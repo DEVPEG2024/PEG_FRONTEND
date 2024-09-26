@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-gray-500 dark:text-gray-400 text-sm bg-gray-100 dark:bg-gray-900 leading-normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  .h1 {
+    @apply text-4xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  h2,
+  .h2 {
+    @apply text-3xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  h3,
+  .h3 {
+    @apply text-2xl font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  h4,
+  .h4 {
+    @apply text-xl font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  h5,
+  .h5 {
+    @apply text-lg font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  h6,
+  .h6 {
+    @apply text-base font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  hr {
+    @apply border-gray-200 dark:border-gray-600;
+  }
+
+  .heading-text {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+ 
+}
+
+.side-nav {
+  background-image: url('/img/logo/picto.svg') ;
+  background-position: bottom;
+  background-size: 100%;
+  background-repeat: no-repeat;
+}
+
+.project-card {
+  border: 2px solid transparent;
+}
+.project-card:hover {
+  border: 2px solid #F96260;
+  transition: border 0.3s ease-in-out;
+  transform: scale(1.02);
+  transition: transform 0.3s ease-in-out;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  
+}
+
+
+.headerProject {
+  background-image: url('/img/others/bg_world.jpg') ;
+  background-position: bottom;
+  background-size: 100%;
+  background-repeat: no-repeat;
+}
+
+.card-product {
+  padding: 0rem !important;
+  border: 2px solid #121726;
+  border-radius: 10px;
+}
+
+.card-product:hover {
+  border: 2px solid #F96260;  
+}
