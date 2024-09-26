@@ -47,12 +47,10 @@ const Tickets = () => {
     dispatch(deleteTicket({ ticketId }));
   };
 
-  const handleUpdateTicket = (ticket: ITicket) => {
+  const handleEditTicket = (ticket: ITicket) => {
     dispatch(setSelectedTicket(ticket));
     dispatch(setEditTicketDialog(true));
   };
-
-
 
   const addTicket = () => {
     dispatch(setNewTicketDialog(true));
@@ -64,7 +62,7 @@ const Tickets = () => {
   };
 
   const columns = useColumns(
-    handleUpdateTicket,
+    handleEditTicket,
     handleDeleteTicket,
     handleViewTicket
   );
@@ -110,7 +108,7 @@ const Tickets = () => {
       </div>
       <ModalNewTicket />
       <ModalEditTicket />
-        
+
     </Container>
   );
 };
