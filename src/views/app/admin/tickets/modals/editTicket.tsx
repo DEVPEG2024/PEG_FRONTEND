@@ -3,28 +3,25 @@ import {
   Dialog,
   Input,
   Select,
-  Upload,
 } from "@/components/ui";
 import { t } from "i18next";
-import {  useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useAppDispatch,
   useAppSelector,
 } from "../store";
-import useUniqueId from "@/components/ui/hooks/useUniqueId";
-import { ticketPriorityData,  ticketTypeData } from "../constants";
+import { ticketPriorityData, ticketTypeData } from "../constants";
 import { RichTextEditor } from "@/components/shared";
-import { createTicket, setEditTicketDialog, setNewTicketDialog, updateTicket } from "../store/ticketSlice";
+import { setEditTicketDialog, updateTicket } from "../store/ticketSlice";
 import { ITicket } from "@/@types/ticket";
 import FileUplaodCustom from "@/components/shared/Upload";
 
 function ModalEditTicket() {
   const user = useAppSelector((state: any) => state.auth.user);
   const { editTicketDialog, selectedTicket } = useAppSelector((state) => state.tickets.data);
-  const newId = useUniqueId("TICKET-", 2).toUpperCase();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    ref: selectedTicket?.ref || newId,
+    ref: selectedTicket?.ref || "",
     title: selectedTicket?.title || "",
     description: selectedTicket?.description || "",
     file: selectedTicket?.file || "",
@@ -33,6 +30,19 @@ function ModalEditTicket() {
     status: selectedTicket?.status || "pending",
     user: user._id,
   });
+
+  useEffect(() =>
+    setFormData({
+      ref: selectedTicket?.ref || "",
+      title: selectedTicket?.title || "",
+      description: selectedTicket?.description || "",
+      file: selectedTicket?.file || "",
+      type: selectedTicket?.type || "bug",
+      priority: selectedTicket?.priority || "low",
+      status: selectedTicket?.status || "pending",
+      user: user._id,
+    }) // TODO: [perf] Ajouter une dépendance au rendu sur ce useEffect pour ne pas qu'il soit joué à chaque fois
+  )
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -43,7 +53,7 @@ function ModalEditTicket() {
       })
     );
     setFormData({
-      ref: newId,
+      ref: "",
       type: "bug",
       title: "",
       file: "",
@@ -111,19 +121,19 @@ function ModalEditTicket() {
             </div>
           </div>
           <div className="flex flex-col gap-2 mt-4">
-              <RichTextEditor
-                
-                value={formData.description}
-                onChange={(value: string) => {
-                  setFormData({ ...formData, description: value });
-                }}
-              />
-            </div>
+            <RichTextEditor
+
+              value={formData.description}
+              onChange={(value: string) => {
+                setFormData({ ...formData, description: value });
+              }}
+            />
+          </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
             <FileUplaodCustom
-               image={formData.file}
-               setImage={onFileChange}
-               setFileType={() => {}}
+              image={formData.file}
+              setImage={onFileChange}
+              setFileType={() => { }}
             />
             <Button
               className="ltr:mr-2 rtl:ml-2"
