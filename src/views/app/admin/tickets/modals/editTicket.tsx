@@ -21,7 +21,6 @@ function ModalEditTicket() {
   const { editTicketDialog, selectedTicket } = useAppSelector((state) => state.tickets.data);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    ref: selectedTicket?.ref || "",
     title: selectedTicket?.title || "",
     description: selectedTicket?.description || "",
     file: selectedTicket?.file || "",
@@ -33,7 +32,6 @@ function ModalEditTicket() {
 
   useEffect(() =>
     setFormData({
-      ref: selectedTicket?.ref || "",
       title: selectedTicket?.title || "",
       description: selectedTicket?.description || "",
       file: selectedTicket?.file || "",
@@ -41,7 +39,7 @@ function ModalEditTicket() {
       priority: selectedTicket?.priority || "low",
       status: selectedTicket?.status || "pending",
       user: user._id,
-    }), [selectedTicket] // TODO: [perf] Ajouter une dépendance au rendu sur ce useEffect pour ne pas qu'il soit joué à chaque fois
+    }), [selectedTicket]
   )
 
   const handleSubmit = async (e: any) => {
@@ -53,7 +51,6 @@ function ModalEditTicket() {
       })
     );
     setFormData({
-      ref: "",
       type: "bug",
       title: "",
       file: "",
@@ -76,7 +73,6 @@ function ModalEditTicket() {
     <div>
       <Dialog isOpen={editTicketDialog} onClose={handleClose} width={1200}>
         <div className="flex flex-col justify-between">
-          <h5 className="mb-4">REF : {formData.ref}</h5>
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-2 ">
               <Input
@@ -123,8 +119,10 @@ function ModalEditTicket() {
           <div className="flex flex-col gap-2 mt-4">
             <RichTextEditor
               value={formData.description}
-              onKeyUp={(value: string) => {
-                setFormData({ ...formData, description: value });
+              onChange={(value: string, delta: any, source: string) => {
+                if (source === 'user') {
+                  setFormData({ ...formData, description: value });
+                }
               }}
             />
           </div>
