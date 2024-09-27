@@ -41,7 +41,7 @@ function ModalEditTicket() {
       priority: selectedTicket?.priority || "low",
       status: selectedTicket?.status || "pending",
       user: user._id,
-    }) // TODO: [perf] Ajouter une dépendance au rendu sur ce useEffect pour ne pas qu'il soit joué à chaque fois
+    }), [selectedTicket] // TODO: [perf] Ajouter une dépendance au rendu sur ce useEffect pour ne pas qu'il soit joué à chaque fois
   )
 
   const handleSubmit = async (e: any) => {
@@ -122,9 +122,8 @@ function ModalEditTicket() {
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <RichTextEditor
-
               value={formData.description}
-              onChange={(value: string) => {
+              onKeyUp={(value: string) => {
                 setFormData({ ...formData, description: value });
               }}
             />
