@@ -10,8 +10,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from "../store";
-import useUniqueId from "@/components/ui/hooks/useUniqueId";
-import { createBanner, setNewBannerDialog } from "../store/bannerSlice";
+import { createBanner, setEditBannerDialog, setNewBannerDialog, updateBanner } from "../store/bannerSlice";
 import { IBanner } from "@/@types/banner";
 import FileUplaodCustom from "@/components/shared/Upload";
 import { apiGetCategoriesCustomers, apiGetCustomers, ICategoryCustomer } from "@/services/CustomerServices";
@@ -20,22 +19,34 @@ type Option = {
   value: string;
   label: string;
 };
-function ModalNewBanner() {
+function ModalEditBanner() {
   const user = useAppSelector((state: any) => state.auth.user);
-  const { newBannerDialog } = useAppSelector((state) => state.banners.data);
+  const { editBannerDialog, selectedBanner } = useAppSelector((state) => state.banners.data);
   const [customers, setCustomers] = useState<Option[]>([])
   const [customersCategories, setCustomersCategories] = useState<Option[]>([])
-  const newId = useUniqueId("BANNER-", 2).toUpperCase();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    title: "",
-    image: "",
-    customer: "",
-    link: "",
-    customerCategory : "",
-    status: "active",
+    title: selectedBanner?.title || "",
+    image: selectedBanner?.image || "",
+    customer: selectedBanner?.customer || "",
+    link: selectedBanner?.link || "",
+    customerCategory: selectedBanner?.customerCategory || "",
+    status: selectedBanner?.status || "active",
     user: user._id,
   });
+
+  useEffect(() =>
+    setFormData({
+      title: selectedBanner?.title || "",
+      image: selectedBanner?.image || "",
+      customer: selectedBanner?.customer || "",
+      link: selectedBanner?.link || "",
+      customerCategory: selectedBanner?.customerCategory || "",
+      status: selectedBanner?.status || "active",
+      user: user._id,
+    }), [selectedBanner]
+  )
+
   const fetchCustomers = async () => {
     const response = await apiGetCustomers(1, 1000, "")
     const customersList = response.data.customers || []
@@ -44,6 +55,7 @@ function ModalNewBanner() {
             label: customer.firstName + " " + customer.lastName
         }))
         setCustomers(customers)
+
 }
 
 const fetchCustomersCategories = async () => {
@@ -64,8 +76,9 @@ const fetchCustomersCategories = async () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     dispatch(
-      createBanner({
+      updateBanner({
         banner: formData as unknown as IBanner,
+        bannerId: selectedBanner?._id || ""
       })
     );
     setFormData({
@@ -80,7 +93,7 @@ const fetchCustomersCategories = async () => {
     handleClose();
   };
   const handleClose = () => {
-    dispatch(setNewBannerDialog(false));
+    dispatch(setEditBannerDialog(false));
   };
 
   const onFileChange = (e: any) => {
@@ -89,7 +102,7 @@ const fetchCustomersCategories = async () => {
 
   return (
     <div>
-      <Dialog isOpen={newBannerDialog} onClose={handleClose} width={1200}>
+      <Dialog isOpen={editBannerDialog} onClose={handleClose} width={1200}>
         <div className="flex flex-col justify-between">
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-2 ">
@@ -109,6 +122,9 @@ const fetchCustomersCategories = async () => {
                 placeholder="Clients"
                 options={customers}
                 noOptionsMessage={() => "Aucun client trouvé"}
+                value={customers.find(
+                  (customer) => customer.value === formData.customer._id
+                )}
                 onChange={(e: any) => {
                   setFormData({ ...formData, customer: e?.value || "" });
                 }}
@@ -122,6 +138,9 @@ const fetchCustomersCategories = async () => {
                 placeholder="Catégorie client"
                 options={customersCategories}
                 noOptionsMessage={() => "Aucune catégorie client trouvée"}
+                value={customersCategories.find(
+                  (customerCategory) => customerCategory.value === formData.customerCategory._id
+                )}
                 onChange={(e: any) => {
                   setFormData({ ...formData, customerCategory: e?.value || "" });
                 }}
@@ -154,4 +173,4 @@ const fetchCustomersCategories = async () => {
   );
 }
 
-export default ModalNewBanner;
+export default ModalEditBanner;
