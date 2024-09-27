@@ -16,11 +16,11 @@ import ModalNewBanner from "./modals/newBanner";
 
 import { useNavigate } from "react-router-dom";
 import { IBanner } from "@/@types/banner";
+import ModalEditBanner from "./modals/editBanner";
 
 injectReducer("banners", reducer);
 
 const Banners = () => {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -102,6 +102,7 @@ const Banners = () => {
         />
       </div>
       <ModalNewBanner />
+      <ModalEditBanner />
      
     </Container>
   );
