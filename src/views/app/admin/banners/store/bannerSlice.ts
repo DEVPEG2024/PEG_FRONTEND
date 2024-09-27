@@ -6,7 +6,7 @@ import { apiGetBanners, apiCreateBanner, apiDeleteBanner, apiUpdateBanner, apiUp
 
 
 
-export type ProjectListState = {
+export type BannerState = {
     banners: IBanner[]
     total: number
     result: boolean
@@ -83,7 +83,7 @@ export const updateStatusBanner = createAsyncThunk(
 )
 
 
-const initialState: ProjectListState = {
+const initialState: BannerState = {
     banners: [],
     selectedBanner: null,
     newBannerDialog: false,
@@ -95,7 +95,7 @@ const initialState: ProjectListState = {
 }
 
 
-const projectListSlice = createSlice({
+const bannerSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
@@ -193,6 +193,6 @@ export const {
   setNewBannerDialog,
   setEditBannerDialog,
   setSelectedBanner,
-} = projectListSlice.actions;
+} = bannerSlice.actions;
 
-export default projectListSlice.reducer;
+export default bannerSlice.reducer;

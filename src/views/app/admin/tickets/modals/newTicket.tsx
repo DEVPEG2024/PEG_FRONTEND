@@ -3,10 +3,9 @@ import {
   Dialog,
   Input,
   Select,
-  Upload,
 } from "@/components/ui";
 import { t } from "i18next";
-import {  useEffect, useState } from "react";
+import { useState } from "react";
 import {
   useAppDispatch,
   useAppSelector,
