@@ -6,7 +6,7 @@ import { ITicket } from '@/@types/ticket'
 
 
 
-export type ProjectListState = {
+export type TicketState = {
     tickets: ITicket[]
     total: number
     result: boolean
@@ -96,7 +96,7 @@ export const updatePriorityTicket = createAsyncThunk(
     }
 )
 
-const initialState: ProjectListState = {
+const initialState: TicketState = {
     tickets: [],
     selectedTicket: null,
     newTicketDialog: false,
@@ -124,7 +124,7 @@ const projectListSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
-        // GET INVOICES
+        // GET TICKETS
         builder.addCase(getTickets.pending, (state) => {
             state.loading = true
         })
@@ -133,7 +133,7 @@ const projectListSlice = createSlice({
             state.tickets = action.payload.tickets as unknown as WritableDraft<ITicket>[]
             state.total = action.payload.total
         })
-        // CREATE INVOICE
+        // CREATE TICKET
         builder.addCase(createTicket.pending, (state) => {
             state.loading = true
         })
@@ -146,7 +146,7 @@ const projectListSlice = createSlice({
             state.loading = false
             state.message = action.error.message as string
         })
-        // UPDATE INVOICE
+        // UPDATE TICKET
         builder.addCase(updateTicket.pending, (state) => {
             state.loading = true
         })
@@ -163,7 +163,7 @@ const projectListSlice = createSlice({
             state.loading = false
             state.message = action.error.message as string
         })
-        // DELETE INVOICE
+        // DELETE TICKET
         builder.addCase(deleteTicket.pending, (state) => {
             state.loading = true
         })
