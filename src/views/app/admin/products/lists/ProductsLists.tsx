@@ -10,15 +10,16 @@ import reducer, {
   setProduct,
   putStatusProduct,
   deleteProduct,
+  duplicateProduct,
   
 } from "../store";
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button, Card, Dialog, Notification, Switcher, Tooltip, toast } from '@/components/ui'
-import { HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi'
+import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi'
 import { isEmpty } from 'lodash'
-import { DoubleSidedImage } from '@/components/shared'
 import { API_URL_IMAGE } from '@/configs/api.config';
+import { IProduct } from '@/@types/product';
 
 injectReducer("products", reducer);
 
@@ -65,6 +66,16 @@ const ProductsLists = () => {
             );
         }
     }
+
+    const onDuplicate = async (product: IProduct) => {
+      dispatch(duplicateProduct({product}))
+      toast.push(
+        <Notification type="success" title="Activé">
+          Produit dupliqué avec succès
+        </Notification>
+      )
+    }
+
     return (
       <>
         <div className="lg:grid lg:grid-cols-3 items-center justify-between mb-4">
@@ -130,13 +141,24 @@ const ProductsLists = () => {
                           className="mt-4"
                         />
                       </Tooltip>
-                      <Button
-                        className="mt-4 "
-                        variant="plain"
-                        onClick={() => onModalOpen(product._id)}
-                        size="sm"
-                        icon={<HiTrash />}
-                      />
+                      <Tooltip title="Dupliquer le produit">
+                        <Button
+                          className="mt-4 "
+                          variant="plain"
+                          onClick={() => onDuplicate(product)}
+                          size="sm"
+                          icon={<HiDuplicate />}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Supprimer le produit">
+                        <Button
+                          className="mt-4 "
+                          variant="plain"
+                          onClick={() => onModalOpen(product._id)}
+                          size="sm"
+                          icon={<HiTrash />}
+                        />
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
