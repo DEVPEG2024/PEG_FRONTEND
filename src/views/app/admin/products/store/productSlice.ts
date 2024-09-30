@@ -1,10 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { IProduct } from '@/@types/product'
-import { apiGetProducts, apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsByCategory } from '@/services/ProductServices'
-
+import { apiGetProducts, apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsByCategory, apiNewProduct } from '@/services/ProductServices'
 
 type Products = IProduct[]
-
 
 export type StateData = {
     loading: boolean
@@ -62,6 +60,18 @@ export const putStatusProduct = createAsyncThunk(
 }
 );
 
+type DuplicateProductRequest = {
+  product: IProduct
+}
+
+export const duplicateProduct = createAsyncThunk(
+  SLICE_NAME + "/duplicateProduct",
+  async (data: DuplicateProductRequest) => {
+    const response = await apiNewProduct(data.product)
+    return response.data
+}
+);
+
 type UpdateProductRequest = {
   product: IProduct
 }
@@ -97,7 +107,7 @@ const initialState: StateData = {
   },
 };
 
-const licencieSlice = createSlice({
+const productSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
@@ -188,6 +198,16 @@ const licencieSlice = createSlice({
         builder.addCase(updateProduct.rejected, (state) => {
             state.loading = false
         })
+        builder.addCase(duplicateProduct.pending, (state) => {
+            state.loading = true
+        })
+        builder.addCase(duplicateProduct.fulfilled, (state, action) => {
+            state.loading = false
+            state.products.push(action.payload.product)
+        })
+        builder.addCase(duplicateProduct.rejected, (state) => {
+            state.loading = false
+        })
         builder.addCase(getProductsByCategory.pending, (state) => {
             state.loading = true
         })
@@ -210,6 +230,6 @@ export const {
     setDeleteProduct,
     setActiveProduct,
     setEditingProduct,
-} = licencieSlice.actions
+} = productSlice.actions
 
-export default licencieSlice.reducer
+export default productSlice.reducer
