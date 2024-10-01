@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next"
 import { useSelector } from "react-redux";
 import ProductsLists from "../components/ProductsLists";
 import { BsArrowRight } from "react-icons/bs";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   const { t } = useTranslation();
@@ -87,14 +88,18 @@ const Home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <ProductsLists products={products} />
             <div className="col-span-1 flex flex-col gap-4">
-              <Button className="flex items-center justify-center gap-2">
-                <span>Voir toutes mes offres</span>
-                <BsArrowRight className="w-4 h-4" />
-              </Button>
-              <Button variant="twoTone" className="flex items-center justify-center gap-2">
-                <span>Voir le catalogue</span>
-                <BsArrowRight className="w-4 h-4" />
-              </Button>
+              <Link to="/products">
+                <Button className="flex items-center justify-center gap-2">
+                  <span>Voir toutes mes offres</span>
+                  <BsArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link to="/catalogue">
+                <Button variant="twoTone" className="flex items-center justify-center gap-2">
+                  <span>Voir le catalogue</span>
+                  <BsArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
