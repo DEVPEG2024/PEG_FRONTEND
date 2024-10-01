@@ -19,8 +19,8 @@
 }
 
 .step-item-icon {
-  min-width: 2.25rem;
-  @apply text-lg rounded-full w-9 h-9 flex items-center justify-center font-semibold;
+  min-width: 1.25rem;
+  @apply text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold;
 
   &.step-item-icon-pending {
     @apply border-2 border-gray-300 dark:border-gray-600;
