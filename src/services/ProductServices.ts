@@ -82,11 +82,11 @@ export async function apiPutStatusProduct(id: string) {
 
 // GET PRODUCTS CUSTOMER
 
-export async function apiGetProductsCustomer(page: number, pageSize: number, searchTerm: string = "",  userId: string) {
+export async function apiGetProductsCustomer(page: number, pageSize: number, searchTerm: string = "",  userId: string, userCategoryId: string) {
     return ApiService.fetchData<ProductResponse>({
         url: `${API_BASE_URL}/products/customer`,
         method: 'get',
-        params: { page, pageSize, searchTerm,  userId }
+        params: { page, pageSize, searchTerm,  userId, userCategoryId }
     })
 }
 
