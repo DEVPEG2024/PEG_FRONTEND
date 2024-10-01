@@ -27,7 +27,7 @@ export type StatsTypesResponses = {
     bilan: number
 }
 type Query = {
-    page: number, pageSize: number, searchTerm: string, userId: string
+    page: number, pageSize: number, searchTerm: string, userId: string, userCategoryId: string
  }
  
  type GetProductListRequest = Query
@@ -37,7 +37,7 @@ export const SLICE_NAME = 'products'
 export const getProducts = createAsyncThunk(
     SLICE_NAME + '/getProducts',
     async (data: GetProductListRequest) => {
-        const response = await apiGetProductsCustomer(data.page, data.pageSize, data.searchTerm, data.userId)
+        const response = await apiGetProductsCustomer(data.page, data.pageSize, data.searchTerm, data.userId, data.userCategoryId)
         return response.data
     }
 )
@@ -89,7 +89,7 @@ const initialState: StateData = {
   },
 };
 
-const licencieSlice = createSlice({
+const productSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
@@ -192,6 +192,6 @@ export const {
     setDeleteProduct,
     setActiveProduct,
     setEditingProduct,
-} = licencieSlice.actions
+} = productSlice.actions
 
-export default licencieSlice.reducer
+export default productSlice.reducer

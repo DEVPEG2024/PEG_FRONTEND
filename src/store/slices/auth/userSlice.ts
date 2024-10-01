@@ -53,6 +53,7 @@ const userSlice = createSlice({
             state.country = action.payload?.country
             state.authority = action.payload?.authority
             state.companyName = action.payload?.companyName
+            state.category = action.payload?.category
         },
     },
 })

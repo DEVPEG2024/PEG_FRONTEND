@@ -1,18 +1,14 @@
 
 import { injectReducer } from '@/store'
 import reducer, {
-
   getProducts,
   useAppDispatch,
   useAppSelector,
   setProduct,
-  putStatusProduct,
-  
 } from "../store";
 import { useEffect } from 'react'
-import { Card, Notification,  toast } from '@/components/ui'
+import { Card } from '@/components/ui'
 import { isEmpty } from 'lodash'
-import { DoubleSidedImage } from '@/components/shared'
 import { API_URL_IMAGE } from '@/configs/api.config';
 
 injectReducer("products", reducer);
@@ -22,26 +18,10 @@ const ProductsLists = () => {
     const dispatch = useAppDispatch()
     const {products} = useAppSelector((state) => state.products.data)
     useEffect(() => {
-       dispatch(getProducts({page: 1, pageSize: 10, searchTerm: "", userId: user?._id || ""}))
+       dispatch(getProducts({page: 1, pageSize: 10, searchTerm: "", userId: user?._id || "", userCategoryId: user?.category?._id || ""}))
        dispatch(setProduct(null))
     }, [dispatch])
 
-    const onActivate = (id: string, checked: boolean) => {
-        dispatch(putStatusProduct({id}))
-        if(!checked){
-            toast.push(
-                <Notification type="success" title="Activé">
-                  Produit activé avec succès
-                </Notification>
-            )
-        }else{
-            toast.push(
-              <Notification type="danger" title="Désactivé">
-                Produit désactivé avec succès
-              </Notification>
-            );
-        }
-    }
     return (
       <>
         <div className="lg:grid lg:grid-cols-3 items-center justify-between mb-4">
