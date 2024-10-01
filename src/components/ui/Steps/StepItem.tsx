@@ -56,7 +56,7 @@ const StepItem = forwardRef<HTMLDivElement, StepItemProps>((props, ref) => {
     }
 
     if (image) {
-        imageIcon = <img src={image} alt="step-icon" className="w-32 h-32 -mb-10" />
+        imageIcon = <img src={image} alt="step-icon" className="w-16 h-16 -mb-10" />
     }
 
     const stepItemClass = classNames(
