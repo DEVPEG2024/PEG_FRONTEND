@@ -38,48 +38,48 @@ const Home = () => {
           className="w-full object-cover"
         />
       )}
-      <div className="flex bg-gray-900 justify-between items-center p-4 ">
-          <div className=" flex  items-center gap-4">
-            <DoubleSidedImage
-              className="mx-auto h-36 "
-              src="/img/others/welcome.png"
-              darkModeSrc="/img/others/welcome-dark.png"
-              alt="Welcome"
+      <div className="flex bg-gray-900 justify-between p-4">
+        <div className="flex gap-4 items-center">
+          <DoubleSidedImage
+            className="mx-auto h-36"
+            src="/img/others/welcome.png"
+            darkModeSrc="/img/others/welcome-dark.png"
+            alt="Welcome"
+          />
+          <div className="flex flex-col">
+            <h3 className="mb-1">
+              {t("hello")}, {user?.firstName} 👋
+            </h3>
+            <p className="text-base">{t("welcome_to_product_management")}</p>
+          </div>
+        </div>
+        <div className="lg:flex hidden items-start">
+          <Steps
+            current={level}
+            className="lg:flex grid grid-cols-4 justify-end gap-8 text-[8px]"
+          >
+            <Steps.Item
+              title="Cosmonaute Apprenti"
+              image={"/img/others/level/0.png"}
+              className="col-span-1 gap-8"
             />
-            <div className="flex flex-col">
-              <h3 className="mb-1">
-                {t("hello")}, {user?.firstName} 👋
-              </h3>
-              <p className="text-base">{t("welcome_to_product_management")}</p>
-            </div>
-          </div>
-          <div className="lg:flex hidden">
-            <Steps
-              current={level}
-              className="lg:flex grid grid-cols-4 justify-center gap-8"
-            >
-              <Steps.Item
-                title="Cosmonaute Apprenti"
-                image={"/img/others/level/0.png"}
-                className="col-span-1 gap-8 w-1/4"
-              />
-              <Steps.Item
-                title="Voyageur Interstellaire"
-                image={"/img/others/level/1.png"}
-                className="col-span-1 gap-8 w-1/4"
-              />
-              <Steps.Item
-                title="Capitaine d’Exploration"
-                image={"/img/others/level/2.png"}
-                className="col-span-1 gap-8 w-1/4"
-              />
-              <Steps.Item
-                title="Légende Galactique"
-                image={"/img/others/level/3.png"}
-                className="col-span-1 gap-8 w-1/4"
-              />
-            </Steps>
-          </div>
+            <Steps.Item
+              title="Voyageur Interstellaire"
+              image={"/img/others/level/1.png"}
+              className="col-span-1 gap-8"
+            />
+            <Steps.Item
+              title="Capitaine d’Exploration"
+              image={"/img/others/level/2.png"}
+              className="col-span-1 gap-8"
+            />
+            <Steps.Item
+              title="Légende Galactique"
+              image={"/img/others/level/3.png"}
+              className="col-span-1 gap-8"
+            />
+          </Steps>
+        </div>
       </div>
       <Container className="mt-4 lg:p-0 p-4">
         <div className="flex flex-col gap-4">
