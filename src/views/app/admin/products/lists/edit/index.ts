@@ -1,3 +1,3 @@
-import EditSponsor from './editSaisie'
+import EditProduct from './EditProduct'
 
-export default EditSponsor
+export default EditProduct

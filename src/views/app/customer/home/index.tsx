@@ -88,13 +88,13 @@ const Home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <ProductsLists products={products} />
             <div className="col-span-1 flex flex-col gap-4">
-              <Link to="/products">
+              <Link to="/customer/products">
                 <Button className="flex items-center justify-center gap-2">
                   <span>Voir toutes mes offres</span>
                   <BsArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link to="/catalogue">
+              <Link to="/customer/catalogue">
                 <Button variant="twoTone" className="flex items-center justify-center gap-2">
                   <span>Voir le catalogue</span>
                   <BsArrowRight className="w-4 h-4" />

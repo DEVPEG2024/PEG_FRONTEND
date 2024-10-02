@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Notification, toast } from '@/components/ui'
 import { useEffect, useState } from 'react'
 import {  OptionsFields } from '@/@types/product'
-import SaisieForm, { FormModel, SetSubmitting } from '../edit/Forms/Form'
+import SaisieForm, { FormModel, SetSubmitting } from './Forms/Form'
 import { ICategoryCustomer } from '@/services/CustomerServices'
 import { ICategory, IUser } from '@/@types/user'
 import useCustomer from '@/utils/hooks/customers/useCustomer'
@@ -87,35 +87,34 @@ const EditSaisie = () => {
 
     const handleFormSubmit = async (
         values: FormModel,
-        
         setSubmitting: SetSubmitting
     ) => {
         setSubmitting(true)
-            const data ={
-                ...values,
-                field_text: field_text,
-                sizes: {
-                    status : sizeSelected,
-                    options: sizeField
-                },
-            }
-            const response =  await apiUpdateProduct(data)
-            if(response.data.result){
-                toast.push(
-                  <Notification type="success" title="Succès">
-                    Le produit a bien été modifié
-                  </Notification>
-                );
-                  navigate("/admin/store/lists");
-            } else {
-                toast.push(
-                    <Notification type="danger" title="Erreur">
-                      Une erreur est survenue lors de la modification du produit
-                    </Notification>
-                  );
-                }
-                setSubmitting(false)
-     
+        const data = {
+            ...values,
+            field_text: field_text,
+            sizes: {
+                status : sizeSelected,
+                options: sizeField
+            },
+        }
+        const response = await apiUpdateProduct(data)
+
+        if (response.data.result) {
+            toast.push(
+                <Notification type="success" title="Succès">
+                Le produit a bien été modifié
+                </Notification>
+            );
+            navigate("/admin/store/lists");
+        } else {
+            toast.push(
+                <Notification type="danger" title="Erreur">
+                    Une erreur est survenue lors de la modification du produit
+                </Notification>
+            );
+        }
+        setSubmitting(false)
     }
     const handleDiscard = () => {
         navigate('/admin/store/lists')

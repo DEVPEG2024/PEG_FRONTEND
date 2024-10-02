@@ -32,7 +32,7 @@ const GridItem = ({ data }: { data: IProject }) => {
   const statusText = statusTextData[status as keyof typeof statusTextData];
   const handleNavigateDetails = () => {
     dispatch(setSelectedProject(data));
-    navigate(`/projects/details/${data._id}`);
+    navigate(`/customer/projects/details/${data._id}`);
   };
 
   const completedTasksCount = tasks.filter(

@@ -9,7 +9,6 @@ import { Field,Form, Formik } from 'formik'
 
 import * as Yup from 'yup'
 import {  useAppSelector } from '@/store'
-import { API_BASE_URL } from '@/configs/api.config'
 import { useState } from 'react'
 import { Alert } from '@/components/ui'
 import { HiFire } from 'react-icons/hi'

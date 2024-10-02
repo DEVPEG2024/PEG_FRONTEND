@@ -1,24 +1,18 @@
 
-import { Button, Card } from '@/components/ui'
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { IProduct } from '@/@types/product'
 import { BsCart2 } from 'react-icons/bs';
 import { useAppDispatch } from '@/store';
 import { CartItem } from '@/@types/cart';
 import { addToCart } from '@/store/slices/base/cartSlice';
-
-
+import { Button, Card, Notification, toast } from "@/components/ui";
 
 const ProductsLists = ({products}: {products: IProduct[]}) => {
   const dispatch = useAppDispatch();
- const add = (product: IProduct) => {
-  const productCart = {
-    ...product,
-    quantity: 1,
-    total: product.amount * 1,
-  };
-  dispatch(addToCart(productCart as CartItem));
- }
+  const onOrder = async (product: IProduct) => {
+    dispatch(addToCart(product as CartItem));
+    toast.push(<Notification type="success" title="Produit ajouté au panier" />)
+  }
     return (
       <>
         {products.map((product) => (
@@ -47,7 +41,7 @@ const ProductsLists = ({products}: {products: IProduct[]}) => {
                   variant="twoTone"
                   size="xs"
                   className="flex items-center justify-center gap-2 mt-1"
-                  onClick={() => add(product)}
+                  onClick={() => onOrder(product)}
                 >
                   <span>Commander</span>
                   <BsCart2 className="w-4 h-4" />

@@ -97,7 +97,7 @@ const initialState: StateData = {
   },
 };
 
-const licencieSlice = createSlice({
+const catalogueSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
@@ -210,6 +210,6 @@ export const {
     setDeleteProduct,
     setActiveProduct,
     setEditingProduct,
-} = licencieSlice.actions
+} = catalogueSlice.actions
 
-export default licencieSlice.reducer
+export default catalogueSlice.reducer

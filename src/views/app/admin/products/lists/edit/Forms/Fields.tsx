@@ -6,7 +6,6 @@ import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
 import { Select, Switcher } from "@/components/ui";
 import { OptionsFields, IProduct } from "@/@types/product";
 import {  SIZE_OPTIONS } from "@/utils/forms";
-import { setEditingProduct, useAppDispatch, useAppSelector } from "../../../store";
 
 type Options = {
   label: string;
@@ -38,7 +37,6 @@ type BasicInformationFields = {
 
 const BasicInformationFields = (props: BasicInformationFields) => {
   const {
-    
     touched,
     errors,
     type,
@@ -56,7 +54,6 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     setSelectedCustomers
   } = props;
 
-  
   return (
     <AdaptableCard divider className="mb-4">
       <h5>{type === "edit" ? "Modification du produit" : "Nouveau produit"}</h5>
@@ -229,7 +226,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
                   value={sizeField.find((field) => field.value === option.value)?.stock}
                   component={Input}
                   onChange={(e : any) => {
-                    // Trouver l'index de l'option actuelle dans le tableau adultFields
+                    // Trouver l'index de l'option actuelle dans le tableau sizeField
                     const index = sizeField.findIndex(
                       (field) => field.value === option.value
                     );
