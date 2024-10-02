@@ -1,4 +1,3 @@
-
 import { injectReducer } from '@/store'
 import reducer, {
   getProducts,
@@ -10,17 +9,24 @@ import { useEffect } from 'react'
 import { Card } from '@/components/ui'
 import { isEmpty } from 'lodash'
 import { API_URL_IMAGE } from '@/configs/api.config';
+import { useNavigate } from 'react-router-dom'
 
 injectReducer("products", reducer);
 
 const ProductsLists = () => {
   const user = useAppSelector(state => state.auth.user)
     const dispatch = useAppDispatch()
+    const navigate = useNavigate()
     const {products} = useAppSelector((state) => state.products.data)
     useEffect(() => {
        dispatch(getProducts({page: 1, pageSize: 10, searchTerm: "", userId: user?._id || "", userCategoryId: user?.category?._id || ""}))
        dispatch(setProduct(null))
     }, [dispatch])
+
+    const handleClick = (id: string) => {
+        dispatch(setProduct(id))
+        navigate(`/customer/product/${id}`)
+    }
 
     return (
       <>
@@ -41,7 +47,7 @@ const ProductsLists = () => {
         {!isEmpty(products) && (
           <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {products.map((product) => (
-              <Card key={product._id}>
+              <Card key={product._id} clickable onClick={(e) => handleClick(product._id)}>
                 <div className="flex flex-col gap-4">
                   <img
                     src={API_URL_IMAGE + product.images[0]}
@@ -67,7 +73,6 @@ const ProductsLists = () => {
                 </div>
               </Card>
             ))}
-            
           </div>
         )}
       </>

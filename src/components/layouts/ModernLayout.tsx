@@ -83,7 +83,7 @@ const HeaderActionsEnd = () => {
         userAuthority={userAuthority as string[]}
         authority={["customer"]}
       >
-        <Link to="/cart">
+        <Link to="/customer/cart">
           <Alert
             showIcon
             type="success"
