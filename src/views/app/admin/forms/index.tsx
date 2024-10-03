@@ -14,13 +14,13 @@ injectReducer("forms", reducer);
 function FormsBuilder() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const {forms} = useAppSelector((state) => state.forms.data)
+  const { forms } = useAppSelector((state) => state.forms.data)
   useEffect(() => {
-    dispatch(getForms({page: 1, pageSize: 10, searchTerm: ""}))
+    dispatch(getForms({ page: 1, pageSize: 10, searchTerm: "" }))
   }, [])
   const handleEdit = (form: IFormList) => {
     dispatch(setForm(form))
-    navigate(`/admin/offers/forms-builder/edit/${form._id}`)
+    navigate(`/admin/forms/edit/${form._id}`)
   }
   const handleDelete = (id: string) => {
     dispatch(deleteForm(id))
@@ -31,7 +31,7 @@ function FormsBuilder() {
         title="Formulaires"
         buttonTitle="Créer"
         description="Tous les formulaires"
-        link={"/admin/offers/forms-builder/add"}
+        link={"/admin/forms/add"}
         addAction
         total={forms.length}
       />
@@ -42,7 +42,7 @@ function FormsBuilder() {
               <div className="flex items-center gap-2">
                 <TbForms className="text-red-400 text-4xl" />
                 <div className="flex flex-col">
-                <span className="text-lg text-white font-bold">{form.title}</span>
+                  <span className="text-lg text-white font-bold">{form.title}</span>
                   <span className="text-md text-white">{form.fields.length} champs</span>
                 </div>
               </div>

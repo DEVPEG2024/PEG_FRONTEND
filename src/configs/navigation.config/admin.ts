@@ -56,10 +56,10 @@ const navigationAdmin: NavigationTree[] = [
         authority: [SUPER_ADMIN],
         subMenu: [
           {
-            key: "admin.offers.forms",
-            path: "/admin/offers/forms-builder",
+            key: "admin.forms",
+            path: "/admin/forms",
             title: "Formulaire des offres",
-            translateKey: "nav.offersForms",
+            translateKey: "nav.forms",
             icon: "forms",
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
