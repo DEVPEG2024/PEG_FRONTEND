@@ -75,7 +75,7 @@ const initialState: StateData = {
   message: "",
 };
 
-const licencieSlice = createSlice({
+const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
@@ -120,6 +120,6 @@ export const {
   setForm,
   setModalDeleteOpen,
   setModalDeleteClose,
-} = licencieSlice.actions;
+} = formsSlice.actions;
 
-export default licencieSlice.reducer;
+export default formsSlice.reducer;

@@ -6,14 +6,16 @@ import { useState } from "react";
 import FieldConfig from "../builder/components/fielsConfig";
 import Empty from "@/components/shared/Empty";
 import { RxInput } from "react-icons/rx";
-import { apiCreateForm } from "@/services/FormServices";
+import { apiCreateForm, apiUpdateForm } from "@/services/FormServices";
 import { useNavigate } from "react-router-dom";
+import { useAppSelector } from "../store";
+import { IFormList } from "@/@types/forms";
 
 function NewForms() {
-  
-  const [selectedFields, setSelectedFields] = useState<Form[]>([]);
+  const { form } = useAppSelector((state) => state.forms.data)
+  const [selectedFields, setSelectedFields] = useState<Form[]>(form?.fields ?? []);
   const [currentField, setCurrentField] = useState<Form | null>(null);
-  const [formTitle, setFormTitle] = useState<string>("");
+  const [formTitle, setFormTitle] = useState<string>(form?.title ?? "");
   const navigate = useNavigate();
   const handleFormsSelected = (form: Form) => {
     const newField = { ...form, id: Date.now().toString() };
@@ -62,17 +64,21 @@ function NewForms() {
       toast.push(<Notification type="danger" title="Veuillez entrer un titre" className="bg-red-700" />)
       return;
     }
-    const form = {
+    const formData: IFormList = {
+      ...form,
+      _id: form?._id ?? '',
       title: formTitle,
-      fields: selectedFields
+      fields: selectedFields,
+      createdAt: form?.createdAt ?? new Date(),
+      updatedAt: new Date()
     }
-    const {data} = await apiCreateForm(form);
+    const { data } = await apiUpdateForm(formData);
 
     if (data.result) {
       toast.push(<Notification type="success" title="Formulaire créé avec succès" />)
-      navigate("/admin/offers/forms-builder");
+      navigate("/admin/forms");
     } else {
-      toast.push(<Notification  type="danger" title="Erreur lors de la création du formulaire" />)
+      toast.push(<Notification type="danger" title="Erreur lors de la création du formulaire" />)
     }
   };
 
@@ -94,13 +100,13 @@ function NewForms() {
         </Card>
         <Card className="col-span-5 bg-gray-900 h-full">
           {currentField ? (
-          <FieldConfig
-            selectedField={currentField}
-            onConfigChange={handleConfigChange}
+            <FieldConfig
+              selectedField={currentField}
+              onConfigChange={handleConfigChange}
               handleAddField={handleAddField}
-            /> 
+            />
           ) : (
-            <Empty icon={<RxInput className="text-gray-500 text-7xl" />}> 
+            <Empty icon={<RxInput className="text-gray-500 text-7xl" />}>
               <p className="text-gray-500 text-xl">Aucun champ sélectionné</p>
               <p className="text-gray-500 text-md">Sélectionnez un champ pour le configurer</p>
             </Empty>

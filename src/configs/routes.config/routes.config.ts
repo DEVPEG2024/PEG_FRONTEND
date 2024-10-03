@@ -120,28 +120,6 @@ const protectedAdminRoutes = [
     authority: [SUPER_ADMIN],
   },
   {
-    key: "admin.offers.forms",
-    path: "/admin/offers/forms-builder",
-    component: lazy(() => import("@/views/app/admin/offers/forms-builder")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.forms.add",
-    path: "/admin/offers/forms-builder/add",
-    component: lazy(
-      () => import("@/views/app/admin/offers/forms-builder/add")
-    ),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.forms.edit",
-    path: "/admin/offers/forms-builder/edit/:id",
-    component: lazy(
-      () => import("@/views/app/admin/offers/forms-builder/edit")
-    ),
-    authority: [SUPER_ADMIN],
-  },
-  {
     key: "admin.offers.new",
     path: "/admin/offers/new",
     component: lazy(() => import("@/views/app/admin/offers/lists/new")),
@@ -159,6 +137,30 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/offers/details")),
     authority: [SUPER_ADMIN],
   },
+  //forms
+  {
+    key: "admin.forms",
+    path: "/admin/forms",
+    component: lazy(() => import("@/views/app/admin/forms")),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.forms.add",
+    path: "/admin/forms/add",
+    component: lazy(
+      () => import("@/views/app/admin/forms/add")
+    ),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.forms.edit",
+    path: "/admin/forms/edit/:id",
+    component: lazy(
+      () => import("@/views/app/admin/forms/edit")
+    ),
+    authority: [SUPER_ADMIN],
+  },
+  //teams
   {
     key: "admin.teams",
     path: "/admin/teams",
@@ -177,12 +179,14 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/teams/EditTeam")),
     authority: [SUPER_ADMIN],
   },
+  //invoices
   {
     key: "admin.invoices",
     path: "/admin/invoices",
     component: lazy(() => import("@/views/app/admin/invoices")),
     authority: [SUPER_ADMIN],
   },
+  //banners
   {
     key: "admin.banners",
     path: "/admin/banners",
