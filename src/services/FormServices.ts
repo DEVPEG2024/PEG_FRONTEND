@@ -1,5 +1,10 @@
-import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
+import {
+    DELETE_FORMS_API_URL,
+    GET_FORMS_API_URL,
+    POST_FORMS_API_URL,
+    PUT_FORMS_API_URL
+  } from "@/constants/api.constant";
 import { IForm, IFormList } from '@/@types/forms'
 
 type CreateFormResponse = {
@@ -34,7 +39,7 @@ type DeleteFormResponse = {
 // create form
 export async function apiCreateForm(form: CreateFormRequest) {
     return ApiService.fetchData<CreateFormResponse>({
-        url: `${API_BASE_URL}/forms/create`,
+        url: POST_FORMS_API_URL,
         method: 'post',
         data: form
     })
@@ -44,7 +49,7 @@ export async function apiCreateForm(form: CreateFormRequest) {
 // get all forms
 export async function apiGetForms(page: number, pageSize: number, searchTerm: string) {
     return ApiService.fetchData<GetAllFormsResponse>({
-        url: `${API_BASE_URL}/forms`,
+        url: GET_FORMS_API_URL,
         method: 'get',
         params: { page, pageSize, searchTerm }
     })
@@ -53,7 +58,7 @@ export async function apiGetForms(page: number, pageSize: number, searchTerm: st
 // update form
 export async function apiUpdateForm(form: IFormList) {
     return ApiService.fetchData<UpdateFormResponse>({
-        url: `${API_BASE_URL}/forms/${form._id}`,
+        url: PUT_FORMS_API_URL + '/' + form._id,
         method: 'put',
         data: form
     })
@@ -62,7 +67,7 @@ export async function apiUpdateForm(form: IFormList) {
 // delete form
 export async function apiDeleteForm(id: string) {
     return ApiService.fetchData<DeleteFormResponse>({
-        url: `${API_BASE_URL}/forms/${id}`,
+        url: DELETE_FORMS_API_URL + '/' + id,
         method: 'delete'
     })
 }

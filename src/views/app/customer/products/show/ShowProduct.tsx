@@ -1,11 +1,13 @@
 import { injectReducer } from '@/store'
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom"
 import reducer, {
-  clearShowProductState,
+  clearState,
   setFormDialog,
   useAppDispatch,
   useAppSelector,
-} from "../store";
+  getProductById
+} from "./store";
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { addToCart } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading'
@@ -14,19 +16,28 @@ import Container from '@/components/shared/Container'
 import { Button, Notification, toast } from '@/components/ui';
 import { IProduct } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
-import ModalCompleteForm from '../modal/ModalCompleteForm';
+import ModalCompleteForm from './modal/ModalCompleteForm';
 
-injectReducer("products", reducer);
+injectReducer("showProduct", reducer);
+
+type ShowProductParams = {
+  id: string;
+};
 
 const ShowProduct = () => {
+  const {id} = useParams<ShowProductParams>() as ShowProductParams
   const dispatch = useAppDispatch()
-  const { product, formCompleted } = useAppSelector((state) => state.products.data)
+  const { product, formCompleted } = useAppSelector((state) => state.showProduct.data)
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
 
   useEffect(() => {
+    dispatch(getProductById(id))
+ }, [dispatch])
+
+  useEffect(() => {
     return () => {
-      dispatch(clearShowProductState())
+      dispatch(clearState())
     }
   }, [])
 
