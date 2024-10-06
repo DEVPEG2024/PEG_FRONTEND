@@ -1,6 +1,7 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { IProduct } from '@/@types/product'
-import { apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsCustomer } from '@/services/ProductServices'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { IProduct } from '@/@types/product';
+import { IFormList } from '@/@types/forms'
+import { apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsCustomer } from '@/services/ProductServices';
 
 
 type Products = IProduct[]
@@ -19,8 +20,6 @@ export type StateData = {
         recette: number
         bilan: number
     }
-    formCompleted: boolean
-    formDialog: boolean
 }
 
 export type StatsTypesResponses = {
@@ -88,9 +87,7 @@ const initialState: StateData = {
     depense: 0,
     recette: 0,
     bilan: 0,
-  },
-  formCompleted: false,
-  formDialog: false
+  }
 };
 
 const productSlice = createSlice({
@@ -130,18 +127,6 @@ const productSlice = createSlice({
         },
         setDeleteProduct: (state, action) => {
             state.product = state.products.find((product) => product._id === action.payload) ?? null
-        },
-        // Créer une nouvelle slice pour le form
-        setFormCompleted: (state, action) => {
-            state.formCompleted = action.payload
-        },
-        setFormDialog: (state, action) => {
-            state.formDialog = action.payload
-        },
-        clearShowProductState: (state) => {
-            state.formCompleted = false
-            state.formDialog = false
-            // Ajouter suppression des valeurs du form
         }
     },
     extraReducers: (builder) => {
@@ -200,16 +185,13 @@ const productSlice = createSlice({
 })
 
 export const {
-    clearShowProductState,
     setTableData,
     setProduct,
     setModalDeleteOpen,
     setModalDeleteClose,
     setDeleteProduct,
     setActiveProduct,
-    setEditingProduct,
-    setFormCompleted,
-    setFormDialog
+    setEditingProduct
 } = productSlice.actions
 
 export default productSlice.reducer

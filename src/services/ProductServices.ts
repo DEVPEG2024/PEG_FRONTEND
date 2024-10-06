@@ -2,12 +2,18 @@ import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import { IProduct } from '@/@types/product'
 
-
-type ProductResponse = {
-    products: IProduct[]
-    total: number
-    result: string
+type GetProductByIdResponse = {
+    product: IProduct
     message: string
+    result: string
+}
+
+// get product by id
+export async function apiGetProductById(id: string) {
+    return ApiService.fetchData<GetProductByIdResponse>({
+        url: `${API_BASE_URL}/products` + '/' + id,
+        method: 'get'
+    })
 }
 
 type CreateProductResponse = {
@@ -38,8 +44,14 @@ export async function apiUpdateProduct(data: IProduct) {
     })
 }
 
+type ProductsResponse = {
+    products: IProduct[]
+    total: number
+    result: string
+    message: string
+}
 export async function apiGetProducts(page: number, pageSize: number, searchTerm: string = "") {
-    return ApiService.fetchData<ProductResponse>({
+    return ApiService.fetchData<ProductsResponse>({
         url: `${API_BASE_URL}/products/admin`,
         method: 'get',
         params: { page, pageSize, searchTerm }
@@ -47,7 +59,7 @@ export async function apiGetProducts(page: number, pageSize: number, searchTerm:
 }
 
 export async function apiGetProductsByCategory(id: string) {
-    return ApiService.fetchData<ProductResponse>({
+    return ApiService.fetchData<ProductsResponse>({
         url: `${API_BASE_URL}/products/category/${id}`,
         method: 'get',
     })
@@ -83,7 +95,7 @@ export async function apiPutStatusProduct(id: string) {
 // GET PRODUCTS CUSTOMER
 
 export async function apiGetProductsCustomer(page: number, pageSize: number, searchTerm: string = "",  userId: string, userCategoryId: string) {
-    return ApiService.fetchData<ProductResponse>({
+    return ApiService.fetchData<ProductsResponse>({
         url: `${API_BASE_URL}/products/customer`,
         method: 'get',
         params: { page, pageSize, searchTerm,  userId, userCategoryId }

@@ -4,7 +4,7 @@ import {
   apiCreateForm,
   apiDeleteForm,
   apiGetForms,
-  apiUpdateForm,
+  apiUpdateForm
 } from "@/services/FormServices";
 
 export type StateData = {

@@ -3,7 +3,7 @@ import ConfigForms from "../builder/configForms";
 import { Button, Card, Input, Notification, toast } from "@/components/ui";
 import { Form, Forms } from "../constants/type";
 import { useState } from "react";
-import FieldConfig from "../builder/components/fielsConfig";
+import FieldConfig from "../builder/components/fieldsConfig";
 import Empty from "@/components/shared/Empty";
 import { RxInput } from "react-icons/rx";
 import { apiCreateForm, apiUpdateForm } from "@/services/FormServices";

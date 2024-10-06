@@ -24,7 +24,6 @@ const ProductsLists = () => {
     }, [dispatch])
 
     const handleClick = (id: string) => {
-        dispatch(setProduct(id))
         navigate(`/customer/product/${id}`)
     }
 

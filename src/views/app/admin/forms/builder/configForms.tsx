@@ -1,15 +1,15 @@
 import React from 'react';
 import { Button } from "@/components/ui"
 import { Form } from "../constants/type"
-import InputSection from "./components/fiels/input"
-import TextAreaSection from "./components/fiels/textArea";
-import SelectSection from "./components/fiels/select";
-import DateSection from "./components/fiels/date";
-import RadioSection from './components/fiels/radio';
-import CheckBoxSection from './components/fiels/checkBox';
-import InputNumberSection from './components/fiels/inputNumber';
-import UploadSection from './components/fiels/uplaodSection';
-import ColorSection from './components/fiels/color';
+import InputSection from "./components/fields/input"
+import TextAreaSection from "./components/fields/textArea";
+import SelectSection from "./components/fields/select";
+import DateSection from "./components/fields/date";
+import RadioSection from './components/fields/radio';
+import CheckBoxSection from './components/fields/checkBox';
+import InputNumberSection from './components/fields/inputNumber';
+import UploadSection from './components/fields/uplaodSection';
+import ColorSection from './components/fields/color';
 
 interface ConfigFormsProps {
   selectedFields: Form[];

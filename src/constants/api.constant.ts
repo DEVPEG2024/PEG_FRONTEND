@@ -114,3 +114,10 @@ export const POST_BANNERS_API_URL = API_BASE_URL + '/banners/create'
 export const DELETE_BANNERS_API_URL = API_BASE_URL + '/banners/delete'
 export const PUT_BANNERS_API_URL = API_BASE_URL + '/banners/edit'
 export const PUT_BANNERS_STATUS_API_URL = API_BASE_URL + '/banners/update-status'
+
+// FORMS
+export const GET_FORMS_API_URL = API_BASE_URL + '/forms'
+export const POST_FORMS_API_URL = API_BASE_URL + '/forms/create'
+export const DELETE_FORMS_API_URL = API_BASE_URL + '/forms/delete'
+export const PUT_FORMS_API_URL = API_BASE_URL + '/forms/edit'
+export const PUT_FORMS_STATUS_API_URL = API_BASE_URL + '/forms/update-status'

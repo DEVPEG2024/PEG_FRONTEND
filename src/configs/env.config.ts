@@ -1,5 +1,5 @@
 const dev = {
-    API_ENDPOINT_URL: 'http://localhost:57002'
+    API_ENDPOINT_URL: 'https://miniature-space-acorn-jjjwg65v4qq2pjpv-57002.app.github.dev'
   };
   
   // API HEROKU
