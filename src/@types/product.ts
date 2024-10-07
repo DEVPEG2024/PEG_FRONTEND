@@ -1,3 +1,4 @@
+import { IForm } from "./form";
 
 export type IProduct = {
   _id: string;
@@ -7,7 +8,7 @@ export type IProduct = {
   amount: number,
   stock: number,
   category: string[],
-  form: string,
+  form: IForm,
   customersCategories: string[],
   customers: string[],
   images: string[],

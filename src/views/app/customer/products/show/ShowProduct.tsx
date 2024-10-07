@@ -18,7 +18,6 @@ import { Button, Notification, toast } from '@/components/ui';
 import { IProduct, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from './modal/ModalCompleteForm';
-import { Field } from 'formik';
 
 injectReducer("showProduct", reducer);
 
@@ -27,7 +26,7 @@ type ShowProductParams = {
 };
 
 const ShowProduct = () => {
-  const {id} = useParams<ShowProductParams>() as ShowProductParams
+  const { id } = useParams<ShowProductParams>() as ShowProductParams
   const dispatch = useAppDispatch()
   const { product, formCompleted, formAnswer } = useAppSelector((state) => state.showProduct.data)
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
@@ -35,7 +34,7 @@ const ShowProduct = () => {
 
   useEffect(() => {
     dispatch(getProductById(id))
- }, [dispatch])
+  }, [dispatch])
 
   useEffect(() => {
     return () => {
@@ -48,7 +47,7 @@ const ShowProduct = () => {
   }, [sizesSelected, formCompleted])
 
   const handleAddToCart = (product: IProduct | null) => {
-    dispatch(addToCart({product, formAnswer, quantity: 1} as CartItem));
+    dispatch(addToCart({ product, formAnswer, quantity: 1 } as CartItem));
     toast.push(
       <Notification type="success" title="Ajouté">
         Article ajouté au panier
@@ -92,7 +91,7 @@ const ShowProduct = () => {
                           name={option.value}
                           type="number"
                           autoComplete="off"
-                          onChange={(e : any) => {
+                          onChange={(e: any) => {
                             if (e.target.value > 0) {
                               const index = sizesSelected.findIndex(
                                 (sizeSelected) => sizeSelected.value === option.value

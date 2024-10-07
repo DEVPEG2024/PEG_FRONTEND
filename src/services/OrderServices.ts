@@ -10,25 +10,50 @@ type OrderResponse = {
 }
 export async function apiGetOrders(page: number, pageSize: number, searchTerm: string = "") {
     return ApiService.fetchData<OrderResponse>({
-        url: `${API_BASE_URL}/secure/admin/orders`,
+        url: `${API_BASE_URL}/orders`,
         method: 'get',
         params: { page, pageSize, searchTerm }
     })
 }
 
-// update order
-export async function apiCancelOrder(id: string, paymentIntentId: string) {
-    return ApiService.fetchData<OrderResponse>({
-        url: `${API_BASE_URL}/secure/admin/orders/cancel/${id}`,
-        method: 'put',
-        data: { paymentIntentId }
+type GetOrderByIdResponse = {
+    order: IOrder
+    message: string
+    result: string
+}
+
+// get order by id
+export async function apiGetOrderById(id: string) {
+    return ApiService.fetchData<GetOrderByIdResponse>({
+        url: `${API_BASE_URL}/orders` + '/' + id,
+        method: 'get'
     })
 }
 
-export async function apiRefundOrder(id: string, paymentIntentId: string, amount: number) {
-    return ApiService.fetchData<OrderResponse>({
-        url: `${API_BASE_URL}/secure/admin/orders/refund/${id}`,
+type CreateOrderResponse = {
+    order: IOrder
+    message: string
+    result: string
+}
+
+export async function apiNewOrder(data: IOrder) {
+    return ApiService.fetchData<CreateOrderResponse>({
+        url: `${API_BASE_URL}/orders/create`,
+        method: 'post',
+        data
+    })
+}
+
+type UpdateOrderResponse = {
+    order: IOrder
+    message: string
+    result: string
+}
+
+export async function apiUpdateOrder(data: IOrder) {
+    return ApiService.fetchData<UpdateOrderResponse>({
+        url: `${API_BASE_URL}/orders/update`,
         method: 'put',
-        data: { paymentIntentId, amountToRefund : amount }
+        data
     })
 }
