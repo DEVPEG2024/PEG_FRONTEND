@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { IProduct } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
+import { IFormAnswer } from '@/@types/formAnswer';
 
 export const SLICE_NAME = 'showProduct'
 
@@ -9,13 +10,15 @@ export type StateData = {
     product: IProduct | null
     formCompleted: boolean
     formDialog: boolean
+    formAnswer: IFormAnswer | null
 }
 
 const initialState: StateData = {
   loading: false,
   product: null,
   formCompleted: false,
-  formDialog: false
+  formDialog: false,
+  formAnswer: null
 };
 
 export const getProductById = createAsyncThunk(
@@ -35,6 +38,9 @@ const productSlice = createSlice({
         },
         setFormDialog: (state, action) => {
             state.formDialog = action.payload
+        },
+        setFormAnswer: (state, action) => {
+            state.formAnswer = action.payload
         },
         clearState: (state) => {
             state.formCompleted = false
@@ -60,7 +66,8 @@ const productSlice = createSlice({
 export const {
     clearState,
     setFormCompleted,
-    setFormDialog
+    setFormDialog,
+    setFormAnswer
 } = productSlice.actions
 
 export default productSlice.reducer

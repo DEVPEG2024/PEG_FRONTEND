@@ -1,6 +1,6 @@
 import { IconType } from 'react-icons';
 
-export type IForm = {
+export type IField = {
   id: string;
   type: string;
   label: string;
@@ -17,10 +17,10 @@ export type IForm = {
 }
 
 
-export type IFormList = {
+export type IForm = {
   _id: string;
   title: string;
-  fields: IForm[];
+  fields: IField[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { IForm, IFormList } from "@/@types/forms";
+import { IForm } from "@/@types/form";
 import {
   apiCreateForm,
   apiDeleteForm,
@@ -9,8 +9,8 @@ import {
 
 export type StateData = {
   loading: boolean;
-  forms: IFormList[];
-  form: IFormList | null;
+  forms: IForm[];
+  form: IForm | null;
   modalDelete: boolean;
   total: number;
   result: boolean;
@@ -42,7 +42,7 @@ export const getForms = createAsyncThunk(
 
 export const createForm = createAsyncThunk(
   SLICE_NAME + "/createForm",
-  async (data: IFormList) => {
+  async (data: IForm) => {
     const response = await apiCreateForm(data);
     return response.data;
   }
@@ -50,7 +50,7 @@ export const createForm = createAsyncThunk(
 
 export const updateForm = createAsyncThunk(
   SLICE_NAME + "/updateForm",
-  async (data: IFormList) => {
+  async (data: IForm) => {
     const response = await apiUpdateForm(data);
     return response.data;
   }
@@ -98,7 +98,7 @@ const formsSlice = createSlice({
     });
     builder.addCase(getForms.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = action.payload.forms as unknown as IFormList[];
+      state.forms = action.payload.forms as unknown as IForm[];
       state.total = action.payload.total;
     });
     builder.addCase(getForms.rejected, (state) => {

@@ -4,8 +4,7 @@ import reducer, { deleteForm, getForms, setForm, useAppSelector } from './store'
 import { useEffect } from 'react';
 import { Button, Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
-import { Form } from './constants/type';
-import { IForm, IFormList } from '@/@types/forms';
+import { IForm } from '@/@types/form';
 import { MdEdit } from 'react-icons/md';
 import { TbForms } from 'react-icons/tb';
 
@@ -18,7 +17,7 @@ function FormsBuilder() {
   useEffect(() => {
     dispatch(getForms({ page: 1, pageSize: 10, searchTerm: "" }))
   }, [])
-  const handleEdit = (form: IFormList) => {
+  const handleEdit = (form: IForm) => {
     dispatch(setForm(form))
     navigate(`/admin/forms/edit/${form._id}`)
   }

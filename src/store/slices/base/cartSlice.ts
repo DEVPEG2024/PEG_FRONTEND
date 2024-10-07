@@ -1,17 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_CART_NAME } from './constants'
 import { CartItem } from '@/@types/cart'
+import { IProduct } from '@/@types/product'
 
 export type CartState = {
-    cart: {
-        product: CartItem
-        total: number
-        quantity: number
-    }[]
+    items: CartItem[]
 }
 
 export const initialState: CartState = {
-    cart: [],
+    items: [],
 }
 
 export const cartSlice = createSlice({
@@ -19,31 +16,24 @@ export const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<CartItem>) => {
-            const existingItem = state.cart.find(item => item.product._id === action.payload._id);
-            if (existingItem) {
-                existingItem.quantity += 1;
-                existingItem.total = existingItem.product.amount * existingItem.quantity;
-            } else {
-                state.cart.push({
-                    product: action.payload,
-                    total: action.payload.amount,
-                    quantity: 1,
-                });
-            }
+            state.items.push({
+                product: action.payload.product,
+                formAnswer: action.payload.formAnswer,
+                quantity: action.payload.quantity,
+            });
         },
         removeFromCart: (state, action: PayloadAction<string>) => {
-            state.cart = state.cart.filter((item) => item.product._id !== action.payload)
+            state.items = state.items.filter((item) => item.product._id !== action.payload)
         },
         updateQuantity: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
             const { id, quantity } = action.payload
-            const item = state.cart.find((item) => item.product._id === id)
+            const item = state.items.find((item) => item.product._id === id)
             if (item) {
                 item.quantity = quantity
-                item.total = item.product.amount * quantity
             }
         },
         clearCart: (state) => {
-            state.cart = []
+            state.items = []
         },
     },
 
