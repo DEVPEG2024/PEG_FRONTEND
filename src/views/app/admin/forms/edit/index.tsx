@@ -6,10 +6,10 @@ import { useState } from "react";
 import FieldConfig from "../builder/components/fieldsConfig";
 import Empty from "@/components/shared/Empty";
 import { RxInput } from "react-icons/rx";
-import { apiCreateForm, apiUpdateForm } from "@/services/FormServices";
+import { apiUpdateForm } from "@/services/FormServices";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../store";
-import { IFormList } from "@/@types/forms";
+import { IForm } from "@/@types/form";
 
 function NewForms() {
   const { form } = useAppSelector((state) => state.forms.data)
@@ -64,7 +64,7 @@ function NewForms() {
       toast.push(<Notification type="danger" title="Veuillez entrer un titre" className="bg-red-700" />)
       return;
     }
-    const formData: IFormList = {
+    const formData: IForm = {
       ...form,
       _id: form?._id ?? '',
       title: formTitle,

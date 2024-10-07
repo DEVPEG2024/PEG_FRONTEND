@@ -1,4 +1,4 @@
-import { IForm, IFormList } from '@/@types/forms'
+import { IField, IForm } from '@/@types/form'
 import InputSection from './fields/input'
 import TextAreaSection from './fields/textArea'
 import CheckBoxSection from './fields/checkBox'
@@ -10,12 +10,12 @@ import RadioSection from './fields/radio'
 import { Alert, Button } from '@/components/ui'
 
 function FormOffer({
-  fields,
+  form,
   isAccepted,
   isRejected,
   isAvailable,
 }: {
-  fields: IFormList;
+  form: IForm;
   isAccepted: boolean;
   isRejected: boolean;
   isAvailable: boolean;
@@ -37,8 +37,8 @@ function FormOffer({
 
   return (
     <div>
-      <h3>{fields.title}</h3>
-      {fields.fields.map((field) => (
+      <h3>{form.title}</h3>
+      {form.fields.map((field) => (
         <div key={field.id}>{renderField(field)}</div>
       ))}
       
@@ -50,7 +50,7 @@ function FormOffer({
   );
 }
 
-const renderField = (field: IForm) => {
+const renderField = (field: IField) => {
     const optionsSelect = field.options?.map((option) => ({
         label: option,
         value: option

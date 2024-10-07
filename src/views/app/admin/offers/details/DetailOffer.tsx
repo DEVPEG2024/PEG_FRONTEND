@@ -18,7 +18,7 @@ import { useAppSelector } from '../lists/store'
 import { Button } from '@/components/ui'
 import { API_URL_IMAGE } from '@/configs/api.config'
 import FormOffer from './forms'
-import {  IFormList } from '@/@types/forms'
+import {  IForm } from '@/@types/form'
 
 
 const DetailOffer = () => {
@@ -55,7 +55,7 @@ const DetailOffer = () => {
 
                 <hr className="my-6" />
                 <FormOffer
-                  fields={offer?.form as IFormList}
+                  form={offer?.form as IForm}
                   isAccepted={isAccepted || false}
                   isRejected={isRejected || false}
                   isAvailable={isAvailable || false}

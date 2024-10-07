@@ -5,7 +5,7 @@ import {
     POST_FORMS_API_URL,
     PUT_FORMS_API_URL
   } from "@/constants/api.constant";
-import { IForm, IFormList } from '@/@types/forms'
+import { IField, IForm } from '@/@types/form'
 
 type CreateFormResponse = {
     form: IForm
@@ -15,11 +15,11 @@ type CreateFormResponse = {
 
 type CreateFormRequest = {
     title: string
-    fields: IForm[]
+    fields: IField[]
 }
 
 type GetAllFormsResponse = {
-    forms: IFormList[]
+    forms: IForm[]
     result: boolean
     message: string
     total: number
@@ -56,7 +56,7 @@ export async function apiGetForms(page: number, pageSize: number, searchTerm: st
 }
 
 // update form
-export async function apiUpdateForm(form: IFormList) {
+export async function apiUpdateForm(form: IForm) {
     return ApiService.fetchData<UpdateFormResponse>({
         url: PUT_FORMS_API_URL + '/' + form._id,
         method: 'put',

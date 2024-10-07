@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { IProduct } from '@/@types/product';
-import { IFormList } from '@/@types/forms'
 import { apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsCustomer } from '@/services/ProductServices';
 
 

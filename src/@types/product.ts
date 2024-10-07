@@ -37,3 +37,9 @@ export type OptionsFields = {
   stock: number;
 };
 
+
+export type SizeSelection = {
+  label: string;
+  value: string;
+  amount: number;
+};

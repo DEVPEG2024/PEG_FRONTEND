@@ -7,9 +7,10 @@ import {
     useAppDispatch,
     useAppSelector,
     setFormCompleted,
-    setFormDialog
+    setFormDialog,
+    setFormAnswer
 } from "../store";
-import { IForm, IFormList } from "@/@types/forms";
+import { IField, IForm } from "@/@types/form";
 import InputSection from "@/views/app/admin/forms/builder/components/fields/input";
 import TextAreaSection from "@/views/app/admin/forms/builder/components/fields/textArea";
 import CheckBoxSection from "@/views/app/admin/forms/builder/components/fields/checkBox";
@@ -18,13 +19,19 @@ import DateSection from "@/views/app/admin/forms/builder/components/fields/date"
 import UploadSection from "@/views/app/admin/forms/builder/components/fields/uplaodSection";
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
+import { IFieldAnswer } from "@/@types/formAnswer";
 
-function ModalCompleteForm({ form }: { form: IFormList }) {
+function ModalCompleteForm({ form }: { form: IForm }) {
     const dispatch = useAppDispatch();
     const { formDialog } = useAppSelector((state) => state.showProduct.data)
+    const formAnswer: {formId: string, answers: IFieldAnswer[]} = {
+        formId: form._id,
+        answers: []
+    };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
+        dispatch(setFormAnswer(formAnswer))
         dispatch(setFormCompleted(true));
         handleClose();
     };
@@ -32,6 +39,39 @@ function ModalCompleteForm({ form }: { form: IFormList }) {
     const handleClose = () => {
         dispatch(setFormDialog(false));
     };
+
+    const renderField = (field: IField) => {
+        const optionsSelect = field.options?.map((option) => ({
+            label: option,
+            value: option
+        })),
+        onChange = (value: string) => {
+            const newAnswers = [...formAnswer.answers.filter((answer) => answer.fieldId !== field.id), {fieldId: field.id, value}]
+
+            formAnswer.answers = newAnswers
+        }
+
+        switch (field.type) {
+            case 'input':
+                return <InputSection {...field} className="mb-4" onChange={onChange} />
+            case 'textarea':
+                return <TextAreaSection {...field} className="mb-4" onChange={onChange} />
+            case 'checkbox':
+                return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} />
+            case 'select':
+                return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} />
+            case 'date':
+                return <DateSection {...field} className="mb-4" onChange={onChange} />
+            case 'file':
+                return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onChange={onChange} />
+            case 'color':
+                return <ColorSection {...field} className="mb-4" onChange={onChange} />
+            case 'radio':
+                return <RadioSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} />
+            default:
+                return null
+        }
+    }
 
     return (
         <div>
@@ -57,33 +97,6 @@ function ModalCompleteForm({ form }: { form: IFormList }) {
             </Dialog>
         </div>
     );
-}
-
-const renderField = (field: IForm) => {
-    const optionsSelect = field.options?.map((option) => ({
-        label: option,
-        value: option
-    }))
-    switch (field.type) {
-        case 'input':
-            return <InputSection {...field} className="mb-4" />
-        case 'textarea':
-            return <TextAreaSection {...field} className="mb-4" />
-        case 'checkbox':
-            return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} />
-        case 'select':
-            return <SelectSection {...field} className="mb-4" options={optionsSelect} />
-        case 'date':
-            return <DateSection {...field} className="mb-4" />
-        case 'file':
-            return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} />
-        case 'color':
-            return <ColorSection {...field} className="mb-4" />
-        case 'radio':
-            return <RadioSection {...field} className="mb-4" options={optionsSelect} />
-        default:
-            return null
-    }
 }
 
 export default ModalCompleteForm;

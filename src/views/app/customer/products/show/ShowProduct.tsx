@@ -10,13 +10,15 @@ import reducer, {
 } from "./store";
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { addToCart } from '@/store/slices/base/cartSlice';
-import Loading from '@/components/shared/Loading'
-import Container from '@/components/shared/Container'
+import Loading from '@/components/shared/Loading';
+import Container from '@/components/shared/Container';
+import Input from "@/components/ui/Input";
 
 import { Button, Notification, toast } from '@/components/ui';
-import { IProduct } from '@/@types/product';
+import { IProduct, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from './modal/ModalCompleteForm';
+import { Field } from 'formik';
 
 injectReducer("showProduct", reducer);
 
@@ -27,9 +29,9 @@ type ShowProductParams = {
 const ShowProduct = () => {
   const {id} = useParams<ShowProductParams>() as ShowProductParams
   const dispatch = useAppDispatch()
-  const { product, formCompleted } = useAppSelector((state) => state.showProduct.data)
-  const [selectedSize, setSelectedSize] = useState<string>('');
+  const { product, formCompleted, formAnswer } = useAppSelector((state) => state.showProduct.data)
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
+  const [sizesSelected, setSizesSelected] = useState<SizeSelection[]>([]);
 
   useEffect(() => {
     dispatch(getProductById(id))
@@ -42,18 +44,14 @@ const ShowProduct = () => {
   }, [])
 
   useEffect(() => {
-    setCanAddToCart(Boolean(selectedSize && (!product?.form || formCompleted)))
-  }, [selectedSize, formCompleted])
-
-  const handleSizeChange = (size: string) => {
-    setSelectedSize(size);
-  };
+    setCanAddToCart(Boolean(sizesSelected.length > 0 && (!product?.form || formCompleted)))
+  }, [sizesSelected, formCompleted])
 
   const handleAddToCart = (product: IProduct | null) => {
-    dispatch(addToCart(product as CartItem));
+    dispatch(addToCart({product, formAnswer, quantity: 1} as CartItem));
     toast.push(
       <Notification type="success" title="Ajouté">
-        Ajouté au panier : ${product?.title} - Taille ${selectedSize}
+        Article ajouté au panier
       </Notification>
     )
   }
@@ -83,25 +81,47 @@ const ShowProduct = () => {
 
               <p className="mt-4 leading-relaxed">{product?.description.replace('<p>', '').replace('</p>', '')}</p>
 
-              <div className="mt-6">
-                <h3 className="text-xl font-medium text-gray-200">Choisissez une taille :</h3>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {product?.sizes.options.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => handleSizeChange(value)}
-                      className={`px-4 py-2 border rounded-lg transition-colors duration-200
-                          ${selectedSize === value
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                        }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+              {product?.sizes.status && (
+                <div>
+                  <p className="font-bold text-yellow-500 mb-4">Choix des tailles</p>
+                  <div className="grid grid-cols-7 gap-4 mb-6">
+                    {product.sizes.options.map((option) => (
+                      <div key={option.value} className="grid gap-4">
+                        <span>{option.label}</span>
+                        <Input
+                          name={option.value}
+                          type="number"
+                          autoComplete="off"
+                          onChange={(e : any) => {
+                            if (e.target.value > 0) {
+                              const index = sizesSelected.findIndex(
+                                (sizeSelected) => sizeSelected.value === option.value
+                              );
+                              // Trouver l'index de l'option actuelle dans le tableau sizeField
+                              const newSizeSelected = {
+                                label: option.label,
+                                value: option.value,
+                                amount: parseInt(e.target.value),
+                              };
+                              // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
+                              if (index > -1) {
+                                const newSizesSelected = [...sizesSelected];
+                                newSizesSelected[index] = newSizeSelected;
+                                setSizesSelected(newSizesSelected);
+                              } else {
+                                setSizesSelected([...sizesSelected, newSizeSelected]);
+                              }
+                            } else {
+                              setSizesSelected([...sizesSelected.filter(((sizeSelected) => sizeSelected.value !== option.value))])
+                            }
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {sizesSelected.length === 0 && (<p className="mt-4 text-green-600">Veuillez renseigner au moins une taille</p>)}
                 </div>
-                <p className="mt-4 text-green-600">{selectedSize ? "Taille sélectionnée : " + selectedSize : "Veuillez sélectionner une taille"}</p>
-              </div>
+              )}
 
               {product?.form && (
                 <Button
