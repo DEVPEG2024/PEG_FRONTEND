@@ -18,7 +18,6 @@ import { Button, Notification, toast } from '@/components/ui';
 import { IProduct, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from './modal/ModalCompleteForm';
-
 injectReducer("showProduct", reducer);
 
 type ShowProductParams = {
@@ -47,7 +46,7 @@ const ShowProduct = () => {
   }, [sizesSelected, formCompleted])
 
   const handleAddToCart = (product: IProduct | null) => {
-    dispatch(addToCart({ product, formAnswer, quantity: 1 } as CartItem));
+    dispatch(addToCart({ product, formAnswer, sizes: sizesSelected } as CartItem));
     toast.push(
       <Notification type="success" title="Ajouté">
         Article ajouté au panier
@@ -98,7 +97,6 @@ const ShowProduct = () => {
                               );
                               // Trouver l'index de l'option actuelle dans le tableau sizeField
                               const newSizeSelected = {
-                                label: option.label,
                                 value: option.value,
                                 amount: parseInt(e.target.value),
                               };

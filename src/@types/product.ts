@@ -5,7 +5,7 @@ export type IProduct = {
   title: string,
   reference: string,
   description: string,
-  amount: number,
+  amount: number, //TODO: remplacer par 'price'
   stock: number,
   category: string[],
   form: IForm,
@@ -40,7 +40,6 @@ export type OptionsFields = {
 
 
 export type SizeSelection = {
-  label: string;
   value: string;
   amount: number;
 };
