@@ -6,7 +6,8 @@ import reducer, {
   setFormDialog,
   useAppDispatch,
   useAppSelector,
-  getProductById
+  getProductById,
+  setSizesSelected
 } from "./store";
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { addToCart } from '@/store/slices/base/cartSlice';
@@ -15,7 +16,7 @@ import Container from '@/components/shared/Container';
 import Input from "@/components/ui/Input";
 
 import { Button, Notification, toast } from '@/components/ui';
-import { IProduct, SizeSelection } from '@/@types/product';
+import { IProduct, OptionsFields } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from './modal/ModalCompleteForm';
 injectReducer("showProduct", reducer);
@@ -27,9 +28,8 @@ type ShowProductParams = {
 const ShowProduct = () => {
   const { id } = useParams<ShowProductParams>() as ShowProductParams
   const dispatch = useAppDispatch()
-  const { product, formCompleted, formAnswer } = useAppSelector((state) => state.showProduct.data)
+  const { product, formCompleted, formAnswer, productEdition, sizesSelected } = useAppSelector((state) => state.showProduct.data)
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
-  const [sizesSelected, setSizesSelected] = useState<SizeSelection[]>([]);
 
   useEffect(() => {
     dispatch(getProductById(id))
@@ -37,7 +37,9 @@ const ShowProduct = () => {
 
   useEffect(() => {
     return () => {
-      dispatch(clearState())
+      if (!productEdition) {
+        dispatch(clearState())
+      }
     }
   }, [])
 
@@ -56,6 +58,35 @@ const ShowProduct = () => {
 
   const handleCompleteForm = () => {
     dispatch(setFormDialog(true));
+  }
+
+  const handleSizesChanged = (value: number, option: OptionsFields) => {
+    const newSizesSelected = determineNewSizes(value, option)
+
+    dispatch(setSizesSelected(newSizesSelected));
+  }
+
+  const determineNewSizes = (value: number, option: OptionsFields) => {
+    if (value > 0) {
+      const index = sizesSelected.findIndex(
+        (sizeSelected) => sizeSelected.value === option.value
+      );
+      // Trouver l'index de l'option actuelle dans le tableau sizeField
+      const newSizeSelected = {
+        value: option.value,
+        amount: value,
+      };
+      // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
+      if (index > -1) {
+        const newSizesSelected = [...sizesSelected];
+        newSizesSelected[index] = newSizeSelected;
+        return newSizeSelected
+      } else {
+        return [...sizesSelected, newSizeSelected];
+      }
+    } else {
+      return [...sizesSelected.filter(((sizeSelected) => sizeSelected.value !== option.value))]
+    }
   }
 
   return (
@@ -88,30 +119,10 @@ const ShowProduct = () => {
                         <span>{option.label}</span>
                         <Input
                           name={option.value}
+                          value={sizesSelected.find((sizeSelected) => sizeSelected.value === option.value)?.amount}
                           type="number"
                           autoComplete="off"
-                          onChange={(e: any) => {
-                            if (e.target.value > 0) {
-                              const index = sizesSelected.findIndex(
-                                (sizeSelected) => sizeSelected.value === option.value
-                              );
-                              // Trouver l'index de l'option actuelle dans le tableau sizeField
-                              const newSizeSelected = {
-                                value: option.value,
-                                amount: parseInt(e.target.value),
-                              };
-                              // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
-                              if (index > -1) {
-                                const newSizesSelected = [...sizesSelected];
-                                newSizesSelected[index] = newSizeSelected;
-                                setSizesSelected(newSizesSelected);
-                              } else {
-                                setSizesSelected([...sizesSelected, newSizeSelected]);
-                              }
-                            } else {
-                              setSizesSelected([...sizesSelected.filter(((sizeSelected) => sizeSelected.value !== option.value))])
-                            }
-                          }}
+                          onChange={(e: any) => handleSizesChanged(parseInt(e.target.value), option)}
                         />
                       </div>
                     ))}
@@ -129,13 +140,17 @@ const ShowProduct = () => {
                 </Button>
               )}
 
-              <Button
-                className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                disabled={!canAddToCart}
-                onClick={() => handleAddToCart(product)}
-              >
-                Ajouter au panier
-              </Button>
+              {
+                // TODO SUITE : modifier taille ou réponse modifie effectivement ?
+                !productEdition && (<Button
+                  className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  disabled={!canAddToCart}
+                  onClick={() => handleAddToCart(product)}
+                >
+                  Ajouter au panier
+                </Button>)
+              }
+
             </div>
           </div>
         </div>

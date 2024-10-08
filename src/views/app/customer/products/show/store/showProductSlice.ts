@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct } from '@/@types/product';
+import { IProduct, SizeSelection } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
 import { IFormAnswer } from '@/@types/formAnswer';
 
@@ -11,6 +11,8 @@ export type StateData = {
     formCompleted: boolean
     formDialog: boolean
     formAnswer: IFormAnswer | null
+    productEdition: boolean,
+    sizesSelected: SizeSelection[]
 }
 
 const initialState: StateData = {
@@ -18,7 +20,9 @@ const initialState: StateData = {
   product: null,
   formCompleted: false,
   formDialog: false,
-  formAnswer: null
+  formAnswer: null,
+  productEdition: false,
+  sizesSelected: []
 };
 
 export const getProductById = createAsyncThunk(
@@ -42,12 +46,19 @@ const productSlice = createSlice({
         setFormAnswer: (state, action) => {
             state.formAnswer = action.payload
         },
+        setProductEdition: (state, action) => {
+            state.productEdition = action.payload
+        },
+        setSizesSelected: (state, action) => {
+            state.sizesSelected = action.payload
+        },
         clearState: (state) => {
             state.formCompleted = false
             state.formDialog = false
             state.product = null
+            state.productEdition = false
             // Ajouter suppression des valeurs du form
-        }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(getProductById.pending, (state) => {
@@ -67,7 +78,9 @@ export const {
     clearState,
     setFormCompleted,
     setFormDialog,
-    setFormAnswer
+    setFormAnswer,
+    setProductEdition,
+    setSizesSelected
 } = productSlice.actions
 
 export default productSlice.reducer
