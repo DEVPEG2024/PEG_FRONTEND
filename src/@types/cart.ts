@@ -1,8 +1,8 @@
 import { IFormAnswer } from "./formAnswer";
-import { IProduct } from "./product";
+import { IProduct, SizeSelection } from "./product";
 
 export type CartItem = {
     product: IProduct
     formAnswer: IFormAnswer
-    quantity: number
+    sizes: SizeSelection[]
 }
