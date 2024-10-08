@@ -3,12 +3,19 @@ import Empty from '@/components/shared/Empty';
 import { Button } from '@/components/ui';
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { RootState, useAppDispatch, useAppSelector } from '@/store'
-import { removeFromCart } from '@/store/slices/base/cartSlice';
+import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { MdShoppingCart } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 
 function Cart() {
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleEdit = (productId: string) => {
+    dispatch(editItem(productId))
+    navigate('/customer/product/' + productId)
+  }
   if (cart.length === 0) {
     return <Empty icon={<MdShoppingCart size={120} />}>Votre panier est vide</Empty>;
   }
@@ -48,8 +55,9 @@ function Cart() {
                         ))}
                       </div>
                       <p>{item.sizes.reduce((amount, size) => amount + size.amount * item.product.amount, 0)} €</p>
+                      <Button onClick={() => handleEdit(item.product._id)}>Edit</Button>
                       {
-                        //TODO SUITE : Ajouter la vue du formulaire via le même modal
+                        //TODO SUITE : Modifier le bouton édition
                       }
                       <Button onClick={() => dispatch(removeFromCart(item.product._id))} size="xs">X</Button>
                     </div>
