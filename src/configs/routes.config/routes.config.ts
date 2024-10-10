@@ -226,6 +226,12 @@ const protectedCustomersRoutes = [
     authority: [CUSTOMER],
   },
   {
+    key: "customer.product",
+    path: "/customer/product/:id/edit",
+    component: lazy(() => import("@/views/app/customer/products/show")),
+    authority: [CUSTOMER],
+  },
+  {
     key: "customer.projects",
     path: "/customer/projects",
     component: lazy(() => import("@/views/app/customer/projects")),

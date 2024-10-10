@@ -11,8 +11,8 @@ export type StateData = {
     formCompleted: boolean
     formDialog: boolean
     formAnswer: IFormAnswer | null
-    productEdition: boolean,
-    sizesSelected: SizeSelection[]
+    sizesSelected: SizeSelection[],
+    cartItemId: string
 }
 
 const initialState: StateData = {
@@ -21,8 +21,8 @@ const initialState: StateData = {
   formCompleted: false,
   formDialog: false,
   formAnswer: null,
-  productEdition: false,
-  sizesSelected: []
+  sizesSelected: [],
+  cartItemId: ''
 };
 
 export const getProductById = createAsyncThunk(
@@ -46,17 +46,21 @@ const productSlice = createSlice({
         setFormAnswer: (state, action) => {
             state.formAnswer = action.payload
         },
-        setProductEdition: (state, action) => {
-            state.productEdition = action.payload
-        },
         setSizesSelected: (state, action) => {
             state.sizesSelected = action.payload
+        },
+        setCartItemId: (state, action) => {
+            state.cartItemId = action.payload
+        },
+        setProduct: (state, action) => {
+            state.product = action.payload
         },
         clearState: (state) => {
             state.formCompleted = false
             state.formDialog = false
             state.product = null
-            state.productEdition = false
+            state.sizesSelected = []
+            state.formAnswer = null
             // Ajouter suppression des valeurs du form
         },
     },
@@ -79,8 +83,9 @@ export const {
     setFormCompleted,
     setFormDialog,
     setFormAnswer,
-    setProductEdition,
-    setSizesSelected
+    setSizesSelected,
+    setCartItemId,
+    setProduct
 } = productSlice.actions
 
 export default productSlice.reducer

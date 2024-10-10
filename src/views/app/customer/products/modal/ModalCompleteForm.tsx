@@ -9,7 +9,7 @@ import {
     setFormCompleted,
     setFormDialog,
     setFormAnswer
-} from "../store";
+} from "../show/store";
 import { IField, IForm } from "@/@types/form";
 import InputSection from "@/views/app/admin/forms/builder/components/fields/input";
 import TextAreaSection from "@/views/app/admin/forms/builder/components/fields/textArea";
@@ -19,19 +19,20 @@ import DateSection from "@/views/app/admin/forms/builder/components/fields/date"
 import UploadSection from "@/views/app/admin/forms/builder/components/fields/uplaodSection";
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
-import { IFieldAnswer } from "@/@types/formAnswer";
+import { useState } from "react";
+import { IFormAnswer } from "@/@types/formAnswer";
 
 function ModalCompleteForm({ form }: { form: IForm }) {
     const dispatch = useAppDispatch();
-    const { formDialog } = useAppSelector((state) => state.showProduct.data)
-    const formAnswer: {formId: string, answers: IFieldAnswer[]} = {
+    const { formDialog, formAnswer } = useAppSelector((state) => state.showProduct.data)
+    const [formAnswerCopy, setFormAnswerCopy] = useState<IFormAnswer>(formAnswer ? structuredClone(formAnswer) : {
         formId: form._id,
         answers: []
-    };
+    })
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-        dispatch(setFormAnswer(formAnswer))
+        dispatch(setFormAnswer(formAnswerCopy))
         dispatch(setFormCompleted(true));
         handleClose();
     };
@@ -45,19 +46,20 @@ function ModalCompleteForm({ form }: { form: IForm }) {
             label: option,
             value: option
         })),
-        onChange = (value: string) => {
-            const newAnswers = [...formAnswer.answers.filter((answer) => answer.fieldId !== field.id), {fieldId: field.id, value}]
+            fieldAnswer = formAnswerCopy.answers.find((answer) => answer.fieldId === field.id),
+            onChange = (value: string) => {
+                const newAnswers = [...formAnswerCopy.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value }]
 
-            formAnswer.answers = newAnswers
-        }
+                setFormAnswerCopy({ ...formAnswerCopy, answers: newAnswers })
+            }
 
         switch (field.type) {
             case 'input':
-                return <InputSection {...field} className="mb-4" onChange={onChange} />
+                return <InputSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'textarea':
                 return <TextAreaSection {...field} className="mb-4" onChange={onChange} />
             case 'checkbox':
-                return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} />
+                return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} />
             case 'select':
                 return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} />
             case 'date':
