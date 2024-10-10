@@ -4,6 +4,7 @@ import { Button } from '@/components/ui';
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { RootState, useAppDispatch, useAppSelector } from '@/store'
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
+import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,7 +15,7 @@ function Cart() {
 
   const handleEdit = (productId: string) => {
     dispatch(editItem(productId))
-    navigate('/customer/product/' + productId)
+    navigate('/customer/product/' + productId + '/edit')
   }
   if (cart.length === 0) {
     return <Empty icon={<MdShoppingCart size={120} />}>Votre panier est vide</Empty>;
@@ -49,17 +50,16 @@ function Cart() {
                         <p>{item.product.title}</p>
                       </div>
                       <p>{item.product.amount} €</p>
-                      <div className='flex justify-center gap-2'>
+                      <div className='flex-col justify-center gap-2'>
                         {item.sizes.map((size) => (
                           <p>{size.value} : {size.amount}</p>
                         ))}
                       </div>
                       <p>{item.sizes.reduce((amount, size) => amount + size.amount * item.product.amount, 0)} €</p>
-                      <Button onClick={() => handleEdit(item.product._id)}>Edit</Button>
-                      {
-                        //TODO SUITE : Modifier le bouton édition
-                      }
-                      <Button onClick={() => dispatch(removeFromCart(item.product._id))} size="xs">X</Button>
+                      <p className='flex gap-1'>
+                        <Button onClick={() => handleEdit(item.product._id)} size="sm" icon={<HiPencil />} />
+                        <Button onClick={() => dispatch(removeFromCart(item.product._id))} size="sm" icon={<HiTrash />} />
+                      </p>
                     </div>
                     <hr className="w-full my-4" />
                   </div>

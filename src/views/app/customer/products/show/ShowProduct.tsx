@@ -1,6 +1,6 @@
 import { injectReducer } from '@/store'
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import reducer, {
   clearState,
   setFormDialog,
@@ -10,15 +10,15 @@ import reducer, {
   setSizesSelected
 } from "./store";
 import { API_URL_IMAGE } from '@/configs/api.config';
-import { addToCart } from '@/store/slices/base/cartSlice';
+import { addToCart, CartItemEdition, editCartItem } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import Input from "@/components/ui/Input";
 
 import { Button, Notification, toast } from '@/components/ui';
-import { IProduct, OptionsFields } from '@/@types/product';
+import { OptionsFields } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
-import ModalCompleteForm from './modal/ModalCompleteForm';
+import ModalCompleteForm from '../modal/ModalCompleteForm';
 injectReducer("showProduct", reducer);
 
 type ShowProductParams = {
@@ -28,32 +28,45 @@ type ShowProductParams = {
 const ShowProduct = () => {
   const { id } = useParams<ShowProductParams>() as ShowProductParams
   const dispatch = useAppDispatch()
-  const { product, formCompleted, formAnswer, productEdition, sizesSelected } = useAppSelector((state) => state.showProduct.data)
+  const navigate = useNavigate()
+  const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit'
+  const { product, formCompleted, formAnswer, sizesSelected, cartItemId } = useAppSelector((state) => state.showProduct.data)
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
+  const [isFirstRender, setFirstRender] = useState<boolean>(true);
 
   useEffect(() => {
-    dispatch(getProductById(id))
+    if (!product) {
+      if (onEdition) {
+        navigate("/customer/cart")
+      } else {
+        dispatch(getProductById(id))
+      }
+    }
   }, [dispatch])
 
   useEffect(() => {
+    if (isFirstRender) {
+      setFirstRender(false)
+    }
     return () => {
-      if (!productEdition) {
+      if (!isFirstRender) {
         dispatch(clearState())
       }
     }
-  }, [])
+  }, [isFirstRender])
 
   useEffect(() => {
     setCanAddToCart(Boolean(sizesSelected.length > 0 && (!product?.form || formCompleted)))
   }, [sizesSelected, formCompleted])
 
-  const handleAddToCart = (product: IProduct | null) => {
+  const handleAddToCart = () => {
     dispatch(addToCart({ product, formAnswer, sizes: sizesSelected } as CartItem));
     toast.push(
       <Notification type="success" title="Ajouté">
         Article ajouté au panier
       </Notification>
     )
+    navigate("/customer/products")
   }
 
   const handleCompleteForm = () => {
@@ -64,6 +77,16 @@ const ShowProduct = () => {
     const newSizesSelected = determineNewSizes(value, option)
 
     dispatch(setSizesSelected(newSizesSelected));
+  }
+
+  const handleEditCartItem = () => {
+    dispatch(editCartItem({ cartItemId, formAnswer, sizes: sizesSelected } as CartItemEdition));
+    toast.push(
+      <Notification type="success" title="Modifié">
+        Article modifié
+      </Notification>
+    )
+    navigate("/customer/cart")
   }
 
   const determineNewSizes = (value: number, option: OptionsFields) => {
@@ -80,7 +103,7 @@ const ShowProduct = () => {
       if (index > -1) {
         const newSizesSelected = [...sizesSelected];
         newSizesSelected[index] = newSizeSelected;
-        return newSizeSelected
+        return newSizesSelected
       } else {
         return [...sizesSelected, newSizeSelected];
       }
@@ -140,16 +163,13 @@ const ShowProduct = () => {
                 </Button>
               )}
 
-              {
-                // TODO SUITE : modifier taille ou réponse modifie effectivement ?
-                !productEdition && (<Button
-                  className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  disabled={!canAddToCart}
-                  onClick={() => handleAddToCart(product)}
-                >
-                  Ajouter au panier
-                </Button>)
-              }
+              <Button
+                className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                disabled={!canAddToCart}
+                onClick={() => onEdition ? handleEditCartItem() : handleAddToCart()}
+              >
+                {onEdition ? 'Enregistrer' : 'Ajouter au panier'}
+              </Button>
 
             </div>
           </div>
