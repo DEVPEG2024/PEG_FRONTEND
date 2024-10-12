@@ -1,14 +1,14 @@
 import { Input } from '@/components/ui'
 import { ChangeEventHandler } from 'react'
 
-function ColorSection({className, label, placeholder, onChange}: {className: string, label: string, placeholder: string, onChange: Function}) {
+function ColorSection({className, label, placeholder, value, onChange}: {className: string, label: string, placeholder: string, value: string, onChange: Function}) {
   const onChangeInput: ChangeEventHandler<HTMLInputElement> = (e) => {
     onChange(e.currentTarget.value)
   }
   return (
     <div className={className}>
         <p className="text-sm text-gray-400 mb-2">{label}</p>    
-        <Input type="color" value="#f96260" placeholder={placeholder} onChange={onChangeInput}/>
+        <Input type="color" value={value ?? "#f96260"} placeholder={placeholder} onChange={onChangeInput}/>
     </div>
   )
 }

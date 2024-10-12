@@ -79,7 +79,7 @@ export const Forms: Form[] = [
         icon: LuUploadCloud,
         acceptedFileTypes: ".pdf,.doc,.docx,.jpg,.png,.jpeg"
     },
-    {
+    /*{
         id: "8",
         type: "number",
         label: "Nombre",
@@ -87,7 +87,7 @@ export const Forms: Form[] = [
         icon: GoNumber,
         min: 0,
         max: 100
-    },
+    },*/
     {
         id: "9",
         type: "color",
