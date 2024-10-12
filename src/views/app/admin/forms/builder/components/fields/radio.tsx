@@ -1,10 +1,10 @@
 import { Radio } from '@/components/ui'
 
-function RadioSection({className, label, options, onChange}: {className: string, label: string, options: any, onChange: Function}) {
+function RadioSection({className, label, options, value, onChange}: {className: string, label: string, options: any, value: string, onChange: Function}) {
   return (
     <div className={className}>
       <p className="text-sm text-gray-400 mb-2">{label}</p>
-      <Radio.Group onChange={(values) => onChange(values)}>
+      <Radio.Group onChange={(values) => onChange(values)} {...(value && { value })}>
         {options.map((option: any) => (
           <Radio value={option.value} key={option.value}>{option.label}</Radio>
         ))}

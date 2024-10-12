@@ -5,5 +5,10 @@ export type IFormAnswer = {
 
 export type IFieldAnswer = {
   fieldId: string;
-  value: string | string[] | File[];
+  value: string | string[] | FileItem[];
+}
+
+export type FileItem = {
+  fileName: string;
+  file: File;
 }

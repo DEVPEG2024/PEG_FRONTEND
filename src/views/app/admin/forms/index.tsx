@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Button, Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 import { IForm } from '@/@types/form';
-import { MdEdit } from 'react-icons/md';
+import { HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 
 injectReducer("forms", reducer);
@@ -46,12 +46,8 @@ function FormsBuilder() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="plain" size="sm" onClick={() => handleEdit(form)}>
-                  <MdEdit />
-                </Button>
-                <Button variant="twoTone" size="sm" onClick={() => handleDelete(form._id)}>
-                  Supprimer
-                </Button>
+                <Button variant="plain" size="sm" onClick={() => handleEdit(form)} icon={<HiPencil />} />
+                <Button variant="twoTone" size="sm" onClick={() => handleDelete(form._id)} icon={<HiTrash />} />
               </div>
             </div>
           </Card>

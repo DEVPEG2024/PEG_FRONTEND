@@ -1,10 +1,10 @@
-import { DatePicker, Input } from '@/components/ui'
+import { DatePicker } from '@/components/ui'
 
-function DateSection({className, label, placeholder, onChange}: {className: string, label: string, placeholder: string, onChange: Function}) {
+function DateSection({className, label, placeholder, value, onChange}: {className: string, label: string, placeholder: string, value: string, onChange: Function}) {
   return (
     <div className={className}>
         <p className="text-sm text-gray-400 mb-2">{label}</p>    
-        <DatePicker  placeholder={placeholder} onChange={(e) => onChange(e)} />
+        <DatePicker  placeholder={placeholder} onChange={(e) => onChange(e)} {...(value && { value: new Date(value) })}/>
     </div>
   )
 }

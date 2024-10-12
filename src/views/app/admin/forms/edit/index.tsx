@@ -75,10 +75,10 @@ function NewForms() {
     const { data } = await apiUpdateForm(formData);
 
     if (data.result) {
-      toast.push(<Notification type="success" title="Formulaire créé avec succès" />)
+      toast.push(<Notification type="success" title="Formulaire modifié avec succès" />)
       navigate("/admin/forms");
     } else {
-      toast.push(<Notification type="danger" title="Erreur lors de la création du formulaire" />)
+      toast.push(<Notification type="danger" title="Erreur lors de la modification du formulaire" />)
     }
   };
 

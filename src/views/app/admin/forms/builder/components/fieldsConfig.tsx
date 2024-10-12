@@ -106,7 +106,7 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
           />
         )}
         
-        {selectedField.type === 'number' && (
+        {/*selectedField.type === 'number' && (
           <>
             <Input
               placeholder="Valeur minimale"
@@ -117,7 +117,7 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
               onChange={(e) => onConfigChange({ max: parseInt(e.target.value) })}
             />
           </>
-        )}
+        )*/}
         
         {selectedField.type === 'color' && (
           <Input
