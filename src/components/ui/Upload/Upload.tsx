@@ -20,7 +20,7 @@ export interface UploadProps extends CommonProps {
     fileItemClass?: string
     multiple?: boolean
     onChange?: (file: File[], fileList: File[]) => void
-    onFileAdd?: (file: File[]) => void
+    onFileAdd?: (file: File) => void
     onFileRemove?: (file: File[]) => void
     showList?: boolean
     tip?: string | ReactNode
@@ -127,7 +127,9 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
             const updatedFiles = addNewFiles(newFiles)
             setFiles(updatedFiles)
             onChange?.(updatedFiles, files)
-            onFileAdd?.(newFiles)
+            if (newFiles?.[0]) {
+                onFileAdd?.(newFiles[0])
+            }
         }
     }
 

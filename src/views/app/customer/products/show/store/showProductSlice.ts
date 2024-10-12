@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { IProduct, SizeSelection } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
-import { IFormAnswer } from '@/@types/formAnswer';
+import { FileItem, IFormAnswer } from '@/@types/formAnswer';
 import { API_BASE_URL } from '@/configs/api.config';
 
 export const SLICE_NAME = 'showProduct'
@@ -14,7 +14,7 @@ export type StateData = {
     formAnswer: IFormAnswer | null
     sizesSelected: SizeSelection[],
     cartItemId: string
-    filesUploaded: Map<string, File>
+    filesLoaded: FileItem[]
 }
 
 const initialState: StateData = {
@@ -25,7 +25,7 @@ const initialState: StateData = {
   formAnswer: null,
   sizesSelected: [],
   cartItemId: '',
-  filesUploaded: new Map()
+  filesLoaded: []
 };
 
 export const getProductById = createAsyncThunk(
@@ -53,12 +53,12 @@ const loadFile = async (
 
 export const loadFiles = createAsyncThunk(
     SLICE_NAME + '/loadFiles',
-    async (fileNames: string[]) : Promise<Map<string, File>> => {
-        const files : Map<string, File> = new Map()
+    async (fileNames: string[]) : Promise<FileItem[]> => {
+        const files : FileItem[] = []
         fileNames.forEach(async (fileName) => {
             const file = await loadFile(fileName)
             if (file) {
-                files.set(fileName, file)
+                files.push({fileName, file})
             }
         })
         return files
@@ -87,8 +87,8 @@ const productSlice = createSlice({
         setProduct: (state, action) => {
             state.product = action.payload
         },
-        setFilesUploaded: (state, action) => {
-            state.filesUploaded = action.payload
+        setFilesLoaded: (state, action) => {
+            state.filesLoaded = action.payload
         },
         clearState: (state) => {
             state.formCompleted = false
@@ -96,7 +96,7 @@ const productSlice = createSlice({
             state.product = null
             state.sizesSelected = []
             state.formAnswer = null
-            state.filesUploaded = new Map()
+            state.filesLoaded = []
             // Ajouter suppression des valeurs du form
         },
     },
@@ -116,7 +116,7 @@ const productSlice = createSlice({
         });
         builder.addCase(loadFiles.fulfilled, (state, action) => {
             state.loading = false;
-            state.filesUploaded = new Map([...state.filesUploaded, ...action.payload]);
+            state.filesLoaded = [...state.filesLoaded, ...action.payload];
         });
         builder.addCase(loadFiles.rejected, (state) => {
             state.loading = false;
@@ -131,7 +131,8 @@ export const {
     setFormAnswer,
     setSizesSelected,
     setCartItemId,
-    setProduct
+    setProduct,
+    setFilesLoaded
 } = productSlice.actions
 
 export default productSlice.reducer
