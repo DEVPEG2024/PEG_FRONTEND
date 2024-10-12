@@ -9,7 +9,7 @@ import {
     setFormCompleted,
     setFormDialog,
     setFormAnswer,
-    setFilesUploaded,
+    setFilesLoaded,
     loadFiles
 } from "../show/store";
 import { IField, IForm } from "@/@types/form";
@@ -22,27 +22,28 @@ import UploadSection from "@/views/app/admin/forms/builder/components/fields/upl
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
 import { useEffect, useState } from "react";
-import { IFormAnswer } from "@/@types/formAnswer";
+import { FileItem, IFormAnswer } from "@/@types/formAnswer";
 import { API_BASE_URL } from "@/configs/api.config";
 
 function ModalCompleteForm({ form }: { form: IForm }) {
     const dispatch = useAppDispatch();
-    const { formDialog, formAnswer, filesUploaded } = useAppSelector((state) => state.showProduct.data)
+    const { formDialog, formAnswer, filesLoaded } = useAppSelector((state) => state.showProduct.data)
     const [newFormAnswer, setNewFormAnswer] = useState<IFormAnswer>(formAnswer ? structuredClone(formAnswer) : {
         formId: form._id,
         answers: []
     })
 
     useEffect(() => {
-        const fieldsFileTypedId: string[] = form.fields.filter(({type}) => type === 'file').map(({id}) => id)
-        const updloadedFileNames: string[] | undefined= formAnswer?.answers
+        const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
+        const filesToLoad: string[] = formAnswer?.answers
             .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
             .map((answer) => answer.value)
             .flat()
             .filter((value) => typeof value === 'string')
-        
-        if (Array.isArray(updloadedFileNames) && updloadedFileNames?.length > 0) {
-            dispatch(loadFiles(updloadedFileNames))
+        const fileNamesLoaded: string[] = filesLoaded.map(({ fileName }) => fileName)
+        const fileNotLoaded: string[] = filesToLoad?.filter((fileToLoad) => !fileNamesLoaded.includes(fileToLoad))
+        if (fileNotLoaded.length > 0) {
+            dispatch(loadFiles(fileNotLoaded))
         }
     }, [])
 
@@ -59,24 +60,24 @@ function ModalCompleteForm({ form }: { form: IForm }) {
 
     const uploadFile = async (
         file: File
-      ) => {
+    ) => {
         try {
             const formData = new FormData();
             formData.append("file", file);
             const response = await fetch(API_BASE_URL + "/upload", {
-            method: "POST",
-            body: formData,
+                method: "POST",
+                body: formData,
             });
             const data = await response.json();
             return data.fileName
         } catch (error) {
             console.error("Erreur lors de l'upload du fichier :", error);
         }
-      };
+    };
 
     const onFileRemove = async (
         fileName: string
-      ) => {
+    ) => {
         try {
             await fetch(API_BASE_URL + "/upload/delete/" + fileName, {
                 method: "DELETE"
@@ -84,24 +85,24 @@ function ModalCompleteForm({ form }: { form: IForm }) {
         } catch (error) {
             console.error("Erreur lors de la suppression du fichier :", error);
         }
-      };
+    };
 
-    const determineNewAnswers = async (field: IField, value: string | string[] | File | {label: string, value: string} | Date) => {
+    const determineNewAnswers = async (field: IField, value: string | string[] | File | { label: string, value: string } | Date) => {
         switch (field.type) {
             case 'checkbox':
-                const selection : string[] = value as string[]
+                const selection: string[] = value as string[]
                 const currentAnswer: [] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value ?? []
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), {fieldId: field.id, value: [...currentAnswer, ...selection]}]
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentAnswer, ...selection] }]
             case 'date':
-                const dateSelected : Date = value as Date
+                const dateSelected: Date = value as Date
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: dateSelected.toISOString() }]
-            case 'input':
-                const file : File = value as File
+            case 'file':
+                const file: File = value as File
                 const fileName = await uploadFile(file)
-                const newFilesUploaded = filesUploaded
-                newFilesUploaded.set(fileName, file)
-                setFilesUploaded(newFilesUploaded)
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: file }]
+                const newFilesUploaded: FileItem[] = [...filesLoaded]
+                newFilesUploaded.push({ fileName, file })
+                setFilesLoaded(newFilesUploaded)
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: fileName }]
             default:
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value }]
         }
@@ -112,10 +113,10 @@ function ModalCompleteForm({ form }: { form: IForm }) {
             label: option,
             value: option
         })),
-        fieldAnswer = newFormAnswer.answers.find((answer) => answer.fieldId === field.id),
-        onChange = async (value: string | string[] | File) => {
-            setNewFormAnswer({ ...newFormAnswer, answers: await determineNewAnswers(field, value) })
-        }
+            fieldAnswer = newFormAnswer.answers.find((answer) => answer.fieldId === field.id),
+            onChange = async (value: string | string[] | File) => {
+                setNewFormAnswer({ ...newFormAnswer, answers: await determineNewAnswers(field, value) })
+            }
 
         switch (field.type) {
             case 'input':
@@ -125,14 +126,15 @@ function ModalCompleteForm({ form }: { form: IForm }) {
             case 'checkbox':
                 return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string[]} />
             case 'select':
-                return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string}/>
+                return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} />
             case 'date':
-                return <DateSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string}/>
+                return <DateSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'file':
-                const files: File[] | [] = (fieldAnswer?.value as string[])?.map((fileName) => filesUploaded.get(fileName)).filter((file) => file) ?? []
+                const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
+                    files: File[] = filesLoaded.filter((fileItem) => fileNamesConcerned.includes(fileItem.fileName)).map(({ file }) => file)
                 return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} value={files} />
             case 'color':
-                return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string}/>
+                return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'radio':
                 return <RadioSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} />
             default:
