@@ -5,7 +5,7 @@ export type IFormAnswer = {
 
 export type IFieldAnswer = {
   fieldId: string;
-  value: string | string[] | FileItem[];
+  value: string | string[];
 }
 
 export type FileItem = {

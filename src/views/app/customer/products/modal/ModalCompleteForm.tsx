@@ -1,6 +1,9 @@
 import {
     Button,
-    Dialog
+    Dialog,
+    Spinner,
+    Notification,
+    toast
 } from "@/components/ui";
 import { t } from "i18next";
 import {
@@ -8,9 +11,7 @@ import {
     useAppSelector,
     setFormCompleted,
     setFormDialog,
-    setFormAnswer,
-    setFilesLoaded,
-    loadFiles
+    setFormAnswer
 } from "../show/store";
 import { IField, IForm } from "@/@types/form";
 import InputSection from "@/views/app/admin/forms/builder/components/fields/input";
@@ -22,37 +23,111 @@ import UploadSection from "@/views/app/admin/forms/builder/components/fields/upl
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
 import { useEffect, useState } from "react";
-import { FileItem, IFormAnswer } from "@/@types/formAnswer";
+import { FileItem, IFormAnswer, IFieldAnswer } from "@/@types/formAnswer";
 import { API_BASE_URL } from "@/configs/api.config";
+import { CartItemFormAnswerEdition, editFormAnswerCartItem } from "@/store/slices/base/cartSlice";
+import { useNavigate } from "react-router-dom";
 
-function ModalCompleteForm({ form }: { form: IForm }) {
+type FileItemAndField = {
+    field: string,
+    fileItem: FileItem
+  }
+
+function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolean }) {
     const dispatch = useAppDispatch();
-    const { formDialog, formAnswer, filesLoaded } = useAppSelector((state) => state.showProduct.data)
+    const navigate = useNavigate()
+    const { formDialog, formAnswer, cartItemId } = useAppSelector((state) => state.showProduct.data)
     const [newFormAnswer, setNewFormAnswer] = useState<IFormAnswer>(formAnswer ? structuredClone(formAnswer) : {
         formId: form._id,
         answers: []
     })
+    const [filesLoaded, setFilesLoaded] = useState<FileItem[]>([])
+    const [tempFiles, setTempFiles] = useState<FileItemAndField[]>([])
+    const [loading, setLoading] = useState<boolean>(false)
 
     useEffect(() => {
-        const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
-        const filesToLoad: string[] = formAnswer?.answers
-            .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
-            .map((answer) => answer.value)
-            .flat()
-            .filter((value) => typeof value === 'string')
-        const fileNamesLoaded: string[] = filesLoaded.map(({ fileName }) => fileName)
-        const fileNotLoaded: string[] = filesToLoad?.filter((fileToLoad) => !fileNamesLoaded.includes(fileToLoad))
-        if (fileNotLoaded.length > 0) {
-            dispatch(loadFiles(fileNotLoaded))
+        const fetchFiles = async () => {
+            const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
+            const filesToLoad: string[] = formAnswer?.answers
+                .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
+                .map((answer) => answer.value)
+                .flat()
+                .filter((value) => typeof value === 'string') ?? []
+            const fileNamesLoaded: string[] = filesLoaded.map(({ fileName }) => fileName)
+            const filesNotLoaded: string[] = filesToLoad?.filter((fileToLoad) => !fileNamesLoaded.includes(fileToLoad))
+            if (filesNotLoaded.length > 0) {
+                setLoading(true)
+                const newFilesLoaded = await loadFiles(filesNotLoaded)
+                const currentFilesLoaded = filesLoaded
+                currentFilesLoaded.push(...newFilesLoaded)
+                setFilesLoaded(currentFilesLoaded)
+            }
+            setLoading(false)
         }
+
+        fetchFiles()
     }, [])
+
+    const loadFile = async (
+        fileName: string
+      ) : Promise<File | null> => {
+        try {
+          const response = await fetch(API_BASE_URL + "/upload/" + fileName, {
+                method: "GET"
+            });
+            const blob = await response.blob();
+            return new File([blob], fileName, { type: blob.type });
+        } catch (error) {
+            console.error("Erreur lors de la récupération du fichier :", error);
+        }
+        return null
+      };
+    
+    const loadFiles = async (fileNames: string[]) : Promise<FileItem[]> => {
+        const files : FileItem[] = []
+        for (const fileName of fileNames) {
+            const file = await loadFile(fileName)
+            if (file) {
+                files.push({fileName, file})
+            }
+        }
+        return files
+    }
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
+        await uploadFiles(tempFiles)
+        if (onEdition) {
+            handleEditFormAnswerCartItem()
+        }
         dispatch(setFormAnswer(newFormAnswer))
         dispatch(setFormCompleted(true));
         handleClose();
     };
+
+    const handleEditFormAnswerCartItem = () => {
+        dispatch(editFormAnswerCartItem({ cartItemId, formAnswer: newFormAnswer } as CartItemFormAnswerEdition));
+        toast.push(
+          <Notification type="success" title="Modifié">
+            Formulaire modifié
+          </Notification>
+        )
+      }
+
+    const uploadFiles = async (fileItemsAndField: FileItemAndField[]) => {
+        const currentFilesLoaded = filesLoaded
+        for (const fileItemAndField of fileItemsAndField) {
+            const fileItem: FileItem = fileItemAndField.fileItem
+            const fileName = await uploadFile(fileItem.file)
+            const newAnswer: IFieldAnswer = newFormAnswer.answers.find(({fieldId}) => fieldId === fileItemAndField.field)
+            const newValue: string[] = [...newAnswer.value.filter((name: string) => name !== fileItem.fileName), fileName]
+            newAnswer.value = newValue
+            newFormAnswer.answers = [...newFormAnswer.answers.filter(({fieldId}) => fieldId !== fileItemAndField.field), newAnswer]
+            currentFilesLoaded.push({file: fileItem.file, fileName})
+        }
+        setFilesLoaded(currentFilesLoaded)
+        setTempFiles([])
+    }
 
     const handleClose = () => {
         dispatch(setFormDialog(false));
@@ -76,33 +151,41 @@ function ModalCompleteForm({ form }: { form: IForm }) {
     };
 
     const onFileRemove = async (
-        fileName: string
+        fileName: string, field: string
     ) => {
-        try {
-            await fetch(API_BASE_URL + "/upload/delete/" + fileName, {
-                method: "DELETE"
-            });
-        } catch (error) {
-            console.error("Erreur lors de la suppression du fichier :", error);
+        const fileFromFilesLoaded: FileItem | undefined = filesLoaded.find((fileLoaded) => fileLoaded.fileName === fileName)
+
+        if (fileFromFilesLoaded) {
+            try {
+                await fetch(API_BASE_URL + "/upload/delete/" + fileName, {
+                    method: "DELETE"
+                });
+                const currentFilesLoaded: FileItem[] = filesLoaded
+                setFilesLoaded(currentFilesLoaded.filter(({fileName: fileNameCurrentFile}) => fileNameCurrentFile !== fileName))
+            } catch (error) {
+                console.error("Erreur lors de la suppression du fichier :", error);
+            }
+        } else {
+            setTempFiles(tempFiles.filter((tempFile) => tempFile.field !== field || tempFile.fileItem.fileName !== fileName))
         }
+        
+        const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field)?.value ?? []
+        const newAswer = [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field), { fieldId: field, value: currentFiles.filter((file: string) => file !== fileName) }]
+        setNewFormAnswer({ ...newFormAnswer, answers: newAswer })
     };
 
     const determineNewAnswers = async (field: IField, value: string | string[] | File | { label: string, value: string } | Date) => {
         switch (field.type) {
-            case 'checkbox':
-                const selection: string[] = value as string[]
-                const currentAnswer: [] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value ?? []
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentAnswer, ...selection] }]
             case 'date':
                 const dateSelected: Date = value as Date
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: dateSelected.toISOString() }]
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: dateSelected?.toISOString() ?? null }]
             case 'file':
                 const file: File = value as File
-                const fileName = await uploadFile(file)
-                const newFilesUploaded: FileItem[] = [...filesLoaded]
-                newFilesUploaded.push({ fileName, file })
-                setFilesLoaded(newFilesUploaded)
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: fileName }]
+                const newTempFiles: FileItemAndField[] = [...tempFiles]
+                newTempFiles.push({field: field.id, fileItem: { fileName: file.name, file }})
+                setTempFiles(newTempFiles)
+                const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value ?? []
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentFiles, file.name] }]
             default:
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value }]
         }
@@ -130,9 +213,22 @@ function ModalCompleteForm({ form }: { form: IForm }) {
             case 'date':
                 return <DateSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'file':
-                const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
-                    files: File[] = filesLoaded.filter((fileItem) => fileNamesConcerned.includes(fileItem.fileName)).map(({ file }) => file)
-                return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} value={files} />
+                if (loading) {
+                    return <Spinner className="mr-4" size={30} />
+                } else {
+                    const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
+                        tempFilesItem: FileItem[] = tempFiles.map(({fileItem}) => fileItem),
+                        files: File[] = []
+                    for (const fileNameConcerned of fileNamesConcerned) {
+                        const file: File | undefined = [...filesLoaded, ...tempFilesItem].find((fileItem) => fileNameConcerned === fileItem.fileName)?.file
+
+                        if (file) {
+                            files.push(file)
+                        }
+                    }
+                    return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} onFileRemove={(file: string) => onFileRemove(file, field.id)} value={files} />
+                }
+                
             case 'color':
                 return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'radio':
