@@ -10,7 +10,7 @@ import reducer, {
   setSizesSelected
 } from "./store";
 import { API_URL_IMAGE } from '@/configs/api.config';
-import { addToCart, CartItemEdition, editCartItem } from '@/store/slices/base/cartSlice';
+import { addToCart, CartItemSizeEdition, editSizesCartItem } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import Input from "@/components/ui/Input";
@@ -33,6 +33,7 @@ const ShowProduct = () => {
   const { product, formCompleted, formAnswer, sizesSelected, cartItemId } = useAppSelector((state) => state.showProduct.data)
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
+  const [sizesChanged, setSizesChanged] = useState<boolean>(false);
 
   useEffect(() => {
     if (!product) {
@@ -75,15 +76,16 @@ const ShowProduct = () => {
 
   const handleSizesChanged = (value: number, option: OptionsFields) => {
     const newSizesSelected = determineNewSizes(value, option)
-
+    
+    setSizesChanged(true)
     dispatch(setSizesSelected(newSizesSelected));
   }
 
-  const handleEditCartItem = () => {
-    dispatch(editCartItem({ cartItemId, formAnswer, sizes: sizesSelected } as CartItemEdition));
+  const handleEditSizesCartItem = () => {
+    dispatch(editSizesCartItem({ cartItemId, sizes: sizesSelected } as CartItemSizeEdition));
     toast.push(
       <Notification type="success" title="Modifié">
-        Article modifié
+        Tailles modifiées
       </Notification>
     )
     navigate("/customer/cart")
@@ -154,6 +156,13 @@ const ShowProduct = () => {
                 </div>
               )}
 
+              {onEdition && (
+                <Button
+                  className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  disabled={!sizesChanged}
+                  onClick={handleEditSizesCartItem}>Enregistrer les tailles</Button>
+              )}
+
               {product?.form && (
                 <Button
                   className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -163,19 +172,17 @@ const ShowProduct = () => {
                 </Button>
               )}
 
-              <Button
+              {!onEdition && (<Button
                 className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 disabled={!canAddToCart}
-                onClick={() => onEdition ? handleEditCartItem() : handleAddToCart()}
-              >
-                {onEdition ? 'Enregistrer' : 'Ajouter au panier'}
-              </Button>
+                onClick={handleAddToCart}
+              >Ajouter au panier</Button>)}
 
             </div>
           </div>
         </div>
       </Loading>
-      {product?.form && <ModalCompleteForm form={product.form} />}
+      {product?.form && <ModalCompleteForm form={product.form} onEdition={onEdition}/>}
     </Container>
   );
 }

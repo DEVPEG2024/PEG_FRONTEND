@@ -14,7 +14,6 @@ export type StateData = {
     formAnswer: IFormAnswer | null
     sizesSelected: SizeSelection[],
     cartItemId: string
-    filesLoaded: FileItem[]
 }
 
 const initialState: StateData = {
@@ -24,8 +23,7 @@ const initialState: StateData = {
   formDialog: false,
   formAnswer: null,
   sizesSelected: [],
-  cartItemId: '',
-  filesLoaded: []
+  cartItemId: ''
 };
 
 export const getProductById = createAsyncThunk(
@@ -36,34 +34,7 @@ export const getProductById = createAsyncThunk(
     }
 )
 
-const loadFile = async (
-    fileName: string
-  ) : Promise<File | null> => {
-    try {
-      const response = await fetch(API_BASE_URL + "/upload/" + fileName, {
-            method: "GET"
-        });
-        const blob = await response.blob();
-        return new File([blob], fileName, { type: blob.type });
-    } catch (error) {
-        console.error("Erreur lors de la récupération du fichier :", error);
-    }
-    return null
-  };
 
-export const loadFiles = createAsyncThunk(
-    SLICE_NAME + '/loadFiles',
-    async (fileNames: string[]) : Promise<FileItem[]> => {
-        const files : FileItem[] = []
-        fileNames.forEach(async (fileName) => {
-            const file = await loadFile(fileName)
-            if (file) {
-                files.push({fileName, file})
-            }
-        })
-        return files
-    }
-)
 
 const productSlice = createSlice({
     name: `${SLICE_NAME}/state`,
@@ -87,16 +58,12 @@ const productSlice = createSlice({
         setProduct: (state, action) => {
             state.product = action.payload
         },
-        setFilesLoaded: (state, action) => {
-            state.filesLoaded = action.payload
-        },
         clearState: (state) => {
             state.formCompleted = false
             state.formDialog = false
             state.product = null
             state.sizesSelected = []
             state.formAnswer = null
-            state.filesLoaded = []
             // Ajouter suppression des valeurs du form
         },
     },
@@ -111,16 +78,6 @@ const productSlice = createSlice({
         builder.addCase(getProductById.rejected, (state) => {
             state.loading = false;
         });
-        builder.addCase(loadFiles.pending, (state) => {
-            state.loading = true;
-        });
-        builder.addCase(loadFiles.fulfilled, (state, action) => {
-            state.loading = false;
-            state.filesLoaded = [...state.filesLoaded, ...action.payload];
-        });
-        builder.addCase(loadFiles.rejected, (state) => {
-            state.loading = false;
-        });
     }
 })
 
@@ -131,8 +88,7 @@ export const {
     setFormAnswer,
     setSizesSelected,
     setCartItemId,
-    setProduct,
-    setFilesLoaded
+    setProduct
 } = productSlice.actions
 
 export default productSlice.reducer

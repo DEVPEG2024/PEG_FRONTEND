@@ -21,7 +21,7 @@ export interface UploadProps extends CommonProps {
     multiple?: boolean
     onChange?: (file: File[], fileList: File[]) => void
     onFileAdd?: (file: File) => void
-    onFileRemove?: (file: File[]) => void
+    onFileRemove?: (file: string) => void
     showList?: boolean
     tip?: string | ReactNode
     uploadLimit?: number
@@ -134,9 +134,9 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
     }
 
     const removeFile = (fileIndex: number) => {
+        onFileRemove?.(files.find((_,  index) => index === fileIndex)?.name ?? '')
         const deletedFileList = files.filter((_, index) => index !== fileIndex)
         setFiles(deletedFileList)
-        onFileRemove?.(deletedFileList)
     }
 
     const triggerUpload = (e: MouseEvent<HTMLDivElement>) => {

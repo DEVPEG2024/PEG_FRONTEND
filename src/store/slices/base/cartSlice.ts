@@ -15,10 +15,15 @@ export const initialState: CartState = {
     cart: [],
 }
 
-export type CartItemEdition = {
+export type CartItemSizeEdition = {
     cartItemId: string
     formAnswer: IFormAnswer
     sizes: SizeSelection[]
+}
+
+export type CartItemFormAnswerEdition = {
+    cartItemId: string
+    formAnswer: IFormAnswer
 }
 
 export const editItem = (productId: string) => (dispatch: AppDispatch, getState: () => RootState) => {
@@ -45,11 +50,23 @@ export const cartSlice = createSlice({
                 sizes: action.payload.sizes,
             });
         },
-        editCartItem: (state, action: PayloadAction<CartItemEdition>) => {
+        editCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
             const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
             if (cartItem) {
                 cartItem.formAnswer = action.payload.formAnswer
                 cartItem.sizes = action.payload.sizes
+            }
+        },
+        editSizesCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
+            const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.sizes = action.payload.sizes
+            }
+        },
+        editFormAnswerCartItem: (state, action: PayloadAction<CartItemFormAnswerEdition>) => {
+            const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.formAnswer = action.payload.formAnswer
             }
         },
         removeFromCart: (state, action: PayloadAction<string>) => {
@@ -69,6 +86,6 @@ export const cartSlice = createSlice({
 
 })
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, editCartItem } = cartSlice.actions
+export const { addToCart, removeFromCart, updateQuantity, clearCart, editSizesCartItem, editFormAnswerCartItem } = cartSlice.actions
 
 export default cartSlice.reducer
