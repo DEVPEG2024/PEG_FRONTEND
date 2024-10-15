@@ -16,7 +16,7 @@ import Container from '@/components/shared/Container';
 import Input from "@/components/ui/Input";
 
 import { Button, Notification, toast } from '@/components/ui';
-import { OptionsFields } from '@/@types/product';
+import { OptionsFields, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 injectReducer("showProduct", reducer);
@@ -97,9 +97,9 @@ const ShowProduct = () => {
         (sizeSelected) => sizeSelected.value === option.value
       );
       // Trouver l'index de l'option actuelle dans le tableau sizeField
-      const newSizeSelected = {
+      const newSizeSelected: SizeSelection = {
         value: option.value,
-        amount: value,
+        quantity: value,
       };
       // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
       if (index > -1) {
@@ -144,7 +144,7 @@ const ShowProduct = () => {
                         <span>{option.label}</span>
                         <Input
                           name={option.value}
-                          value={sizesSelected.find((sizeSelected) => sizeSelected.value === option.value)?.amount}
+                          value={sizesSelected.find((sizeSelected) => sizeSelected.value === option.value)?.quantity}
                           type="number"
                           autoComplete="off"
                           onChange={(e: any) => handleSizesChanged(parseInt(e.target.value), option)}

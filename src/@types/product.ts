@@ -38,8 +38,7 @@ export type OptionsFields = {
   stock: number;
 };
 
-
 export type SizeSelection = {
   value: string;
-  amount: number;
+  quantity: number;
 };
