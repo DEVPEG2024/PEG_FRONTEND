@@ -36,7 +36,7 @@ type CreateOrderResponse = {
     result: string
 }
 
-export async function apiNewOrder(data: IOrder) {
+export async function apiCreateOrder(data: Record<string, unknown>) {
     return ApiService.fetchData<CreateOrderResponse>({
         url: `${API_BASE_URL}/orders/create`,
         method: 'post',
