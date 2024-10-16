@@ -41,11 +41,12 @@ function Cart() {
       formId: item.formAnswer.formId
     })
     const respOrderCreation = await apiCreateOrder({
-      customerId: user._id,
-      productId: item.product._id,
+      customer: user,
+      product: item.product,
       formAnswerId: respFormAnswerCreation.data.formAnswer._id,
       orderNumber: 0,
-      sizes: item.sizes
+      sizes: item.sizes,
+      total: item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)
     })
     return respOrderCreation.data
   }

@@ -59,7 +59,7 @@ export async function apiUpdateBanner(data: Record<string, unknown>) {
     })
 }
 
-// update status invoice
+// update status banner
 export async function apiUpdateStatusBanner(data: Record<string, unknown>) {
     return ApiService.fetchData<BannerResponse>({
         url: PUT_BANNERS_STATUS_API_URL + '/' + data.bannerId,
@@ -67,7 +67,6 @@ export async function apiUpdateStatusBanner(data: Record<string, unknown>) {
         data 
     })
 }
-
 
 // delete banner
 export async function apiDeleteBanner(data: Record<string, unknown>) {
