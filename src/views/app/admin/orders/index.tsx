@@ -8,14 +8,17 @@ import reducer, {
   getOrders,
   finishOrder,
   useAppSelector,
+  showCustomerProduct,
 } from "./store";
 
 import { IOrder } from "@/@types/order";
+import { useNavigate } from "react-router-dom";
 
 injectReducer("orders", reducer);
 
 const Orders = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,11 +39,17 @@ const Orders = () => {
     setCurrentPage(1);
   };
 
+  const handleShowProduct = (order: IOrder) => {
+    dispatch(showCustomerProduct(order))
+    navigate("/admin/product/" + order.product._id)
+  };
+
   const handleUpdateStatusOrderFinished = (order: IOrder) => {
-    dispatch(finishOrder({order, status: 'Termine'}))
+    dispatch(finishOrder({ order, status: 'Termine' }))
   };
 
   const columns = useColumns(
+    handleShowProduct,
     handleUpdateStatusOrderFinished
   );
   const onPaginationChange = (page: number) => {
@@ -81,7 +90,7 @@ const Orders = () => {
             pageSize: pageSize,
           }}
         />
-      </div>     
+      </div>
     </Container>
   );
 };

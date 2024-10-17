@@ -1,5 +1,5 @@
 export type IFormAnswer = {
-  formId: string;
+  form: string;
   answers: IFieldAnswer[]
 }
 

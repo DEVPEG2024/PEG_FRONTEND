@@ -35,15 +35,15 @@ function Cart() {
 
   const createOrder = async (item: CartItem) => {
     const respFormAnswerCreation = await apiCreateFormAnswer({
-      customerId: user._id,
-      productId: item.product._id,
+      customer: user._id,
+      product: item.product._id,
       answers: item.formAnswer.answers,
-      formId: item.formAnswer.formId
+      form: item.formAnswer.form
     })
     const respOrderCreation = await apiCreateOrder({
       customer: user,
       product: item.product,
-      formAnswerId: respFormAnswerCreation.data.formAnswer._id,
+      formAnswer: respFormAnswerCreation.data.formAnswer,
       orderNumber: 0,
       sizes: item.sizes,
       total: item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)
@@ -56,9 +56,9 @@ function Cart() {
       for (const item of cart) {
         await createOrder(item)
       }
-      return {status: 'success'}
+      return { status: 'success' }
     } catch (errors: any) {
-      return {status: 'failed', message: errors?.response?.data?.message || errors.toString()}
+      return { status: 'failed', message: errors?.response?.data?.message || errors.toString() }
     }
   }
 
@@ -83,7 +83,7 @@ function Cart() {
         navigate('/customer/projects')
       }
     }
-  } 
+  }
 
   const validateCart = async () => {
     const paymentValidated = await validatePayment()
@@ -133,7 +133,7 @@ function Cart() {
                       <p>{item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)} €</p>
                       <p className='flex gap-1'>
                         <Button onClick={() => handleEdit(item)} size="sm" icon={<HiPencil />} />
-                        <Button onClick={() => dispatch(removeFromCart(item.id))} size="sm" icon={<HiTrash />} />
+                        <Button onClick={() => dispatch(removeFromCart(item))} size="sm" icon={<HiTrash />} />
                       </p>
                     </div>
                     <hr className="w-full my-4" />

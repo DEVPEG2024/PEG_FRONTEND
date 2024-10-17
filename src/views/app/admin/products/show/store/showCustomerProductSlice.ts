@@ -3,26 +3,22 @@ import { IProduct, SizeSelection } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
 import { IFormAnswer } from '@/@types/formAnswer';
 
-export const SLICE_NAME = 'showProduct'
+export const SLICE_NAME = 'showCustomerProduct'
 
 export type StateData = {
     loading: boolean
     product: IProduct | null
-    formCompleted: boolean
     formDialog: boolean
     formAnswer: IFormAnswer | null
-    sizesSelected: SizeSelection[],
-    cartItemId: string
+    sizesSelected: SizeSelection[]
 }
 
 const initialState: StateData = {
   loading: false,
   product: null,
-  formCompleted: false,
   formDialog: false,
   formAnswer: null,
-  sizesSelected: [],
-  cartItemId: ''
+  sizesSelected: []
 };
 
 export const getProductById = createAsyncThunk(
@@ -37,9 +33,6 @@ const productSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
-        setFormCompleted: (state, action) => {
-            state.formCompleted = action.payload
-        },
         setFormDialog: (state, action) => {
             state.formDialog = action.payload
         },
@@ -49,14 +42,7 @@ const productSlice = createSlice({
         setSizesSelected: (state, action) => {
             state.sizesSelected = action.payload
         },
-        setCartItemId: (state, action) => {
-            state.cartItemId = action.payload
-        },
-        setProduct: (state, action) => {
-            state.product = action.payload
-        },
         clearState: (state) => {
-            state.formCompleted = false
             state.formDialog = false
             state.product = null
             state.sizesSelected = []
@@ -79,12 +65,9 @@ const productSlice = createSlice({
 
 export const {
     clearState,
-    setFormCompleted,
     setFormDialog,
     setFormAnswer,
-    setSizesSelected,
-    setCartItemId,
-    setProduct
+    setSizesSelected
 } = productSlice.actions
 
 export default productSlice.reducer

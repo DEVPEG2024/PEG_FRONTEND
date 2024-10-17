@@ -2,6 +2,8 @@ import { createAsyncThunk, createSlice} from '@reduxjs/toolkit'
 import { WritableDraft } from 'immer'
 import { apiGetOrders, apiUpdateStatusOrder } from '@/services/OrderServices'
 import { IOrder } from '@/@types/order'
+import { AppDispatch } from '@/store'
+import { setFormAnswer, setSizesSelected } from '../../products/show/store'
 
 export const SLICE_NAME = 'orders'
 
@@ -37,6 +39,11 @@ export const finishOrder = createAsyncThunk(
         return {status: data.status, order: data.order};
     }
 )
+
+export const showCustomerProduct = (order: IOrder) => (dispatch: AppDispatch) => {
+    dispatch(setFormAnswer(order.formAnswer));
+    dispatch(setSizesSelected(order.sizes));
+};
 
 const initialState: OrderState = {
     orders: [],
