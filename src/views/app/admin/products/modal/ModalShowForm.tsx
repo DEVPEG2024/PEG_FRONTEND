@@ -86,15 +86,15 @@ function ModalShowForm({ form }: { form: IForm }) {
 
         switch (field.type) {
             case 'input':
-                return <InputSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
+                return <InputSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             case 'textarea':
-                return <TextAreaSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
+                return <TextAreaSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             case 'checkbox':
-                return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string[]} />
+                return <CheckBoxSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string[]} disabled={true} />
             case 'select':
-                return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} />
+                return <SelectSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             case 'date':
-                return <DateSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
+                return <DateSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             case 'file':
                 if (loading) {
                     return <Spinner className="mr-4" size={30} />
@@ -108,13 +108,13 @@ function ModalShowForm({ form }: { form: IForm }) {
                             files.push(file)
                         }
                     }
-                    return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} onFileRemove={() => { }} value={files} />
+                    return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} onFileRemove={() => { }} value={files} disabled={true} />
                 }
 
             case 'color':
-                return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
+                return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             case 'radio':
-                return <RadioSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} />
+                return <RadioSection {...field} className="mb-4" options={optionsSelect} onChange={onChange} value={fieldAnswer?.value as string} disabled={true} />
             default:
                 return null
         }
