@@ -24,21 +24,19 @@ import ColorSection from "@/views/app/admin/forms/builder/components/fields/colo
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
 import { useEffect, useState } from "react";
 import { FileItem, IFormAnswer, IFieldAnswer } from "@/@types/formAnswer";
-import { API_BASE_URL } from "@/configs/api.config";
 import { CartItemFormAnswerEdition, editFormAnswerCartItem } from "@/store/slices/base/cartSlice";
-import { useNavigate } from "react-router-dom";
+import { apiDeleteFile, apiGetFile, apiUploadFile } from "@/services/FileServices";
 
 type FileItemAndField = {
     field: string,
     fileItem: FileItem
-  }
+}
 
 function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolean }) {
     const dispatch = useAppDispatch();
-    const navigate = useNavigate()
     const { formDialog, formAnswer, cartItemId } = useAppSelector((state) => state.showProduct.data)
     const [newFormAnswer, setNewFormAnswer] = useState<IFormAnswer>(formAnswer ? structuredClone(formAnswer) : {
-        formId: form._id,
+        form: form._id,
         answers: []
     })
     const [filesLoaded, setFilesLoaded] = useState<FileItem[]>([])
@@ -46,7 +44,7 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
     const [loading, setLoading] = useState<boolean>(false)
 
     useEffect(() => {
-        const fetchFiles = async () => {
+        const fetchFiles = async (): Promise<void> => {
             const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
             const filesToLoad: string[] = formAnswer?.answers
                 .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
@@ -70,31 +68,27 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
 
     const loadFile = async (
         fileName: string
-      ) : Promise<File | null> => {
+    ): Promise<File | null> => {
         try {
-          const response = await fetch(API_BASE_URL + "/upload/" + fileName, {
-                method: "GET"
-            });
-            const blob = await response.blob();
-            return new File([blob], fileName, { type: blob.type });
+            return await apiGetFile(fileName)
         } catch (error) {
             console.error("Erreur lors de la récupération du fichier :", error);
         }
         return null
-      };
-    
-    const loadFiles = async (fileNames: string[]) : Promise<FileItem[]> => {
-        const files : FileItem[] = []
+    };
+
+    const loadFiles = async (fileNames: string[]): Promise<FileItem[]> => {
+        const files: FileItem[] = []
         for (const fileName of fileNames) {
             const file = await loadFile(fileName)
             if (file) {
-                files.push({fileName, file})
+                files.push({ fileName, file })
             }
         }
         return files
     }
 
-    const handleSubmit = async (e: any) => {
+    const handleSubmit = async (e: any): Promise<void> => {
         e.preventDefault();
         await uploadFiles(tempFiles)
         if (onEdition) {
@@ -105,45 +99,43 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
         handleClose();
     };
 
-    const handleEditFormAnswerCartItem = () => {
+    const handleEditFormAnswerCartItem = (): void => {
         dispatch(editFormAnswerCartItem({ cartItemId, formAnswer: newFormAnswer } as CartItemFormAnswerEdition));
         toast.push(
-          <Notification type="success" title="Modifié">
-            Formulaire modifié
-          </Notification>
+            <Notification type="success" title="Modifié">
+                Formulaire modifié
+            </Notification>
         )
-      }
+    }
 
-    const uploadFiles = async (fileItemsAndField: FileItemAndField[]) => {
+    const uploadFiles = async (fileItemsAndField: FileItemAndField[]): Promise<void> => {
         const currentFilesLoaded = filesLoaded
         for (const fileItemAndField of fileItemsAndField) {
-            const fileItem: FileItem = fileItemAndField.fileItem
-            const fileName = await uploadFile(fileItem.file)
-            const newAnswer: IFieldAnswer = newFormAnswer.answers.find(({fieldId}) => fieldId === fileItemAndField.field)
-            const newValue: string[] = [...newAnswer.value.filter((name: string) => name !== fileItem.fileName), fileName]
-            newAnswer.value = newValue
-            newFormAnswer.answers = [...newFormAnswer.answers.filter(({fieldId}) => fieldId !== fileItemAndField.field), newAnswer]
-            currentFilesLoaded.push({file: fileItem.file, fileName})
+            const fileItem: FileItem = fileItemAndField.fileItem,
+                fileName: string | undefined = await uploadFile(fileItem.file),
+                newAnswer: IFieldAnswer | undefined = newFormAnswer.answers.find(({ fieldId }) => fieldId === fileItemAndField.field)
+
+            if (newAnswer && fileName) {
+                const newValue: string[] = [...newAnswer.value.filter((name: string) => name !== fileItem.fileName), fileName]
+                newAnswer.value = newValue
+                newFormAnswer.answers = [...newFormAnswer.answers.filter(({ fieldId }) => fieldId !== fileItemAndField.field), newAnswer]
+                currentFilesLoaded.push({ file: fileItem.file, fileName })
+            }
         }
         setFilesLoaded(currentFilesLoaded)
         setTempFiles([])
     }
 
-    const handleClose = () => {
+    const handleClose = (): void => {
         dispatch(setFormDialog(false));
     };
 
     const uploadFile = async (
         file: File
-    ) => {
+    ): Promise<string | undefined> => {
         try {
-            const formData = new FormData();
-            formData.append("file", file);
-            const response = await fetch(API_BASE_URL + "/upload", {
-                method: "POST",
-                body: formData,
-            });
-            const data = await response.json();
+            const data = await apiUploadFile(file)
+
             return data.fileName
         } catch (error) {
             console.error("Erreur lors de l'upload du fichier :", error);
@@ -152,29 +144,27 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
 
     const onFileRemove = async (
         fileName: string, field: string
-    ) => {
+    ): Promise<void> => {
         const fileFromFilesLoaded: FileItem | undefined = filesLoaded.find((fileLoaded) => fileLoaded.fileName === fileName)
 
         if (fileFromFilesLoaded) {
             try {
-                await fetch(API_BASE_URL + "/upload/delete/" + fileName, {
-                    method: "DELETE"
-                });
+                await apiDeleteFile(fileName)
                 const currentFilesLoaded: FileItem[] = filesLoaded
-                setFilesLoaded(currentFilesLoaded.filter(({fileName: fileNameCurrentFile}) => fileNameCurrentFile !== fileName))
+                setFilesLoaded(currentFilesLoaded.filter(({ fileName: fileNameCurrentFile }) => fileNameCurrentFile !== fileName))
             } catch (error) {
                 console.error("Erreur lors de la suppression du fichier :", error);
             }
         } else {
             setTempFiles(tempFiles.filter((tempFile) => tempFile.field !== field || tempFile.fileItem.fileName !== fileName))
         }
-        
-        const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field)?.value ?? []
+
+        const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field)?.value as string[] ?? []
         const newAswer = [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field), { fieldId: field, value: currentFiles.filter((file: string) => file !== fileName) }]
         setNewFormAnswer({ ...newFormAnswer, answers: newAswer })
     };
 
-    const determineNewAnswers = async (field: IField, value: string | string[] | File | { label: string, value: string } | Date) => {
+    const determineNewAnswers = async (field: IField, value: string | string[] | File | { label: string, value: string } | Date): Promise<IFieldAnswer[]> => {
         switch (field.type) {
             case 'date':
                 const dateSelected: Date = value as Date
@@ -182,16 +172,17 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
             case 'file':
                 const file: File = value as File
                 const newTempFiles: FileItemAndField[] = [...tempFiles]
-                newTempFiles.push({field: field.id, fileItem: { fileName: file.name, file }})
+                newTempFiles.push({ field: field.id, fileItem: { fileName: file.name, file } })
                 setTempFiles(newTempFiles)
-                const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value ?? []
+                const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value as string[] ?? []
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentFiles, file.name] }]
             default:
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value }]
+                const valueSelected: string | string[] = value as string | string[]
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: valueSelected }]
         }
     }
 
-    const renderField = (field: IField) => {
+    const renderField = (field: IField): React.ReactElement | null => {
         const optionsSelect = field.options?.map((option) => ({
             label: option,
             value: option
@@ -217,7 +208,7 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
                     return <Spinner className="mr-4" size={30} />
                 } else {
                     const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
-                        tempFilesItem: FileItem[] = tempFiles.map(({fileItem}) => fileItem),
+                        tempFilesItem: FileItem[] = tempFiles.map(({ fileItem }) => fileItem),
                         files: File[] = []
                     for (const fileNameConcerned of fileNamesConcerned) {
                         const file: File | undefined = [...filesLoaded, ...tempFilesItem].find((fileItem) => fileNameConcerned === fileItem.fileName)?.file
@@ -228,7 +219,7 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
                     }
                     return <UploadSection {...field} className="mb-4" acceptedFileTypes={field.acceptedFileTypes || ''} onFileAdd={onChange} onFileRemove={(file: string) => onFileRemove(file, field.id)} value={files} />
                 }
-                
+
             case 'color':
                 return <ColorSection {...field} className="mb-4" onChange={onChange} value={fieldAnswer?.value as string} />
             case 'radio':

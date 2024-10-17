@@ -3,8 +3,9 @@ import { SLICE_CART_NAME } from './constants'
 import { CartItem } from '@/@types/cart'
 import { setCartItemId, setFormAnswer, setFormCompleted, setProduct, setSizesSelected } from '@/views/app/customer/products/show/store'
 import { AppDispatch } from '@/store/storeSetup'
-import { IFormAnswer } from '@/@types/formAnswer'
+import { IFieldAnswer, IFormAnswer } from '@/@types/formAnswer'
 import { SizeSelection } from '@/@types/product'
+import { apiDeleteFile } from '@/services/FileServices'
 
 export type CartState = {
     cart: CartItem[]
@@ -46,26 +47,32 @@ export const cartSlice = createSlice({
             });
         },
         editCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
-            const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.formAnswer = action.payload.formAnswer
                 cartItem.sizes = action.payload.sizes
             }
         },
         editSizesCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
-            const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.sizes = action.payload.sizes
             }
         },
         editFormAnswerCartItem: (state, action: PayloadAction<CartItemFormAnswerEdition>) => {
-            const cartItem = state.cart.find((item) => item.id = action.payload.cartItemId)
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.formAnswer = action.payload.formAnswer
             }
         },
-        removeFromCart: (state, action: PayloadAction<string>) => {
-            state.cart = state.cart.filter((item) => item.id !== action.payload)
+        removeFromCart: (state, action: PayloadAction<CartItem>) => {
+            state.cart = state.cart.filter((item) => item.id !== action.payload.id)
+            const fieldsWithFile: string[] = action.payload.product.form.fields.filter(({type}) => type === 'file').map(({id}) => id),
+                anwsersWithFile: IFieldAnswer[] = action.payload.formAnswer.answers.filter(({fieldId}) => fieldsWithFile.includes(fieldId))
+            
+            anwsersWithFile.forEach((answer) => {
+                apiDeleteFile(answer.value as string)
+            })
         },
         updateQuantity: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
             const { id, quantity } = action.payload

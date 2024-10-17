@@ -82,7 +82,7 @@ type UploadFileResponse = {
     result: boolean
 }
 
-export async function apiUploadFile(data: Record<string, unknown>) {
+export async function apiUploadFileToProject(data: Record<string, unknown>) {
     return ApiService.fetchData<UploadFileResponse>({
         url: UPLOAD_FILE_API_URL,
         method: 'post',
@@ -90,7 +90,7 @@ export async function apiUploadFile(data: Record<string, unknown>) {
     })
 }
 
-export async function apiDeleteFile(data: Record<string, unknown>) {
+export async function apiDeleteFileFromProject(data: Record<string, unknown>) {
     return ApiService.fetchData<DeleteProjectResponse>({
         url: DELETE_FILE_API_URL,
         method: 'delete',

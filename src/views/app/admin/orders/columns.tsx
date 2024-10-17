@@ -1,9 +1,10 @@
-import {Button, Tag } from "@/components/ui"; // Assurez-vous que le chemin est correct
-import { HiCheck } from "react-icons/hi";
+import { Button, Tag } from "@/components/ui"; // Assurez-vous que le chemin est correct
+import { HiCheck, HiInformationCircle } from "react-icons/hi";
 import { IOrder } from "@/@types/order";
 import { SizeSelection } from "@/@types/product";
 
 export const useColumns = (
+  handleShowProduct: (order: IOrder) => void,
   handleUpdateStatusOrderFinished: (order: IOrder) => void
 ) => {
 
@@ -55,9 +56,27 @@ export const useColumns = (
         );
       },
     },
-    
+
     {
-      header: "",
+      header: "Demande",
+      accessorKey: "",
+      enableSorting: false,
+      cell: ({ row }: { row: any }) => {
+        return (
+          <div className="flex items-center">
+            <Button
+              onClick={() => handleShowProduct(row.original)}
+              size="sm"
+              variant="twoTone"
+              icon={<HiInformationCircle size={20} />}
+            />
+          </div>
+        );
+      },
+    },
+
+    {
+      header: "Statut",
       accessorKey: "status",
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
@@ -77,7 +96,7 @@ export const useColumns = (
               onClick={() => handleUpdateStatusOrderFinished(row.original)}
               size="sm"
               variant="twoTone"
-              icon={<HiCheck size={20}/>}
+              icon={<HiCheck size={20} />}
             />
           </div>
         );
