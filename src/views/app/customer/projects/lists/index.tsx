@@ -93,7 +93,7 @@ const Projects = () => {
             <Select
               size="sm"
               isSearchable={false}
-              defaultValue={options[0]}
+              defaultValue={options[4]}
               options={options}
               onChange={(selected) => onPageSelect(selected as Option)}
             />
