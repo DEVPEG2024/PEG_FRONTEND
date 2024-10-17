@@ -33,7 +33,7 @@ const navigationIcon: NavigationIcons = {
     users: <HiUsers />,
     producers: <LuUsers />,
     offers: <MdOutlineWorkOutline />,
-    offersForms: <MdOutlineWorkOutline />,
+    forms: <MdOutlineWorkOutline />,
     store: <PiStorefront />,
     storeOrders: <PiStorefront />,
     storeProducts: <PiStorefront />,

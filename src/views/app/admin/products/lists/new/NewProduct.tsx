@@ -11,7 +11,7 @@ import useCategoryCustomer from '@/utils/hooks/customers/useCategoryCustomer'
 import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer'
 import { apiNewProduct } from '@/services/ProductServices'
 import { apiGetForms } from '@/services/FormServices'
-import { IFormList } from '@/@types/forms'
+import { IForm } from '@/@types/form'
 
 interface Options {
     value: string
@@ -45,7 +45,7 @@ const NewSaisie = () => {
    const fetchForms = async () => {
         const response = await apiGetForms(1, 1000, "")
         const formsList = response.data.forms || []
-        const forms = formsList.map((form: IFormList) => ({
+        const forms = formsList.map((form: IForm) => ({
             value: form._id || "",
             label: form.title
         }))

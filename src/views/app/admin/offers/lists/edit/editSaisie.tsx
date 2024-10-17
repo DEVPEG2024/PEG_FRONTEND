@@ -6,7 +6,7 @@ import SaisieForm, { FormModel, SetSubmitting } from '../edit/Forms/Form'
 import { IUser } from '@/@types/user'
 import useCustomer from '@/utils/hooks/customers/useCustomer'
 import { useAppSelector } from '../store'
-import { IFormList } from '@/@types/forms'
+import { IForm } from '@/@types/form'
 import { apiGetForms } from '@/services/FormServices'
 import { apiUpdateOffer } from '@/services/OfferServices'
 import { IOffer } from '@/@types/offer'
@@ -45,7 +45,7 @@ const EditSaisie = () => {
     const fetchForms = async () => {
         const response = await apiGetForms(1, 1000, "")
         const formsList = response.data.forms || []
-        const forms = formsList.map((form: IFormList) => ({
+        const forms = formsList.map((form: IForm) => ({
             value: form._id || "",
             label: form.title
         }))

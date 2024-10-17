@@ -7,8 +7,8 @@ import { CUSTOMER } from '@/constants/roles.constant';
 
 const navigationCustomer: NavigationTree[] = [
   {
-    key: "home",
-    path: "/home",
+    key: "customer.home",
+    path: "/customer/home",
     title: "Accueil",
     translateKey: "nav.home",
     icon: "home",
@@ -17,8 +17,8 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "products",
-    path: "/products",
+    key: "customer.products",
+    path: "/customer/products",
     title: "Mes offres",
     translateKey: "nav.mesoffres",
     icon: "storeList",
@@ -27,8 +27,8 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "projects",
-    path: "/projects",
+    key: "customer.projects",
+    path: "/customer/projects",
     title: "Mes projets",
     translateKey: "nav.mesprojets",
     icon: "projects",
@@ -38,8 +38,8 @@ const navigationCustomer: NavigationTree[] = [
   },
 
   {
-    key: "catalogue",
-    path: "/catalogue",
+    key: "customer.catalogue",
+    path: "/customer/catalogue",
     title: "Catalogue",
     translateKey: "nav.catalogue",
     icon: "categories",
@@ -48,8 +48,8 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "invoices",
-    path: "/invoices",
+    key: "customer.invoices",
+    path: "/customer/invoices",
     title: "Mes factures",
     translateKey: "nav.mesfactures",
     icon: "invoices",

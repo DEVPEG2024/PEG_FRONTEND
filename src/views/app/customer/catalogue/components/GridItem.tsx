@@ -10,7 +10,7 @@ const GridItem = ({ data }: { data: CategoryProduct }) => {
   } = data;
   const navigate = useNavigate()
   return (
-    <Card bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center" onClick={() => navigate(`/catalogue/categories/${data._id}`)}>
+    <Card bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center" onClick={() => navigate(`/customer/catalogue/categories/${data._id}`)}>
         <div className="flex flex-col justify-center items-center">
           <a className="cursor-pointer">
             <h6 className="flex flex-col justify-center flex-grow items-center gap-2">

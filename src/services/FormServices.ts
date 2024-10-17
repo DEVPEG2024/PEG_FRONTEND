@@ -1,6 +1,11 @@
-import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IForm, IFormList } from '@/@types/forms'
+import {
+    DELETE_FORMS_API_URL,
+    GET_FORMS_API_URL,
+    POST_FORMS_API_URL,
+    PUT_FORMS_API_URL
+  } from "@/constants/api.constant";
+import { IField, IForm } from '@/@types/form'
 
 type CreateFormResponse = {
     form: IForm
@@ -10,11 +15,11 @@ type CreateFormResponse = {
 
 type CreateFormRequest = {
     title: string
-    fields: IForm[]
+    fields: IField[]
 }
 
 type GetAllFormsResponse = {
-    forms: IFormList[]
+    forms: IForm[]
     result: boolean
     message: string
     total: number
@@ -34,7 +39,7 @@ type DeleteFormResponse = {
 // create form
 export async function apiCreateForm(form: CreateFormRequest) {
     return ApiService.fetchData<CreateFormResponse>({
-        url: `${API_BASE_URL}/forms/create`,
+        url: POST_FORMS_API_URL,
         method: 'post',
         data: form
     })
@@ -44,16 +49,16 @@ export async function apiCreateForm(form: CreateFormRequest) {
 // get all forms
 export async function apiGetForms(page: number, pageSize: number, searchTerm: string) {
     return ApiService.fetchData<GetAllFormsResponse>({
-        url: `${API_BASE_URL}/forms`,
+        url: GET_FORMS_API_URL,
         method: 'get',
         params: { page, pageSize, searchTerm }
     })
 }
 
 // update form
-export async function apiUpdateForm(form: IFormList) {
+export async function apiUpdateForm(form: IForm) {
     return ApiService.fetchData<UpdateFormResponse>({
-        url: `${API_BASE_URL}/forms/${form._id}`,
+        url: PUT_FORMS_API_URL + '/' + form._id,
         method: 'put',
         data: form
     })
@@ -62,7 +67,7 @@ export async function apiUpdateForm(form: IFormList) {
 // delete form
 export async function apiDeleteForm(id: string) {
     return ApiService.fetchData<DeleteFormResponse>({
-        url: `${API_BASE_URL}/forms/${id}`,
+        url: DELETE_FORMS_API_URL + '/' + id,
         method: 'delete'
     })
 }
