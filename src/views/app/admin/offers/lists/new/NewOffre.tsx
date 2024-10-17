@@ -7,7 +7,7 @@ import SaisieForm, { FormModel, SetSubmitting } from './Forms/Form'
 import {IUser } from '@/@types/user'
 import useCustomer from '@/utils/hooks/customers/useCustomer'
 import { apiGetForms } from '@/services/FormServices'
-import { IFormList } from '@/@types/forms'
+import { IForm } from '@/@types/form'
 import { apiNewOffer } from '@/services/OfferServices'
 import { IOffer } from '@/@types/offer'
 
@@ -44,7 +44,7 @@ const NewOffre = () => {
     const fetchForms = async () => {
         const response = await apiGetForms(1, 1000, "")
         const formsList = response.data.forms || []
-        const forms = formsList.map((form: IFormList) => ({
+        const forms = formsList.map((form: IForm) => ({
             value: form._id || "",
             label: form.title
         }))

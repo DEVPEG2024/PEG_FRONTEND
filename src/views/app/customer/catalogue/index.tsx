@@ -1,4 +1,4 @@
-import {  Container } from "@/components/shared";
+import { Container } from "@/components/shared";
 import HeaderTitle from "@/components/template/HeaderTitle";
 import { useEffect, useState } from "react";
 import { Input, Pagination, Select } from "@/components/ui";
@@ -26,22 +26,20 @@ const Categories = () => {
     fetchProjects();
   }, [currentPage, pageSize, searchTerm]);
 
-    const fetchProjects = async () => {
-      const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm)
-      setCategories(resp.data || [])
-      setTotal(resp.total || 0)
-    };
+  const fetchProjects = async () => {
+    const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm)
+    setCategories(resp.data || [])
+    setTotal(resp.total || 0)
+  };
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
   };
 
-
-
   const onPageSelect = ({ value }: Option) => {
     setPageSize(value)
-}
+  }
 
   return (
     <Container>
@@ -82,7 +80,7 @@ const Categories = () => {
           </div>
         </div>
       </div>
-    
+
     </Container>
   );
 }

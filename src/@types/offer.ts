@@ -1,4 +1,4 @@
-import { IFormList } from "./forms";
+import { IForm } from "./form";
 import { IUser } from "./user";
 
 export interface IOffer {
@@ -6,7 +6,7 @@ export interface IOffer {
   ref: string;
   title: string;
   customer: IUser;
-  form: IFormList;
+  form: IForm;
   images: string[];
   description: string;
   isAccepted: boolean;

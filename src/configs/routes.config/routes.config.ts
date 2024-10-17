@@ -112,33 +112,24 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/products/categories/ProductsLists")),
     authority: [SUPER_ADMIN],
   },
+  {
+    key: "admin.product",
+    path: "/admin/product/:id",
+    component: lazy(() => import("@/views/app/admin/products/show")),
+    authority: [SUPER_ADMIN],
+  },
+  //orders
+  {
+    key: "admin.store.orders",
+    path: "/admin/store/orders",
+    component: lazy(() => import("@/views/app/admin/orders")),
+    authority: [SUPER_ADMIN],
+  },
   // offers
   {
     key: "admin.offers.list",
     path: "/admin/offers/list",
     component: lazy(() => import("@/views/app/admin/offers/lists")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.forms",
-    path: "/admin/offers/forms-builder",
-    component: lazy(() => import("@/views/app/admin/offers/forms-builder")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.forms.add",
-    path: "/admin/offers/forms-builder/add",
-    component: lazy(
-      () => import("@/views/app/admin/offers/forms-builder/add")
-    ),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.forms.edit",
-    path: "/admin/offers/forms-builder/edit/:id",
-    component: lazy(
-      () => import("@/views/app/admin/offers/forms-builder/edit")
-    ),
     authority: [SUPER_ADMIN],
   },
   {
@@ -159,6 +150,30 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/offers/details")),
     authority: [SUPER_ADMIN],
   },
+  //forms
+  {
+    key: "admin.forms",
+    path: "/admin/forms",
+    component: lazy(() => import("@/views/app/admin/forms")),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.forms.add",
+    path: "/admin/forms/add",
+    component: lazy(
+      () => import("@/views/app/admin/forms/add")
+    ),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.forms.edit",
+    path: "/admin/forms/edit/:id",
+    component: lazy(
+      () => import("@/views/app/admin/forms/edit")
+    ),
+    authority: [SUPER_ADMIN],
+  },
+  //teams
   {
     key: "admin.teams",
     path: "/admin/teams",
@@ -177,12 +192,14 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/teams/EditTeam")),
     authority: [SUPER_ADMIN],
   },
+  //invoices
   {
     key: "admin.invoices",
     path: "/admin/invoices",
     component: lazy(() => import("@/views/app/admin/invoices")),
     authority: [SUPER_ADMIN],
   },
+  //banners
   {
     key: "admin.banners",
     path: "/admin/banners",
@@ -210,20 +227,32 @@ const protectedCustomersRoutes = [
     authority: [],
   },
   {
-    key: "products",
-    path: "/products",
+    key: "customer.products",
+    path: "/customer/products",
     component: lazy(() => import("@/views/app/customer/products/lists")),
     authority: [CUSTOMER],
   },
   {
-    key: "projects",
-    path: "/projects",
+    key: "customer.product",
+    path: "/customer/product/:id",
+    component: lazy(() => import("@/views/app/customer/products/show")),
+    authority: [CUSTOMER],
+  },
+  {
+    key: "customer.product",
+    path: "/customer/product/:id/edit",
+    component: lazy(() => import("@/views/app/customer/products/show")),
+    authority: [CUSTOMER],
+  },
+  {
+    key: "customer.projects",
+    path: "/customer/projects",
     component: lazy(() => import("@/views/app/customer/projects")),
     authority: [CUSTOMER],
   },
   {
-    key: "projects.details",
-    path: "/projects/details/:id",
+    key: "customer.projects.details",
+    path: "/customer/projects/details/:id",
     component: lazy(() => import("@/views/app/customer/projects/details")),
     authority: [CUSTOMER],
     meta: {
@@ -231,26 +260,26 @@ const protectedCustomersRoutes = [
     },
   },
   {
-    key: "catalogue",
-    path: "/catalogue",
+    key: "customer.catalogue",
+    path: "/customer/catalogue",
     component: lazy(() => import("@/views/app/customer/catalogue")),
     authority: [CUSTOMER],
   },
   {
-    key: "catalogue.categories.products",
-    path: "/catalogue/categories/:id",
+    key: "customer.catalogue.categories.products",
+    path: "/customer/catalogue/categories/:id",
     component: lazy(() => import("@/views/app/customer/catalogue/ProductsLists")),
     authority: [CUSTOMER],
   },
   {
-    key: "cart",
-    path: "/cart",
+    key: "customer.cart",
+    path: "/customer/cart",
     component: lazy(() => import("@/views/app/customer/cart")),
     authority: [CUSTOMER],
   },
   {
-    key: "invoices",
-    path: "/invoices",
+    key: "customer.invoices",
+    path: "/customer/invoices",
     component: lazy(() => import("@/views/app/customer/invoices")),
     authority: [CUSTOMER],
   },

@@ -1,6 +1,6 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { IProduct } from '@/@types/product'
-import { apiGetProducts, apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsCustomer } from '@/services/ProductServices'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { IProduct } from '@/@types/product';
+import { apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsCustomer } from '@/services/ProductServices';
 
 
 type Products = IProduct[]
@@ -86,7 +86,7 @@ const initialState: StateData = {
     depense: 0,
     recette: 0,
     bilan: 0,
-  },
+  }
 };
 
 const productSlice = createSlice({
@@ -126,8 +126,7 @@ const productSlice = createSlice({
         },
         setDeleteProduct: (state, action) => {
             state.product = state.products.find((product) => product._id === action.payload) ?? null
-        },
-
+        }
     },
     extraReducers: (builder) => {
         builder.addCase(getProducts.pending, (state) => {
@@ -191,7 +190,7 @@ export const {
     setModalDeleteClose,
     setDeleteProduct,
     setActiveProduct,
-    setEditingProduct,
+    setEditingProduct
 } = productSlice.actions
 
 export default productSlice.reducer

@@ -1,13 +1,14 @@
+import { IForm } from "./form";
 
 export type IProduct = {
   _id: string;
   title: string,
   reference: string,
   description: string,
-  amount: number,
+  amount: number, //TODO: remplacer par 'price'
   stock: number,
   category: string[],
-  form: string,
+  form: IForm,
   customersCategories: string[],
   customers: string[],
   images: string[],
@@ -37,3 +38,7 @@ export type OptionsFields = {
   stock: number;
 };
 
+export type SizeSelection = {
+  value: string;
+  quantity: number;
+};

@@ -1,45 +1,84 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_CART_NAME } from './constants'
 import { CartItem } from '@/@types/cart'
+import { setCartItemId, setFormAnswer, setFormCompleted, setProduct, setSizesSelected } from '@/views/app/customer/products/show/store'
+import { AppDispatch } from '@/store/storeSetup'
+import { IFieldAnswer, IFormAnswer } from '@/@types/formAnswer'
+import { SizeSelection } from '@/@types/product'
+import { apiDeleteFile } from '@/services/FileServices'
 
 export type CartState = {
-    cart: {
-        product: CartItem
-        total: number
-        quantity: number
-    }[]
+    cart: CartItem[]
 }
 
 export const initialState: CartState = {
     cart: [],
 }
 
+export type CartItemSizeEdition = {
+    cartItemId: string
+    formAnswer: IFormAnswer
+    sizes: SizeSelection[]
+}
+
+export type CartItemFormAnswerEdition = {
+    cartItemId: string
+    formAnswer: IFormAnswer
+}
+
+export const editItem = (item: CartItem) => (dispatch: AppDispatch) => {
+      dispatch(setCartItemId(item.id));
+      dispatch(setProduct(item.product));
+      dispatch(setFormAnswer(item.formAnswer));
+      dispatch(setFormCompleted(true));
+      dispatch(setSizesSelected(item.sizes));
+  };
+
 export const cartSlice = createSlice({
     name: `${SLICE_CART_NAME}/cart`,
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<CartItem>) => {
-            const existingItem = state.cart.find(item => item.product._id === action.payload._id);
-            if (existingItem) {
-                existingItem.quantity += 1;
-                existingItem.total = existingItem.product.amount * existingItem.quantity;
-            } else {
-                state.cart.push({
-                    product: action.payload,
-                    total: action.payload.amount,
-                    quantity: 1,
-                });
+            state.cart.push({
+                id: Math.random().toString(16).slice(2),
+                product: action.payload.product,
+                formAnswer: action.payload.formAnswer,
+                sizes: action.payload.sizes,
+            });
+        },
+        editCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.formAnswer = action.payload.formAnswer
+                cartItem.sizes = action.payload.sizes
             }
         },
-        removeFromCart: (state, action: PayloadAction<string>) => {
-            state.cart = state.cart.filter((item) => item.product._id !== action.payload)
+        editSizesCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.sizes = action.payload.sizes
+            }
+        },
+        editFormAnswerCartItem: (state, action: PayloadAction<CartItemFormAnswerEdition>) => {
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.formAnswer = action.payload.formAnswer
+            }
+        },
+        removeFromCart: (state, action: PayloadAction<CartItem>) => {
+            state.cart = state.cart.filter((item) => item.id !== action.payload.id)
+            const fieldsWithFile: string[] = action.payload.product.form.fields.filter(({type}) => type === 'file').map(({id}) => id),
+                anwsersWithFile: IFieldAnswer[] = action.payload.formAnswer.answers.filter(({fieldId}) => fieldsWithFile.includes(fieldId))
+            
+            anwsersWithFile.forEach((answer) => {
+                apiDeleteFile(answer.value as string)
+            })
         },
         updateQuantity: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
             const { id, quantity } = action.payload
             const item = state.cart.find((item) => item.product._id === id)
             if (item) {
                 item.quantity = quantity
-                item.total = item.product.amount * quantity
             }
         },
         clearCart: (state) => {
@@ -49,6 +88,6 @@ export const cartSlice = createSlice({
 
 })
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } = cartSlice.actions
+export const { addToCart, removeFromCart, updateQuantity, clearCart, editSizesCartItem, editFormAnswerCartItem } = cartSlice.actions
 
 export default cartSlice.reducer

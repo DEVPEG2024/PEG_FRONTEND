@@ -52,13 +52,13 @@ const ProductsLists = () => {
     
     const onActivate = (id: string, checked: boolean) => {
         dispatch(putStatusProduct({id}))
-        if(!checked){
+        if (!checked){
             toast.push(
                 <Notification type="success" title="Activé">
                   Produit activé avec succès
                 </Notification>
             )
-        }else{
+        } else{
             toast.push(
               <Notification type="danger" title="Désactivé">
                 Produit désactivé avec succès
