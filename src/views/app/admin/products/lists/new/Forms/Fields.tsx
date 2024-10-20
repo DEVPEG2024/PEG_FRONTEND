@@ -5,7 +5,7 @@ import { FormItem } from "@/components/ui/Form";
 import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
 import { Select, Switcher } from "@/components/ui";
 import { OptionsFields, IProduct } from "@/@types/product";
-import {  SIZE_OPTIONS } from "@/utils/forms";
+import { SIZE_OPTIONS } from "@/utils/forms";
 import { useAppSelector } from "../../../store";
 
 type Options = {
@@ -33,7 +33,7 @@ type BasicInformationFields = {
   setSelectedCategories: (value: string[]) => void;
   setSelectedCustomers: (value: string[]) => void;
   forms: Options[];
-  setSelectedForms: (value: string) => void;
+  setSelectedForms: (value: string[]) => void;
 };
 
 const BasicInformationFields = (props: BasicInformationFields) => {
@@ -43,7 +43,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     type,
     sizeField,
     setSizeField,
- 
+
     sizeSelected,
     setSizeSelected,
     customersCategories,
@@ -55,7 +55,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     setSelectedCategories,
     setSelectedCustomers
   } = props;
-  
+
 
   return (
     <AdaptableCard divider className="mb-4">
@@ -165,12 +165,12 @@ const BasicInformationFields = (props: BasicInformationFields) => {
           <span>Activer le choix des tailles</span>
         </div>
         <div className="flex flex-col gap-2">
-        <p className="font-bold mb-2">Formulaires</p>
-        <Select
-            placeholder="Choisir un ou plusieurs client(s)"
+          <p className="font-bold mb-2">Formulaires</p>
+          <Select
+            placeholder="Choisir un ou plusieurs formulaire(s)"
             options={forms}
             onChange={(e) =>
-              setSelectedForms(e?.value as string)
+              setSelectedForms(e?.value as string[])
             }
           />
         </div>
@@ -213,7 +213,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
         </div>
       )}
 
-      <FormItem label="Description" labelClass="!justify-start">
+      <FormItem label="Description" labelClass="!justify-start" invalid={(errors.description && touched.description) as boolean} errorMessage={errors.description}>
         <Field name="description">
           {({ field, form }: FieldProps) => (
             <RichTextEditor
