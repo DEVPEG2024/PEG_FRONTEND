@@ -11,6 +11,7 @@ import { Upload } from '@/components/ui'
 import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config'
 import { useAppSelector } from '../../../store'
 import { OptionsFields, IProduct } from '@/@types/product'
+import { apiDeleteFile, apiUploadFile } from '@/services/FileServices'
 
 interface Options {
     value: string
@@ -51,9 +52,8 @@ type ProductForm = {
     setSelectedCustomers: (value: string[]) => void
     forms: Options[]
     setSelectedForms: (value: string) => void
+    setImagesName: (value: string[]) => void
 }
-
-
 
 const validationSchema = Yup.object().shape({
     title: Yup.string().required('Nom de la saisie requis'),
@@ -62,12 +62,9 @@ const validationSchema = Yup.object().shape({
     description: Yup.string().required('Description requise'),
 })
 
-
-
 const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   const { product } = useAppSelector((state) => state.products.data)
  
-
     const {
       type,
       sizeField,
@@ -95,10 +92,13 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
      
       setSelectedCustomersCategories,
       setSelectedCategories,
-      setSelectedCustomers
+      setSelectedCustomers,
+      setImagesName
     } = props;
-    const onFileUpload = async (
-      files: File[],
+
+    const onFileAdd = async (
+      file: File,
+      currentFileNames: string[],
       setFieldValue: (
         field: string,
         value: any,
@@ -106,30 +106,37 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       ) => void,
       field: string,
     ) => {
-      const formData = new FormData();
-      formData.append("file", files[0]);
       try {
-        const fileNames = [];
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append("file", file);
-          try {
-            const response = await fetch(API_BASE_URL + "/upload", {
-              method: "POST",
-              body: formData,
-            });
-            const data = await response.json();
-            fileNames.push(data.fileName);
-          } catch (error) {
-            console.error("Erreur lors de l'upload du fichier :", error);
-          }
-        }
-        setFieldValue(field, fileNames);
+        const data = await apiUploadFile(file),
+          newFileNames = [...currentFileNames, data.fileName]
+
+        setFieldValue(field, newFileNames)
+        setImagesName(newFileNames)
       } catch (error) {
-        console.error("Erreur lors de l'upload du fichier :", error);
+          console.error("Erreur lors de l'upload du fichier :", error);
       }
     };
   
+    const onFileRemove = async (
+      file: string,
+      currentFileNames: string[],
+      setFieldValue: (
+        field: string,
+        value: any,
+        shouldValidate?: boolean,
+      ) => void,
+      field: string,
+    ) => {
+      try {
+        await apiDeleteFile(file)
+        const newFileNames = currentFileNames.filter((fileName) => fileName !== file)
+        
+        setFieldValue(field, newFileNames)
+        setImagesName(newFileNames)
+      } catch (error) {
+          console.error("Erreur lors de l'upload du fichier :", error);
+      }
+    };
 
   const beforeUpload = (files: FileList | null) => {
       let valid: string | boolean = true
@@ -212,9 +219,10 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                       draggable
                       uploadLimit={4}
                       beforeUpload={beforeUpload}
-                      onChange={(files) =>
-                        onFileUpload(files, setFieldValue, "images")
+                      onFileAdd={(file) =>
+                        onFileAdd(file, values.images, setFieldValue, "images")
                       }
+                      onFileRemove={(file) => onFileRemove(file, values.images, setFieldValue, "images")}
                       field={{ name: "images" }}
                     />
                   </div>

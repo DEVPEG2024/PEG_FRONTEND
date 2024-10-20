@@ -167,7 +167,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
         <div className="flex flex-col gap-2">
         <p className="font-bold mb-2">Formulaires</p>
         <Select
-            placeholder="Choisir un ou plusieurs client(s)"
+            placeholder="Choisir un ou plusieurs formulaire(s)"
             options={forms}
             onChange={(e) =>
               setSelectedForms(e?.value as string)
@@ -213,7 +213,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
         </div>
       )}
 
-      <FormItem label="Description" labelClass="!justify-start">
+      <FormItem label="Description" labelClass="!justify-start" invalid={(errors.description && touched.description) as boolean} errorMessage={errors.description}>
         <Field name="description">
           {({ field, form }: FieldProps) => (
             <RichTextEditor
