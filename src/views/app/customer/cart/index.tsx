@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import { apiCreateOrder } from '@/services/OrderServices';
 import { IOrder } from '@/@types/order';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
+import { useState } from 'react';
 
 type CreateOrderRequest = {
   order: IOrder
@@ -23,6 +24,7 @@ function Cart() {
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isSubmitting, setSubmitting] = useState<boolean>(false)
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item))
@@ -86,10 +88,12 @@ function Cart() {
   }
 
   const validateCart = async () => {
+    setSubmitting(true)
     const paymentValidated = await validatePayment()
     if (paymentValidated) {
       await createOrderAndClearCart()
     }
+    setSubmitting(false)
   }
 
   if (cart.length === 0) {
@@ -162,7 +166,7 @@ function Cart() {
               <hr className="my-6" />
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap gap-4">
-                  <Button variant="solid" className="w-full" onClick={validateCart}>
+                  <Button variant="solid" className="w-full" onClick={validateCart} loading={isSubmitting}>
                     Valider le panier
                   </Button>
                 </div>

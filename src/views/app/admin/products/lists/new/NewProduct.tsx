@@ -12,6 +12,7 @@ import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer'
 import { apiNewProduct } from '@/services/ProductServices'
 import { apiGetForms } from '@/services/FormServices'
 import { IForm } from '@/@types/form'
+import { apiDeleteFile } from '@/services/FileServices'
 
 interface Options {
     value: string
@@ -30,11 +31,25 @@ const NewSaisie = () => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
     const [forms, setForms] = useState<Options[]>([])
-    const [selectedForms, setSelectedForms] = useState<string>("")
+    const [selectedForms, setSelectedForms] = useState<string[]>([])
+    const [imagesName, setImagesName] = useState<string[]>([])
+    const [isFirstRender, setFirstRender] = useState<boolean>(true)
+    const [isSubmitted, setSubmitted] = useState<boolean>(false)
 
     const { getCustomers } = useCustomer()
     const { getCategoriesCustomers } = useCategoryCustomer()
     const { getCategoriesProduct } = useCategoryProduct()
+
+    useEffect(() => {
+        if (isFirstRender) {
+          setFirstRender(false)
+        }
+        return () => {
+          if (!isFirstRender && !isSubmitted) {
+            removeAllFilesFromDisk()
+          }
+        }
+      }, [isFirstRender])
 
     useEffect(() => {
         fetchCustomers()
@@ -82,41 +97,50 @@ const NewSaisie = () => {
             setCategories(categories)
     }
 
+    const removeAllFilesFromDisk = async () : Promise<void>=> {
+        try {
+            for (const file of imagesName) {
+                await apiDeleteFile(file)
+            }
+        } catch (error) {
+            console.error("Erreur lors de la suppression du fichier :", error);
+        }
+      };
+
     const handleFormSubmit = async (
         values: FormModel,
-        
         setSubmitting: SetSubmitting
     ) => {
         setSubmitting(true)
-            const data ={
-                ...values,
-                field_text: field_text,
-                sizes: {
-                    status : sizeSelected,
-                    options: sizeField
-                },
-                form: selectedForms,
-                customersCategories: selectedCustomersCategories,
-                category: selectedCategories,
-                customers: selectedCustomers,
-            }
-            const response = await apiNewProduct(data)
-            if (response.status === 200) {
-              toast.push(
-                <Notification type="success" title="Succès">
-                  Le produit a bien été ajouté
-                </Notification>
-              );
-              navigate("/admin/store/lists");
-            } else {
-              toast.push(
-                <Notification type="danger" title="Erreur">
-                  Une erreur est survenue lors de l'ajout du produit
-                </Notification>
-              );
-            }
-                setSubmitting(false)
-     
+        const data ={
+            ...values,
+            field_text: field_text,
+            sizes: {
+                status : sizeSelected,
+                options: sizeField
+            },
+            form: selectedForms,
+            customersCategories: selectedCustomersCategories,
+            category: selectedCategories,
+            customers: selectedCustomers,
+        }
+        const response = await apiNewProduct(data)
+        if (response.status === 200) {
+            toast.push(
+            <Notification type="success" title="Succès">
+                Le produit a bien été ajouté
+            </Notification>
+            );
+            setSubmitted(true)
+            navigate("/admin/store/lists");
+        } else {
+            toast.push(
+            <Notification type="danger" title="Erreur">
+                Une erreur est survenue lors de l'ajout du produit
+            </Notification>
+            );
+        }
+        setSubmitting(false)
     }
     const handleDiscard = () => {
         navigate('/admin/store/lists')
@@ -141,7 +165,7 @@ const NewSaisie = () => {
                 setSelectedCustomersCategories={setSelectedCustomersCategories}
                 setSelectedCategories={setSelectedCategories}
                 setSelectedCustomers={setSelectedCustomers}
-               
+                setImagesName={setImagesName}
             />
         </>
     )
