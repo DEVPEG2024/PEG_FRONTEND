@@ -22,6 +22,10 @@ export async function apiDeleteFile(fileName: string) {
     });
 }
 
+export async function apiDeleteFiles(filesName: string[]) {
+    await Promise.all(filesName.map(fileName => apiDeleteFile(fileName)));
+}
+
 export async function apiGetFile(fileName: string): Promise<File> {
     const response = await fetch(API_BASE_URL + "/upload/" + fileName, {
         method: "GET"
