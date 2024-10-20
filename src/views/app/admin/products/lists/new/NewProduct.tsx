@@ -19,11 +19,16 @@ interface Options {
     label: string
 }
 
+export type FileNameBackFront = {
+    fileNameBack: string
+    fileNameFront: string
+}
+
 const NewSaisie = () => {
     const navigate = useNavigate()
     const [sizeSelected, setSizeSelected] = useState(false);
     const [sizeField, setSizeField] = useState<OptionsFields[]>([])
-    const [field_text, setField_text] = useState(false)    
+    const [field_text, setField_text] = useState(false)
     const [customers, setCustomers] = useState<Options[]>([])
     const [customersCategories, setCustomersCategories] = useState<Options[]>([])
     const [categories, setCategories] = useState<Options[]>([])
@@ -32,7 +37,7 @@ const NewSaisie = () => {
     const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
     const [forms, setForms] = useState<Options[]>([])
     const [selectedForms, setSelectedForms] = useState<string[]>([])
-    const [imagesName, setImagesName] = useState<string[]>([])
+    const [imagesName, setImagesName] = useState<FileNameBackFront[]>([])
     const [isFirstRender, setFirstRender] = useState<boolean>(true)
     const [isSubmitted, setSubmitted] = useState<boolean>(false)
 
@@ -42,14 +47,14 @@ const NewSaisie = () => {
 
     useEffect(() => {
         if (isFirstRender) {
-          setFirstRender(false)
+            setFirstRender(false)
         }
         return () => {
-          if (!isFirstRender && !isSubmitted) {
-            removeAllFilesFromDisk()
-          }
+            if (!isFirstRender && !isSubmitted) {
+                removeAllFilesFromDisk()
+            }
         }
-      }, [isFirstRender])
+    }, [isFirstRender])
 
     useEffect(() => {
         fetchCustomers()
@@ -57,7 +62,7 @@ const NewSaisie = () => {
         fetchCategories()
         fetchForms()
     }, [])
-   const fetchForms = async () => {
+    const fetchForms = async () => {
         const response = await apiGetForms(1, 1000, "")
         const formsList = response.data.forms || []
         const forms = formsList.map((form: IForm) => ({
@@ -69,54 +74,54 @@ const NewSaisie = () => {
     const fetchCustomers = async () => {
         const response = await getCustomers(1, 1000, "")
         const customersList = response.data || []
-            const customers = customersList.map((customer: IUser) => ({
-                value: customer._id || "",
-                label: customer.firstName + " " + customer.lastName
-            }))
-            setCustomers(customers)
+        const customers = customersList.map((customer: IUser) => ({
+            value: customer._id || "",
+            label: customer.firstName + " " + customer.lastName
+        }))
+        setCustomers(customers)
 
     }
 
     const fetchCustomersCategories = async () => {
         const response = await getCategoriesCustomers(1, 1000, "")
         const customersCategoriesList = response.data || []
-            const customersCategories = customersCategoriesList.map((customerCategory: ICategoryCustomer) => ({
-                value: customerCategory._id || "",
-                label: customerCategory.label || ""
-            }))
-            setCustomersCategories(customersCategories)
+        const customersCategories = customersCategoriesList.map((customerCategory: ICategoryCustomer) => ({
+            value: customerCategory._id || "",
+            label: customerCategory.label || ""
+        }))
+        setCustomersCategories(customersCategories)
     }
 
     const fetchCategories = async () => {
         const response = await getCategoriesProduct(1, 1000, "")
         const categoriesList = response.data || []
-            const categories = categoriesList.map((category: ICategory) => ({
-                value: category._id || "",
-                label: category.title || ""
-            }))
-            setCategories(categories)
+        const categories = categoriesList.map((category: ICategory) => ({
+            value: category._id || "",
+            label: category.title || ""
+        }))
+        setCategories(categories)
     }
 
-    const removeAllFilesFromDisk = async () : Promise<void>=> {
+    const removeAllFilesFromDisk = async (): Promise<void> => {
         try {
             for (const file of imagesName) {
-                await apiDeleteFile(file)
+                await apiDeleteFile(file.fileNameBack)
             }
         } catch (error) {
             console.error("Erreur lors de la suppression du fichier :", error);
         }
-      };
+    };
 
     const handleFormSubmit = async (
         values: FormModel,
         setSubmitting: SetSubmitting
     ) => {
         setSubmitting(true)
-        const data ={
+        const data = {
             ...values,
             field_text: field_text,
             sizes: {
-                status : sizeSelected,
+                status: sizeSelected,
                 options: sizeField
             },
             form: selectedForms,
@@ -127,17 +132,17 @@ const NewSaisie = () => {
         const response = await apiNewProduct(data)
         if (response.status === 200) {
             toast.push(
-            <Notification type="success" title="Succès">
-                Le produit a bien été ajouté
-            </Notification>
+                <Notification type="success" title="Succès">
+                    Le produit a bien été ajouté
+                </Notification>
             );
             setSubmitted(true)
             navigate("/admin/store/lists");
         } else {
             toast.push(
-            <Notification type="danger" title="Erreur">
-                Une erreur est survenue lors de l'ajout du produit
-            </Notification>
+                <Notification type="danger" title="Erreur">
+                    Une erreur est survenue lors de l'ajout du produit
+                </Notification>
             );
         }
         setSubmitting(false)
@@ -165,6 +170,7 @@ const NewSaisie = () => {
                 setSelectedCustomersCategories={setSelectedCustomersCategories}
                 setSelectedCategories={setSelectedCategories}
                 setSelectedCustomers={setSelectedCustomers}
+                imagesName={imagesName}
                 setImagesName={setImagesName}
             />
         </>

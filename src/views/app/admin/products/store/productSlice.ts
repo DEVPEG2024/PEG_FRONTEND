@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { IProduct } from '@/@types/product'
 import { apiGetProducts, apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsByCategory, apiNewProduct } from '@/services/ProductServices'
+import { apiDeleteFiles } from '@/services/FileServices'
 
 type Products = IProduct[]
 
@@ -84,10 +85,15 @@ export const updateProduct = createAsyncThunk(
 }
 );
 
+type DeleteProductRequest = {
+  product: IProduct;
+}
+
 export const deleteProduct = createAsyncThunk(
   SLICE_NAME + "/deleteProduct",
-  async (data: PutStatusProductRequest) => {
-    const response = await apiDeleteProduct(data.id)
+  async (data: DeleteProductRequest, {getState}) => {
+    const response = await apiDeleteProduct(data.product._id)
+    apiDeleteFiles(data.product.images)
     return response.data
 }
 );
