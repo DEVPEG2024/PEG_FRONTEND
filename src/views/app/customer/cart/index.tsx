@@ -122,7 +122,7 @@ function Cart() {
                     <div className="flex justify-between items-center">
                       <div className='flex items-center gap-2'>
                         <img
-                          src={API_URL_IMAGE + item.product.images[0]}
+                          src={item.product.images[0].fileNameBack}
                           alt={item.product.title}
                           className="w-20 h-20 object-cover rounded-md"
                         />

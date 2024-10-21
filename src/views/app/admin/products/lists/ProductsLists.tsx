@@ -17,7 +17,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Button, Card, Dialog, Notification, Switcher, Tooltip, toast } from '@/components/ui'
 import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi'
 import { isEmpty } from 'lodash'
-import { API_URL_IMAGE } from '@/configs/api.config';
 import { IProduct } from '@/@types/product';
 
 injectReducer("products", reducer);
@@ -104,7 +103,7 @@ const ProductsLists = () => {
             <Card key={product._id}>
               <div className="flex flex-col gap-4">
                 <img
-                  src={API_URL_IMAGE + product.images[0]}
+                  src={product.images[0]?.fileNameBack}
                   alt={product.title}
                   className=" rounded-lg bg-yellow-400"
                   style={{

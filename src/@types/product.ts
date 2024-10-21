@@ -1,3 +1,4 @@
+import { FileNameBackFront } from "@/views/app/admin/products/product/Product";
 import { IForm } from "./form";
 
 export type IProduct = {
@@ -8,10 +9,10 @@ export type IProduct = {
   amount: number, //TODO: remplacer par 'price'
   stock: number,
   category: string[],
-  form: IForm,
+  form?: IForm,
   customersCategories: string[],
   customers: string[],
-  images: string[],
+  images: FileNameBackFront[],
   isActive: boolean,
   isDeleted: boolean,
   date: string,

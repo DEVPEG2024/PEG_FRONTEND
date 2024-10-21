@@ -62,7 +62,7 @@ const ShowCustomerProduct = () => {
           <div className="flex flex-col lg:flex-row items-center justify-between">
             <div className="lg:w-1/2 w-full">
               <img
-                src={API_URL_IMAGE + product?.images[0]}
+                src={product?.images[0].fileNameBack}
                 alt={product?.title}
                 className="w-full h-auto rounded-lg shadow-md object-cover"
               />

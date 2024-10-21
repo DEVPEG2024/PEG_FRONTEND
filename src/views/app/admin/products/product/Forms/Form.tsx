@@ -8,10 +8,11 @@ import cloneDeep from 'lodash/cloneDeep'
 import { AiOutlineSave } from 'react-icons/ai'
 import * as Yup from 'yup'
 import { Upload } from '@/components/ui'
-import { useAppSelector } from '../../../store'
+import { useAppSelector } from '../../store'
 import { OptionsFields, IProduct } from '@/@types/product'
 import { apiDeleteFile, apiUploadFile } from '@/services/FileServices'
-import { FileNameBackFront } from '../NewProduct'
+import { FileNameBackFront } from '../Product'
+import { FileItem } from '@/@types/formAnswer'
 
 interface Options {
   value: string
@@ -51,9 +52,10 @@ type ProductForm = {
   setSelectedCategories: (value: string[]) => void
   setSelectedCustomers: (value: string[]) => void
   forms: Options[]
-  setSelectedForms: (value: string[]) => void
+  setSelectedForm: (value: string) => void
   imagesName: FileNameBackFront[]
   setImagesName: (value: FileNameBackFront[]) => void
+  images: FileItem[]
 }
 
 const validationSchema = Yup.object().shape({
@@ -75,7 +77,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     sizeSelected,
     setSizeSelected,
     forms,
-    setSelectedForms,
+    setSelectedForm,
     initialData = {
       _id: product?._id || "",
       title: product?.title || "",
@@ -84,6 +86,15 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       images: product?.images || [],
       reference: product?.reference || "",
       description: product?.description || "",
+      sizes: {
+        status: product?.sizes?.status || false,
+        options: product?.sizes?.options || {}
+      },
+      field_text: product?.field_text || false,
+      customersCategories: product?.customersCategories || [],
+      category: product?.category || [],
+      customers: product?.customers || [],
+      form: product?.form || '',
     },
     onFormSubmit,
     onDiscard,
@@ -95,7 +106,8 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     setSelectedCategories,
     setSelectedCustomers,
     imagesName,
-    setImagesName
+    setImagesName,
+    images
   } = props;
 
   const onFileAdd = async (
@@ -106,19 +118,23 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       shouldValidate?: boolean,
     ) => void,
     field: string,
+    setSubmitting: (isSubmitting: boolean) => void
   ) => {
     try {
+      setSubmitting(true)
       const data = await apiUploadFile(file),
-        newFileNames = [...imagesName, { fileNameFront: file.name, fileNameBack: data.fileName }]
+        newFileNames = [...imagesName, { fileNameFront: file.name, fileNameBack: data.fileUrl }]
 
       setFieldValue(field, newFileNames.map(({ fileNameBack }) => fileNameBack))
       setImagesName(newFileNames)
+      setSubmitting(false)
     } catch (error) {
       console.error("Erreur lors de l'upload du fichier :", error);
+      setSubmitting(false)
     }
   };
 
-  const onFileRemove = async (
+  const onFileRemove = (
     file: string,
     setFieldValue: (
       field: string,
@@ -129,7 +145,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   ) => {
     try {
       const fileNameBack: string = imagesName.find(({ fileNameFront }) => fileNameFront === file)?.fileNameBack ?? ""
-      await apiDeleteFile(fileNameBack)
+      apiDeleteFile(fileNameBack)
       const newFileNames = imagesName.filter(({ fileNameFront }) => fileNameFront !== file)
 
       setFieldValue(field, newFileNames.map(({ fileNameBack }) => fileNameBack))
@@ -186,7 +202,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
           onFormSubmit?.(formData, setSubmitting);
         }}
       >
-        {({ values, setFieldValue, touched, errors, isSubmitting }) => (
+        {({ values, setFieldValue, touched, errors, isSubmitting, setSubmitting }) => (
           <Form>
             <FormContainer>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -197,7 +213,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     values={values}
                     type={type}
                     forms={forms}
-                    setSelectedForms={setSelectedForms}
+                    setSelectedForm={setSelectedForm}
                     sizeSelected={sizeSelected}
                     setSizeSelected={setSizeSelected}
                     sizeField={sizeField}
@@ -221,10 +237,11 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
                     onFileAdd={(file) =>
-                      onFileAdd(file, setFieldValue, "images")
+                      onFileAdd(file, setFieldValue, "images", setSubmitting)
                     }
                     onFileRemove={(file) => onFileRemove(file, setFieldValue, "images")}
                     field={{ name: "images" }}
+                    fileList={images.map(({file}) => file)}
                   />
                 </div>
               </div>
