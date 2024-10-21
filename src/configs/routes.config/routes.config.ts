@@ -88,7 +88,23 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/products/lists")),
     authority: [SUPER_ADMIN],
   },
+
+
   {
+    key: "admin.store.new",
+    path: "/admin/store/new",
+    component: lazy(() => import("@/views/app/admin/products/product/index")), // TODO: pourquoi devoir mettre index ?
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.store.edit",
+    path: "/admin/store/edit/:id",
+    component: lazy(() => import("@/views/app/admin/products/product/index")),
+    authority: [SUPER_ADMIN],
+  },
+
+
+  /*{
     key: "admin.store.new",
     path: "/admin/store/new",
     component: lazy(() => import("@/views/app/admin/products/lists/new")),
@@ -99,7 +115,7 @@ const protectedAdminRoutes = [
     path: "/admin/store/edit/:id",
     component: lazy(() => import("@/views/app/admin/products/lists/edit")),
     authority: [SUPER_ADMIN],
-  },
+  },*/
   {
     key: "admin.store.categories",
     path: "/admin/store/categories",
