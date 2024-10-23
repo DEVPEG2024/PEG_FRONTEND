@@ -9,7 +9,6 @@ import reducer, {
   getProductById,
   setSizesSelected
 } from "./store";
-import { API_URL_IMAGE } from '@/configs/api.config';
 import { addToCart, CartItemSizeEdition, editSizesCartItem } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
@@ -57,8 +56,11 @@ const ShowProduct = () => {
   }, [isFirstRender])
 
   useEffect(() => {
-    setCanAddToCart(Boolean(sizesSelected.length > 0 && (!product?.form || formCompleted)))
-  }, [sizesSelected, formCompleted])
+    setCanAddToCart(
+      ((product?.sizes?.status && sizesSelected.length > 0) || !product?.sizes?.status) &&
+      ((product?.form && formCompleted) || !product?.form)
+    );
+  }, [sizesSelected, formCompleted, product])
 
   const handleAddToCart = () => {
     dispatch(addToCart({ product, formAnswer, sizes: sizesSelected } as CartItem));
@@ -121,7 +123,7 @@ const ShowProduct = () => {
           <div className="flex flex-col lg:flex-row items-center justify-between">
             <div className="lg:w-1/2 w-full">
               <img
-                src={API_URL_IMAGE + product?.images[0]}
+                src={product?.images[0].fileNameBack}
                 alt={product?.title}
                 className="w-full h-auto rounded-lg shadow-md object-cover"
               />

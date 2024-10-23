@@ -93,7 +93,7 @@ export const deleteProduct = createAsyncThunk(
   SLICE_NAME + "/deleteProduct",
   async (data: DeleteProductRequest, {getState}) => {
     const response = await apiDeleteProduct(data.product._id)
-    apiDeleteFiles(data.product.images)
+    apiDeleteFiles(data.product.images.map(({fileNameBack}) => fileNameBack))
     return response.data
 }
 );

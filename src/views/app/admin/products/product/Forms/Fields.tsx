@@ -5,7 +5,7 @@ import { FormItem } from "@/components/ui/Form";
 import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
 import { Select, Switcher } from "@/components/ui";
 import { OptionsFields, IProduct } from "@/@types/product";
-import {  SIZE_OPTIONS } from "@/utils/forms";
+import { SIZE_OPTIONS } from "@/utils/forms";
 
 type Options = {
   label: string;
@@ -32,7 +32,7 @@ type BasicInformationFields = {
   setSelectedCategories: (value: string[]) => void;
   setSelectedCustomers: (value: string[]) => void;
   forms: Options[];
-  setSelectedForms: (value: string) => void;
+  setSelectedForm: (value: string) => void;
 };
 
 const BasicInformationFields = (props: BasicInformationFields) => {
@@ -42,13 +42,13 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     type,
     sizeField,
     setSizeField,
-    forms,
-    setSelectedForms,
     sizeSelected,
     setSizeSelected,
     customersCategories,
     categories,
     customers,
+    forms,
+    setSelectedForm,
     setSelectedCustomersCategories,
     setSelectedCategories,
     setSelectedCustomers
@@ -138,7 +138,6 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             )}
           </Field>
         </div>
-        
         <div className="col-span-1">
           <p className="font-bold mb-2">Catégorie produit</p>
           <Field name="category">
@@ -159,7 +158,6 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             )}
           </Field>
         </div>
-        
         <div className="col-span-1">
           <p className="font-bold mb-2">Client</p>
           <Field name="customers">
@@ -184,34 +182,32 @@ const BasicInformationFields = (props: BasicInformationFields) => {
 
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
-        <Switcher
+          <Switcher
             checked={sizeSelected}
             onChange={() => setSizeSelected(!sizeSelected)}
           />
           <span>Activer le choix des tailles</span>
         </div>
-
-        <div className="col-span-1">
-          <p className="font-bold mb-2">Formulaires</p>
+        <div className="flex flex-col gap-2">
+          <p className="font-bold mb-2">Formulaire</p>
           <Field name="form">
             {({ field, form }: FieldProps) => (
               <Select
                 value={forms.find(option =>{
-                  return field.value._id === option.value
+                  return field.value?._id === option.value
                 })}
                 placeholder="Choisir un formulaire"
                 options={forms}
                 onChange={(selectedOptions) => {
                   const values = selectedOptions?.value ;
                   form.setFieldValue(field.name, values);
-                  setSelectedForms(values as string);
+                  setSelectedForm(values as string);
                 }}
               />
             )}
           </Field>
         </div>
       </div>
-
       {sizeSelected && (
         <div>
           <p className="font-bold text-yellow-500 mb-4">Stocks tailles</p>
@@ -223,10 +219,9 @@ const BasicInformationFields = (props: BasicInformationFields) => {
                   name={option.value}
                   type="number"
                   autoComplete="off"
-                  value={sizeField.find((field) => field.value === option.value)?.stock}
                   component={Input}
-                  onChange={(e : any) => {
-                    // Trouver l'index de l'option actuelle dans le tableau sizeField
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    // Trouver l'index de l'option actuelle dans le tableau adultFields
                     const index = sizeField.findIndex(
                       (field) => field.value === option.value
                     );
@@ -251,7 +246,7 @@ const BasicInformationFields = (props: BasicInformationFields) => {
         </div>
       )}
 
-      <FormItem label="Description" labelClass="!justify-start">
+      <FormItem label="Description" labelClass="!justify-start" invalid={(errors.description && touched.description) as boolean} errorMessage={errors.description}>
         <Field name="description">
           {({ field, form }: FieldProps) => (
             <RichTextEditor

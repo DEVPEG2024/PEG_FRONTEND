@@ -88,7 +88,7 @@ const ProductsLists = () => {
               <Card key={product._id}>
                 <div className="flex flex-col gap-4">
                   <img
-                    src={API_URL_IMAGE + product.images[0]}
+                    src={product.images[0].fileNameBack}
                     alt={product.title}
                     className=" rounded-lg bg-yellow-400"
                     style={{
