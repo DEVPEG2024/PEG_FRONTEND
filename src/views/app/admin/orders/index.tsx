@@ -9,6 +9,10 @@ import reducer, {
   finishOrder,
   useAppSelector,
   showOrder,
+  validatePayment,
+  invalidatePayment,
+  pendOrder,
+  getOrder,
 } from "./store";
 
 import { IOrder } from "@/@types/order";
@@ -44,13 +48,32 @@ const Orders = () => {
     navigate("/common/order/show")
   };
 
-  const handleUpdateStatusOrderFinished = (order: IOrder) => {
-    dispatch(finishOrder({ order, status: 'Termine' }))
+  const handleFinishOrder = async (order: IOrder) => {
+    await dispatch(finishOrder({ order })).unwrap()
+    dispatch(getOrder({ orderId: order._id }))
+  };
+
+  const handlePendOrder = async (order: IOrder) => {
+    await dispatch(pendOrder({ order })).unwrap()
+    dispatch(getOrder({ orderId: order._id }))
+  };
+
+  const handleValidatePaymentStatus = async (order: IOrder) => {
+    await dispatch(validatePayment({ order })).unwrap()
+    dispatch(getOrder({ orderId: order._id }))
+  };
+
+  const handleInvalidatePaymentStatus =async (order: IOrder) => {
+    await dispatch(invalidatePayment({ order })).unwrap()
+    dispatch(getOrder({ orderId: order._id }))
   };
 
   const columns = useColumns(
     handleShowOrder,
-    handleUpdateStatusOrderFinished
+    handleFinishOrder,
+    handlePendOrder,
+    handleValidatePaymentStatus,
+    handleInvalidatePaymentStatus
   );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
