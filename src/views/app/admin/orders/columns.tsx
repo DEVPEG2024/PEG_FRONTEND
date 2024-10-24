@@ -64,24 +64,24 @@ export const useColumns = (
       accessorKey: "paymentStatus",
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
-        const status = row.original.paymentStatus === "PENDING" ? "En attente" : "Effectué";
+        const status = row.original.paymentStatus === 'PENDING' ? "En attente" : "Effectué";
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag
               className={
-                row.original.paymentStatus === "PENDING"
+                row.original.paymentStatus === 'PENDING'
                   ? "bg-yellow-500"
                   : "bg-green-500"
               }
             >
               <p className="text-sm text-white">{status}</p>
             </Tag>
-            <Tooltip title={(row.original.paymentStatus === "PENDING" ? "Valider" : "Invalider") + " le paiement"}>
+            <Tooltip title={(row.original.paymentStatus === 'PENDING' ? "Valider" : "Invalider") + " le paiement"}>
               <Button
-                onClick={() => row.original.paymentStatus === "PENDING" ? handleValidatePaymentStatus(row.original) : handleInvalidatePaymentStatus(row.original)}
+                onClick={() => row.original.paymentStatus === 'PENDING' ? handleValidatePaymentStatus(row.original) : handleInvalidatePaymentStatus(row.original)}
                 size="sm"
                 variant="twoTone"
-                icon={row.original.paymentStatus === "PENDING" ? <HiCheck size={20} /> : <HiBan size={20} />}
+                icon={row.original.paymentStatus === 'PENDING' ? <HiCheck size={20} /> : <HiBan size={20} />}
               />
             </Tooltip>
           </div>
@@ -104,7 +104,7 @@ export const useColumns = (
                 icon={<HiInformationCircle size={20} />}
               />
             </Tooltip>
-            
+
           </div>
         );
       },
@@ -115,24 +115,24 @@ export const useColumns = (
       accessorKey: "status",
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
-        const status = row.original.status === "PENDING" ? "En attente" : "Terminée";
+        const status = row.original.status === 'PENDING' ? "En attente" : "Terminée";
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag
               className={
-                row.original.status === "PENDING"
+                row.original.status === 'PENDING'
                   ? "bg-yellow-500"
                   : "bg-green-500"
               }
             >
               <p className="text-sm text-white">{status}</p>
             </Tag>
-            <Tooltip title={row.original.status === "PENDING" ? "Terminer la commande" : "Mettre en attente"}>
+            <Tooltip title={row.original.status === 'PENDING' ? "Terminer la commande" : "Mettre en attente"}>
               <Button
-                onClick={() => row.original.status === "PENDING" ? handleFinishOrder(row.original) : handlePendOrder(row.original)}
+                onClick={() => row.original.status === 'PENDING' ? handleFinishOrder(row.original) : handlePendOrder(row.original)}
                 size="sm"
                 variant="twoTone"
-                icon={row.original.status === "PENDING" ? <HiCheck size={20} /> : <HiBan size={20} />}
+                icon={row.original.status === 'PENDING' ? <HiCheck size={20} /> : <HiBan size={20} />}
               />
             </Tooltip>
           </div>
