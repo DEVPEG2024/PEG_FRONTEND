@@ -67,12 +67,14 @@ export const cartSlice = createSlice({
         },
         removeFromCart: (state, action: PayloadAction<CartItem>) => {
             state.cart = state.cart.filter((item) => item.id !== action.payload.id)
-            const fieldsWithFile: string[] = action.payload.product.form.fields.filter(({type}) => type === 'file').map(({id}) => id),
-                anwsersWithFile: IFieldAnswer[] = action.payload.formAnswer.answers.filter(({fieldId}) => fieldsWithFile.includes(fieldId))
+            if (action.payload.product.form) {
+                const fieldsWithFile: string[] = action.payload.product.form.fields.filter(({type}) => type === 'file').map(({id}) => id),
+                    anwsersWithFile: IFieldAnswer[] = action.payload.formAnswer.answers.filter(({fieldId}) => fieldsWithFile.includes(fieldId))
             
-            anwsersWithFile.forEach((answer) => {
-                apiDeleteFile(answer.value as string)
-            })
+                anwsersWithFile.forEach((answer) => {
+                    apiDeleteFile(answer.value as string)
+                })
+            }
         },
         updateQuantity: (state, action: PayloadAction<{ id: string, quantity: number }>) => {
             const { id, quantity } = action.payload

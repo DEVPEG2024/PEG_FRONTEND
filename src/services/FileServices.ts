@@ -1,5 +1,7 @@
+import ApiService from './ApiService'
+import { CHANGE_TASK_STATUS_API_URL, DELETE_COMMENT_API_URL, DELETE_FILE_API_URL, DELETE_INVOICES_PROJECT_API_URL, DELETE_PROJECTS_API_URL, DELETE_TASKS_API_URL, GET_INVOICES_PROJECT_API_URL, GET_PROJECTS_API_URL, GET_PROJECTS_CUSTOMER_API_URL, GET_PROJECTS_PRODUCER_API_URL, PAY_PRODUCER_API_URL, POST_COMMENT_API_URL, POST_INVOICES_PROJECT_API_URL, POST_PROJECTS_API_URL, POST_TASKS_API_URL, PUT_INVOICES_PROJECT_API_URL, PUT_PROJECTS_API_URL, PUT_TASKS_API_URL, UPLOAD_FILE_API_URL } from '@/constants/api.constant'
+import { FileItem, FileNameBackFront } from '@/@types/file';
 import { API_BASE_URL } from '@/configs/api.config'
-
 
 export async function apiUploadFile(file: File) {
     const formData = new FormData();
@@ -39,4 +41,24 @@ export async function apiGetFile(fileNameBack: string, fileNameFront: string): P
 
     const blob = await response.blob();
     return new File([blob], fileNameFront, { type: blob.type });
+}
+
+export async function loadFile(fileName: FileNameBackFront): Promise<File | null> {
+    try {
+        return await apiGetFile(fileName.fileNameBack, fileName.fileNameFront)
+    } catch (error) {
+        console.error("Erreur lors de la récupération du fichier :", error);
+    }
+    return null
+};
+
+export async function loadFiles(fileNamesBackFront: FileNameBackFront[]): Promise<FileItem[]> {
+    const files: FileItem[] = []
+    for (const fileNameBackFront of fileNamesBackFront) {
+        const file = await loadFile(fileNameBackFront)
+        if (file) {
+            files.push({ fileNameBackFront, file })
+        }
+    }
+    return files
 }

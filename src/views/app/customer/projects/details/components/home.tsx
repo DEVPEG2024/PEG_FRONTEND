@@ -1,18 +1,12 @@
-import { useEffect, useState, useCallback } from 'react'
-import Button from '@/components/ui/Button'
+import { useEffect, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Loading from '@/components/shared/Loading'
 import Container from '@/components/shared/Container'
-import RichTextEditor from '@/components/shared/RichTextEditor'
-import {
-    HiPencil,
-} from 'react-icons/hi'
 import ReactHtmlParser from 'html-react-parser'
-import debounce from 'lodash/debounce'
 import { IProject } from '@/@types/project'
-import { updateProject } from '@/utils/hooks/projects/useCreateProject'
 import DetailsRight from './detailsRight'
 import { Progress } from '@/components/ui'
+import OrderDetails from './orderDetails'
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
       <div className="text-center">
@@ -59,6 +53,11 @@ const Home = ({project}: {project: IProject}) => {
                   </div>
                 </div>
                 <hr className="my-6" />
+                {project.order ? (
+                <div className="flex items-center justify-between mb-4">
+                  <OrderDetails order={project.order} />
+                </div>
+                ): (
                 <div className="text-base">
                   <div className="flex items-center justify-between mb-4">
                     <h4>Description détaillée :</h4>
@@ -66,7 +65,7 @@ const Home = ({project}: {project: IProject}) => {
                     <div className="prose dark:prose-invert max-w-none text-sm">
                       {ReactHtmlParser(project.fullDescription || "")}
                     </div>
-                </div>
+                </div>)}
               </AdaptableCard>
             </div>
             <DetailsRight project={project} />

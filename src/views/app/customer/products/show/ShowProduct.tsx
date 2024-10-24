@@ -116,28 +116,28 @@ const ShowProduct = () => {
     }
   }
 
-  return (
+  return product && (
     <Container className="h-full">
       <Loading>
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row items-center justify-between">
             <div className="lg:w-1/2 w-full">
               <img
-                src={product?.images[0].fileNameBack}
-                alt={product?.title}
+                src={product.images[0]?.fileNameBack}
+                alt={product.title}
                 className="w-full h-auto rounded-lg shadow-md object-cover"
               />
             </div>
 
             <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
               <div className="flex flex-col justify-between">
-                <h1 className="text-3xl font-bold">{product?.title}</h1>
-                <p className="text-2xl font-semibold">{product?.amount.toFixed(2)} €</p>
+                <h1 className="text-3xl font-bold">{product.title}</h1>
+                <p className="text-2xl font-semibold">{product.amount.toFixed(2)} €</p>
               </div>
 
-              <p className="mt-4 leading-relaxed">{product?.description.replace('<p>', '').replace('</p>', '')}</p>
+              <p className="mt-4 leading-relaxed">{product.description.replace('<p>', '').replace('</p>', '')}</p>
 
-              {product?.sizes.status && (
+              {product.sizes.status ? (
                 <div>
                   <p className="font-bold text-yellow-500 mb-4">Choix des tailles</p>
                   <div className="grid grid-cols-7 gap-4 mb-6">
@@ -156,6 +156,17 @@ const ShowProduct = () => {
                   </div>
                   {sizesSelected.length === 0 && (<p className="mt-4 text-green-600">Veuillez renseigner au moins une taille</p>)}
                 </div>
+              ) : (
+                <div className="flex-auto mt-8 flex-initial w-32">
+                  <span>Quantité</span>
+                  <Input
+                    name="Quantité"
+                    value={sizesSelected.find((sizeSelected) => sizeSelected.value === "DEFAULT")?.quantity}
+                    type="number"
+                    autoComplete="off"
+                    onChange={(e: any) => handleSizesChanged(parseInt(e.target.value), {label: "Default", value: "DEFAULT", stock: 0})}
+                  />
+                </div>
               )}
 
               {onEdition && (
@@ -165,7 +176,7 @@ const ShowProduct = () => {
                   onClick={handleEditSizesCartItem}>Enregistrer les tailles</Button>
               )}
 
-              {product?.form && (
+              {product.form && (
                 <Button
                   className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   onClick={() => handleCompleteForm()}
@@ -184,7 +195,7 @@ const ShowProduct = () => {
           </div>
         </div>
       </Loading>
-      {product?.form && <ModalCompleteForm form={product.form} onEdition={onEdition}/>}
+      {product.form && <ModalCompleteForm form={product.form} onEdition={onEdition}/>}
     </Container>
   );
 }

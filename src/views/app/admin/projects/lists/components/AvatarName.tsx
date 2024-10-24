@@ -3,10 +3,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Tooltip } from '@/components/ui/Tooltip'
 import acronym from '@/utils/acronym';
 
-
-
 const AvatarName = ({ user, type }: {user: IUser, type: string}) => {
-    return (
+    return user && (
       <Tooltip title={user.companyName}>
         <div className="flex items-center gap-2">
           <Avatar className="rounded-full text-white text-lg font-bold">

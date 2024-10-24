@@ -14,7 +14,7 @@ import { IProject } from '@/@types/project'
 import { updateProject } from '@/utils/hooks/projects/useCreateProject'
 import DetailsRight from './detailsRight'
 import { Progress } from '@/components/ui'
-import { useNavigate } from 'react-router-dom'
+import OrderDetails from './orderDetails'
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
     <div className="text-center">
@@ -28,7 +28,6 @@ const Home = ({ project }: { project: IProject }) => {
   const [editMode, setEditMode] = useState(false)
   const [description, setDescription] = useState(project.fullDescription)
   const [isUpdating, setIsUpdating] = useState(false)
-  const navigate = useNavigate()
 
   const debounceFn = debounce(handleDebounceFn, 1000)
 
@@ -93,41 +92,46 @@ const Home = ({ project }: { project: IProject }) => {
                 </div>
               </div>
               <hr className="my-6" />
-              <div className="text-base">
+              {project.order ? (
                 <div className="flex items-center justify-between mb-4">
-                  <h4>Description détaillée :</h4>
-                  <div>
-                    {editMode ? (
-                      <Button
-                        block
-                        variant="solid"
-                        onClick={onEditComplete}
-                        loading={isUpdating}
-                      >
-                        Terminer
-                      </Button>
-                    ) : (
-                      <Button
-                        block
-                        icon={<HiPencil />}
-                        onClick={onEditModeActive}
-                      >
-                        Modifier
-                      </Button>
-                    )}
-                  </div>
+                  <OrderDetails order={project.order} />
                 </div>
-                {editMode ? (
-                  <RichTextEditor value={description} onChange={onEdit} />
-                ) : (
-                  <div className="prose dark:prose-invert max-w-none text-sm">
-                    {ReactHtmlParser(description || "")}
+                ): (
+                <div className="text-base">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4>Description détaillée :</h4>
+                    <div>
+                      {editMode ? (
+                        <Button
+                          block
+                          variant="solid"
+                          onClick={onEditComplete}
+                          loading={isUpdating}
+                        >
+                          Terminer
+                        </Button>
+                      ) : (
+                        <Button
+                          block
+                          icon={<HiPencil />}
+                          onClick={onEditModeActive}
+                        >
+                          Modifier
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </AdaptableCard>
-          </div>
-          <DetailsRight project={project} />
+                  {editMode ? (
+                    <RichTextEditor value={description} onChange={onEdit} />
+                  ) : (
+                    <div className="prose dark:prose-invert max-w-none text-sm">
+                      {ReactHtmlParser(description || "")}
+                    </div>
+                  )}
+                </div>)}
+              </AdaptableCard>
+            </div>
+            <DetailsRight project={project} />
         </div>
       </Loading>
     </Container>

@@ -4,7 +4,7 @@ import { IOrder } from "@/@types/order";
 import { SizeSelection } from "@/@types/product";
 
 export const useColumns = (
-  handleShowProduct: (order: IOrder) => void,
+  handleShowOrder: (order: IOrder) => void,
   handleUpdateStatusOrderFinished: (order: IOrder) => void
 ) => {
 
@@ -65,7 +65,7 @@ export const useColumns = (
         return (
           <div className="flex items-center">
             <Button
-              onClick={() => handleShowProduct(row.original)}
+              onClick={() => handleShowOrder(row.original)}
               size="sm"
               variant="twoTone"
               icon={<HiInformationCircle size={20} />}

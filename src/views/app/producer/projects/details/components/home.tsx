@@ -13,6 +13,7 @@ import { IProject } from '@/@types/project'
 import { updateProject } from '@/utils/hooks/projects/useCreateProject'
 import DetailsRight from './detailsRight'
 import { Progress } from '@/components/ui'
+import OrderDetails from './orderDetails'
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
       <div className="text-center">
@@ -59,6 +60,11 @@ const Home = ({project}: {project: IProject}) => {
                   </div>
                 </div>
                 <hr className="my-6" />
+                {project.order ? (
+                <div className="flex items-center justify-between mb-4">
+                  <OrderDetails order={project.order} />
+                </div>
+                ): (
                 <div className="text-base">
                   <div className="flex items-center justify-between mb-4">
                     <h4>Description détaillée :</h4>
@@ -67,6 +73,7 @@ const Home = ({project}: {project: IProject}) => {
                       {ReactHtmlParser(project.fullDescription || "")}
                     </div>
                 </div>
+                )}
               </AdaptableCard>
             </div>
             <DetailsRight project={project} />
