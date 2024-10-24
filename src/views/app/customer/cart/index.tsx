@@ -9,7 +9,6 @@ import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import dayjs from "dayjs";
 import { apiCreateOrder } from '@/services/OrderServices';
-import { IOrder } from '@/@types/order';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { useState } from 'react';
 import { apiCreateProject } from '@/services/ProjectServices';

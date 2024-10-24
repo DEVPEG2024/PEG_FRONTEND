@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice} from '@reduxjs/toolkit'
 import { WritableDraft } from 'immer'
-import { apiGetOrders, apiUpdateStatusOrder } from '@/services/OrderServices'
+import { apiGetOrderById, apiGetOrders, apiUpdatePaymentStatusOrder, apiUpdateStatusOrder } from '@/services/OrderServices'
 import { IOrder } from '@/@types/order'
 import { AppDispatch, injectReducer } from '@/store'
 import showOrderReducer, { setFormAnswer, setSizesSelected, setProduct } from '../../../common/order/show/store'
@@ -29,16 +29,51 @@ export const getOrders = createAsyncThunk(
     }
 )
 
+type GetOrder = {
+    orderId: string
+}
+
+export const getOrder = createAsyncThunk(
+    SLICE_NAME + '/getOrder',
+    async (data: GetOrder) => {
+        const response = await apiGetOrderById(data.orderId);
+        return response.data
+    }
+)
+
 type UpdateStatusOrderFinishedRequest = {
     order: IOrder
-    status: string
 }
 
 export const finishOrder = createAsyncThunk(
     SLICE_NAME + '/updateStatusOrder',
     async (data: UpdateStatusOrderFinishedRequest) => {
-        await apiUpdateStatusOrder(data);   
-        return {status: data.status, order: data.order};
+        await apiUpdateStatusOrder({orderId: data.order._id, status: 'FINISHED'});
+    }
+)
+
+export const pendOrder = createAsyncThunk(
+    SLICE_NAME + '/updateStatusOrder',
+    async (data: UpdateStatusOrderFinishedRequest) => {
+        await apiUpdateStatusOrder({orderId: data.order._id, status: 'PENDING'});
+    }
+)
+
+type UpdatePaymentStatusOrderRequest = {
+    order: IOrder
+}
+
+export const validatePayment = createAsyncThunk(
+    SLICE_NAME + '/updatePaymentStatusOrder',
+    async (data: UpdatePaymentStatusOrderRequest) => {
+        await apiUpdatePaymentStatusOrder({orderId: data.order._id, status: 'RECEIVED'});
+    }
+)
+
+export const invalidatePayment = createAsyncThunk(
+    SLICE_NAME + '/updatePaymentStatusOrder',
+    async (data: UpdatePaymentStatusOrderRequest) => {
+        await apiUpdatePaymentStatusOrder({orderId: data.order._id, status: 'PENDING'});
     }
 )
 
@@ -72,19 +107,17 @@ const orderSlice = createSlice({
         builder.addCase(getOrders.rejected, (state) => {
             state.loading = false
         })
-        builder.addCase(finishOrder.pending, (state) => {
+        // GET ORDER
+        builder.addCase(getOrder.pending, (state) => {
             state.loading = true
         })
-        builder.addCase(finishOrder.fulfilled, (state, action) => {
+        builder.addCase(getOrder.fulfilled, (state, action) => {
             state.loading = false
-            state.orders = state.orders.map((order) => {
-                if (order._id === action.payload.order._id) {
-                    return action.payload.order
-                }   
-                return order
-            })
+            state.orders = state.orders.map((order) =>
+                order._id === action.payload.order._id ? action.payload.order : order
+            );
         })
-        builder.addCase(finishOrder.rejected, (state) => {
+        builder.addCase(getOrder.rejected, (state) => {
             state.loading = false
         })
     }
