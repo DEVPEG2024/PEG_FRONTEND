@@ -7,7 +7,7 @@ import {
     useAppDispatch,
     useAppSelector,
     setFormDialog
-} from "../show/store";
+} from "../store";
 import { IField, IForm } from "@/@types/form";
 import InputSection from "@/views/app/admin/forms/builder/components/fields/input";
 import TextAreaSection from "@/views/app/admin/forms/builder/components/fields/textArea";
@@ -18,28 +18,27 @@ import UploadSection from "@/views/app/admin/forms/builder/components/fields/upl
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
 import { useEffect, useState } from "react";
-import { FileItem } from "@/@types/formAnswer";
-import { apiGetFile } from "@/services/FileServices";
+import { FileItem, FileNameBackFront } from "@/@types/file";
+import { loadFiles } from "@/services/FileServices";
 
 function ModalShowForm({ form }: { form: IForm }) {
     const dispatch = useAppDispatch();
-    const { formDialog, formAnswer } = useAppSelector((state) => state.showCustomerProduct.data)
+    const { formDialog, formAnswer } = useAppSelector((state) => state.showOrder.data)
     const [filesLoaded, setFilesLoaded] = useState<FileItem[]>([])
     const [loading, setLoading] = useState<boolean>(false)
 
     useEffect(() => {
         const fetchFiles = async (): Promise<void> => {
             const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
-            const filesToLoad: string[] = formAnswer?.answers
+            const filesToLoad: FileNameBackFront[] = formAnswer?.answers
                 .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
-                .map((answer) => answer.value)
+                .map((answer) => answer.value as FileNameBackFront[])
                 .flat()
-                .filter((value) => typeof value === 'string') ?? []
-            const fileNamesLoaded: string[] = filesLoaded.map(({ fileName }) => fileName)
-            const filesNotLoaded: string[] = filesToLoad?.filter((fileToLoad) => !fileNamesLoaded.includes(fileToLoad))
-            if (filesNotLoaded.length > 0) {
+                .map((fileNames) => fileNames) ?? []
+
+            if (filesToLoad.length > 0) {
                 setLoading(true)
-                const newFilesLoaded = await loadFiles(filesNotLoaded)
+                const newFilesLoaded: FileItem[] = await loadFiles(filesToLoad)
                 const currentFilesLoaded = filesLoaded
                 currentFilesLoaded.push(...newFilesLoaded)
                 setFilesLoaded(currentFilesLoaded)
@@ -49,28 +48,6 @@ function ModalShowForm({ form }: { form: IForm }) {
 
         fetchFiles()
     }, [])
-
-    const loadFile = async (
-        fileName: string
-    ): Promise<File | null> => {
-        try {
-            return await apiGetFile(fileName)
-        } catch (error) {
-            console.error("Erreur lors de la récupération du fichier :", error);
-        }
-        return null
-    };
-
-    const loadFiles = async (fileNames: string[]): Promise<FileItem[]> => {
-        const files: FileItem[] = []
-        for (const fileName of fileNames) {
-            const file = await loadFile(fileName)
-            if (file) {
-                files.push({ fileName, file })
-            }
-        }
-        return files
-    }
 
     const handleClose = (): void => {
         dispatch(setFormDialog(false));
@@ -99,10 +76,11 @@ function ModalShowForm({ form }: { form: IForm }) {
                 if (loading) {
                     return <Spinner className="mr-4" size={30} />
                 } else {
-                    const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
+                    const fileNamesConcerned: FileNameBackFront[] = fieldAnswer?.value as FileNameBackFront[] ?? [],
                         files: File[] = []
+
                     for (const fileNameConcerned of fileNamesConcerned) {
-                        const file: File | undefined = filesLoaded.find((fileItem) => fileNameConcerned === fileItem.fileName)?.file
+                        const file: File | undefined = filesLoaded.find((fileItem) => fileNameConcerned.fileNameBack === fileItem.fileNameBackFront.fileNameBack)?.file
 
                         if (file) {
                             files.push(file)

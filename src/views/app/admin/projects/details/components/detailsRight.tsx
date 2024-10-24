@@ -113,19 +113,23 @@ const DetailsRight = ({project}: {project: IProject}) => {
                   </span>
                 </IconText>
                 <p className="font-semibold mb-4 mt-8">Producteur</p>
-                <IconText
-                  key={project.producer._id}
-                  className="mb-4"
-                  icon={
-                    <Avatar size={20} shape="circle" icon={<HiUserCircle />} />
-                  }
-                >
-                  <span className="font-semibold text-gray-700 dark:text-gray-100">
-                    {project.producer.firstName +
-                      " " +
-                      project.producer.lastName}
-                  </span>
-                </IconText>
+                {project.producer ? (
+                  <IconText
+                    key={project.producer._id}
+                    className="mb-4"
+                    icon={
+                      <Avatar size={20} shape="circle" icon={<HiUserCircle />} />
+                    }
+                  >
+                    <span className="font-semibold text-gray-700 dark:text-gray-100">
+                      {project.producer.firstName +
+                        " " +
+                        project.producer.lastName}
+                    </span>
+                  </IconText>
+                ) : (
+                  <span className="font-semibold text-gray-700 dark:text-gray-100">A définir</span>
+                )}
               </AdaptableCard>
         </div>
     );

@@ -10,7 +10,6 @@ import reducer, {
   putStatusProduct,
   deleteProduct,
   duplicateProduct,
-
 } from "../store";
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'

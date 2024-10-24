@@ -2,10 +2,8 @@ import { CartItem } from '@/@types/cart';
 import { AdaptableCard, Container, Loading } from '@/components/shared';
 import Empty from '@/components/shared/Empty';
 import { Button } from '@/components/ui';
-import { API_URL_IMAGE } from '@/configs/api.config';
 import { RootState, useAppDispatch, useAppSelector } from '@/store'
 import { editItem, removeFromCart, clearCart } from '@/store/slices/base/cartSlice';
-import { createProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
@@ -14,10 +12,8 @@ import { apiCreateOrder } from '@/services/OrderServices';
 import { IOrder } from '@/@types/order';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { useState } from 'react';
-
-type CreateOrderRequest = {
-  order: IOrder
-}
+import { apiCreateProject } from '@/services/ProjectServices';
+import { IFormAnswer } from '@/@types/formAnswer';
 
 function Cart() {
   const user = useAppSelector(state => state.auth.user)
@@ -35,30 +31,63 @@ function Cart() {
     return true
   }
 
+  const createFormAnswer = async (item: CartItem): Promise<IFormAnswer | null> => {
+    if (item.product.form) {
+      const respFormAnswerCreation = await apiCreateFormAnswer({
+        customer: user._id,
+        product: item.product._id,
+        answers: item.formAnswer.answers,
+        form: item.formAnswer.form
+      })
+
+      return respFormAnswerCreation.data.formAnswer
+    }
+    return null
+  }
+
   const createOrder = async (item: CartItem) => {
-    const respFormAnswerCreation = await apiCreateFormAnswer({
-      customer: user._id,
-      product: item.product._id,
-      answers: item.formAnswer.answers,
-      form: item.formAnswer.form
-    })
-    const respOrderCreation = await apiCreateOrder({
-      customer: user,
-      product: item.product,
-      formAnswer: respFormAnswerCreation.data.formAnswer,
-      orderNumber: 0,
-      sizes: item.sizes,
-      total: item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)
-    })
-    return respOrderCreation.data
+    try {
+      const formAnswer: IFormAnswer | null = await createFormAnswer(item),
+        order = {
+          customer: user,
+          product: item.product,
+          orderNumber: 0,
+          sizes: item.sizes,
+          total: item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)
+        }
+      
+      if (formAnswer) {
+        (order as any).formAnswer = formAnswer
+      }
+      const respOrderCreation = await apiCreateOrder(order)
+      // TODO : envoyer mail création commande OK
+      try {
+        await apiCreateProject({
+          title: "Commande " + item.product.title + " pour " + user.firstName + " " + user.lastName,
+          ref: item.product.title + "_" + user.firstName + "_" + user.lastName + "_" + new Date().toISOString().slice(0, 10),
+          description: "",
+          priority: 'low',
+          status: 'pending',
+          amount: item.product.amount,
+          amountProducers: 0,
+          customer: user._id,
+          order: respOrderCreation.data.order,
+          startDate: dayjs().toDate(),
+          endDate: dayjs().add(30, "day").toDate(),
+        })
+      } catch (error) {
+        // TODO: envoyer mail erreur création projet
+      }
+      return respOrderCreation.data
+    } catch (error) {
+      // TODO: envoyer mail erreur création commande
+    }
   }
 
   const createOrders = async () => {
     try {
-      for (const item of cart) {
-        await createOrder(item)
-      }
-      return { status: 'success' }
+      await Promise.allSettled(cart.map((item) => createOrder(item)));
+      return { status: 'success'}
     } catch (errors: any) {
       return { status: 'failed', message: errors?.response?.data?.message || errors.toString() }
     }
@@ -67,23 +96,8 @@ function Cart() {
   const createOrderAndClearCart = async () => {
     const respOrdersCreation = await createOrders()
     if (respOrdersCreation.status === 'success') {
-      const resp = await createProject({
-        title: "Projet 1",
-        ref: "Test1",
-        description: "",
-        priority: 'low',
-        status: 'pending',
-        amount: cart?.reduce((total, item) => total + item.product.amount, 0),
-        amountProducers: 0,
-        customer: user._id,
-        producer: '66f1657e6b35774dc8e151ae',
-        startDate: dayjs().toDate(),
-        endDate: dayjs().add(30, "day").toDate(),
-      })
-      if (resp.status === 'success') {
-        dispatch(clearCart())
-        navigate('/customer/projects')
-      }
+      dispatch(clearCart())
+      navigate('/customer/projects')
     }
   }
 
@@ -122,7 +136,7 @@ function Cart() {
                     <div className="flex justify-between items-center">
                       <div className='flex items-center gap-2'>
                         <img
-                          src={item.product.images[0].fileNameBack}
+                          src={item.product.images[0]?.fileNameBack}
                           alt={item.product.title}
                           className="w-20 h-20 object-cover rounded-md"
                         />
@@ -131,7 +145,7 @@ function Cart() {
                       <p>{item.product.amount} €</p>
                       <div className='flex-col justify-center gap-2'>
                         {item.sizes.map((size) => (
-                          <p>{size.value} : {size.quantity}</p>
+                          <p>{size.value === "DEFAULT" ? "Quantité" : size.value} : {size.quantity}</p>
                         ))}
                       </div>
                       <p>{item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)} €</p>
