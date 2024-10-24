@@ -23,14 +23,10 @@ import UploadSection from "@/views/app/admin/forms/builder/components/fields/upl
 import ColorSection from "@/views/app/admin/forms/builder/components/fields/color";
 import RadioSection from "@/views/app/admin/forms/builder/components/fields/radio";
 import { useEffect, useState } from "react";
-import { FileItem, IFormAnswer, IFieldAnswer } from "@/@types/formAnswer";
+import { IFormAnswer, IFieldAnswer } from "@/@types/formAnswer";
 import { CartItemFormAnswerEdition, editFormAnswerCartItem } from "@/store/slices/base/cartSlice";
-import { apiDeleteFile, apiGetFile, apiUploadFile } from "@/services/FileServices";
-
-type FileItemAndField = {
-    field: string,
-    fileItem: FileItem
-}
+import { apiDeleteFile, apiUploadFile, loadFiles } from "@/services/FileServices";
+import { FileItem, FileNameBackFront } from "@/@types/file";
 
 function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolean }) {
     const dispatch = useAppDispatch();
@@ -40,22 +36,21 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
         answers: []
     })
     const [filesLoaded, setFilesLoaded] = useState<FileItem[]>([])
-    const [tempFiles, setTempFiles] = useState<FileItemAndField[]>([])
     const [loading, setLoading] = useState<boolean>(false)
+    const [waitToStore, setWaitToStore] = useState<boolean>(false)
 
     useEffect(() => {
         const fetchFiles = async (): Promise<void> => {
             const fieldsFileTypedId: string[] = form.fields.filter(({ type }) => type === 'file').map(({ id }) => id)
-            const filesToLoad: string[] = formAnswer?.answers
+            const filesToLoad: FileNameBackFront[] = formAnswer?.answers
                 .filter((answer) => fieldsFileTypedId.includes(answer.fieldId))
-                .map((answer) => answer.value)
+                .map((answer) => answer.value as FileNameBackFront[])
                 .flat()
-                .filter((value) => typeof value === 'string') ?? []
-            const fileNamesLoaded: string[] = filesLoaded.map(({ fileName }) => fileName)
-            const filesNotLoaded: string[] = filesToLoad?.filter((fileToLoad) => !fileNamesLoaded.includes(fileToLoad))
-            if (filesNotLoaded.length > 0) {
+                .map((fileNames) => fileNames) ?? []
+
+            if (filesToLoad.length > 0) {
                 setLoading(true)
-                const newFilesLoaded = await loadFiles(filesNotLoaded)
+                const newFilesLoaded: FileItem[] = await loadFiles(filesToLoad)
                 const currentFilesLoaded = filesLoaded
                 currentFilesLoaded.push(...newFilesLoaded)
                 setFilesLoaded(currentFilesLoaded)
@@ -66,31 +61,8 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
         fetchFiles()
     }, [])
 
-    const loadFile = async (
-        fileName: string
-    ): Promise<File | null> => {
-        try {
-            return await apiGetFile(fileName)
-        } catch (error) {
-            console.error("Erreur lors de la récupération du fichier :", error);
-        }
-        return null
-    };
-
-    const loadFiles = async (fileNames: string[]): Promise<FileItem[]> => {
-        const files: FileItem[] = []
-        for (const fileName of fileNames) {
-            const file = await loadFile(fileName)
-            if (file) {
-                files.push({ fileName, file })
-            }
-        }
-        return files
-    }
-
     const handleSubmit = async (e: any): Promise<void> => {
         e.preventDefault();
-        await uploadFiles(tempFiles)
         if (onEdition) {
             handleEditFormAnswerCartItem()
         }
@@ -108,24 +80,6 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
         )
     }
 
-    const uploadFiles = async (fileItemsAndField: FileItemAndField[]): Promise<void> => {
-        const currentFilesLoaded = filesLoaded
-        for (const fileItemAndField of fileItemsAndField) {
-            const fileItem: FileItem = fileItemAndField.fileItem,
-                fileName: string | undefined = await uploadFile(fileItem.file),
-                newAnswer: IFieldAnswer | undefined = newFormAnswer.answers.find(({ fieldId }) => fieldId === fileItemAndField.field)
-
-            if (newAnswer && fileName) {
-                const newValue: string[] = [...newAnswer.value.filter((name: string) => name !== fileItem.fileName), fileName]
-                newAnswer.value = newValue
-                newFormAnswer.answers = [...newFormAnswer.answers.filter(({ fieldId }) => fieldId !== fileItemAndField.field), newAnswer]
-                currentFilesLoaded.push({ file: fileItem.file, fileName })
-            }
-        }
-        setFilesLoaded(currentFilesLoaded)
-        setTempFiles([])
-    }
-
     const handleClose = (): void => {
         dispatch(setFormDialog(false));
     };
@@ -136,31 +90,29 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
         try {
             const data = await apiUploadFile(file)
 
-            return data.fileName
+            return data.fileUrl
         } catch (error) {
             console.error("Erreur lors de l'upload du fichier :", error);
         }
     };
 
     const onFileRemove = async (
-        fileName: string, field: string
+        fileNameFront: string, field: string
     ): Promise<void> => {
-        const fileFromFilesLoaded: FileItem | undefined = filesLoaded.find((fileLoaded) => fileLoaded.fileName === fileName)
+        const fileFromFilesLoaded: FileItem | undefined = filesLoaded.find((fileLoaded) => fileLoaded.fileNameBackFront.fileNameFront === fileNameFront)
 
         if (fileFromFilesLoaded) {
             try {
-                await apiDeleteFile(fileName)
+                await apiDeleteFile(fileFromFilesLoaded.fileNameBackFront.fileNameBack)
                 const currentFilesLoaded: FileItem[] = filesLoaded
-                setFilesLoaded(currentFilesLoaded.filter(({ fileName: fileNameCurrentFile }) => fileNameCurrentFile !== fileName))
+                setFilesLoaded(currentFilesLoaded.filter(({ fileNameBackFront: {fileNameFront: fileNameCurrentFile} }) => fileNameCurrentFile !== fileNameFront))
             } catch (error) {
                 console.error("Erreur lors de la suppression du fichier :", error);
             }
-        } else {
-            setTempFiles(tempFiles.filter((tempFile) => tempFile.field !== field || tempFile.fileItem.fileName !== fileName))
         }
 
-        const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field)?.value as string[] ?? []
-        const newAswer = [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field), { fieldId: field, value: currentFiles.filter((file: string) => file !== fileName) }]
+        const currentFiles: FileNameBackFront[] = newFormAnswer.answers.find((answer) => answer.fieldId === field)?.value as FileNameBackFront[] ?? []
+        const newAswer = [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field), { fieldId: field, value: currentFiles.filter((file: FileNameBackFront) => file.fileNameFront !== fileNameFront) }]
         setNewFormAnswer({ ...newFormAnswer, answers: newAswer })
     };
 
@@ -170,12 +122,14 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
                 const dateSelected: Date = value as Date
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: dateSelected?.toISOString() ?? null }]
             case 'file':
-                const file: File = value as File
-                const newTempFiles: FileItemAndField[] = [...tempFiles]
-                newTempFiles.push({ field: field.id, fileItem: { fileName: file.name, file } })
-                setTempFiles(newTempFiles)
-                const currentFiles: string[] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value as string[] ?? []
-                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentFiles, file.name] }]
+                setWaitToStore(true)
+                const file: File = value as File,
+                    fileNameBack: string = await uploadFile(file) as string,
+                    currentFiles: FileNameBackFront[] = newFormAnswer.answers.find((answer) => answer.fieldId === field.id)?.value as FileNameBackFront[] ?? []
+                
+                setFilesLoaded([...filesLoaded, {file, fileNameBackFront: {fileNameBack, fileNameFront: file.name}}])
+                setWaitToStore(false)
+                return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: [...currentFiles, {fileNameBack, fileNameFront: file.name}] }]
             default:
                 const valueSelected: string | string[] = value as string | string[]
                 return [...newFormAnswer.answers.filter((answer) => answer.fieldId !== field.id), { fieldId: field.id, value: valueSelected }]
@@ -207,11 +161,11 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
                 if (loading) {
                     return <Spinner className="mr-4" size={30} />
                 } else {
-                    const fileNamesConcerned: string[] = fieldAnswer?.value as string[] ?? [],
-                        tempFilesItem: FileItem[] = tempFiles.map(({ fileItem }) => fileItem),
+                    const fileNamesConcerned: FileNameBackFront[] = fieldAnswer?.value as FileNameBackFront[] ?? [],
                         files: File[] = []
+
                     for (const fileNameConcerned of fileNamesConcerned) {
-                        const file: File | undefined = [...filesLoaded, ...tempFilesItem].find((fileItem) => fileNameConcerned === fileItem.fileName)?.file
+                        const file: File | undefined = filesLoaded.find((fileItem) => fileNameConcerned.fileNameBack === fileItem.fileNameBackFront.fileNameBack)?.file
 
                         if (file) {
                             files.push(file)
@@ -246,7 +200,7 @@ function ModalCompleteForm({ form, onEdition }: { form: IForm, onEdition: boolea
                         >
                             {t("cancel")}
                         </Button>
-                        <Button variant="solid" onClick={handleSubmit}>
+                        <Button variant="solid" onClick={handleSubmit} loading={waitToStore}>
                             {t("save")}
                         </Button>
                     </div>

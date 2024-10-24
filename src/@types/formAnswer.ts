@@ -1,3 +1,5 @@
+import { FileNameBackFront } from "./file";
+
 export type IFormAnswer = {
   form: string;
   answers: IFieldAnswer[]
@@ -5,10 +7,5 @@ export type IFormAnswer = {
 
 export type IFieldAnswer = {
   fieldId: string;
-  value: string | string[];
-}
-
-export type FileItem = {
-  fileName: string;
-  file: File;
+  value: string | string[] | FileNameBackFront[];
 }

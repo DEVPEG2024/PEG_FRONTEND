@@ -1,9 +1,8 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { IProduct, SizeSelection } from '@/@types/product';
-import { apiGetProductById } from '@/services/ProductServices';
 import { IFormAnswer } from '@/@types/formAnswer';
 
-export const SLICE_NAME = 'showCustomerProduct'
+export const SLICE_NAME = 'showOrder'
 
 export type StateData = {
     loading: boolean
@@ -21,15 +20,7 @@ const initialState: StateData = {
   sizesSelected: []
 };
 
-export const getProductById = createAsyncThunk(
-    SLICE_NAME + '/getProduct',
-    async (id: string) => {
-        const response = await apiGetProductById(id)
-        return response.data
-    }
-)
-
-const productSlice = createSlice({
+const showOrderSlice = createSlice({
     name: `${SLICE_NAME}/state`,
     initialState,
     reducers: {
@@ -38,6 +29,9 @@ const productSlice = createSlice({
         },
         setFormAnswer: (state, action) => {
             state.formAnswer = action.payload
+        },
+        setProduct: (state, action) => {
+            state.product = action.payload
         },
         setSizesSelected: (state, action) => {
             state.sizesSelected = action.payload
@@ -48,18 +42,6 @@ const productSlice = createSlice({
             state.sizesSelected = []
             state.formAnswer = null
         },
-    },
-    extraReducers: (builder) => {
-        builder.addCase(getProductById.pending, (state) => {
-            state.loading = true;
-        });
-        builder.addCase(getProductById.fulfilled, (state, action) => {
-            state.loading = false;
-            state.product = action.payload.product as unknown as IProduct;
-        });
-        builder.addCase(getProductById.rejected, (state) => {
-            state.loading = false;
-        });
     }
 })
 
@@ -67,7 +49,8 @@ export const {
     clearState,
     setFormDialog,
     setFormAnswer,
+    setProduct,
     setSizesSelected
-} = productSlice.actions
+} = showOrderSlice.actions
 
-export default productSlice.reducer
+export default showOrderSlice.reducer

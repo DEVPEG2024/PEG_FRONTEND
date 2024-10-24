@@ -131,7 +131,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.product",
     path: "/admin/product/:id",
-    component: lazy(() => import("@/views/app/admin/products/show")),
+    component: lazy(() => import("@/views/app/common/order/show")),
     authority: [SUPER_ADMIN],
   },
   //orders
@@ -329,6 +329,19 @@ const protectedProducerRoutes = [
     authority: [PRODUCER],
   },
 ];
+
+const protectedCommonRoutes = [
+  {
+    key: "common.order.show",
+    path: "/common/order/show",
+    component: lazy(() => import("@/views/app/common/order/show")),
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, ADMIN],
+    meta: {
+      pageContainerType: "gutterless",
+    },
+  }
+]
+
 const protectedDefaultRoutes = [
   {
     key: "home",
@@ -356,5 +369,6 @@ export const protectedRoutes = [
   ...protectedAdminRoutes,
   ...protectedCustomersRoutes,
   ...protectedProducerRoutes,
+  ...protectedCommonRoutes,
   ...protectedDefaultRoutes,
 ];

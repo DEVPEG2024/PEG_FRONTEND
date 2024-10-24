@@ -1,3 +1,4 @@
+import { IOrder } from "./order";
 import { IUser } from "./user";
 
 export interface IComment {
@@ -50,6 +51,7 @@ export interface IProject {
   comments: IComment[];
   files: IFile[];
   tasks: ITask[];
+  order: IOrder;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

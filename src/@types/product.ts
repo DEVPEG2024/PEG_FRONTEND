@@ -1,4 +1,4 @@
-import { FileNameBackFront } from "@/views/app/admin/products/product/Product";
+import { FileNameBackFront } from "./file";
 import { IForm } from "./form";
 
 export type IProduct = {
