@@ -8,7 +8,7 @@ import reducer, {
   getOrders,
   finishOrder,
   useAppSelector,
-  showCustomerProduct,
+  showOrder,
 } from "./store";
 
 import { IOrder } from "@/@types/order";
@@ -39,9 +39,9 @@ const Orders = () => {
     setCurrentPage(1);
   };
 
-  const handleShowProduct = (order: IOrder) => {
-    dispatch(showCustomerProduct(order))
-    navigate("/admin/product/" + order.product._id)
+  const handleShowOrder = (order: IOrder) => {
+    dispatch(showOrder(order))
+    navigate("/common/order/show")
   };
 
   const handleUpdateStatusOrderFinished = (order: IOrder) => {
@@ -49,7 +49,7 @@ const Orders = () => {
   };
 
   const columns = useColumns(
-    handleShowProduct,
+    handleShowOrder,
     handleUpdateStatusOrderFinished
   );
   const onPaginationChange = (page: number) => {

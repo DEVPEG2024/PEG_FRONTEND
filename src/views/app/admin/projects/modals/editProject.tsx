@@ -40,7 +40,7 @@ function ModalEditProject() {
     amount: selectedProject?.amount || 0,
     amountProducers: selectedProject?.amountProducers || 0,
     customer: selectedProject?.customer._id,
-    producer: selectedProject?.producer._id,
+    producer: selectedProject?.producer?._id,
     startDate: dayjs(selectedProject?.startDate).toDate(),
     endDate: dayjs(selectedProject?.endDate).toDate(),
   });

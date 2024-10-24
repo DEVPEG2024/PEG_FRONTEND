@@ -18,7 +18,7 @@ const ProductsLists = ({ products }: { products: IProduct[] }) => {
         >
           <div className="flex gap-4">
             <img
-              src={API_URL_IMAGE + product.images[0]}
+              src={product.images[0]?.fileNameBack}
               alt={product.title}
               className=" rounded-l-lg bg-yellow-400"
               style={{
