@@ -1,6 +1,6 @@
 import ApiService from './ApiService'
 import { IOrder } from '@/@types/order'
-import { GET_ORDERS_API_URL, POST_ORDERS_API_URL, PUT_ORDER_STATUS_API_URL } from '@/constants/api.constant'
+import { GET_ORDERS_API_URL, POST_ORDERS_API_URL, PUT_ORDER_PAYMENT_STATUS_API_URL, PUT_ORDER_STATUS_API_URL } from '@/constants/api.constant'
 
 type OrdersResponse = {
     orders: IOrder[]
@@ -51,7 +51,16 @@ type UpdateOrderResponse = {
 // update status order
 export async function apiUpdateStatusOrder(data: Record<string, unknown>) {
     return ApiService.fetchData<UpdateOrderResponse>({
-        url: PUT_ORDER_STATUS_API_URL + '/' + data.orderId,
+        url: PUT_ORDER_STATUS_API_URL,
+        method: 'put',
+        data 
+    })
+}
+
+// update payment status order
+export async function apiUpdatePaymentStatusOrder(data: Record<string, unknown>) {
+    return ApiService.fetchData<UpdateOrderResponse>({
+        url: PUT_ORDER_PAYMENT_STATUS_API_URL,
         method: 'put',
         data 
     })
