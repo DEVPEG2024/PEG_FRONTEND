@@ -14,7 +14,7 @@ export interface IOrder {
       }
     ];
     orderNumber: string;
-    paymentMethod: string;
+    paymentStatus: string;
     status: string;
     message: string;
     createdAt: string;

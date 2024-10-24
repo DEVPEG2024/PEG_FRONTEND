@@ -1,11 +1,14 @@
-import { Button, Tag } from "@/components/ui"; // Assurez-vous que le chemin est correct
-import { HiCheck, HiInformationCircle } from "react-icons/hi";
+import { Button, Tag, Tooltip } from "@/components/ui"; // Assurez-vous que le chemin est correct
+import { HiBan, HiCheck, HiInformationCircle } from "react-icons/hi";
 import { IOrder } from "@/@types/order";
 import { SizeSelection } from "@/@types/product";
 
 export const useColumns = (
   handleShowOrder: (order: IOrder) => void,
-  handleUpdateStatusOrderFinished: (order: IOrder) => void
+  handleFinishOrder: (order: IOrder) => void,
+  handlePendOrder: (order: IOrder) => void,
+  handleValidatePaymentStatus: (order: IOrder) => void,
+  handleInvalidatePaymentStatus: (order: IOrder) => void
 ) => {
 
   return [
@@ -28,7 +31,7 @@ export const useColumns = (
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
         return (
-          <div className="flex items-center gap-2">{row.original.product.title}</div>
+          <div className="flex items-center gap-2">{row.original.product ? row.original.product.title : 'PRODUIT SUPPRIME'}</div>
         );
       },
     },
@@ -56,6 +59,35 @@ export const useColumns = (
         );
       },
     },
+    {
+      header: "Paiement",
+      accessorKey: "paymentStatus",
+      enableSorting: false,
+      cell: ({ row }: { row: any }) => {
+        const status = row.original.paymentStatus === 'PENDING' ? "En attente" : "Effectué";
+        return (
+          <div className="flex justify-end items-center gap-2">
+            <Tag
+              className={
+                row.original.paymentStatus === 'PENDING'
+                  ? "bg-yellow-500"
+                  : "bg-green-500"
+              }
+            >
+              <p className="text-sm text-white">{status}</p>
+            </Tag>
+            <Tooltip title={(row.original.paymentStatus === 'PENDING' ? "Valider" : "Invalider") + " le paiement"}>
+              <Button
+                onClick={() => row.original.paymentStatus === 'PENDING' ? handleValidatePaymentStatus(row.original) : handleInvalidatePaymentStatus(row.original)}
+                size="sm"
+                variant="twoTone"
+                icon={row.original.paymentStatus === 'PENDING' ? <HiCheck size={20} /> : <HiBan size={20} />}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
+    },
 
     {
       header: "Demande",
@@ -64,12 +96,15 @@ export const useColumns = (
       cell: ({ row }: { row: any }) => {
         return (
           <div className="flex items-center">
-            <Button
-              onClick={() => handleShowOrder(row.original)}
-              size="sm"
-              variant="twoTone"
-              icon={<HiInformationCircle size={20} />}
-            />
+            <Tooltip title="Consulter les détails">
+              <Button
+                onClick={() => handleShowOrder(row.original)}
+                size="sm"
+                variant="twoTone"
+                icon={<HiInformationCircle size={20} />}
+              />
+            </Tooltip>
+
           </div>
         );
       },
@@ -80,24 +115,26 @@ export const useColumns = (
       accessorKey: "status",
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
-        const status = row.original.status === "pending" ? "En attente" : "Terminée";
+        const status = row.original.status === 'PENDING' ? "En attente" : "Terminée";
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag
               className={
-                row.original.status === "pending"
+                row.original.status === 'PENDING'
                   ? "bg-yellow-500"
                   : "bg-green-500"
               }
             >
               <p className="text-sm text-white">{status}</p>
             </Tag>
-            <Button
-              onClick={() => handleUpdateStatusOrderFinished(row.original)}
-              size="sm"
-              variant="twoTone"
-              icon={<HiCheck size={20} />}
-            />
+            <Tooltip title={row.original.status === 'PENDING' ? "Terminer la commande" : "Mettre en attente"}>
+              <Button
+                onClick={() => row.original.status === 'PENDING' ? handleFinishOrder(row.original) : handlePendOrder(row.original)}
+                size="sm"
+                variant="twoTone"
+                icon={row.original.status === 'PENDING' ? <HiCheck size={20} /> : <HiBan size={20} />}
+              />
+            </Tooltip>
           </div>
         );
       },
