@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom'
 import useQuery from './useQuery'
 import type { SignInCredential, SignUpCredential } from '@/@types/auth'
 import { ADMIN, CUSTOMER } from '@/constants/roles.constant'
+import { API_BASE_URL } from '@/configs/api.config'
+import { getUser } from '@/services/UserService'
 
 type Status = 'success' | 'failed'
 
@@ -36,29 +38,21 @@ function useAuth() {
         try {
             const resp = await apiSignIn(values)
             if (resp.data) {
-                const { token } = resp.data
+                const { jwt: token } = resp.data
+                const user = await getUser(token)
+                user.authority = [user.role.name]
                 dispatch(signInSuccess(token))
                 localStorage.setItem('token', token)
-                if (resp.data.user) {
-                    dispatch(
-                        setUser(
-                            resp.data.user || {
-                                avatar: '',
-                                userName: 'Anonymous',
-                                authority: ['USER'],
-                                email: '',
-                            }
-                        )
-                    )
-             
-                const userRole = resp.data.user?.authority[0]
-                if (userRole === ADMIN) {
-                    navigate("/admin/home")
-                } else if (userRole === CUSTOMER) {
-                    navigate("/customer/home")
-                } else {
-                    navigate("/")
-                }
+                if (user) {
+                    dispatch(setUser(user))
+                    const userRole = user.authority[0]
+                    if (userRole === ADMIN) {
+                        navigate("/admin/home")
+                    } else if (userRole === CUSTOMER) {
+                        navigate("/customer/home")
+                    } else {
+                        navigate("/")
+                    }
                 }
                 // navigate(
                 //     redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath

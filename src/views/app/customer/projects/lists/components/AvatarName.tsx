@@ -1,25 +1,24 @@
-import { IUser } from '@/@types/user'
-import { Avatar } from '@/components/ui/Avatar'
-import { Tooltip } from '@/components/ui/Tooltip'
+import { IUser } from '@/@types/user';
+import { Avatar } from '@/components/ui/Avatar';
+import { Tooltip } from '@/components/ui/Tooltip';
 import acronym from '@/utils/acronym';
 
-
-
-const AvatarName = ({ user }: {user: IUser}) => {
-    return (
-      <Tooltip title={user.companyName}>
-        <div className="flex items-center gap-2">
-          <Avatar className="rounded-full text-white text-lg font-bold">
-            {acronym(user.firstName + " " + user.lastName)}
-          </Avatar>
-          <div className="flex-col hidden lg:flex">
-            <span className="text-xs font-semibold">{user.companyName}</span>
-            <span className="text-sm font-semibold text-gray-100">{user.firstName + " " + user.lastName}</span>
-          </div>
+const AvatarName = ({ user }: { user: IUser }) => {
+  return (
+    <Tooltip title={user.companyName}>
+      <div className="flex items-center gap-2">
+        <Avatar className="rounded-full text-white text-lg font-bold">
+          {acronym(user.firstName + ' ' + user.lastName)}
+        </Avatar>
+        <div className="flex-col hidden lg:flex">
+          <span className="text-xs font-semibold">{user.companyName}</span>
+          <span className="text-sm font-semibold text-gray-100">
+            {user.firstName + ' ' + user.lastName}
+          </span>
         </div>
-      </Tooltip>
-    ); 
-       
-}
+      </div>
+    </Tooltip>
+  );
+};
 
-export default AvatarName
+export default AvatarName;

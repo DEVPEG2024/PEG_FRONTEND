@@ -1,32 +1,32 @@
-import { Container, DoubleSidedImage } from "@/components/shared";
-import { Button, Card, Steps, Tag } from "@/components/ui";
-import { RootState } from "@/store";
-import { Suspense, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next"
-import { useSelector } from "react-redux";
-import { apiGetHomeProducer } from "@/services/HomeProducerService";
-import { IProject } from "@/@types/project";
-import ProjectListContent from "../projects/lists/components/ProjectListContent";
-import GridItem from "../projects/lists/components/GridItem";
+import { Container, DoubleSidedImage } from '@/components/shared';
+import { Button, Card, Steps, Tag } from '@/components/ui';
+import { RootState } from '@/store';
+import { Suspense, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { apiGetHomeProducer } from '@/services/HomeProducerService';
+import { IProject } from '@/@types/project';
+import ProjectListContent from '../projects/lists/components/ProjectListContent';
+import GridItem from '../projects/lists/components/GridItem';
 
 const Home = () => {
   const { t } = useTranslation();
-  const [projects, setProjects] = useState<IProject[]>([])
-  const [level, setLevel] = useState<number>(0)
-  const [wallet, setWallet] = useState<number>(0)
+  const [projects, setProjects] = useState<IProject[]>([]);
+  const [level, setLevel] = useState<number>(0);
+  const [wallet, setWallet] = useState<number>(0);
   const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    fetchHomeProducer()
-  }, [])
+    fetchHomeProducer();
+  }, []);
 
   const fetchHomeProducer = async () => {
-    const res = await apiGetHomeProducer(user?._id || '')
-    setProjects(res.data.projects)
-    setLevel(res.data.level)
-    setWallet(res.data.wallet.balance)
-  }
-  
+    const res = await apiGetHomeProducer(user?._id || '');
+    setProjects(res.data.projects);
+    setLevel(res.data.level);
+    setWallet(res.data.wallet.balance);
+  };
+
   return (
     <div>
       <Suspense fallback={<></>}>
@@ -46,9 +46,9 @@ const Home = () => {
             />
             <div className="flex flex-col">
               <h3 className="mb-1">
-                {t("hello")}, {user?.firstName} 👋
+                {t('hello')}, {user?.firstName} 👋
               </h3>
-              <p className="text-base">{t("welcome_to_product_management")}</p>
+              <p className="text-base">{t('welcome_to_product_management')}</p>
             </div>
           </div>
           <div className="lg:flex hidden">
@@ -58,22 +58,22 @@ const Home = () => {
             >
               <Steps.Item
                 title="Cosmonaute Apprenti"
-                image={"/img/others/level/0.png"}
+                image={'/img/others/level/0.png'}
                 className="col-span-1 gap-8 w-1/4"
               />
               <Steps.Item
                 title="Voyageur Interstellaire"
-                image={"/img/others/level/1.png"}
+                image={'/img/others/level/1.png'}
                 className="col-span-1 gap-8 w-1/4"
               />
               <Steps.Item
                 title="Capitaine d’Exploration"
-                image={"/img/others/level/2.png"}
+                image={'/img/others/level/2.png'}
                 className="col-span-1 gap-8 w-1/4"
               />
               <Steps.Item
                 title="Légende Galactique"
-                image={"/img/others/level/3.png"}
+                image={'/img/others/level/3.png'}
                 className="col-span-1 gap-8 w-1/4"
               />
             </Steps>
@@ -93,9 +93,23 @@ const Home = () => {
                   </div>
                   <Tag className="bg-emerald-500 text-white">{wallet} €</Tag>
                 </div>
-                <div className="flex flex-col gap-2 justify-end mt-4"> 
-                  <Button variant="twoTone" size="xs" className="w-full" color="red" >Retirer les fonds</Button>
-                  <Button variant="twoTone" size="xs" className="w-full" color="green" >Voir les détails</Button>
+                <div className="flex flex-col gap-2 justify-end mt-4">
+                  <Button
+                    variant="twoTone"
+                    size="xs"
+                    className="w-full"
+                    color="red"
+                  >
+                    Retirer les fonds
+                  </Button>
+                  <Button
+                    variant="twoTone"
+                    size="xs"
+                    className="w-full"
+                    color="green"
+                  >
+                    Voir les détails
+                  </Button>
                 </div>
               </Card>
             </div>
@@ -104,6 +118,6 @@ const Home = () => {
       </Suspense>
     </div>
   );
-}
+};
 
-export default Home
+export default Home;

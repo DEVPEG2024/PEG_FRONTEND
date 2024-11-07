@@ -1,8 +1,8 @@
-import { Container, DoubleSidedImage } from "@/components/shared";
-import { RootState } from "@/store";
-import { Suspense } from "react";
-import { useTranslation } from "react-i18next"
-import { useSelector } from "react-redux";
+import { Container, DoubleSidedImage } from '@/components/shared';
+import { RootState } from '@/store';
+import { Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -20,14 +20,14 @@ const Home = () => {
             />
 
             <h3 className="mb-2">
-              {t("hello")}, {user?.firstName} 👋
+              {t('hello')}, {user?.firstName} 👋
             </h3>
-            <p className="text-base">{t("welcome_to_product_management")}</p>
+            <p className="text-base">{t('welcome_to_product_management')}</p>
           </div>
         </Suspense>
       </div>
     </Container>
   );
-}
+};
 
-export default Home
+export default Home;

@@ -1,72 +1,74 @@
-import { forwardRef } from 'react'
-import { FormContainer, FormItem } from '@/components/ui/Form'
-import Button from '@/components/ui/Button'
-import StickyFooter from '@/components/shared/StickyFooter'
-import { Field, Form, Formik, FormikProps } from 'formik'
-import BasicInformationFields from './Fields'
-import cloneDeep from 'lodash/cloneDeep'
-import { AiOutlineSave } from 'react-icons/ai'
-import * as Yup from 'yup'
-import { Upload } from '@/components/ui'
-import { useAppSelector } from '../../store'
-import { OptionsFields, IProduct } from '@/@types/product'
-import { apiDeleteFile, apiUploadFile } from '@/services/FileServices'
-import { FileNameBackFront } from '../Product'
-import { FileItem } from '@/@types/formAnswer'
+import { forwardRef } from 'react';
+import { FormContainer, FormItem } from '@/components/ui/Form';
+import Button from '@/components/ui/Button';
+import StickyFooter from '@/components/shared/StickyFooter';
+import { Field, Form, Formik, FormikProps } from 'formik';
+import BasicInformationFields from './Fields';
+import cloneDeep from 'lodash/cloneDeep';
+import { AiOutlineSave } from 'react-icons/ai';
+import * as Yup from 'yup';
+import { Upload } from '@/components/ui';
+import { useAppSelector } from '../../store';
+import { OptionsFields, IProduct } from '@/@types/product';
+import { apiDeleteFile, apiUploadFile } from '@/services/FileServices';
+import { FileNameBackFront } from '../Product';
+import { FileItem } from '@/@types/formAnswer';
 
 interface Options {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-type FormikRef = FormikProps<any>
+type FormikRef = FormikProps<any>;
 
 type InitialData = IProduct;
 
 export type FormModel = Omit<InitialData, 'type'> & {
-  type: string
-}
+  type: string;
+};
 
-export type SetSubmitting = (isSubmitting: boolean) => void
+export type SetSubmitting = (isSubmitting: boolean) => void;
 
-export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>
+export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
 
-type OnDelete = (callback: OnDeleteCallback) => void
+type OnDelete = (callback: OnDeleteCallback) => void;
 
 type ProductForm = {
-  initialData?: InitialData
-  type: 'edit' | 'new'
-  onDiscard?: () => void
-  onDelete?: OnDelete
-  onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void
-  sizeSelected: boolean
-  setSizeSelected: (value: boolean) => void
-  sizeField: OptionsFields[]
-  setSizeField: (value: OptionsFields[]) => void
-  field_text: boolean
-  setField_text: (value: boolean) => void
-  customersCategories: Options[]
-  categories: Options[]
-  customers: Options[]
-  setSelectedCustomersCategories: (value: string[]) => void
-  setSelectedCategories: (value: string[]) => void
-  setSelectedCustomers: (value: string[]) => void
-  forms: Options[]
-  setSelectedForm: (value: string) => void
-  imagesName: FileNameBackFront[]
-  setImagesName: (value: FileNameBackFront[]) => void
-  images: FileItem[]
-}
+  initialData?: InitialData;
+  type: 'edit' | 'new';
+  onDiscard?: () => void;
+  onDelete?: OnDelete;
+  onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void;
+  sizeSelected: boolean;
+  setSizeSelected: (value: boolean) => void;
+  sizeField: OptionsFields[];
+  setSizeField: (value: OptionsFields[]) => void;
+  field_text: boolean;
+  setField_text: (value: boolean) => void;
+  customersCategories: Options[];
+  categories: Options[];
+  customers: Options[];
+  setSelectedCustomersCategories: (value: string[]) => void;
+  setSelectedCategories: (value: string[]) => void;
+  setSelectedCustomers: (value: string[]) => void;
+  forms: Options[];
+  setSelectedForm: (value: string) => void;
+  imagesName: FileNameBackFront[];
+  setImagesName: (value: FileNameBackFront[]) => void;
+  images: FileItem[];
+};
 
 const validationSchema = Yup.object().shape({
   title: Yup.string().required('Nom de la saisie requis'),
-  amount: Yup.number().moreThan(0, 'Le montant doit être supérieur à 0').required('Montant requis'),
+  amount: Yup.number()
+    .moreThan(0, 'Le montant doit être supérieur à 0')
+    .required('Montant requis'),
   reference: Yup.string().required('Référence requise'),
   description: Yup.string().required('Description requise'),
-})
+});
 
 const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
-  const { product } = useAppSelector((state) => state.products.data)
+  const { product } = useAppSelector((state) => state.products.data);
 
   const {
     type,
@@ -79,16 +81,16 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     forms,
     setSelectedForm,
     initialData = {
-      _id: product?._id || "",
-      title: product?.title || "",
+      _id: product?._id || '',
+      title: product?.title || '',
       amount: product?.amount || 0,
       stock: product?.stock || 0,
       images: product?.images || [],
-      reference: product?.reference || "",
-      description: product?.description || "",
+      reference: product?.reference || '',
+      description: product?.description || '',
       sizes: {
         status: product?.sizes?.status || false,
-        options: product?.sizes?.options || {}
+        options: product?.sizes?.options || {},
       },
       field_text: product?.field_text || false,
       customersCategories: product?.customersCategories || [],
@@ -107,7 +109,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     setSelectedCustomers,
     imagesName,
     setImagesName,
-    images
+    images,
   } = props;
 
   const onFileAdd = async (
@@ -115,22 +117,28 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     setFieldValue: (
       field: string,
       value: any,
-      shouldValidate?: boolean,
+      shouldValidate?: boolean
     ) => void,
     field: string,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     try {
-      setSubmitting(true)
+      setSubmitting(true);
       const data = await apiUploadFile(file),
-        newFileNames = [...imagesName, { fileNameFront: file.name, fileNameBack: data.fileUrl }]
+        newFileNames = [
+          ...imagesName,
+          { fileNameFront: file.name, fileNameBack: data.fileUrl },
+        ];
 
-      setFieldValue(field, newFileNames.map(({ fileNameBack }) => fileNameBack))
-      setImagesName(newFileNames)
-      setSubmitting(false)
+      setFieldValue(
+        field,
+        newFileNames.map(({ fileNameBack }) => fileNameBack)
+      );
+      setImagesName(newFileNames);
+      setSubmitting(false);
     } catch (error) {
       console.error("Erreur lors de l'upload du fichier :", error);
-      setSubmitting(false)
+      setSubmitting(false);
     }
   };
 
@@ -139,53 +147,58 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     setFieldValue: (
       field: string,
       value: any,
-      shouldValidate?: boolean,
+      shouldValidate?: boolean
     ) => void,
-    field: string,
+    field: string
   ) => {
     try {
-      const fileNameBack: string = imagesName.find(({ fileNameFront }) => fileNameFront === file)?.fileNameBack ?? ""
-      apiDeleteFile(fileNameBack)
-      const newFileNames = imagesName.filter(({ fileNameFront }) => fileNameFront !== file)
+      const fileNameBack: string =
+        imagesName.find(({ fileNameFront }) => fileNameFront === file)
+          ?.fileNameBack ?? '';
+      apiDeleteFile(fileNameBack);
+      const newFileNames = imagesName.filter(
+        ({ fileNameFront }) => fileNameFront !== file
+      );
 
-      setFieldValue(field, newFileNames.map(({ fileNameBack }) => fileNameBack))
-      setImagesName(newFileNames)
+      setFieldValue(
+        field,
+        newFileNames.map(({ fileNameBack }) => fileNameBack)
+      );
+      setImagesName(newFileNames);
     } catch (error) {
-      console.error("Erreur lors de la suppression du fichier :", error);
+      console.error('Erreur lors de la suppression du fichier :', error);
     }
   };
 
   const beforeUpload = (files: FileList | null) => {
-    let valid: string | boolean = true
+    let valid: string | boolean = true;
 
     const allowedFileType = [
-      "image/jpeg",
-      "image/png",
-      "image/jpg",
-      "image/webp",
-      "application/pdf",
-      "application/x-pdf",
-      "application/pdf",
-      "application/x-pdf",
-      "application/pdf",
-      "application/x-pdf",
-      "application/pdf",
-      "application/x-pdf",
-      "application/pdf",
-      "application/x-pdf",
-
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/webp',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
     ];
     if (files) {
       for (const file of files) {
         if (!allowedFileType.includes(file.type)) {
-          valid = 'Veuillez télécharger un fichier .jpeg ou .png!'
+          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
         }
       }
     }
 
-    return valid
-  }
-
+    return valid;
+  };
 
   return (
     <>
@@ -197,12 +210,19 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         }}
         validationSchema={validationSchema}
         onSubmit={(values: FormModel, { setSubmitting }) => {
-          console.log("Form submitted with values:", values);
+          console.log('Form submitted with values:', values);
           const formData = cloneDeep(values);
           onFormSubmit?.(formData, setSubmitting);
         }}
       >
-        {({ values, setFieldValue, touched, errors, isSubmitting, setSubmitting }) => (
+        {({
+          values,
+          setFieldValue,
+          touched,
+          errors,
+          isSubmitting,
+          setSubmitting,
+        }) => (
           <Form>
             <FormContainer>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -223,9 +243,17 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     customersCategories={customersCategories as Options[]}
                     categories={categories as Options[]}
                     customers={customers as Options[]}
-                    setSelectedCustomersCategories={setSelectedCustomersCategories as (value: string[]) => void}
-                    setSelectedCategories={setSelectedCategories as (value: string[]) => void}
-                    setSelectedCustomers={setSelectedCustomers as (value: string[]) => void}
+                    setSelectedCustomersCategories={
+                      setSelectedCustomersCategories as (
+                        value: string[]
+                      ) => void
+                    }
+                    setSelectedCategories={
+                      setSelectedCategories as (value: string[]) => void
+                    }
+                    setSelectedCustomers={
+                      setSelectedCustomers as (value: string[]) => void
+                    }
                   />
                 </div>
                 <div className="lg:col-span-1">
@@ -237,11 +265,13 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
                     onFileAdd={(file) =>
-                      onFileAdd(file, setFieldValue, "images", setSubmitting)
+                      onFileAdd(file, setFieldValue, 'images', setSubmitting)
                     }
-                    onFileRemove={(file) => onFileRemove(file, setFieldValue, "images")}
-                    field={{ name: "images" }}
-                    fileList={images.map(({file}) => file)}
+                    onFileRemove={(file) =>
+                      onFileRemove(file, setFieldValue, 'images')
+                    }
+                    field={{ name: 'images' }}
+                    fileList={images.map(({ file }) => file)}
                   />
                 </div>
               </div>
@@ -249,7 +279,6 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                 className="-mx-8 px-8 flex items-center justify-end py-4"
                 stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
               >
-
                 <Button
                   size="sm"
                   className="ltr:mr-3 rtl:ml-3"
@@ -275,8 +304,8 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       </Formik>
     </>
   );
-})
+});
 
-SaisieForm.displayName = 'SaisieForm'
+SaisieForm.displayName = 'SaisieForm';
 
-export default SaisieForm
+export default SaisieForm;

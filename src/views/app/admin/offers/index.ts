@@ -1,3 +1,3 @@
-import OffersLists from './lists'
+import OffersLists from './lists';
 
-export default OffersLists
+export default OffersLists;

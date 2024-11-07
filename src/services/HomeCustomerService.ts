@@ -13,7 +13,7 @@ type HomeCustomerResponse = {
 
 export async function apiGetHomeCustomer(id: string) {
   return ApiService.fetchData<HomeCustomerResponse>({
-    url: `${API_BASE_URL}/customers/home/${id}`,
+    url: `${API_BASE_URL}/customer/home/${id}`,
     method: "get",
   });
 }

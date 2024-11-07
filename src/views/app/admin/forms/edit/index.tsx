@@ -1,21 +1,23 @@
-import ListForm from "../builder/listForms";
-import ConfigForms from "../builder/configForms";
-import { Button, Card, Input, Notification, toast } from "@/components/ui";
-import { Form, Forms } from "../constants/type";
-import { useState } from "react";
-import FieldConfig from "../builder/components/fieldsConfig";
-import Empty from "@/components/shared/Empty";
-import { RxInput } from "react-icons/rx";
-import { apiUpdateForm } from "@/services/FormServices";
-import { useNavigate } from "react-router-dom";
-import { useAppSelector } from "../store";
-import { IForm } from "@/@types/form";
+import ListForm from '../builder/listForms';
+import ConfigForms from '../builder/configForms';
+import { Button, Card, Input, Notification, toast } from '@/components/ui';
+import { Form, Forms } from '../constants/type';
+import { useState } from 'react';
+import FieldConfig from '../builder/components/fieldsConfig';
+import Empty from '@/components/shared/Empty';
+import { RxInput } from 'react-icons/rx';
+import { apiUpdateForm } from '@/services/FormServices';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from '../store';
+import { IForm } from '@/@types/form';
 
 function NewForms() {
-  const { form } = useAppSelector((state) => state.forms.data)
-  const [selectedFields, setSelectedFields] = useState<Form[]>(form?.fields ?? []);
+  const { form } = useAppSelector((state) => state.forms.data);
+  const [selectedFields, setSelectedFields] = useState<Form[]>(
+    form?.fields ?? []
+  );
   const [currentField, setCurrentField] = useState<Form | null>(null);
-  const [formTitle, setFormTitle] = useState<string>(form?.title ?? "");
+  const [formTitle, setFormTitle] = useState<string>(form?.title ?? '');
   const navigate = useNavigate();
   const handleFormsSelected = (form: Form) => {
     const newField = { ...form, id: Date.now().toString() };
@@ -42,16 +44,16 @@ function NewForms() {
     }
   };
 
-  const moveField = (index: number, direction: "up" | "down") => {
+  const moveField = (index: number, direction: 'up' | 'down') => {
     if (
-      (direction === "up" && index === 0) ||
-      (direction === "down" && index === selectedFields.length - 1)
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === selectedFields.length - 1)
     ) {
       return; // Ne rien faire si on essaie de déplacer le premier élément vers le haut ou le dernier vers le bas
     }
 
     const newFields = [...selectedFields];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
     [newFields[index], newFields[newIndex]] = [
       newFields[newIndex],
       newFields[index],
@@ -61,7 +63,13 @@ function NewForms() {
 
   const handleSaveForm = async () => {
     if (!formTitle) {
-      toast.push(<Notification type="danger" title="Veuillez entrer un titre" className="bg-red-700" />)
+      toast.push(
+        <Notification
+          type="danger"
+          title="Veuillez entrer un titre"
+          className="bg-red-700"
+        />
+      );
       return;
     }
     const formData: IForm = {
@@ -70,15 +78,22 @@ function NewForms() {
       title: formTitle,
       fields: selectedFields,
       createdAt: form?.createdAt ?? new Date(),
-      updatedAt: new Date()
-    }
+      updatedAt: new Date(),
+    };
     const { data } = await apiUpdateForm(formData);
 
     if (data.result) {
-      toast.push(<Notification type="success" title="Formulaire modifié avec succès" />)
-      navigate("/admin/forms");
+      toast.push(
+        <Notification type="success" title="Formulaire modifié avec succès" />
+      );
+      navigate('/admin/forms');
     } else {
-      toast.push(<Notification type="danger" title="Erreur lors de la modification du formulaire" />)
+      toast.push(
+        <Notification
+          type="danger"
+          title="Erreur lors de la modification du formulaire"
+        />
+      );
     }
   };
 
@@ -108,7 +123,9 @@ function NewForms() {
           ) : (
             <Empty icon={<RxInput className="text-gray-500 text-7xl" />}>
               <p className="text-gray-500 text-xl">Aucun champ sélectionné</p>
-              <p className="text-gray-500 text-md">Sélectionnez un champ pour le configurer</p>
+              <p className="text-gray-500 text-md">
+                Sélectionnez un champ pour le configurer
+              </p>
             </Empty>
           )}
         </Card>

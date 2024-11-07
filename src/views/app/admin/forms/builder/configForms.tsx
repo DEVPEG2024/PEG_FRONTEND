@@ -1,10 +1,10 @@
 import React from 'react';
-import { Button } from "@/components/ui"
-import { Form } from "../constants/type"
-import InputSection from "./components/fields/input"
-import TextAreaSection from "./components/fields/textArea";
-import SelectSection from "./components/fields/select";
-import DateSection from "./components/fields/date";
+import { Button } from '@/components/ui';
+import { Form } from '../constants/type';
+import InputSection from './components/fields/input';
+import TextAreaSection from './components/fields/textArea';
+import SelectSection from './components/fields/select';
+import DateSection from './components/fields/date';
 import RadioSection from './components/fields/radio';
 import CheckBoxSection from './components/fields/checkBox';
 import InputNumberSection from './components/fields/inputNumber';
@@ -17,66 +17,126 @@ interface ConfigFormsProps {
   moveField: (index: number, direction: 'up' | 'down') => void;
 }
 
-function ConfigForms({ selectedFields, handleDeleteForm, moveField }: ConfigFormsProps) {
+function ConfigForms({
+  selectedFields,
+  handleDeleteForm,
+  moveField,
+}: ConfigFormsProps) {
   return (
     <div className="flex flex-col gap-4">
-      {selectedFields.map((form: Form, index: number) =>{
+      {selectedFields.map((form: Form, index: number) => {
         return (
-          <div key={form.id.toString()} className="flex items-center gap-4 bg-gray-800 p-4 rounded-md">
-              {renderFormField(form)}
-          <div className="flex gap-2 mt-4">
-            <Button 
-              variant="twoTone" 
-              size="xs" 
-              color='green'
-              onClick={() => moveField(index, 'up')}
-              disabled={index === 0}
-            >
-              ↑
-            </Button>
-            <Button 
-              variant="twoTone" 
-              size="xs" 
-              color='green'
-              onClick={() => moveField(index, 'down')}
-              disabled={index === selectedFields.length - 1}
-            >
-              ↓
-            </Button>
-            <Button 
-              variant="twoTone" 
-              size="xs" 
-              onClick={() => handleDeleteForm(form)}
-            >
-              X
-            </Button>
+          <div
+            key={form.id.toString()}
+            className="flex items-center gap-4 bg-gray-800 p-4 rounded-md"
+          >
+            {renderFormField(form)}
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="twoTone"
+                size="xs"
+                color="green"
+                onClick={() => moveField(index, 'up')}
+                disabled={index === 0}
+              >
+                ↑
+              </Button>
+              <Button
+                variant="twoTone"
+                size="xs"
+                color="green"
+                onClick={() => moveField(index, 'down')}
+                disabled={index === selectedFields.length - 1}
+              >
+                ↓
+              </Button>
+              <Button
+                variant="twoTone"
+                size="xs"
+                onClick={() => handleDeleteForm(form)}
+              >
+                X
+              </Button>
             </div>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function renderFormField(form: Form) {
-  const options = form.options ? form.options.map((option: any) => ({ label: option, value: option })) : [];
+  const options = form.options
+    ? form.options.map((option: any) => ({ label: option, value: option }))
+    : [];
   switch (form.type) {
     case 'input':
-      return <InputSection className="w-full" label={form.label} placeholder={form.placeholder} />;
+      return (
+        <InputSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+        />
+      );
     case 'textarea':
-      return <TextAreaSection className="w-full" label={form.label} placeholder={form.placeholder} />;
+      return (
+        <TextAreaSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+        />
+      );
     case 'select':
-      return <SelectSection className="w-full" label={form.label} placeholder={form.placeholder} options={options} />;
+      return (
+        <SelectSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+          options={options}
+        />
+      );
     case 'date':
-      return <DateSection className="w-full" label={form.label} placeholder={form.placeholder} />;
+      return (
+        <DateSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+        />
+      );
     case 'radio':
-      return <RadioSection className="w-full" label={form.label} placeholder={form.placeholder} options={options} />;
+      return (
+        <RadioSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+          options={options}
+        />
+      );
     case 'checkbox':
-      return <CheckBoxSection className="w-full" label={form.label} placeholder={form.placeholder} options={options} />;
+      return (
+        <CheckBoxSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+          options={options}
+        />
+      );
     case 'file':
-      return <UploadSection className="w-full" label={form.label} acceptedFileTypes={form.acceptedFileTypes || ""} />;
+      return (
+        <UploadSection
+          className="w-full"
+          label={form.label}
+          acceptedFileTypes={form.acceptedFileTypes || ''}
+        />
+      );
     case 'color':
-      return <ColorSection className="w-full" label={form.label} placeholder={form.placeholder} />;
+      return (
+        <ColorSection
+          className="w-full"
+          label={form.label}
+          placeholder={form.placeholder}
+        />
+      );
     case 'inputNumber':
       return (
         <InputNumberSection

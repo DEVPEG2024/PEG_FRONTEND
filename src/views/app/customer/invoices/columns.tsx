@@ -1,16 +1,13 @@
-import {Button, Tag } from "@/components/ui"; // Assurez-vous que le chemin est correct
-import {  HiPencil, HiPrinter, HiTrash,  HiUserCircle,  } from "react-icons/hi";
-import { Invoice } from "@/@types/invoice";
-import dayjs from "dayjs";
+import { Button, Tag } from '@/components/ui'; // Assurez-vous que le chemin est correct
+import { HiPencil, HiPrinter, HiTrash, HiUserCircle } from 'react-icons/hi';
+import { Invoice } from '@/@types/invoice';
+import dayjs from 'dayjs';
 
-export const useColumns = (
-  handlePrintInvoice: (invoice: Invoice) => void
-) => {
-
+export const useColumns = (handlePrintInvoice: (invoice: Invoice) => void) => {
   return [
     {
-      header: "Facture N°",
-      accessorKey: "invoiceNumber",
+      header: 'Facture N°',
+      accessorKey: 'invoiceNumber',
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
         return (
@@ -21,45 +18,49 @@ export const useColumns = (
       },
     },
     {
-      header: "Client",
-      accessorKey: "companyName",
+      header: 'Client',
+      accessorKey: 'companyName',
       enableSorting: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex items-center gap-2">
           <HiUserCircle size={40} />
           {row.original.customerId.companyName ? (
             <div className="flex flex-col">
-              <span className="font-bold">{row.original.customerId.companyName}</span>
+              <span className="font-bold">
+                {row.original.customerId.companyName}
+              </span>
               <span className="text-sm">
-                {row.original.customerId.firstName} {row.original.customerId.lastName}
+                {row.original.customerId.firstName}{' '}
+                {row.original.customerId.lastName}
               </span>
             </div>
           ) : (
             <div className="flex flex-col">
               <span className="font-bold">
-                {row.original.customerId.firstName} {row.original.customerId.lastName}
+                {row.original.customerId.firstName}{' '}
+                {row.original.customerId.lastName}
               </span>
             </div>
           )}
         </div>
       ),
     },
-  
+
     {
-      header: "Date",
-      accessorKey: "createdAt",
+      header: 'Date',
+      accessorKey: 'createdAt',
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
         return (
           <div className="flex items-center gap-2">
-            {dayjs(row.original.createdAt).format("DD/MM/YYYY")}
+            {dayjs(row.original.createdAt).format('DD/MM/YYYY')}
           </div>
         );
       },
     },
     {
-      header: "Total",
-      accessorKey: "amount",
+      header: 'Total',
+      accessorKey: 'amount',
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
         return (
@@ -70,18 +71,19 @@ export const useColumns = (
       },
     },
     {
-      header: "",
-      accessorKey: "status",
+      header: '',
+      accessorKey: 'status',
       enableSorting: false,
       cell: ({ row }: { row: any }) => {
-        const status = row.original.paymentStatus === "paid" ? "Payé" : "Non payé";
+        const status =
+          row.original.paymentStatus === 'paid' ? 'Payé' : 'Non payé';
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag
               className={
-                row.original.paymentStatus === "paid"
-                  ? "bg-green-500"
-                  : "bg-red-500"
+                row.original.paymentStatus === 'paid'
+                  ? 'bg-green-500'
+                  : 'bg-red-500'
               }
             >
               <p className="text-sm text-white">{status}</p>

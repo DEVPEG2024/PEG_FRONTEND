@@ -1,8 +1,13 @@
-import { Button, Input } from '@/components/ui'
+import { Button, Input } from '@/components/ui';
 import { Form } from '../constants/type';
 
-function ListForm({forms, handleFormsSelected}: {forms: Form[], handleFormsSelected: (form: Form) => void}) {
- 
+function ListForm({
+  forms,
+  handleFormsSelected,
+}: {
+  forms: Form[];
+  handleFormsSelected: (form: Form) => void;
+}) {
   return (
     <div>
       <div className="flex flex-col gap-2">
@@ -21,7 +26,7 @@ function ListForm({forms, handleFormsSelected}: {forms: Form[], handleFormsSelec
               color="green"
               onClick={() => handleFormsSelected(form)}
             >
-              <p className='text-white text-xl'>+</p>
+              <p className="text-white text-xl">+</p>
             </Button>
           </div>
         ))}
@@ -30,4 +35,4 @@ function ListForm({forms, handleFormsSelected}: {forms: Form[], handleFormsSelec
   );
 }
 
-export default ListForm
+export default ListForm;

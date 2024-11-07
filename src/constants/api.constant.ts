@@ -4,7 +4,7 @@ export const TOKEN_TYPE = 'Bearer '
 export const REQUEST_HEADER_AUTH_KEY = 'Authorization'
 
 // AUTH
-export const LOGIN_API_URL = API_BASE_URL + '/auth/login/'
+export const LOGIN_API_URL = API_BASE_URL + '/auth/local/'
 export const REGISTER_API_URL = API_BASE_URL + '/auth/register/'
 export const FORGOT_PASSWORD_API_URL = API_BASE_URL + '/auth/forgot-password/'
 export const RESET_PASSWORD_API_URL = API_BASE_URL + '/auth/reset-password/'

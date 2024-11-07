@@ -1,35 +1,35 @@
-import { Container } from "@/components/shared";
-import HeaderTitle from "@/components/template/HeaderTitle";
-import { useEffect, useState } from "react";
-import { Input, Pagination, Select } from "@/components/ui";
-import useCategoryProduct from "@/utils/hooks/products/useCategoryCustomer";
-import ProductCategoryListContent from "./components/CategoryList";
+import { Container } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { useEffect, useState } from 'react';
+import { Input, Pagination, Select } from '@/components/ui';
+import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
+import ProductCategoryListContent from './components/CategoryList';
 
 type Option = {
-  value: number
-  label: string
-}
+  value: number;
+  label: string;
+};
 const options: Option[] = [
   { value: 16, label: '16 / page' },
   { value: 24, label: '24 / page' },
   { value: 32, label: '32 / page' },
-]
+];
 const Categories = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(16);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
-  const { getCategoriesProduct } = useCategoryProduct()
+  const { getCategoriesProduct } = useCategoryProduct();
 
   useEffect(() => {
     fetchProjects();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProjects = async () => {
-    const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm)
-    setCategories(resp.data || [])
-    setTotal(resp.total || 0)
+    const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm);
+    setCategories(resp.data || []);
+    setTotal(resp.total || 0);
   };
 
   const handleSearch = (value: string) => {
@@ -38,8 +38,8 @@ const Categories = () => {
   };
 
   const onPageSelect = ({ value }: Option) => {
-    setPageSize(value)
-  }
+    setPageSize(value);
+  };
 
   return (
     <Container>
@@ -47,7 +47,7 @@ const Categories = () => {
         title="Catégorie de produit"
         buttonTitle="Ajouter une catégorie de produit"
         description="Catégorie de produit"
-        link={""}
+        link={''}
         addAction={false}
         total={total}
       />
@@ -59,9 +59,7 @@ const Categories = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <ProductCategoryListContent
-          categories={categories}
-        />
+        <ProductCategoryListContent categories={categories} />
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}
@@ -80,9 +78,8 @@ const Categories = () => {
           </div>
         </div>
       </div>
-
     </Container>
   );
-}
+};
 
-export default Categories
+export default Categories;

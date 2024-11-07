@@ -1,22 +1,24 @@
-import { useEffect, useState } from 'react'
-import Button from '@/components/ui/Button'
-import AdaptableCard from '@/components/shared/AdaptableCard'
-import Container from '@/components/shared/Container'
-import { HiTrash } from 'react-icons/hi'
-import { IProject } from '@/@types/project'
-import DetailsRight from './detailsRight'
-import { useAppDispatch, } from '@/store'
-import { setAddFile, setDeleteFile } from '../../store'
-import FileUplaodDragCustom from '@/components/shared/Upload/drag'
+import { useEffect, useState } from 'react';
+import Button from '@/components/ui/Button';
+import AdaptableCard from '@/components/shared/AdaptableCard';
+import Container from '@/components/shared/Container';
+import { HiTrash } from 'react-icons/hi';
+import { IProject } from '@/@types/project';
+import DetailsRight from './detailsRight';
+import { useAppDispatch } from '@/store';
+import { setAddFile, setDeleteFile } from '../../store';
+import FileUplaodDragCustom from '@/components/shared/Upload/drag';
 import { FaFilePdf } from 'react-icons/fa';
-import { API_URL_IMAGE } from '@/configs/api.config'
-import { deleteFileFromProject, uploadNewFileToProject } from '@/utils/hooks/projects/useFile'
-
+import { API_URL_IMAGE } from '@/configs/api.config';
+import {
+  deleteFileFromProject,
+  uploadNewFileToProject,
+} from '@/utils/hooks/projects/useFile';
 
 const Files = ({ project }: { project: IProject }) => {
-  const [image, setImage] = useState<string>("")
-  const [fileType, setFileType] = useState("");
-  const dispatch = useAppDispatch()
+  const [image, setImage] = useState<string>('');
+  const [fileType, setFileType] = useState('');
+  const dispatch = useAppDispatch();
   useEffect(() => {
     if (image) {
       handleUpload();
@@ -26,32 +28,33 @@ const Files = ({ project }: { project: IProject }) => {
     const data = {
       file: image,
       fileType: fileType,
-      projectId: project._id
-    }
+      projectId: project._id,
+    };
     const resp = await uploadNewFileToProject(data);
     if (resp.status === 'success' && resp.data) {
-      setImage('')
-      setFileType('')
-      dispatch(setAddFile({
-        _id: resp.data._id,
-        file: resp.data.file,
-        fileType: resp.data.fileType,
-        createdAt: resp.data.createdAt
-      }))
+      setImage('');
+      setFileType('');
+      dispatch(
+        setAddFile({
+          _id: resp.data._id,
+          file: resp.data.file,
+          fileType: resp.data.fileType,
+          createdAt: resp.data.createdAt,
+        })
+      );
     }
-  }
+  };
 
   const handleDeleteFile = async (fileId: string) => {
     const data = {
       fileId: fileId,
-      projectId: project._id
-    }
-    const resp = await deleteFileFromProject(data)
+      projectId: project._id,
+    };
+    const resp = await deleteFileFromProject(data);
     if (resp.status === 'success') {
-      dispatch(setDeleteFile(fileId))
+      dispatch(setDeleteFile(fileId));
     }
-  }
-
+  };
 
   return (
     <Container className="h-full">
@@ -65,7 +68,7 @@ const Files = ({ project }: { project: IProject }) => {
             />
             <div className="flex flex-wrap gap-11 w-full mt-4">
               {project.files.map((file) => {
-                const fileType = file.fileType.split("/")[0];
+                const fileType = file.fileType.split('/')[0];
                 return (
                   <div key={file._id} className=" col-span-1">
                     <a
@@ -73,7 +76,7 @@ const Files = ({ project }: { project: IProject }) => {
                       target="_blank"
                       className="bg-gray-900 rounded-md w-40 h-40 cursor-pointer justify-center items-center flex flex-col"
                     >
-                      {fileType === "image" ? (
+                      {fileType === 'image' ? (
                         <img
                           src={API_URL_IMAGE + file.file}
                           alt="file"
@@ -83,7 +86,10 @@ const Files = ({ project }: { project: IProject }) => {
                         <FaFilePdf size={100} className="text-red-500" />
                       )}
                     </a>
-                    <Button className="flex justify-center items-center mt-2 gap-2" onClick={() => handleDeleteFile(file._id)}>
+                    <Button
+                      className="flex justify-center items-center mt-2 gap-2"
+                      onClick={() => handleDeleteFile(file._id)}
+                    >
                       <HiTrash size={15} className="text-gray-500" />
                       <p className="text-sm text-gray-500">Supprimer</p>
                     </Button>
@@ -97,6 +103,6 @@ const Files = ({ project }: { project: IProject }) => {
       </div>
     </Container>
   );
-}
+};
 
-export default Files
+export default Files;

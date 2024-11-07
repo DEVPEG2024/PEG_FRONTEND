@@ -1,10 +1,13 @@
-import { Button, Dialog, Input, Notification, toast} from '@/components/ui'
-import { DELETE_CATEGORY_CUSTOMERS_API_URL, POST_CATEGORY_CUSTOMERS_API_URL } from '@/constants/api.constant';
+import { Button, Dialog, Input, Notification, toast } from '@/components/ui';
+import {
+  DELETE_CATEGORY_CUSTOMERS_API_URL,
+  POST_CATEGORY_CUSTOMERS_API_URL,
+} from '@/constants/api.constant';
 import { ICategoryCustomer } from '@/services/CustomerServices';
 import { RootState } from '@/store';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 import { HiCheckCircle } from 'react-icons/hi';
 import { useSelector } from 'react-redux';
 
@@ -14,7 +17,7 @@ function ModalDeleteCategory({
   setIsOpen,
   category,
   handleCloseModal,
-  fetchCategories
+  fetchCategories,
 }: {
   title: string;
   isOpen: boolean;
@@ -28,10 +31,10 @@ function ModalDeleteCategory({
   const onDialogClose = () => {
     setIsOpen(false);
   };
- 
+
   const onDialogOk = async () => {
     const response = await axios.delete(
-      DELETE_CATEGORY_CUSTOMERS_API_URL +'/' + category?._id,
+      DELETE_CATEGORY_CUSTOMERS_API_URL + '/' + category?._id,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -43,9 +46,9 @@ function ModalDeleteCategory({
       toast.push(
         <Notification
           className="bg-green-500"
-          title={t("cat.categoryAdded")}
+          title={t('cat.categoryAdded')}
           type="success"
-          customIcon={<HiCheckCircle color='white' size={20}/>}
+          customIcon={<HiCheckCircle color="white" size={20} />}
         />
       );
       handleCloseModal();
@@ -60,17 +63,17 @@ function ModalDeleteCategory({
     >
       <div className="flex flex-col h-full justify-between">
         <h5 className="mb-4">{title}</h5>
-        <p>{t("cat.deleteCategoryConfirmation")}</p>
+        <p>{t('cat.deleteCategoryConfirmation')}</p>
         <div className="text-right mt-6">
           <Button
             className="ltr:mr-2 rtl:ml-2"
             variant="plain"
             onClick={onDialogClose}
           >
-            {t("cancel")}
+            {t('cancel')}
           </Button>
           <Button variant="solid" onClick={onDialogOk}>
-            {t("delete")}
+            {t('delete')}
           </Button>
         </div>
       </div>
@@ -78,4 +81,4 @@ function ModalDeleteCategory({
   );
 }
 
-export default ModalDeleteCategory
+export default ModalDeleteCategory;

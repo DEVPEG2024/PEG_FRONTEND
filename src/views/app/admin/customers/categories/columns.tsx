@@ -1,15 +1,18 @@
-import { useTranslation } from "react-i18next";
-import {  Button } from "@/components/ui"; // Assurez-vous que le chemin est correct
-import {  HiFolderOpen, HiPencil, HiTrash,} from "react-icons/hi";
-import { ICategoryCustomer } from "@/services/CustomerServices";
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui'; // Assurez-vous que le chemin est correct
+import { HiFolderOpen, HiPencil, HiTrash } from 'react-icons/hi';
+import { ICategoryCustomer } from '@/services/CustomerServices';
 
-export const useColumns = (handleDeleteCategory: (customer: ICategoryCustomer) => void, handleEditCategory: (customer: ICategoryCustomer) => void ) => {
+export const useColumns = (
+  handleDeleteCategory: (customer: ICategoryCustomer) => void,
+  handleEditCategory: (customer: ICategoryCustomer) => void
+) => {
   const { t } = useTranslation();
 
   return [
     {
-      header: t("title"),
-      accessorKey: "title",
+      header: t('title'),
+      accessorKey: 'title',
       enableSorting: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex items-center gap-2">
@@ -20,8 +23,8 @@ export const useColumns = (handleDeleteCategory: (customer: ICategoryCustomer) =
     },
 
     {
-      header: t("cust.total_customers"),
-      accessorKey: "customers",
+      header: t('cust.total_customers'),
+      accessorKey: 'customers',
       enableSorting: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex items-center gap-2">{row.original.customers}</div>
@@ -29,8 +32,8 @@ export const useColumns = (handleDeleteCategory: (customer: ICategoryCustomer) =
     },
 
     {
-      header: "",
-      accessorKey: "actions",
+      header: '',
+      accessorKey: 'actions',
       enableSorting: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex justify-end items-center gap-2">

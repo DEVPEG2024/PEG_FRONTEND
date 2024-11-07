@@ -1,11 +1,11 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { IForm } from "@/@types/form";
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { IForm } from '@/@types/form';
 import {
   apiCreateForm,
   apiDeleteForm,
   apiGetForms,
-  apiUpdateForm
-} from "@/services/FormServices";
+  apiUpdateForm,
+} from '@/services/FormServices';
 
 export type StateData = {
   loading: boolean;
@@ -24,12 +24,12 @@ type Query = {
 };
 
 type GetProductListRequest = Query;
-export const SLICE_NAME = "forms";
+export const SLICE_NAME = 'forms';
 
 /// forms
 
 export const getForms = createAsyncThunk(
-  SLICE_NAME + "/getForms",
+  SLICE_NAME + '/getForms',
   async (data: GetProductListRequest) => {
     const response = await apiGetForms(
       data.page,
@@ -41,7 +41,7 @@ export const getForms = createAsyncThunk(
 );
 
 export const createForm = createAsyncThunk(
-  SLICE_NAME + "/createForm",
+  SLICE_NAME + '/createForm',
   async (data: IForm) => {
     const response = await apiCreateForm(data);
     return response.data;
@@ -49,7 +49,7 @@ export const createForm = createAsyncThunk(
 );
 
 export const updateForm = createAsyncThunk(
-  SLICE_NAME + "/updateForm",
+  SLICE_NAME + '/updateForm',
   async (data: IForm) => {
     const response = await apiUpdateForm(data);
     return response.data;
@@ -58,9 +58,9 @@ export const updateForm = createAsyncThunk(
 
 // delete form
 export const deleteForm = createAsyncThunk(
-  SLICE_NAME + "/deleteForm",
+  SLICE_NAME + '/deleteForm',
   async (id: string) => {
-     await apiDeleteForm(id);
+    await apiDeleteForm(id);
     return id;
   }
 );
@@ -72,7 +72,7 @@ const initialState: StateData = {
   form: null,
   total: 0,
   result: false,
-  message: "",
+  message: '',
 };
 
 const formsSlice = createSlice({
@@ -108,10 +108,10 @@ const formsSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(deleteForm.fulfilled, (state, action) => {
-        console.log(action.payload);
+      console.log(action.payload);
       state.loading = false;
       state.forms = state.forms.filter((form) => form._id !== action.payload);
-    })
+    });
   },
 });
 

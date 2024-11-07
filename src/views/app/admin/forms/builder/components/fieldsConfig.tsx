@@ -8,7 +8,11 @@ interface FieldConfigProps {
   handleAddField: (field: Form) => void;
 }
 
-const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange, handleAddField }) => {
+const FieldConfig: React.FC<FieldConfigProps> = ({
+  selectedField,
+  onConfigChange,
+  handleAddField,
+}) => {
   const [newOption, setNewOption] = useState('');
 
   if (!selectedField) return null;
@@ -27,32 +31,37 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
   const renderOptions = () => (
     <div>
       <h4 className="font-semibold mb-2">Options</h4>
-      {selectedField.options && selectedField.options.map((option, index) => (
-        <div key={index} className="flex items-center mb-2">
-          <Input value={option} readOnly />
-          <Button
-            onClick={() => onConfigChange({
-              options: selectedField.options?.filter((_, i) => i !== index)
-            })}
-            className="ml-2"
-          >
-            Supprimer
-          </Button>
-        </div>
-      ))}
+      {selectedField.options &&
+        selectedField.options.map((option, index) => (
+          <div key={index} className="flex items-center mb-2">
+            <Input value={option} readOnly />
+            <Button
+              onClick={() =>
+                onConfigChange({
+                  options: selectedField.options?.filter((_, i) => i !== index),
+                })
+              }
+              className="ml-2"
+            >
+              Supprimer
+            </Button>
+          </div>
+        ))}
       <div className="flex items-center">
         <Input
           value={newOption}
           onChange={(e) => setNewOption(e.target.value)}
           placeholder="Nouvelle option"
         />
-        <Button onClick={handleAddOption} className="ml-2">Ajouter</Button>
+        <Button onClick={handleAddOption} className="ml-2">
+          Ajouter
+        </Button>
       </div>
     </div>
   );
   return (
     <div className="rounded-md">
-       <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold mb-4">Configuration du champ</h3>
         <Button
           variant="solid"
@@ -73,7 +82,7 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
           value={selectedField.placeholder}
           onChange={(e) => onConfigChange({ placeholder: e.target.value })}
         />
-        
+
         {/* Configuration spécifique pour chaque type de champ */}
         {selectedField.type === 'input' && (
           <Input
@@ -81,7 +90,7 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
             onChange={(e) => onConfigChange({ inputType: e.target.value })}
           />
         )}
-        
+
         {selectedField.type === 'textarea' && (
           <Input
             placeholder="Nombre de lignes"
@@ -89,23 +98,30 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
             onChange={(e) => onConfigChange({ rows: parseInt(e.target.value) })}
           />
         )}
-        
-        {(selectedField.type === 'select' || selectedField.type === 'checkbox' || selectedField.type === 'radio') && renderOptions()}
-        
+
+        {(selectedField.type === 'select' ||
+          selectedField.type === 'checkbox' ||
+          selectedField.type === 'radio') &&
+          renderOptions()}
+
         {selectedField.type === 'date' && (
           <DatePicker
             placeholder="Date par défaut"
-            onChange={(date: Date | null) => onConfigChange({ defaultDate: date })}
+            onChange={(date: Date | null) =>
+              onConfigChange({ defaultDate: date })
+            }
           />
         )}
-        
+
         {selectedField.type === 'file' && (
           <Input
             placeholder="Types de fichiers acceptés"
-            onChange={(e) => onConfigChange({ acceptedFileTypes: e.target.value })}
+            onChange={(e) =>
+              onConfigChange({ acceptedFileTypes: e.target.value })
+            }
           />
         )}
-        
+
         {/*selectedField.type === 'number' && (
           <>
             <Input
@@ -118,7 +134,7 @@ const FieldConfig: React.FC<FieldConfigProps> = ({ selectedField, onConfigChange
             />
           </>
         )*/}
-        
+
         {selectedField.type === 'color' && (
           <Input
             placeholder="Couleur par défaut"

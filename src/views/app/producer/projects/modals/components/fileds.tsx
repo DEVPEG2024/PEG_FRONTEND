@@ -1,6 +1,16 @@
-import { Input } from '@/components/ui'
+import { Input } from '@/components/ui';
 
-function FieldCustom({value, setValue, placeholder, type = "text"}: {value: string | number, setValue: (value: string | number) => void, placeholder: string, type?: string}) {
+function FieldCustom({
+  value,
+  setValue,
+  placeholder,
+  type = 'text',
+}: {
+  value: string | number;
+  setValue: (value: string | number) => void;
+  placeholder: string;
+  type?: string;
+}) {
   return (
     <div>
       <p className="text-sm text-gray-200 mb-2">{placeholder}</p>
@@ -15,4 +25,4 @@ function FieldCustom({value, setValue, placeholder, type = "text"}: {value: stri
   );
 }
 
-export default FieldCustom
+export default FieldCustom;

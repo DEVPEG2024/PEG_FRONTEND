@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Page, Text, View, Document, StyleSheet, PDFViewer, Image, Font } from '@react-pdf/renderer'
-import QRCode from 'qrcode'
+import {
+  Page,
+  Text,
+  View,
+  Document,
+  StyleSheet,
+  PDFViewer,
+  Image,
+  Font,
+} from '@react-pdf/renderer';
+import QRCode from 'qrcode';
 import dayjs from 'dayjs';
 import { Dialog } from '@/components/ui';
 import { useAppSelector } from '@/store';
@@ -9,49 +18,63 @@ import { Invoice } from '@/@types/invoice';
 import { paymentModeData } from '../lists/constants';
 import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config';
 
-
-const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClose: () => void, invoice: Invoice}) => {
-    const user = invoice.sellerId
+const ModalPrintInvoice = ({
+  isOpen,
+  onClose,
+  invoice,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  invoice: Invoice;
+}) => {
+  const user = invoice.sellerId;
   const order = invoice;
-  const [qrcod, setQrcode] = useState('')
- 
+  const [qrcod, setQrcode] = useState('');
+
   useEffect(() => {
     Font.register({
       family: 'Roboto',
       fonts: [
         {
-          src: '../../../../assets/fonts/Roboto/Roboto-Regular.ttf'
+          src: '../../../../assets/fonts/Roboto/Roboto-Regular.ttf',
         },
         {
           src: '../../../../assets/fonts/Roboto/Roboto-Bold.ttf',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
         },
         {
           src: '../../../../assets/fonts/Roboto/Roboto-Italic.ttf',
           fontWeight: 'normal',
-          fontStyle: 'italic'
+          fontStyle: 'italic',
         },
         {
           src: '../../../../assets/fonts/Roboto/Roboto-BoldItalic.ttf',
           fontWeight: 'bold',
-          fontStyle: 'italic'
-        }
-      ]
-    })
-    QRCode.toDataURL(invoice?._id.toString()).then(setQrcode)
-  }, [invoice?._id])
-  const textPaymentMethod = paymentModeData.find((item: any) => item.value === invoice?.paymentMethod)?.label
+          fontStyle: 'italic',
+        },
+      ],
+    });
+    QRCode.toDataURL(invoice?._id.toString()).then(setQrcode);
+  }, [invoice?._id]);
+  const textPaymentMethod = paymentModeData.find(
+    (item: any) => item.value === invoice?.paymentMethod
+  )?.label;
   return (
     <>
       <Dialog isOpen={isOpen} onClose={onClose} width={800}>
-        <h3 className="text-center text-2xl font-bold">Facture N° {invoice?.invoiceNumber}</h3>
+        <h3 className="text-center text-2xl font-bold">
+          Facture N° {invoice?.invoiceNumber}
+        </h3>
         <div className="flex flex-col justify-between mt-4">
-          <PDFViewer style={{ width: "100%", height: "700px" }}>
+          <PDFViewer style={{ width: '100%', height: '700px' }}>
             <Document>
               <Page size="A4">
                 <View style={styles.page}>
                   <View style={styles.section}>
-                    <Image src={API_URL_IMAGE + user?.logo} style={{ width: '200px', height: '70px' }} />
+                    <Image
+                      src={API_URL_IMAGE + user?.logo}
+                      style={{ width: '200px', height: '70px' }}
+                    />
                     <Text
                       style={{ fontSize: 10, marginTop: 10, fontWeight: 700 }}
                     >
@@ -61,7 +84,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                       {user?.address}
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      {user?.zip + ", " + user?.city}
+                      {user?.zip + ', ' + user?.city}
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
                       Siret : {user?.siret}
@@ -75,11 +98,11 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
                       Email : {user?.email}
                     </Text>
-                    <View style={{ flexDirection: "row", marginTop: 10 }}>
+                    <View style={{ flexDirection: 'row', marginTop: 10 }}>
                       <View style={styles.section2}>
                         <Text
                           style={{
-                            fontWeight: "bold",
+                            fontWeight: 'bold',
                             fontSize: 10,
                             padding: 3,
                           }}
@@ -93,15 +116,15 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                         </Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: "row" }}>
+                    <View style={{ flexDirection: 'row' }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 10, padding: 3 }}>
-                          Date d'échéance :{" "}
+                          Date d'échéance :{' '}
                         </Text>
                       </View>
                       <View style={styles.section5}>
                         <Text style={{ fontSize: 10, padding: 3 }}>
-                          {dayjs(invoice?.dueDate).format("DD.MM.YYYY")}
+                          {dayjs(invoice?.dueDate).format('DD.MM.YYYY')}
                         </Text>
                       </View>
                     </View>
@@ -113,19 +136,19 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                         style={{
                           fontSize: 19,
                           padding: 7,
-                          textAlign: "center",
+                          textAlign: 'center',
                         }}
                       >
                         FACTURE
                       </Text>
                     </View>
-                    <View style={{ flexDirection: "row" }}>
+                    <View style={{ flexDirection: 'row' }}>
                       <View style={styles.section2}>
                         <Text
                           style={{
                             fontSize: 10,
                             padding: 7,
-                            textAlign: "center",
+                            textAlign: 'center',
                           }}
                         >
                           FACTURE N°
@@ -136,7 +159,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                           style={{
                             fontSize: 10,
                             padding: 7,
-                            textAlign: "center",
+                            textAlign: 'center',
                           }}
                         >
                           Date
@@ -147,26 +170,26 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                           style={{
                             fontSize: 10,
                             padding: 7,
-                            textAlign: "center",
+                            textAlign: 'center',
                           }}
                         >
                           Client
                         </Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: "row" }}>
+                    <View style={{ flexDirection: 'row' }}>
                       <View style={styles.section3}>
-                        <Text style={{ fontSize: 10, textAlign: "center" }}>
+                        <Text style={{ fontSize: 10, textAlign: 'center' }}>
                           {invoice?.invoiceNumber}
                         </Text>
                       </View>
                       <View style={styles.section3}>
-                        <Text style={{ fontSize: 10, textAlign: "center" }}>
-                          {dayjs(invoice?.invoiceDate).format("DD.MM.YYYY")}
+                        <Text style={{ fontSize: 10, textAlign: 'center' }}>
+                          {dayjs(invoice?.invoiceDate).format('DD.MM.YYYY')}
                         </Text>
                       </View>
                       <View style={styles.section3}>
-                        <Text style={{ fontSize: 10, textAlign: "center" }}>
+                        <Text style={{ fontSize: 10, textAlign: 'center' }}>
                           {invoice?.customerId._id.slice(0, 5).toUpperCase()}
                         </Text>
                       </View>
@@ -176,7 +199,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                         style={{
                           fontSize: 14,
                           padding: 7,
-                          textAlign: "center",
+                          textAlign: 'center',
                         }}
                       >
                         {invoice?.customerId.companyName}
@@ -185,7 +208,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                         style={{
                           fontSize: 10,
                           padding: 7,
-                          textAlign: "center",
+                          textAlign: 'center',
                         }}
                       >
                         {invoice?.customerId.address}
@@ -194,11 +217,11 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                         style={{
                           fontSize: 10,
                           padding: 7,
-                          textAlign: "center",
+                          textAlign: 'center',
                         }}
                       >
                         {invoice?.customerId.zip +
-                          " - " +
+                          ' - ' +
                           invoice?.customerId.city}
                       </Text>
                     </View>
@@ -206,7 +229,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                 </View>
                 <View style={styles.page2}>
                   <View style={styles.section10}>
-                    <View style={{ flexDirection: "row", width: "100%" }}>
+                    <View style={{ flexDirection: 'row', width: '100%' }}>
                       <View style={styles.section11}>
                         <Text style={{ fontSize: 8, padding: 4 }}>Réf</Text>
                       </View>
@@ -233,16 +256,16 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                       return (
                         <View
                           style={{
-                            flexDirection: "row",
-                            width: "100%",
+                            flexDirection: 'row',
+                            width: '100%',
                             borderBottom: 1,
-                            borderColor: "#ECECEC",
+                            borderColor: '#ECECEC',
                           }}
                           key={i}
                         >
                           <View style={styles.section13}>
                             <Text style={{ fontSize: 8, padding: 4 }}>
-                              {i+1}
+                              {i + 1}
                             </Text>
                           </View>
                           <View style={styles.section14}>
@@ -255,7 +278,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                               style={{
                                 fontSize: 8,
                                 padding: 4,
-                                textAlign: "right",
+                                textAlign: 'right',
                               }}
                             >
                               {order?.quantity}
@@ -266,7 +289,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                               style={{
                                 fontSize: 8,
                                 padding: 4,
-                                textAlign: "right",
+                                textAlign: 'right',
                               }}
                             >
                               {order?.price.toFixed(2)} €
@@ -277,10 +300,10 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                               style={{
                                 fontSize: 8,
                                 padding: 4,
-                                textAlign: "right",
+                                textAlign: 'right',
                               }}
                             >
-                              20%{" "}
+                              20%{' '}
                             </Text>
                           </View>
                           <View style={styles.section13}>
@@ -288,7 +311,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                               style={{
                                 fontSize: 8,
                                 padding: 4,
-                                textAlign: "right",
+                                textAlign: 'right',
                               }}
                             >
                               {total.toFixed(2)} €
@@ -301,11 +324,11 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                 </View>
                 <View style={styles.page}>
                   <View style={styles.section}>
-                    <View style={{ flexDirection: "row" }}>
+                    <View style={{ flexDirection: 'row' }}>
                       <View style={styles.section22}>
                         <Image
                           source={qrcod}
-                          style={{ width: "100px", paddingRight: 5 }}
+                          style={{ width: '100px', paddingRight: 5 }}
                         />
                       </View>
                       <View style={styles.section00}></View>
@@ -313,10 +336,10 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                   </View>
 
                   <View style={styles.sectionTTC}>
-                    <View style={{ flexDirection: "row", marginTop: 5 }}>
+                    <View style={{ flexDirection: 'row', marginTop: 5 }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 10, padding: 3 }}>
-                          TOTAL HT :{" "}
+                          TOTAL HT :{' '}
                         </Text>
                       </View>
                       <View style={styles.section5}>
@@ -324,17 +347,17 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                           style={{
                             fontSize: 10,
                             padding: 3,
-                            textAlign: "right",
+                            textAlign: 'right',
                           }}
                         >
                           {invoice?.amount.toFixed(2)} €
                         </Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: "row", marginTop: 2 }}>
+                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 10, padding: 3 }}>
-                          TVA {invoice?.vat > 0 ? "20%" : "0%"} :{" "}
+                          TVA {invoice?.vat > 0 ? '20%' : '0%'} :{' '}
                         </Text>
                       </View>
                       <View style={styles.section5}>
@@ -342,17 +365,17 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                           style={{
                             fontSize: 10,
                             padding: 3,
-                            textAlign: "right",
+                            textAlign: 'right',
                           }}
                         >
                           {invoice?.vatAmount.toFixed(2)} €
                         </Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: "row", marginTop: 2 }}>
+                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 12, padding: 3 }}>
-                          Total TTC :{" "}
+                          Total TTC :{' '}
                         </Text>
                       </View>
                       <View style={styles.section5}>
@@ -360,7 +383,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                           style={{
                             fontSize: 12,
                             padding: 3,
-                            textAlign: "right",
+                            textAlign: 'right',
                           }}
                         >
                           {order?.totalAmount.toFixed(2)} €
@@ -371,19 +394,19 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                 </View>
                 <View style={styles.sectionFooter}>
                   <Text
-                    style={{ fontSize: 6, padding: 3, textAlign: "center" }}
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
                     {user?.companyName +
-                      " - " +
+                      ' - ' +
                       user?.address +
-                      " - " +
+                      ' - ' +
                       user?.zip +
-                      ", " +
-                      user?.city}{" "}
+                      ', ' +
+                      user?.city}{' '}
                     - RCS : {user?.siret} - N° TVA : {user?.vat}
                   </Text>
                   <Text
-                    style={{ fontSize: 6, padding: 3, textAlign: "center" }}
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
                     Pas d'escompte en cas de paiement anticipé. - Pénalités pour
                     retard de paiement : 3 fois le taux d'intérêt légal -
@@ -391,7 +414,7 @@ const ModalPrintInvoice = ({isOpen, onClose, invoice } : {isOpen: boolean, onClo
                     retard de paiement : 40,00 €
                   </Text>
                   <Text
-                    style={{ fontSize: 6, padding: 3, textAlign: "center" }}
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
                     RESERVE DE PROPRIETE : Nous nous réservons la propriété des
                     marchandises jusqu'au paiement du prix par l'acheteur. Notre
@@ -413,7 +436,7 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'row',
     with: '100%',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
   },
   page2: {
     flexDirection: 'row',
@@ -423,28 +446,28 @@ const styles = StyleSheet.create({
     marginRight: 20,
     borderWidth: 1,
     borderRadius: 2,
-    borderColor: '#ECECEC'
+    borderColor: '#ECECEC',
   },
   text: {
     fontSize: 10,
-    marginTop: 10
+    marginTop: 10,
   },
   section: {
     margin: 20,
-    flexGrow: 1
+    flexGrow: 1,
   },
   sectionFooter: {
     margin: 20,
     flexGrow: 1,
-    justifyContent: 'flex-end'
+    justifyContent: 'flex-end',
   },
   sectionTTC: {
     margin: 20,
     flexGrow: 1,
-    alignItems: 'flex-end'
+    alignItems: 'flex-end',
   },
   section10: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   section1: {
     borderWidth: 1,
@@ -454,7 +477,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderColor: '#ECECEC',
-    backgroundColor: '#ECECEC'
+    backgroundColor: '#ECECEC',
   },
   section4: {
     borderWidth: 1,
@@ -464,66 +487,66 @@ const styles = StyleSheet.create({
     marginTop: 25,
     justifyContent: 'center',
     borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
   },
   section2: {
     borderWidth: 1,
     borderRadius: 2,
     width: '100px',
     borderColor: '#ECECEC',
-    backgroundColor: '#ECECEC'
+    backgroundColor: '#ECECEC',
   },
   section22: {
     borderWidth: 1,
     padding: 3,
     borderRadius: 2,
     borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
   },
   section11: {
     borderWidth: 1,
     width: '10%',
     borderColor: '#FFF',
-    backgroundColor: '#ECECEC'
+    backgroundColor: '#ECECEC',
   },
   section13: {
     width: '10%',
-    backgroundColor: '#FFF'
+    backgroundColor: '#FFF',
   },
   section15: {
     borderWidth: 1,
     width: '5%',
     borderColor: '#FFF',
-    backgroundColor: '#ECECEC'
+    backgroundColor: '#ECECEC',
   },
   section16: {
     width: '5%',
-    backgroundColor: '#FFF'
+    backgroundColor: '#FFF',
   },
   section12: {
     borderWidth: 1,
     width: '60%',
     borderColor: '#FFF',
-    backgroundColor: '#ECECEC'
+    backgroundColor: '#ECECEC',
   },
   section14: {
     width: '60%',
-    backgroundColor: '#FFF'
+    backgroundColor: '#FFF',
   },
   section5: {
     borderWidth: 1,
     borderRadius: 2,
     width: '100px',
     borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
   },
   section00: {
     borderWidth: 1,
     borderRadius: 2,
     width: '250px',
-    height : '100px',
+    height: '100px',
     borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
   },
   section3: {
     borderWidth: 1,
@@ -532,8 +555,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100px',
     borderColor: '#ECECEC',
-    backgroundColor: '#FFF'
-  }
-})
+    backgroundColor: '#FFF',
+  },
+});
 
 export default ModalPrintInvoice;

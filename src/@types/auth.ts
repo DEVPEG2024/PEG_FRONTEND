@@ -1,10 +1,10 @@
 export type SignInCredential = {
-    email: string
+    identifier: string
     password: string
 }
 
 export type SignInResponse = {
-  token: string;
+  jwt: string;
   user: {
     _id: string; // Identifiant unique
     firstName: string; // Prénom

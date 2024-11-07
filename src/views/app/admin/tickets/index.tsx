@@ -1,9 +1,9 @@
-import { Container, DataTable } from "@/components/shared";
-import HeaderTitle from "@/components/template/HeaderTitle";
-import { useEffect, useState } from "react";
-import { useColumns } from "./columns";
-import { Input } from "@/components/ui";
-import { injectReducer, useAppDispatch } from "@/store";
+import { Container, DataTable } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { useEffect, useState } from 'react';
+import { useColumns } from './columns';
+import { Input } from '@/components/ui';
+import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteTicket,
   getTickets,
@@ -11,21 +11,21 @@ import reducer, {
   setNewTicketDialog,
   setSelectedTicket,
   useAppSelector,
-} from "./store";
-import ModalNewTicket from "./modals/newTicket";
+} from './store';
+import ModalNewTicket from './modals/newTicket';
 
-import { ITicket } from "@/@types/ticket";
-import { useNavigate } from "react-router-dom";
-import ModalEditTicket from "./modals/editTicket";
+import { ITicket } from '@/@types/ticket';
+import { useNavigate } from 'react-router-dom';
+import ModalEditTicket from './modals/editTicket';
 
-injectReducer("tickets", reducer);
+injectReducer('tickets', reducer);
 
 const Tickets = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const { tickets, total } = useAppSelector((state) => state.tickets.data);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ const Tickets = () => {
         pageSize: pageSize,
         searchTerm: searchTerm,
       })
-    )
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -80,7 +80,7 @@ const Tickets = () => {
         title="Tickets"
         buttonTitle="Ajouter un ticket"
         description="Gérer les tickets"
-        link={"/support/add"}
+        link={'/support/add'}
         addAction={true}
         action={addTicket}
         total={total}
@@ -88,7 +88,7 @@ const Tickets = () => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={"Rechercher un ticket"}
+            placeholder={'Rechercher un ticket'}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -108,7 +108,6 @@ const Tickets = () => {
       </div>
       <ModalNewTicket />
       <ModalEditTicket />
-
     </Container>
   );
 };

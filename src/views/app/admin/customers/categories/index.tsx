@@ -1,28 +1,27 @@
-import {  Container, DataTable } from "@/components/shared";
-import HeaderTitle from "@/components/template/HeaderTitle";
-import { useEffect, useState } from "react";
-import { useColumns } from "./columns";
-import { Input } from "@/components/ui";
-import { useTranslation } from "react-i18next";
-import useCategoryCustomer from "@/utils/hooks/customers/useCategoryCustomer";
-import { ICategoryCustomer } from "@/services/CustomerServices";
-import ModalAddCategory from "./modals/form";
-import ModalDeleteCategory from "./modals/delete";
-import Empty from "@/components/shared/Empty";
-
+import { Container, DataTable } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { useEffect, useState } from 'react';
+import { useColumns } from './columns';
+import { Input } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
+import useCategoryCustomer from '@/utils/hooks/customers/useCategoryCustomer';
+import { ICategoryCustomer } from '@/services/CustomerServices';
+import ModalAddCategory from './modals/form';
+import ModalDeleteCategory from './modals/delete';
+import Empty from '@/components/shared/Empty';
 
 const Categories = () => {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isOpenEdit, setIsOpenEdit] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [category, setCategory] = useState<ICategoryCustomer | null>(null);
-  const { getCategoriesCustomers } = useCategoryCustomer()
-  const [customers, setCustomers] = useState<ICategoryCustomer[]>([])
+  const { getCategoriesCustomers } = useCategoryCustomer();
+  const [customers, setCustomers] = useState<ICategoryCustomer[]>([]);
 
   useEffect(() => {
     fetchCustomers();
@@ -31,27 +30,31 @@ const Categories = () => {
   const handleAddCategory = () => {
     setCategory(null);
     setIsOpen(true);
-  }
+  };
 
   const handleEditCategory = (customer: ICategoryCustomer) => {
     setCategory(customer);
     setIsOpenEdit(true);
-  }
+  };
 
   const handleCloseModal = () => {
     setIsOpen(false);
     setIsOpenEdit(false);
     setIsOpenDelete(false);
     setCategory(null);
-  }
+  };
 
   const handleDeleteCategory = (category: ICategoryCustomer) => {
     setCategory(category);
     setIsOpenDelete(true);
-  }
+  };
 
   const fetchCustomers = async () => {
-    const result = await getCategoriesCustomers(currentPage, pageSize, searchTerm);
+    const result = await getCategoriesCustomers(
+      currentPage,
+      pageSize,
+      searchTerm
+    );
     setCustomers(result.data || []);
     setTotalItems(result.total || 0);
   };
@@ -61,16 +64,15 @@ const Categories = () => {
     setCurrentPage(1);
   };
 
+  const columns = useColumns(handleDeleteCategory, handleEditCategory);
+  const onPaginationChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-  const columns = useColumns(handleDeleteCategory, handleEditCategory );
-const onPaginationChange = (page: number) => {
-  setCurrentPage(page);
-}
-
-const onSelectChange = (value = 10) => {
-  setPageSize(Number(value));
-  setCurrentPage(1); // Reset to first page when changing page size
-}
+  const onSelectChange = (value = 10) => {
+    setPageSize(Number(value));
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
   return (
     <Container>
       <HeaderTitle
@@ -85,7 +87,7 @@ const onSelectChange = (value = 10) => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={t("cat.search")}
+            placeholder={t('cat.search')}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -105,7 +107,7 @@ const onSelectChange = (value = 10) => {
       {category && (
         <ModalAddCategory
           mode="edit"
-          title={t("cat.editCategory")}
+          title={t('cat.editCategory')}
           isOpen={isOpenEdit}
           handleCloseModal={handleCloseModal}
           setIsOpen={setIsOpenEdit}
@@ -115,7 +117,7 @@ const onSelectChange = (value = 10) => {
       )}
       <ModalAddCategory
         mode="add"
-        title={t("cat.addCategory")}
+        title={t('cat.addCategory')}
         isOpen={isOpen}
         handleCloseModal={handleCloseModal}
         setIsOpen={setIsOpen}
@@ -124,7 +126,7 @@ const onSelectChange = (value = 10) => {
       />
       {category && (
         <ModalDeleteCategory
-          title={t("cat.deleteCategory")}
+          title={t('cat.deleteCategory')}
           isOpen={isOpenDelete}
           handleCloseModal={handleCloseModal}
           setIsOpen={setIsOpenDelete}
@@ -132,10 +134,8 @@ const onSelectChange = (value = 10) => {
           category={category}
         />
       )}
-      
-
     </Container>
   );
-}
+};
 
-export default Categories
+export default Categories;

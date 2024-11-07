@@ -1,17 +1,17 @@
-import AdaptableCard from "@/components/shared/AdaptableCard";
-import RichTextEditor from "@/components/shared/RichTextEditor";
-import Input from "@/components/ui/Input";
-import { FormItem } from "@/components/ui/Form";
-import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
-import { Select } from "@/components/ui";
-import { IOffer } from "@/@types/offer";
+import AdaptableCard from '@/components/shared/AdaptableCard';
+import RichTextEditor from '@/components/shared/RichTextEditor';
+import Input from '@/components/ui/Input';
+import { FormItem } from '@/components/ui/Form';
+import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import { Select } from '@/components/ui';
+import { IOffer } from '@/@types/offer';
 
 type Options = {
   label: string;
   value: string;
-}
+};
 
-type FormFieldsName = IOffer
+type FormFieldsName = IOffer;
 
 type BasicInformationFields = {
   touched: FormikTouched<FormFieldsName>;
@@ -31,17 +31,16 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     errors,
     type,
     customers,
-    setSelectedCustomers
+    setSelectedCustomers,
   } = props;
-  
 
   return (
     <AdaptableCard divider className="mb-4">
-      <h5>{type === "edit" ? "Modification de l'offre" : "Nouvelle offre"}</h5>
+      <h5>{type === 'edit' ? "Modification de l'offre" : 'Nouvelle offre'}</h5>
       <p className="mb-6">
-        {type === "edit"
+        {type === 'edit'
           ? "Remplissez les informations de l'offre à modifier"
-          : "Remplissez les informations de la nouvelle offre"}
+          : 'Remplissez les informations de la nouvelle offre'}
       </p>
       <div className="grid grid-cols-4 gap-4">
         <FormItem
@@ -84,16 +83,14 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             component={Input}
           />
         </FormItem>
-        </div>
-        <div className="grid grid-cols-4 gap-4 mb-8">
+      </div>
+      <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="col-span-2">
           <p className="font-bold mb-2">Formulaire</p>
           <Select
             placeholder="Choisir un formulaire"
             options={forms}
-            onChange={(e) =>
-              setForms(e?.value as string)
-            }
+            onChange={(e) => setForms(e?.value as string)}
           />
         </div>
         <div className="col-span-2">
@@ -101,12 +98,10 @@ const BasicInformationFields = (props: BasicInformationFields) => {
           <Select
             placeholder="Choisir un client"
             options={customers}
-            onChange={(e) =>
-              setSelectedCustomers(e?.value as string)
-            }
+            onChange={(e) => setSelectedCustomers(e?.value as string)}
           />
         </div>
-        </div>
+      </div>
 
       <FormItem label="Description de l'offre" labelClass="!justify-start">
         <Field name="description">
@@ -114,7 +109,6 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             <RichTextEditor
               value={field.value}
               onChange={(val) => form.setFieldValue(field.name, val)}
-            
             />
           )}
         </Field>

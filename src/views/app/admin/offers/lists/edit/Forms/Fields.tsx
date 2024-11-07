@@ -1,23 +1,23 @@
-import AdaptableCard from "@/components/shared/AdaptableCard";
-import RichTextEditor from "@/components/shared/RichTextEditor";
-import Input from "@/components/ui/Input";
-import { FormItem } from "@/components/ui/Form";
-import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
-import { Select } from "@/components/ui";
-import { IOffer } from "@/@types/offer";
+import AdaptableCard from '@/components/shared/AdaptableCard';
+import RichTextEditor from '@/components/shared/RichTextEditor';
+import Input from '@/components/ui/Input';
+import { FormItem } from '@/components/ui/Form';
+import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import { Select } from '@/components/ui';
+import { IOffer } from '@/@types/offer';
 
 type Options = {
   label: string;
   value: string;
-}
+};
 
-type FormFieldsName = IOffer
+type FormFieldsName = IOffer;
 
 type BasicInformationFields = {
   touched: FormikTouched<FormFieldsName>;
   errors: FormikErrors<FormFieldsName>;
   type: string;
-  offer: IOffer;      
+  offer: IOffer;
   customers: Options[];
   setSelectedCustomers: (value: string) => void;
   forms: Options[];
@@ -29,22 +29,20 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     touched,
     forms,
     setForms,
-    offer,  
+    offer,
     errors,
     type,
     customers,
-    setSelectedCustomers
+    setSelectedCustomers,
   } = props;
-  
-  
 
   return (
     <AdaptableCard divider className="mb-4">
-      <h5>{type === "edit" ? "Modification de l'offre" : "Nouvelle offre"}</h5>
+      <h5>{type === 'edit' ? "Modification de l'offre" : 'Nouvelle offre'}</h5>
       <p className="mb-6">
-        {type === "edit"
+        {type === 'edit'
           ? "Remplissez les informations de l'offre à modifier"
-          : "Remplissez les informations de la nouvelle offre"}
+          : 'Remplissez les informations de la nouvelle offre'}
       </p>
       <div className="grid grid-cols-4 gap-4">
         <FormItem
@@ -94,8 +92,8 @@ const BasicInformationFields = (props: BasicInformationFields) => {
           <Field name="form">
             {({ field, form }: FieldProps) => (
               <Select
-                value={forms.filter(
-                  (option) => field.value?.includes(option.value)
+                value={forms.filter((option) =>
+                  field.value?.includes(option.value)
                 )}
                 placeholder="Choisir un client"
                 options={forms}
@@ -107,20 +105,18 @@ const BasicInformationFields = (props: BasicInformationFields) => {
               />
             )}
           </Field>
-        
         </div>
-        
+
         <div className="col-span-2">
           <p className="font-bold mb-2">Client</p>
           <Field name="customer">
             {({ field, form }: FieldProps) => (
               <Select
-                value={customers.filter(
-                  (option) => field.value?.includes(option.value)
+                value={customers.filter((option) =>
+                  field.value?.includes(option.value)
                 )}
                 placeholder="Choisir un client"
                 options={customers}
-                
                 onChange={(selectedOptions) => {
                   form.setFieldValue(field.name, selectedOptions?.value);
                   setSelectedCustomers(selectedOptions?.value as string);

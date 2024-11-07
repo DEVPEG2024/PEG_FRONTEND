@@ -1,3 +1,3 @@
-import ShowProduct from './ShowProduct'
+import ShowProduct from './ShowProduct';
 
-export default ShowProduct
+export default ShowProduct;

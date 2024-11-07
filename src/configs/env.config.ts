@@ -1,5 +1,5 @@
 const dev = {
-    API_ENDPOINT_URL: 'http://localhost:57002'
+    API_ENDPOINT_URL: 'http://localhost:1337'
   };
   
   // API HEROKU

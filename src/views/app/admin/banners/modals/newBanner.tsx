@@ -1,21 +1,17 @@
+import { Button, Dialog, Input, Select } from '@/components/ui';
+import { t } from 'i18next';
+import { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../store';
+import useUniqueId from '@/components/ui/hooks/useUniqueId';
+import { createBanner, setNewBannerDialog } from '../store/bannerSlice';
+import { IBanner } from '@/@types/banner';
+import FileUplaodCustom from '@/components/shared/Upload';
 import {
-  Button,
-  Dialog,
-  Input,
-  Select,
-} from "@/components/ui";
-import { t } from "i18next";
-import {  useEffect, useState } from "react";
-import {
-  useAppDispatch,
-  useAppSelector,
-} from "../store";
-import useUniqueId from "@/components/ui/hooks/useUniqueId";
-import { createBanner, setNewBannerDialog } from "../store/bannerSlice";
-import { IBanner } from "@/@types/banner";
-import FileUplaodCustom from "@/components/shared/Upload";
-import { apiGetCategoriesCustomers, apiGetCustomers, ICategoryCustomer } from "@/services/CustomerServices";
-import { IUser } from "@/@types/user";
+  apiGetCategoriesCustomers,
+  apiGetCustomers,
+  ICategoryCustomer,
+} from '@/services/CustomerServices';
+import { IUser } from '@/@types/user';
 type Option = {
   value: string;
   label: string;
@@ -23,43 +19,45 @@ type Option = {
 function ModalNewBanner() {
   const user = useAppSelector((state: any) => state.auth.user);
   const { newBannerDialog } = useAppSelector((state) => state.banners.data);
-  const [customers, setCustomers] = useState<Option[]>([])
-  const [customersCategories, setCustomersCategories] = useState<Option[]>([])
-  const newId = useUniqueId("BANNER-", 2).toUpperCase();
+  const [customers, setCustomers] = useState<Option[]>([]);
+  const [customersCategories, setCustomersCategories] = useState<Option[]>([]);
+  const newId = useUniqueId('BANNER-', 2).toUpperCase();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    title: "",
-    image: "",
-    customer: "",
-    link: "",
-    customerCategory : "",
-    status: "active",
+    title: '',
+    image: '',
+    customer: '',
+    link: '',
+    customerCategory: '',
+    status: 'active',
     user: user._id,
   });
   const fetchCustomers = async () => {
-    const response = await apiGetCustomers(1, 1000, "")
-    const customersList = response.data.customers || []
-        const customers = customersList.map((customer: IUser) => ({
-            value: customer._id || "",
-            label: customer.firstName + " " + customer.lastName
-        }))
-        setCustomers(customers)
-}
+    const response = await apiGetCustomers(1, 1000, '');
+    const customersList = response.data.customers || [];
+    const customers = customersList.map((customer: IUser) => ({
+      value: customer._id || '',
+      label: customer.firstName + ' ' + customer.lastName,
+    }));
+    setCustomers(customers);
+  };
 
-const fetchCustomersCategories = async () => {
-    const response = await apiGetCategoriesCustomers(1, 1000, "")
-    const customersCategoriesList = response.data.categories || []
-        const customersCategories = customersCategoriesList.map((customerCategory: ICategoryCustomer) => ({
-            value: customerCategory._id || "",
-            label: customerCategory.label || ""
-        }))
-        setCustomersCategories(customersCategories)
-}
+  const fetchCustomersCategories = async () => {
+    const response = await apiGetCategoriesCustomers(1, 1000, '');
+    const customersCategoriesList = response.data.categories || [];
+    const customersCategories = customersCategoriesList.map(
+      (customerCategory: ICategoryCustomer) => ({
+        value: customerCategory._id || '',
+        label: customerCategory.label || '',
+      })
+    );
+    setCustomersCategories(customersCategories);
+  };
 
   useEffect(() => {
-    fetchCustomers()
-    fetchCustomersCategories()
-  }, [])
+    fetchCustomers();
+    fetchCustomersCategories();
+  }, []);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -69,12 +67,12 @@ const fetchCustomersCategories = async () => {
       })
     );
     setFormData({
-      title: "",
-      image: "",
-      customer: "",
-      link: "",
-      customerCategory : "",
-      status: "active",
+      title: '',
+      image: '',
+      customer: '',
+      link: '',
+      customerCategory: '',
+      status: 'active',
       user: user._id,
     });
     handleClose();
@@ -108,9 +106,9 @@ const fetchCustomersCategories = async () => {
               <Select
                 placeholder="Clients"
                 options={customers}
-                noOptionsMessage={() => "Aucun client trouvé"}
+                noOptionsMessage={() => 'Aucun client trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, customer: e?.value || "" });
+                  setFormData({ ...formData, customer: e?.value || '' });
                 }}
               />
             </div>
@@ -121,31 +119,33 @@ const fetchCustomersCategories = async () => {
               <Select
                 placeholder="Catégorie client"
                 options={customersCategories}
-                noOptionsMessage={() => "Aucune catégorie client trouvée"}
+                noOptionsMessage={() => 'Aucune catégorie client trouvée'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, customerCategory: e?.value || "" });
+                  setFormData({
+                    ...formData,
+                    customerCategory: e?.value || '',
+                  });
                 }}
               />
             </div>
           </div>
           <div className="flex flex-col gap-2 mt-4">
-          <FileUplaodCustom
-               image={formData.image}
-               setImage={onFileChange}
-               setFileType={() => {}}
+            <FileUplaodCustom
+              image={formData.image}
+              setImage={onFileChange}
+              setFileType={() => {}}
             />
-            </div>
+          </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
-           
             <Button
               className="ltr:mr-2 rtl:ml-2"
               variant="plain"
               onClick={handleClose}
             >
-              {t("cancel")}
+              {t('cancel')}
             </Button>
             <Button variant="solid" onClick={handleSubmit}>
-              {t("save")}
+              {t('save')}
             </Button>
           </div>
         </div>

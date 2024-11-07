@@ -1,3 +1,3 @@
-import NewOffre from './NewOffre'
+import NewOffre from './NewOffre';
 
-export default NewOffre
+export default NewOffre;

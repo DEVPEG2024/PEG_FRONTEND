@@ -1,3 +1,3 @@
-import ShowOrder from './ShowOrder'
+import ShowOrder from './ShowOrder';
 
-export default ShowOrder
+export default ShowOrder;

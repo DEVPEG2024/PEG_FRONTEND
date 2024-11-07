@@ -16,7 +16,8 @@ export type UserState = {
     city?: string
     zip?: string
     country?: string
-    companyName?: string
+    companyName?: string,
+    customer: any
 }
 
 const initialState: UserState = {
@@ -33,6 +34,7 @@ const initialState: UserState = {
     country: '',
     authority: [],
     companyName: '',
+    customer: null
 }
 
 const userSlice = createSlice({
@@ -54,6 +56,7 @@ const userSlice = createSlice({
             state.authority = action.payload?.authority
             state.companyName = action.payload?.companyName
             state.category = action.payload?.category
+            state.customer = action.payload?.customer
         },
     },
 })

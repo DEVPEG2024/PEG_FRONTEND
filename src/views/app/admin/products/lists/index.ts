@@ -1,3 +1,3 @@
-import ProductsLists from './ProductsLists'
+import ProductsLists from './ProductsLists';
 
-export default ProductsLists
+export default ProductsLists;

@@ -1,9 +1,9 @@
-import { Container, DataTable } from "@/components/shared";
-import HeaderTitle from "@/components/template/HeaderTitle";
-import { useEffect, useState } from "react";
-import { useColumns } from "./columns";
-import { Input } from "@/components/ui";
-import { injectReducer, useAppDispatch } from "@/store";
+import { Container, DataTable } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { useEffect, useState } from 'react';
+import { useColumns } from './columns';
+import { Input } from '@/components/ui';
+import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   getOrders,
   finishOrder,
@@ -13,19 +13,19 @@ import reducer, {
   invalidatePayment,
   pendOrder,
   getOrder,
-} from "./store";
+} from './store';
 
-import { IOrder } from "@/@types/order";
-import { useNavigate } from "react-router-dom";
+import { IOrder } from '@/@types/order';
+import { useNavigate } from 'react-router-dom';
 
-injectReducer("orders", reducer);
+injectReducer('orders', reducer);
 
 const Orders = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const { orders, total } = useAppSelector((state) => state.orders.data);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ const Orders = () => {
         pageSize: pageSize,
         searchTerm: searchTerm,
       })
-    )
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -44,28 +44,28 @@ const Orders = () => {
   };
 
   const handleShowOrder = (order: IOrder) => {
-    dispatch(showOrder(order))
-    navigate("/common/order/show")
+    dispatch(showOrder(order));
+    navigate('/common/order/show');
   };
 
   const handleFinishOrder = async (order: IOrder) => {
-    await dispatch(finishOrder({ order })).unwrap()
-    dispatch(getOrder({ orderId: order._id }))
+    await dispatch(finishOrder({ order })).unwrap();
+    dispatch(getOrder({ orderId: order._id }));
   };
 
   const handlePendOrder = async (order: IOrder) => {
-    await dispatch(pendOrder({ order })).unwrap()
-    dispatch(getOrder({ orderId: order._id }))
+    await dispatch(pendOrder({ order })).unwrap();
+    dispatch(getOrder({ orderId: order._id }));
   };
 
   const handleValidatePaymentStatus = async (order: IOrder) => {
-    await dispatch(validatePayment({ order })).unwrap()
-    dispatch(getOrder({ orderId: order._id }))
+    await dispatch(validatePayment({ order })).unwrap();
+    dispatch(getOrder({ orderId: order._id }));
   };
 
-  const handleInvalidatePaymentStatus =async (order: IOrder) => {
-    await dispatch(invalidatePayment({ order })).unwrap()
-    dispatch(getOrder({ orderId: order._id }))
+  const handleInvalidatePaymentStatus = async (order: IOrder) => {
+    await dispatch(invalidatePayment({ order })).unwrap();
+    dispatch(getOrder({ orderId: order._id }));
   };
 
   const columns = useColumns(
@@ -96,7 +96,7 @@ const Orders = () => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={"Rechercher une commande"}
+            placeholder={'Rechercher une commande'}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
