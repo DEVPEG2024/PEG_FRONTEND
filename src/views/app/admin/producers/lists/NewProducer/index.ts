@@ -1,3 +1,3 @@
-import CustomerNew from './CustomerNew'
+import CustomerNew from './CustomerNew';
 
-export default CustomerNew 
+export default CustomerNew;

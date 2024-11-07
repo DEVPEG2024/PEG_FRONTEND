@@ -1,30 +1,25 @@
-import { Button, DatePicker, Dialog, Input, Select } from "@/components/ui";
-import { t } from "i18next";
-import FieldCustom from "./components/fileds";
-import dayjs from "dayjs";
-import {  useCallback, useEffect, useState } from "react";
-import { HiOutlineCalendar, HiPencil } from "react-icons/hi";
+import { Button, DatePicker, Dialog, Input, Select } from '@/components/ui';
+import { t } from 'i18next';
+import FieldCustom from './components/fileds';
+import dayjs from 'dayjs';
+import { useCallback, useEffect, useState } from 'react';
+import { HiOutlineCalendar, HiPencil } from 'react-icons/hi';
 import {
   setCloseEditDialogTask,
   setEditTaskSelected,
   useAppDispatch,
   useAppSelector,
-} from "../store";
-import { priorityData, statsDataTask } from "../lists/constants";
-import { ITask } from "@/@types/project";
-import { RichTextEditor } from "@/components/shared";
-import { debounce } from "lodash";
-import ReactHtmlParser from 'html-react-parser'
+} from '../store';
+import { priorityData, statsDataTask } from '../lists/constants';
+import { ITask } from '@/@types/project';
+import { RichTextEditor } from '@/components/shared';
+import { debounce } from 'lodash';
+import ReactHtmlParser from 'html-react-parser';
 
-function ModalEditTask({projectId}: {projectId: string}) {
-  const  {editDialogTask}  = useAppSelector(
-    (state) => state.projectList.data
-  );
-  const {selectedTask} = useAppSelector(
-    (state) => state.projectList.data
-  );
+function ModalEditTask({ projectId }: { projectId: string }) {
+  const { editDialogTask } = useAppSelector((state) => state.projectList.data);
+  const { selectedTask } = useAppSelector((state) => state.projectList.data);
   const [description, setDescription] = useState('');
-
 
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
@@ -101,9 +96,9 @@ function ModalEditTask({projectId}: {projectId: string}) {
                 value={priorityData.find(
                   (priority) => priority.value === formData.priority
                 )}
-                noOptionsMessage={() => "Aucun priorité trouvé"}
+                noOptionsMessage={() => 'Aucun priorité trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, priority: e?.value || "" });
+                  setFormData({ ...formData, priority: e?.value || '' });
                 }}
               />
             </div>
@@ -112,12 +107,12 @@ function ModalEditTask({projectId}: {projectId: string}) {
               <Select
                 placeholder="Statut"
                 options={statsDataTask}
-                noOptionsMessage={() => "Aucun statut trouvé"}
+                noOptionsMessage={() => 'Aucun statut trouvé'}
                 value={statsDataTask.find(
                   (status) => status.value === formData.status
                 )}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, status: e?.value || "" });
+                  setFormData({ ...formData, status: e?.value || '' });
                 }}
               />
             </div>
@@ -154,10 +149,10 @@ function ModalEditTask({projectId}: {projectId: string}) {
               variant="plain"
               onClick={handleClose}
             >
-              {t("cancel")}
+              {t('cancel')}
             </Button>
             <Button variant="solid" onClick={handleSubmit}>
-              {t("save")}
+              {t('save')}
             </Button>
           </div>
         </div>

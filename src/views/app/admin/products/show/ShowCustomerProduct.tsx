@@ -1,59 +1,61 @@
-import { injectReducer } from '@/store'
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom"
+import { injectReducer } from '@/store';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import reducer, {
   clearState,
   setFormDialog,
   useAppDispatch,
   useAppSelector,
   getProductById,
-} from "./store";
+} from './store';
 import { API_URL_IMAGE } from '@/configs/api.config';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
-import Input from "@/components/ui/Input";
+import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from '../modal/ModalShowForm';
-injectReducer("showCustomerProduct", reducer);
+injectReducer('showCustomerProduct', reducer);
 
 type ShowCustomerProductParams = {
   id: string;
 };
 
 const ShowCustomerProduct = () => {
-  const { id } = useParams<ShowCustomerProductParams>() as ShowCustomerProductParams
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const { product, formAnswer, sizesSelected } = useAppSelector((state) => state.showCustomerProduct.data)
+  const { id } =
+    useParams<ShowCustomerProductParams>() as ShowCustomerProductParams;
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { product, formAnswer, sizesSelected } = useAppSelector(
+    (state) => state.showCustomerProduct.data
+  );
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
 
   useEffect(() => {
     if (!formAnswer) {
-      navigate("/admin/store/orders")
+      navigate('/admin/store/orders');
     } else {
-      dispatch(getProductById(id))
-
+      dispatch(getProductById(id));
     }
-  }, [dispatch])
+  }, [dispatch]);
 
   useEffect(() => {
-    dispatch(getProductById(id))
-  }, [dispatch])
+    dispatch(getProductById(id));
+  }, [dispatch]);
 
   useEffect(() => {
     if (isFirstRender) {
-      setFirstRender(false)
+      setFirstRender(false);
     }
     return () => {
       if (!isFirstRender) {
-        dispatch(clearState())
+        dispatch(clearState());
       }
-    }
-  }, [isFirstRender])
+    };
+  }, [isFirstRender]);
 
   const handleShowForm = () => {
     dispatch(setFormDialog(true));
-  }
+  };
 
   return (
     <Container className="h-full">
@@ -71,21 +73,32 @@ const ShowCustomerProduct = () => {
             <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
               <div className="flex flex-col justify-between">
                 <h1 className="text-3xl font-bold">{product?.title}</h1>
-                <p className="text-2xl font-semibold">{product?.amount.toFixed(2)} €</p>
+                <p className="text-2xl font-semibold">
+                  {product?.amount.toFixed(2)} €
+                </p>
               </div>
 
-              <p className="mt-4 leading-relaxed">{product?.description.replace('<p>', '').replace('</p>', '')}</p>
+              <p className="mt-4 leading-relaxed">
+                {product?.description.replace('<p>', '').replace('</p>', '')}
+              </p>
 
               {product?.sizes.status && (
                 <div>
-                  <p className="font-bold text-yellow-500 mb-4">Choix des tailles</p>
+                  <p className="font-bold text-yellow-500 mb-4">
+                    Choix des tailles
+                  </p>
                   <div className="grid grid-cols-7 gap-4 mb-6">
                     {product.sizes.options.map((option) => (
                       <div key={option.value} className="grid gap-4">
                         <span>{option.label}</span>
                         <Input
                           name={option.value}
-                          value={sizesSelected.find((sizeSelected) => sizeSelected.value === option.value)?.quantity}
+                          value={
+                            sizesSelected.find(
+                              (sizeSelected) =>
+                                sizeSelected.value === option.value
+                            )?.quantity
+                          }
                           type="number"
                           autoComplete="off"
                           disabled={true}
@@ -104,7 +117,6 @@ const ShowCustomerProduct = () => {
                   {'Voir les détails du produit'}
                 </Button>
               )}
-
             </div>
           </div>
         </div>
@@ -112,6 +124,6 @@ const ShowCustomerProduct = () => {
       {product?.form && <ModalShowForm form={product.form} />}
     </Container>
   );
-}
+};
 
-export default ShowCustomerProduct
+export default ShowCustomerProduct;

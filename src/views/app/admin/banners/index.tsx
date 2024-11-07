@@ -1,9 +1,9 @@
-import { Container, DataTable } from "@/components/shared";
-import HeaderTitle from "@/components/template/HeaderTitle";
-import { useEffect, useState } from "react";
-import { useColumns } from "./columns";
-import { Input } from "@/components/ui";
-import { injectReducer, useAppDispatch } from "@/store";
+import { Container, DataTable } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { useEffect, useState } from 'react';
+import { useColumns } from './columns';
+import { Input } from '@/components/ui';
+import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteBanner,
   getBanners,
@@ -11,20 +11,20 @@ import reducer, {
   setNewBannerDialog,
   setSelectedBanner,
   useAppSelector,
-} from "./store";
-import ModalNewBanner from "./modals/newBanner";
+} from './store';
+import ModalNewBanner from './modals/newBanner';
 
-import { useNavigate } from "react-router-dom";
-import { IBanner } from "@/@types/banner";
-import ModalEditBanner from "./modals/editBanner";
+import { useNavigate } from 'react-router-dom';
+import { IBanner } from '@/@types/banner';
+import ModalEditBanner from './modals/editBanner';
 
-injectReducer("banners", reducer);
+injectReducer('banners', reducer);
 
 const Banners = () => {
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const { banners, total } = useAppSelector((state) => state.banners.data);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const Banners = () => {
         pageSize: pageSize,
         searchTerm: searchTerm,
       })
-    )
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -51,16 +51,11 @@ const Banners = () => {
     dispatch(setEditBannerDialog(true));
   };
 
-
-
   const addBanner = () => {
     dispatch(setNewBannerDialog(true));
   };
 
-  const columns = useColumns(
-    handleUpdateBanner,
-    handleDeleteBanner,
-  );
+  const columns = useColumns(handleUpdateBanner, handleDeleteBanner);
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -75,7 +70,7 @@ const Banners = () => {
         title="Bannières"
         buttonTitle="Ajouter une bannière"
         description="Gérer les bannières"
-        link={"/admin/banners/add"}
+        link={'/admin/banners/add'}
         addAction={true}
         action={addBanner}
         total={total}
@@ -83,7 +78,7 @@ const Banners = () => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={"Rechercher une bannière"}
+            placeholder={'Rechercher une bannière'}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -103,7 +98,6 @@ const Banners = () => {
       </div>
       <ModalNewBanner />
       <ModalEditBanner />
-     
     </Container>
   );
 };

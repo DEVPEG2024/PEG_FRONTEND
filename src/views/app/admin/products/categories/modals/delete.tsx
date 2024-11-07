@@ -1,6 +1,6 @@
-import { Button, Dialog,  Notification, toast} from '@/components/ui'
+import { Button, Dialog, Notification, toast } from '@/components/ui';
 import { apiDeleteCategoryProduct } from '@/services/categoryProduct';
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 import { HiCheckCircle } from 'react-icons/hi';
 
 function ModalDeleteCategory({
@@ -8,7 +8,7 @@ function ModalDeleteCategory({
   isOpen,
   setIsOpen,
   category,
-  fetchCategories
+  fetchCategories,
 }: {
   title: string;
   isOpen: boolean;
@@ -20,17 +20,17 @@ function ModalDeleteCategory({
   const onDialogClose = () => {
     setIsOpen(false);
   };
- 
+
   const onDialogOk = async () => {
-    const response = await apiDeleteCategoryProduct(category || "")
+    const response = await apiDeleteCategoryProduct(category || '');
 
     if (response.status === 200) {
       toast.push(
         <Notification
           className="bg-green-500"
-          title={t("cat.categoryAdded")}
+          title={t('cat.categoryAdded')}
           type="success"
-          customIcon={<HiCheckCircle color='white' size={20}/>}
+          customIcon={<HiCheckCircle color="white" size={20} />}
         />
       );
       onDialogClose();
@@ -45,17 +45,17 @@ function ModalDeleteCategory({
     >
       <div className="flex flex-col h-full justify-between">
         <h5 className="mb-4">{title}</h5>
-        <p>{t("cat.deleteCategoryConfirmation")}</p>
+        <p>{t('cat.deleteCategoryConfirmation')}</p>
         <div className="text-right mt-6">
           <Button
             className="ltr:mr-2 rtl:ml-2"
             variant="plain"
             onClick={onDialogClose}
           >
-            {t("cancel")}
+            {t('cancel')}
           </Button>
           <Button variant="solid" onClick={onDialogOk}>
-            {t("delete")}
+            {t('delete')}
           </Button>
         </div>
       </div>
@@ -63,4 +63,4 @@ function ModalDeleteCategory({
   );
 }
 
-export default ModalDeleteCategory
+export default ModalDeleteCategory;

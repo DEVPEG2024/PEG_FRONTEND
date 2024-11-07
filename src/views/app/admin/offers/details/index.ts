@@ -1,3 +1,3 @@
-import DetailOffer from './DetailOffer'
+import DetailOffer from './DetailOffer';
 
-export default DetailOffer
+export default DetailOffer;

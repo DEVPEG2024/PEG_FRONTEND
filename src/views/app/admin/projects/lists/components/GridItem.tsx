@@ -1,34 +1,32 @@
-import Card from "@/components/ui/Card";
-import ItemDropdown from "./ItemDropdown";
-import AvatarName from "./AvatarName";
-import ProgressionBar from "./ProgressionBar";
-import { Link, useNavigate } from "react-router-dom";
-import { IProject } from "@/@types/project";
-import { LiaBusinessTimeSolid } from "react-icons/lia";
-import { MdAccessTime } from "react-icons/md";
+import Card from '@/components/ui/Card';
+import ItemDropdown from './ItemDropdown';
+import AvatarName from './AvatarName';
+import ProgressionBar from './ProgressionBar';
+import { Link, useNavigate } from 'react-router-dom';
+import { IProject } from '@/@types/project';
+import { LiaBusinessTimeSolid } from 'react-icons/lia';
+import { MdAccessTime } from 'react-icons/md';
 
-import dayjs from "dayjs";
-import { Tag } from "@/components/ui";
-import { statusColorData, statusTextData } from "../constants";
-import { useAppDispatch } from "@/store";
-import { setSelectedProject } from "../../store";
-import { useState } from "react";
-import PayProducerModal from "../../modals/payProducer";
+import dayjs from 'dayjs';
+import { Tag } from '@/components/ui';
+import { statusColorData, statusTextData } from '../constants';
+import { useAppDispatch } from '@/store';
+import { setSelectedProject } from '../../store';
+import { useState } from 'react';
+import PayProducerModal from '../../modals/payProducer';
 
-const GridItem = ({ data, handleDeleteProject }: { data: IProject, handleDeleteProject: (id: string) => void }) => {
+const GridItem = ({
+  data,
+  handleDeleteProject,
+}: {
+  data: IProject;
+  handleDeleteProject: (id: string) => void;
+}) => {
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const {
-    title,
-    status,
-    customer,
-    producer,
-    startDate,
-    endDate,
-    tasks,
-  } = data;
-  const duration = dayjs(endDate).diff(startDate, "day");
+  const { title, status, customer, producer, startDate, endDate, tasks } = data;
+  const duration = dayjs(endDate).diff(startDate, 'day');
   const statusColor = statusColorData[status as keyof typeof statusColorData];
   const statusText = statusTextData[status as keyof typeof statusTextData];
   const handleNavigateDetails = () => {
@@ -37,10 +35,11 @@ const GridItem = ({ data, handleDeleteProject }: { data: IProject, handleDeleteP
   };
 
   const completedTasksCount = tasks.filter(
-    (task) => task.status === "completed"
+    (task) => task.status === 'completed'
   ).length;
 
-  const totalProgress = tasks.length > 0 ? completedTasksCount / tasks.length : 0;
+  const totalProgress =
+    tasks.length > 0 ? completedTasksCount / tasks.length : 0;
   const percentageComplete = (totalProgress * 100).toFixed(0);
   return (
     <Card bodyClass="h-full bg-gray-900 rounded-lg project-card">
@@ -77,7 +76,7 @@ const GridItem = ({ data, handleDeleteProject }: { data: IProject, handleDeleteP
               >
                 <MdAccessTime className="text-white" size={16} />
                 <span className="ml-1 rtl:mr-1 whitespace-nowrapn text-white">
-                  {duration > 0 ? `${duration} jours restant` : "Dépassé"}
+                  {duration > 0 ? `${duration} jours restant` : 'Dépassé'}
                 </span>
               </div>
             </div>

@@ -1,44 +1,52 @@
-import { Button, DatePicker, Dialog, Input, Select, Switcher } from "@/components/ui";
-import { t } from "i18next";
-import dayjs from "dayjs";
-import {  useEffect, useState } from "react";
-import { HiMinus, HiOutlineCalendar, HiPlus } from "react-icons/hi";
+import {
+  Button,
+  DatePicker,
+  Dialog,
+  Input,
+  Select,
+  Switcher,
+} from '@/components/ui';
+import { t } from 'i18next';
+import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
+import { HiMinus, HiOutlineCalendar, HiPlus } from 'react-icons/hi';
 import {
   setEditInvoiceDialog,
   updateInvoice,
   useAppDispatch,
   useAppSelector,
-} from "../store";
-import { paymentModeData, paymentStatusData } from "../lists/constants";
-import { IProject } from "@/@types/project";
-import { Invoice } from "@/@types/invoice";
+} from '../store';
+import { paymentModeData, paymentStatusData } from '../lists/constants';
+import { IProject } from '@/@types/project';
+import { Invoice } from '@/@types/invoice';
 
-
-function ModalEditInvoice({project}: {project: IProject}) {
+function ModalEditInvoice({ project }: { project: IProject }) {
   const { editInvoiceDialog, selectedInvoice } = useAppSelector(
     (state) => state.projectList.data
   );
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    invoiceNumber: "",
-      amount: 0,
-      vatAmount: 0,
+    invoiceNumber: '',
+    amount: 0,
+    vatAmount: 0,
     vat: 0,
     vatEnabled: false,
     totalAmount: 0,
     priority: 'low',
     status: 'pending',
-    items: [{
-      name: "",
-      quantity: 1,
-      price: 0,
-      total: 0,
-    }],
+    items: [
+      {
+        name: '',
+        quantity: 1,
+        price: 0,
+        total: 0,
+      },
+    ],
     invoiceDate: new Date(),
     dueDate: new Date(),
     paymentMethod: '',
     paymentStatus: '',
-    });
+  });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -49,7 +57,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
       })
     );
     setFormData({
-      invoiceNumber:  '',
+      invoiceNumber: '',
       amount: 0,
       vatAmount: 0,
       vat: 0,
@@ -57,12 +65,14 @@ function ModalEditInvoice({project}: {project: IProject}) {
       totalAmount: 0,
       priority: 'low',
       status: 'pending',
-      items: [{
-        name: '',
-        quantity: 0,
-        price: 0,
-        total: 0,
-      }],
+      items: [
+        {
+          name: '',
+          quantity: 0,
+          price: 0,
+          total: 0,
+        },
+      ],
       invoiceDate: new Date(),
       dueDate: new Date(),
       paymentMethod: '',
@@ -77,37 +87,46 @@ function ModalEditInvoice({project}: {project: IProject}) {
   const addProductLine = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { name: '', quantity: 0, price: 0, total: 0 }]
+      items: [...formData.items, { name: '', quantity: 0, price: 0, total: 0 }],
     });
   };
   useEffect(() => {
     setFormData({
       ...formData,
-        invoiceNumber: selectedInvoice?.invoiceNumber || '',
+      invoiceNumber: selectedInvoice?.invoiceNumber || '',
       amount: selectedInvoice?.amount || 0,
       vatAmount: selectedInvoice?.vatAmount || 0,
       vat: selectedInvoice?.vat || 0,
       vatEnabled: selectedInvoice?.vat || 0 > 0 ? true : false,
       totalAmount: selectedInvoice?.totalAmount || 0,
-      paymentMethod: paymentModeData.find(item => item.value === selectedInvoice?.paymentMethod)?.value || '',
-      paymentStatus: paymentStatusData.find(item => item.value === selectedInvoice?.paymentStatus)?.value || '',
+      paymentMethod:
+        paymentModeData.find(
+          (item) => item.value === selectedInvoice?.paymentMethod
+        )?.value || '',
+      paymentStatus:
+        paymentStatusData.find(
+          (item) => item.value === selectedInvoice?.paymentStatus
+        )?.value || '',
       items: selectedInvoice?.items || [],
       invoiceDate: selectedInvoice?.invoiceDate || new Date(),
       dueDate: selectedInvoice?.dueDate || new Date(),
-
     });
   }, [selectedInvoice]);
   const removeProductLine = (index: number) => {
     const newItems = formData.items.filter((_, i) => i !== index);
     setFormData({
       ...formData,
-      items: newItems
+      items: newItems,
     });
   };
-  const updateProductLine = (index: number, field: string, value: string | number) => {
+  const updateProductLine = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'price') {
       newItems[index].total = newItems[index].quantity * newItems[index].price;
     }
@@ -121,7 +140,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
       items: newItems,
       amount: subtotal,
       vatAmount: vatAmount,
-      totalAmount: totalAmount
+      totalAmount: totalAmount,
     });
   };
 
@@ -194,10 +213,12 @@ function ModalEditInvoice({project}: {project: IProject}) {
               <Select
                 placeholder="Mode de paiement"
                 options={paymentModeData}
-                value={paymentModeData.find(item => item.value === formData.paymentMethod)}
-                noOptionsMessage={() => "Aucun mode de paiement trouvé"}
+                value={paymentModeData.find(
+                  (item) => item.value === formData.paymentMethod
+                )}
+                noOptionsMessage={() => 'Aucun mode de paiement trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, paymentMethod: e?.value || "" });
+                  setFormData({ ...formData, paymentMethod: e?.value || '' });
                 }}
               />
             </div>
@@ -208,10 +229,12 @@ function ModalEditInvoice({project}: {project: IProject}) {
               <Select
                 placeholder="Statut de paiement"
                 options={paymentStatusData}
-                value={paymentStatusData.find(item => item.value === formData.paymentStatus)}
-                noOptionsMessage={() => "Aucun statut de paiement trouvé"}
+                value={paymentStatusData.find(
+                  (item) => item.value === formData.paymentStatus
+                )}
+                noOptionsMessage={() => 'Aucun statut de paiement trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, paymentStatus: e?.value || "" });
+                  setFormData({ ...formData, paymentStatus: e?.value || '' });
                 }}
               />
             </div>
@@ -228,7 +251,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
                   placeholder="Nom du produit"
                   value={item.name}
                   onChange={(e) =>
-                    updateProductLine(index, "name", e.target.value)
+                    updateProductLine(index, 'name', e.target.value)
                   }
                 />
                 <Input
@@ -239,7 +262,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
                   onChange={(e) =>
                     updateProductLine(
                       index,
-                      "quantity",
+                      'quantity',
                       parseFloat(e.target.value)
                     )
                   }
@@ -252,7 +275,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
                   onChange={(e) =>
                     updateProductLine(
                       index,
-                      "price",
+                      'price',
                       parseFloat(e.target.value)
                     )
                   }
@@ -307,7 +330,7 @@ function ModalEditInvoice({project}: {project: IProject}) {
             <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
               <span className="text-sm text-gray-200">Sous-total: </span>
               <span className="text-sm text-gray-200">
-                TVA ({formData.vatEnabled ? formData.vat : 0}%):{" "}
+                TVA ({formData.vatEnabled ? formData.vat : 0}%):{' '}
               </span>
               <span className="text-sm text-gray-200">Total:</span>
             </div>
@@ -329,10 +352,10 @@ function ModalEditInvoice({project}: {project: IProject}) {
               variant="plain"
               onClick={handleClose}
             >
-              {t("cancel")}
+              {t('cancel')}
             </Button>
             <Button variant="solid" onClick={handleSubmit}>
-              {t("save")}
+              {t('save')}
             </Button>
           </div>
         </div>

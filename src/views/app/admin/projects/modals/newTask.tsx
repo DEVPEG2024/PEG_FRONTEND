@@ -1,51 +1,49 @@
-import { Button, DatePicker, Dialog, Input, Select } from "@/components/ui";
-import { t } from "i18next";
-import FieldCustom from "./components/fileds";
-import dayjs from "dayjs";
-import {  useState } from "react";
-import { HiOutlineCalendar } from "react-icons/hi";
+import { Button, DatePicker, Dialog, Input, Select } from '@/components/ui';
+import { t } from 'i18next';
+import FieldCustom from './components/fileds';
+import dayjs from 'dayjs';
+import { useState } from 'react';
+import { HiOutlineCalendar } from 'react-icons/hi';
 import {
   createTask,
   setNewDialogTask,
   useAppDispatch,
   useAppSelector,
-} from "../store";
-import useUniqueId from "@/components/ui/hooks/useUniqueId";
-import { priorityData, statsDataTask } from "../lists/constants";
-import { ITask } from "@/@types/project";
-import { RichTextEditor } from "@/components/shared";
-
-
+} from '../store';
+import useUniqueId from '@/components/ui/hooks/useUniqueId';
+import { priorityData, statsDataTask } from '../lists/constants';
+import { ITask } from '@/@types/project';
+import { RichTextEditor } from '@/components/shared';
 
 function ModalNewTask() {
   const { newDialogTask, selectedProject } = useAppSelector(
     (state) => state.projectList.data
   );
-  const newId = useUniqueId('PR-', 10)
+  const newId = useUniqueId('PR-', 10);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
-    title: "",
+    title: '',
     ref: newId,
-    description: "",
+    description: '',
     priority: 'low',
     status: 'pending',
     startDate: new Date(),
     endDate: new Date(),
-    });
+  });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    console.log(formData)
+    console.log(formData);
     dispatch(
       createTask({
         task: formData as unknown as ITask,
-        projectId: selectedProject?._id || "",
+        projectId: selectedProject?._id || '',
       })
     );
     setFormData({
-      title: "",
+      title: '',
       ref: newId,
-      description: "",
+      description: '',
       priority: 'low',
       status: 'pending',
       startDate: new Date(),
@@ -59,7 +57,7 @@ function ModalNewTask() {
 
   return (
     <div>
-      <Dialog isOpen={newDialogTask} onClose={handleClose} >
+      <Dialog isOpen={newDialogTask} onClose={handleClose}>
         <div className="flex flex-col h-full justify-between">
           <h5 className="mb-4">Ajouter une tâche</h5>
           <FieldCustom
@@ -69,46 +67,40 @@ function ModalNewTask() {
               setFormData({ ...formData, title: e });
             }}
           />
-           <RichTextEditor
-                      value={formData.description}
-                      className="mt-4"
-                      onChange={(e: any) => {
-                        setFormData({ ...formData, description: e });
-                      }}
-                    />
+          <RichTextEditor
+            value={formData.description}
+            className="mt-4"
+            onChange={(e: any) => {
+              setFormData({ ...formData, description: e });
+            }}
+          />
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                Priorité
-              </p>
+              <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
               <Select
                 placeholder="Priorité"
                 options={priorityData}
-                noOptionsMessage={() => "Aucun priorité trouvé"}
+                noOptionsMessage={() => 'Aucun priorité trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, priority: e?.value || "" });
+                  setFormData({ ...formData, priority: e?.value || '' });
                 }}
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                Statut
-              </p>
+              <p className="text-sm text-gray-200 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
                 options={statsDataTask}
-                noOptionsMessage={() => "Aucun statut trouvé"}
+                noOptionsMessage={() => 'Aucun statut trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, status: e?.value || "" });
+                  setFormData({ ...formData, status: e?.value || '' });
                 }}
               />
             </div>
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                Date de début
-              </p>
+              <p className="text-sm text-gray-200 mb-2 mt-4">Date de début</p>
               <DatePicker
                 placeholder="Date de début"
                 value={dayjs(formData.startDate).toDate()}
@@ -120,9 +112,7 @@ function ModalNewTask() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                Date de fin
-              </p>
+              <p className="text-sm text-gray-200 mb-2 mt-4">Date de fin</p>
               <DatePicker
                 placeholder="Date de fin"
                 value={dayjs(formData.endDate).toDate()}
@@ -140,10 +130,10 @@ function ModalNewTask() {
               variant="plain"
               onClick={handleClose}
             >
-              {t("cancel")}
+              {t('cancel')}
             </Button>
-            <Button variant="solid" onClick={handleSubmit} >
-              {t("save")}
+            <Button variant="solid" onClick={handleSubmit}>
+              {t('save')}
             </Button>
           </div>
         </div>

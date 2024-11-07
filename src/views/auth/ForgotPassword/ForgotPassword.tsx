@@ -1,7 +1,7 @@
-import ForgotPasswordForm from './ForgotPasswordForm'
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 const ForgotPassword = () => {
-    return <ForgotPasswordForm disableSubmit={false} />
-}
+  return <ForgotPasswordForm disableSubmit={false} />;
+};
 
-export default ForgotPassword
+export default ForgotPassword;

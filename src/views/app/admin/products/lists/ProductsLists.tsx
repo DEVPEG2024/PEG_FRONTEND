@@ -1,5 +1,4 @@
-
-import { injectReducer } from '@/store'
+import { injectReducer } from '@/store';
 import reducer, {
   getProducts,
   useAppDispatch,
@@ -10,51 +9,61 @@ import reducer, {
   putStatusProduct,
   deleteProduct,
   duplicateProduct,
-} from "../store";
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, Dialog, Notification, Switcher, Tooltip, toast } from '@/components/ui'
-import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi'
-import { isEmpty } from 'lodash'
+} from '../store';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Button,
+  Card,
+  Dialog,
+  Notification,
+  Switcher,
+  Tooltip,
+  toast,
+} from '@/components/ui';
+import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi';
+import { isEmpty } from 'lodash';
 import { IProduct } from '@/@types/product';
 
-injectReducer("products", reducer);
+injectReducer('products', reducer);
 
 const ProductsLists = () => {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const [productToDelete, setProductToDelete] = useState<IProduct>()
-  const { products, modalDelete } = useAppSelector((state) => state.products.data)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [productToDelete, setProductToDelete] = useState<IProduct>();
+  const { products, modalDelete } = useAppSelector(
+    (state) => state.products.data
+  );
   useEffect(() => {
-    dispatch(getProducts({ page: 1, pageSize: 10, searchTerm: "" }))
-    dispatch(setProduct(null))
-  }, [dispatch])
+    dispatch(getProducts({ page: 1, pageSize: 10, searchTerm: '' }));
+    dispatch(setProduct(null));
+  }, [dispatch]);
 
   const onDeleted = () => {
-    dispatch(deleteProduct({ product: productToDelete as IProduct }))
+    dispatch(deleteProduct({ product: productToDelete as IProduct }));
     dispatch(setModalDeleteClose());
-  }
+  };
   const onEdit = (id: string) => {
-    dispatch(setProduct(id))
-    navigate(`/admin/store/edit/${id}`)
-  }
+    dispatch(setProduct(id));
+    navigate(`/admin/store/edit/${id}`);
+  };
   const onModalOpen = (product: IProduct) => {
-    setProductToDelete(product)
-    dispatch(setModalDeleteOpen())
-  }
+    setProductToDelete(product);
+    dispatch(setModalDeleteOpen());
+  };
   const onModalClose = () => {
-    setProductToDelete(undefined)
-    dispatch(setModalDeleteClose())
-  }
+    setProductToDelete(undefined);
+    dispatch(setModalDeleteClose());
+  };
 
   const onActivate = (id: string, checked: boolean) => {
-    dispatch(putStatusProduct({ id }))
+    dispatch(putStatusProduct({ id }));
     if (!checked) {
       toast.push(
         <Notification type="success" title="Activé">
           Produit activé avec succès
         </Notification>
-      )
+      );
     } else {
       toast.push(
         <Notification type="danger" title="Désactivé">
@@ -62,16 +71,16 @@ const ProductsLists = () => {
         </Notification>
       );
     }
-  }
+  };
 
   const onDuplicate = async (product: IProduct) => {
-    dispatch(duplicateProduct({ product }))
+    dispatch(duplicateProduct({ product }));
     toast.push(
       <Notification type="success" title="Activé">
         Produit dupliqué avec succès
       </Notification>
-    )
-  }
+    );
+  };
 
   return (
     <>
@@ -106,9 +115,9 @@ const ProductsLists = () => {
                   alt={product.title}
                   className=" rounded-lg bg-yellow-400"
                   style={{
-                    height: "250px",
-                    width: "100%",
-                    objectFit: "cover",
+                    height: '250px',
+                    width: '100%',
+                    objectFit: 'cover',
                   }}
                 />
                 <div className="flex flex-col justify-between">
@@ -188,6 +197,6 @@ const ProductsLists = () => {
       )}
     </>
   );
-}
+};
 
-export default ProductsLists
+export default ProductsLists;

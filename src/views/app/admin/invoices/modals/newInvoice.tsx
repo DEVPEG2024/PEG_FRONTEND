@@ -5,26 +5,26 @@ import {
   Input,
   Select,
   Switcher,
-} from "@/components/ui";
-import { t } from "i18next";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import { HiMinus, HiOutlineCalendar, HiPlus } from "react-icons/hi";
+} from '@/components/ui';
+import { t } from 'i18next';
+import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
+import { HiMinus, HiOutlineCalendar, HiPlus } from 'react-icons/hi';
 import {
   createInvoice,
   setNewInvoiceDialog,
   useAppDispatch,
   useAppSelector,
-} from "../store";
-import useUniqueId from "@/components/ui/hooks/useUniqueId";
-import { paymentModeData, paymentStatusData } from "../constants";
-import { apiGetCustomers } from "@/services/CustomerServices";
-import { IUser } from "@/@types/user";
-import { apiGetProjects } from "@/services/ProjectServices";
-import { IProject } from "@/@types/project";
-import { apiGetOffers } from "@/services/OfferServices";
-import { IOffer } from "@/@types/offer";
-import { Invoice } from "@/@types/invoice";
+} from '../store';
+import useUniqueId from '@/components/ui/hooks/useUniqueId';
+import { paymentModeData, paymentStatusData } from '../constants';
+import { apiGetCustomers } from '@/services/CustomerServices';
+import { IUser } from '@/@types/user';
+import { apiGetProjects } from '@/services/ProjectServices';
+import { IProject } from '@/@types/project';
+import { apiGetOffers } from '@/services/OfferServices';
+import { IOffer } from '@/@types/offer';
+import { Invoice } from '@/@types/invoice';
 
 function ModalNewInvoice() {
   const user = useAppSelector((state: any) => state.auth.user);
@@ -32,7 +32,7 @@ function ModalNewInvoice() {
   const [projects, setProjects] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
   const { newInvoiceDialog } = useAppSelector((state) => state.invoices.data);
-  const newId = useUniqueId("INV-", 2).toUpperCase();
+  const newId = useUniqueId('INV-', 2).toUpperCase();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
     invoiceNumber: newId,
@@ -41,10 +41,10 @@ function ModalNewInvoice() {
     vat: 0,
     vatEnabled: false,
     totalAmount: 0,
-    status: "unpaid",
+    status: 'unpaid',
     items: [
       {
-        name: "",
+        name: '',
         quantity: 1,
         price: 0,
         total: 0,
@@ -52,11 +52,11 @@ function ModalNewInvoice() {
     ],
     invoiceDate: new Date(),
     dueDate: new Date(),
-    paymentMethod: "",
-    paymentStatus: "",
+    paymentMethod: '',
+    paymentStatus: '',
     projectId: null,
     offerId: null,
-    customerId: "",
+    customerId: '',
   });
 
   const handleSubmit = async (e: any) => {
@@ -64,9 +64,9 @@ function ModalNewInvoice() {
     dispatch(
       createInvoice({
         invoice: {
-          ...formData as unknown as Invoice,
-          offerId: formData.offerId === "" ? null : formData.offerId,
-          projectId: formData.projectId === "" ? null : formData.projectId,
+          ...(formData as unknown as Invoice),
+          offerId: formData.offerId === '' ? null : formData.offerId,
+          projectId: formData.projectId === '' ? null : formData.projectId,
         },
         sellerId: user._id,
       })
@@ -78,10 +78,10 @@ function ModalNewInvoice() {
       vat: 0,
       vatEnabled: false,
       totalAmount: 0,
-      status: "unpaid",
+      status: 'unpaid',
       items: [
         {
-          name: "",
+          name: '',
           quantity: 0,
           price: 0,
           total: 0,
@@ -89,11 +89,11 @@ function ModalNewInvoice() {
       ],
       invoiceDate: new Date(),
       dueDate: new Date(),
-      paymentMethod: "",
-      paymentStatus: "",
+      paymentMethod: '',
+      paymentStatus: '',
       projectId: null,
       offerId: null,
-      customerId: "",
+      customerId: '',
     });
     handleClose();
   };
@@ -102,34 +102,33 @@ function ModalNewInvoice() {
   };
 
   const fetchCustomers = async () => {
-    const response = await apiGetCustomers(1, 1000, "");
+    const response = await apiGetCustomers(1, 1000, '');
     const customersList = response.data.customers || [];
     const customers = customersList.map((customer: IUser) => ({
-      value: customer._id || "",
-      label: customer.firstName + " " + customer.lastName,
+      value: customer._id || '',
+      label: customer.firstName + ' ' + customer.lastName,
     }));
     setCustomers(customers);
   };
   const fetchProjects = async () => {
-    const response = await apiGetProjects(1, 1000, "");
+    const response = await apiGetProjects(1, 1000, '');
     const projectsList = response.data.projects || [];
     const projects = projectsList.map((project: IProject) => ({
-      value: project._id || "",
-      label: project.title || "",
+      value: project._id || '',
+      label: project.title || '',
     }));
     setProjects(projects);
   };
 
   const fetchOffers = async () => {
-    const response = await apiGetOffers(1, 1000, "");
+    const response = await apiGetOffers(1, 1000, '');
     const offersList = response.data.offers || [];
     const offers = offersList.map((offer: IOffer) => ({
-      value: offer._id || "",
-      label: offer.title || "",
+      value: offer._id || '',
+      label: offer.title || '',
     }));
     setOffers(offers);
   };
-
 
   useEffect(() => {
     fetchCustomers();
@@ -140,7 +139,7 @@ function ModalNewInvoice() {
   const addProductLine = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { name: "", quantity: 0, price: 0, total: 0 }],
+      items: [...formData.items, { name: '', quantity: 0, price: 0, total: 0 }],
     });
   };
 
@@ -160,7 +159,7 @@ function ModalNewInvoice() {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
 
-    if (field === "quantity" || field === "price") {
+    if (field === 'quantity' || field === 'price') {
       newItems[index].total = newItems[index].quantity * newItems[index].price;
     }
 
@@ -213,9 +212,9 @@ function ModalNewInvoice() {
               <Select
                 placeholder="Client"
                 options={customers}
-                noOptionsMessage={() => "Aucun client trouvé"}
+                noOptionsMessage={() => 'Aucun client trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, customerId: e?.value || "" });
+                  setFormData({ ...formData, customerId: e?.value || '' });
                 }}
               />
             </div>
@@ -224,9 +223,9 @@ function ModalNewInvoice() {
               <Select
                 placeholder="Projet"
                 options={projects}
-                noOptionsMessage={() => "Aucun projet trouvé"}
+                noOptionsMessage={() => 'Aucun projet trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, projectId: e?.value || "" });
+                  setFormData({ ...formData, projectId: e?.value || '' });
                 }}
               />
             </div>
@@ -235,9 +234,9 @@ function ModalNewInvoice() {
               <Select
                 placeholder="Offre"
                 options={offers}
-                noOptionsMessage={() => "Aucune offre trouvée"}
+                noOptionsMessage={() => 'Aucune offre trouvée'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, offerId: e?.value || "" });
+                  setFormData({ ...formData, offerId: e?.value || '' });
                 }}
               />
             </div>
@@ -280,9 +279,9 @@ function ModalNewInvoice() {
               <Select
                 placeholder="Mode de paiement"
                 options={paymentModeData}
-                noOptionsMessage={() => "Aucun mode de paiement trouvé"}
+                noOptionsMessage={() => 'Aucun mode de paiement trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, paymentMethod: e?.value || "" });
+                  setFormData({ ...formData, paymentMethod: e?.value || '' });
                 }}
               />
             </div>
@@ -293,9 +292,9 @@ function ModalNewInvoice() {
               <Select
                 placeholder="Statut de paiement"
                 options={paymentStatusData}
-                noOptionsMessage={() => "Aucun statut de paiement trouvé"}
+                noOptionsMessage={() => 'Aucun statut de paiement trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, paymentStatus: e?.value || "" });
+                  setFormData({ ...formData, paymentStatus: e?.value || '' });
                 }}
               />
             </div>
@@ -312,7 +311,7 @@ function ModalNewInvoice() {
                   placeholder="Nom du produit"
                   value={item.name}
                   onChange={(e) =>
-                    updateProductLine(index, "name", e.target.value)
+                    updateProductLine(index, 'name', e.target.value)
                   }
                 />
                 <Input
@@ -323,7 +322,7 @@ function ModalNewInvoice() {
                   onChange={(e) =>
                     updateProductLine(
                       index,
-                      "quantity",
+                      'quantity',
                       parseFloat(e.target.value)
                     )
                   }
@@ -336,7 +335,7 @@ function ModalNewInvoice() {
                   onChange={(e) =>
                     updateProductLine(
                       index,
-                      "price",
+                      'price',
                       parseFloat(e.target.value)
                     )
                   }
@@ -391,7 +390,7 @@ function ModalNewInvoice() {
             <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
               <span className="text-sm text-gray-200">Sous-total: </span>
               <span className="text-sm text-gray-200">
-                TVA ({formData.vatEnabled ? formData.vat : 0}%):{" "}
+                TVA ({formData.vatEnabled ? formData.vat : 0}%):{' '}
               </span>
               <span className="text-sm text-gray-200">Total:</span>
             </div>
@@ -413,10 +412,10 @@ function ModalNewInvoice() {
               variant="plain"
               onClick={handleClose}
             >
-              {t("cancel")}
+              {t('cancel')}
             </Button>
             <Button variant="solid" onClick={handleSubmit}>
-              {t("save")}
+              {t('save')}
             </Button>
           </div>
         </div>

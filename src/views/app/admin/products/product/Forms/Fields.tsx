@@ -1,18 +1,18 @@
-import AdaptableCard from "@/components/shared/AdaptableCard";
-import RichTextEditor from "@/components/shared/RichTextEditor";
-import Input from "@/components/ui/Input";
-import { FormItem } from "@/components/ui/Form";
-import { Field, FormikErrors, FormikTouched, FieldProps } from "formik";
-import { Select, Switcher } from "@/components/ui";
-import { OptionsFields, IProduct } from "@/@types/product";
-import { SIZE_OPTIONS } from "@/utils/forms";
+import AdaptableCard from '@/components/shared/AdaptableCard';
+import RichTextEditor from '@/components/shared/RichTextEditor';
+import Input from '@/components/ui/Input';
+import { FormItem } from '@/components/ui/Form';
+import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import { Select, Switcher } from '@/components/ui';
+import { OptionsFields, IProduct } from '@/@types/product';
+import { SIZE_OPTIONS } from '@/utils/forms';
 
 type Options = {
   label: string;
   value: string;
-}
+};
 
-type FormFieldsName = IProduct
+type FormFieldsName = IProduct;
 
 type BasicInformationFields = {
   touched: FormikTouched<FormFieldsName>;
@@ -51,16 +51,16 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     setSelectedForm,
     setSelectedCustomersCategories,
     setSelectedCategories,
-    setSelectedCustomers
+    setSelectedCustomers,
   } = props;
 
   return (
     <AdaptableCard divider className="mb-4">
-      <h5>{type === "edit" ? "Modification du produit" : "Nouveau produit"}</h5>
+      <h5>{type === 'edit' ? 'Modification du produit' : 'Nouveau produit'}</h5>
       <p className="mb-6">
-        {type === "edit"
-          ? "Remplissez les informations du produit à modifier"
-          : "Remplissez les informations du nouveau produit"}
+        {type === 'edit'
+          ? 'Remplissez les informations du produit à modifier'
+          : 'Remplissez les informations du nouveau produit'}
       </p>
       <div className="grid grid-cols-4 gap-4">
         <FormItem
@@ -124,13 +124,13 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             {({ field, form }: FieldProps) => (
               <Select
                 isMulti
-                value={customersCategories.filter(option => 
+                value={customersCategories.filter((option) =>
                   field.value?.includes(option.value)
                 )}
                 placeholder="Choisir une ou plusieurs catégories"
                 options={customersCategories}
                 onChange={(selectedOptions) => {
-                  const values = selectedOptions.map(option => option.value);
+                  const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
                   setSelectedCustomersCategories(values);
                 }}
@@ -144,13 +144,13 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             {({ field, form }: FieldProps) => (
               <Select
                 isMulti
-                value={categories.filter(option => 
+                value={categories.filter((option) =>
                   field.value?.includes(option.value)
                 )}
                 placeholder="Choisir une ou plusieurs catégories"
                 options={categories}
                 onChange={(selectedOptions) => {
-                  const values = selectedOptions.map(option => option.value);
+                  const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
                   setSelectedCategories(values);
                 }}
@@ -164,13 +164,13 @@ const BasicInformationFields = (props: BasicInformationFields) => {
             {({ field, form }: FieldProps) => (
               <Select
                 isMulti
-                value={customers.filter(option => 
+                value={customers.filter((option) =>
                   field.value?.includes(option.value)
                 )}
                 placeholder="Choisir un ou plusieurs client(s)"
                 options={customers}
                 onChange={(selectedOptions) => {
-                  const values = selectedOptions.map(option => option.value);
+                  const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
                   setSelectedCustomers(values);
                 }}
@@ -193,13 +193,13 @@ const BasicInformationFields = (props: BasicInformationFields) => {
           <Field name="form">
             {({ field, form }: FieldProps) => (
               <Select
-                value={forms.find(option =>{
-                  return field.value?._id === option.value
+                value={forms.find((option) => {
+                  return field.value?._id === option.value;
                 })}
                 placeholder="Choisir un formulaire"
                 options={forms}
                 onChange={(selectedOptions) => {
-                  const values = selectedOptions?.value ;
+                  const values = selectedOptions?.value;
                   form.setFieldValue(field.name, values);
                   setSelectedForm(values as string);
                 }}
@@ -246,7 +246,12 @@ const BasicInformationFields = (props: BasicInformationFields) => {
         </div>
       )}
 
-      <FormItem label="Description" labelClass="!justify-start" invalid={(errors.description && touched.description) as boolean} errorMessage={errors.description}>
+      <FormItem
+        label="Description"
+        labelClass="!justify-start"
+        invalid={(errors.description && touched.description) as boolean}
+        errorMessage={errors.description}
+      >
         <Field name="description">
           {({ field, form }: FieldProps) => (
             <RichTextEditor

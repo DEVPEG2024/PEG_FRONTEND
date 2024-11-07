@@ -1,9 +1,9 @@
 import FileUplaodDragLight from '@/components/shared/Upload/light';
-import { Button, Dialog, Input, Notification, toast} from '@/components/ui'
+import { Button, Dialog, Input, Notification, toast } from '@/components/ui';
 import { apiNewCategoryProduct } from '@/services/categoryProduct';
 import { ICategoryProducer } from '@/services/ProducerServices';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 import { HiCheckCircle } from 'react-icons/hi';
 
 function ModalFormCategoryProduct({
@@ -11,7 +11,7 @@ function ModalFormCategoryProduct({
   isOpen,
   onClose,
   category,
-  fetchCategories
+  fetchCategories,
 }: {
   title: string;
   isOpen: boolean;
@@ -20,30 +20,33 @@ function ModalFormCategoryProduct({
   category: ICategoryProducer | null;
 }) {
   const { t } = useTranslation();
-  const [newTitle, setNewTitle] = useState("");
+  const [newTitle, setNewTitle] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const onDialogClose = () => {
     onClose();
   };
   useEffect(() => {
     if (category) {
-      setNewTitle(category?.label || "");
+      setNewTitle(category?.label || '');
     }
   }, [category]);
   const onDialogOk = async () => {
-    const response = await apiNewCategoryProduct({ title: newTitle, image : image || "" })
-    
+    const response = await apiNewCategoryProduct({
+      title: newTitle,
+      image: image || '',
+    });
+
     if (response.status === 200) {
       toast.push(
         <Notification
           className="bg-green-500"
-          title={t("cat.categoryAdded")}
+          title={t('cat.categoryAdded')}
           type="success"
-          customIcon={<HiCheckCircle color='white' size={20}/>}
+          customIcon={<HiCheckCircle color="white" size={20} />}
         />
       );
       onDialogClose();
-      setNewTitle("");
+      setNewTitle('');
       fetchCategories();
     }
   };
@@ -57,12 +60,12 @@ function ModalFormCategoryProduct({
         <h5 className="mb-4">{title}</h5>
         <div className="flex flex-col gap-4">
           <Input
-            placeholder={t("cat.categoryName")}
+            placeholder={t('cat.categoryName')}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
           />
           <FileUplaodDragLight
-            image={image || ""}
+            image={image || ''}
             setImage={setImage}
             setFileType={(type: string) => {}}
           />
@@ -73,10 +76,10 @@ function ModalFormCategoryProduct({
             variant="plain"
             onClick={onDialogClose}
           >
-            {t("cancel")}
+            {t('cancel')}
           </Button>
           <Button variant="solid" onClick={onDialogOk}>
-            {t("save")}
+            {t('save')}
           </Button>
         </div>
       </div>
@@ -84,4 +87,4 @@ function ModalFormCategoryProduct({
   );
 }
 
-export default ModalFormCategoryProduct
+export default ModalFormCategoryProduct;

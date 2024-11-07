@@ -1,3 +1,3 @@
-import NewTeam from './NewTeam'
+import NewTeam from './NewTeam';
 
-export default NewTeam 
+export default NewTeam;

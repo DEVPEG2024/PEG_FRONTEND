@@ -1,19 +1,18 @@
-import ListForm from "../builder/listForms";
-import ConfigForms from "../builder/configForms";
-import { Button, Card, Input, Notification, toast } from "@/components/ui";
-import { Form, Forms } from "../constants/type";
-import { useState } from "react";
-import FieldConfig from "../builder/components/fieldsConfig";
-import Empty from "@/components/shared/Empty";
-import { RxInput } from "react-icons/rx";
-import { apiCreateForm } from "@/services/FormServices";
-import { useNavigate } from "react-router-dom";
+import ListForm from '../builder/listForms';
+import ConfigForms from '../builder/configForms';
+import { Button, Card, Input, Notification, toast } from '@/components/ui';
+import { Form, Forms } from '../constants/type';
+import { useState } from 'react';
+import FieldConfig from '../builder/components/fieldsConfig';
+import Empty from '@/components/shared/Empty';
+import { RxInput } from 'react-icons/rx';
+import { apiCreateForm } from '@/services/FormServices';
+import { useNavigate } from 'react-router-dom';
 
 function NewForms() {
-
   const [selectedFields, setSelectedFields] = useState<Form[]>([]);
   const [currentField, setCurrentField] = useState<Form | null>(null);
-  const [formTitle, setFormTitle] = useState<string>("");
+  const [formTitle, setFormTitle] = useState<string>('');
   const navigate = useNavigate();
   const handleFormsSelected = (form: Form) => {
     const newField = { ...form, id: Date.now().toString() };
@@ -40,16 +39,16 @@ function NewForms() {
     }
   };
 
-  const moveField = (index: number, direction: "up" | "down") => {
+  const moveField = (index: number, direction: 'up' | 'down') => {
     if (
-      (direction === "up" && index === 0) ||
-      (direction === "down" && index === selectedFields.length - 1)
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === selectedFields.length - 1)
     ) {
       return; // Ne rien faire si on essaie de déplacer le premier élément vers le haut ou le dernier vers le bas
     }
 
     const newFields = [...selectedFields];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
     [newFields[index], newFields[newIndex]] = [
       newFields[newIndex],
       newFields[index],
@@ -59,20 +58,33 @@ function NewForms() {
 
   const handleSaveForm = async () => {
     if (!formTitle) {
-      toast.push(<Notification type="danger" title="Veuillez entrer un titre" className="bg-red-700" />)
+      toast.push(
+        <Notification
+          type="danger"
+          title="Veuillez entrer un titre"
+          className="bg-red-700"
+        />
+      );
       return;
     }
     const form = {
       title: formTitle,
-      fields: selectedFields
-    }
+      fields: selectedFields,
+    };
     const { data } = await apiCreateForm(form);
 
     if (data.result) {
-      toast.push(<Notification type="success" title="Formulaire créé avec succès" />)
-      navigate("/admin/forms");
+      toast.push(
+        <Notification type="success" title="Formulaire créé avec succès" />
+      );
+      navigate('/admin/forms');
     } else {
-      toast.push(<Notification type="danger" title="Erreur lors de la création du formulaire" />)
+      toast.push(
+        <Notification
+          type="danger"
+          title="Erreur lors de la création du formulaire"
+        />
+      );
     }
   };
 
@@ -102,7 +114,9 @@ function NewForms() {
           ) : (
             <Empty icon={<RxInput className="text-gray-500 text-7xl" />}>
               <p className="text-gray-500 text-xl">Aucun champ sélectionné</p>
-              <p className="text-gray-500 text-md">Sélectionnez un champ pour le configurer</p>
+              <p className="text-gray-500 text-md">
+                Sélectionnez un champ pour le configurer
+              </p>
             </Empty>
           )}
         </Card>

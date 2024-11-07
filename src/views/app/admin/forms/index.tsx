@@ -1,6 +1,11 @@
-import HeaderTitle from '@/components/template/HeaderTitle'
-import { injectReducer, useAppDispatch } from '@/store'
-import reducer, { deleteForm, getForms, setForm, useAppSelector } from './store'
+import HeaderTitle from '@/components/template/HeaderTitle';
+import { injectReducer, useAppDispatch } from '@/store';
+import reducer, {
+  deleteForm,
+  getForms,
+  setForm,
+  useAppSelector,
+} from './store';
 import { useEffect } from 'react';
 import { Button, Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
@@ -8,29 +13,29 @@ import { IForm } from '@/@types/form';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 
-injectReducer("forms", reducer);
+injectReducer('forms', reducer);
 
 function FormsBuilder() {
-  const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { forms } = useAppSelector((state) => state.forms.data)
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { forms } = useAppSelector((state) => state.forms.data);
   useEffect(() => {
-    dispatch(getForms({ page: 1, pageSize: 10, searchTerm: "" }))
-  }, [])
+    dispatch(getForms({ page: 1, pageSize: 10, searchTerm: '' }));
+  }, []);
   const handleEdit = (form: IForm) => {
-    dispatch(setForm(form))
-    navigate(`/admin/forms/edit/${form._id}`)
-  }
+    dispatch(setForm(form));
+    navigate(`/admin/forms/edit/${form._id}`);
+  };
   const handleDelete = (id: string) => {
-    dispatch(deleteForm(id))
-  }
+    dispatch(deleteForm(id));
+  };
   return (
     <div className="h-full">
       <HeaderTitle
         title="Formulaires"
         buttonTitle="Créer"
         description="Tous les formulaires"
-        link={"/admin/forms/add"}
+        link={'/admin/forms/add'}
         addAction
         total={forms.length}
       />
@@ -41,13 +46,27 @@ function FormsBuilder() {
               <div className="flex items-center gap-2">
                 <TbForms className="text-red-400 text-4xl" />
                 <div className="flex flex-col">
-                  <span className="text-lg text-white font-bold">{form.title}</span>
-                  <span className="text-md text-white">{form.fields.length} champs</span>
+                  <span className="text-lg text-white font-bold">
+                    {form.title}
+                  </span>
+                  <span className="text-md text-white">
+                    {form.fields.length} champs
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="plain" size="sm" onClick={() => handleEdit(form)} icon={<HiPencil />} />
-                <Button variant="twoTone" size="sm" onClick={() => handleDelete(form._id)} icon={<HiTrash />} />
+                <Button
+                  variant="plain"
+                  size="sm"
+                  onClick={() => handleEdit(form)}
+                  icon={<HiPencil />}
+                />
+                <Button
+                  variant="twoTone"
+                  size="sm"
+                  onClick={() => handleDelete(form._id)}
+                  icon={<HiTrash />}
+                />
               </div>
             </div>
           </Card>
@@ -57,4 +76,4 @@ function FormsBuilder() {
   );
 }
 
-export default FormsBuilder
+export default FormsBuilder;

@@ -1,3 +1,3 @@
-import EditSponsor from './editSaisie'
+import EditSponsor from './editSaisie';
 
-export default EditSponsor
+export default EditSponsor;

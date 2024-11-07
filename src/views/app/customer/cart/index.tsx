@@ -2,12 +2,16 @@ import { CartItem } from '@/@types/cart';
 import { AdaptableCard, Container, Loading } from '@/components/shared';
 import Empty from '@/components/shared/Empty';
 import { Button } from '@/components/ui';
-import { RootState, useAppDispatch, useAppSelector } from '@/store'
-import { editItem, removeFromCart, clearCart } from '@/store/slices/base/cartSlice';
+import { RootState, useAppDispatch, useAppSelector } from '@/store';
+import {
+  editItem,
+  removeFromCart,
+  clearCart,
+} from '@/store/slices/base/cartSlice';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 import { apiCreateOrder } from '@/services/OrderServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { useState } from 'react';
@@ -15,34 +19,36 @@ import { apiCreateProject } from '@/services/ProjectServices';
 import { IFormAnswer } from '@/@types/formAnswer';
 
 function Cart() {
-  const user = useAppSelector(state => state.auth.user)
+  const user = useAppSelector((state) => state.auth.user);
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [isSubmitting, setSubmitting] = useState<boolean>(false)
+  const [isSubmitting, setSubmitting] = useState<boolean>(false);
 
   const handleEdit = (item: CartItem) => {
-    dispatch(editItem(item))
-    navigate('/customer/product/' + item.product._id + '/edit')
-  }
+    dispatch(editItem(item));
+    navigate('/customer/product/' + item.product._id + '/edit');
+  };
 
   const validatePayment = async () => {
-    return true
-  }
+    return true;
+  };
 
-  const createFormAnswer = async (item: CartItem): Promise<IFormAnswer | null> => {
+  const createFormAnswer = async (
+    item: CartItem
+  ): Promise<IFormAnswer | null> => {
     if (item.product.form) {
       const respFormAnswerCreation = await apiCreateFormAnswer({
         customer: user._id,
         product: item.product._id,
         answers: item.formAnswer.answers,
-        form: item.formAnswer.form
-      })
+        form: item.formAnswer.form,
+      });
 
-      return respFormAnswerCreation.data.formAnswer
+      return respFormAnswerCreation.data.formAnswer;
     }
-    return null
-  }
+    return null;
+  };
 
   const createOrder = async (item: CartItem) => {
     try {
@@ -52,19 +58,35 @@ function Cart() {
           product: item.product,
           orderNumber: 0,
           sizes: item.sizes,
-          total: item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)
-        }
-      
+          total: item.sizes.reduce(
+            (amount, size) => amount + size.quantity * item.product.amount,
+            0
+          ),
+        };
+
       if (formAnswer) {
-        (order as any).formAnswer = formAnswer
+        (order as any).formAnswer = formAnswer;
       }
-      const respOrderCreation = await apiCreateOrder(order)
+      const respOrderCreation = await apiCreateOrder(order);
       // TODO : envoyer mail création commande OK
       try {
         await apiCreateProject({
-          title: "Commande " + item.product.title + " pour " + user.firstName + " " + user.lastName,
-          ref: item.product.title + "_" + user.firstName + "_" + user.lastName + "_" + new Date().toISOString().slice(0, 10),
-          description: "",
+          title:
+            'Commande ' +
+            item.product.title +
+            ' pour ' +
+            user.firstName +
+            ' ' +
+            user.lastName,
+          ref:
+            item.product.title +
+            '_' +
+            user.firstName +
+            '_' +
+            user.lastName +
+            '_' +
+            new Date().toISOString().slice(0, 10),
+          description: '',
           priority: 'low',
           status: 'pending',
           amount: item.product.amount,
@@ -72,45 +94,50 @@ function Cart() {
           customer: user._id,
           order: respOrderCreation.data.order,
           startDate: dayjs().toDate(),
-          endDate: dayjs().add(30, "day").toDate(),
-        })
+          endDate: dayjs().add(30, 'day').toDate(),
+        });
       } catch (error) {
         // TODO: envoyer mail erreur création projet
       }
-      return respOrderCreation.data
+      return respOrderCreation.data;
     } catch (error) {
       // TODO: envoyer mail erreur création commande
     }
-  }
+  };
 
   const createOrders = async () => {
     try {
       await Promise.allSettled(cart.map((item) => createOrder(item)));
-      return { status: 'success'}
+      return { status: 'success' };
     } catch (errors: any) {
-      return { status: 'failed', message: errors?.response?.data?.message || errors.toString() }
+      return {
+        status: 'failed',
+        message: errors?.response?.data?.message || errors.toString(),
+      };
     }
-  }
+  };
 
   const createOrderAndClearCart = async () => {
-    const respOrdersCreation = await createOrders()
+    const respOrdersCreation = await createOrders();
     if (respOrdersCreation.status === 'success') {
-      dispatch(clearCart())
-      navigate('/customer/projects')
+      dispatch(clearCart());
+      navigate('/customer/projects');
     }
-  }
+  };
 
   const validateCart = async () => {
-    setSubmitting(true)
-    const paymentValidated = await validatePayment()
+    setSubmitting(true);
+    const paymentValidated = await validatePayment();
     if (paymentValidated) {
-      await createOrderAndClearCart()
+      await createOrderAndClearCart();
     }
-    setSubmitting(false)
-  }
+    setSubmitting(false);
+  };
 
   if (cart.length === 0) {
-    return <Empty icon={<MdShoppingCart size={120} />}>Votre panier est vide</Empty>;
+    return (
+      <Empty icon={<MdShoppingCart size={120} />}>Votre panier est vide</Empty>
+    );
   }
   return (
     <Container className="h-full">
@@ -133,7 +160,7 @@ function Cart() {
                 {cart?.map((item) => (
                   <div key={item.id}>
                     <div className="flex justify-between items-center">
-                      <div className='flex items-center gap-2'>
+                      <div className="flex items-center gap-2">
                         <img
                           src={item.product.images[0]?.fileNameBack}
                           alt={item.product.title}
@@ -142,15 +169,33 @@ function Cart() {
                         <p>{item.product.title}</p>
                       </div>
                       <p>{item.product.amount} €</p>
-                      <div className='flex-col justify-center gap-2'>
+                      <div className="flex-col justify-center gap-2">
                         {item.sizes.map((size) => (
-                          <p>{size.value === "DEFAULT" ? "Quantité" : size.value} : {size.quantity}</p>
+                          <p>
+                            {size.value === 'DEFAULT' ? 'Quantité' : size.value}{' '}
+                            : {size.quantity}
+                          </p>
                         ))}
                       </div>
-                      <p>{item.sizes.reduce((amount, size) => amount + size.quantity * item.product.amount, 0)} €</p>
-                      <p className='flex gap-1'>
-                        <Button onClick={() => handleEdit(item)} size="sm" icon={<HiPencil />} />
-                        <Button onClick={() => dispatch(removeFromCart(item))} size="sm" icon={<HiTrash />} />
+                      <p>
+                        {item.sizes.reduce(
+                          (amount, size) =>
+                            amount + size.quantity * item.product.amount,
+                          0
+                        )}{' '}
+                        €
+                      </p>
+                      <p className="flex gap-1">
+                        <Button
+                          onClick={() => handleEdit(item)}
+                          size="sm"
+                          icon={<HiPencil />}
+                        />
+                        <Button
+                          onClick={() => dispatch(removeFromCart(item))}
+                          size="sm"
+                          icon={<HiTrash />}
+                        />
                       </p>
                     </div>
                     <hr className="w-full my-4" />
@@ -164,22 +209,39 @@ function Cart() {
               <h4 className="mb-6">Détails</h4>
               <div className="flex flex-col gap-2">
                 <span className="font-semibold">
-                  Total HT :{" "}
-                  {cart?.reduce((total, item) => total + item.product.amount, 0)} €
-                </span>
-                <span className="font-semibold">
-                  Tva : {cart?.reduce((total, item) => total + item.product.amount, 0)}{" "}
+                  Total HT :{' '}
+                  {cart?.reduce(
+                    (total, item) => total + item.product.amount,
+                    0
+                  )}{' '}
                   €
                 </span>
                 <span className="font-semibold">
-                  Total TTC :{" "}
-                  {cart?.reduce((total, item) => total + item.product.amount, 0)} €
+                  Tva :{' '}
+                  {cart?.reduce(
+                    (total, item) => total + item.product.amount,
+                    0
+                  )}{' '}
+                  €
+                </span>
+                <span className="font-semibold">
+                  Total TTC :{' '}
+                  {cart?.reduce(
+                    (total, item) => total + item.product.amount,
+                    0
+                  )}{' '}
+                  €
                 </span>
               </div>
               <hr className="my-6" />
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap gap-4">
-                  <Button variant="solid" className="w-full" onClick={validateCart} loading={isSubmitting}>
+                  <Button
+                    variant="solid"
+                    className="w-full"
+                    onClick={validateCart}
+                    loading={isSubmitting}
+                  >
                     Valider le panier
                   </Button>
                 </div>
@@ -192,4 +254,4 @@ function Cart() {
   );
 }
 
-export default Cart
+export default Cart;
