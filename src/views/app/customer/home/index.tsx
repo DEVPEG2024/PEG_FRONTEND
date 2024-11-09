@@ -1,8 +1,8 @@
-import { IProduct } from '@/@types/product';
+import { IProduct, Product } from '@/@types/product';
 import { Container, DoubleSidedImage } from '@/components/shared';
 import { Button, Steps } from '@/components/ui';
 import { API_URL_IMAGE } from '@/configs/api.config';
-import { apiGetHomeCustomer } from '@/services/HomeCustomerService';
+import { apiGetCustomer, CustomerResponse } from '@/services/HomeCustomerService';
 import { RootState } from '@/store';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,11 +10,12 @@ import { useSelector } from 'react-redux';
 import ProductsLists from '../components/ProductsLists';
 import { BsArrowRight } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
+import { apiGetCustomerProducts, CustomerProductsResponse } from '@/services/ProductServices';
 
 const Home = () => {
   const { t } = useTranslation();
   const [banner, setBanner] = useState<string>('');
-  const [products, setProducts] = useState<IProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [level, setLevel] = useState<number>(0);
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -23,10 +24,11 @@ const Home = () => {
   }, []);
 
   const fetchHomeCustomer = async () => {
-    const res = await apiGetHomeCustomer(user?.customer?.id || '');
-    setBanner(res.data.banner[0].image || '');
-    setProducts(res.data.products);
-    setLevel(res.data.level);
+    const {data: customer} : {data: CustomerResponse} = await apiGetCustomer(user?.customer?.documentId);
+    const {data: products} : {data: CustomerProductsResponse} = await apiGetCustomerProducts(customer?.documentId, customer.customer_category.documentId);
+    setBanner(customer.banner?.image || '');
+    setProducts(products.products);
+    setLevel(0); // TODO: A supprimer
   };
 
   return (

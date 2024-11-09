@@ -1,19 +1,22 @@
 import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import { IBanner } from '@/@types/banner';
-import { IProduct } from '@/@types/product';
 
-
-type HomeCustomerResponse = {
-  banner: IBanner[]
-  products: IProduct[]
-  level: number
-  message: string
+export type CustomerCategory = {
+  name: string,
+  documentId: string
 }
 
-export async function apiGetHomeCustomer(id: string) {
-  return ApiService.fetchData<HomeCustomerResponse>({
-    url: `${API_BASE_URL}/customer/home/${id}`,
+export type CustomerResponse = {
+  banner?: IBanner,
+  customer_category: any,
+  documentId: string
+}
+
+// TODO: déplacer dans CustomerService
+export async function apiGetCustomer(documentId: string) {
+  return ApiService.fetchData<CustomerResponse>({
+    url: `${API_BASE_URL}/customers/${documentId}`,
     method: "get",
   });
 }

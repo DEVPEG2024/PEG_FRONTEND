@@ -218,7 +218,7 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "default.settings",
+    key: "admin.settings",
     path: "/settings/profile",
     title: "PARAMÈTRES",
     translateKey: "nav.settings",

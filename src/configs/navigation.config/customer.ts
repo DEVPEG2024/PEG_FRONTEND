@@ -58,7 +58,7 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "default.settings",
+    key: "customer.settings",
     path: "/settings/profile",
     title: "PARAMÈTRES",
     translateKey: "nav.settings",

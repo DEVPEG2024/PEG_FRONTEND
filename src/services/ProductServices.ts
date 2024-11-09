@@ -1,17 +1,18 @@
 import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IProduct } from '@/@types/product'
+import { IProduct, Product } from '@/@types/product'
+import { ApiProductProduct } from '@/@types/contentTypes'
 
 type GetProductByIdResponse = {
-    product: IProduct
+    product: Product
     message: string
     result: string
 }
 
 // get product by id
-export async function apiGetProductById(id: string) {
+export async function apiGetProductById(documentId: string) {
     return ApiService.fetchData<GetProductByIdResponse>({
-        url: `${API_BASE_URL}/products` + '/' + id,
+        url: `${API_BASE_URL}/products/` + documentId,
         method: 'get'
     })
 }
@@ -102,3 +103,25 @@ export async function apiGetProductsCustomer(page: number, pageSize: number, sea
     })
 }
 
+
+
+
+
+
+
+
+
+
+
+
+export type CustomerProductsResponse = {
+    products: Product[]
+    total: number
+}
+
+export async function apiGetCustomerProducts(customerDocumentId: string, customerCategoryDocumentId: string) {
+    return ApiService.fetchData<CustomerProductsResponse>({
+      url: `${API_BASE_URL}/products?sort[0]=title:asc&filters[$or][0][customer_categories][documentId]=${customerCategoryDocumentId}&filters[$or][1][customers][documentId]=${customerDocumentId}&fields[0]=title&pagination[pageSize]=10&pagination[page]=1`,
+      method: "get",
+    });
+  }
