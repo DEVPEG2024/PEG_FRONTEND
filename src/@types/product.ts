@@ -1,6 +1,24 @@
 import { FileNameBackFront } from "./file";
 import { IForm } from "./form";
 
+export type Product = {
+  active: boolean,
+  description: string,
+  documentId: string,
+  id: number,
+  images: ProductImage[],
+  name: string,
+  price: number
+}
+
+export type ProductImage = {
+  name: string,
+  url: string,
+  height: number,
+  width: number
+}
+
+// TODO: A supprimer
 export type IProduct = {
   _id: string;
   title: string,

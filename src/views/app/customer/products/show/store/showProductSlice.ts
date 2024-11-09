@@ -27,8 +27,8 @@ const initialState: StateData = {
 
 export const getProductById = createAsyncThunk(
   SLICE_NAME + '/getProduct',
-  async (id: string) => {
-    const response = await apiGetProductById(id);
+  async (documentId: string) => {
+    const response = await apiGetProductById(documentId);
     return response.data;
   }
 );

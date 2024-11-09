@@ -25,11 +25,11 @@ import ModalCompleteForm from '../modal/ModalCompleteForm';
 injectReducer('showProduct', reducer);
 
 type ShowProductParams = {
-  id: string;
+  documentId: string;
 };
 
 const ShowProduct = () => {
-  const { id } = useParams<ShowProductParams>() as ShowProductParams;
+  const { documentId } = useParams<ShowProductParams>() as ShowProductParams;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
@@ -44,7 +44,7 @@ const ShowProduct = () => {
       if (onEdition) {
         navigate('/customer/cart');
       } else {
-        dispatch(getProductById(id));
+        dispatch(getProductById(documentId));
       }
     }
   }, [dispatch]);

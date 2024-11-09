@@ -8,7 +8,6 @@ import reducer, {
 import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { isEmpty } from 'lodash';
-import { API_URL_IMAGE } from '@/configs/api.config';
 import { useNavigate } from 'react-router-dom';
 
 injectReducer('products', reducer);
