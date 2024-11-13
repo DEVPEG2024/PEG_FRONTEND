@@ -39,12 +39,7 @@ export const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<CartItem>) => {
-            state.cart.push({
-                id: Math.random().toString(16).slice(2),
-                product: action.payload.product,
-                formAnswer: action.payload.formAnswer,
-                sizes: action.payload.sizes,
-            });
+            state.cart.push({...action.payload});
         },
         editCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
             const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)

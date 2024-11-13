@@ -1,7 +1,7 @@
 export type SignInCredential = {
-    identifier: string
-    password: string
-}
+  identifier: string;
+  password: string;
+};
 
 export type SignInResponse = {
   jwt: string;
@@ -29,19 +29,19 @@ export type SignInResponse = {
   };
 };
 
-export type SignUpResponse = SignInResponse
+export type SignUpResponse = SignInResponse;
 
 export type SignUpCredential = {
   firstName: string;
   lastName: string;
-  email: string
-  password: string
-}
+  email: string;
+  password: string;
+};
 
 export type ForgotPassword = {
-    email: string
-}
+  email: string;
+};
 
 export type ResetPassword = {
-    password: string
-}
+  password: string;
+};

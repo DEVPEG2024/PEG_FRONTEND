@@ -19,7 +19,7 @@ import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 
 import { Button, Notification, toast } from '@/components/ui';
-import { OptionsFields, SizeSelection } from '@/@types/product';
+import { OptionsFields, Size, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 injectReducer('showProduct', reducer);
@@ -62,15 +62,15 @@ const ShowProduct = () => {
 
   useEffect(() => {
     setCanAddToCart(
-      ((product?.sizes?.status && sizesSelected.length > 0) ||
-        !product?.sizes?.status) &&
-        ((product?.form && formCompleted) || !product?.form)
+      product &&
+      ((product.sizes.length > 0 && sizesSelected.length > 0) || product.sizes.length === 0) &&
+      ((product.form && formCompleted) || !product.form)
     );
   }, [sizesSelected, formCompleted, product]);
 
   const handleAddToCart = () => {
     dispatch(
-      addToCart({ product, formAnswer, sizes: sizesSelected } as CartItem)
+      addToCart({ id: Math.random().toString(16).slice(2), product, formAnswer, sizes: sizesSelected } as CartItem)
     );
     toast.push(
       <Notification type="success" title="Ajouté">
@@ -84,7 +84,7 @@ const ShowProduct = () => {
     dispatch(setFormDialog(true));
   };
 
-  const handleSizesChanged = (value: number, option: OptionsFields) => {
+  const handleSizesChanged = (value: number, option: Size) => {
     const newSizesSelected = determineNewSizes(value, option);
 
     setSizesChanged(true);
@@ -106,7 +106,7 @@ const ShowProduct = () => {
     navigate('/customer/cart');
   };
 
-  const determineNewSizes = (value: number, option: OptionsFields) => {
+  const determineNewSizes = (value: number, option: Size) => {
     if (value > 0) {
       const index = sizesSelected.findIndex(
         (sizeSelected) => sizeSelected.value === option.value
@@ -141,33 +141,33 @@ const ShowProduct = () => {
             <div className="flex flex-col lg:flex-row items-center justify-between">
               <div className="lg:w-1/2 w-full">
                 <img
-                  src={product.images[0]?.fileNameBack}
-                  alt={product.title}
+                  src={product.images[0]?.url}
+                  alt={product.name}
                   className="w-full h-auto rounded-lg shadow-md object-cover"
                 />
               </div>
 
               <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
                 <div className="flex flex-col justify-between">
-                  <h1 className="text-3xl font-bold">{product.title}</h1>
+                  <h1 className="text-3xl font-bold">{product.name}</h1>
                   <p className="text-2xl font-semibold">
-                    {product.amount.toFixed(2)} €
+                    {product.price.toFixed(2)} €
                   </p>
                 </div>
 
                 <p className="mt-4 leading-relaxed">
-                  {product.description.replace('<p>', '').replace('</p>', '')}
+                  {product.description?.replace('<p>', '').replace('</p>', '')}
                 </p>
 
-                {product.sizes.status ? (
+                {product.sizes.length > 0 ? (
                   <div>
                     <p className="font-bold text-yellow-500 mb-4">
                       Choix des tailles
                     </p>
                     <div className="grid grid-cols-7 gap-4 mb-6">
-                      {product.sizes.options.map((option) => (
+                      {product.sizes.map((option) => (
                         <div key={option.value} className="grid gap-4">
-                          <span>{option.label}</span>
+                          <span>{option.name}</span>
                           <Input
                             name={option.value}
                             value={
@@ -208,9 +208,9 @@ const ShowProduct = () => {
                       autoComplete="off"
                       onChange={(e: any) =>
                         handleSizesChanged(parseInt(e.target.value), {
-                          label: 'Default',
+                          name: 'Default',
                           value: 'DEFAULT',
-                          stock: 0,
+                          description: 'Default'
                         })
                       }
                     />

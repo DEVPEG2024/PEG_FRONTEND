@@ -1,5 +1,5 @@
-import { IOrder } from "./order";
-import { IUser } from "./user";
+import { IOrder } from './order';
+import { IUser } from './user';
 
 export interface IComment {
   _id: string;
@@ -31,7 +31,7 @@ export interface ITask {
 export interface IProject {
   _id: string;
   title: string;
-  ref : string;
+  ref: string;
   description: string;
   fullDescription: string;
   startDate: Date;

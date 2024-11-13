@@ -1,19 +1,36 @@
-import { API_BASE_URL } from '@/configs/api.config'
+import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import { IProduct, Product } from '@/@types/product'
-import { ApiProductProduct } from '@/@types/contentTypes'
+import { AxiosResponse } from 'axios'
+import { ApiResponse, PageInfo } from '@/utils/serviceHelper'
 
-type GetProductByIdResponse = {
-    product: Product
-    message: string
-    result: string
-}
-
-// get product by id
-export async function apiGetProductById(documentId: string) {
-    return ApiService.fetchData<GetProductByIdResponse>({
-        url: `${API_BASE_URL}/products/` + documentId,
-        method: 'get'
+export async function apiGetProductById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
+    const query = `
+    query GetProduct($documentId: ID!) {
+        product(documentId: $documentId) {
+            description
+            name
+            price
+            images {
+                url
+            }
+            sizes {
+                name
+                value
+            }
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{product: Product}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
     })
 }
 
@@ -94,34 +111,71 @@ export async function apiPutStatusProduct(id: string) {
 }
 
 // GET PRODUCTS CUSTOMER
-
-export async function apiGetProductsCustomer(page: number, pageSize: number, searchTerm: string = "",  userId: string, userCategoryId: string) {
-    return ApiService.fetchData<ProductsResponse>({
-        url: `${API_BASE_URL}/products/customer`,
-        method: 'get',
-        params: { page, pageSize, searchTerm,  userId, userCategoryId }
+export async function apiGetCustomerProductsREST(customerDocumentId: string, customerCategoryDocumentId: string, pagination: {page: number, pageSize:number} = {page: 1, pageSize: 10}, searchTerm: string = ''): Promise<AxiosResponse<ApiResponse<Product[]>>> {
+    return ApiService.fetchData<ApiResponse<Product[]>>({
+        url: API_BASE_URL + '/products?filters[$and][0][$or][0][customers][documentId][$eq]=' + customerDocumentId + '&filters[$and][0][$or][1][customer_categories][documentId][$eq]=' + customerCategoryDocumentId + '&filters[$and][1][name][$contains]=' + searchTerm + '&populate[images][fields][0]=url&fields[0]=active&fields[1]=description&fields[2]=documentId&fields[3]=name&fields[4]=price&pagination[pageSize]=' + pagination.pageSize + '&pagination[page]=' + pagination.page,
+        method: 'get'
     })
 }
 
-
-
-
-
-
-
-
-
-
-
-
 export type CustomerProductsResponse = {
-    products: Product[]
-    total: number
-}
-
-export async function apiGetCustomerProducts(customerDocumentId: string, customerCategoryDocumentId: string) {
-    return ApiService.fetchData<CustomerProductsResponse>({
-      url: `${API_BASE_URL}/products?sort[0]=title:asc&filters[$or][0][customer_categories][documentId]=${customerCategoryDocumentId}&filters[$or][1][customers][documentId]=${customerDocumentId}&fields[0]=title&pagination[pageSize]=10&pagination[page]=1`,
-      method: "get",
-    });
+    nodes: Product[],
+    pageInfo: PageInfo
   }
+
+export async function apiGetCustomerProducts(customerDocumentId: string, customerCategoryDocumentId: string, pagination: {page: number, pageSize:number} = {page: 1, pageSize: 10}, searchTerm: string = ''): Promise<AxiosResponse<ApiResponse<{products_connection: CustomerProductsResponse}>>> {
+    const query = `
+    query GetCustomerProducts($customerDocumentId: ID!, $customerCategoryDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+        products_connection(filters: {
+            and: [
+            {
+                or: [
+                {
+                    customers: {
+                    documentId: {eq: $customerDocumentId}
+                    }
+                }, {
+                    customer_categories: {
+                    documentId: {eq: $customerCategoryDocumentId}
+                    }
+                }
+                ]
+            }, {
+                name: {contains: $searchTerm}
+            }
+            ]
+        }, pagination: $pagination) {
+            nodes {
+                images {
+                    url
+                }
+                active
+                description
+                documentId
+                name
+                price
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    customerDocumentId,
+    customerCategoryDocumentId,
+    searchTerm,
+    pagination
+  }
+    return ApiService.fetchData<ApiResponse<{products_connection: CustomerProductsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+        query,
+        variables
+        }
+    })
+}

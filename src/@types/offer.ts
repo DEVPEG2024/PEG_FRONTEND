@@ -1,8 +1,8 @@
-import { IForm } from "./form";
-import { IUser } from "./user";
+import { IForm } from './form';
+import { IUser } from './user';
 
 export interface IOffer {
-    _id: string;
+  _id: string;
   ref: string;
   title: string;
   customer: IUser;

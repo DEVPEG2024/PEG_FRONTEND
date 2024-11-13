@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 injectReducer('products', reducer);
 
 const ProductsLists = () => {
-  const user = useAppSelector((state) => state.auth.user);
+  const customer = useAppSelector((state) => state.auth.customer);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { products } = useAppSelector((state) => state.products.data);
@@ -23,8 +23,8 @@ const ProductsLists = () => {
         page: 1,
         pageSize: 10,
         searchTerm: '',
-        userId: user?._id || '',
-        userCategoryId: user?.category?._id || '',
+        customerDocumentId: customer?.documentId || '',
+        customerCategoryDocumentId: customer?.customer_category?.documentId || '',
       })
     );
     dispatch(setProduct(null));
@@ -54,14 +54,14 @@ const ProductsLists = () => {
         <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {products.map((product) => (
             <Card
-              key={product._id}
+              key={product.id}
               clickable
-              onClick={(e) => handleClick(product._id)}
+              onClick={(e) => handleClick(product.documentId)}
             >
               <div className="flex flex-col gap-4">
                 <img
-                  src={product.images[0]?.fileNameBack}
-                  alt={product.title}
+                  src={product.images[0]?.url}
+                  alt={product.name}
                   className=" rounded-lg bg-yellow-400"
                   style={{
                     height: '250px',
@@ -70,15 +70,10 @@ const ProductsLists = () => {
                   }}
                 />
                 <div className="flex flex-col justify-between">
-                  <p className="text-lg font-bold">{product.title}</p>
+                  <p className="text-lg font-bold">{product.name}</p>
                   <p className="text-lg font-bold text-white">
-                    {product.amount}€
+                    {product.price}€
                   </p>
-                  {product.stock > 0 ? (
-                    <p className="text-sm text-emerald-500">En stock</p>
-                  ) : (
-                    <p className="text-sm text-red-500">Rupture de stock</p>
-                  )}
                 </div>
               </div>
             </Card>

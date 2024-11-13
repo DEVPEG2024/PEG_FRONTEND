@@ -14,8 +14,7 @@ export type IField = {
   min?: number;
   max?: number;
   defaultColor?: string;
-}
-
+};
 
 export type IForm = {
   _id: string;
@@ -23,4 +22,18 @@ export type IForm = {
   fields: IField[];
   createdAt: Date;
   updatedAt: Date;
-}
+};
+
+export type Form = {
+  documentId: string;
+  name: string;
+  form_fields: FormField[];
+};
+
+export type FormField = {
+  documentId: string;
+  name: string;
+  type: string;
+  required: boolean;
+  options: Record<string, any>;
+};

@@ -1,48 +1,53 @@
-import { FileNameBackFront } from "./file";
-import { IForm } from "./form";
+import { FileNameBackFront } from './file';
+import { IForm } from './form';
 
 export type Product = {
-  active: boolean,
-  description: string,
-  documentId: string,
-  id: number,
-  images: ProductImage[],
+  active: boolean;
+  description: string;
+  documentId: string;
+  id: number;
+  images: ProductImage[];
+  name: string;
+  price: number;
+  sizes: Size[]
+  form
+};
+
+export type Size = {
   name: string,
-  price: number
+  value: string,
+  description: string
 }
 
 export type ProductImage = {
-  name: string,
-  url: string,
-  height: number,
-  width: number
-}
+  url: string;
+};
 
 // TODO: A supprimer
 export type IProduct = {
   _id: string;
-  title: string,
-  reference: string,
-  description: string,
-  amount: number, //TODO: remplacer par 'price'
-  stock: number,
-  category: string[],
-  form?: IForm,
-  customersCategories: string[],
-  customers: string[],
-  images: FileNameBackFront[],
-  isActive: boolean,
-  isDeleted: boolean,
-  date: string,
-  field_name : boolean,
-  field_number : boolean,
-  field_text : boolean,
-  fields: ProductForm[],
+  title: string;
+  reference: string;
+  description: string;
+  amount: number; //TODO: remplacer par 'price'
+  stock: number;
+  category: string[];
+  form?: IForm;
+  customersCategories: string[];
+  customers: string[];
+  images: FileNameBackFront[];
+  isActive: boolean;
+  isDeleted: boolean;
+  date: string;
+  field_name: boolean;
+  field_number: boolean;
+  field_text: boolean;
+  fields: ProductForm[];
   sizes: {
-    status: boolean,
-    options: OptionsFields[]
-  }
-}
+    status: boolean;
+    options: OptionsFields[];
+  };
+};
 
 export type ProductForm = {
   label: string;

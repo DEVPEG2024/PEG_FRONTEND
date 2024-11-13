@@ -1,18 +1,20 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct } from '@/@types/product';
+import { IProduct, Product } from '@/@types/product';
 import {
   apiPutStatusProduct,
   apiDeleteProduct,
   apiUpdateProduct,
-  apiGetProductsCustomer,
+  apiGetCustomerProducts,
+  CustomerProductsResponse,
 } from '@/services/ProductServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
-type Products = IProduct[];
+type Products = Product[];
 
 export type StateData = {
   loading: boolean;
   products: Products;
-  product: IProduct | null;
+  product: Product | null;
   modalDelete: boolean;
   total: number;
   result: boolean;
@@ -33,8 +35,8 @@ type Query = {
   page: number;
   pageSize: number;
   searchTerm: string;
-  userId: string;
-  userCategoryId: string;
+  customerDocumentId: string;
+  customerCategoryDocumentId: string;
 };
 
 type GetProductListRequest = Query;
@@ -42,15 +44,14 @@ export const SLICE_NAME = 'products';
 
 export const getProducts = createAsyncThunk(
   SLICE_NAME + '/getProducts',
-  async (data: GetProductListRequest) => {
-    const response = await apiGetProductsCustomer(
-      data.page,
-      data.pageSize,
-      data.searchTerm,
-      data.userId,
-      data.userCategoryId
-    );
-    return response.data;
+  async (data: GetProductListRequest): Promise<{products: Product[]}> => {
+    const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(
+      data.customerDocumentId,
+      data.customerCategoryDocumentId,
+      {page: data.page, pageSize: data.pageSize},
+      data.searchTerm
+    ));
+    return {products: products_connection.nodes};
   }
 );
 

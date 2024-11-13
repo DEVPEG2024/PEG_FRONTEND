@@ -1,5 +1,5 @@
-import { ICategoryCustomer } from "@/services/CustomerServices";
-import { IUser } from "./user";
+import { ICategoryCustomer } from '@/services/CustomerServices';
+import { IUser } from './user';
 
 export interface IBanner {
   _id: string;
