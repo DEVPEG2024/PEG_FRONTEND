@@ -3,17 +3,20 @@ import { Container, DoubleSidedImage } from '@/components/shared';
 import { Button, Steps } from '@/components/ui';
 import { API_URL_IMAGE } from '@/configs/api.config';
 import { apiGetCustomer, CustomerResponse } from '@/services/HomeCustomerService';
-import { RootState } from '@/store';
+import { RootState, useAppDispatch } from '@/store';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import ProductsLists from '../components/ProductsLists';
+import HomeProductsList from './HomeProductsList';
 import { BsArrowRight } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
 import { apiGetCustomerProducts, CustomerProductsResponse } from '@/services/ProductServices';
+import { unwrapData } from '@/utils/serviceHelper';
+import { setCustomer } from '@/store/slices/auth/customerSlice';
 
 const Home = () => {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch()
   const [banner, setBanner] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
   const [level, setLevel] = useState<number>(0);
@@ -24,10 +27,12 @@ const Home = () => {
   }, []);
 
   const fetchHomeCustomer = async () => {
-    const {data: customer} : {data: CustomerResponse} = await apiGetCustomer(user?.customer?.documentId);
-    const {data: products} : {data: CustomerProductsResponse} = await apiGetCustomerProducts(customer?.documentId, customer.customer_category.documentId);
+    // TODO: voir pour faire les deux requêtes suivantes en une seule
+    const {customer}: {customer: CustomerResponse} = (await unwrapData(apiGetCustomer(user?.customer?.documentId)));
+    dispatch(setCustomer(customer))
+    const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(customer?.documentId, customer.customer_category.documentId));
     setBanner(customer.banner?.image || '');
-    setProducts(products.products);
+    setProducts(products_connection.nodes);
     setLevel(0); // TODO: A supprimer
   };
 
@@ -88,7 +93,7 @@ const Home = () => {
           <div className="flex flex-col gap-4">
             <h3>Mes offres personnalisées</h3>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              <ProductsLists products={products} />
+              <HomeProductsList products={products} />
               <div className="col-span-1 flex flex-col gap-4">
                 <Link to="/customer/products">
                   <Button className="flex items-center justify-center gap-2">

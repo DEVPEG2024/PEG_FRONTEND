@@ -2,14 +2,14 @@ import { Product } from '@/@types/product';
 import { Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 
-const ProductsLists = ({ products }: { products: Product[] }) => {
+const HomeProductsList = ({ products }: { products: Product[] }) => {
   const navigate = useNavigate();
 
   return (
     <>
       {products.map((product) => (
         <Card
-          key={product.id}
+          key={product.documentId}
           className="col-span-1 card-product cursor-pointer bg-slate-900"
           bodyClass="p-0"
           onClick={() => navigate(`/customer/product/${product.documentId}`)}
@@ -36,4 +36,4 @@ const ProductsLists = ({ products }: { products: Product[] }) => {
   );
 };
 
-export default ProductsLists;
+export default HomeProductsList;

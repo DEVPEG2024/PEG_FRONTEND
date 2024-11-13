@@ -1,13 +1,14 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct, SizeSelection } from '@/@types/product';
+import { IProduct, Product, SizeSelection } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
 import { IFormAnswer } from '@/@types/formAnswer';
+import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'showProduct';
 
 export type StateData = {
   loading: boolean;
-  product: IProduct | null;
+  product: Product | null;
   formCompleted: boolean;
   formDialog: boolean;
   formAnswer: IFormAnswer | null;
@@ -27,9 +28,8 @@ const initialState: StateData = {
 
 export const getProductById = createAsyncThunk(
   SLICE_NAME + '/getProduct',
-  async (documentId: string) => {
-    const response = await apiGetProductById(documentId);
-    return response.data;
+  async (documentId: string): Promise<{product: Product}> => {
+    return await unwrapData(apiGetProductById(documentId));
   }
 );
 
@@ -69,7 +69,7 @@ const productSlice = createSlice({
     });
     builder.addCase(getProductById.fulfilled, (state, action) => {
       state.loading = false;
-      state.product = action.payload.product as unknown as IProduct;
+      state.product = action.payload.product;
     });
     builder.addCase(getProductById.rejected, (state) => {
       state.loading = false;

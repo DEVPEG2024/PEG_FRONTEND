@@ -1,9 +1,9 @@
 export type FileNameBackFront = {
-    fileNameBack: string
-    fileNameFront: string
-}
+  fileNameBack: string;
+  fileNameFront: string;
+};
 
 export type FileItem = {
-    fileNameBackFront: FileNameBackFront;
-    file: File;
-  }
+  fileNameBackFront: FileNameBackFront;
+  file: File;
+};
