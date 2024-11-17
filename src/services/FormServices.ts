@@ -1,28 +1,41 @@
 import ApiService from './ApiService'
 import {
-    DELETE_FORMS_API_URL,
-    GET_FORMS_API_URL,
-    POST_FORMS_API_URL,
     PUT_FORMS_API_URL
   } from "@/constants/api.constant";
-import { IField, IForm } from '@/@types/form'
+import { Form, IField, IForm } from '@/@types/form'
+import { AxiosResponse } from 'axios';
+import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
+import { API_GRAPHQL_URL } from '@/configs/api.config';
 
-type CreateFormResponse = {
-    form: IForm
-    result: boolean
-    message: string
+// create form
+export type CreateFormResponse = {
+    documentId: string
 }
 
-type CreateFormRequest = {
-    title: string
-    fields: IField[]
+export type CreateFormRequest = {
+    name: string
+    form_fields?: IField[]
 }
 
-type GetAllFormsResponse = {
-    forms: IForm[]
-    result: boolean
-    message: string
-    total: number
+export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosResponse<ApiResponse<{createForm: CreateFormResponse}>>> {
+    const query = `
+    mutation CreateForm($data: FormInput!) {
+        createForm(data: $data) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{createForm: CreateFormResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
 }
 
 type UpdateFormResponse = {
@@ -31,27 +44,48 @@ type UpdateFormResponse = {
     message: string
 }
 
-type DeleteFormResponse = {
-    result: boolean
-    message: string
-}
 
-// create form
-export async function apiCreateForm(form: CreateFormRequest) {
-    return ApiService.fetchData<CreateFormResponse>({
-        url: POST_FORMS_API_URL,
+// get forms
+export type GetFormsRequest = {
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export type GetFormsResponse = {
+    nodes: Form[]
+    pageInfo: PageInfo
+};
+
+export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{forms_connection: GetFormsResponse}>>> {
+    const query = `
+    query getForms($searchTerm: String, $pagination: PaginationArg) {
+        forms_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+            nodes {
+                documentId
+                name
+                form_fields {
+                    documentId
+                }
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{forms_connection: GetFormsResponse}>>({
+        url: API_GRAPHQL_URL,
         method: 'post',
-        data: form
-    })
-}
-
-
-// get all forms
-export async function apiGetForms(page: number, pageSize: number, searchTerm: string) {
-    return ApiService.fetchData<GetAllFormsResponse>({
-        url: GET_FORMS_API_URL,
-        method: 'get',
-        params: { page, pageSize, searchTerm }
+        data: {
+            query,
+            variables
+        }
     })
 }
 
@@ -65,9 +99,27 @@ export async function apiUpdateForm(form: IForm) {
 }
 
 // delete form
-export async function apiDeleteForm(id: string) {
-    return ApiService.fetchData<DeleteFormResponse>({
-        url: DELETE_FORMS_API_URL + '/' + id,
-        method: 'delete'
+export type DeleteFormResponse = {
+    documentId: string
+}
+
+export async function apiDeleteForm(documentId: string): Promise<AxiosResponse<ApiResponse<{deleteForm: DeleteFormResponse}>>> {
+    const query = `
+    mutation DeleteForm($documentId: ID!) {
+        deleteForm(documentId: $documentId) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{deleteForm: DeleteFormResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
     })
 }

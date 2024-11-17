@@ -9,25 +9,25 @@ import reducer, {
 import { useEffect } from 'react';
 import { Button, Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
-import { IForm } from '@/@types/form';
+import { Form, IForm } from '@/@types/form';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 
 injectReducer('forms', reducer);
 
-function FormsBuilder() {
+function FormsList() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { forms } = useAppSelector((state) => state.forms.data);
+  const { forms, total } = useAppSelector((state) => state.forms.data);
   useEffect(() => {
-    dispatch(getForms({ page: 1, pageSize: 10, searchTerm: '' }));
+    dispatch(getForms({ pagination: {page: 1, pageSize: 10}, searchTerm: '' }));
   }, []);
-  const handleEdit = (form: IForm) => {
+  const handleEdit = (form: Form) => {
     dispatch(setForm(form));
-    navigate(`/admin/forms/edit/${form._id}`);
+    navigate(`/admin/forms/edit/${form.documentId}`);
   };
-  const handleDelete = (id: string) => {
-    dispatch(deleteForm(id));
+  const handleDelete = (documentId: string) => {
+    dispatch(deleteForm(documentId));
   };
   return (
     <div className="h-full">
@@ -37,20 +37,20 @@ function FormsBuilder() {
         description="Tous les formulaires"
         link={'/admin/forms/add'}
         addAction
-        total={forms.length}
+        total={total}
       />
       <div className="flex flex-col gap-2 h-full mt-4">
         {forms.map((form) => (
-          <Card key={form._id} className="bg-gray-900">
+          <Card key={form.documentId} className="bg-gray-900">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <TbForms className="text-red-400 text-4xl" />
                 <div className="flex flex-col">
                   <span className="text-lg text-white font-bold">
-                    {form.title}
+                    {form.name}
                   </span>
                   <span className="text-md text-white">
-                    {form.fields.length} champs
+                    {form.form_fields.length} champs
                   </span>
                 </div>
               </div>
@@ -64,7 +64,7 @@ function FormsBuilder() {
                 <Button
                   variant="twoTone"
                   size="sm"
-                  onClick={() => handleDelete(form._id)}
+                  onClick={() => handleDelete(form.documentId)}
                   icon={<HiTrash />}
                 />
               </div>
@@ -76,4 +76,4 @@ function FormsBuilder() {
   );
 }
 
-export default FormsBuilder;
+export default FormsList;

@@ -6,7 +6,7 @@ import { VscSymbolColor } from 'react-icons/vsc';
 import { IconType } from 'react-icons';
 import { GoNumber } from 'react-icons/go';
 
-export type Form = {
+export type FormFieldType = {
   id: string;
   type: string;
   label: string;
@@ -22,7 +22,7 @@ export type Form = {
   defaultColor?: string;
 };
 
-export const Forms: Form[] = [
+export const FormFieldTypes: FormFieldType[] = [
   {
     id: '1',
     type: 'input',

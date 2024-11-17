@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Form } from '../../constants/type';
+import { useState } from 'react';
+import { FormFieldType } from '../../constants/type';
 import { Input, DatePicker, Button } from '@/components/ui';
+import { FormField, isFormFieldOptions } from '@/@types/form';
 
-interface FieldConfigProps {
-  selectedField: Form | null;
-  onConfigChange: (config: Partial<Form>) => void;
-  handleAddField: (field: Form) => void;
-}
-
-const FieldConfig: React.FC<FieldConfigProps> = ({
+const FieldConfig = ({
   selectedField,
   onConfigChange,
   handleAddField,
+}: {
+  selectedField: FormField | null;
+  onConfigChange: (config: Partial<FormFieldType>) => void;
+  handleAddField: (field: FormFieldType) => void;
 }) => {
   const [newOption, setNewOption] = useState('');
 
@@ -31,12 +30,13 @@ const FieldConfig: React.FC<FieldConfigProps> = ({
   const renderOptions = () => (
     <div>
       <h4 className="font-semibold mb-2">Options</h4>
-      {selectedField.options &&
+      {isFormFieldOptions(selectedField) &&
         selectedField.options.map((option, index) => (
           <div key={index} className="flex items-center mb-2">
-            <Input value={option} readOnly />
+            <Input value={option.value} readOnly />
             <Button
               onClick={() =>
+                // TODO SUITE_ICI
                 onConfigChange({
                   options: selectedField.options?.filter((_, i) => i !== index),
                 })

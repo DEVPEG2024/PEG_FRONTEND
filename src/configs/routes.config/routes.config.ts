@@ -141,43 +141,18 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/orders")),
     authority: [SUPER_ADMIN],
   },
-  // offers
-  {
-    key: "admin.offers.list",
-    path: "/admin/offers/list",
-    component: lazy(() => import("@/views/app/admin/offers/lists")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.new",
-    path: "/admin/offers/new",
-    component: lazy(() => import("@/views/app/admin/offers/lists/new")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.edit",
-    path: "/admin/offers/edit/:id",
-    component: lazy(() => import("@/views/app/admin/offers/lists/edit")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.offers.details",
-    path: "/admin/offers/details/:id",
-    component: lazy(() => import("@/views/app/admin/offers/details")),
-    authority: [SUPER_ADMIN],
-  },
   //forms
   {
     key: "admin.forms",
     path: "/admin/forms",
-    component: lazy(() => import("@/views/app/admin/forms")),
+    component: lazy(() => import("@/views/app/admin/forms/FormsList")),
     authority: [SUPER_ADMIN],
   },
   {
     key: "admin.forms.add",
     path: "/admin/forms/add",
     component: lazy(
-      () => import("@/views/app/admin/forms/add")
+      () => import("@/views/app/admin/forms/add/CreateForm")
     ),
     authority: [SUPER_ADMIN],
   },
@@ -185,7 +160,7 @@ const protectedAdminRoutes = [
     key: "admin.forms.edit",
     path: "/admin/forms/edit/:id",
     component: lazy(
-      () => import("@/views/app/admin/forms/edit")
+      () => import("@/views/app/admin/forms/edit/EditForm")
     ),
     authority: [SUPER_ADMIN],
   },
