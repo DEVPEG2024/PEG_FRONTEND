@@ -9,11 +9,12 @@ import useCustomer from '@/utils/hooks/customers/useCustomer';
 import useCategoryCustomer from '@/utils/hooks/customers/useCategoryCustomer';
 import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
 import { apiNewProduct, apiUpdateProduct } from '@/services/ProductServices';
-import { apiGetForms } from '@/services/FormServices';
-import { IForm } from '@/@types/form';
+import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
+import { Form, IForm } from '@/@types/form';
 import { apiDeleteFile, apiGetFile } from '@/services/FileServices';
 import { useAppSelector } from '../store';
 import { FileItem } from '@/@types/formAnswer';
+import { unwrapData } from '@/utils/serviceHelper';
 
 interface Options {
   value: string;
@@ -115,11 +116,11 @@ const Product = () => {
     return files;
   };
   const fetchForms = async () => {
-    const response = await apiGetForms(1, 1000, '');
-    const formsList = response.data.forms || [];
-    const forms = formsList.map((form: IForm) => ({
-      value: form._id || '',
-      label: form.title,
+    const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms());
+    const formsList = forms_connection.nodes || [];
+    const forms = formsList.map((form: Form) => ({
+      value: form.documentId || '',
+      label: form.name,
     }));
     setForms(forms);
   };

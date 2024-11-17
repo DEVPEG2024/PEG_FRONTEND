@@ -1,7 +1,7 @@
-import ListForm from '../builder/listForms';
+import FormFieldsList from '../builder/FormFieldsList';
 import ConfigForms from '../builder/configForms';
 import { Button, Card, Input, Notification, toast } from '@/components/ui';
-import { Form, Forms } from '../constants/type';
+import { FormFieldType, FormFieldTypes } from '../constants/type';
 import { useState } from 'react';
 import FieldConfig from '../builder/components/fieldsConfig';
 import Empty from '@/components/shared/Empty';
@@ -9,30 +9,31 @@ import { RxInput } from 'react-icons/rx';
 import { apiUpdateForm } from '@/services/FormServices';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../store';
-import { IForm } from '@/@types/form';
+import { FormField, IForm } from '@/@types/form';
 
-function NewForms() {
+function EditForm() {
   const { form } = useAppSelector((state) => state.forms.data);
-  const [selectedFields, setSelectedFields] = useState<Form[]>(
-    form?.fields ?? []
+  const [selectedFields, setSelectedFields] = useState<FormField[]>(
+    form?.form_fields ?? []
   );
-  const [currentField, setCurrentField] = useState<Form | null>(null);
-  const [formTitle, setFormTitle] = useState<string>(form?.title ?? '');
+  const [currentField, setCurrentField] = useState<FormField | null>(null);
+  const [formTitle, setFormTitle] = useState<string>(form?.name ?? '');
   const navigate = useNavigate();
-  const handleFormsSelected = (form: Form) => {
-    const newField = { ...form, id: Date.now().toString() };
+  const handleFormFieldTypeSelected = (formFieldType: FormFieldType) => {
+    const newField = { type: formFieldType.type, documentId: Date.now().toString(), options: {} };
     setCurrentField(newField);
   };
 
-  const handleAddField = (field: Form) => {
+  const handleAddField = (field: FormField) => {
     setSelectedFields([...selectedFields, field]);
     setCurrentField(null);
   };
 
-  const handleDeleteForm = (form: Form) => {
-    setSelectedFields(selectedFields.filter((f) => f.id !== form.id));
+  const handleDeleteField = (formField: FormField) => {
+    setSelectedFields(selectedFields.filter((field) => field.documentId !== formField.documentId));
   };
-  const handleConfigChange = (config: Partial<Form>) => {
+
+  const handleConfigChange = (config: Partial<FormFieldType>) => {
     if (currentField) {
       const updatedField = { ...currentField, ...config };
       setSelectedFields(
@@ -111,7 +112,7 @@ function NewForms() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 h-full ">
         <Card className="col-span-3 bg-gray-900 h-full">
-          <ListForm forms={Forms} handleFormsSelected={handleFormsSelected} />
+          <FormFieldsList formFieldTypes={FormFieldTypes} handleFormFieldTypeSelected={handleFormFieldTypeSelected} />
         </Card>
         <Card className="col-span-5 bg-gray-900 h-full">
           {currentField ? (
@@ -132,7 +133,7 @@ function NewForms() {
         <Card className="col-span-4 bg-gray-900 h-full">
           <ConfigForms
             selectedFields={selectedFields}
-            handleDeleteForm={handleDeleteForm}
+            handleDeleteForm={handleDeleteField}
             moveField={moveField}
           />
         </Card>
@@ -141,4 +142,4 @@ function NewForms() {
   );
 }
 
-export default NewForms;
+export default EditForm;

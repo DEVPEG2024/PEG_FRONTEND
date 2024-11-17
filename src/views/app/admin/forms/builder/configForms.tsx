@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui';
-import { Form } from '../constants/type';
+import { FormFieldType } from '../constants/type';
 import InputSection from './components/fields/input';
 import TextAreaSection from './components/fields/textArea';
 import SelectSection from './components/fields/select';
@@ -12,8 +12,8 @@ import UploadSection from './components/fields/uplaodSection';
 import ColorSection from './components/fields/color';
 
 interface ConfigFormsProps {
-  selectedFields: Form[];
-  handleDeleteForm: (form: Form) => void;
+  selectedFields: FormFieldType[];
+  handleDeleteForm: (form: FormFieldType) => void;
   moveField: (index: number, direction: 'up' | 'down') => void;
 }
 
@@ -24,7 +24,7 @@ function ConfigForms({
 }: ConfigFormsProps) {
   return (
     <div className="flex flex-col gap-4">
-      {selectedFields.map((form: Form, index: number) => {
+      {selectedFields.map((form: FormFieldType, index: number) => {
         return (
           <div
             key={form.id.toString()}
@@ -65,7 +65,7 @@ function ConfigForms({
   );
 }
 
-function renderFormField(form: Form) {
+function renderFormField(form: FormFieldType) {
   const options = form.options
     ? form.options.map((option: any) => ({ label: option, value: option }))
     : [];

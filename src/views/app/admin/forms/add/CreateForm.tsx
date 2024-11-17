@@ -1,33 +1,35 @@
-import ListForm from '../builder/listForms';
+import FormFieldsList from '../builder/FormFieldsList';
 import ConfigForms from '../builder/configForms';
 import { Button, Card, Input, Notification, toast } from '@/components/ui';
-import { Form, Forms } from '../constants/type';
+import { FormFieldType, FormFieldTypes } from '../constants/type';
 import { useState } from 'react';
 import FieldConfig from '../builder/components/fieldsConfig';
 import Empty from '@/components/shared/Empty';
 import { RxInput } from 'react-icons/rx';
-import { apiCreateForm } from '@/services/FormServices';
+import { apiCreateForm, CreateFormRequest, CreateFormResponse } from '@/services/FormServices';
 import { useNavigate } from 'react-router-dom';
+import { IField } from '@/@types/form';
+import { unwrapData } from '@/utils/serviceHelper';
 
-function NewForms() {
-  const [selectedFields, setSelectedFields] = useState<Form[]>([]);
-  const [currentField, setCurrentField] = useState<Form | null>(null);
+function CreateForm() {
+  const [selectedFields, setSelectedFields] = useState<IField[]>([]);
+  const [currentField, setCurrentField] = useState<FormFieldType | null>(null);
   const [formTitle, setFormTitle] = useState<string>('');
   const navigate = useNavigate();
-  const handleFormsSelected = (form: Form) => {
+  const handleFormsSelected = (form: FormFieldType) => {
     const newField = { ...form, id: Date.now().toString() };
     setCurrentField(newField);
   };
 
-  const handleAddField = (field: Form) => {
+  const handleAddField = (field: FormFieldType) => {
     setSelectedFields([...selectedFields, field]);
     setCurrentField(null);
   };
 
-  const handleDeleteForm = (form: Form) => {
+  const handleDeleteForm = (form: FormFieldType) => {
     setSelectedFields(selectedFields.filter((f) => f.id !== form.id));
   };
-  const handleConfigChange = (config: Partial<Form>) => {
+  const handleConfigChange = (config: Partial<FormFieldType>) => {
     if (currentField) {
       const updatedField = { ...currentField, ...config };
       setSelectedFields(
@@ -67,13 +69,13 @@ function NewForms() {
       );
       return;
     }
-    const form = {
-      title: formTitle,
-      fields: selectedFields,
+    const form: CreateFormRequest = {
+      name: formTitle,
+      form_fields: selectedFields,
     };
-    const { data } = await apiCreateForm(form);
+    const {createForm} : {createForm: CreateFormResponse} = await unwrapData(apiCreateForm(form));
 
-    if (data.result) {
+    if (createForm) {
       toast.push(
         <Notification type="success" title="Formulaire créé avec succès" />
       );
@@ -102,7 +104,7 @@ function NewForms() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 h-full ">
         <Card className="col-span-3 bg-gray-900 h-full">
-          <ListForm forms={Forms} handleFormsSelected={handleFormsSelected} />
+          <FormFieldsList formFieldTypes={FormFieldTypes} handleFormFieldTypeSelected={handleFormsSelected} />
         </Card>
         <Card className="col-span-5 bg-gray-900 h-full">
           {currentField ? (
@@ -132,4 +134,4 @@ function NewForms() {
   );
 }
 
-export default NewForms;
+export default CreateForm;

@@ -4,6 +4,11 @@ export type ApiResponse<T> = {
     data: T
   }
 
+export type PaginationRequest = {
+  page: number,
+  pageSize: number
+}
+
 export type PageInfo = {
   page: number,
   pageSize: number,

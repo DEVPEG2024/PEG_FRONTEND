@@ -1,50 +1,39 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IForm } from '@/@types/form';
+import { Form, IForm } from '@/@types/form';
 import {
-  apiCreateForm,
   apiDeleteForm,
   apiGetForms,
   apiUpdateForm,
+  DeleteFormResponse,
+  GetFormsRequest,
+  GetFormsResponse,
 } from '@/services/FormServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
-export type StateData = {
-  loading: boolean;
-  forms: IForm[];
-  form: IForm | null;
-  modalDelete: boolean;
-  total: number;
-  result: boolean;
-  message: string;
-};
-
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
-
-type GetProductListRequest = Query;
 export const SLICE_NAME = 'forms';
 
-/// forms
+export type FormsStateData = {
+  forms: Form[];
+  form: Form | null;
+  loading: boolean;
+  modalDelete: boolean;
+  total: number;
+};
 
+const initialState: FormsStateData = {
+  forms: [],
+  form: null,
+  loading: false,
+  modalDelete: false,
+  total: 0,
+};
+
+/// forms
 export const getForms = createAsyncThunk(
   SLICE_NAME + '/getForms',
-  async (data: GetProductListRequest) => {
-    const response = await apiGetForms(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
-  }
-);
-
-export const createForm = createAsyncThunk(
-  SLICE_NAME + '/createForm',
-  async (data: IForm) => {
-    const response = await apiCreateForm(data);
-    return response.data;
+  async (data: GetFormsRequest): Promise<GetFormsResponse> => {
+    const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms(data));
+    return forms_connection
   }
 );
 
@@ -59,21 +48,11 @@ export const updateForm = createAsyncThunk(
 // delete form
 export const deleteForm = createAsyncThunk(
   SLICE_NAME + '/deleteForm',
-  async (id: string) => {
-    await apiDeleteForm(id);
-    return id;
+  async (documentId: string): Promise<DeleteFormResponse> => {
+    const {deleteForm} : {deleteForm: DeleteFormResponse} = await unwrapData(apiDeleteForm(documentId));
+    return deleteForm;
   }
 );
-
-const initialState: StateData = {
-  loading: false,
-  modalDelete: false,
-  forms: [],
-  form: null,
-  total: 0,
-  result: false,
-  message: '',
-};
 
 const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
@@ -98,8 +77,8 @@ const formsSlice = createSlice({
     });
     builder.addCase(getForms.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = action.payload.forms as unknown as IForm[];
-      state.total = action.payload.total;
+      state.forms = action.payload.nodes as Form[];
+      state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getForms.rejected, (state) => {
       state.loading = false;
@@ -110,7 +89,7 @@ const formsSlice = createSlice({
     builder.addCase(deleteForm.fulfilled, (state, action) => {
       console.log(action.payload);
       state.loading = false;
-      state.forms = state.forms.filter((form) => form._id !== action.payload);
+      state.forms = state.forms.filter((form) => form.documentId !== action.payload.documentId);
     });
   },
 });
