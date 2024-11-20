@@ -14,7 +14,7 @@ export type CreateFormResponse = {
 
 export type CreateFormRequest = {
     name: string
-    form_fields?: IField[]
+    fields: string
 }
 
 export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosResponse<ApiResponse<{createForm: CreateFormResponse}>>> {
@@ -63,9 +63,7 @@ export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1,
             nodes {
                 documentId
                 name
-                form_fields {
-                    documentId
-                }
+                fields
             }
             pageInfo {
                 page

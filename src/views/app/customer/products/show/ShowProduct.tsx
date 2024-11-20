@@ -81,7 +81,8 @@ const ShowProduct = () => {
   };
 
   const handleCompleteForm = () => {
-    dispatch(setFormDialog(true));
+    //dispatch(setFormDialog(true));
+    
   };
 
   const handleSizesChanged = (value: number, option: Size) => {
