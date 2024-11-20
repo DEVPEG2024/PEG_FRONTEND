@@ -1,14 +1,12 @@
 import { Button, Input, Notification, toast } from '@/components/ui';
 import { useState } from 'react';
-import { apiUpdateForm } from '@/services/FormServices';
+import { apiCreateForm, CreateFormRequest, CreateFormResponse } from '@/services/FormServices';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../store';
-import { Form } from '@/@types/form';
+import { unwrapData } from '@/utils/serviceHelper';
 
-function EditForm() {
-  const { form } = useAppSelector((state) => state.forms.data);
-  const [formName, setFormName] = useState<string>(form?.name ?? '');
-  const [formGoogleFormUrl, setFormGoogleFormUrl] = useState<string>(form?.googleFormUrl ?? '');
+function CreateForm() {
+  const [formName, setFormName] = useState<string>('');
+  const [googleFormUrl, setGoogleFormUrl] = useState<string>('');
   const navigate = useNavigate();
 
   const handleSaveForm = async () => {
@@ -22,23 +20,22 @@ function EditForm() {
       );
       return;
     }
-    const formData: Form = {
-      ...form,
+    const form: CreateFormRequest = {
       name: formName,
-      googleFormUrl: formGoogleFormUrl
+      googleFormUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSf2pztGomwKb6IQc42cR6S9DnhOMsgDH676D_ZEj13eDGcWFg/viewform?usp=pp_url&entry.820005313=Option+1',
     };
-    const { data } = await apiUpdateForm(formData);
+    const {createForm} : {createForm: CreateFormResponse} = await unwrapData(apiCreateForm(form));
 
-    if (data.result) {
+    if (createForm) {
       toast.push(
-        <Notification type="success" title="Formulaire modifié avec succès" />
+        <Notification type="success" title="Formulaire créé avec succès" />
       );
       navigate('/admin/forms');
     } else {
       toast.push(
         <Notification
           type="danger"
-          title="Erreur lors de la modification du formulaire"
+          title="Erreur lors de la création du formulaire"
         />
       );
     }
@@ -54,15 +51,15 @@ function EditForm() {
         />
         <Input
           placeholder="Lien Google Forms"
-          value={formGoogleFormUrl}
-          onChange={(e) => setFormGoogleFormUrl(e.target.value)}
+          value={googleFormUrl}
+          onChange={(e) => setGoogleFormUrl(e.target.value)}
         />
-        <Button variant="solid" size="md" onClick={handleSaveForm}>
-          Enregistrer
-        </Button>
       </div>
+      <Button variant="solid" size="md" onClick={handleSaveForm}>
+        Enregistrer
+      </Button>
     </div>
   );
 }
 
-export default EditForm;
+export default CreateForm;
