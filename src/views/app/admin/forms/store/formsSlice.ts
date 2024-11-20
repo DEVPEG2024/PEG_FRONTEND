@@ -19,7 +19,6 @@ export type FormsStateData = {
   modalDelete: boolean;
   total: number;
   newFormDialog: boolean;
-  formComponents: any[]
 };
 
 const initialState: FormsStateData = {
@@ -28,8 +27,7 @@ const initialState: FormsStateData = {
   loading: false,
   modalDelete: false,
   total: 0,
-  newFormDialog: false,
-  formComponents: []
+  newFormDialog: false
 };
 
 /// forms
@@ -77,9 +75,6 @@ const formsSlice = createSlice({
     setModalDeleteClose: (state) => {
       state.modalDelete = false;
     },
-    setFormComponents: (state, action) => {
-      state.formComponents = action.payload;
-    },
   },
   extraReducers: (builder) => {
     builder.addCase(getForms.pending, (state) => {
@@ -110,7 +105,6 @@ export const {
   setModalDeleteOpen,
   setModalDeleteClose,
   setNewFormDialog,
-  setFormComponents
 } = formsSlice.actions;
 
 export default formsSlice.reducer;
