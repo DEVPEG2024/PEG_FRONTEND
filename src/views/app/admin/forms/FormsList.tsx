@@ -1,12 +1,12 @@
 import FormsListContent from './FormsListContent';
 import { Container } from '@/components/shared';
-import NewFormModal from './add/NewFormModal';
+import EditFormModal from './edit/EditFormModal';
 
 function FormsList() {
   return (
     <Container className="h-full">
       <FormsListContent />
-      <NewFormModal />
+      <EditFormModal />
     </Container>
   );
 }
