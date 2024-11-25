@@ -1,9 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Form, IForm } from '@/@types/form';
 import {
+  apiCreateForm,
   apiDeleteForm,
   apiGetForms,
   apiUpdateForm,
+  CreateFormRequest,
   DeleteFormResponse,
   GetFormsRequest,
   GetFormsResponse,
@@ -16,7 +18,6 @@ export type FormsStateData = {
   forms: Form[];
   form: Form | null;
   loading: boolean;
-  modalDelete: boolean;
   total: number;
   newFormDialog: boolean;
 };
@@ -25,7 +26,6 @@ const initialState: FormsStateData = {
   forms: [],
   form: null,
   loading: false,
-  modalDelete: false,
   total: 0,
   newFormDialog: false
 };
@@ -41,8 +41,16 @@ export const getForms = createAsyncThunk(
 
 export const updateForm = createAsyncThunk(
   SLICE_NAME + '/updateForm',
-  async (data: IForm) => {
+  async (data: Form) => {
     const response = await apiUpdateForm(data);
+    return response.data;
+  }
+);
+
+export const createForm = createAsyncThunk(
+  SLICE_NAME + '/createForm',
+  async (data: CreateFormRequest) => {
+    const response = await apiCreateForm(data);
     return response.data;
   }
 );
@@ -68,13 +76,7 @@ const formsSlice = createSlice({
     },
     setNewFormDialog: (state, action) => {
       state.newFormDialog = action.payload;
-    },
-    setModalDeleteOpen: (state) => {
-      state.modalDelete = true;
-    },
-    setModalDeleteClose: (state) => {
-      state.modalDelete = false;
-    },
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(getForms.pending, (state) => {
@@ -95,6 +97,32 @@ const formsSlice = createSlice({
       console.log(action.payload);
       state.loading = false;
       state.forms = state.forms.filter((form) => form.documentId !== action.payload.documentId);
+      state.total = state.forms.length
+    });
+    builder.addCase(updateForm.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateForm.fulfilled, (state, action) => {
+      state.loading = false;
+      state.forms = state.forms.map((form) =>
+        form.documentId === action.payload.data.updateForm.documentId
+          ? action.payload.data.updateForm
+          : form
+      );
+    });
+    builder.addCase(updateForm.rejected, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(createForm.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(createForm.fulfilled, (state, action) => {
+      state.loading = false;
+      state.forms.push(action.payload.data.createForm);
+      state.total = state.forms.length
+    });
+    builder.addCase(createForm.rejected, (state) => {
+      state.loading = false;
     });
   },
 });
@@ -102,8 +130,6 @@ const formsSlice = createSlice({
 export const {
   setTableData,
   setForm,
-  setModalDeleteOpen,
-  setModalDeleteClose,
   setNewFormDialog,
 } = formsSlice.actions;
 

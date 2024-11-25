@@ -148,22 +148,6 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/forms/FormsList")),
     authority: [SUPER_ADMIN],
   },
-  {
-    key: "admin.forms.add",
-    path: "/admin/forms/add",
-    component: lazy(
-      () => import("@/views/app/admin/forms/add/CreateForm")
-    ),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.forms.edit",
-    path: "/admin/forms/edit/:id",
-    component: lazy(
-      () => import("@/views/app/admin/forms/edit/EditForm")
-    ),
-    authority: [SUPER_ADMIN],
-  },
   //teams
   {
     key: "admin.teams",

@@ -2,33 +2,31 @@ import ApiService from './ApiService'
 import {
     PUT_FORMS_API_URL
   } from "@/constants/api.constant";
-import { Form, IField, IForm } from '@/@types/form'
+import { Form, IForm } from '@/@types/form'
 import { AxiosResponse } from 'axios';
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 
 // create form
-export type CreateFormResponse = {
-    documentId: string
-}
-
 export type CreateFormRequest = {
     name: string
     fields: string
 }
 
-export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosResponse<ApiResponse<{createForm: CreateFormResponse}>>> {
+export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosResponse<ApiResponse<{createForm: Form}>>> {
     const query = `
     mutation CreateForm($data: FormInput!) {
         createForm(data: $data) {
-            documentId
+            documentId,
+            name,
+            fields
         }
     }
   `,
   variables = {
     data
   }
-    return ApiService.fetchData<ApiResponse<{createForm: CreateFormResponse}>>({
+    return ApiService.fetchData<ApiResponse<{createForm: Form}>>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -38,12 +36,31 @@ export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosRespo
     })
 }
 
-type UpdateFormResponse = {
-    form: IForm
-    result: boolean
-    message: string
+// update form
+export async function apiUpdateForm(form: Form): Promise<AxiosResponse<ApiResponse<{updateForm: Form}>>> {
+    const query = `
+    mutation UpdateForm($documentId: ID!, $data: FormInput!) {
+        updateForm(documentId: $documentId, data: $data) {
+            documentId
+            name,
+            fields
+        }
+    }
+  `,
+  {documentId, ...data} = form,
+  variables = {
+    documentId,
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{updateForm: Form}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
 }
-
 
 // get forms
 export type GetFormsRequest = {
@@ -84,15 +101,6 @@ export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1,
             query,
             variables
         }
-    })
-}
-
-// update form
-export async function apiUpdateForm(form: IForm) {
-    return ApiService.fetchData<UpdateFormResponse>({
-        url: PUT_FORMS_API_URL + '/' + form._id,
-        method: 'put',
-        data: form
     })
 }
 
