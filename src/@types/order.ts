@@ -1,11 +1,12 @@
-import { IFormAnswer } from './formAnswer';
-import { IProduct } from './product';
+import { Customer } from './customer';
+import { FormAnswer, IFormAnswer } from './formAnswer';
+import { Product, Size, SizeSelection } from './product';
 import { IUser } from './user';
 
 export interface IOrder {
   _id: string;
   customer: IUser;
-  product: IProduct;
+  product: Product;
   formAnswer: IFormAnswer;
   sizes: [
     {
@@ -21,4 +22,19 @@ export interface IOrder {
   updatedAt: string;
   deletedAt: string;
   canceled: boolean;
+}
+
+export type OrderItem = {
+  documentId: string;
+  product: Product;
+  sizeSelections: SizeSelection[];
+  formAnswer: FormAnswer | null;
+  price: number;
+}
+
+export type Order = {
+  documentId: string;
+  orderItems: OrderItem[];
+  customer: Customer;
+  paymentState: string;
 }

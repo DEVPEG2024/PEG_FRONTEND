@@ -85,7 +85,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.store.lists",
     path: "/admin/store/lists",
-    component: lazy(() => import("@/views/app/admin/products/lists")),
+    component: lazy(() => import("@/views/app/admin/products/list")),
     authority: [SUPER_ADMIN],
   },
 
@@ -227,7 +227,7 @@ const protectedCustomersRoutes = [
   },
   {
     key: "customer.projects.details",
-    path: "/customer/projects/details/:id",
+    path: "/customer/projects/details/:documentId",
     component: lazy(() => import("@/views/app/customer/projects/details")),
     authority: [CUSTOMER],
     meta: {
@@ -249,7 +249,7 @@ const protectedCustomersRoutes = [
   {
     key: "customer.cart",
     path: "/customer/cart",
-    component: lazy(() => import("@/views/app/customer/cart")),
+    component: lazy(() => import("@/views/app/customer/cart/Cart")),
     authority: [CUSTOMER],
   },
   {

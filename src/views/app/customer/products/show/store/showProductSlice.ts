@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { IProduct, Product, SizeSelection } from '@/@types/product';
 import { apiGetProductById } from '@/services/ProductServices';
-import { IFormAnswer } from '@/@types/formAnswer';
+import { FormAnswer } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'showProduct';
@@ -11,7 +11,7 @@ export type StateData = {
   product: Product | null;
   formCompleted: boolean;
   formDialog: boolean;
-  formAnswer: IFormAnswer | null;
+  formAnswer: Partial<FormAnswer> | null;
   sizesSelected: SizeSelection[];
   cartItemId: string;
 };

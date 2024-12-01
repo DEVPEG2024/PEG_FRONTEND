@@ -1,9 +1,9 @@
-import { IFormAnswer } from './formAnswer';
-import { IProduct, Product, SizeSelection } from './product';
+import { FormAnswer } from './formAnswer';
+import { Product, SizeSelection } from './product';
 
 export type CartItem = {
   id: string;
   product: Product;
-  formAnswer: IFormAnswer;
+  formAnswer: FormAnswer;
   sizes: SizeSelection[];
 };

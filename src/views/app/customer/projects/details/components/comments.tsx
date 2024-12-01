@@ -8,9 +8,8 @@ import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
 import type { TimeLineItemProps } from '@/components/ui/Timeline';
-import { IProject } from '@/@types/project';
+import { Comment, IProject, Project } from '@/@types/project';
 import DetailsRight from './detailsRight';
-import { IUser } from '@/@types/user';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { setAddComment, setAddFile, setDeleteComment } from '../../store';
 import dayjs from 'dayjs';
@@ -22,22 +21,12 @@ import {
 import { FaFilePdf, FaFileAlt } from 'react-icons/fa';
 import { API_URL_IMAGE } from '@/configs/api.config';
 
-// Nouveau type pour les commentaires
-export interface IComment {
-  _id: string;
-  comment: string;
-  user: IUser;
-  createdAt: Date;
-  file: string;
-  fileType: string;
-}
-
 type TimelineCommentProps = TimeLineItemProps & {
-  comment: IComment;
+  comment: Comment;
   projectId: string;
 };
 
-const Comments = ({ project }: { project: IProject }) => {
+const Comments = ({ project }: { project: Project }) => {
   const [commentText, setCommentText] = useState('');
   const [image, setImage] = useState<string>('');
   const [fileType, setFileType] = useState('');
@@ -45,13 +34,12 @@ const Comments = ({ project }: { project: IProject }) => {
   const user = useAppSelector((state: RootState) => state.auth.user);
   const submitComment = async () => {
     if (commentText.trim()) {
-      const comment = {
-        comment: commentText,
-        user: user?._id,
-        createdAt: dayjs().toISOString(),
-        file: image,
-        fileType: fileType,
-        projectId: project._id,
+      const comment: Omit<Comment, 'documentId'> = {
+        content: commentText,
+        user: user,
+        createdAt: dayjs().toDate()
+        /*file: image,
+        fileType: fileType,*/
       };
 
       const resp = await createComment(comment);
@@ -91,12 +79,12 @@ const Comments = ({ project }: { project: IProject }) => {
               <Timeline>
                 {project.comments.map((comment) => (
                   <TimelineComment
-                    key={comment._id}
-                    projectId={project._id}
-                    comment={comment as unknown as IComment}
+                    key={comment.documentId}
+                    projectId={project.documentId}
+                    comment={comment as Comment}
                     isLast={
-                      comment._id ===
-                      project.comments[project.comments.length - 1]._id
+                      comment.documentId ===
+                      project.comments[project.comments.length - 1].documentId
                     }
                   />
                 ))}
@@ -143,11 +131,11 @@ const TimelineComment = ({
   const dispatch = useAppDispatch();
   const handleDeleteComment = async () => {
     const resp = await deleteComment({
-      _id: comment._id,
+      _id: comment.documentId,
       projectId: projectId,
     });
     if (resp.status === 'success') {
-      dispatch(setDeleteComment(comment._id));
+      dispatch(setDeleteComment(comment.documentId));
     }
   };
   const renderFilePreview = () => {
@@ -249,7 +237,7 @@ const TimelineComment = ({
           bordered
           className={`${comment.file ? 'col-span-11' : 'col-span-12'}`}
         >
-          <p>{comment.comment}</p>
+          <p>{comment.content}</p>
           <p
             className="text-gray-500 text-end cursor-pointer hover:text-red-500"
             onClick={handleDeleteComment}

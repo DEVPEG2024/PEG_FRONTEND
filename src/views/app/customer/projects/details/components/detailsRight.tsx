@@ -7,25 +7,23 @@ import {
   HiUserCircle,
   HiLightningBolt,
 } from 'react-icons/hi';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 import dayjs from 'dayjs';
 import {
   priorityColorText,
   statusColorText,
   statusTextData,
 } from '../../lists/constants';
-import { IoFileTrayFull } from 'react-icons/io5';
 import {
   LuCalendarCheck,
   LuCalendarClock,
-  LuCalendarPlus,
 } from 'react-icons/lu';
-import { FaEuroSign, FaPercent } from 'react-icons/fa';
+import { FaEuroSign } from 'react-icons/fa';
 
-const DetailsRight = ({ project }: { project: IProject }) => {
-  const status = statusTextData[project.status as keyof typeof statusTextData];
+const DetailsRight = ({ project }: { project: Project }) => {
+  const status = statusTextData[project.state as keyof typeof statusTextData];
   const statusColor =
-    statusColorText[project.status as keyof typeof statusColorText];
+    statusColorText[project.state as keyof typeof statusColorText];
   const priorityColor =
     priorityColorText[project.priority as keyof typeof priorityColorText];
   const duration = dayjs(project.endDate).diff(project.startDate, 'day');
@@ -54,18 +52,18 @@ const DetailsRight = ({ project }: { project: IProject }) => {
         >
           <span className="font-semibold">{durationText}</span>
         </IconText>
-        <IconText
+        {/*<IconText
           className="mb-4"
           icon={<IoFileTrayFull className="text-lg opacity-70" />}
         >
           <span className="font-semibold">{project.files.length} fichiers</span>
-        </IconText>
+        </IconText>*/}
         <IconText
           className="mb-4"
           icon={<FaEuroSign className="text-lg opacity-70" />}
         >
           <span className="font-semibold">
-            Montant total : {project.amount.toFixed(2)} €
+            Montant total : {project.price.toFixed(2)} €
           </span>
         </IconText>
         <IconText
@@ -90,23 +88,15 @@ const DetailsRight = ({ project }: { project: IProject }) => {
             Fini le {dayjs(project.endDate).format('DD/MM/YYYY')}
           </span>
         </IconText>
-        <IconText
-          className="mb-4"
-          icon={<LuCalendarPlus className="text-lg opacity-70" />}
-        >
-          <span className="font-semibold">
-            Crée le {dayjs(project.createdAt).format('DD/MM/YYYY')}
-          </span>
-        </IconText>
         <hr className="my-6" />
         <p className="font-semibold mb-4">Client</p>
         <IconText
-          key={project.customer._id}
+          key={project.customer.documentId}
           className="mb-4"
           icon={<Avatar size={20} shape="circle" icon={<HiUserCircle />} />}
         >
           <span className="font-semibold text-gray-700 dark:text-gray-100">
-            {project.customer.firstName + ' ' + project.customer.lastName}
+            {project.customer.companyName}
           </span>
         </IconText>
       </AdaptableCard>

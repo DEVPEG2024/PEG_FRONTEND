@@ -1,30 +1,32 @@
-import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IFormAnswer } from '@/@types/formAnswer'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { AxiosResponse } from 'axios'
+import { ApiResponse } from '@/utils/serviceHelper'
+import { FormAnswer } from '@/@types/formAnswer'
 
-type GetFormAnswerByIdResponse = {
-    formAnswer: IFormAnswer
-    message: string
-    result: string
-}
+// Create form answer
+export type CreateFormAnswerRequest = Omit<FormAnswer, 'documentId'>
 
-export async function apiGetFormAnswerById(id: string) {
-    return ApiService.fetchData<GetFormAnswerByIdResponse>({
-        url: `${API_BASE_URL}/formAnswers` + '/' + id,
-        method: 'get'
-    })
-}
-
-type CreateFormAnswerResponse = {
-    formAnswer: IFormAnswer
-    message: string
-    result: string
-}
-
-export async function apiCreateFormAnswer(data: Record<string, unknown>) {
-    return ApiService.fetchData<CreateFormAnswerResponse>({
-        url: `${API_BASE_URL}/formAnswers/create`,
+export async function apiCreateFormAnswer(data: CreateFormAnswerRequest): Promise<AxiosResponse<ApiResponse<{createFormAnswer: FormAnswer}>>> {
+    const query = `
+    mutation CreateFormAnswer($data: FormAnswerInput!) {
+        createFormAnswer(data: $data) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    data: {
+        form: data.form.documentId,
+        answer: data.answer
+    }
+  }
+    return ApiService.fetchData<ApiResponse<{createFormAnswer: FormAnswer}>>({
+        url: API_GRAPHQL_URL,
         method: 'post',
-        data
+        data: {
+            query,
+            variables
+        }
     })
 }

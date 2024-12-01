@@ -1,16 +1,15 @@
 import { FileNameBackFront } from './file';
-import { IForm } from './form';
+import { Form } from './form';
 
 export type Product = {
   active: boolean;
   description: string;
   documentId: string;
-  id: number;
   images: ProductImage[];
   name: string;
   price: number;
-  sizes: Size[]
-  form
+  sizes: Size[];
+  form: Form;
 };
 
 export type Size = {
@@ -18,6 +17,11 @@ export type Size = {
   value: string,
   description: string
 }
+
+export type SizeSelection = {
+  size: Size;
+  quantity: number;
+};
 
 export type ProductImage = {
   url: string;
@@ -60,9 +64,4 @@ export type OptionsFields = {
   label: string;
   value: string;
   stock: number;
-};
-
-export type SizeSelection = {
-  value: string;
-  quantity: number;
 };

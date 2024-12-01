@@ -1,4 +1,6 @@
-import { IOrder } from './order';
+import { UserState } from '@/store';
+import { Customer } from './customer';
+import { IOrder, OrderItem } from './order';
 import { IUser } from './user';
 
 export interface IComment {
@@ -56,4 +58,48 @@ export interface IProject {
   updatedAt: string;
   deletedAt: string | null;
   deleted: boolean;
+}
+
+export type Project = {
+  documentId: string;
+  name: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  state: string;
+  customer: Customer;
+  priority: string;
+  //producer: IUser;
+  price: number;
+  producerPrice: number;
+  paidPrice: number;
+  remainingPrice: number;
+  progress: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  paymentDate: Date;
+  comments: Comment[];
+  //files: IFile[];
+  tasks: Task[];
+  orderItem: OrderItem;
+  //deleted: boolean;
+}
+
+export type Task = {
+  documentId: string;
+  name: string;
+  description: string;
+  state: string;
+  priority: string;
+  startDate: string;
+  endDate: string;
+}
+
+export type Comment = {
+  documentId: string;
+  content: string;
+  user: UserState;
+  createdAt: Date;
+  /*file: string;
+  fileType: string;*/
 }

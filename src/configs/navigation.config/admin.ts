@@ -26,7 +26,7 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
-  {
+  /*{
     key: "admin.banners",
     path: "/admin/banners",
     title: "Bannières",
@@ -35,8 +35,7 @@ const navigationAdmin: NavigationTree[] = [
     type: NAV_ITEM_TYPE_ITEM,
     authority: [SUPER_ADMIN],
     subMenu: [],
-  },
-  
+  },*/
   {
     key: "admin.store",
     path: "/admin/store",
@@ -65,7 +64,7 @@ const navigationAdmin: NavigationTree[] = [
             authority: [SUPER_ADMIN],
             subMenu: [],
           },
-          {
+          /*{
             key: "admin.store.lists",
             path: "/admin/store/lists",
             title: "Liste des produits",
@@ -74,8 +73,8 @@ const navigationAdmin: NavigationTree[] = [
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
             subMenu: [],
-          },
-          {
+          },*/
+          /*{
             key: "admin.store.categories",
             path: "/admin/store/categories",
             title: "Catégories",
@@ -84,7 +83,7 @@ const navigationAdmin: NavigationTree[] = [
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
             subMenu: [],
-          },
+          },*/
           {
             key: "admin.store.orders",
             path: "/admin/store/orders",

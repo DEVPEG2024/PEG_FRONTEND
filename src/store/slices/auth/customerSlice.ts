@@ -5,13 +5,13 @@ import { SLICE_BASE_NAME } from './constants'
 export type CustomerState = {
     documentId?: string
     companyName?: string
-    customer_category: CustomerCategory
+    customerCategory: CustomerCategory
 }
 
 const initialState: CustomerState = {
     documentId: '',
     companyName: '',
-    customer_category: {documentId: ''}
+    customerCategory: {documentId: ''}
 }
 
 const customerSlice = createSlice({
@@ -21,7 +21,7 @@ const customerSlice = createSlice({
         setCustomer(state, action: PayloadAction<CustomerState>) {
             state.documentId = action.payload?.documentId
             state.companyName = action.payload?.companyName
-            state.customer_category = action.payload?.customer_category
+            state.customerCategory = action.payload?.customerCategory
         },
     },
 })

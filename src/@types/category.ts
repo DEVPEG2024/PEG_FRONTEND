@@ -1,4 +1,4 @@
-import { IProduct } from './product';
+import { Product } from './product';
 
 export type Category = {
   _id: string;
@@ -16,5 +16,5 @@ export type CategoryProduct = {
   title: string;
   image: string;
   totalProducts: number;
-  products: IProduct[];
+  products: Product[];
 };

@@ -49,7 +49,7 @@ export const useColumns = (
           <div className="flex-col justify-center gap-2">
             {row.original.sizes.map((size: SizeSelection) => (
               <p>
-                {size.value} : {size.quantity}
+                {size.size.value} : {size.quantity}
               </p>
             ))}
           </div>

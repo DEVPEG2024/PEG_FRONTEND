@@ -1,4 +1,4 @@
-import { Container, DataTable } from '@/components/shared';
+import { Container } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
@@ -6,12 +6,15 @@ import { useTranslation } from 'react-i18next';
 
 import ProjectListContent from './components/ProjectListContent';
 import useDeleteProject from '@/utils/hooks/projects/useDeleteProject';
-import {
-  getList,
+import reducer, {
+  getProjects,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
 } from '../store';
+import { injectReducer } from '@/store';
+
+injectReducer('customerProjects', reducer);
 
 type Option = {
   value: number;
@@ -24,7 +27,7 @@ const options: Option[] = [
   { value: 24, label: '24 / page' },
   { value: 30, label: '30 / page' },
 ];
-const Projects = () => {
+const CustomerProjects = () => {
   const { t } = useTranslation();
   const user = useAppSelector((state) => state.auth.user);
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,8 +37,8 @@ const Projects = () => {
   const { deleteProject } = useDeleteProject();
   const dispatch = useAppDispatch();
 
-  const { total, projectList } = useAppSelector(
-    (state) => state.projectList.data
+  const { total, projects } = useAppSelector(
+    (state) => state.customerProjects.data
   );
 
   useEffect(() => {
@@ -44,11 +47,13 @@ const Projects = () => {
 
   const fetchProjects = async () => {
     dispatch(
-      getList({
-        page: currentPage,
-        pageSize,
-        searchTerm,
-        customerId: user?._id as string,
+      getProjects({
+        customerDocumentId: user.customer.documentId,
+        pagination: {
+          page: currentPage,
+          pageSize
+        },
+        searchTerm
       })
     );
   };
@@ -90,7 +95,7 @@ const Projects = () => {
           />
         </div>
         {/*List view *Project*/}
-        <ProjectListContent projects={projectList} />
+        <ProjectListContent projects={projects} />
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}
@@ -113,4 +118,4 @@ const Projects = () => {
   );
 };
 
-export default Projects;
+export default CustomerProjects;

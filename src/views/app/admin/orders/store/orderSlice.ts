@@ -6,7 +6,7 @@ import {
   apiUpdatePaymentStatusOrder,
   apiUpdateStatusOrder,
 } from '@/services/OrderServices';
-import { IOrder } from '@/@types/order';
+import { IOrder, OrderItem } from '@/@types/order';
 import { AppDispatch, injectReducer } from '@/store';
 import showOrderReducer, {
   setFormAnswer,
@@ -96,10 +96,10 @@ export const invalidatePayment = createAsyncThunk(
   }
 );
 
-export const showOrder = (order: IOrder) => (dispatch: AppDispatch) => {
-  dispatch(setFormAnswer(order.formAnswer));
-  dispatch(setProduct(order.product));
-  dispatch(setSizesSelected(order.sizes));
+export const showOrder = (orderItem: OrderItem) => (dispatch: AppDispatch) => {
+  dispatch(setFormAnswer(orderItem.formAnswer));
+  dispatch(setProduct(orderItem.product));
+  dispatch(setSizesSelected(orderItem.sizeSelections));
 };
 
 const initialState: OrderState = {

@@ -19,7 +19,7 @@ import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 
 import { Button, Notification, toast } from '@/components/ui';
-import { OptionsFields, Size, SizeSelection } from '@/@types/product';
+import { Size, SizeSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 injectReducer('showProduct', reducer);
@@ -81,8 +81,7 @@ const ShowProduct = () => {
   };
 
   const handleCompleteForm = () => {
-    //dispatch(setFormDialog(true));
-    
+    dispatch(setFormDialog(true));
   };
 
   const handleSizesChanged = (value: number, option: Size) => {
@@ -110,11 +109,11 @@ const ShowProduct = () => {
   const determineNewSizes = (value: number, option: Size) => {
     if (value > 0) {
       const index = sizesSelected.findIndex(
-        (sizeSelected) => sizeSelected.value === option.value
+        (sizeSelected) => sizeSelected.size.value === option.value
       );
       // Trouver l'index de l'option actuelle dans le tableau sizeField
       const newSizeSelected: SizeSelection = {
-        value: option.value,
+        size: option,
         quantity: value,
       };
       // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
@@ -128,7 +127,7 @@ const ShowProduct = () => {
     } else {
       return [
         ...sizesSelected.filter(
-          (sizeSelected) => sizeSelected.value !== option.value
+          (sizeSelected) => sizeSelected.size.value !== option.value
         ),
       ];
     }
@@ -174,7 +173,7 @@ const ShowProduct = () => {
                             value={
                               sizesSelected.find(
                                 (sizeSelected) =>
-                                  sizeSelected.value === option.value
+                                  sizeSelected.size.value === option.value
                               )?.quantity
                             }
                             type="number"
@@ -202,7 +201,7 @@ const ShowProduct = () => {
                       name="Quantité"
                       value={
                         sizesSelected.find(
-                          (sizeSelected) => sizeSelected.value === 'DEFAULT'
+                          (sizeSelected) => sizeSelected.size.value === 'DEFAULT'
                         )?.quantity
                       }
                       type="number"

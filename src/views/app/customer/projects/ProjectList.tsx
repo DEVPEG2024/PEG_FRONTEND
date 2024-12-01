@@ -1,8 +1,9 @@
-import ProjectListContent from './lists';
+import ProjectListContent from './lists/CustomerProjects';
 import Container from '@/components/shared/Container';
 import reducer from './store';
 import { injectReducer } from '@/store';
-injectReducer('projectList', reducer);
+
+injectReducer('customerProjects', reducer);
 
 const ProjectList = () => {
   return (

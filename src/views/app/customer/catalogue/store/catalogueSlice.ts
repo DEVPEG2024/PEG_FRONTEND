@@ -1,18 +1,24 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct } from '@/@types/product';
+import { IProduct, Product } from '@/@types/product';
 import {
   apiGetProducts,
   apiPutStatusProduct,
   apiDeleteProduct,
   apiUpdateProduct,
   apiGetProductsByCategory,
+  GetProductsRequest,
+  GetProductsResponse,
 } from '@/services/ProductServices';
+import { unwrapData } from '@/utils/serviceHelper';
+
+// TODO: Voir si cette slice est nécessaire: redondante avec productSlice
+export const SLICE_NAME = 'products';
 
 type Products = IProduct[];
 
 export type StateData = {
   loading: boolean;
-  products: Products;
+  products: Product[];
   product: IProduct | null;
   modalDelete: boolean;
   total: number;
@@ -30,24 +36,13 @@ export type StatsTypesResponses = {
   recette: number;
   bilan: number;
 };
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
 
-type GetProductListRequest = Query;
-export const SLICE_NAME = 'products';
 
 export const getProducts = createAsyncThunk(
   SLICE_NAME + '/getProducts',
-  async (data: GetProductListRequest) => {
-    const response = await apiGetProducts(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
+  async (data: GetProductsRequest): Promise<GetProductsResponse> => {
+    const {forms_connection} : {forms_connection: GetProductsResponse}= await unwrapData(apiGetProducts(data));
+    return forms_connection
   }
 );
 
@@ -159,7 +154,7 @@ const catalogueSlice = createSlice({
     });
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.products;
+      state.products = action.payload.nodes as Product;
     });
     builder.addCase(getProducts.rejected, (state) => {
       state.loading = false;

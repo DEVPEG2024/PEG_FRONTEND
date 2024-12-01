@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 injectReducer('products', reducer);
 
-const ProductsLists = () => {
+const CustomerProducts = () => {
   const customer = useAppSelector((state) => state.auth.customer);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const ProductsLists = () => {
         pageSize: 10,
         searchTerm: '',
         customerDocumentId: customer?.documentId || '',
-        customerCategoryDocumentId: customer?.customer_category?.documentId || '',
+        customerCategoryDocumentId: customer?.customerCategory?.documentId || '',
       })
     );
     dispatch(setProduct(null));
@@ -54,7 +54,7 @@ const ProductsLists = () => {
         <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {products.map((product) => (
             <Card
-              key={product.id}
+              key={product.documentId}
               clickable
               onClick={(e) => handleClick(product.documentId)}
             >
@@ -84,4 +84,4 @@ const ProductsLists = () => {
   );
 };
 
-export default ProductsLists;
+export default CustomerProducts;

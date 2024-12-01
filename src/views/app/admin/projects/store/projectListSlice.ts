@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IComment, IFile, IProject, ITask } from '@/@types/project';
+import { IComment, IFile, IProject, ITask, Project } from '@/@types/project';
 import {
   apiChangeTaskStatus,
   apiCreateTask,
@@ -8,9 +8,12 @@ import {
   apiCreateInvoice,
   apiDeleteInvoice,
   apiUpdateInvoice,
+  GetProjectsResponse,
+  GetProjectsRequest,
 } from '@/services/ProjectServices';
 import { WritableDraft } from 'immer';
 import { Invoice } from '@/@types/invoice';
+import { unwrapData } from '@/utils/serviceHelper';
 
 export type ProjectListState = {
   projectList: IProject[];
@@ -36,18 +39,15 @@ type Query = {
   searchTerm: string;
 };
 
-type GetProjectListRequest = Query;
-
 export const SLICE_NAME = 'projectList';
 export const getList = createAsyncThunk(
-  SLICE_NAME + '/getList',
-  async (data: GetProjectListRequest) => {
-    const response = await apiGetProjects(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
+  SLICE_NAME + '/getProjects',
+  async (data: GetProjectsRequest) : Promise<{projects: Project[]}> => {
+    const {projects_connection} : {projects_connection: GetProjectsResponse} = await unwrapData(apiGetProjects({
+      pagination: {page: data.page, pageSize: data.pageSize},
+      searchTerm: data.searchTerm}
+    ));
+    return {projects: projects_connection.nodes};
   }
 );
 

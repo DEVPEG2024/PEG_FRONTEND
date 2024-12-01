@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiTrash } from 'react-icons/hi';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 import DetailsRight from './detailsRight';
 import { useAppDispatch } from '@/store';
 import { setAddFile, setDeleteFile } from '../../store';
@@ -15,7 +15,7 @@ import {
   uploadNewFileToProject,
 } from '@/utils/hooks/projects/useFile';
 
-const Files = ({ project }: { project: IProject }) => {
+const Files = ({ project }: { project: Project }) => {
   const [image, setImage] = useState<string>('');
   const [fileType, setFileType] = useState('');
   const dispatch = useAppDispatch();
@@ -28,7 +28,7 @@ const Files = ({ project }: { project: IProject }) => {
     const data = {
       file: image,
       fileType: fileType,
-      projectId: project._id,
+      projectId: project.documentId,
     };
     const resp = await uploadNewFileToProject(data);
     if (resp.status === 'success' && resp.data) {
@@ -48,7 +48,7 @@ const Files = ({ project }: { project: IProject }) => {
   const handleDeleteFile = async (fileId: string) => {
     const data = {
       fileId: fileId,
-      projectId: project._id,
+      projectId: project.documentId,
     };
     const resp = await deleteFileFromProject(data);
     if (resp.status === 'success') {

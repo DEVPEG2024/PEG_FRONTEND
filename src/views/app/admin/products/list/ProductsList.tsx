@@ -23,35 +23,35 @@ import {
 } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi';
 import { isEmpty } from 'lodash';
-import { IProduct } from '@/@types/product';
+import { Product } from '@/@types/product';
 
 injectReducer('products', reducer);
 
-const ProductsLists = () => {
+const ProductsList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [productToDelete, setProductToDelete] = useState<IProduct>();
+  const [productToDelete, setProductToDelete] = useState<Product>();
   const { products, modalDelete } = useAppSelector(
     (state) => state.products.data
   );
   useEffect(() => {
-    dispatch(getProducts({ page: 1, pageSize: 10, searchTerm: '' }));
+    dispatch(getProducts({ pagination: {page: 1, pageSize: 10}, searchTerm: '' }));
     dispatch(setProduct(null));
   }, [dispatch]);
 
   const onDeleted = () => {
-    dispatch(deleteProduct({ product: productToDelete as IProduct }));
+    productToDelete && dispatch(deleteProduct(productToDelete.documentId));
     dispatch(setModalDeleteClose());
   };
   const onEdit = (id: string) => {
     dispatch(setProduct(id));
     navigate(`/admin/store/edit/${id}`);
   };
-  const onModalOpen = (product: IProduct) => {
+  const onDeleteModalOpen = (product: Product) => {
     setProductToDelete(product);
     dispatch(setModalDeleteOpen());
   };
-  const onModalClose = () => {
+  const onDeleteModalClose = () => {
     setProductToDelete(undefined);
     dispatch(setModalDeleteClose());
   };
@@ -73,7 +73,7 @@ const ProductsLists = () => {
     }
   };
 
-  const onDuplicate = async (product: IProduct) => {
+  const onDuplicate = async (product: Product) => {
     dispatch(duplicateProduct({ product }));
     toast.push(
       <Notification type="success" title="Activé">
@@ -108,11 +108,11 @@ const ProductsLists = () => {
       {!isEmpty(products) && (
         <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {products.map((product) => (
-            <Card key={product._id}>
+            <Card key={product.documentId}>
               <div className="flex flex-col gap-4">
                 <img
-                  src={product.images[0]?.fileNameBack}
-                  alt={product.title}
+                  src={product.images[0]?.url}
+                  alt={product.name}
                   className=" rounded-lg bg-yellow-400"
                   style={{
                     height: '250px',
@@ -121,29 +121,24 @@ const ProductsLists = () => {
                   }}
                 />
                 <div className="flex flex-col justify-between">
-                  <p className="text-lg font-bold">{product.title}</p>
+                  <p className="text-lg font-bold">{product.name}</p>
                   <p className="text-lg font-bold text-white">
-                    {product.amount}€
+                    {product.price}€
                   </p>
-                  {product.stock > 0 ? (
-                    <p className="text-sm text-emerald-500">En stock</p>
-                  ) : (
-                    <p className="text-sm text-red-500">Rupture de stock</p>
-                  )}
                   <div className="flex gap-4 items-center ">
                     <Button
                       className="mt-4 "
                       variant="twoTone"
                       size="sm"
-                      onClick={() => onEdit(product._id)}
+                      onClick={() => onEdit(product.documentId)}
                       icon={<HiPencil />}
                     >
                       Modifier
                     </Button>
                     <Tooltip title="Activer/Désactiver le produit">
                       <Switcher
-                        checked={product.isActive}
-                        onChange={(checked) => onActivate(product._id, checked)}
+                        checked={product.active}
+                        onChange={(checked) => onActivate(product.documentId, checked)}
                         className="mt-4"
                       />
                     </Tooltip>
@@ -160,7 +155,7 @@ const ProductsLists = () => {
                       <Button
                         className="mt-4 "
                         variant="plain"
-                        onClick={() => onModalOpen(product)}
+                        onClick={() => onDeleteModalOpen(product)}
                         size="sm"
                         icon={<HiTrash />}
                       />
@@ -172,8 +167,8 @@ const ProductsLists = () => {
           ))}
           <Dialog
             isOpen={modalDelete}
-            onClose={onModalClose}
-            onRequestClose={onModalClose}
+            onClose={onDeleteModalClose}
+            onRequestClose={onDeleteModalClose}
           >
             <div className="flex flex-col  gap-4">
               <h3 className="text-xl font-bold">Suppression</h3>
@@ -199,4 +194,4 @@ const ProductsLists = () => {
   );
 };
 
-export default ProductsLists;
+export default ProductsList;

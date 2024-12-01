@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct } from '@/@types/product';
+import { IProduct, Product } from '@/@types/product';
 import {
   apiGetProducts,
   apiPutStatusProduct,
@@ -7,14 +7,19 @@ import {
   apiUpdateProduct,
   apiGetProductsByCategory,
   apiNewProduct,
+  GetProductsRequest,
+  GetProductsResponse,
+  apiCreateProduct,
+  DeleteProductResponse,
 } from '@/services/ProductServices';
 import { apiDeleteFiles } from '@/services/FileServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
-type Products = IProduct[];
+export const SLICE_NAME = 'products';
 
 export type StateData = {
   loading: boolean;
-  products: Products;
+  products: Product[];
   product: IProduct | null;
   modalDelete: boolean;
   total: number;
@@ -32,24 +37,12 @@ export type StatsTypesResponses = {
   recette: number;
   bilan: number;
 };
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
-
-type GetProductListRequest = Query;
-export const SLICE_NAME = 'products';
 
 export const getProducts = createAsyncThunk(
   SLICE_NAME + '/getProducts',
-  async (data: GetProductListRequest) => {
-    const response = await apiGetProducts(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
+  async (data: GetProductsRequest): Promise<GetProductsResponse> => {
+    const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProducts(data));
+    return products_connection
   }
 );
 
@@ -74,13 +67,14 @@ export const putStatusProduct = createAsyncThunk(
 );
 
 type DuplicateProductRequest = {
-  product: IProduct;
+  product: Product;
 };
 
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (data: DuplicateProductRequest) => {
-    const response = await apiNewProduct(data.product);
+    const {documentId, ...duplicatedProduct} = data.product,
+      response = await apiCreateProduct(duplicatedProduct);
     return response.data;
   }
 );
@@ -97,16 +91,13 @@ export const updateProduct = createAsyncThunk(
   }
 );
 
-type DeleteProductRequest = {
-  product: IProduct;
-};
-
 export const deleteProduct = createAsyncThunk(
   SLICE_NAME + '/deleteProduct',
-  async (data: DeleteProductRequest, { getState }) => {
-    const response = await apiDeleteProduct(data.product._id);
-    apiDeleteFiles(data.product.images.map(({ fileNameBack }) => fileNameBack));
-    return response.data;
+  async (documentId: string): Promise<DeleteProductResponse> => {
+    const {deleteProduct} : {deleteProduct: DeleteProductResponse} = await unwrapData(apiDeleteProduct(documentId));
+    //TODO: à remettre
+    //apiDeleteFiles(data.product.images.map(({ fileNameBack }) => fileNameBack));
+    return deleteProduct;
   }
 );
 
@@ -178,7 +169,7 @@ const productSlice = createSlice({
     });
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.products;
+      state.products = action.payload.nodes as Product[];
     });
     builder.addCase(getProducts.rejected, (state) => {
       state.loading = false;
@@ -204,7 +195,7 @@ const productSlice = createSlice({
     builder.addCase(deleteProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products = state.products.filter(
-        (product) => product._id !== action.payload.product._id
+        (product) => product.documentId !== action.payload.documentId
       );
     });
     builder.addCase(deleteProduct.rejected, (state) => {

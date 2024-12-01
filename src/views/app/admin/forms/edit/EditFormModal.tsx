@@ -1,5 +1,6 @@
 import { Dialog } from '@/components/ui';
 import {
+  createForm,
   setForm,
   setNewFormDialog,
   updateForm,
@@ -7,7 +8,6 @@ import {
   useAppSelector,
 } from '../store';
 import EditForm from './EditForm';
-import { apiCreateForm } from '@/services/FormServices';
 import { Form } from '@/@types/form';
 
 function EditFormModal() {
@@ -24,7 +24,7 @@ function EditFormModal() {
     if (form?.documentId) {
       dispatch(updateForm({...form, name, fields: JSON.stringify(components)} as Form))
     } else {
-      apiCreateForm({name, fields: JSON.stringify(components)})
+      dispatch(createForm({name, fields: JSON.stringify(components)}))
     }
     handleClose()
   }

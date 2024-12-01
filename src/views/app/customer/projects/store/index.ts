@@ -1,5 +1,5 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, ProjectListState } from './projectListSlice';
+import reducers, { SLICE_NAME, ProjectListState } from './customerProjectsSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -17,6 +17,6 @@ export const useAppSelector: TypedUseSelectorHook<
   }
 > = useSelector;
 
-export * from './projectListSlice';
+export * from './customerProjectsSlice';
 export { useAppDispatch } from '@/store';
 export default reducer;
