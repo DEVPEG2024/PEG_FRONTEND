@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { FormBuilder  } from '@formio/react';
-import './EditForm.css';
 import { JSONValue } from '@/@types/form';
 import classNames from 'classnames';
 import { Input } from '@/components/ui';
@@ -22,6 +21,10 @@ function EditForm({onValidate, onCancel, fields, name} : {onValidate: (name: str
     link3.rel = 'stylesheet';
     link3.href = 'https://cdn.form.io/formiojs/formio.full.min.css';
     document.head.appendChild(link3);
+    const link4 = document.createElement('link');
+    link4.rel = 'stylesheet';
+    link4.href = '/EditForm.css';
+    document.head.appendChild(link4);
     const script = document.createElement('script');
     script.src = 'https://cdn.form.io/js/formio.full.min.js';
     document.head.appendChild(script);
@@ -30,6 +33,7 @@ function EditForm({onValidate, onCancel, fields, name} : {onValidate: (name: str
       document.head.removeChild(link); // Supprime les styles après le démontage du composant
       document.head.removeChild(link2); // Supprime les styles après le démontage du composant
       document.head.removeChild(link3); // Supprime les styles après le démontage du composant
+      document.head.removeChild(link4); // Supprime les styles après le démontage du composant
       document.head.removeChild(script); // Supprime les styles après le démontage du composant
     };
   }, []);

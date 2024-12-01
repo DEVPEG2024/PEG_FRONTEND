@@ -1,8 +1,227 @@
 import ApiService from './ApiService'
 import { CHANGE_TASK_STATUS_API_URL, DELETE_COMMENT_API_URL, DELETE_FILE_API_URL, DELETE_INVOICES_PROJECT_API_URL, DELETE_PROJECTS_API_URL, DELETE_TASKS_API_URL, GET_INVOICES_PROJECT_API_URL, GET_PROJECTS_API_URL, GET_PROJECTS_CUSTOMER_API_URL, GET_PROJECTS_PRODUCER_API_URL, PAY_PRODUCER_API_URL, POST_COMMENT_API_URL, POST_INVOICES_PROJECT_API_URL, POST_PROJECTS_API_URL, POST_TASKS_API_URL, PUT_INVOICES_PROJECT_API_URL, PUT_PROJECTS_API_URL, PUT_TASKS_API_URL, UPLOAD_FILE_API_URL } from '@/constants/api.constant'
-import { IComment, IFile, IProject, ITask } from '@/@types/project'
+import { IComment, IFile, IProject, ITask, Project } from '@/@types/project'
 import { Invoice } from '@/@types/invoice'
+import { AxiosResponse } from 'axios'
+import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
 
+// Create project
+export type CreateProjectRequest = Omit<Project, 'documentId'>
+
+export async function apiCreateProject(data: CreateProjectRequest): Promise<AxiosResponse<ApiResponse<{createProject: Project}>>> {
+    const query = `
+    mutation CreateProject($data: ProjectInput!) {
+        createProject(data: $data) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    data: {
+        ...data,
+        customer: data.customer.documentId,
+        orderItem: data.orderItem.documentId
+    }
+  }
+    return ApiService.fetchData<ApiResponse<{createProject: Project}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get project by id
+export async function apiGetProjectById(documentId: string): Promise<AxiosResponse<ApiResponse<{project: Project}>>> {
+    const query = `
+    query GetProject($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId
+            comments {
+                content
+                createdAt
+                user {
+                    firstName
+                    lastName
+                    customer {
+                    companyName
+                    }
+                }
+            }
+            customer {
+                companyName
+            }
+            description
+            endDate
+            name
+            orderItem {
+                documentId
+                price
+                product {
+                    name
+                }
+                sizeSelections
+                state
+            }
+            paidPrice
+            paymentStatus
+            price
+            priority
+            producerPrice
+            progress
+            remainingPrice
+            startDate
+            state
+            tasks {
+                name
+                priority
+                startDate
+                state
+            }
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{project: Project}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get projects
+export type GetProjectsRequest = {
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export type GetProjectsResponse = {
+    nodes: Project[]
+    pageInfo: PageInfo
+};
+
+export async function apiGetProjects(data: GetProjectsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
+    const query = `
+    query getProjects {
+        projects_connection {
+            nodes {
+                documentId
+                comments {
+                    content
+                }
+                customer {
+                    companyName
+                }
+                endDate
+                name
+                paymentStatus
+                price
+                progress
+                startDate
+                state
+                tasks {
+                    documentId
+                    state
+                }
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get customer projects
+export type GetCustomerProjectsRequest = {
+    customerDocumentId: string;
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export type GetCustomerProjectsResponse = {
+    nodes: Project[]
+    pageInfo: PageInfo
+};
+
+export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = {customerDocumentId: '', pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
+    const query = `
+    query getCustomerProjects($customerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+        projects_connection (filters: {
+            and: [
+            {
+                customer: {
+                documentId: {eq: $customerDocumentId}
+                }
+            },
+            {
+                name: {contains: $searchTerm}
+            }
+            ]
+            }, pagination: $pagination){
+            nodes {
+                documentId
+                comments {
+                    content
+                }
+                customer {
+                    companyName
+                }
+                endDate
+                name
+                paymentStatus
+                price
+                progress
+                startDate
+                state
+                tasks {
+                    documentId
+                    state
+                }
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
 
 
 type ProjectResponse = {
@@ -23,19 +242,11 @@ type DeleteProjectResponse = {
     result: boolean
 }
 
-export async function apiGetProjects(page: number, pageSize: number, searchTerm: string = "") {
+export async function apiGetProjectsOld(page: number, pageSize: number, searchTerm: string = "") {
     return ApiService.fetchData<ProjectResponse>({
         url: GET_PROJECTS_API_URL,
         method: 'get',
         params: { page, pageSize, searchTerm }
-    })
-}
-
-export async function apiCreateProject(data: Record<string, unknown>) {
-    return ApiService.fetchData<CreateProjectResponse>({
-        url: POST_PROJECTS_API_URL,
-        method: 'post',
-        data: data
     })
 }
 

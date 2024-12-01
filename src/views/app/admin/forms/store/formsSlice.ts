@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Form, IForm } from '@/@types/form';
+import { Form } from '@/@types/form';
 import {
   apiCreateForm,
   apiDeleteForm,
@@ -55,7 +55,6 @@ export const createForm = createAsyncThunk(
   }
 );
 
-// delete form
 export const deleteForm = createAsyncThunk(
   SLICE_NAME + '/deleteForm',
   async (documentId: string): Promise<DeleteFormResponse> => {

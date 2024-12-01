@@ -2,7 +2,7 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiPrinter } from 'react-icons/hi';
-import { IProject } from '@/@types/project';
+import { IProject, Project } from '@/@types/project';
 import DetailsRight from './detailsRight';
 import { IUser } from '@/@types/user';
 import { useAppDispatch } from '@/store';
@@ -20,29 +20,18 @@ import { Invoice } from '@/@types/invoice';
 
 import ModalPrintInvoice from '../../modals/printInvoice';
 
-// Nouveau type pour les commentaires
-export interface IComment {
-  _id: string;
-  comment: string;
-  user: IUser;
-  createdAt: Date;
-  startDate: Date;
-  endDate: Date;
-  file: string;
-  fileType: string;
-}
-const Invoices = ({ project }: { project: IProject }) => {
+const Invoices = ({ project }: { project: Project }) => {
   const dispatch = useAppDispatch();
-  const { invoices } = useAppSelector((state) => state.projectList.data);
+  const { invoices } = useAppSelector((state) => state.customerProjects.data);
   const [modalPrintInvoice, setModalPrintInvoice] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    dispatch(getInvoicesProject({ projectId: project._id })).finally(() =>
+    dispatch(getInvoicesProject({ projectId: project.documentId })).finally(() =>
       setLoading(false)
     );
-  }, [dispatch, project._id]);
+  }, [dispatch, project.documentId]);
 
   const handlePrintInvoice = (invoice: Invoice) => {
     setInvoice(invoice);

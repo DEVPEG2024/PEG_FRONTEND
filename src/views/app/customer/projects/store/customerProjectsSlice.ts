@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IComment, IFile, IProject, ITask } from '@/@types/project';
+import { Comment, IFile, IProject, ITask, Project, Task } from '@/@types/project';
 import {
   apiChangeTaskStatus,
   apiCreateTask,
@@ -9,19 +9,28 @@ import {
   apiDeleteInvoice,
   apiUpdateInvoice,
   apiGetProjectsCustomer,
+  GetProjectsRequest,
+  GetProjectsResponse,
+  GetCustomerProjectsRequest,
+  GetCustomerProjectsResponse,
+  apiGetCustomerProjects,
+  apiGetProjectById,
 } from '@/services/ProjectServices';
 import { WritableDraft } from 'immer';
 import { Invoice } from '@/@types/invoice';
+import { unwrapData } from '@/utils/serviceHelper';
+
+export const SLICE_NAME = 'customerProjects';
 
 export type ProjectListState = {
-  projectList: IProject[];
+  projects: Project[];
   invoices: Invoice[];
   total: number;
   result: boolean;
   message: string;
   selectedTask: ITask | null;
   selectedInvoice: Invoice | null;
-  selectedProject: IProject | null;
+  selectedProject: Project | null;
   newProjectDialog: boolean;
   editProjectDialog: boolean;
   newInvoiceDialog: boolean;
@@ -31,26 +40,19 @@ export type ProjectListState = {
   selectedTab: string;
   loading: boolean;
 };
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-  customerId: string;
-};
 
-type GetProjectListRequest = Query;
+export const getProjects = createAsyncThunk(
+  SLICE_NAME + '/getProducts',
+  async (data: GetCustomerProjectsRequest): Promise<GetCustomerProjectsResponse> => {
+    const {projects_connection} : {projects_connection: GetProjectsResponse}= await unwrapData(apiGetCustomerProjects(data));
+    return projects_connection
+  }
+);
 
-export const SLICE_NAME = 'projectList';
-export const getList = createAsyncThunk(
-  SLICE_NAME + '/getList',
-  async (data: GetProjectListRequest) => {
-    const response = await apiGetProjectsCustomer(
-      data.page,
-      data.pageSize,
-      data.searchTerm,
-      data.customerId
-    );
-    return response.data;
+export const getProjectById = createAsyncThunk(
+  SLICE_NAME + '/getProject',
+  async (documentId: string): Promise<{project: Project}> => {
+    return await unwrapData(apiGetProjectById(documentId));
   }
 );
 
@@ -134,7 +136,7 @@ export const changeTaskStatus = createAsyncThunk(
 );
 
 const initialState: ProjectListState = {
-  projectList: [],
+  projects: [],
   invoices: [],
   selectedProject: null,
   newProjectDialog: false,
@@ -157,7 +159,7 @@ const projectListSlice = createSlice({
   initialState,
   reducers: {
     setProjectList: (state, action) => {
-      state.projectList = action.payload;
+      state.projects = action.payload;
     },
     setSelectedProject: (state, action) => {
       state.selectedProject = action.payload;
@@ -185,7 +187,7 @@ const projectListSlice = createSlice({
     setDeleteComment: (state, action) => {
       if (state.selectedProject) {
         state.selectedProject.comments = state.selectedProject.comments.filter(
-          (comment: IComment) => comment._id !== action.payload
+          (comment: Comment) => comment.documentId !== action.payload
         );
       }
     },
@@ -222,8 +224,8 @@ const projectListSlice = createSlice({
       console.log('action.payload', action.payload);
       if (state.selectedProject) {
         state.selectedProject.tasks = state.selectedProject.tasks.map(
-          (task: ITask) =>
-            task._id === action.payload._id ? action.payload : task
+          (task: Task) =>
+            task.documentId === action.payload.documentId ? action.payload : task
         );
         // Mise à jour de selectedTask
         state.selectedTask = action.payload;
@@ -232,7 +234,7 @@ const projectListSlice = createSlice({
     setDeleteTask: (state, action) => {
       if (state.selectedProject) {
         state.selectedProject.tasks = state.selectedProject.tasks.filter(
-          (task: ITask) => task._id !== action.payload
+          (task: Task) => task.documentId !== action.payload
         );
       }
     },
@@ -247,14 +249,19 @@ const projectListSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getList.pending, (state) => {
+    builder.addCase(getProjects.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getList.fulfilled, (state, action) => {
-      state.projectList = action.payload.projects as never;
-      state.total = action.payload.total;
-      state.result = action.payload.result;
-      state.message = action.payload.message;
+    builder.addCase(getProjects.fulfilled, (state, action) => {
+      state.projects = action.payload.nodes as Project[];
+      state.total = action.payload.pageInfo.total;
+      state.loading = false;
+    });
+    builder.addCase(getProjectById.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProjectById.fulfilled, (state, action) => {
+      state.selectedProject = action.payload.project;
       state.loading = false;
     });
     // CREATE TASK
@@ -266,8 +273,8 @@ const projectListSlice = createSlice({
       state.message = action.payload.message;
       state.result = action.payload.result;
       state.newDialogTask = false;
-      state.projectList = state.projectList.map((project) => {
-        if (project._id === action.payload.projectId) {
+      state.projects = state.projects.map((project) => {
+        if (project.documentId === action.payload.projectId) {
           return {
             ...project,
             tasks: [...project.tasks, action.payload.task],
@@ -296,15 +303,15 @@ const projectListSlice = createSlice({
 
       if (state.selectedProject) {
         state.selectedProject.tasks = state.selectedProject.tasks.map((task) =>
-          task._id === action.payload.task._id ? action.payload.task : task
+          task.documentId === action.payload.task._id ? action.payload.task : task
         );
       }
-      state.projectList = state.projectList.map((project) => {
-        if (project._id === action.payload.projectId) {
+      state.projects = state.projects.map((project) => {
+        if (project.documentId === action.payload.projectId) {
           return {
             ...project,
             tasks: project.tasks.map((task) =>
-              task._id === action.payload.task._id ? action.payload.task : task
+              task.documentId === action.payload.task.documentId ? action.payload.task : task
             ),
           };
         }

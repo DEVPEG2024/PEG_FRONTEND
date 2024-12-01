@@ -3,7 +3,7 @@ import ItemDropdown from './ItemDropdown';
 import AvatarName from './AvatarName';
 import ProgressionBar from './ProgressionBar';
 import { Link, useNavigate } from 'react-router-dom';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 import { LiaBusinessTimeSolid } from 'react-icons/lia';
 import { MdAccessTime } from 'react-icons/md';
 
@@ -15,21 +15,21 @@ import { setSelectedProject } from '../../store';
 import { useState } from 'react';
 import PayProducerModal from '../../modals/payProducer';
 
-const GridItem = ({ data }: { data: IProject }) => {
+const GridItem = ({ data }: { data: Project }) => {
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const { title, status, customer, startDate, endDate, tasks } = data;
+  const { name, state, customer, startDate, endDate, tasks } = data;
   const duration = dayjs(endDate).diff(startDate, 'day');
-  const statusColor = statusColorData[status as keyof typeof statusColorData];
-  const statusText = statusTextData[status as keyof typeof statusTextData];
+  const statusColor = statusColorData[state as keyof typeof statusColorData];
+  const statusText = statusTextData[state as keyof typeof statusTextData];
   const handleNavigateDetails = () => {
     dispatch(setSelectedProject(data));
-    navigate(`/customer/projects/details/${data._id}`);
+    navigate(`/customer/projects/details/${data.documentId}`);
   };
 
   const completedTasksCount = tasks.filter(
-    (task) => task.status === 'completed'
+    (task) => task.state === 'completed'
   ).length;
 
   const totalProgress =
@@ -42,7 +42,7 @@ const GridItem = ({ data }: { data: IProject }) => {
           <a onClick={handleNavigateDetails} className="cursor-pointer">
             <h6 className="flex flex-grow items-center gap-2">
               <LiaBusinessTimeSolid className="text-2xl" />
-              {title}
+              {name}
             </h6>
           </a>
           <div className={`flex items-center gap-4`}>
@@ -54,7 +54,7 @@ const GridItem = ({ data }: { data: IProject }) => {
         <div className="mt-3 cursor-pointer" onClick={handleNavigateDetails}>
           <ProgressionBar progression={Number(percentageComplete)} />
           <div className="flex items-center justify-between mt-2">
-            <AvatarName user={customer} />
+            <AvatarName customer={customer} />
             <div className="flex items-center rounded-full font-semibold text-xs">
               <div
                 className={`flex items-center px-2 py-1 border-2 border-gray-300 rounded-full`}

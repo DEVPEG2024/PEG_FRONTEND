@@ -8,7 +8,7 @@ const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
 
   const selectedTab = useAppSelector(
-    (state) => state.projectList.data.selectedTab
+    (state) => state.customerProjects.data.selectedTab
   );
 
   const handleTabChange = (val: string) => {

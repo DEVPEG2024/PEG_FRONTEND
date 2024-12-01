@@ -2,7 +2,7 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiLightningBolt, HiPencil } from 'react-icons/hi';
-import { IProject, ITask } from '@/@types/project';
+import { IProject, ITask, Project, Task } from '@/@types/project';
 import DetailsRight from './detailsRight';
 import { IUser } from '@/@types/user';
 import { useAppDispatch } from '@/store';
@@ -22,18 +22,7 @@ import dayjs from 'dayjs';
 import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
 import ModalEditTask from '../../modals/editTask';
 
-// Nouveau type pour les commentaires
-export interface IComment {
-  _id: string;
-  comment: string;
-  user: IUser;
-  createdAt: Date;
-  startDate: Date;
-  endDate: Date;
-  file: string;
-  fileType: string;
-}
-const Tasks = ({ project }: { project: IProject }) => {
+const Tasks = ({ project }: { project: Project }) => {
   const dispatch = useAppDispatch();
   const [openTasks, setOpenTasks] = useState<{ [key: string]: boolean }>({});
 
@@ -41,7 +30,7 @@ const Tasks = ({ project }: { project: IProject }) => {
     const data = {
       taskId: taskId,
       status: status,
-      projectId: project._id,
+      projectId: project.documentId,
     };
     dispatch(changeTaskStatus(data));
   };
@@ -50,7 +39,7 @@ const Tasks = ({ project }: { project: IProject }) => {
     setOpenTasks((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
   };
 
-  const handleEditTask = (task: ITask) => {
+  const handleEditTask = (task: Task) => {
     dispatch(setSelectedTask(task));
     dispatch(setEditDialogTask());
   };
@@ -65,7 +54,7 @@ const Tasks = ({ project }: { project: IProject }) => {
             </div>
             <div className="flex flex-col gap-2">
               {project.tasks.length > 0 ? (
-                project.tasks.map((task: ITask, index: number) => {
+                project.tasks.map((task: Task, index: number) => {
                   const priorityColor =
                     priorityColorText[
                       task.priority as keyof typeof priorityColorText
@@ -76,17 +65,17 @@ const Tasks = ({ project }: { project: IProject }) => {
                       : task.priority === 'medium'
                         ? 'moyenne'
                         : 'haute';
-                  const checked = task.status === 'completed';
+                  const checked = task.state === 'completed';
                   return (
-                    <Card key={task._id} bordered className=" bg-gray-900">
+                    <Card key={task.documentId} bordered className=" bg-gray-900">
                       <div className="grid grid-cols-12 justify-between">
                         <div
                           className="cursor-pointer col-span-6 "
-                          onClick={() => toggleTask(task._id)}
+                          onClick={() => toggleTask(task.documentId)}
                         >
                           <div className="flex justify-between w-full">
                             <div className="flex items-center gap-2 ">
-                              {openTasks[task._id] ? (
+                              {openTasks[task.documentId] ? (
                                 <FaAngleUp
                                   size={20}
                                   className="text-gray-500"
@@ -101,7 +90,7 @@ const Tasks = ({ project }: { project: IProject }) => {
                                 #{index + 1} -{' '}
                               </span>
                               <span className="font-semibold">
-                                {task.title}
+                                {task.name}
                               </span>
                             </div>
                             <div className="cursor-pointer  items-center justify-end gap-2 hidden md:block">
@@ -130,8 +119,8 @@ const Tasks = ({ project }: { project: IProject }) => {
                             color="green-500"
                             onChange={() =>
                               handleChangeTaskStatus(
-                                task._id,
-                                task.status === 'completed'
+                                task.documentId,
+                                task.state === 'completed'
                                   ? 'pending'
                                   : 'completed'
                               )
@@ -139,7 +128,7 @@ const Tasks = ({ project }: { project: IProject }) => {
                           />
                         </div>
                       </div>
-                      {openTasks[task._id] && (
+                      {openTasks[task.documentId] && (
                         <div className="flex flex-col gap-2 mt-8 px-4">
                           <hr className="my-6" />
                           <div className="flex justify-between ">
@@ -171,7 +160,7 @@ const Tasks = ({ project }: { project: IProject }) => {
         </div>
         <DetailsRight project={project} />
       </div>
-      <ModalEditTask projectId={project._id} />
+      <ModalEditTask projectId={project.documentId} />
     </Container>
   );
 };

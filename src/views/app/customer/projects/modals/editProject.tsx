@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { updateProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
-  getList,
+  getProjects,
   setEditProjectDialog,
   setSelectedProject,
   useAppDispatch,
@@ -101,7 +101,7 @@ function ModalEditProject() {
     if (resp.status === 'success') {
       setIsLoading(false);
       handleClose();
-      dispatch(getList({ page: 1, pageSize: 4, searchTerm: '' }));
+      dispatch(getProjects({ page: 1, pageSize: 4, searchTerm: '' }));
       dispatch(setEditProjectDialog(false));
       dispatch(setSelectedProject(resp.data));
     } else {

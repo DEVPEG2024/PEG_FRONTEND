@@ -3,10 +3,10 @@ import AdaptableCard from '@/components/shared/AdaptableCard';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import ReactHtmlParser from 'html-react-parser';
-import { IProject } from '@/@types/project';
+import { IProject, Project } from '@/@types/project';
 import DetailsRight from './detailsRight';
 import { Progress } from '@/components/ui';
-import OrderDetails from './orderDetails';
+import OrderItemDetails from './OrderItemDetails';
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
     <div className="text-center">
@@ -15,7 +15,7 @@ const CircleCustomInfo = ({ percent }: { percent: number }) => {
     </div>
   );
 };
-const Home = ({ project }: { project: IProject }) => {
+const Home = ({ project }: { project: Project }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ const Home = ({ project }: { project: IProject }) => {
   }, [project]);
 
   const completedTasksCount = project.tasks.filter(
-    (task) => task.status === 'completed'
+    (task) => task.state === 'completed'
   ).length;
   const totalProgress =
     project.tasks.length > 0 ? completedTasksCount / project.tasks.length : 0;
@@ -46,14 +46,14 @@ const Home = ({ project }: { project: IProject }) => {
                   />
                 </div>
                 <div>
-                  <h3 className="mb-2 font-bold">{project.title}</h3>
+                  <h3 className="mb-2 font-bold">{project.name}</h3>
                   <p className="text-sm text-gray-400">{project.description}</p>
                 </div>
               </div>
               <hr className="my-6" />
-              {project.order ? (
+              {project.orderItem ? (
                 <div className="flex items-center justify-between mb-4">
-                  <OrderDetails order={project.order} />
+                  <OrderItemDetails orderItem={project.orderItem} customer={project.customer} />
                 </div>
               ) : (
                 <div className="text-base">
@@ -61,7 +61,7 @@ const Home = ({ project }: { project: IProject }) => {
                     <h4>Description détaillée :</h4>
                   </div>
                   <div className="prose dark:prose-invert max-w-none text-sm">
-                    {ReactHtmlParser(project.fullDescription || '')}
+                    {ReactHtmlParser(project.description || '')}
                   </div>
                 </div>
               )}

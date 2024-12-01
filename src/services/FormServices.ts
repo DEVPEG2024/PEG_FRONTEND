@@ -1,17 +1,11 @@
 import ApiService from './ApiService'
-import {
-    PUT_FORMS_API_URL
-  } from "@/constants/api.constant";
-import { Form, IForm } from '@/@types/form'
+import { Form } from '@/@types/form'
 import { AxiosResponse } from 'axios';
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 
 // create form
-export type CreateFormRequest = {
-    name: string
-    fields: string
-}
+export type CreateFormRequest = Omit<Form, "documentId">
 
 export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosResponse<ApiResponse<{createForm: Form}>>> {
     const query = `

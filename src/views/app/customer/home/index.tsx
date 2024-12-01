@@ -30,7 +30,7 @@ const Home = () => {
     // TODO: voir pour faire les deux requêtes suivantes en une seule
     const {customer}: {customer: CustomerResponse} = (await unwrapData(apiGetCustomer(user?.customer?.documentId)));
     dispatch(setCustomer(customer))
-    const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(customer?.documentId, customer.customer_category.documentId));
+    const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(customer?.documentId, customer.customerCategory.documentId));
     setBanner(customer.banner?.image || '');
     setProducts(products_connection.nodes);
     setLevel(0); // TODO: A supprimer

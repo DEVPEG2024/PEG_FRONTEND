@@ -12,102 +12,104 @@ import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { apiCreateOrder } from '@/services/OrderServices';
+import { apiCreateOrder, apiCreateOrderItem, PaymentInformations } from '@/services/OrderServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
-import { useState } from 'react';
 import { apiCreateProject } from '@/services/ProjectServices';
-import { IFormAnswer } from '@/@types/formAnswer';
+import { FormAnswer } from '@/@types/formAnswer';
+import PaymentContent from './PaymentContent';
+import { unwrapData } from '@/utils/serviceHelper';
+import { OrderItem } from '@/@types/order';
+import { Project } from '@/@types/project';
 
 function Cart() {
   const user = useAppSelector((state) => state.auth.user);
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [isSubmitting, setSubmitting] = useState<boolean>(false);
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item));
-    navigate('/customer/product/' + item.product._id + '/edit');
-  };
-
-  const validatePayment = async () => {
-    return true;
+    navigate('/customer/product/' + item.product.documentId + '/edit');
   };
 
   const createFormAnswer = async (
     item: CartItem
-  ): Promise<IFormAnswer | null> => {
+  ): Promise<FormAnswer | null> => {
     if (item.product.form) {
-      const respFormAnswerCreation = await apiCreateFormAnswer({
-        customer: user._id,
-        product: item.product._id,
-        answers: item.formAnswer.answers,
-        form: item.formAnswer.form,
-      });
-
-      return respFormAnswerCreation.data.formAnswer;
+      const {createFormAnswer} : {createFormAnswer: FormAnswer}= await unwrapData(apiCreateFormAnswer(item.formAnswer));
+      
+      return createFormAnswer
     }
     return null;
   };
 
-  const createOrder = async (item: CartItem) => {
+  const createOrderItem = async (item: CartItem, paymentInformations: PaymentInformations) : Promise<OrderItem | null> => {
     try {
-      const formAnswer: IFormAnswer | null = await createFormAnswer(item),
-        order = {
-          customer: user,
+      const formAnswer: FormAnswer | null = await createFormAnswer(item),
+        orderItem: Omit<OrderItem, 'documentId'> = {
           product: item.product,
-          orderNumber: 0,
-          sizes: item.sizes,
-          total: item.sizes.reduce(
-            (amount, size) => amount + size.quantity * item.product.amount,
+          sizeSelections: item.sizes,
+          formAnswer,
+          price: item.sizes.reduce(
+            (amount, size) => amount + size.quantity * item.product.price,
             0
           ),
         };
-
-      if (formAnswer) {
-        (order as any).formAnswer = formAnswer;
-      }
-      const respOrderCreation = await apiCreateOrder(order);
+      const {createOrderItem} : {createOrderItem: OrderItem}= await unwrapData(apiCreateOrderItem(orderItem));
       // TODO : envoyer mail création commande OK
       try {
-        await apiCreateProject({
-          title:
-            'Commande ' +
-            item.product.title +
+        const project: Omit<Project, 'documentId'> = {
+          name: 'Commande ' +
+            item.product.name +
             ' pour ' +
             user.firstName +
             ' ' +
             user.lastName,
-          ref:
-            item.product.title +
-            '_' +
+          description: 'Commande ' +
+            item.product.name +
+            ' pour ' +
             user.firstName +
-            '_' +
-            user.lastName +
-            '_' +
-            new Date().toISOString().slice(0, 10),
-          description: '',
-          priority: 'low',
-          status: 'pending',
-          amount: item.product.amount,
-          amountProducers: 0,
-          customer: user._id,
-          order: respOrderCreation.data.order,
+            ' ' +
+            user.lastName,
           startDate: dayjs().toDate(),
           endDate: dayjs().add(30, 'day').toDate(),
-        });
+          state: 'pending',
+          customer: user.customer,
+          price: orderItem.price,
+          producerPrice: 0,
+          paidPrice: paymentInformations.paymentMethod === 'manual' ? 0 : 0,
+          remainingPrice: paymentInformations.paymentMethod === 'manual' ? orderItem.price : orderItem.price,
+          progress: 0,
+          paymentMethod: paymentInformations.paymentMethod,
+          paymentStatus: paymentInformations.paymentStatus,
+          paymentDate: paymentInformations.paymentDate,
+          orderItem: createOrderItem,
+          priority: 'medium',
+          comments: [],
+          tasks: []
+        }
+        await apiCreateProject(project);
       } catch (error) {
         // TODO: envoyer mail erreur création projet
       }
-      return respOrderCreation.data;
+      return createOrderItem;
     } catch (error) {
       // TODO: envoyer mail erreur création commande
     }
+    return null
   };
 
-  const createOrders = async () => {
+  const createOrder = async (paymentInformations: PaymentInformations) => {
     try {
-      await Promise.allSettled(cart.map((item) => createOrder(item)));
+      const promises = await Promise.allSettled(cart.map((item) => createOrderItem(item, paymentInformations))),
+        orderItems : OrderItem[] = promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItem>).value),
+        order = {
+          orderItems,
+          customer: user.customer,
+          paymentState: paymentInformations.paymentMethod === 'manual' ? 'pending' : ''
+        }
+      
+      await apiCreateOrder(order);
       return { status: 'success' };
     } catch (errors: any) {
       return {
@@ -117,21 +119,12 @@ function Cart() {
     }
   };
 
-  const createOrderAndClearCart = async () => {
-    const respOrdersCreation = await createOrders();
-    if (respOrdersCreation.status === 'success') {
+  const createOrderAndClearCart = async (paymentInformations: PaymentInformations) : Promise<void> => {
+    const respOrderCreation = await createOrder(paymentInformations);
+    if (respOrderCreation.status === 'success') {
       dispatch(clearCart());
       navigate('/customer/projects');
     }
-  };
-
-  const validateCart = async () => {
-    setSubmitting(true);
-    const paymentValidated = await validatePayment();
-    if (paymentValidated) {
-      await createOrderAndClearCart();
-    }
-    setSubmitting(false);
   };
 
   if (cart.length === 0) {
@@ -162,17 +155,17 @@ function Cart() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <img
-                          src={item.product.images[0]?.fileNameBack}
-                          alt={item.product.title}
+                          src={item.product.images[0]?.url}
+                          alt={item.product.name}
                           className="w-20 h-20 object-cover rounded-md"
                         />
-                        <p>{item.product.title}</p>
+                        <p>{item.product.name}</p>
                       </div>
-                      <p>{item.product.amount} €</p>
+                      <p>{item.product.price} €</p>
                       <div className="flex-col justify-center gap-2">
                         {item.sizes.map((size) => (
-                          <p>
-                            {size.value === 'DEFAULT' ? 'Quantité' : size.value}{' '}
+                          <p key={size.size.value}>
+                            {size.size.value === 'DEFAULT' ? 'Quantité' : size.size.name}{' '}
                             : {size.quantity}
                           </p>
                         ))}
@@ -180,7 +173,7 @@ function Cart() {
                       <p>
                         {item.sizes.reduce(
                           (amount, size) =>
-                            amount + size.quantity * item.product.amount,
+                            amount + size.quantity * item.product.price,
                           0
                         )}{' '}
                         €
@@ -204,50 +197,7 @@ function Cart() {
               </div>
             </AdaptableCard>
           </div>
-          <div>
-            <AdaptableCard bodyClass="p-5">
-              <h4 className="mb-6">Détails</h4>
-              <div className="flex flex-col gap-2">
-                <span className="font-semibold">
-                  Total HT :{' '}
-                  {cart?.reduce(
-                    (total, item) => total + item.product.amount,
-                    0
-                  )}{' '}
-                  €
-                </span>
-                <span className="font-semibold">
-                  Tva :{' '}
-                  {cart?.reduce(
-                    (total, item) => total + item.product.amount,
-                    0
-                  )}{' '}
-                  €
-                </span>
-                <span className="font-semibold">
-                  Total TTC :{' '}
-                  {cart?.reduce(
-                    (total, item) => total + item.product.amount,
-                    0
-                  )}{' '}
-                  €
-                </span>
-              </div>
-              <hr className="my-6" />
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap gap-4">
-                  <Button
-                    variant="solid"
-                    className="w-full"
-                    onClick={validateCart}
-                    loading={isSubmitting}
-                  >
-                    Valider le panier
-                  </Button>
-                </div>
-              </div>
-            </AdaptableCard>
-          </div>
+          <PaymentContent cart={cart} createOrderAndClearCart={createOrderAndClearCart} />
         </div>
       </Loading>
     </Container>
