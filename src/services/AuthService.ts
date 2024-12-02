@@ -9,7 +9,6 @@ import type {
     SignUpResponse,
 } from '@/@types/auth'
 import { LOGIN_API_URL, REGISTER_API_URL } from '@/constants/api.constant'
-import { IUser } from '@/@types/user'
 
 export type RefreshToken = {
     refreshToken: string

@@ -10,7 +10,7 @@ import { HiUserCircle } from 'react-icons/hi';
 import type { TimeLineItemProps } from '@/components/ui/Timeline';
 import { IProject } from '@/@types/project';
 import DetailsRight from './detailsRight';
-import { IUser } from '@/@types/user';
+import { IUser, User } from '@/@types/user';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { setAddComment, setAddFile, setDeleteComment } from '../../store';
 import dayjs from 'dayjs';
@@ -42,7 +42,7 @@ const Comments = ({ project }: { project: IProject }) => {
   const [image, setImage] = useState<string>('');
   const [fileType, setFileType] = useState('');
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state: RootState) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   const submitComment = async () => {
     if (commentText.trim()) {
       const comment = {

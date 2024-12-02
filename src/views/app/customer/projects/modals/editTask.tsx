@@ -1,9 +1,9 @@
-import { Button, DatePicker, Dialog, Input, Select } from '@/components/ui';
+import { Button, DatePicker, Dialog, Select } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useState } from 'react';
-import { HiOutlineCalendar, HiPencil } from 'react-icons/hi';
+import { HiOutlineCalendar } from 'react-icons/hi';
 import {
   setCloseEditDialogTask,
   setEditTaskSelected,
@@ -11,14 +11,15 @@ import {
   useAppSelector,
 } from '../store';
 import { priorityData, statsDataTask } from '../lists/constants';
-import { ITask } from '@/@types/project';
 import { RichTextEditor } from '@/components/shared';
-import { debounce } from 'lodash';
-import ReactHtmlParser from 'html-react-parser';
+import { injectReducer } from '@/store';
+import reducer from '../store';
 
-function ModalEditTask({ projectId }: { projectId: string }) {
-  const { editDialogTask } = useAppSelector((state) => state.projectList.data);
-  const { selectedTask } = useAppSelector((state) => state.projectList.data);
+injectReducer('customerProjects', reducer);
+
+function ModalEditTask() {
+  const { editDialogTask } = useAppSelector((state) => state.customerProjects.data);
+  const { selectedTask } = useAppSelector((state) => state.customerProjects.data);
   const [description, setDescription] = useState('');
 
   const dispatch = useAppDispatch();

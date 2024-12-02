@@ -1,8 +1,8 @@
-import { IProduct, Product } from '@/@types/product';
+import { Product } from '@/@types/product';
 import { Container, DoubleSidedImage } from '@/components/shared';
 import { Button, Steps } from '@/components/ui';
 import { API_URL_IMAGE } from '@/configs/api.config';
-import { apiGetCustomer, CustomerResponse } from '@/services/HomeCustomerService';
+import { apiGetCustomer } from '@/services/HomeCustomerService';
 import { RootState, useAppDispatch } from '@/store';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,8 @@ import { Link } from 'react-router-dom';
 import { apiGetCustomerProducts, CustomerProductsResponse } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { setCustomer } from '@/store/slices/auth/customerSlice';
+import { Customer } from '@/@types/customer';
+import { User } from '@/@types/user';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -20,7 +22,7 @@ const Home = () => {
   const [banner, setBanner] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
   const [level, setLevel] = useState<number>(0);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const {user}: {user: User} = useSelector((state: RootState) => state.auth.user!);
 
   useEffect(() => {
     fetchHomeCustomer();
@@ -28,7 +30,7 @@ const Home = () => {
 
   const fetchHomeCustomer = async () => {
     // TODO: voir pour faire les deux requêtes suivantes en une seule
-    const {customer}: {customer: CustomerResponse} = (await unwrapData(apiGetCustomer(user?.customer?.documentId)));
+    const {customer}: {customer: Customer} = (await unwrapData(apiGetCustomer(user.customer!.documentId)));
     dispatch(setCustomer(customer))
     const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(customer?.documentId, customer.customerCategory.documentId));
     setBanner(customer.banner?.image || '');

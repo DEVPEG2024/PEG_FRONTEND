@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { createProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
-  getProjects,
+  getCustomerProjects,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
@@ -82,7 +82,7 @@ function ModalNewProject() {
     if (resp.status === 'success') {
       setIsLoading(false);
       handleClose();
-      dispatch(getProjects({ page: 1, pageSize: 4, searchTerm: '' }));
+      dispatch(getCustomerProjects({ page: 1, pageSize: 4, searchTerm: '' }));
     } else {
       setIsLoading(false);
     }

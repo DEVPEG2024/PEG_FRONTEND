@@ -2,8 +2,8 @@ import Card from '@/components/ui/Card';
 import ItemDropdown from './ItemDropdown';
 import AvatarName from './AvatarName';
 import ProgressionBar from './ProgressionBar';
-import { Link, useNavigate } from 'react-router-dom';
-import { IProject } from '@/@types/project';
+import { useNavigate } from 'react-router-dom';
+import { Project } from '@/@types/project';
 import { LiaBusinessTimeSolid } from 'react-icons/lia';
 import { MdAccessTime } from 'react-icons/md';
 
@@ -19,23 +19,23 @@ const GridItem = ({
   data,
   handleDeleteProject,
 }: {
-  data: IProject;
+  data: Project;
   handleDeleteProject: (id: string) => void;
 }) => {
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const { title, status, customer, producer, startDate, endDate, tasks } = data;
+  const { name, state, customer, producer, startDate, endDate, tasks } = data;
   const duration = dayjs(endDate).diff(startDate, 'day');
-  const statusColor = statusColorData[status as keyof typeof statusColorData];
-  const statusText = statusTextData[status as keyof typeof statusTextData];
+  const statusColor = statusColorData[state as keyof typeof statusColorData];
+  const statusText = statusTextData[state as keyof typeof statusTextData];
   const handleNavigateDetails = () => {
     dispatch(setSelectedProject(data));
-    navigate(`/admin/projects/details/${data._id}`);
+    navigate(`/admin/projects/details/${data.documentId}`);
   };
 
   const completedTasksCount = tasks.filter(
-    (task) => task.status === 'completed'
+    (task) => task.state === 'completed'
   ).length;
 
   const totalProgress =
@@ -48,7 +48,7 @@ const GridItem = ({
           <a onClick={handleNavigateDetails} className="cursor-pointer">
             <h6 className="flex flex-grow items-center gap-2">
               <LiaBusinessTimeSolid className="text-2xl" />
-              {title}
+              {name}
             </h6>
           </a>
           <div className={`flex items-center gap-4`}>

@@ -38,7 +38,7 @@ const OrderItemDetails = ({ orderItem, customer }: { orderItem: OrderItem, custo
           className="mb-4"
           icon={<HiOfficeBuilding className="text-lg opacity-70" />}
         >
-          <span className="font-semibold">{customer.companyName}</span>
+          <span className="font-semibold">{customer.name}</span>
         </IconText>
         <IconText
           className="mb-4"

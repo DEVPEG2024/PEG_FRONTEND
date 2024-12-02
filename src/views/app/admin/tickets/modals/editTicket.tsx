@@ -7,9 +7,10 @@ import { RichTextEditor } from '@/components/shared';
 import { setEditTicketDialog, updateTicket } from '../store/ticketSlice';
 import { ITicket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
+import { User } from '@/@types/user';
 
 function ModalEditTicket() {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
   const { editTicketDialog, selectedTicket } = useAppSelector(
     (state) => state.tickets.data
   );
@@ -21,7 +22,7 @@ function ModalEditTicket() {
     type: selectedTicket?.type || 'bug',
     priority: selectedTicket?.priority || 'low',
     status: selectedTicket?.status || 'pending',
-    user: user._id,
+    user: user.documentId,
   });
 
   useEffect(
@@ -33,7 +34,7 @@ function ModalEditTicket() {
         type: selectedTicket?.type || 'bug',
         priority: selectedTicket?.priority || 'low',
         status: selectedTicket?.status || 'pending',
-        user: user._id,
+        user: user.documentId,
       }),
     [selectedTicket]
   );
@@ -53,7 +54,7 @@ function ModalEditTicket() {
       priority: 'low',
       description: '',
       status: 'pending',
-      user: user._id,
+      user: user.documentId,
     });
     handleClose();
   };

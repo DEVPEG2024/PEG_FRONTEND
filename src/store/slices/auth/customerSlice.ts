@@ -1,27 +1,21 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { CustomerCategory } from '@/@types/customer'
+import { Customer } from '@/@types/customer'
 import { SLICE_BASE_NAME } from './constants'
 
 export type CustomerState = {
-    documentId?: string
-    companyName?: string
-    customerCategory: CustomerCategory
+    customer?: Customer;
 }
 
 const initialState: CustomerState = {
-    documentId: '',
-    companyName: '',
-    customerCategory: {documentId: ''}
+    customer: undefined,
 }
 
 const customerSlice = createSlice({
     name: `${SLICE_BASE_NAME}/customer`,
     initialState,
     reducers: {
-        setCustomer(state, action: PayloadAction<CustomerState>) {
-            state.documentId = action.payload?.documentId
-            state.companyName = action.payload?.companyName
-            state.customerCategory = action.payload?.customerCategory
+        setCustomer(state, action: PayloadAction<Customer>) {
+            state.customer = action.payload
         },
     },
 })

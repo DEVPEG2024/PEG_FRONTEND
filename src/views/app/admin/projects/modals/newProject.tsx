@@ -3,18 +3,20 @@ import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { createProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiOutlineCalendar } from 'react-icons/hi';
-import {
-  getList,
+import reducer, {
+  createProject,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
 } from '../store';
 import useCustomer from '@/utils/hooks/customers/useCustomer';
 import useProducer from '@/utils/hooks/producers/useProducer';
-import useUniqueId from '@/components/ui/hooks/useUniqueId';
 import { priorityData, statusData } from '../lists/constants';
+import { injectReducer } from '@/store';
+import { Project } from '@/@types/project';
+
+injectReducer('adminProjects', reducer);
 
 type Option = {
   value: number;
@@ -23,23 +25,30 @@ type Option = {
 
 function ModalNewProject() {
   const { newProjectDialog } = useAppSelector(
-    (state) => state.projectList.data
+    (state) => state.adminProjects.data
   );
-  const newId = useUniqueId('PR-', 10);
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    ref: newId,
+  const [formData, setFormData] = useState<Omit<Project, 'documentId'>>({
+    name: '',
     description: '',
     priority: 'low',
-    status: 'pending',
-    amount: 0,
-    amountProducers: 0,
-    customer: '',
-    producer: '',
+    state: 'pending',
+    price: 0,
+    producerPrice: 0,
+    paidPrice: 0,
+    remainingPrice: 0,
+    progress: 0,
+    paymentMethod: '',
+    paymentStatus: 'pending',
+    paymentDate: new Date(0),
     startDate: dayjs().toDate(),
     endDate: dayjs().add(30, 'day').toDate(),
+    customer: undefined,
+    producer: undefined,
+    comments: [],
+    tasks: [],
+    orderItem: undefined,
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
@@ -76,16 +85,8 @@ function ModalNewProject() {
   };
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    const resp = await createProject(formData);
-    if (resp.status === 'success') {
-      setIsLoading(false);
-      handleClose();
-      dispatch(getList({ page: 1, pageSize: 4, searchTerm: '' }));
-    } else {
-      setIsLoading(false);
-    }
+    dispatch(createProject(formData))
+    handleClose();
   };
   const handleClose = () => {
     dispatch(setNewProjectDialog(false));
@@ -98,9 +99,9 @@ function ModalNewProject() {
           <h5 className="mb-4">{t('projects.add')}</h5>
           <FieldCustom
             placeholder={t('projects.projectName')}
-            value={formData.title}
+            value={formData.name}
             setValue={(e: any) => {
-              setFormData({ ...formData, title: e });
+              setFormData({ ...formData, name: e });
             }}
           />
           <Input
@@ -119,9 +120,9 @@ function ModalNewProject() {
               <Input
                 type="number"
                 placeholder={t('projects.amount')}
-                value={formData.amount}
+                value={formData.price}
                 onChange={(e) => {
-                  setFormData({ ...formData, amount: Number(e.target.value) });
+                  setFormData({ ...formData, price: Number(e.target.value) });
                 }}
               />
             </div>
@@ -130,11 +131,11 @@ function ModalNewProject() {
               <Input
                 type="number"
                 placeholder={t('projects.amountProducers')}
-                value={formData.amountProducers}
+                value={formData.producerPrice}
                 onChange={(e) => {
                   setFormData({
                     ...formData,
-                    amountProducers: Number(e.target.value),
+                    producerPrice: Number(e.target.value),
                   });
                 }}
               />
@@ -187,7 +188,7 @@ function ModalNewProject() {
                 options={statusData}
                 noOptionsMessage={() => 'Aucun statut trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, status: e?.value || '' });
+                  setFormData({ ...formData, state: e?.value || '' });
                 }}
               />
             </div>

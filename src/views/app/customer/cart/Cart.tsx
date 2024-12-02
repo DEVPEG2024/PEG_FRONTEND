@@ -20,9 +20,10 @@ import PaymentContent from './PaymentContent';
 import { unwrapData } from '@/utils/serviceHelper';
 import { OrderItem } from '@/@types/order';
 import { Project } from '@/@types/project';
+import { User } from '@/@types/user';
 
 function Cart() {
-  const user = useAppSelector((state) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ function Cart() {
       const {createOrderItem} : {createOrderItem: OrderItem}= await unwrapData(apiCreateOrderItem(orderItem));
       // TODO : envoyer mail création commande OK
       try {
+        // TODO: Ajouter producer
         const project: Omit<Project, 'documentId'> = {
           name: 'Commande ' +
             item.product.name +
@@ -74,7 +76,7 @@ function Cart() {
           startDate: dayjs().toDate(),
           endDate: dayjs().add(30, 'day').toDate(),
           state: 'pending',
-          customer: user.customer,
+          customer: user.customer!,
           price: orderItem.price,
           producerPrice: 0,
           paidPrice: paymentInformations.paymentMethod === 'manual' ? 0 : 0,

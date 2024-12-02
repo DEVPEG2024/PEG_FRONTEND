@@ -1,5 +1,6 @@
-import { apiCreateProject, apiUpdateProject } from '@/services/ProjectServices'
+import { apiCreateProject, apiUpdateProjectOld } from '@/services/ProjectServices'
 
+// TODO: a voir pour supprimer ou au moins vérifier ses appels
 export const createProject = async (data: Record<string, unknown>) => {
     try {
         const resp = await apiCreateProject(data)
@@ -11,7 +12,7 @@ export const createProject = async (data: Record<string, unknown>) => {
 
 export const updateProject = async (data: Record<string, unknown>) => {
     try {
-        const resp = await apiUpdateProject(data)
+        const resp = await apiUpdateProjectOld(data)
         return {data: resp.data.project, status: 'success', message: resp.data.message}
     } catch (errors: any) {
         return {status: 'failed', message: errors?.response?.data?.message || errors.toString()}

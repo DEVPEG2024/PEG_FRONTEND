@@ -7,7 +7,7 @@ import {
   HiUserCircle,
   HiLightningBolt,
 } from 'react-icons/hi';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 import dayjs from 'dayjs';
 import {
   priorityColorText,
@@ -18,14 +18,13 @@ import { IoFileTrayFull } from 'react-icons/io5';
 import {
   LuCalendarCheck,
   LuCalendarClock,
-  LuCalendarPlus,
 } from 'react-icons/lu';
 import { FaEuroSign, FaPercent } from 'react-icons/fa';
 
-const DetailsRight = ({ project }: { project: IProject }) => {
-  const status = statusTextData[project.status as keyof typeof statusTextData];
+const DetailsRight = ({ project }: { project: Project }) => {
+  const status = statusTextData[project.state as keyof typeof statusTextData];
   const statusColor =
-    statusColorText[project.status as keyof typeof statusColorText];
+    statusColorText[project.state as keyof typeof statusColorText];
   const priorityColor =
     priorityColorText[project.priority as keyof typeof priorityColorText];
   const duration = dayjs(project.endDate).diff(project.startDate, 'day');
@@ -65,7 +64,7 @@ const DetailsRight = ({ project }: { project: IProject }) => {
           icon={<FaEuroSign className="text-lg opacity-70" />}
         >
           <span className="font-semibold">
-            Montant total : {project.amount.toFixed(2)} €
+            Montant total : {project.price.toFixed(2)} €
           </span>
         </IconText>
         <IconText
@@ -73,7 +72,7 @@ const DetailsRight = ({ project }: { project: IProject }) => {
           icon={<FaPercent className="text-lg opacity-70" />}
         >
           <span className="font-semibold">
-            Commission producteur : {project.amountProducers} €
+            Commission producteur : {project.producerPrice} €
           </span>
         </IconText>
         <IconText
@@ -98,34 +97,26 @@ const DetailsRight = ({ project }: { project: IProject }) => {
             Fini le {dayjs(project.endDate).format('DD/MM/YYYY')}
           </span>
         </IconText>
-        <IconText
-          className="mb-4"
-          icon={<LuCalendarPlus className="text-lg opacity-70" />}
-        >
-          <span className="font-semibold">
-            Crée le {dayjs(project.createdAt).format('DD/MM/YYYY')}
-          </span>
-        </IconText>
         <hr className="my-6" />
         <p className="font-semibold mb-4">Client</p>
         <IconText
-          key={project.customer._id}
+          key={project.customer?.documentId}
           className="mb-4"
           icon={<Avatar size={20} shape="circle" icon={<HiUserCircle />} />}
         >
           <span className="font-semibold text-gray-700 dark:text-gray-100">
-            {project.customer.firstName + ' ' + project.customer.lastName}
+            {project.customer?.name}
           </span>
         </IconText>
         <p className="font-semibold mb-4 mt-8">Producteur</p>
         {project.producer ? (
           <IconText
-            key={project.producer._id}
+            key={project.producer.documentId}
             className="mb-4"
             icon={<Avatar size={20} shape="circle" icon={<HiUserCircle />} />}
           >
             <span className="font-semibold text-gray-700 dark:text-gray-100">
-              {project.producer.firstName + ' ' + project.producer.lastName}
+              {project.producer.name}
             </span>
           </IconText>
         ) : (

@@ -14,6 +14,7 @@ import { Avatar, Upload } from '@/components/ui';
 import { HiOutlineUser } from 'react-icons/hi';
 import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config';
 import { apiUpdateUser } from '@/services/AccountServices';
+import { User } from '@/@types/user';
 
 type UserInformations = {
   avatar: string;
@@ -38,16 +39,17 @@ const validationSchema = Yup.object().shape({
   companyName: Yup.string().required("Nom de l'entreprise Requis"),
 });
 
+// TODO: revoir ici user
 const Profil = ({ data }: { data?: UserInformations[] }) => {
   const dispatch = useAppDispatch();
-  const userData = useAppSelector((state) => state.auth.user);
+  const {user} : {user: User} = useAppSelector((state) => state.auth.user);
   const onFormSubmit = async (
     values: UserInformations,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     const data = {
       ...values,
-      _id: userData._id,
+      _id: user?.documentId,
     };
     const response = await apiUpdateUser(data);
     if (response.data.result) {
@@ -89,7 +91,7 @@ const Profil = ({ data }: { data?: UserInformations[] }) => {
     formData.append('file', files[0]);
     try {
       const response = await fetch(
-        API_BASE_URL + '/upload/avatar/' + userData._id,
+        API_BASE_URL + '/upload/avatar/' + user._id,
         {
           method: 'POST',
           body: formData,
@@ -107,15 +109,15 @@ const Profil = ({ data }: { data?: UserInformations[] }) => {
     <>
       <Formik
         initialValues={{
-          avatar: userData.avatar || '',
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          address: userData.address || '',
-          companyName: userData.companyName || '',
-          city: userData.city || '',
-          zip: userData.zip || '',
+          avatar: user.avatar || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          address: user.address || '',
+          companyName: user.companyName || '',
+          city: user.city || '',
+          zip: user.zip || '',
         }}
         validationSchema={validationSchema}
         onSubmit={(values, { setSubmitting }) => {

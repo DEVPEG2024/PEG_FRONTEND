@@ -8,6 +8,7 @@ import { HiOutlineLogout, HiOutlineUser } from 'react-icons/hi'
 import type { CommonProps } from '@/@types/common'
 import { useAppSelector } from '@/store'
 import { useTranslation } from 'react-i18next'
+import { User } from '@/@types/user'
 
 type DropdownList = {
     label: string
@@ -20,7 +21,7 @@ const dropdownItemList: DropdownList[] = []
 const _UserDropdown = ({ className }: CommonProps) => {
     const { t } = useTranslation()
     const { signOut } = useAuth()
-    const user = useAppSelector((state) => state.auth.user)
+    const {user} : {user: User} = useAppSelector((state) => state.auth.user)
     const UserAvatar = (
         <div className={classNames(className, 'flex items-center gap-2')}>
             <Avatar size={32} shape="circle" icon={<HiOutlineUser />} />

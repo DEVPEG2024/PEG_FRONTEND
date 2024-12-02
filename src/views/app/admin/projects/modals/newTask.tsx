@@ -17,7 +17,7 @@ import { RichTextEditor } from '@/components/shared';
 
 function ModalNewTask() {
   const { newDialogTask, selectedProject } = useAppSelector(
-    (state) => state.projectList.data
+    (state) => state.adminProjects.data
   );
   const newId = useUniqueId('PR-', 10);
   const dispatch = useAppDispatch();
@@ -37,7 +37,7 @@ function ModalNewTask() {
     dispatch(
       createTask({
         task: formData as unknown as ITask,
-        projectId: selectedProject?._id || '',
+        projectId: selectedProject?.documentId || '',
       })
     );
     setFormData({

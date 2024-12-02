@@ -1,35 +1,30 @@
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import IconText from '@/components/shared/IconText';
 import {
-  HiUser,
   HiAdjustments,
-  HiHashtag,
   HiOfficeBuilding,
   HiBookOpen,
   HiInformationCircle,
 } from 'react-icons/hi';
-import { IOrder } from '@/@types/order';
+import { OrderItem } from '@/@types/order';
 import { SizeSelection } from '@/@types/product';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, { showOrder } from '../../../orders/store';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui';
+import { Customer } from '@/@types/customer';
 
 injectReducer('orders', reducer);
 
-const OrderDetails = ({ order }: { order: IOrder }) => {
+const OrderItemDetails = ({ orderItem, customer }: { orderItem: OrderItem, customer: Customer | undefined }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const customer: string =
-    order.customer.firstName + ' ' + order.customer.lastName;
-  const company: string = order.customer.companyName;
-  const orderNumber: string = order.orderNumber;
-  const productTitle: string = order.product.title;
-  const productSizes: SizeSelection[] = order.sizes;
+  const productTitle: string = orderItem.product.name;
+  const productSizes: SizeSelection[] = orderItem.sizeSelections;
 
-  const handleShowProduct = (order: IOrder) => {
-    dispatch(showOrder(order));
+  const handleShowProduct = (orderItem: OrderItem) => {
+    dispatch(showOrder(orderItem));
     navigate('/common/order/show');
   };
 
@@ -41,21 +36,9 @@ const OrderDetails = ({ order }: { order: IOrder }) => {
         </div>
         <IconText
           className="mb-4"
-          icon={<HiUser className="text-lg opacity-70" />}
-        >
-          <span className="font-semibold">{customer}</span>
-        </IconText>
-        <IconText
-          className="mb-4"
           icon={<HiOfficeBuilding className="text-lg opacity-70" />}
         >
-          <span className="font-semibold">{company}</span>
-        </IconText>
-        <IconText
-          className="mb-4"
-          icon={<HiHashtag className="text-lg opacity-70" />}
-        >
-          <span className="font-semibold">{orderNumber}</span>
+          <span className="font-semibold">{customer?.name}</span>
         </IconText>
         <IconText
           className="mb-4"
@@ -70,14 +53,14 @@ const OrderDetails = ({ order }: { order: IOrder }) => {
           <span className="font-semibold flex-col justify-center gap-2">
             {productSizes.map((size) => (
               <p>
-                {size.value === 'DEFAULT' ? 'Quantité' : size.value} :{' '}
+                {size.size.value === 'DEFAULT' ? 'Quantité' : size.size.value} :{' '}
                 {size.quantity}
               </p>
             ))}
           </span>
         </IconText>
         <Button
-          onClick={() => handleShowProduct(order)}
+          onClick={() => handleShowProduct(orderItem)}
           size="sm"
           variant="twoTone"
           icon={<HiInformationCircle size={20} />}
@@ -89,4 +72,4 @@ const OrderDetails = ({ order }: { order: IOrder }) => {
   );
 };
 
-export default OrderDetails;
+export default OrderItemDetails;

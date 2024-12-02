@@ -14,6 +14,7 @@ import type { SignInCredential, SignUpCredential } from '@/@types/auth'
 import { ADMIN, CUSTOMER } from '@/constants/roles.constant'
 import { API_BASE_URL } from '@/configs/api.config'
 import { getUser } from '@/services/UserService'
+import { User } from '@/@types/user'
 
 type Status = 'success' | 'failed'
 
@@ -39,8 +40,7 @@ function useAuth() {
             const resp = await apiSignIn(values)
             if (resp.data) {
                 const { jwt: token } = resp.data
-                const user = await getUser(token)
-                user.authority = [user.role.name]
+                const user: User = await getUser(token)
                 dispatch(signInSuccess(token))
                 localStorage.setItem('token', token)
                 if (user) {

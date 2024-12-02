@@ -15,13 +15,13 @@ import {
   apiGetCustomers,
   ICategoryCustomer,
 } from '@/services/CustomerServices';
-import { IUser } from '@/@types/user';
+import { IUser, User } from '@/@types/user';
 type Option = {
   value: string;
   label: string;
 };
 function ModalEditBanner() {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
   const { editBannerDialog, selectedBanner } = useAppSelector(
     (state) => state.banners.data
   );
@@ -35,7 +35,7 @@ function ModalEditBanner() {
     link: selectedBanner?.link || '',
     customerCategory: selectedBanner?.customerCategory || '',
     status: selectedBanner?.status || 'active',
-    user: user._id,
+    user: user.documentId,
   });
 
   useEffect(
@@ -47,7 +47,7 @@ function ModalEditBanner() {
         link: selectedBanner?.link || '',
         customerCategory: selectedBanner?.customerCategory || '',
         status: selectedBanner?.status || 'active',
-        user: user._id,
+        user: user.documentId,
       }),
     [selectedBanner]
   );
@@ -94,7 +94,7 @@ function ModalEditBanner() {
       link: '',
       customerCategory: '',
       status: 'active',
-      user: user._id,
+      user: user.documentId,
     });
     handleClose();
   };

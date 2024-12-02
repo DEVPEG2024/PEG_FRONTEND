@@ -4,7 +4,7 @@ import { useAppSelector } from '@/store'
 
 const HorizontalNav = () => {
     const mode = useAppSelector((state) => state.theme.mode)
-    const userAuthority = useAppSelector((state) => state.auth.user.authority)
+    const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
 
     const { larger } = useResponsive()
 

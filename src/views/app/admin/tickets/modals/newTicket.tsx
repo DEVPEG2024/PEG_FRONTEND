@@ -7,9 +7,10 @@ import { RichTextEditor } from '@/components/shared';
 import { createTicket, setNewTicketDialog } from '../store/ticketSlice';
 import { ITicket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
+import { User } from '@/@types/user';
 
 function ModalNewTicket() {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
   const { newTicketDialog } = useAppSelector((state) => state.tickets.data);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ function ModalNewTicket() {
     type: 'bug',
     priority: 'low',
     status: 'pending',
-    user: user._id,
+    user: user.do,
   });
 
   const handleSubmit = async (e: any) => {

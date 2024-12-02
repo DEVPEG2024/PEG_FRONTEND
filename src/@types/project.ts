@@ -2,6 +2,7 @@ import { UserState } from '@/store';
 import { Customer } from './customer';
 import { IOrder, OrderItem } from './order';
 import { IUser } from './user';
+import { Producer } from './producer';
 
 export interface IComment {
   _id: string;
@@ -67,9 +68,9 @@ export type Project = {
   startDate: Date;
   endDate: Date;
   state: string;
-  customer: Customer;
+  customer?: Customer;
   priority: string;
-  //producer: IUser;
+  producer?: Producer;
   price: number;
   producerPrice: number;
   paidPrice: number;
@@ -81,7 +82,7 @@ export type Project = {
   comments: Comment[];
   //files: IFile[];
   tasks: Task[];
-  orderItem: OrderItem;
+  orderItem?: OrderItem;
   //deleted: boolean;
 }
 

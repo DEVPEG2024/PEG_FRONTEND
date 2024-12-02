@@ -3,24 +3,10 @@ import ApiService from './ApiService'
 import { IBanner } from '@/@types/banner';
 import { AxiosResponse } from 'axios';
 import { ApiResponse } from '@/utils/serviceHelper';
-import { CustomerCategory } from '@/@types/customer';
-
-
-export type CustomerResponse = {
-  banner?: IBanner,
-  customerCategory: CustomerCategory,
-  documentId: string,
-}
-
-export async function apiGetCustomerREST(documentId: string): Promise<AxiosResponse<ApiResponse<CustomerResponse[]>>> {
-  return ApiService.fetchData<ApiResponse<CustomerResponse[]>>({
-    url: API_BASE_URL + '/customers?filters[documentId][$eq]=' + documentId + '&populate[customerCategory][fields][0]=documentId&fields[0]=documentId&pagination[pageSize]=10&pagination[page]=1',
-    method: 'get'
-  })
-}
+import { Customer, CustomerCategory } from '@/@types/customer';
 
 // TODO: déplacer dans CustomerService
-export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: CustomerResponse}>>> {
+export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: Customer}>>> {
   const query = `
     query CustomerQuery($documentId: ID!) {
       customer(documentId: $documentId) {
@@ -28,6 +14,7 @@ export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<
         customerCategory {
           documentId
         }
+        name
       }
     }
   `,
@@ -35,7 +22,7 @@ export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<
     documentId
   }
 
-  return ApiService.fetchData<ApiResponse<{customer: CustomerResponse}>>({
+  return ApiService.fetchData<ApiResponse<{customer: Customer}>>({
     url: API_GRAPHQL_URL,
     method: 'post',
     data: {

@@ -18,31 +18,32 @@ import {
 } from '../store';
 import useUniqueId from '@/components/ui/hooks/useUniqueId';
 import { paymentModeData, paymentStatusData } from '../lists/constants';
-import { IProject, ITask } from '@/@types/project';
+import { Project, ITask } from '@/@types/project';
 import { Invoice } from '@/@types/invoice';
+import { User } from '@/@types/user';
 
-function ModalNewInvoice({ project }: { project: IProject }) {
-  const user = useAppSelector((state: any) => state.auth.user);
+function ModalNewInvoice({ project }: { project: Project }) {
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
 
   const { newInvoiceDialog } = useAppSelector(
-    (state) => state.projectList.data
+    (state) => state.adminProjects.data
   );
   const newId = useUniqueId('INV-', 2).toUpperCase();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
     invoiceNumber: newId,
-    amount: project.amount,
+    amount: project.price,
     vatAmount: 0,
     vat: 0,
     vatEnabled: false,
-    totalAmount: project.amount,
+    totalAmount: project.price,
     status: 'unpaid',
     items: [
       {
-        name: project.title,
+        name: project.name,
         quantity: 1,
-        price: project.amount,
-        total: project.amount,
+        price: project.price,
+        total: project.price,
       },
     ],
     invoiceDate: new Date(),
@@ -56,9 +57,9 @@ function ModalNewInvoice({ project }: { project: IProject }) {
     dispatch(
       createInvoice({
         invoice: formData as unknown as Invoice,
-        projectId: project._id,
-        customerId: project.customer._id,
-        sellerId: user._id,
+        projectId: project.documentId,
+        customerId: project.customer?.documentId,
+        sellerId: user.documentId,
       })
     );
     setFormData({

@@ -6,12 +6,16 @@ import { useTranslation } from 'react-i18next';
 
 import ProjectListContent from './components/ProjectListContent';
 import useDeleteProject from '@/utils/hooks/projects/useDeleteProject';
-import {
-  getList,
+import reducer, {
+  getProjects,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
 } from '../store';
+import { injectReducer } from '@/store';
+
+
+injectReducer('adminProjects', reducer);
 
 type Option = {
   value: number;
@@ -33,8 +37,8 @@ const Projects = () => {
   const { deleteProject } = useDeleteProject();
   const dispatch = useAppDispatch();
 
-  const { total, projectList } = useAppSelector(
-    (state) => state.projectList.data
+  const { total, projects } = useAppSelector(
+    (state) => state.adminProjects.data
   );
 
   useEffect(() => {
@@ -42,7 +46,7 @@ const Projects = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProjects = async () => {
-    dispatch(getList({ page: currentPage, pageSize, searchTerm }));
+    dispatch(getProjects({pagination: {page: currentPage, pageSize}, searchTerm }));
   };
 
   const handleSearch = (value: string) => {
@@ -83,7 +87,7 @@ const Projects = () => {
         </div>
         {/*List view *Project*/}
         <ProjectListContent
-          projects={projectList}
+          projects={projects}
           handleDeleteProject={handleDeleteProject}
         />
         <div className="flex justify-end mt-10">

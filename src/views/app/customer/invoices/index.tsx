@@ -14,12 +14,13 @@ import reducer, {
   useAppSelector,
 } from './store';
 import ModalPrintInvoice from './modals/printInvoice';
+import { User } from '@/@types/user';
 
 injectReducer('invoices', reducer);
 
 const Invoices = () => {
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
