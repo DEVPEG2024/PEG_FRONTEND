@@ -11,7 +11,7 @@ export type CustomerCategory = {
 
 export type Customer = {
   documentId: string;
-  companyName: string;
+  name: string;
   customerCategory: CustomerCategory;
   banner: IBanner;
   orders: IOrder[];

@@ -11,13 +11,13 @@ import {
   apiGetCustomers,
   ICategoryCustomer,
 } from '@/services/CustomerServices';
-import { IUser } from '@/@types/user';
+import { IUser, User } from '@/@types/user';
 type Option = {
   value: string;
   label: string;
 };
 function ModalNewBanner() {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
   const { newBannerDialog } = useAppSelector((state) => state.banners.data);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customersCategories, setCustomersCategories] = useState<Option[]>([]);
@@ -30,7 +30,7 @@ function ModalNewBanner() {
     link: '',
     customerCategory: '',
     status: 'active',
-    user: user._id,
+    user: user.documentId,
   });
   const fetchCustomers = async () => {
     const response = await apiGetCustomers(1, 1000, '');
@@ -73,7 +73,7 @@ function ModalNewBanner() {
       link: '',
       customerCategory: '',
       status: 'active',
-      user: user._id,
+      user: user.documentId,
     });
     handleClose();
   };

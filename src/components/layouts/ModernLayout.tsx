@@ -26,12 +26,12 @@ const HeaderActionsStart = () => {
 
 const HeaderActionsEnd = () => {
   const { t } = useTranslation();
-  const { _id } = useAppSelector((state: RootState) => state.auth.user);
+  const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   useEffect(() => {
-    const clientId = _id;
+    const clientId = documentId;
 
     const newSocket = io(API_BASE_URL, {
       query: { clientId },
@@ -61,7 +61,7 @@ const HeaderActionsEnd = () => {
     return userCount;
   };
   const text = (userCount ?? 0) > 1 ? "online_users" : "online_user";
-  const userAuthority = useAppSelector((state) => state.auth.user.authority)
+  const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
   return (
     <>
       <AuthorityCheck

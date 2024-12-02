@@ -20,9 +20,10 @@ import useUniqueId from '@/components/ui/hooks/useUniqueId';
 import { paymentModeData, paymentStatusData } from '../lists/constants';
 import { IProject, ITask } from '@/@types/project';
 import { Invoice } from '@/@types/invoice';
+import { User } from '@/@types/user';
 
 function ModalNewInvoice({ project }: { project: IProject }) {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
 
   const { newInvoiceDialog } = useAppSelector(
     (state) => state.projectList.data

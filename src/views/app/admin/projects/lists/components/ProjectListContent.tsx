@@ -1,12 +1,12 @@
 import classNames from 'classnames';
 import GridItem from './GridItem';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 
 const ProjectListContent = ({
   projects,
   handleDeleteProject,
 }: {
-  projects: IProject[];
+  projects: Project[];
   handleDeleteProject: (id: string) => void;
 }) => {
   return (
@@ -14,7 +14,7 @@ const ProjectListContent = ({
       <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
         {projects.map((project) => (
           <GridItem
-            key={project._id}
+            key={project.documentId}
             data={project}
             handleDeleteProject={handleDeleteProject}
           />

@@ -6,6 +6,30 @@ import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { API_GRAPHQL_URL } from '@/configs/api.config'
 
+// update project
+export async function apiUpdateProject(project: Project): Promise<AxiosResponse<ApiResponse<{updateProject: Project}>>> {
+    const query = `
+    mutation UpdateProject($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId
+        }
+    }
+  `,
+  {documentId, ...data} = project,
+  variables = {
+    documentId,
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{updateProject: Project}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
 // Create project
 export type CreateProjectRequest = Omit<Project, 'documentId'>
 
@@ -20,8 +44,8 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
   variables = {
     data: {
         ...data,
-        customer: data.customer.documentId,
-        orderItem: data.orderItem.documentId
+        customer: data.customer?.documentId,
+        orderItem: data.orderItem?.documentId
     }
   }
     return ApiService.fetchData<ApiResponse<{createProject: Project}>>({
@@ -47,12 +71,12 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                     firstName
                     lastName
                     customer {
-                    companyName
+                        name
                     }
                 }
             }
             customer {
-                companyName
+                name
             }
             description
             endDate
@@ -118,7 +142,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                     content
                 }
                 customer {
-                    companyName
+                    name
                 }
                 endDate
                 name
@@ -187,7 +211,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                     content
                 }
                 customer {
-                    companyName
+                    name
                 }
                 endDate
                 name
@@ -250,7 +274,7 @@ export async function apiGetProjectsOld(page: number, pageSize: number, searchTe
     })
 }
 
-export async function apiUpdateProject(data: Record<string, unknown>) {
+export async function apiUpdateProjectOld(data: Record<string, unknown>) {
     return ApiService.fetchData<CreateProjectResponse>({
         url: `${PUT_PROJECTS_API_URL}/${data._id}`,
         method: 'put',

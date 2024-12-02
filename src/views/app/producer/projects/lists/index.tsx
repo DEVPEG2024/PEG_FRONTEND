@@ -12,6 +12,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '../store';
+import { User } from '@/@types/user';
 
 type Option = {
   value: number;
@@ -26,7 +27,7 @@ const options: Option[] = [
 ];
 const ProjectList = () => {
   const { t } = useTranslation();
-  const user = useAppSelector((state) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 

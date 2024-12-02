@@ -1,9 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct, Product } from '@/@types/product';
+import { Product } from '@/@types/product';
 import {
-  apiPutStatusProduct,
-  apiDeleteProduct,
-  apiUpdateProduct,
   apiGetCustomerProducts,
   CustomerProductsResponse,
 } from '@/services/ProductServices';
@@ -15,7 +12,6 @@ export type StateData = {
   loading: boolean;
   products: Products;
   product: Product | null;
-  modalDelete: boolean;
   total: number;
   result: boolean;
   message: string;
@@ -55,43 +51,10 @@ export const getProducts = createAsyncThunk(
   }
 );
 
-type PutStatusProductRequest = {
-  id: string;
-};
-
-export const putStatusProduct = createAsyncThunk(
-  SLICE_NAME + '/putStatusProduct',
-  async (data: PutStatusProductRequest) => {
-    const response = await apiPutStatusProduct(data.id);
-    return response.data;
-  }
-);
-
-type UpdateProductRequest = {
-  product: IProduct;
-};
-
-export const updateProduct = createAsyncThunk(
-  SLICE_NAME + '/updateProduct',
-  async (data: UpdateProductRequest) => {
-    const response = await apiUpdateProduct(data.product);
-    return response.data;
-  }
-);
-
-export const deleteProduct = createAsyncThunk(
-  SLICE_NAME + '/deleteProduct',
-  async (data: PutStatusProductRequest) => {
-    const response = await apiDeleteProduct(data.id);
-    return response.data;
-  }
-);
-
 const initialState: StateData = {
   loading: false,
   products: [],
   product: null,
-  modalDelete: false,
   total: 0,
   result: false,
   message: '',
@@ -111,41 +74,7 @@ const productSlice = createSlice({
     },
     setProduct: (state, action) => {
       state.product =
-        state.products.find((product) => product._id === action.payload) ??
-        null;
-    },
-    setModalDeleteOpen: (state) => {
-      state.modalDelete = true;
-    },
-    setModalDeleteClose: (state) => {
-      state.modalDelete = false;
-    },
-    setEditProduct: (state, action) => {
-      const product = state.products.find(
-        (product) => product._id === action.payload._id
-      );
-      if (product) {
-        state.product = product;
-      }
-    },
-    setEditingProduct: (state, action) => {
-      state.product = action.payload;
-    },
-    setActiveProduct: (state, action) => {
-      console.log(action.payload);
-      const productId = action.payload.id;
-      const isActive = action.payload.mode;
-
-      const product = state.products.find(
-        (product) => product._id === productId
-      );
-      if (product) {
-        product.isActive = isActive;
-      }
-    },
-    setDeleteProduct: (state, action) => {
-      state.product =
-        state.products.find((product) => product._id === action.payload) ??
+        state.products.find((product) => product.documentId === action.payload) ??
         null;
     },
   },
@@ -160,59 +89,12 @@ const productSlice = createSlice({
     builder.addCase(getProducts.rejected, (state) => {
       state.loading = false;
     });
-    builder.addCase(putStatusProduct.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(putStatusProduct.fulfilled, (state, action) => {
-      state.loading = false;
-      state.products = state.products.map((product) => {
-        if (product._id === action.payload.product._id) {
-          return action.payload.product;
-        }
-        return product;
-      });
-    });
-    builder.addCase(putStatusProduct.rejected, (state) => {
-      state.loading = false;
-    });
-    builder.addCase(deleteProduct.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(deleteProduct.fulfilled, (state, action) => {
-      state.loading = false;
-      state.products = state.products.filter(
-        (product) => product._id !== action.payload.product._id
-      );
-    });
-    builder.addCase(deleteProduct.rejected, (state) => {
-      state.loading = false;
-    });
-    builder.addCase(updateProduct.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(updateProduct.fulfilled, (state, action) => {
-      state.loading = false;
-      state.products = state.products.map((product) => {
-        if (product._id === action.payload.product._id) {
-          return action.payload.product;
-        }
-        return product;
-      });
-    });
-    builder.addCase(updateProduct.rejected, (state) => {
-      state.loading = false;
-    });
   },
 });
 
 export const {
   setTableData,
   setProduct,
-  setModalDeleteOpen,
-  setModalDeleteClose,
-  setDeleteProduct,
-  setActiveProduct,
-  setEditingProduct,
 } = productSlice.actions;
 
 export default productSlice.reducer;

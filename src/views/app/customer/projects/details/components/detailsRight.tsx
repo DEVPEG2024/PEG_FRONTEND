@@ -91,12 +91,12 @@ const DetailsRight = ({ project }: { project: Project }) => {
         <hr className="my-6" />
         <p className="font-semibold mb-4">Client</p>
         <IconText
-          key={project.customer.documentId}
+          key={project.customer?.documentId}
           className="mb-4"
           icon={<Avatar size={20} shape="circle" icon={<HiUserCircle />} />}
         >
           <span className="font-semibold text-gray-700 dark:text-gray-100">
-            {project.customer.companyName}
+            {project.customer?.name}
           </span>
         </IconText>
       </AdaptableCard>

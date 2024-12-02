@@ -20,6 +20,7 @@ import {
 } from '@/utils/hooks/projects/useComments';
 import { FaFilePdf, FaFileAlt } from 'react-icons/fa';
 import { API_URL_IMAGE } from '@/configs/api.config';
+import { User } from '@/@types/user';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
@@ -31,7 +32,7 @@ const Comments = ({ project }: { project: Project }) => {
   const [image, setImage] = useState<string>('');
   const [fileType, setFileType] = useState('');
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state: RootState) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   const submitComment = async () => {
     if (commentText.trim()) {
       const comment: Omit<Comment, 'documentId'> = {

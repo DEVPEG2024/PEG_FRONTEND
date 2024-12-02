@@ -2,7 +2,7 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiPencil, HiPrinter, HiTrash } from 'react-icons/hi';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 import DetailsRight from './detailsRight';
 import { IUser } from '@/@types/user';
 import { useAppDispatch } from '@/store';
@@ -35,18 +35,18 @@ export interface IComment {
   file: string;
   fileType: string;
 }
-const Invoices = ({ project }: { project: IProject }) => {
+const Invoices = ({ project }: { project: Project }) => {
   const dispatch = useAppDispatch();
-  const { invoices } = useAppSelector((state) => state.projectList.data);
+  const { invoices } = useAppSelector((state) => state.adminProjects.data);
   const [modalPrintInvoice, setModalPrintInvoice] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    dispatch(getInvoicesProject({ projectId: project._id })).finally(() =>
+    dispatch(getInvoicesProject({ projectId: project.documentId })).finally(() =>
       setLoading(false)
     );
-  }, [dispatch, project._id]);
+  }, [dispatch, project.documentId]);
 
   const handleDeleteInvoice = (invoiceId: string) => {
     dispatch(deleteInvoice({ invoiceId }));
@@ -150,7 +150,7 @@ const Invoices = ({ project }: { project: IProject }) => {
         <DetailsRight project={project} />
       </div>
       <ModalNewInvoice project={project} />
-      <ModalEditInvoice project={project} />
+      <ModalEditInvoice />
       {invoice && (
         <ModalPrintInvoice
           invoice={invoice as Invoice}

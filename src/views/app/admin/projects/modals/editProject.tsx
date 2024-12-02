@@ -3,12 +3,11 @@ import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { updateProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiOutlineCalendar } from 'react-icons/hi';
-import {
-  getList,
+import reducer, {
   setEditProjectDialog,
   setSelectedProject,
+  updateProject,
   useAppDispatch,
   useAppSelector,
 } from '../store';
@@ -16,6 +15,10 @@ import useCustomer from '@/utils/hooks/customers/useCustomer';
 import useProducer from '@/utils/hooks/producers/useProducer';
 import _ from 'lodash';
 import { priorityData, statusData } from '../lists/constants';
+import { injectReducer } from '@/store';
+import { Project } from '@/@types/project';
+
+injectReducer('adminProjects', reducer);
 
 type Option = {
   value: string;
@@ -23,27 +26,15 @@ type Option = {
 };
 
 function ModalEditProject() {
-  const editProjectDialog = useAppSelector(
-    (state) => state.projectList.data.editProjectDialog
+  const {editProjectDialog, selectedProject} = useAppSelector(
+    (state) => state.adminProjects.data
   );
-  const selectedProject = useAppSelector(
-    (state) => state.projectList.data.selectedProject
-  );
+  if (!selectedProject) {
+    return
+  }
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    _id: selectedProject?._id,
-    title: selectedProject?.title,
-    description: selectedProject?.description || '',
-    priority: selectedProject?.priority || 'low',
-    status: selectedProject?.status || 'pending',
-    amount: selectedProject?.amount || 0,
-    amountProducers: selectedProject?.amountProducers || 0,
-    customer: selectedProject?.customer._id,
-    producer: selectedProject?.producer?._id,
-    startDate: dayjs(selectedProject?.startDate).toDate(),
-    endDate: dayjs(selectedProject?.endDate).toDate(),
-  });
+  const [formData, setFormData] = useState<Project>(selectedProject);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
   const { getCustomers } = useCustomer();
@@ -51,27 +42,6 @@ function ModalEditProject() {
   useEffect(() => {
     getUsers();
   }, []);
-  useEffect(() => {
-    if (selectedProject) {
-      setFormData({
-        _id: selectedProject._id || '',
-        title: selectedProject.title || '',
-        description: selectedProject.description || '',
-        priority: selectedProject.priority || 'low',
-        status: selectedProject.status || 'pending',
-        amount: selectedProject.amount || 0,
-        amountProducers: selectedProject.amountProducers || 0,
-        customer: selectedProject.customer?._id || '',
-        producer: selectedProject.producer?._id || '',
-        startDate: selectedProject.startDate
-          ? dayjs(selectedProject.startDate).toDate()
-          : new Date(),
-        endDate: selectedProject.endDate
-          ? dayjs(selectedProject.endDate).toDate()
-          : new Date(),
-      });
-    }
-  }, [selectedProject]);
   const getUsers = async () => {
     const res = await getCustomers(1, 10000, '');
     const resProducer = await getProducers(1, 10000, '');
@@ -97,17 +67,11 @@ function ModalEditProject() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
-    const resp = await updateProject(formData);
-    if (resp.status === 'success') {
-      setIsLoading(false);
-      handleClose();
-      dispatch(getList({ page: 1, pageSize: 4, searchTerm: '' }));
-      dispatch(setEditProjectDialog(false));
-      dispatch(setSelectedProject(resp.data));
-    } else {
-      setIsLoading(false);
-    }
+    dispatch(updateProject(formData))
+    dispatch(setSelectedProject(null));
+    handleClose();
   };
+  
   const handleClose = () => {
     dispatch(setEditProjectDialog(false));
   };
@@ -119,9 +83,9 @@ function ModalEditProject() {
           <h5 className="mb-4">{t('projects.editProject')}</h5>
           <FieldCustom
             placeholder={t('projects.projectName')}
-            value={formData.title as string}
+            value={formData.name as string}
             setValue={(e: any) => {
-              setFormData({ ...formData, title: e });
+              setFormData({ ...formData, name: e });
             }}
           />
           <Input
@@ -138,18 +102,18 @@ function ModalEditProject() {
             <div className="flex flex-col gap-2 w-1/2">
               <FieldCustom
                 placeholder={t('projects.amount')}
-                value={formData.amount as number}
+                value={formData.price as number}
                 setValue={(e: any) => {
-                  setFormData({ ...formData, amount: e });
+                  setFormData({ ...formData, price: e });
                 }}
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
               <FieldCustom
                 placeholder={t('projects.amountProducers')}
-                value={formData.amountProducers as number}
+                value={formData.producerPrice as number}
                 setValue={(e: any) => {
-                  setFormData({ ...formData, amountProducers: e });
+                  setFormData({ ...formData, producerPrice: e });
                 }}
               />
             </div>
@@ -162,7 +126,7 @@ function ModalEditProject() {
                 options={customers}
                 noOptionsMessage={() => 'Aucun client trouvé'}
                 value={customers.find(
-                  (customer) => customer.value == formData.customer
+                  (customer) => customer.value == formData.customer?.documentId
                 )}
                 onChange={(e: any) => {
                   setFormData({ ...formData, customer: e?.value || '' });
@@ -176,7 +140,7 @@ function ModalEditProject() {
                 options={producers}
                 noOptionsMessage={() => 'Aucun producteur trouvé'}
                 value={producers.find(
-                  (producer) => producer.value == formData.producer
+                  (producer) => producer.value == formData.producer?.documentId
                 )}
                 onChange={(e: any) => {
                   setFormData({ ...formData, producer: e?.value || '' });
@@ -206,10 +170,10 @@ function ModalEditProject() {
                 options={statusData}
                 noOptionsMessage={() => 'Aucun status trouvé'}
                 value={statusData.find(
-                  (status) => status.value == formData.status
+                  (status) => status.value == formData.state
                 )}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, status: e?.value || '' });
+                  setFormData({ ...formData, state: e?.value || '' });
                 }}
               />
             </div>

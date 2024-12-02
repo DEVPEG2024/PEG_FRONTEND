@@ -10,7 +10,8 @@ import {
   GetFormsRequest,
   GetFormsResponse,
 } from '@/services/FormServices';
-import { unwrapData } from '@/utils/serviceHelper';
+import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
+import { AxiosResponse } from 'axios';
 
 export const SLICE_NAME = 'forms';
 
@@ -39,18 +40,20 @@ export const getForms = createAsyncThunk(
   }
 );
 
+// MODELE UPDATE
 export const updateForm = createAsyncThunk(
   SLICE_NAME + '/updateForm',
-  async (data: Form) => {
-    const response = await apiUpdateForm(data);
+  async (data: Form): Promise<ApiResponse<{updateForm: Form}>> => {
+    const response: AxiosResponse<ApiResponse<{updateForm: Form}>> = await apiUpdateForm(data);
     return response.data;
   }
 );
 
+// MODELE CREATE
 export const createForm = createAsyncThunk(
   SLICE_NAME + '/createForm',
-  async (data: CreateFormRequest) => {
-    const response = await apiCreateForm(data);
+  async (data: CreateFormRequest) : Promise<ApiResponse<{createForm: Form}>> => {
+    const response: AxiosResponse<ApiResponse<{createForm: Form}>> = await apiCreateForm(data);
     return response.data;
   }
 );

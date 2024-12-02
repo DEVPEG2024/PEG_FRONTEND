@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Button, Dialog } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { setEditProjectDialog, setSelectedProject } from '../../store';
-import { IProject } from '@/@types/project';
+import { Project } from '@/@types/project';
 
 const ItemDropdown = ({
   handleDeleteProject,
@@ -18,7 +18,7 @@ const ItemDropdown = ({
   setIsPayProducerOpen,
 }: {
   handleDeleteProject: (id: string) => void;
-  data: IProject;
+  data: Project;
   setIsPayProducerOpen: (value: boolean) => void;
 }) => {
   const [validDelete, setValidDelete] = useState(false);

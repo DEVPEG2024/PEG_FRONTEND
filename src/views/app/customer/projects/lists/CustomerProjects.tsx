@@ -1,4 +1,4 @@
-import { Container } from '@/components/shared';
+import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
@@ -7,12 +7,13 @@ import { useTranslation } from 'react-i18next';
 import ProjectListContent from './components/ProjectListContent';
 import useDeleteProject from '@/utils/hooks/projects/useDeleteProject';
 import reducer, {
-  getProjects,
+  getCustomerProjects,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
 } from '../store';
 import { injectReducer } from '@/store';
+import { User } from '@/@types/user';
 
 injectReducer('customerProjects', reducer);
 
@@ -29,7 +30,7 @@ const options: Option[] = [
 ];
 const CustomerProjects = () => {
   const { t } = useTranslation();
-  const user = useAppSelector((state) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
@@ -37,7 +38,7 @@ const CustomerProjects = () => {
   const { deleteProject } = useDeleteProject();
   const dispatch = useAppDispatch();
 
-  const { total, projects } = useAppSelector(
+  const { total, projects, loading } = useAppSelector(
     (state) => state.customerProjects.data
   );
 
@@ -47,7 +48,7 @@ const CustomerProjects = () => {
 
   const fetchProjects = async () => {
     dispatch(
-      getProjects({
+      getCustomerProjects({
         customerDocumentId: user.customer.documentId,
         pagination: {
           page: currentPage,
@@ -95,7 +96,9 @@ const CustomerProjects = () => {
           />
         </div>
         {/*List view *Project*/}
-        <ProjectListContent projects={projects} />
+        <Loading loading={loading}>
+          <ProjectListContent projects={projects} />
+        </Loading>
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}

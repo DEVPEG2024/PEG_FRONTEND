@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { Alert } from '@/components/ui';
 import { HiFire } from 'react-icons/hi';
 import { apiUpdatePassword } from '@/services/AccountServices';
+import { User } from '@/@types/user';
 
 type UserInformations = {
   oldPassword: string;
@@ -32,14 +33,14 @@ const Password = () => {
     type: null,
     message: null,
   });
-  const userData = useAppSelector((state) => state.auth.user);
+  const {user} : {user: User} = useAppSelector((state) => state.auth.user);
   const onFormSubmit = async (
     values: UserInformations,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     const data = {
       ...values,
-      _id: userData._id,
+      _id: user?.documentId,
     };
     const response = await apiUpdatePassword(data);
     if (response.data.result) {

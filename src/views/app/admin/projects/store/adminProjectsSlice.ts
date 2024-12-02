@@ -10,20 +10,26 @@ import {
   apiUpdateInvoice,
   GetProjectsResponse,
   GetProjectsRequest,
+  apiCreateProject,
+  CreateProjectRequest,
+  apiUpdateProject,
 } from '@/services/ProjectServices';
 import { WritableDraft } from 'immer';
 import { Invoice } from '@/@types/invoice';
-import { unwrapData } from '@/utils/serviceHelper';
+import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
+import { AxiosResponse } from 'axios';
 
-export type ProjectListState = {
-  projectList: IProject[];
+export const SLICE_NAME = 'adminProjects';
+
+export type AdminProjectsState = {
+  projects: Project[];
   invoices: Invoice[];
   total: number;
   result: boolean;
   message: string;
   selectedTask: ITask | null;
   selectedInvoice: Invoice | null;
-  selectedProject: IProject | null;
+  selectedProject: Project | null;
   newProjectDialog: boolean;
   editProjectDialog: boolean;
   newInvoiceDialog: boolean;
@@ -33,21 +39,28 @@ export type ProjectListState = {
   selectedTab: string;
   loading: boolean;
 };
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
 
-export const SLICE_NAME = 'projectList';
-export const getList = createAsyncThunk(
+export const getProjects = createAsyncThunk(
   SLICE_NAME + '/getProjects',
-  async (data: GetProjectsRequest) : Promise<{projects: Project[]}> => {
-    const {projects_connection} : {projects_connection: GetProjectsResponse} = await unwrapData(apiGetProjects({
-      pagination: {page: data.page, pageSize: data.pageSize},
-      searchTerm: data.searchTerm}
-    ));
-    return {projects: projects_connection.nodes};
+  async (data: GetProjectsRequest) : Promise<GetProjectsResponse> => {
+    const {projects_connection} : {projects_connection: GetProjectsResponse} = await unwrapData(apiGetProjects(data));
+    return projects_connection;
+  }
+);
+
+export const createProject = createAsyncThunk(
+  SLICE_NAME + '/createProject',
+  async (data: CreateProjectRequest) : Promise<ApiResponse<{createProject: Project}>> => {
+    const response: AxiosResponse<ApiResponse<{createProject: Project}>> = await apiCreateProject(data);
+    return response.data;
+  }
+);
+
+export const updateProject = createAsyncThunk(
+  SLICE_NAME + '/updateProject',
+  async (data: Project): Promise<ApiResponse<{updateProject: Project}>> => {
+    const response: AxiosResponse<ApiResponse<{updateProject: Project}>> = await apiUpdateProject(data);
+    return response.data;
   }
 );
 
@@ -130,8 +143,8 @@ export const changeTaskStatus = createAsyncThunk(
   }
 );
 
-const initialState: ProjectListState = {
-  projectList: [],
+const initialState: AdminProjectsState = {
+  projects: [],
   invoices: [],
   selectedProject: null,
   newProjectDialog: false,
@@ -154,7 +167,7 @@ const projectListSlice = createSlice({
   initialState,
   reducers: {
     setProjectList: (state, action) => {
-      state.projectList = action.payload;
+      state.projects = action.payload;
     },
     setSelectedProject: (state, action) => {
       state.selectedProject = action.payload;
@@ -244,14 +257,12 @@ const projectListSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getList.pending, (state) => {
+    builder.addCase(getProjects.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getList.fulfilled, (state, action) => {
-      state.projectList = action.payload.projects as never;
-      state.total = action.payload.total;
-      state.result = action.payload.result;
-      state.message = action.payload.message;
+    builder.addCase(getProjects.fulfilled, (state, action) => {
+      state.projects = action.payload.nodes;
+      state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
     // CREATE TASK
@@ -263,7 +274,7 @@ const projectListSlice = createSlice({
       state.message = action.payload.message;
       state.result = action.payload.result;
       state.newDialogTask = false;
-      state.projectList = state.projectList.map((project) => {
+      state.projects = state.projects.map((project) => {
         if (project._id === action.payload.projectId) {
           return {
             ...project,
@@ -296,7 +307,7 @@ const projectListSlice = createSlice({
           task._id === action.payload.task._id ? action.payload.task : task
         );
       }
-      state.projectList = state.projectList.map((project) => {
+      state.projects = state.projects.map((project) => {
         if (project._id === action.payload.projectId) {
           return {
             ...project,
@@ -367,6 +378,33 @@ const projectListSlice = createSlice({
     builder.addCase(deleteInvoice.rejected, (state, action) => {
       state.loading = false;
       state.message = action.error.message as string;
+    });
+
+    builder.addCase(createProject.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(createProject.fulfilled, (state, action) => {
+      state.loading = false;
+      state.projects.push(action.payload.data.createProject);
+      state.total = state.projects.length
+    });
+    builder.addCase(createProject.rejected, (state) => {
+      state.loading = false;
+    });
+
+    builder.addCase(updateProject.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateProject.fulfilled, (state, action) => {
+      state.loading = false;
+      state.projects = state.projects.map((project) =>
+        project.documentId === action.payload.data.updateProject.documentId
+          ? action.payload.data.updateProject
+          : project
+      );
+    });
+    builder.addCase(updateProject.rejected, (state) => {
+      state.loading = false;
     });
   },
 });

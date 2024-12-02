@@ -22,7 +22,7 @@ import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'customerProjects';
 
-export type ProjectListState = {
+export type CustomerProjectsState = {
   projects: Project[];
   invoices: Invoice[];
   total: number;
@@ -41,8 +41,8 @@ export type ProjectListState = {
   loading: boolean;
 };
 
-export const getProjects = createAsyncThunk(
-  SLICE_NAME + '/getProducts',
+export const getCustomerProjects = createAsyncThunk(
+  SLICE_NAME + '/getCustomerProjects',
   async (data: GetCustomerProjectsRequest): Promise<GetCustomerProjectsResponse> => {
     const {projects_connection} : {projects_connection: GetProjectsResponse}= await unwrapData(apiGetCustomerProjects(data));
     return projects_connection
@@ -135,7 +135,7 @@ export const changeTaskStatus = createAsyncThunk(
   }
 );
 
-const initialState: ProjectListState = {
+const initialState: CustomerProjectsState = {
   projects: [],
   invoices: [],
   selectedProject: null,
@@ -249,10 +249,10 @@ const projectListSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getProjects.pending, (state) => {
+    builder.addCase(getCustomerProjects.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProjects.fulfilled, (state, action) => {
+    builder.addCase(getCustomerProjects.fulfilled, (state, action) => {
       state.projects = action.payload.nodes as Project[];
       state.total = action.payload.pageInfo.total;
       state.loading = false;

@@ -8,13 +8,14 @@ import { apiGetHomeProducer } from '@/services/HomeProducerService';
 import { IProject } from '@/@types/project';
 import ProjectListContent from '../projects/lists/components/ProjectListContent';
 import GridItem from '../projects/lists/components/GridItem';
+import { User } from '@/@types/user';
 
 const Home = () => {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<IProject[]>([]);
   const [level, setLevel] = useState<number>(0);
   const [wallet, setWallet] = useState<number>(0);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const {user}: {user: User} = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     fetchHomeProducer();

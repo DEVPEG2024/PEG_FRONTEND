@@ -17,12 +17,11 @@ import {
   useAppSelector,
 } from '../store';
 import { paymentModeData, paymentStatusData } from '../lists/constants';
-import { IProject } from '@/@types/project';
 import { Invoice } from '@/@types/invoice';
 
-function ModalEditInvoice({ project }: { project: IProject }) {
+function ModalEditInvoice() {
   const { editInvoiceDialog, selectedInvoice } = useAppSelector(
-    (state) => state.projectList.data
+    (state) => state.adminProjects.data
   );
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({

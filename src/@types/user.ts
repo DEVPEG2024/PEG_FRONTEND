@@ -1,3 +1,6 @@
+import { Customer } from "./customer";
+import { Producer } from "./producer";
+
 export interface ICategory {
   _id: string; // Identifiant unique
   title: string; // Titre
@@ -62,8 +65,21 @@ export type UserFrontResponse = UserResponse & {
 };
 
 type Role = {
-  id: number;
+  documentId: string;
   name: string;
   description: string;
   type: string;
 };
+
+
+export type User = {
+  documentId: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  customer?: Customer;
+  producer?: Producer;
+  role: Role;
+  authority: string[];
+}

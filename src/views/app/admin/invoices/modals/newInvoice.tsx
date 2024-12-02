@@ -19,7 +19,7 @@ import {
 import useUniqueId from '@/components/ui/hooks/useUniqueId';
 import { paymentModeData, paymentStatusData } from '../constants';
 import { apiGetCustomers } from '@/services/CustomerServices';
-import { IUser } from '@/@types/user';
+import { IUser, User } from '@/@types/user';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { IProject } from '@/@types/project';
 import { apiGetOffers } from '@/services/OfferServices';
@@ -27,7 +27,7 @@ import { IOffer } from '@/@types/offer';
 import { Invoice } from '@/@types/invoice';
 
 function ModalNewInvoice() {
-  const user = useAppSelector((state: any) => state.auth.user);
+  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
   const [customers, setCustomers] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
