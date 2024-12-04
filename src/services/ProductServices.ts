@@ -1,10 +1,66 @@
 import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IProduct, Product } from '@/@types/product'
+import { IProduct, Product, Image, Size } from '@/@types/product'
 import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 
-export async function apiGetProductById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
+type ProductsResponse = {
+    products: IProduct[]
+    total: number
+    result: string
+    message: string
+}
+
+export async function apiGetProductsByCategoryOld(id: string) {
+    return ApiService.fetchData<ProductsResponse>({
+        url: `${API_BASE_URL}/products/category/${id}`,
+        method: 'get',
+    })
+}
+
+type CreateProductResponse = {
+    product: IProduct
+    message: string
+    result: string
+}
+
+export async function apiNewProduct(data: IProduct) {
+    return ApiService.fetchData<CreateProductResponse>({
+        url: `${API_BASE_URL}/products/admin/create`,
+        method: 'post',
+        data: data
+    })
+}
+
+type UpdateProductResponse = {
+    product: IProduct
+    message: string
+    result: string
+}
+
+export async function apiUpdateProduct(data: IProduct) {
+    return ApiService.fetchData<UpdateProductResponse>({
+        url: `${API_BASE_URL}/products/admin/update`,
+        method: 'put',
+        data: data
+    })
+}
+
+type PutStatusProductResponse = {
+    product: IProduct
+    message: string
+    result: string
+}
+
+export async function apiPutStatusProduct(id: string) {
+    return ApiService.fetchData<PutStatusProductResponse>({
+        url: `${API_BASE_URL}/products/admin/update-status/${id}`,
+        method: 'put',
+    })
+}
+
+// get product by id for show
+export async function apiGetProductForShowById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
     const query = `
     query GetProduct($documentId: ID!) {
         product(documentId: $documentId) {
@@ -39,31 +95,99 @@ export async function apiGetProductById(documentId: string): Promise<AxiosRespon
     })
 }
 
-type CreateProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
-
-export async function apiNewProduct(data: IProduct) {
-    return ApiService.fetchData<CreateProductResponse>({
-        url: `${API_BASE_URL}/products/admin/create`,
+// get product by id
+export async function apiGetProductForEditById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
+    const query = `
+    query GetProduct($documentId: ID!) {
+        product(documentId: $documentId) {
+            documentId
+            description
+            name
+            price
+            images {
+                url
+            }
+            sizes {
+                documentId
+                name
+                value
+            }
+            form {
+                documentId
+                fields
+            }
+            customerCategories {
+                documentId
+                name
+            }
+            productCategory {
+                documentId
+                name
+            }
+            customers {
+                documentId
+                name
+            }
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{product: Product}>>({
+        url: API_GRAPHQL_URL,
         method: 'post',
-        data: data
+        data: {
+            query,
+            variables
+        }
     })
 }
 
-type UpdateProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
+// get products
+export type GetProductsByCategoryRequest = {
+    pagination: PaginationRequest;
+    searchTerm: string;
+    productCategoryDocumentId: string;
+  };
 
-export async function apiUpdateProduct(data: IProduct) {
-    return ApiService.fetchData<UpdateProductResponse>({
-        url: `${API_BASE_URL}/products/admin/update`,
-        method: 'put',
-        data: data
+export async function apiGetProductsByCategory(data: GetProductsByCategoryRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: '', productCategoryDocumentId: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
+    const query = `
+    query getProductsByCategory($searchTerm: String, $productCategoryDocumentId: ID!, $pagination: PaginationArg) {
+        products_connection (filters: {
+        and: [
+            {name: {contains: $searchTerm}},
+            {productCategory: {documentId: {eq: $productCategoryDocumentId}}}
+        ]},
+        pagination: $pagination) {
+            nodes {
+                documentId
+                name
+                price
+                images {
+                    documentId
+                    url
+                }
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
     })
 }
 
@@ -87,6 +211,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                 name
                 price
                 images {
+                    documentId
                     url
                 }
             }
@@ -136,17 +261,32 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
     })
 }
 
-type ProductsResponse = {
-    products: IProduct[]
-    total: number
-    result: string
-    message: string
-}
+// Duplicate Product
+export type DuplicateProductRequest = {
+    product: Product;
+  };
 
-export async function apiGetProductsByCategory(id: string) {
-    return ApiService.fetchData<ProductsResponse>({
-        url: `${API_BASE_URL}/products/category/${id}`,
-        method: 'get',
+export async function apiDuplicateProduct(data: DuplicateProductRequest): Promise<AxiosResponse<ApiResponse<{createProduct: Product}>>> {
+    const query = `
+    mutation CreateProduct($data: ProductInput!) {
+        createProduct(data: $data) {
+            documentId
+        }
+    }
+  `,
+  {documentId, images, ...duplicatedProduct} = data.product,
+  variables = {
+    data: {
+        ...duplicatedProduct
+    }
+  }
+    return ApiService.fetchData<ApiResponse<{createProduct: Product}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
     })
 }
 
@@ -173,20 +313,6 @@ export async function apiDeleteProduct(documentId: string): Promise<AxiosRespons
             query,
             variables
         }
-    })
-}
-
-
-type PutStatusProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
-
-export async function apiPutStatusProduct(id: string) {
-    return ApiService.fetchData<PutStatusProductResponse>({
-        url: `${API_BASE_URL}/products/admin/update-status/${id}`,
-        method: 'put',
     })
 }
 
@@ -249,6 +375,28 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
         data: {
         query,
         variables
+        }
+    })
+}
+
+// get product sizes
+export async function apiGetProductSizes(): Promise<AxiosResponse<ApiResponse<{sizes: Size[]}>>> {
+    const query = `
+    query getSizes {
+        sizes {
+            documentId
+            name
+            value
+            description
+        }
+    }
+  `
+
+  return ApiService.fetchData<ApiResponse<{sizes: Size[]}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query
         }
     })
 }

@@ -12,7 +12,7 @@ import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { apiCreateOrder, apiCreateOrderItem, PaymentInformations } from '@/services/OrderServices';
+import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { apiCreateProject } from '@/services/ProjectServices';
 import { FormAnswer } from '@/@types/formAnswer';
@@ -55,6 +55,9 @@ function Cart() {
             (amount, size) => amount + size.quantity * item.product.price,
             0
           ),
+          paymentState: paymentInformations.paymentMethod === 'manual' ? 'pending' : '',
+          state: 'pending',
+          customer: user.customer!
         };
       const {createOrderItem} : {createOrderItem: OrderItem}= await unwrapData(apiCreateOrderItem(orderItem));
       // TODO : envoyer mail création commande OK
@@ -103,15 +106,9 @@ function Cart() {
 
   const createOrder = async (paymentInformations: PaymentInformations) => {
     try {
-      const promises = await Promise.allSettled(cart.map((item) => createOrderItem(item, paymentInformations))),
-        orderItems : OrderItem[] = promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItem>).value),
-        order = {
-          orderItems,
-          customer: user.customer,
-          paymentState: paymentInformations.paymentMethod === 'manual' ? 'pending' : ''
-        }
-      
-      await apiCreateOrder(order);
+      const promises = await Promise.allSettled(cart.map((item) => createOrderItem(item, paymentInformations)))
+        
+      promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItem>).value)
       return { status: 'success' };
     } catch (errors: any) {
       return {

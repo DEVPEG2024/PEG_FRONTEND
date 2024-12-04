@@ -43,7 +43,7 @@ export const getForms = createAsyncThunk(
 // MODELE UPDATE
 export const updateForm = createAsyncThunk(
   SLICE_NAME + '/updateForm',
-  async (data: Form): Promise<ApiResponse<{updateForm: Form}>> => {
+  async (data: Partial<Form>): Promise<ApiResponse<{updateForm: Form}>> => {
     const response: AxiosResponse<ApiResponse<{updateForm: Form}>> = await apiUpdateForm(data);
     return response.data;
   }
@@ -70,9 +70,6 @@ const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setTableData: (state, action) => {
-      state.forms = action.payload;
-    },
     setForm: (state, action) => {
       state.form = action.payload;
     },
@@ -130,7 +127,6 @@ const formsSlice = createSlice({
 });
 
 export const {
-  setTableData,
   setForm,
   setNewFormDialog,
 } = formsSlice.actions;

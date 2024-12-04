@@ -1,4 +1,4 @@
-import { Container, DataTable } from '@/components/shared';
+import { Container, DataTable, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
@@ -37,7 +37,7 @@ const Projects = () => {
   const { deleteProject } = useDeleteProject();
   const dispatch = useAppDispatch();
 
-  const { total, projects } = useAppSelector(
+  const { total, projects, loading } = useAppSelector(
     (state) => state.adminProjects.data
   );
 
@@ -86,10 +86,12 @@ const Projects = () => {
           />
         </div>
         {/*List view *Project*/}
-        <ProjectListContent
-          projects={projects}
-          handleDeleteProject={handleDeleteProject}
-        />
+        <Loading loading={loading}>
+          <ProjectListContent
+            projects={projects}
+            handleDeleteProject={handleDeleteProject}
+          />
+        </Loading>
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}

@@ -30,6 +30,9 @@ export type OrderItem = {
   sizeSelections: SizeSelection[];
   formAnswer: FormAnswer | null;
   price: number;
+  state: string;
+  paymentState: string;
+  customer: Customer;
 }
 
 export type Order = {

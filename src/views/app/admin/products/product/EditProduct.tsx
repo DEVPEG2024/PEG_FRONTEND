@@ -1,20 +1,22 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Notification, toast } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { IProduct, OptionsFields } from '@/@types/product';
-import SaisieForm, { FormModel, SetSubmitting } from './Forms/Form';
-import { ICategoryCustomer } from '@/services/CustomerServices';
-import { ICategory, IUser } from '@/@types/user';
-import useCustomer from '@/utils/hooks/customers/useCustomer';
-import useCategoryCustomer from '@/utils/hooks/customers/useCategoryCustomer';
-import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
-import { apiNewProduct, apiUpdateProduct } from '@/services/ProductServices';
+import { Product, ProductCategory, Size } from '@/@types/product';
+import ProductForm, { FormModel, SetSubmitting } from './Forms/ProductForm';
+import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
+import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
-import { Form, IForm } from '@/@types/form';
+import { Form } from '@/@types/form';
 import { apiDeleteFile, apiGetFile } from '@/services/FileServices';
-import { useAppSelector } from '../store';
+import reducer, { getProductById, useAppDispatch, useAppSelector } from '../store';
 import { FileItem } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';
+import { Customer, CustomerCategory } from '@/@types/customer';
+import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
+import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import { injectReducer } from '@/store';
+
+injectReducer('products', reducer);
 
 interface Options {
   value: string;
@@ -26,32 +28,34 @@ export type FileNameBackFront = {
   fileNameFront: string;
 };
 
-const Product = () => {
+type EditProductParams = {
+  documentId: string;
+};
+
+const EditProduct = () => {
   const navigate = useNavigate();
   const onEdition: boolean =
     useLocation().pathname.split('/').slice(-2).shift() === 'edit';
+  const { documentId } = useParams<EditProductParams>() as EditProductParams;
   const { product } = useAppSelector((state) => state.products.data);
-  const [sizeSelected, setSizeSelected] = useState(
-    product?.sizes?.status || false
-  );
-  const [sizeField, setSizeField] = useState<OptionsFields[]>(
-    product?.sizes?.options || []
-  );
-  const [field_text, setField_text] = useState(product?.field_text || false);
   const [customers, setCustomers] = useState<Options[]>([]);
-  const [customersCategories, setCustomersCategories] = useState<Options[]>([]);
-  const [categories, setCategories] = useState<Options[]>([]);
-  const [selectedCustomersCategories, setSelectedCustomersCategories] =
-    useState<string[]>(product?.customersCategories || []);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    product?.category || []
+  const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
+  const [sizes, setSizes] = useState<Options[]>([]);
+  const [productCategories, setProductCategories] = useState<Options[]>([]);
+  const [selectedCustomerCategories, setSelectedCustomerCategories] =
+    useState<string[]>(product?.customerCategories.map((customerCategory: CustomerCategory) => customerCategory.name) || []);
+  const [selectedProductCategory, setSelectedProductCategory] = useState<string>(
+    product?.productCategory?.name ?? ''
   );
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>(
-    product?.customers || []
+    product?.customers.map((customer: Customer) => customer.name) || []
+  );
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(
+    product?.sizes.map((size: Size) => size.name) || []
   );
   const [forms, setForms] = useState<Options[]>([]);
   const [selectedForm, setSelectedForm] = useState<string>(
-    product?.form?._id || ''
+    product?.form?.documentId || ''
   );
   const [imagesName, setImagesName] = useState<FileNameBackFront[]>(
     product?.images || []
@@ -59,10 +63,13 @@ const Product = () => {
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
   const [isSubmitted, setSubmitted] = useState<boolean>(false);
   const [images, setImages] = useState<FileItem[]>([]);
+  const dispatch = useAppDispatch();
 
-  const { getCustomers } = useCustomer();
-  const { getCategoriesCustomers } = useCategoryCustomer();
-  const { getCategoriesProduct } = useCategoryProduct();
+  useEffect(() => {
+    if (!product && onEdition) {
+      dispatch(getProductById(documentId));
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     if (isFirstRender) {
@@ -77,10 +84,11 @@ const Product = () => {
 
   useEffect(() => {
     fetchCustomers();
-    fetchCustomersCategories();
-    fetchCategories();
+    fetchCustomerCategories();
+    fetchProductCategories();
     fetchForms();
     fetchFiles();
+    fetchProductSizes();
   }, []);
 
   const fetchFiles = async (): Promise<void> => {
@@ -124,36 +132,46 @@ const Product = () => {
     }));
     setForms(forms);
   };
+
   const fetchCustomers = async () => {
-    const response = await getCustomers(1, 1000, '');
-    const customersList = response.data || [];
-    const customers = customersList.map((customer: IUser) => ({
-      value: customer._id || '',
-      label: customer.firstName + ' ' + customer.lastName,
+    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const customersList = customers_connection.nodes || [];
+    const customers = customersList.map((customer: Customer) => ({
+      value: customer.documentId || '',
+      label: customer.name,
     }));
     setCustomers(customers);
   };
 
-  const fetchCustomersCategories = async () => {
-    const response = await getCategoriesCustomers(1, 1000, '');
-    const customersCategoriesList = response.data || [];
-    const customersCategories = customersCategoriesList.map(
-      (customerCategory: ICategoryCustomer) => ({
-        value: customerCategory._id || '',
-        label: customerCategory.label || '',
+  const fetchCustomerCategories = async () => {
+    const {customerCategories_connection} : {customerCategories_connection: GetCustomerCategoriesResponse}= await unwrapData(apiGetCustomerCategories());
+    const customerCategoriesList = customerCategories_connection.nodes || [];
+    const customerCategories = customerCategoriesList.map(
+      (customerCategory: CustomerCategory) => ({
+        value: customerCategory.documentId || '',
+        label: customerCategory.name || '',
       })
     );
-    setCustomersCategories(customersCategories);
+    setCustomerCategories(customerCategories);
   };
 
-  const fetchCategories = async () => {
-    const response = await getCategoriesProduct(1, 1000, '');
-    const categoriesList = response.data || [];
-    const categories = categoriesList.map((category: ICategory) => ({
-      value: category._id || '',
-      label: category.title || '',
+  const fetchProductCategories = async () => {
+    const {productCategories_connection} : {productCategories_connection: GetProductCategoriesResponse}= await unwrapData(apiGetProductCategories());
+    const productCategoriesList = productCategories_connection.nodes || [];
+    const productCategories = productCategoriesList.map((productCategory: ProductCategory) => ({
+      value: productCategory.documentId || '',
+      label: productCategory.name || '',
     }));
-    setCategories(categories);
+    setProductCategories(productCategories);
+  };
+
+  const fetchProductSizes = async () => {
+    const {sizes} : {sizes: Size[]}= await unwrapData(apiGetProductSizes());
+    const productSizes = sizes.map((size: Size) => ({
+      value: size.documentId || '',
+      label: size.name || '',
+    }));
+    setSizes(productSizes);
   };
 
   const removeAllFilesFromDisk = async (): Promise<void> => {
@@ -171,24 +189,23 @@ const Product = () => {
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    const data = {
+    const data: Product = {
       ...values,
-      field_text: field_text,
-      sizes: {
-        status: sizeSelected,
-        options: sizeField,
-      },
-      customersCategories: selectedCustomersCategories,
-      category: selectedCategories,
+      sizes: selectedSizes,
+      customerCategories: selectedCustomerCategories,
+      productCategory: selectedProductCategory,
       customers: selectedCustomers,
       images: imagesName,
     };
     if (values.form === '') {
       delete data.form;
     }
+    if (!onEdition) {
+      delete data.documentId
+    }
     const response = onEdition
       ? await apiUpdateProduct(data)
-      : await apiNewProduct(data);
+      : await apiCreateProduct(data);
     if (response.status === 200) {
       toast.push(
         <Notification type="success" title="Succès">
@@ -212,23 +229,19 @@ const Product = () => {
   };
   return (
     <>
-      <SaisieForm
+      <ProductForm
         type={onEdition ? 'edit' : 'new'}
         onFormSubmit={handleFormSubmit}
         onDiscard={handleDiscard}
-        sizeSelected={sizeSelected}
-        setSizeSelected={setSizeSelected}
-        sizeField={sizeField}
-        setSizeField={setSizeField}
-        field_text={field_text}
-        setField_text={setField_text}
+        sizes={sizes}
         customers={customers}
-        customersCategories={customersCategories}
-        categories={categories}
+        customerCategories={customerCategories}
+        categories={productCategories}
         forms={forms}
+        setSelectedSizes={setSelectedSizes}
         setSelectedForm={setSelectedForm}
-        setSelectedCustomersCategories={setSelectedCustomersCategories}
-        setSelectedCategories={setSelectedCategories}
+        setSelectedCustomerCategories={setSelectedCustomerCategories}
+        setSelectedProductCategory={setSelectedProductCategory}
         setSelectedCustomers={setSelectedCustomers}
         imagesName={imagesName}
         setImagesName={setImagesName}
@@ -238,4 +251,4 @@ const Product = () => {
   );
 };
 
-export default Product;
+export default EditProduct;

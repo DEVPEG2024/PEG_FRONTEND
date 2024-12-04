@@ -1,9 +1,14 @@
-import { Container } from '@/components/shared';
+import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
 import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
 import ProductCategoryListContent from './components/CategoryList';
+import { injectReducer, useAppDispatch } from '@/store';
+import { apiGetProductCategories } from '@/services/ProductCategoryServices';
+import reducer, { getProductCategories, useAppSelector } from './store';
+
+injectReducer('catalogue', reducer);
 
 type Option = {
   value: number;
@@ -18,18 +23,17 @@ const Categories = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
-  const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<any[]>([]);
-  const { getCategoriesProduct } = useCategoryProduct();
+  const dispatch = useAppDispatch();
+  const { total, productCategories, loading } = useAppSelector(
+    (state) => state.catalogue.data
+  );
 
   useEffect(() => {
-    fetchProjects();
+    fetchProductCategories();
   }, [currentPage, pageSize, searchTerm]);
 
-  const fetchProjects = async () => {
-    const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm);
-    setCategories(resp.data || []);
-    setTotal(resp.total || 0);
+  const fetchProductCategories = async () => {
+    dispatch(getProductCategories({pagination: {page: currentPage, pageSize}, searchTerm}))
   };
 
   const handleSearch = (value: string) => {
@@ -59,7 +63,9 @@ const Categories = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <ProductCategoryListContent categories={categories} />
+        <Loading loading={loading}>
+          <ProductCategoryListContent productCategories={productCategories} />
+        </Loading>
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}

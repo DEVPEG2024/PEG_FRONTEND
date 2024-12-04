@@ -1,5 +1,5 @@
 import { Button, Dialog, Notification, toast } from '@/components/ui';
-import { apiDeleteCategoryProduct } from '@/services/categoryProduct';
+import { apiDeleteCategoryProduct } from '@/services/ProductCategoryServices';
 import { useTranslation } from 'react-i18next';
 import { HiCheckCircle } from 'react-icons/hi';
 

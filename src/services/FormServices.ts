@@ -31,7 +31,7 @@ export async function apiCreateForm(data: CreateFormRequest): Promise<AxiosRespo
 }
 
 // update form
-export async function apiUpdateForm(form: Form): Promise<AxiosResponse<ApiResponse<{updateForm: Form}>>> {
+export async function apiUpdateForm(form: Partial<Form>): Promise<AxiosResponse<ApiResponse<{updateForm: Form}>>> {
     const query = `
     mutation UpdateForm($documentId: ID!, $data: FormInput!) {
         updateForm(documentId: $documentId, data: $data) {

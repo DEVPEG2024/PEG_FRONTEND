@@ -1,27 +1,26 @@
 import { Button, Tag, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { HiBan, HiCheck, HiInformationCircle } from 'react-icons/hi';
-import { IOrder } from '@/@types/order';
+import { OrderItem } from '@/@types/order';
 import { SizeSelection } from '@/@types/product';
 
 export const useColumns = (
-  handleShowOrder: (order: IOrder) => void,
-  handleFinishOrder: (order: IOrder) => void,
-  handlePendOrder: (order: IOrder) => void,
-  handleValidatePaymentStatus: (order: IOrder) => void,
-  handleInvalidatePaymentStatus: (order: IOrder) => void
+  handleShowOrder: (order: OrderItem) => void,
+  handleFinishOrder: (order: OrderItem) => void,
+  handlePendOrder: (order: OrderItem) => void,
+  handleValidatePaymentState: (order: OrderItem) => void,
+  handleInvalidatePaymentState: (order: OrderItem) => void
 ) => {
   return [
     {
       header: 'Client',
       accessorKey: 'customer',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: OrderItem} }) => {
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col" key={row.original.documentId}>
             <span className="font-bold">
-              {row.original.customer.companyName}
+              {row.original.customer.name}
             </span>
-            <span>{row.original.customer.firstName}</span>
           </div>
         );
       },
@@ -30,11 +29,11 @@ export const useColumns = (
       header: 'Produit',
       accessorKey: 'product',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: OrderItem} }) => {
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" key={row.original.documentId}>
             {row.original.product
-              ? row.original.product.title
+              ? row.original.product.name
               : 'PRODUIT SUPPRIME'}
           </div>
         );
@@ -42,14 +41,14 @@ export const useColumns = (
     },
     {
       header: 'Tailles',
-      accessorKey: 'sizes',
+      accessorKey: 'sizeSelections',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: OrderItem} }) => {
         return (
-          <div className="flex-col justify-center gap-2">
-            {row.original.sizes.map((size: SizeSelection) => (
+          <div className="flex-col justify-center gap-2" key={row.original.documentId}>
+            {row.original.sizeSelections.map((sizeSelection: SizeSelection) => (
               <p>
-                {size.size.value} : {size.quantity}
+                {sizeSelection.size.name} : {sizeSelection.quantity}
               </p>
             ))}
           </div>
@@ -58,49 +57,49 @@ export const useColumns = (
     },
     {
       header: 'Montant',
-      accessorKey: 'total',
+      accessorKey: 'price',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: OrderItem} }) => {
         return (
-          <div className="flex items-center gap-2">{row.original.total} €</div>
+          <div className="flex items-center gap-2" key={row.original.documentId}>{row.original.price} €</div>
         );
       },
     },
     {
       header: 'Paiement',
-      accessorKey: 'paymentStatus',
+      accessorKey: 'paymentState',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
-        const status =
-          row.original.paymentStatus === 'PENDING' ? 'En attente' : 'Effectué';
+      cell: ({ row }: { row: {original: OrderItem} }) => {
+        const paymentState =
+          row.original.paymentState === 'pending' ? 'En attente' : 'Effectué';
         return (
-          <div className="flex justify-end items-center gap-2">
+          <div className="flex justify-end items-center gap-2" key={row.original.documentId}>
             <Tag
               className={
-                row.original.paymentStatus === 'PENDING'
+                row.original.paymentState === 'pending'
                   ? 'bg-yellow-500'
                   : 'bg-green-500'
               }
             >
-              <p className="text-sm text-white">{status}</p>
+              <p className="text-sm text-white">{paymentState}</p>
             </Tag>
             <Tooltip
               title={
-                (row.original.paymentStatus === 'PENDING'
+                (row.original.paymentState === 'pending'
                   ? 'Valider'
                   : 'Invalider') + ' le paiement'
               }
             >
               <Button
                 onClick={() =>
-                  row.original.paymentStatus === 'PENDING'
-                    ? handleValidatePaymentStatus(row.original)
-                    : handleInvalidatePaymentStatus(row.original)
+                  row.original.paymentState === 'pending'
+                    ? handleValidatePaymentState(row.original)
+                    : handleInvalidatePaymentState(row.original)
                 }
                 size="sm"
                 variant="twoTone"
                 icon={
-                  row.original.paymentStatus === 'PENDING' ? (
+                  row.original.paymentState === 'pending' ? (
                     <HiCheck size={20} />
                   ) : (
                     <HiBan size={20} />
@@ -117,9 +116,9 @@ export const useColumns = (
       header: 'Demande',
       accessorKey: '',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: OrderItem} }) => {
         return (
-          <div className="flex items-center">
+          <div className="flex items-center" key={row.original.documentId}>
             <Tooltip title="Consulter les détails">
               <Button
                 onClick={() => handleShowOrder(row.original)}
@@ -135,39 +134,39 @@ export const useColumns = (
 
     {
       header: 'Statut',
-      accessorKey: 'status',
+      accessorKey: 'state',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
-        const status =
-          row.original.status === 'PENDING' ? 'En attente' : 'Terminée';
+      cell: ({ row }: { row: {original: OrderItem} }) => {
+        const state =
+          row.original.state === 'pending' ? 'En attente' : 'Terminée';
         return (
-          <div className="flex justify-end items-center gap-2">
+          <div className="flex justify-end items-center gap-2" key={row.original.documentId}>
             <Tag
               className={
-                row.original.status === 'PENDING'
+                row.original.state === 'pending'
                   ? 'bg-yellow-500'
                   : 'bg-green-500'
               }
             >
-              <p className="text-sm text-white">{status}</p>
+              <p className="text-sm text-white">{state}</p>
             </Tag>
             <Tooltip
               title={
-                row.original.status === 'PENDING'
+                row.original.state === 'pending'
                   ? 'Terminer la commande'
                   : 'Mettre en attente'
               }
             >
               <Button
                 onClick={() =>
-                  row.original.status === 'PENDING'
+                  row.original.state === 'pending'
                     ? handleFinishOrder(row.original)
                     : handlePendOrder(row.original)
                 }
                 size="sm"
                 variant="twoTone"
                 icon={
-                  row.original.status === 'PENDING' ? (
+                  row.original.state === 'pending' ? (
                     <HiCheck size={20} />
                   ) : (
                     <HiBan size={20} />

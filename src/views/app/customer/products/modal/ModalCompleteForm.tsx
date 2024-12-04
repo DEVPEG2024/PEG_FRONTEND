@@ -8,7 +8,7 @@ import {
 } from '../show/store';
 import { Form } from '@/@types/form';
 
-import CompleteForm from './CompleteForm';
+import ShowForm from './ShowForm';
 import { CartItemFormAnswerEdition, editFormAnswerCartItem } from '@/store/slices/base/cartSlice';
 import { FormAnswer } from '@/@types/formAnswer';
 
@@ -56,7 +56,7 @@ function ModalCompleteForm({
   return (
     <div>
       <Dialog isOpen={formDialog} onClose={handleClose} width={1200} contentClassName='dialog-formbuilder'>
-        <CompleteForm onSubmit={onSubmit} fields={form.fields} formAnswer={formAnswer}/>
+        <ShowForm onSubmit={onSubmit} fields={form.fields} formAnswer={formAnswer} readOnly={false}/>
       </Dialog>
     </div>
   );

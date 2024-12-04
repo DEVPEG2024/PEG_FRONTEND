@@ -1,34 +1,34 @@
-import { Container, DataTable } from '@/components/shared';
+import { Container, DataTable, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './columns';
 import { Input } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
-import { IUser } from '@/@types/user';
-import useCustomer from '@/utils/hooks/customers/useCustomer';
-import Empty from '@/components/shared/Empty';
 import { CUSTOMERS_NEW } from '@/constants/navigation.constant';
 import { useNavigate } from 'react-router-dom';
+import { injectReducer, useAppDispatch } from '@/store';
+import reducer, { getCustomers, useAppSelector } from '../store';
+import { Customer } from '@/@types/customer';
 
-const Customers = () => {
+injectReducer('customers', reducer);
+
+const CustomersList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const { getCustomers } = useCustomer();
-  const [customers, setCustomers] = useState<IUser[]>([]);
+  const dispatch = useAppDispatch();
+  const { total, customers, loading } = useAppSelector(
+    (state) => state.customers.data
+  );
 
   useEffect(() => {
     fetchCustomers();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchCustomers = async () => {
-    const result = await getCustomers(currentPage, pageSize, searchTerm);
-    setCustomers(result.data || []);
-    setTotalItems(result.total || 0);
+    dispatch(getCustomers({pagination: {page: currentPage, pageSize}, searchTerm}))
   };
 
   const handleSearch = (value: string) => {
@@ -36,13 +36,13 @@ const Customers = () => {
     setCurrentPage(1);
   };
 
-  const handleEditCustomer = (customer: IUser) => {
-    navigate(`/admin/customers/edit/${customer._id}`, {
+  const handleEditCustomer = (customer: Customer) => {
+    navigate(`/admin/customers/edit/${customer.documentId}`, {
       state: { customerData: customer },
     });
   };
 
-  const columns = useColumns(fetchCustomers, handleEditCustomer);
+  const columns = useColumns(handleEditCustomer);
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -59,7 +59,7 @@ const Customers = () => {
         description="cust.description"
         link={CUSTOMERS_NEW}
         addAction
-        total={totalItems}
+        total={total}
       />
       <div className="mt-4">
         <div className="mb-4">
@@ -70,20 +70,22 @@ const Customers = () => {
           />
         </div>
 
-        <DataTable
-          columns={columns}
-          data={customers}
-          onPaginationChange={onPaginationChange}
-          onSelectChange={onSelectChange}
-          pagingData={{
-            total: totalItems,
-            pageIndex: currentPage,
-            pageSize: pageSize,
-          }}
-        />
+        <Loading loading={loading}>
+          <DataTable
+            columns={columns}
+            data={customers}
+            onPaginationChange={onPaginationChange}
+            onSelectChange={onSelectChange}
+            pagingData={{
+              total,
+              pageIndex: currentPage,
+              pageSize: pageSize,
+            }}
+          />
+        </Loading>
       </div>
     </Container>
   );
 };
 
-export default Customers;
+export default CustomersList;

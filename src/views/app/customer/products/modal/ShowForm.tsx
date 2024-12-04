@@ -3,7 +3,7 @@ import { Form as FormViewer  } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
 
-function CompleteForm({ fields, formAnswer, onSubmit } : {fields: JSONValue, formAnswer: Partial<FormAnswer> | null, onSubmit: (submission: any) => void}) {
+function ShowForm({ fields, formAnswer, readOnly, onSubmit } : {fields: JSONValue, formAnswer: Partial<FormAnswer> | null, readOnly: boolean, onSubmit: (submission: any) => void}) {
   
   useEffect(() => {
     const link = document.createElement('link');
@@ -37,9 +37,12 @@ function CompleteForm({ fields, formAnswer, onSubmit } : {fields: JSONValue, for
         display: 'form',
         components: JSON.parse(JSON.stringify(fields))}}
         submission={formAnswer?.answer}
+        options={{
+          readOnly,
+        }}
         onSubmit={onSubmit} />
     </div>
   )
 }
 
-export default CompleteForm;
+export default ShowForm;

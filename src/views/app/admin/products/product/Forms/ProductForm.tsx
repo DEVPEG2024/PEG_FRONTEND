@@ -1,15 +1,15 @@
 import { forwardRef } from 'react';
-import { FormContainer, FormItem } from '@/components/ui/Form';
+import { FormContainer } from '@/components/ui/Form';
 import Button from '@/components/ui/Button';
 import StickyFooter from '@/components/shared/StickyFooter';
-import { Field, Form, Formik, FormikProps } from 'formik';
-import BasicInformationFields from './Fields';
+import { Form, Formik, FormikProps } from 'formik';
+import ProductFields from './ProductFields';
 import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
 import { useAppSelector } from '../../store';
-import { OptionsFields, IProduct } from '@/@types/product';
+import { IProduct, Product } from '@/@types/product';
 import { apiDeleteFile, apiUploadFile } from '@/services/FileServices';
 import { FileNameBackFront } from '../Product';
 import { FileItem } from '@/@types/formAnswer';
@@ -23,9 +23,7 @@ type FormikRef = FormikProps<any>;
 
 type InitialData = IProduct;
 
-export type FormModel = Omit<InitialData, 'type'> & {
-  type: string;
-};
+export type FormModel = Omit<Product, 'documentId'>
 
 export type SetSubmitting = (isSubmitting: boolean) => void;
 
@@ -39,17 +37,13 @@ type ProductForm = {
   onDiscard?: () => void;
   onDelete?: OnDelete;
   onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void;
-  sizeSelected: boolean;
-  setSizeSelected: (value: boolean) => void;
-  sizeField: OptionsFields[];
-  setSizeField: (value: OptionsFields[]) => void;
-  field_text: boolean;
-  setField_text: (value: boolean) => void;
-  customersCategories: Options[];
+  sizes: Options[];
+  customerCategories: Options[];
   categories: Options[];
   customers: Options[];
-  setSelectedCustomersCategories: (value: string[]) => void;
-  setSelectedCategories: (value: string[]) => void;
+  setSelectedSizes: (value: string[]) => void;
+  setSelectedCustomerCategories: (value: string[]) => void;
+  setSelectedProductCategory: (value: string) => void;
   setSelectedCustomers: (value: string[]) => void;
   forms: Options[];
   setSelectedForm: (value: string) => void;
@@ -59,53 +53,41 @@ type ProductForm = {
 };
 
 const validationSchema = Yup.object().shape({
-  title: Yup.string().required('Nom de la saisie requis'),
-  amount: Yup.number()
-    .moreThan(0, 'Le montant doit être supérieur à 0')
-    .required('Montant requis'),
-  reference: Yup.string().required('Référence requise'),
+  name: Yup.string().required('Nom du produit requis'),
+  price: Yup.number()
+    .moreThan(0, 'Le prix doit être supérieur à 0')
+    .required('Prix requis'),
   description: Yup.string().required('Description requise'),
 });
 
-const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
+const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   const { product } = useAppSelector((state) => state.products.data);
 
   const {
     type,
-    sizeField,
-    setSizeField,
-    field_text,
-    setField_text,
-    sizeSelected,
-    setSizeSelected,
+    sizes,
     forms,
     setSelectedForm,
     initialData = {
-      _id: product?._id || '',
-      title: product?.title || '',
-      amount: product?.amount || 0,
-      stock: product?.stock || 0,
+      documentId: product?.documentId || '',
+      name: product?.name || '',
+      price: product?.price || 0,
       images: product?.images || [],
-      reference: product?.reference || '',
       description: product?.description || '',
-      sizes: {
-        status: product?.sizes?.status || false,
-        options: product?.sizes?.options || {},
-      },
-      field_text: product?.field_text || false,
-      customersCategories: product?.customersCategories || [],
-      category: product?.category || [],
+      sizes: product?.sizes || [],
+      customerCategories: product?.customerCategories || [],
+      productCategory: product?.productCategory || [],
       customers: product?.customers || [],
       form: product?.form || '',
     },
     onFormSubmit,
     onDiscard,
-    customersCategories,
+    customerCategories,
     categories,
     customers,
-
-    setSelectedCustomersCategories,
-    setSelectedCategories,
+    setSelectedSizes,
+    setSelectedCustomerCategories,
+    setSelectedProductCategory,
     setSelectedCustomers,
     imagesName,
     setImagesName,
@@ -205,8 +187,7 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       <Formik
         innerRef={ref}
         initialValues={{
-          ...initialData,
-          type: type,
+          ...initialData
         }}
         validationSchema={validationSchema}
         onSubmit={(values: FormModel, { setSubmitting }) => {
@@ -227,30 +208,20 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
             <FormContainer>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
-                  <BasicInformationFields
+                  <ProductFields
                     touched={touched}
                     errors={errors}
                     values={values}
                     type={type}
                     forms={forms}
                     setSelectedForm={setSelectedForm}
-                    sizeSelected={sizeSelected}
-                    setSizeSelected={setSizeSelected}
-                    sizeField={sizeField}
-                    setSizeField={setSizeField}
-                    field_text={field_text}
-                    setField_text={setField_text}
-                    customersCategories={customersCategories as Options[]}
-                    categories={categories as Options[]}
-                    customers={customers as Options[]}
-                    setSelectedCustomersCategories={
-                      setSelectedCustomersCategories as (
-                        value: string[]
-                      ) => void
-                    }
-                    setSelectedCategories={
-                      setSelectedCategories as (value: string[]) => void
-                    }
+                    sizes={sizes}
+                    customerCategories={customerCategories}
+                    categories={categories}
+                    customers={customers}
+                    setSelectedSizes={setSelectedSizes}
+                    setSelectedCustomerCategories={setSelectedCustomerCategories}
+                    setSelectedProductCategory={setSelectedProductCategory}
                     setSelectedCustomers={
                       setSelectedCustomers as (value: string[]) => void
                     }
@@ -306,6 +277,6 @@ const SaisieForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   );
 });
 
-SaisieForm.displayName = 'SaisieForm';
+ProductForm.displayName = 'SaisieForm';
 
-export default SaisieForm;
+export default ProductForm;

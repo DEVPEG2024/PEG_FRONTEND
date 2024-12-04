@@ -5,8 +5,9 @@ import { Product } from "./product";
 export type CustomerCategory = {
     documentId: string;
     name: string;
-    banner: IBanner;
-    products: Product[]
+    banner?: IBanner;
+    products: Product[],
+    customers: Customer[];
   }
 
 export type Customer = {

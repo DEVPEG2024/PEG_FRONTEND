@@ -1,14 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { IProduct, SizeSelection } from '@/@types/product';
-import { IFormAnswer } from '@/@types/formAnswer';
+import { Product, SizeSelection } from '@/@types/product';
+import { FormAnswer } from '@/@types/formAnswer';
 
 export const SLICE_NAME = 'showOrder';
 
 export type StateData = {
   loading: boolean;
-  product: IProduct | null;
+  product: Product | null;
   formDialog: boolean;
-  formAnswer: IFormAnswer | null;
+  formAnswer: FormAnswer | null;
   sizesSelected: SizeSelection[];
 };
 
