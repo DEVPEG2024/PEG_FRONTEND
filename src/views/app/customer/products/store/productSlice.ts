@@ -69,9 +69,6 @@ const productSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setTableData: (state, action) => {
-      state.products = action.payload;
-    },
     setProduct: (state, action) => {
       state.product =
         state.products.find((product) => product.documentId === action.payload) ??
@@ -93,7 +90,6 @@ const productSlice = createSlice({
 });
 
 export const {
-  setTableData,
   setProduct,
 } = productSlice.actions;
 

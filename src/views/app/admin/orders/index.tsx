@@ -1,38 +1,35 @@
-import { Container, DataTable } from '@/components/shared';
+import { Container, DataTable, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './columns';
 import { Input } from '@/components/ui';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
-  getOrders,
-  finishOrder,
+  getOrderItems,
   useAppSelector,
   showOrder,
-  validatePayment,
-  invalidatePayment,
-  pendOrder,
-  getOrder,
+  updateOrderItem,
 } from './store';
 
-import { IOrder } from '@/@types/order';
+import { OrderItem } from '@/@types/order';
 import { useNavigate } from 'react-router-dom';
 
 injectReducer('orders', reducer);
 
-const Orders = () => {
+const OrderItems = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { orders, total } = useAppSelector((state) => state.orders.data);
+  const { orderItems, total, loading } = useAppSelector((state) => state.orders.data);
 
   useEffect(() => {
     dispatch(
-      getOrders({
+      getOrderItems({ pagination: {
         page: currentPage,
         pageSize: pageSize,
+      },
         searchTerm: searchTerm,
       })
     );
@@ -43,37 +40,41 @@ const Orders = () => {
     setCurrentPage(1);
   };
 
-  const handleShowOrder = (order: IOrder) => {
+  const handleShowOrder = (order: OrderItem) => {
     dispatch(showOrder(order));
     navigate('/common/order/show');
   };
 
-  const handleFinishOrder = async (order: IOrder) => {
-    await dispatch(finishOrder({ order })).unwrap();
-    dispatch(getOrder({ orderId: order._id }));
+  const handleFinishOrder = async (orderItem: OrderItem) => {
+    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, state: 'fulfilled'}
+    await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
+    //dispatch(getOrder({ orderId: order.documentId }));
   };
 
-  const handlePendOrder = async (order: IOrder) => {
-    await dispatch(pendOrder({ order })).unwrap();
-    dispatch(getOrder({ orderId: order._id }));
+  const handlePendOrder = async (orderItem: OrderItem) => {
+    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, state: 'pending'}
+    await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
+    //dispatch(getOrder({ orderId: order.documentId }));
   };
 
-  const handleValidatePaymentStatus = async (order: IOrder) => {
-    await dispatch(validatePayment({ order })).unwrap();
-    dispatch(getOrder({ orderId: order._id }));
+  const handleValidatePaymentState = async (orderItem: OrderItem) => {
+    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, paymentState: 'fulfilled'}
+    await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
+    //dispatch(getOrder({ orderId: order.documentId }));
   };
 
-  const handleInvalidatePaymentStatus = async (order: IOrder) => {
-    await dispatch(invalidatePayment({ order })).unwrap();
-    dispatch(getOrder({ orderId: order._id }));
+  const handleInvalidatePaymentState = async (orderItem: OrderItem) => {
+    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, paymentState: 'pending'}
+    await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
+    //dispatch(getOrder({ orderId: order.documentId }));
   };
 
   const columns = useColumns(
     handleShowOrder,
     handleFinishOrder,
     handlePendOrder,
-    handleValidatePaymentStatus,
-    handleInvalidatePaymentStatus
+    handleValidatePaymentState,
+    handleInvalidatePaymentState
   );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
@@ -102,20 +103,22 @@ const Orders = () => {
           />
         </div>
 
-        <DataTable
-          columns={columns}
-          data={orders}
-          onPaginationChange={onPaginationChange}
-          onSelectChange={onSelectChange}
-          pagingData={{
-            total: total,
-            pageIndex: currentPage,
-            pageSize: pageSize,
-          }}
-        />
+        <Loading loading={loading}>
+          <DataTable
+            columns={columns}
+            data={orderItems}
+            onPaginationChange={onPaginationChange}
+            onSelectChange={onSelectChange}
+            pagingData={{
+              total: total,
+              pageIndex: currentPage,
+              pageSize: pageSize,
+            }}
+          />
+        </Loading>
       </div>
     </Container>
   );
 };
 
-export default Orders;
+export default OrderItems;

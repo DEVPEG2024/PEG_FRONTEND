@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { IProduct, Product, SizeSelection } from '@/@types/product';
-import { apiGetProductById } from '@/services/ProductServices';
+import { apiGetProductForShowById } from '@/services/ProductServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';
 
@@ -29,7 +29,7 @@ const initialState: StateData = {
 export const getProductById = createAsyncThunk(
   SLICE_NAME + '/getProduct',
   async (documentId: string): Promise<{product: Product}> => {
-    return await unwrapData(apiGetProductById(documentId));
+    return await unwrapData(apiGetProductForShowById(documentId));
   }
 );
 

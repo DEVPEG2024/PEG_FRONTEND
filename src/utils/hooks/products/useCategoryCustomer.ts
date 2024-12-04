@@ -1,4 +1,4 @@
-import { apiGetCategoriesProduct } from '@/services/categoryProduct'
+import { apiGetCategoriesProduct } from '@/services/ProductCategoryServices'
 
 export default function useCategoryProduct() {
     const getCategoriesProduct = async (page: number, pageSize: number, searchTerm: string) => {

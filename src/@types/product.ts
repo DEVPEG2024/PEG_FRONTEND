@@ -1,3 +1,4 @@
+import { Customer, CustomerCategory } from './customer';
 import { FileNameBackFront } from './file';
 import { Form } from './form';
 
@@ -5,14 +6,18 @@ export type Product = {
   active: boolean;
   description: string;
   documentId: string;
-  images: ProductImage[];
+  images: Image[];
   name: string;
   price: number;
   sizes: Size[];
   form: Form;
+  productCategory: ProductCategory;
+  customerCategories: CustomerCategory[];
+  customers: Customer[];
 };
 
 export type Size = {
+  documentId: string;
   name: string,
   value: string,
   description: string
@@ -23,8 +28,16 @@ export type SizeSelection = {
   quantity: number;
 };
 
-export type ProductImage = {
+export type Image = {
+  documentId: string;
   url: string;
+};
+
+export type ProductCategory = {
+  documentId: string;
+  name: string;
+  image: Image;
+  products: Product[];
 };
 
 // TODO: A supprimer
@@ -37,7 +50,7 @@ export type IProduct = {
   stock: number;
   category: string[];
   form?: IForm;
-  customersCategories: string[];
+  customerCategories: string[];
   customers: string[];
   images: FileNameBackFront[];
   isActive: boolean;

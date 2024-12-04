@@ -16,6 +16,22 @@ export async function apiUploadFile(file: File) {
     return await response.json()
 }
 
+export async function apiUploadFileTest(file: any, ref: string, refId: string, field: string) {
+    const formData = new FormData();
+    
+    formData.append("files", file);
+    formData.append("ref", ref);
+    formData.append("refId", refId);
+    formData.append("field", field);
+    
+    const response = await fetch(API_BASE_URL + "/upload", {
+        method: "POST",
+        body: formData,
+    });
+    
+    return await response.json()
+}
+
 export async function apiDeleteFile(fileName: string) {
     const fileId : string = fileName.split('/').pop()?.split('.')[0] as string
 

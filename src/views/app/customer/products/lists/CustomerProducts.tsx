@@ -11,6 +11,7 @@ import { isEmpty } from 'lodash';
 import { useNavigate } from 'react-router-dom';
 import { Loading } from '@/components/shared';
 import { Customer } from '@/@types/customer';
+import CustomerProductCard from './CustomerProductCard';
 
 injectReducer('products', reducer);
 
@@ -55,30 +56,7 @@ const CustomerProducts = () => {
         {!isEmpty(products) && (
           <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {products.map((product) => (
-              <Card
-                key={product.documentId}
-                clickable
-                onClick={(e) => handleClick(product.documentId)}
-              >
-                <div className="flex flex-col gap-4">
-                  <img
-                    src={product.images[0]?.url}
-                    alt={product.name}
-                    className=" rounded-lg bg-yellow-400"
-                    style={{
-                      height: '250px',
-                      width: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                  <div className="flex flex-col justify-between">
-                    <p className="text-lg font-bold">{product.name}</p>
-                    <p className="text-lg font-bold text-white">
-                      {product.price}€
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              <CustomerProductCard product={product} />
             ))}
           </div>
         )}

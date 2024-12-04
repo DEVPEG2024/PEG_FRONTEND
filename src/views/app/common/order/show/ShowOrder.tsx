@@ -11,6 +11,8 @@ import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
+import { Size, SizeSelection } from '@/@types/product';
+import ModalCompleteForm from '@/views/app/customer/products/modal/ModalCompleteForm';
 
 injectReducer('showOrder', reducer);
 
@@ -44,39 +46,39 @@ const ShowOrder = () => {
             <div className="flex flex-col lg:flex-row items-center justify-between">
               <div className="lg:w-1/2 w-full">
                 <img
-                  src={product.images[0]?.fileNameBack}
-                  alt={product.title}
+                  src={product.images[0]?.url}
+                  alt={product.name}
                   className="w-full h-auto rounded-lg shadow-md object-cover"
                 />
               </div>
 
               <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
                 <div className="flex flex-col justify-between">
-                  <h1 className="text-3xl font-bold">{product.title}</h1>
+                  <h1 className="text-3xl font-bold">{product.name}</h1>
                   <p className="text-2xl font-semibold">
-                    {product.amount.toFixed(2)} €
+                    {product.price.toFixed(2)} €
                   </p>
                 </div>
 
                 <p className="mt-4 leading-relaxed">
-                  {product.description.replace('<p>', '').replace('</p>', '')}
+                  {product.description}
                 </p>
 
-                {product.sizes.status && (
+                {product.sizes && (
                   <div>
                     <p className="font-bold text-yellow-500 mb-4">
                       Choix des tailles
                     </p>
                     <div className="grid grid-cols-7 gap-4 mb-6">
-                      {product.sizes.options.map((option) => (
-                        <div key={option.value} className="grid gap-4">
-                          <span>{option.label}</span>
+                      {product.sizes.map((size: Size) => (
+                        <div key={size.value} className="grid gap-4">
+                          <span>{size.name}</span>
                           <Input
-                            name={option.value}
+                            name={size.value}
                             value={
                               sizesSelected.find(
-                                (sizeSelected) =>
-                                  sizeSelected.value === option.value
+                                (sizeSelected: SizeSelection) =>
+                                  sizeSelected.size.value === size.value
                               )?.quantity
                             }
                             type="number"

@@ -11,8 +11,11 @@ import {
   GetProductsResponse,
   apiCreateProduct,
   DeleteProductResponse,
+  apiDuplicateProduct,
+  DuplicateProductRequest,
+  apiGetProductForEditById,
 } from '@/services/ProductServices';
-import { apiDeleteFiles } from '@/services/FileServices';
+import { apiDeleteFiles, apiUploadFileTest } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'products';
@@ -20,7 +23,7 @@ export const SLICE_NAME = 'products';
 export type StateData = {
   loading: boolean;
   products: Product[];
-  product: IProduct | null;
+  product: Product | null;
   modalDelete: boolean;
   total: number;
   result: boolean;
@@ -46,6 +49,13 @@ export const getProducts = createAsyncThunk(
   }
 );
 
+export const getProductById = createAsyncThunk(
+  SLICE_NAME + '/getProduct',
+  async (documentId: string): Promise<{product: Product}> => {
+    return await unwrapData(apiGetProductForEditById(documentId));
+  }
+);
+
 export const getProductsByCategory = createAsyncThunk(
   SLICE_NAME + '/getProductsByCategory',
   async (id: string) => {
@@ -66,16 +76,12 @@ export const putStatusProduct = createAsyncThunk(
   }
 );
 
-type DuplicateProductRequest = {
-  product: Product;
-};
-
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (data: DuplicateProductRequest) => {
-    const {documentId, ...duplicatedProduct} = data.product,
-      response = await apiCreateProduct(duplicatedProduct);
-    return response.data;
+    const {createProduct} : {createProduct: Product}= await unwrapData(apiDuplicateProduct(data));
+    await apiUploadFileTest(data.product.images[0], 'api::product.product', createProduct.documentId, 'images')
+    return createProduct;
   }
 );
 
@@ -120,47 +126,14 @@ const productSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setTableData: (state, action) => {
-      state.products = action.payload;
-    },
     setProduct: (state, action) => {
-      state.product =
-        state.products.find((product) => product._id === action.payload) ??
-        null;
+      state.product = action.payload;
     },
     setModalDeleteOpen: (state) => {
       state.modalDelete = true;
     },
     setModalDeleteClose: (state) => {
       state.modalDelete = false;
-    },
-    setEditProduct: (state, action) => {
-      const product = state.products.find(
-        (product) => product._id === action.payload._id
-      );
-      if (product) {
-        state.product = product;
-      }
-    },
-    setEditingProduct: (state, action) => {
-      state.product = action.payload;
-    },
-    setActiveProduct: (state, action) => {
-      console.log(action.payload);
-      const productId = action.payload.id;
-      const isActive = action.payload.mode;
-
-      const product = state.products.find(
-        (product) => product._id === productId
-      );
-      if (product) {
-        product.isActive = isActive;
-      }
-    },
-    setDeleteProduct: (state, action) => {
-      state.product =
-        state.products.find((product) => product._id === action.payload) ??
-        null;
     },
   },
   extraReducers: (builder) => {
@@ -236,17 +209,24 @@ const productSlice = createSlice({
     builder.addCase(getProductsByCategory.rejected, (state) => {
       state.loading = false;
     });
+
+    builder.addCase(getProductById.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProductById.fulfilled, (state, action) => {
+      state.loading = false;
+      state.product = action.payload.product;
+    });
+    builder.addCase(getProductById.rejected, (state) => {
+      state.loading = false;
+    });
   },
 });
 
 export const {
-  setTableData,
   setProduct,
   setModalDeleteOpen,
   setModalDeleteClose,
-  setDeleteProduct,
-  setActiveProduct,
-  setEditingProduct,
 } = productSlice.actions;
 
 export default productSlice.reducer;

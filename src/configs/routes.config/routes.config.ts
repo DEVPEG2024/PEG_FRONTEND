@@ -10,7 +10,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.customers.list",
     path: "/admin/customers/list",
-    component: lazy(() => import("@/views/app/admin/customers/lists")),
+    component: lazy(() => import("@/views/app/admin/customers/lists/CustomersList")),
     authority: [SUPER_ADMIN],
   },
   {
@@ -32,7 +32,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.customers.categories",
     path: "/admin/customers/categories",
-    component: lazy(() => import("@/views/app/admin/customers/categories")),
+    component: lazy(() => import("@/views/app/admin/customers/categories/CustomerCategoriesList")),
     authority: [SUPER_ADMIN],
   },
   // producers
@@ -98,7 +98,7 @@ const protectedAdminRoutes = [
   },
   {
     key: "admin.store.edit",
-    path: "/admin/store/edit/:id",
+    path: "/admin/store/edit/:documentId",
     component: lazy(() => import("@/views/app/admin/products/product/index")),
     authority: [SUPER_ADMIN],
   },
@@ -242,8 +242,8 @@ const protectedCustomersRoutes = [
   },
   {
     key: "customer.catalogue.categories.products",
-    path: "/customer/catalogue/categories/:id",
-    component: lazy(() => import("@/views/app/customer/catalogue/ProductsLists")),
+    path: "/customer/catalogue/categories/:documentId",
+    component: lazy(() => import("@/views/app/customer/catalogue/ProductsOfCategory")),
     authority: [CUSTOMER],
   },
   {

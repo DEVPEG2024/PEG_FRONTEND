@@ -22,7 +22,7 @@ function EditFormModal() {
 
   const onValidate = (name: string, components: any) => {
     if (form?.documentId) {
-      dispatch(updateForm({...form, name, fields: JSON.stringify(components)} as Form))
+      dispatch(updateForm({documentId: form.documentId, name, fields: JSON.stringify(components)}))
     } else {
       dispatch(createForm({name, fields: JSON.stringify(components)}))
     }

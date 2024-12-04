@@ -1,4 +1,4 @@
-import Form from './Form';
+import Form from './ProductForm';
 
-export * from './Form';
+export * from './ProductForm';
 export default Form;

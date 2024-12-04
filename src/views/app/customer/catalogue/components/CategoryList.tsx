@@ -1,17 +1,17 @@
 import classNames from 'classnames';
 import GridItem from './GridItem';
-import { CategoryProduct } from '@/@types/category';
+import { ProductCategory } from '@/@types/product';
 
 const ProductCategoryListContent = ({
-  categories,
+  productCategories,
 }: {
-  categories: CategoryProduct[];
+  productCategories: ProductCategory[];
 }) => {
   return (
     <div className={classNames('mt-6 h-full flex flex-col')}>
       <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {categories.map((category) => (
-          <GridItem key={category._id} data={category} />
+        {productCategories.map((productCategory) => (
+          <GridItem key={productCategory.documentId} data={productCategory} />
         ))}
       </div>
     </div>
