@@ -33,10 +33,6 @@ const CustomerProducts = () => {
     dispatch(setProduct(null));
   }, [dispatch]);
 
-  const handleClick = (id: string) => {
-    navigate(`/customer/product/${id}`);
-  };
-
   return (
     <>
       <div className="lg:grid lg:grid-cols-3 items-center justify-between mb-4">

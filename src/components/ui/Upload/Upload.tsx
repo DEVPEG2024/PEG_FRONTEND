@@ -9,7 +9,6 @@ import Notification from '../Notification/Notification'
 import toast from '../toast/toast'
 import type { CommonProps } from '../@types/common'
 import type { ReactNode, ChangeEvent, MouseEvent } from 'react'
-import { ConfirmDialog } from '@/components/shared'
 
 export interface UploadProps extends CommonProps {
     accept?: string
@@ -59,8 +58,6 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
     const fileInputField = useRef<HTMLInputElement>(null)
     const [files, setFiles] = useState(fileList)
     const [dragOver, setDragOver] = useState(false)
-    const [openConfirmDeleteFileDialog, setOpenConfirmDeleteFileDialog] = useState<boolean>(false)
-    const [fileIndexToDelete, setFileIndexToDelete] = useState<number>(-1)
 
     const { themeColor, primaryColorLevel } = useConfig()
 
@@ -134,21 +131,6 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
                 onFileAdd?.(newFiles[0])
             }
         }
-    }
-
-    const handleCloseConfirmDeleteFileDialog = (): void => {
-        setOpenConfirmDeleteFileDialog(false)
-    }
-
-    const handleConfirmDeleteFile = (): void => {
-        removeFile(fileIndexToDelete)
-        setFileIndexToDelete(-1)
-        handleCloseConfirmDeleteFileDialog()
-    }
-
-    const askConfirmationDeleteFile = (fileIndex: number): void => {
-        setFileIndexToDelete(fileIndex)
-        setOpenConfirmDeleteFileDialog(true)
     }
 
     const removeFile = (fileIndex: number) => {
@@ -250,24 +232,12 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
                         <FileItem key={file.name + index} file={file} className={fileItemClass}>
                             <CloseButton
                                 className="upload-file-remove"
-                                onClick={() => askConfirmationDeleteFile(index)}
+                                onClick={() => removeFile(index)}
                             />
                         </FileItem>
                     ))}
                 </div>
             )}
-            <ConfirmDialog
-                isOpen={openConfirmDeleteFileDialog}
-                type={'warning'}
-                title={'Suppression définitive'}
-                confirmButtonColor={'amber-600'}
-                onClose={handleCloseConfirmDeleteFileDialog}
-                onRequestClose={handleCloseConfirmDeleteFileDialog}
-                onCancel={handleCloseConfirmDeleteFileDialog}
-                onConfirm={handleConfirmDeleteFile}
-            >
-                <p>Même en cas d'annulation, le fichier devra être à nouveau ajouté</p>
-            </ConfirmDialog>
         </>
     )
 })

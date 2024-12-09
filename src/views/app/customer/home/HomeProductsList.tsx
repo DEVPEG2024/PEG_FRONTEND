@@ -18,7 +18,7 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
             <img
               src={product.images?.[0]?.url}
               alt={product.name}
-              className=" rounded-l-lg bg-yellow-400"
+              className=" rounded-l-lg bg-slate-50"
               style={{
                 height: '100px',
                 width: '100px',

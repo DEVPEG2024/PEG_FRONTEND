@@ -134,8 +134,8 @@ export type GetProjectsResponse = {
 
 export async function apiGetProjects(data: GetProjectsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
     const query = `
-    query getProjects {
-        projects_connection {
+    query getProjects($searchTerm: String, $pagination: PaginationArg) {
+        projects_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 comments {

@@ -2,18 +2,112 @@ import ApiService from './ApiService'
 import { CHANGE_TASK_STATUS_API_URL, DELETE_COMMENT_API_URL, DELETE_FILE_API_URL, DELETE_INVOICES_PROJECT_API_URL, DELETE_PROJECTS_API_URL, DELETE_TASKS_API_URL, GET_INVOICES_PROJECT_API_URL, GET_PROJECTS_API_URL, GET_PROJECTS_CUSTOMER_API_URL, GET_PROJECTS_PRODUCER_API_URL, PAY_PRODUCER_API_URL, POST_COMMENT_API_URL, POST_INVOICES_PROJECT_API_URL, POST_PROJECTS_API_URL, POST_TASKS_API_URL, PUT_INVOICES_PROJECT_API_URL, PUT_PROJECTS_API_URL, PUT_TASKS_API_URL, UPLOAD_FILE_API_URL } from '@/constants/api.constant'
 import { FileItem, FileNameBackFront } from '@/@types/file';
 import { API_BASE_URL } from '@/configs/api.config'
+import { Image } from '@/@types/product';
 
-export async function apiUploadFile(file: File) {
+export async function apiUploadFileToEntity(file: File, ref: string, refId: string, field: string) {
     const formData = new FormData();
     
-    formData.append("file", file);
+    formData.append("files", file);
+    formData.append("ref", ref);
+    formData.append("refId", refId);
+    formData.append("field", field);
     
-    const response = await fetch(API_BASE_URL + "/upload", {
+    const response = await ApiService.fetchData<File[]>({
+        url: API_BASE_URL + "/upload",
+        method: 'post',
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        data: formData
+    })
+    /*const response = await fetch(API_BASE_URL + "/upload", {
         method: "POST",
+        headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s`,
+          },
         body: formData,
-    });
+    });*/
     
-    return await response.json()
+    return response.data
+}
+
+export async function apiUploadFile(file: File): Promise<Image> {
+    const formData = new FormData();
+    
+    formData.append("files", file);
+    
+    const response = await ApiService.fetchData<Image[]>({
+        url: API_BASE_URL + "/upload",
+        method: 'post',
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        data: formData
+    })
+    /*const response = await fetch(API_BASE_URL + "/upload", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s`,
+          },
+        body: formData,
+    });*/
+    
+    return response.data[0]
+}
+
+export async function apiGetFile(id: string) {    
+    const response = await ApiService.fetchData<Image[]>({
+        url: API_BASE_URL + "/upload/files/:" + id,
+        method: 'get'
+    })
+    /*const response = await fetch(API_BASE_URL + "/upload", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s`,
+          },
+        body: formData,
+    });*/
+    
+    return response.data
+}
+
+export async function apiGetAllFiles() : Promise<Image[]> {    
+    const response = await ApiService.fetchData<Image[]>({
+        url: API_BASE_URL + "/upload/files/",
+        method: 'get'
+    })
+    /*const response = await fetch(API_BASE_URL + "/upload", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s`,
+          },
+        body: formData,
+    });*/
+    
+    return response.data
+}
+
+export async function apiGetImages(fileNames: Image[]): Promise<Image[]> {
+    const allUploadedFiles : Image[] = await apiGetAllFiles(),
+      filesNameToLoadDocumentId : string[] = fileNames.map(({documentId}) => documentId)
+
+    return allUploadedFiles.filter(({documentId}) => filesNameToLoadDocumentId.includes(documentId))
+  };
+
+export async function apiDeleteFile(id: string) {    
+    const response = await ApiService.fetchData<Image[]>({
+        url: API_BASE_URL + "/upload/files/:" + id,
+        method: 'delete'
+    })
+    /*const response = await fetch(API_BASE_URL + "/upload", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s`,
+          },
+        body: formData,
+    });*/
+    
+    return response.data
 }
 
 export async function apiUploadFileTest(file: any, ref: string, refId: string, field: string) {
@@ -32,7 +126,7 @@ export async function apiUploadFileTest(file: any, ref: string, refId: string, f
     return await response.json()
 }
 
-export async function apiDeleteFile(fileName: string) {
+export async function apiDeleteFileOld(fileName: string) {
     const fileId : string = fileName.split('/').pop()?.split('.')[0] as string
 
     return await fetch(API_BASE_URL + "/upload/delete/" + fileId, {
@@ -44,7 +138,7 @@ export async function apiDeleteFiles(filesName: string[]) {
     await Promise.all(filesName.map(fileName => apiDeleteFile(fileName)));
 }
 
-export async function apiGetFile(fileNameBack: string, fileNameFront: string): Promise<File> {
+export async function apiGetFileOld(fileNameBack: string, fileNameFront: string): Promise<File> {
     // Récupération de l'image depuis l'URL Cloudinary
     const response = await fetch(fileNameBack, {
         method: "GET"

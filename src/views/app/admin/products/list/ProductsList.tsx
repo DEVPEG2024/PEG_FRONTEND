@@ -5,10 +5,9 @@ import reducer, {
   useAppSelector,
   setModalDeleteOpen,
   setModalDeleteClose,
-  setProduct,
-  putStatusProduct,
   deleteProduct,
   duplicateProduct,
+  updateProduct,
 } from '../store';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -55,8 +54,8 @@ const ProductsList = () => {
     dispatch(setModalDeleteClose());
   };
 
-  const onActivate = (id: string, checked: boolean) => {
-    dispatch(putStatusProduct({ id }));
+  const onActivate = (product: Product, checked: boolean) => {
+    dispatch(updateProduct({documentId: product.documentId, active: !checked}))
     if (!checked) {
       toast.push(
         <Notification type="success" title="Activé">
@@ -65,7 +64,7 @@ const ProductsList = () => {
       );
     } else {
       toast.push(
-        <Notification type="danger" title="Désactivé">
+        <Notification type="success" title="Désactivé">
           Produit désactivé avec succès
         </Notification>
       );
@@ -73,9 +72,9 @@ const ProductsList = () => {
   };
 
   const onDuplicate = async (product: Product) => {
-    dispatch(duplicateProduct({ product }));
+    dispatch(duplicateProduct(product));
     toast.push(
-      <Notification type="success" title="Activé">
+      <Notification type="success" title="Dupliqué">
         Produit dupliqué avec succès
       </Notification>
     );
@@ -113,7 +112,7 @@ const ProductsList = () => {
                   <img
                     src={product.images[0]?.url}
                     alt={product.name}
-                    className=" rounded-lg bg-yellow-400"
+                    className="rounded-lg bg-slate-50"
                     style={{
                       height: '250px',
                       width: '100%',
@@ -138,7 +137,7 @@ const ProductsList = () => {
                       <Tooltip title="Activer/Désactiver le produit">
                         <Switcher
                           checked={product.active}
-                          onChange={(checked) => onActivate(product.documentId, checked)}
+                          onChange={(checked) => onActivate(product, checked)}
                           className="mt-4"
                         />
                       </Tooltip>

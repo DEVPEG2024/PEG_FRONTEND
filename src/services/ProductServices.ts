@@ -38,7 +38,7 @@ type UpdateProductResponse = {
     result: string
 }
 
-export async function apiUpdateProduct(data: IProduct) {
+export async function apiUpdateProductOld(data: IProduct) {
     return ApiService.fetchData<UpdateProductResponse>({
         url: `${API_BASE_URL}/products/admin/update`,
         method: 'put',
@@ -95,18 +95,21 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
     })
 }
 
-// get product by id
+// get product for edit by id
 export async function apiGetProductForEditById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
     const query = `
-    query GetProduct($documentId: ID!) {
+    query GetProductForEditById($documentId: ID!) {
         product(documentId: $documentId) {
             documentId
             description
             name
             price
             images {
+                documentId
                 url
+                name
             }
+            active
             sizes {
                 documentId
                 name
@@ -157,7 +160,8 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
         products_connection (filters: {
         and: [
             {name: {contains: $searchTerm}},
-            {productCategory: {documentId: {eq: $productCategoryDocumentId}}}
+            {productCategory: {documentId: {eq: $productCategoryDocumentId}}},
+            {active: {eq: true}}
         ]},
         pagination: $pagination) {
             nodes {
@@ -214,6 +218,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                     documentId
                     url
                 }
+                active
             }
             pageInfo {
                 page
@@ -245,40 +250,18 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
     mutation CreateProduct($data: ProductInput!) {
         createProduct(data: $data) {
             documentId
+            name
+            price
+            images {
+                documentId
+                url
+            }
+            active
         }
     }
   `,
   variables = {
     data
-  }
-    return ApiService.fetchData<ApiResponse<{createProduct: Product}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
-    })
-}
-
-// Duplicate Product
-export type DuplicateProductRequest = {
-    product: Product;
-  };
-
-export async function apiDuplicateProduct(data: DuplicateProductRequest): Promise<AxiosResponse<ApiResponse<{createProduct: Product}>>> {
-    const query = `
-    mutation CreateProduct($data: ProductInput!) {
-        createProduct(data: $data) {
-            documentId
-        }
-    }
-  `,
-  {documentId, images, ...duplicatedProduct} = data.product,
-  variables = {
-    data: {
-        ...duplicatedProduct
-    }
   }
     return ApiService.fetchData<ApiResponse<{createProduct: Product}>>({
         url: API_GRAPHQL_URL,
@@ -341,6 +324,8 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 ]
             }, {
                 name: {contains: $searchTerm}
+            }, {
+                active: {eq: true}
             }
             ]
         }, pagination: $pagination) {
@@ -348,7 +333,6 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 images {
                     url
                 }
-                active
                 description
                 documentId
                 name
@@ -397,6 +381,37 @@ export async function apiGetProductSizes(): Promise<AxiosResponse<ApiResponse<{s
         method: 'post',
         data: {
             query
+        }
+    })
+}
+
+// update project
+export async function apiUpdateProduct(product: Partial<Product>): Promise<AxiosResponse<ApiResponse<{updateProduct: Product}>>> {
+    const query = `
+    mutation UpdateProduct($documentId: ID!, $data: ProductInput!) {
+        updateProduct(documentId: $documentId, data: $data) {
+            documentId
+            name
+            price
+            images {
+                documentId
+                url
+            }
+            active
+        }
+    }
+  `,
+  {documentId, ...data} = product,
+  variables = {
+    documentId,
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{updateProduct: Product}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
         }
     })
 }

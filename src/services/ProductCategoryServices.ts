@@ -1,42 +1,63 @@
-import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { Category } from '@/@types/category'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
-import { Product, ProductCategory } from '@/@types/product'
+import { ProductCategory } from '@/@types/product'
 import { AxiosResponse } from 'axios'
 
-type CategoryProductResponse = {
-    categories: Category[]
-    total: number
-    result: string
-    message: string
-}
-export async function apiGetCategoriesProduct(page: number, pageSize: number, searchTerm: string = "") {
-    return ApiService.fetchData<CategoryProductResponse>({
-        url: `${API_BASE_URL}/products/admin/category-product`,
-        method: 'get',
-        params: { page, pageSize, searchTerm }
-    })
+// delete product category
+export type DeleteProductCategoryResponse = {
+    documentId: string
 }
 
-type CreateCategoryProductResponse = {
-    image: string   
-    title: string
-}
-
-export async function apiNewCategoryProduct(data: CreateCategoryProductResponse) {
-    return ApiService.fetchData<CategoryProductResponse>({
-        url: `${API_BASE_URL}/products/admin/category-product/create`,
+export async function apiDeleteProductCategory(documentId: string): Promise<AxiosResponse<ApiResponse<{deleteProductCategory: DeleteProductCategoryResponse}>>> {
+    const query = `
+    mutation DeleteProductCategory($documentId: ID!) {
+        deleteProductCategory(documentId: $documentId) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{deleteProductCategory: DeleteProductCategoryResponse}>>({
+        url: API_GRAPHQL_URL,
         method: 'post',
-        data: data
+        data: {
+            query,
+            variables
+        }
     })
 }
 
-// delete category
-export async function apiDeleteCategoryProduct(id: string) {
-    return ApiService.fetchData<CategoryProductResponse>({
-        url: `${API_BASE_URL}/products/admin/category-product/delete/${id}`,
-        method: 'delete',
+// create product category
+export type CreateProductCategoryRequest = Omit<ProductCategory, "documentId">
+
+export async function apiCreateProductCategory(data: CreateProductCategoryRequest): Promise<AxiosResponse<ApiResponse<{createProductCategory: ProductCategory}>>> {
+    const query = `
+    mutation CreateProductCategory($data: ProductCategoryInput!) {
+        createProductCategory(data: $data) {
+            documentId
+            image {
+                url
+            }
+            name
+            products {
+                documentId
+            }
+        }
+    }
+  `,
+  variables = {
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{createProductCategory: ProductCategory}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
     })
 }
 
@@ -54,14 +75,17 @@ export type GetProductCategoriesResponse = {
 
 export async function apiGetProductCategories(data: GetProductCategoriesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{productCategories_connection: GetProductCategoriesResponse}>>> {
     const query = `
-    query GetProductCategories {
-        productCategories_connection {
+    query GetProductCategories($searchTerm: String, $pagination: PaginationArg) {
+        productCategories_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 image {
                     url
                 }
                 name
+                products {
+                    documentId
+                }
             }
             pageInfo {
                 page
