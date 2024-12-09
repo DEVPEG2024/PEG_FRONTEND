@@ -28,6 +28,7 @@ export const getCustomerCategories = createAsyncThunk(
   }
 );
 
+// TODO: à revoir en utilisant directement unwrapData
 export const createCustomerCategory = createAsyncThunk(
   SLICE_NAME + '/createCustomerCategory',
   async (data: CreateCustomerCategoryRequest) : Promise<ApiResponse<{createCustomerCategory: CustomerCategory}>> => {

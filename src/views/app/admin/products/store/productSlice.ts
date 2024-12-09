@@ -1,22 +1,20 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct, Product } from '@/@types/product';
+import { Image, Product } from '@/@types/product';
 import {
   apiGetProducts,
   apiPutStatusProduct,
   apiDeleteProduct,
   apiUpdateProduct,
   apiGetProductsByCategory,
-  apiNewProduct,
   GetProductsRequest,
   GetProductsResponse,
   apiCreateProduct,
   DeleteProductResponse,
-  apiDuplicateProduct,
-  DuplicateProductRequest,
   apiGetProductForEditById,
 } from '@/services/ProductServices';
-import { apiDeleteFiles, apiUploadFileTest } from '@/services/FileServices';
-import { unwrapData } from '@/utils/serviceHelper';
+import { apiGetImages } from '@/services/FileServices';
+import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
+import { AxiosResponse } from 'axios';
 
 export const SLICE_NAME = 'products';
 
@@ -78,21 +76,28 @@ export const putStatusProduct = createAsyncThunk(
 
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
-  async (data: DuplicateProductRequest) => {
-    const {createProduct} : {createProduct: Product}= await unwrapData(apiDuplicateProduct(data));
-    await apiUploadFileTest(data.product.images[0], 'api::product.product', createProduct.documentId, 'images')
+  async (product: Product) => {
+    const {product: productToDuplicate} : {product: Product} = await unwrapData(apiGetProductForEditById(product.documentId))
+    const {documentId, images, ...duplicatedProduct} = productToDuplicate
+    const imagesLoaded : Image[] = await apiGetImages(images)
+    const newProduct: Product = {
+      ...duplicatedProduct,
+      images: imagesLoaded.map(({id}) => id),
+      sizes: duplicatedProduct.sizes.map(({documentId}) => documentId),
+      form: duplicatedProduct.form?.documentId,
+      productCategory: duplicatedProduct.productCategory?.documentId,
+      customerCategories: duplicatedProduct.customerCategories.map(({documentId}) => documentId),
+      customers: duplicatedProduct.customers.map(({documentId}) => documentId),
+    }
+    const {createProduct} : {createProduct: Product}= await unwrapData(apiCreateProduct(newProduct));
     return createProduct;
   }
 );
 
-type UpdateProductRequest = {
-  product: IProduct;
-};
-
 export const updateProduct = createAsyncThunk(
   SLICE_NAME + '/updateProduct',
-  async (data: UpdateProductRequest) => {
-    const response = await apiUpdateProduct(data.product);
+  async (data: Partial<Product>): Promise<ApiResponse<{updateProduct: Product}>> => {
+    const response: AxiosResponse<ApiResponse<{updateProduct: Product}>> = await apiUpdateProduct(data);
     return response.data;
   }
 );
@@ -180,8 +185,8 @@ const productSlice = createSlice({
     builder.addCase(updateProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products = state.products.map((product) => {
-        if (product._id === action.payload.product._id) {
-          return action.payload.product;
+        if (product.documentId === action.payload.data.updateProduct.documentId) {
+          return action.payload.data.updateProduct;
         }
         return product;
       });
@@ -194,7 +199,7 @@ const productSlice = createSlice({
     });
     builder.addCase(duplicateProduct.fulfilled, (state, action) => {
       state.loading = false;
-      state.products.push(action.payload.product);
+      state.products.push(action.payload);
     });
     builder.addCase(duplicateProduct.rejected, (state) => {
       state.loading = false;

@@ -8,11 +8,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { useAppSelector } from '../../store';
-import { IProduct, Product } from '@/@types/product';
-import { apiDeleteFile, apiUploadFile } from '@/services/FileServices';
-import { FileNameBackFront } from '../Product';
-import { FileItem } from '@/@types/formAnswer';
+import { Image } from '@/@types/product';
 
 interface Options {
   value: string;
@@ -21,9 +17,17 @@ interface Options {
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>;
 
-type InitialData = IProduct;
-
-export type FormModel = Omit<Product, 'documentId'>
+export type FormModel = {
+  documentId?: string;
+  name: string;
+  price: number;
+  description: string;
+  sizes: string[];
+  customerCategories: string[];
+  customers: string[];
+  productCategory: string | null;
+  form: string | null;
+}
 
 export type SetSubmitting = (isSubmitting: boolean) => void;
 
@@ -32,7 +36,7 @@ export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
 type OnDelete = (callback: OnDeleteCallback) => void;
 
 type ProductForm = {
-  initialData?: InitialData;
+  initialData?: FormModel;
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
@@ -41,15 +45,9 @@ type ProductForm = {
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
-  setSelectedSizes: (value: string[]) => void;
-  setSelectedCustomerCategories: (value: string[]) => void;
-  setSelectedProductCategory: (value: string) => void;
-  setSelectedCustomers: (value: string[]) => void;
   forms: Options[];
-  setSelectedForm: (value: string) => void;
-  imagesName: FileNameBackFront[];
-  setImagesName: (value: FileNameBackFront[]) => void;
-  images: FileItem[];
+  images: Image[];
+  setImages: (images: Image[]) => void
 };
 
 const validationSchema = Yup.object().shape({
@@ -61,62 +59,27 @@ const validationSchema = Yup.object().shape({
 });
 
 const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
-  const { product } = useAppSelector((state) => state.products.data);
-
   const {
     type,
     sizes,
     forms,
-    setSelectedForm,
-    initialData = {
-      documentId: product?.documentId || '',
-      name: product?.name || '',
-      price: product?.price || 0,
-      images: product?.images || [],
-      description: product?.description || '',
-      sizes: product?.sizes || [],
-      customerCategories: product?.customerCategories || [],
-      productCategory: product?.productCategory || [],
-      customers: product?.customers || [],
-      form: product?.form || '',
-    },
+    initialData,
     onFormSubmit,
     onDiscard,
     customerCategories,
     categories,
     customers,
-    setSelectedSizes,
-    setSelectedCustomerCategories,
-    setSelectedProductCategory,
-    setSelectedCustomers,
-    imagesName,
-    setImagesName,
     images,
+    setImages,
   } = props;
 
   const onFileAdd = async (
     file: File,
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean
-    ) => void,
-    field: string,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     try {
       setSubmitting(true);
-      const data = await apiUploadFile(file),
-        newFileNames = [
-          ...imagesName,
-          { fileNameFront: file.name, fileNameBack: data.fileUrl },
-        ];
-
-      setFieldValue(
-        field,
-        newFileNames.map(({ fileNameBack }) => fileNameBack)
-      );
-      setImagesName(newFileNames);
+      setImages([...images, {file, name: file.name}]);
       setSubmitting(false);
     } catch (error) {
       console.error("Erreur lors de l'upload du fichier :", error);
@@ -125,28 +88,19 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   };
 
   const onFileRemove = (
-    file: string,
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean
-    ) => void,
-    field: string
+    fileName: string,
+    setSubmitting: (isSubmitting: boolean) => void
   ) => {
     try {
-      const fileNameBack: string =
-        imagesName.find(({ fileNameFront }) => fileNameFront === file)
-          ?.fileNameBack ?? '';
-      apiDeleteFile(fileNameBack);
-      const newFileNames = imagesName.filter(
-        ({ fileNameFront }) => fileNameFront !== file
-      );
+      setSubmitting(true);
+      const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
 
-      setFieldValue(
-        field,
-        newFileNames.map(({ fileNameBack }) => fileNameBack)
-      );
-      setImagesName(newFileNames);
+      if (imageToDelete) {
+        //apiDeleteFile(imageToDelete.id);
+        setImages(images.filter(({name}) => name !== fileName));
+      }
+
+      setSubmitting(false);
     } catch (error) {
       console.error('Erreur lors de la suppression du fichier :', error);
     }
@@ -198,7 +152,6 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       >
         {({
           values,
-          setFieldValue,
           touched,
           errors,
           isSubmitting,
@@ -214,17 +167,10 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     values={values}
                     type={type}
                     forms={forms}
-                    setSelectedForm={setSelectedForm}
                     sizes={sizes}
                     customerCategories={customerCategories}
                     categories={categories}
                     customers={customers}
-                    setSelectedSizes={setSelectedSizes}
-                    setSelectedCustomerCategories={setSelectedCustomerCategories}
-                    setSelectedProductCategory={setSelectedProductCategory}
-                    setSelectedCustomers={
-                      setSelectedCustomers as (value: string[]) => void
-                    }
                   />
                 </div>
                 <div className="lg:col-span-1">
@@ -236,13 +182,13 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
                     onFileAdd={(file) =>
-                      onFileAdd(file, setFieldValue, 'images', setSubmitting)
+                      onFileAdd(file, setSubmitting)
                     }
                     onFileRemove={(file) =>
-                      onFileRemove(file, setFieldValue, 'images')
+                      onFileRemove(file, setSubmitting)
                     }
                     field={{ name: 'images' }}
-                    fileList={images.map(({ file }) => file)}
+                    fileList={images.map(({file}) => file)}
                   />
                 </div>
               </div>

@@ -119,12 +119,12 @@ const protectedAdminRoutes = [
   {
     key: "admin.store.categories",
     path: "/admin/store/categories",
-    component: lazy(() => import("@/views/app/admin/products/categories")),
+    component: lazy(() => import("@/views/app/admin/products/categories/ProductCategories")),
     authority: [SUPER_ADMIN],
   },
   {
     key: "admin.store.categories.products",
-    path: "/admin/store/categories/:id",
+    path: "/admin/store/categories/:documentId",
     component: lazy(() => import("@/views/app/admin/products/categories/ProductsLists")),
     authority: [SUPER_ADMIN],
   },

@@ -20,12 +20,7 @@ type ProductFields = {
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
-  setSelectedSizes: (value: string[]) => void;
-  setSelectedCustomerCategories: (value: string[]) => void;
-  setSelectedProductCategory: (value: string) => void;
-  setSelectedCustomers: (value: string[]) => void;
   forms: Options[];
-  setSelectedForm: (value: string) => void;
 };
 
 const ProductFields = (props: ProductFields) => {
@@ -38,11 +33,6 @@ const ProductFields = (props: ProductFields) => {
     categories,
     customers,
     forms,
-    setSelectedSizes,
-    setSelectedForm,
-    setSelectedCustomerCategories,
-    setSelectedProductCategory,
-    setSelectedCustomers,
   } = props;
 
   return (
@@ -65,6 +55,7 @@ const ProductFields = (props: ProductFields) => {
             name="name"
             placeholder="Donnez un nom au produit"
             component={Input}
+            value={props.values.name}
           />
         </FormItem>
         <FormItem
@@ -96,7 +87,6 @@ const ProductFields = (props: ProductFields) => {
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
-                  setSelectedCustomerCategories(values);
                 }}
               />
             )}
@@ -108,14 +98,13 @@ const ProductFields = (props: ProductFields) => {
             {({ field, form }: FieldProps) => (
               <Select
                 value={categories.find((option) => {
-                  return field.value?.documentId === option.value;
+                  return field.value === option.value;
                 })}
                 placeholder="Choisir une catégorie de produit"
                 options={categories}
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
                   form.setFieldValue(field.name, value);
-                  setSelectedProductCategory(value);
                 }}
               />
             )}
@@ -135,7 +124,6 @@ const ProductFields = (props: ProductFields) => {
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
-                  setSelectedCustomers(values);
                 }}
               />
             )}
@@ -158,7 +146,6 @@ const ProductFields = (props: ProductFields) => {
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
                   form.setFieldValue(field.name, values);
-                  setSelectedSizes(values);
                 }}
               />
             )}
@@ -170,14 +157,13 @@ const ProductFields = (props: ProductFields) => {
             {({ field, form }: FieldProps) => (
               <Select
                 value={forms.find((option) => {
-                  return field.value?._id === option.value;
+                  return field.value === option.value;
                 })}
                 placeholder="Choisir un formulaire"
                 options={forms}
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
                   form.setFieldValue(field.name, value);
-                  setSelectedForm(value as string);
                 }}
               />
             )}

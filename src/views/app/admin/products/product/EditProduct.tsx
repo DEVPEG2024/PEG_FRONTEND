@@ -1,15 +1,13 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Notification, toast } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { Product, ProductCategory, Size } from '@/@types/product';
+import { Image, Product, ProductCategory, Size } from '@/@types/product';
 import ProductForm, { FormModel, SetSubmitting } from './Forms/ProductForm';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
 import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
-import { apiDeleteFile, apiGetFile } from '@/services/FileServices';
-import reducer, { getProductById, useAppDispatch, useAppSelector } from '../store';
-import { FileItem } from '@/@types/formAnswer';
+import { apiGetImages, apiUploadFile } from '@/services/FileServices';
+import reducer, { getProductById, setProduct, useAppDispatch, useAppSelector } from '../store';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
@@ -22,11 +20,6 @@ interface Options {
   value: string;
   label: string;
 }
-
-export type FileNameBackFront = {
-  fileNameBack: string;
-  fileNameFront: string;
-};
 
 type EditProductParams = {
   documentId: string;
@@ -42,87 +35,70 @@ const EditProduct = () => {
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
   const [productCategories, setProductCategories] = useState<Options[]>([]);
-  const [selectedCustomerCategories, setSelectedCustomerCategories] =
-    useState<string[]>(product?.customerCategories.map((customerCategory: CustomerCategory) => customerCategory.name) || []);
-  const [selectedProductCategory, setSelectedProductCategory] = useState<string>(
-    product?.productCategory?.name ?? ''
-  );
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>(
-    product?.customers.map((customer: Customer) => customer.name) || []
-  );
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(
-    product?.sizes.map((size: Size) => size.name) || []
-  );
   const [forms, setForms] = useState<Options[]>([]);
-  const [selectedForm, setSelectedForm] = useState<string>(
-    product?.form?.documentId || ''
-  );
-  const [imagesName, setImagesName] = useState<FileNameBackFront[]>(
-    product?.images || []
-  );
-  const [isFirstRender, setFirstRender] = useState<boolean>(true);
-  const [isSubmitted, setSubmitted] = useState<boolean>(false);
-  const [images, setImages] = useState<FileItem[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
+  const initialData: FormModel = {
+    documentId: documentId ?? '',
+    name: product?.name || '',
+    price: product?.price || 0,
+    description: product?.description || '',
+    sizes: product?.sizes.map((size) => size.documentId) || [],
+    customerCategories: product?.customerCategories.map((customerCategory) => customerCategory.documentId) || [],
+    productCategory: product?.productCategory?.documentId || null,
+    customers: product?.customers.map((customer) => customer.documentId) || [],
+    form: product?.form?.documentId || null
+  }
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (!product && onEdition) {
       dispatch(getProductById(documentId));
-    }
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (isFirstRender) {
-      setFirstRender(false);
+    } else {
+      
     }
     return () => {
-      if (!isFirstRender && !isSubmitted) {
-        removeAllFilesFromDisk();
-      }
-    };
-  }, [isFirstRender]);
+      dispatch(setProduct(null))
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     fetchCustomers();
     fetchCustomerCategories();
     fetchProductCategories();
     fetchForms();
-    fetchFiles();
     fetchProductSizes();
   }, []);
 
+  useEffect(() => {
+    fetchFiles();
+  }, [product]);
+
   const fetchFiles = async (): Promise<void> => {
-    const filesToLoad: FileNameBackFront[] = product?.images ?? [];
+    if (product?.images && product?.images?.length > 0){
+      const imagesLoaded: Image[] = await apiGetImages(product?.images);
+      const imagesWithFile : Image[] = []
+      for (const image of imagesLoaded) {
+        const imageAsFile : File = await convertImageUrlToFile(image.url, image.name)
 
-    if (filesToLoad.length > 0) {
-      const filesLoaded: FileItem[] = await loadFiles(filesToLoad);
-      setImages(filesLoaded);
-    }
-  };
-
-  const loadFile = async (
-    fileName: FileNameBackFront
-  ): Promise<File | null> => {
-    try {
-      return await apiGetFile(fileName.fileNameBack, fileName.fileNameFront);
-    } catch (error) {
-      console.error('Erreur lors de la récupération du fichier :', error);
-    }
-    return null;
-  };
-
-  const loadFiles = async (
-    fileNames: FileNameBackFront[]
-  ): Promise<FileItem[]> => {
-    const files: FileItem[] = [];
-    for (const fileName of fileNames) {
-      const file = await loadFile(fileName);
-      if (file) {
-        files.push({ fileName: fileName.fileNameFront, file });
+        imagesWithFile.push({...image, file: imageAsFile})
       }
+      setImages(imagesWithFile);
     }
-    return files;
   };
+
+  const convertImageUrlToFile = async(url: string, fileName: string) : Promise<File> => {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image from URL: ${response.statusText}`);
+    }
+
+    const blob = await response.blob(),
+      file = new File([blob], fileName, { type: blob.type });
+
+    return file; 
+  }
+
   const fetchForms = async () => {
     const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms());
     const formsList = forms_connection.nodes || [];
@@ -174,28 +150,33 @@ const EditProduct = () => {
     setSizes(productSizes);
   };
 
-  const removeAllFilesFromDisk = async (): Promise<void> => {
-    try {
-      for (const file of imagesName) {
-        await apiDeleteFile(file.fileNameBack);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression du fichier :', error);
+  const updateOrCreateProduct = async (data: Product) : Promise<Product> => {
+    if (onEdition) {
+      const {updateProduct} : {updateProduct: Product} = await unwrapData(apiUpdateProduct(data));
+      return updateProduct
     }
-  };
+    const {createProduct} : {createProduct: Product} = await unwrapData(apiCreateProduct(data));
+    return createProduct
+  }
 
   const handleFormSubmit = async (
     values: FormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
+    const newImages: Image[] = []
+    for (const image of images) {
+      if (image.id) {
+        newImages.push(image)
+      } else {
+        const imageUploaded: Image = await apiUploadFile(image.file)
+        newImages.push(imageUploaded)
+      }
+    }
     const data: Product = {
       ...values,
-      sizes: selectedSizes,
-      customerCategories: selectedCustomerCategories,
-      productCategory: selectedProductCategory,
-      customers: selectedCustomers,
-      images: imagesName,
+      images: newImages.map(({id}) => id),
+      active: true
     };
     if (values.form === '') {
       delete data.form;
@@ -203,51 +184,30 @@ const EditProduct = () => {
     if (!onEdition) {
       delete data.documentId
     }
-    const response = onEdition
-      ? await apiUpdateProduct(data)
-      : await apiCreateProduct(data);
-    if (response.status === 200) {
-      toast.push(
-        <Notification type="success" title="Succès">
-          Le produit a bien été {onEdition ? 'modifié' : 'ajouté'}
-        </Notification>
-      );
-      setSubmitted(true);
-      navigate('/admin/store/lists');
-    } else {
-      toast.push(
-        <Notification type="danger" title="Erreur">
-          Une erreur est survenue lors de $
-          {onEdition ? 'la modification' : "l'ajout"} du produit
-        </Notification>
-      );
-    }
+
+    await updateOrCreateProduct(data)
     setSubmitting(false);
+    navigate('/admin/store/lists');
   };
+
   const handleDiscard = () => {
     navigate('/admin/store/lists');
   };
-  return (
-    <>
-      <ProductForm
-        type={onEdition ? 'edit' : 'new'}
-        onFormSubmit={handleFormSubmit}
-        onDiscard={handleDiscard}
-        sizes={sizes}
-        customers={customers}
-        customerCategories={customerCategories}
-        categories={productCategories}
-        forms={forms}
-        setSelectedSizes={setSelectedSizes}
-        setSelectedForm={setSelectedForm}
-        setSelectedCustomerCategories={setSelectedCustomerCategories}
-        setSelectedProductCategory={setSelectedProductCategory}
-        setSelectedCustomers={setSelectedCustomers}
-        imagesName={imagesName}
-        setImagesName={setImagesName}
-        images={images}
-      />
-    </>
+
+  return (!onEdition || product) && (
+    <ProductForm
+      type={onEdition ? 'edit' : 'new'}
+      onFormSubmit={handleFormSubmit}
+      onDiscard={handleDiscard}
+      sizes={sizes}
+      customers={customers}
+      customerCategories={customerCategories}
+      categories={productCategories}
+      forms={forms}
+      images={images}
+      setImages={setImages}
+      initialData={initialData}
+    />
   );
 };
 

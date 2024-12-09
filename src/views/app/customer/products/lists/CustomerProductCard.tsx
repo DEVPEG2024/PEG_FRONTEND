@@ -19,7 +19,7 @@ const CustomerProductCard = ({product}: {product: Product}) => {
         <img
         src={product.images[0]?.url}
         alt={product.name}
-        className=" rounded-lg bg-yellow-400"
+        className=" rounded-lg bg-slate-50"
         style={{
             height: '250px',
             width: '100%',

@@ -7,7 +7,7 @@ import reducer, {
   getProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
-import { Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 import { isEmpty } from 'lodash';
 import { useParams } from 'react-router-dom';
 import { DoubleSidedImage, Loading } from '@/components/shared';

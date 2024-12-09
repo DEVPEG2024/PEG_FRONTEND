@@ -2,10 +2,8 @@ import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
-import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
 import ProductCategoryListContent from './components/CategoryList';
 import { injectReducer, useAppDispatch } from '@/store';
-import { apiGetProductCategories } from '@/services/ProductCategoryServices';
 import reducer, { getProductCategories, useAppSelector } from './store';
 
 injectReducer('catalogue', reducer);

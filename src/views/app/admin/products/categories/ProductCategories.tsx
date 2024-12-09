@@ -1,12 +1,15 @@
-import { Container } from '@/components/shared';
+import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
-import useDeleteProject from '@/utils/hooks/projects/useDeleteProject';
-import useCategoryProduct from '@/utils/hooks/products/useCategoryCustomer';
-import ProductCategoryListContent from './components/CategoryList';
-import ModalFormCategoryProduct from './modals/form';
-import ModalDeleteCategory from './modals/delete';
+import ProductCategoriesListContent from './components/ProductCategoriesListContent';
+import ModalAddProductCategory from './modals/ModalAddProductCategory';
+import ModalDeleteProductCategory from './modals/ModalDeleteProductCategory';
+import reducer, { getProductCategories, useAppDispatch, useAppSelector } from './store';
+import { injectReducer } from '@/store';
+import { ProductCategory } from '@/@types/product';
+
+injectReducer('productCategories', reducer);
 
 type Option = {
   value: number;
@@ -18,33 +21,28 @@ const options: Option[] = [
   { value: 32, label: '32 / page' },
 ];
 const Categories = () => {
+  const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
-  const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<any[]>([]);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [categorySelected, setCategorySelected] = useState<string | null>(null);
+  const [categorySelected, setCategorySelected] = useState<ProductCategory | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { getCategoriesProduct } = useCategoryProduct();
+  const { productCategories, loading, total } = useAppSelector(
+    (state) => state.productCategories.data
+  );
 
   useEffect(() => {
-    fetchProjects();
-  }, [currentPage, pageSize, searchTerm]);
-
-  const fetchProjects = async () => {
-    const resp = await getCategoriesProduct(currentPage, pageSize, searchTerm);
-    setCategories(resp.data || []);
-    setTotal(resp.total || 0);
-  };
+    dispatch(getProductCategories({ pagination: {page: 1, pageSize}, searchTerm: '' }));
+  }, [dispatch]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
   };
 
-  const handleDeleteProject = async (id: string) => {
-    setCategorySelected(id);
+  const handleDeleteProductCategory = async (productCategory: ProductCategory) => {
+    setCategorySelected(productCategory);
     setIsOpenDelete(true);
   };
 
@@ -73,10 +71,12 @@ const Categories = () => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <ProductCategoryListContent
-          categories={categories}
-          handleDeleteProject={handleDeleteProject}
-        />
+        <Loading loading={loading}>
+          <ProductCategoriesListContent
+            productCategories={productCategories}
+            handleDeleteProductCategory={handleDeleteProductCategory}
+          />
+        </Loading>
         <div className="flex justify-end mt-10">
           <Pagination
             total={total}
@@ -95,20 +95,18 @@ const Categories = () => {
           </div>
         </div>
       </div>
-      <ModalFormCategoryProduct
+      <ModalAddProductCategory
         title="Ajouter une catégorie de produit"
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        fetchCategories={fetchProjects}
-        category={null}
+        productCategory={null}
       />
-      <ModalDeleteCategory
+      {categorySelected && <ModalDeleteProductCategory
         title="Supprimer une catégorie de produit"
         isOpen={isOpenDelete}
         setIsOpen={setIsOpenDelete}
-        fetchCategories={fetchProjects}
-        category={categorySelected}
-      />
+        productCategory={categorySelected}
+      />}
     </Container>
   );
 };

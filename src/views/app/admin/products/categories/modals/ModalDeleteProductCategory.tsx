@@ -1,41 +1,29 @@
-import { Button, Dialog, Notification, toast } from '@/components/ui';
-import { apiDeleteCategoryProduct } from '@/services/ProductCategoryServices';
+import { ProductCategory } from '@/@types/product';
+import { Button, Dialog } from '@/components/ui';
+import { useAppDispatch } from '@/store';
 import { useTranslation } from 'react-i18next';
-import { HiCheckCircle } from 'react-icons/hi';
+import { deleteProductCategory } from '../store';
 
-function ModalDeleteCategory({
+function ModalDeleteProductCategory({
   title,
   isOpen,
   setIsOpen,
-  category,
-  fetchCategories,
+  productCategory,
 }: {
   title: string;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  fetchCategories: () => void;
-  category: string | null;
+  productCategory: ProductCategory;
 }) {
   const { t } = useTranslation();
   const onDialogClose = () => {
     setIsOpen(false);
   };
+  const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    const response = await apiDeleteCategoryProduct(category || '');
-
-    if (response.status === 200) {
-      toast.push(
-        <Notification
-          className="bg-green-500"
-          title={t('cat.categoryAdded')}
-          type="success"
-          customIcon={<HiCheckCircle color="white" size={20} />}
-        />
-      );
-      onDialogClose();
-      fetchCategories();
-    }
+    dispatch(deleteProductCategory(productCategory.documentId))
+    onDialogClose();
   };
   return (
     <Dialog
@@ -63,4 +51,4 @@ function ModalDeleteCategory({
   );
 }
 
-export default ModalDeleteCategory;
+export default ModalDeleteProductCategory;
