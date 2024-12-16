@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct, Product, SizeSelection } from '@/@types/product';
+import { Product, SizeSelection } from '@/@types/product';
 import { apiGetProductForShowById } from '@/services/ProductServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';

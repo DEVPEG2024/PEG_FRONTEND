@@ -1,94 +1,64 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { WritableDraft } from 'immer';
 
-import { IBanner } from '@/@types/banner';
+import { Banner } from '@/@types/banner';
 import {
   apiGetBanners,
   apiCreateBanner,
   apiDeleteBanner,
   apiUpdateBanner,
-  apiUpdateStatusBanner,
+  GetBannersRequest,
+  GetBannersResponse,
+  CreateBannerRequest,
+  DeleteBannerResponse,
 } from '@/services/BannerServices';
+import { unwrapData } from '@/utils/serviceHelper';
+import { Image } from '@/@types/product';
+import { apiUploadFile } from '@/services/FileServices';
+
+export const SLICE_NAME = 'banners';
 
 export type BannerState = {
-  banners: IBanner[];
+  banners: Banner[];
   total: number;
-  result: boolean;
-  message: string;
-  selectedBanner: IBanner | null;
+  selectedBanner: Banner | null;
   newBannerDialog: boolean;
   editBannerDialog: boolean;
   loading: boolean;
 };
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
-
-type GetBannerListRequest = Query;
-
-export const SLICE_NAME = 'banners';
 
 export const getBanners = createAsyncThunk(
   SLICE_NAME + '/getBanners',
-  async (data: GetBannerListRequest) => {
-    const response = await apiGetBanners(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
+  async (data: GetBannersRequest) : Promise<GetBannersResponse> => {
+    const {banners_connection} : {banners_connection: GetBannersResponse} = await unwrapData(apiGetBanners(data));
+    return banners_connection;
   }
 );
-
-type CreateBannerRequest = {
-  banner: IBanner;
-};
 
 export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
-  async (data: CreateBannerRequest) => {
-    const response = await apiCreateBanner(data);
-    return response.data;
+  async (data: CreateBannerRequest) : Promise<Banner> => {
+    let imageUploaded : Image | undefined = undefined
+    if(data.image) {
+      imageUploaded = await apiUploadFile(data.image.file)
+    }
+    const {createBanner} : {createBanner: Banner} = await unwrapData(apiCreateBanner({...data, image: imageUploaded?.id ?? undefined}));
+    return createBanner;
   }
 );
-
-type DeleteBannerRequest = {
-  bannerId: string;
-};
 
 export const deleteBanner = createAsyncThunk(
   SLICE_NAME + '/deleteBanner',
-  async (data: DeleteBannerRequest) => {
-    const response = await apiDeleteBanner(data);
-    return response.data.bannerId;
+  async (documentId: string): Promise<DeleteBannerResponse> => {
+    const {deleteBanner} : {deleteBanner: DeleteBannerResponse} = await unwrapData(apiDeleteBanner(documentId));
+    return deleteBanner;
   }
 );
-
-type UpdateBannerRequest = {
-  banner: IBanner;
-  bannerId: string;
-};
 
 export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
-  async (data: UpdateBannerRequest) => {
-    const response = await apiUpdateBanner(data);
-    return { banner: response.data.banner, bannerId: data.bannerId };
-  }
-);
-
-type UpdateStatusBannerRequest = {
-  bannerId: string;
-  status: string;
-};
-
-export const updateStatusBanner = createAsyncThunk(
-  SLICE_NAME + '/updateStatusBanner',
-  async (data: UpdateStatusBannerRequest) => {
-    await apiUpdateStatusBanner(data);
-    return { status: data.status, bannerId: data.bannerId };
+  async (data: Partial<Banner>): Promise<Banner> => {
+    const {updateBanner} : {updateBanner: Banner} = await unwrapData(apiUpdateBanner(data));
+    return updateBanner;
   }
 );
 
@@ -99,8 +69,6 @@ const initialState: BannerState = {
   editBannerDialog: false,
   loading: false,
   total: 0,
-  result: false,
-  message: '',
 };
 
 const bannerSlice = createSlice({
@@ -124,9 +92,11 @@ const bannerSlice = createSlice({
     });
     builder.addCase(getBanners.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = action.payload
-        .banners as unknown as WritableDraft<IBanner>[];
-      state.total = action.payload.total;
+      state.banners = action.payload.nodes;
+      state.total = action.payload.pageInfo.total;
+    });
+    builder.addCase(getBanners.rejected, (state) => {
+      state.loading = false;
     });
     // CREATE BANNER
     builder.addCase(createBanner.pending, (state) => {
@@ -134,12 +104,11 @@ const bannerSlice = createSlice({
     });
     builder.addCase(createBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.newBannerDialog = false;
-      state.banners.push(action.payload.banner as never);
+      state.banners.push(action.payload);
+      state.total += 1
     });
-    builder.addCase(createBanner.rejected, (state, action) => {
+    builder.addCase(createBanner.rejected, (state) => {
       state.loading = false;
-      state.message = action.error.message as string;
     });
     // UPDATE BANNER
     builder.addCase(updateBanner.pending, (state) => {
@@ -147,14 +116,12 @@ const bannerSlice = createSlice({
     });
     builder.addCase(updateBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.editBannerDialog = false;
       state.banners = state.banners.map((banner) =>
-        banner._id === action.payload.bannerId ? action.payload.banner : banner
-      ) as WritableDraft<IBanner>[];
+        banner.documentId === action.payload.documentId ? action.payload : banner
+      );
     });
-    builder.addCase(updateBanner.rejected, (state, action) => {
+    builder.addCase(updateBanner.rejected, (state) => {
       state.loading = false;
-      state.message = action.error.message as string;
     });
     // DELETE BANNER
     builder.addCase(deleteBanner.pending, (state) => {
@@ -162,34 +129,11 @@ const bannerSlice = createSlice({
     });
     builder.addCase(deleteBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = state.banners.filter(
-        (ticket) => ticket._id !== action.payload
-      );
+      state.banners = state.banners.filter((banner) => banner.documentId !== action.payload.documentId);
+      state.total -= 1
     });
-    builder.addCase(deleteBanner.rejected, (state, action) => {
+    builder.addCase(deleteBanner.rejected, (state) => {
       state.loading = false;
-      state.message = action.error.message as string;
-    });
-    builder.addCase(updateStatusBanner.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(updateStatusBanner.fulfilled, (state, action) => {
-      state.loading = false;
-      state.banners = state.banners.map((banner) =>
-        banner._id === action.payload.bannerId
-          ? { ...banner, status: action.payload.status }
-          : banner
-      );
-      if (state.selectedBanner?._id === action.payload.bannerId) {
-        state.selectedBanner = {
-          ...state.selectedBanner,
-          status: action.payload.status,
-        };
-      }
-    });
-    builder.addCase(updateStatusBanner.rejected, (state, action) => {
-      state.loading = false;
-      state.message = action.error.message as string;
     });
   },
 });

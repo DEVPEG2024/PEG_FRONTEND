@@ -3,7 +3,7 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './columns';
 import { Input } from '@/components/ui';
-import { Invoice } from '@/@types/invoice';
+import { InvoiceOld } from '@/@types/invoice';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteInvoice,
@@ -25,7 +25,7 @@ const Invoices = () => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalPrintInvoice, setModalPrintInvoice] = useState(false);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [invoice, setInvoice] = useState<InvoiceOld | null>(null);
   const { invoices, total } = useAppSelector((state) => state.invoices.data);
 
   useEffect(() => {
@@ -48,12 +48,12 @@ const Invoices = () => {
     dispatch(deleteInvoice({ invoiceId }));
   };
 
-  const handleUpdateInvoice = (invoice: Invoice) => {
+  const handleUpdateInvoice = (invoice: InvoiceOld) => {
     dispatch(setSelectedInvoice(invoice));
     dispatch(setEditInvoiceDialog(true));
   };
 
-  const handlePrintInvoice = (invoice: Invoice) => {
+  const handlePrintInvoice = (invoice: InvoiceOld) => {
     setInvoice(invoice);
     setModalPrintInvoice(true);
   };
@@ -105,7 +105,7 @@ const Invoices = () => {
       </div>
       {invoice && (
         <ModalPrintInvoice
-          invoice={invoice as Invoice}
+          invoice={invoice as InvoiceOld}
           isOpen={modalPrintInvoice}
           onClose={() => setModalPrintInvoice(false)}
         />

@@ -12,7 +12,7 @@ import * as Yup from 'yup';
 import { t } from 'i18next';
 import { IUser } from '@/@types/user';
 import { countries } from '@/constants/countries.constant';
-import { OptionsRole } from '../NewTeam/NewTeam';
+import { OptionsRole } from '../NewTeam';
 import { ROLES_OPTIONS } from '@/constants/roles.constant';
 
 type FormikRef = FormikProps<any>;

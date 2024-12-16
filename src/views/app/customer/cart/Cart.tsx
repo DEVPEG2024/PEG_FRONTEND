@@ -14,13 +14,21 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
-import { apiCreateProject } from '@/services/ProjectServices';
+import { apiCreateProject, apiUpdateProject } from '@/services/ProjectServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import PaymentContent from './PaymentContent';
 import { unwrapData } from '@/utils/serviceHelper';
 import { OrderItem } from '@/@types/order';
 import { Project } from '@/@types/project';
 import { User } from '@/@types/user';
+import { apiCreateInvoice } from '@/services/InvoicesServices';
+import { Invoice } from '@/@types/invoice';
+import createUID from '@/components/ui/utils/createUid';
+
+type OrderItemAndProject = {
+  orderItem?: OrderItem;
+  project?: Project;
+}
 
 function Cart() {
   const {user}: {user: User} = useAppSelector((state) => state.auth.user);
@@ -44,7 +52,7 @@ function Cart() {
     return null;
   };
 
-  const createOrderItem = async (item: CartItem, paymentInformations: PaymentInformations) : Promise<OrderItem | null> => {
+  const createOrderItemAndProject = async (item: CartItem, paymentInformations: PaymentInformations) : Promise<OrderItemAndProject> => {
     try {
       const formAnswer: FormAnswer | null = await createFormAnswer(item),
         orderItem: Omit<OrderItem, 'documentId'> = {
@@ -55,6 +63,7 @@ function Cart() {
             (amount, size) => amount + size.quantity * item.product.price,
             0
           ),
+          // TODO: A supprimer car porté par facture
           paymentState: paymentInformations.paymentMethod === 'manual' ? 'pending' : '',
           state: 'pending',
           customer: user.customer!
@@ -86,29 +95,51 @@ function Cart() {
           remainingPrice: paymentInformations.paymentMethod === 'manual' ? orderItem.price : orderItem.price,
           progress: 0,
           paymentMethod: paymentInformations.paymentMethod,
-          paymentStatus: paymentInformations.paymentStatus,
+          paymentState: paymentInformations.paymentStatus,
           paymentDate: paymentInformations.paymentDate,
           orderItem: createOrderItem,
           priority: 'medium',
           comments: [],
-          tasks: []
+          tasks: [],
+          invoices: []
         }
-        await apiCreateProject(project);
+        const {createProject} : {createProject: Project}= await unwrapData(apiCreateProject(project));
+        return {orderItem: createOrderItem, project: createProject}
       } catch (error) {
         // TODO: envoyer mail erreur création projet
       }
-      return createOrderItem;
+      return {orderItem: createOrderItem};
     } catch (error) {
       // TODO: envoyer mail erreur création commande
     }
-    return null
+    return {}
   };
 
   const createOrder = async (paymentInformations: PaymentInformations) => {
     try {
-      const promises = await Promise.allSettled(cart.map((item) => createOrderItem(item, paymentInformations)))
-        
-      promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItem>).value)
+      const promises = await Promise.allSettled(cart.map((item) => createOrderItemAndProject(item, paymentInformations))),
+        orderItemsAndProjects: OrderItemAndProject[] = promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItemAndProject>).value),
+        orderItems: OrderItem[] = orderItemsAndProjects.filter(({orderItem}) => orderItem).map(({orderItem}) => orderItem as OrderItem),
+        orderItemsAmount = orderItems.reduce((tempAmount, orderItem) => tempAmount + orderItem.price, 0)
+
+      const invoice: Omit<Invoice, 'documentId' | 'paymentDate'> = {
+        customer: user.customer!,
+        orderItems,
+        amount: orderItemsAmount,
+        vatAmount: orderItemsAmount * 0.2,
+        totalAmount: orderItemsAmount * 1.2,
+        name: createUID(10).toUpperCase(),
+        date: dayjs().toDate(),
+        dueDate: dayjs().add(30, 'day').toDate(),
+        state: 'pending',
+        paymentMethod: 'transfer',
+        paymentAmount: 0,
+        paymentReference: '',
+        paymentState: 'pending',
+      }
+      // TODO: Déplacer cette création côté backend dans une route personnalisée et retirer la permission de création de facture par le client (plugin user Strapi)
+      const {createInvoice} : {createInvoice: Invoice}= await unwrapData(apiCreateInvoice(invoice));
+      Promise.allSettled(orderItemsAndProjects.filter(({project}) => project).map(({project}) => addInvoiceToProject(project!, createInvoice)))
       return { status: 'success' };
     } catch (errors: any) {
       return {
@@ -117,6 +148,11 @@ function Cart() {
       };
     }
   };
+
+  const addInvoiceToProject = (project: Project, invoice: Invoice) => {
+    project.invoices.push(invoice)
+    apiUpdateProject({documentId: project.documentId, invoices: project.invoices.map(({documentId}) => documentId)})
+  }
 
   const createOrderAndClearCart = async (paymentInformations: PaymentInformations) : Promise<void> => {
     const respOrderCreation = await createOrder(paymentInformations);
@@ -156,7 +192,7 @@ function Cart() {
                         <img
                           src={item.product.images[0]?.url}
                           alt={item.product.name}
-                          className="w-20 h-20 object-cover rounded-md"
+                          className="w-20 h-20 object-cover rounded-md bg-slate-50"
                         />
                         <p>{item.product.name}</p>
                       </div>

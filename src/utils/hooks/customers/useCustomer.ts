@@ -1,4 +1,4 @@
-import {  apiGetCustomers, apiUpdateCustomer } from '@/services/CustomerServices'
+import {  apiGetCustomers } from '@/services/CustomerServices'
 
 export default function useCustomer() {
     const getCustomers = async (page: number, pageSize: number, searchTerm: string) => {
@@ -15,14 +15,5 @@ export default function useCustomer() {
     }
     return {
         getCustomers,
-    }
-}
-
-export const updateCustomer = async (data: Record<string, unknown>) => {
-    try {
-        const resp = await apiUpdateCustomer(data)
-        return {data: resp.data, status: 'success', message: resp.data.message}
-    } catch (errors: any) {
-        return {status: 'failed', message: errors?.response?.data?.message || errors.toString()}
     }
 }

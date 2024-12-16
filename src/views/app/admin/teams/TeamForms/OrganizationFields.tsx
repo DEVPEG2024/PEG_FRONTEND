@@ -4,7 +4,7 @@ import Select from '@/components/ui/Select';
 import CreatableSelect from 'react-select/creatable';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { t } from 'i18next';
-import { OptionsRole } from '../NewTeam/NewTeam';
+import { OptionsRole } from '../NewTeam';
 import { ROLES_OPTIONS } from '@/constants/roles.constant';
 
 type Options = {

@@ -14,7 +14,7 @@ import QRCode from 'qrcode';
 import dayjs from 'dayjs';
 import { Dialog } from '@/components/ui';
 import { useAppSelector } from '@/store';
-import { Invoice } from '@/@types/invoice';
+import { InvoiceOld } from '@/@types/invoice';
 import { paymentModeData } from '../constants';
 import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config';
 
@@ -25,7 +25,7 @@ const ModalPrintInvoice = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  invoice: Invoice;
+  invoice: InvoiceOld;
 }) => {
   const user = invoice.sellerId;
   const order = invoice;

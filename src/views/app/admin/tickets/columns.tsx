@@ -1,43 +1,20 @@
 import { Button, Tag } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import dayjs from 'dayjs';
-import { ITicket } from '@/@types/ticket';
+import { Ticket } from '@/@types/ticket';
 
 export const useColumns = (
-  handleEditTicket: (ticket: ITicket) => void,
-  handleDeleteTicket: (ticketId: string) => void,
-  handleViewTicket: (ticket: ITicket) => void
+  handleEditTicket: (ticket: Ticket) => void,
+  handleDeleteTicket: (ticketId: Ticket) => void
 ) => {
   return [
     {
-      header: 'Ticket N°',
-      accessorKey: 'ref',
+      header: 'Nom',
+      accessorKey: 'name',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
-        return (
-          <div className="flex items-center gap-2">
-            <a
-              className="cursor-pointer"
-              onClick={() => handleViewTicket(row.original)}
-            >
-              {row.original.ref}
-            </a>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Title',
-      accessorKey: 'title',
-      enableSorting: false,
-      cell: ({ row }: { row: any }) => (
+      cell: ({ row }: { row: {original: Ticket} }) => (
         <div className="flex items-center gap-2">
-          <a
-            className="cursor-pointer"
-            onClick={() => handleViewTicket(row.original)}
-          >
-            <span className="font-bold">{row.original.title}</span>
-          </a>
+          <span className="font-bold">{row.original.name}</span>
         </div>
       ),
     },
@@ -45,15 +22,9 @@ export const useColumns = (
       header: 'Crée par',
       accessorKey: 'user',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: Ticket} }) => {
         return (
-          <a
-            className="cursor-pointer"
-            onClick={() => handleViewTicket(row.original)}
-          >
-            <span className="font-bold">{row.original.user.companyName}</span>
-            <span>{row.original.user.firstName}</span>
-          </a>
+          <span className="font-bold">{row.original.user.firstName + ' ' + row.original.user.lastName}</span>
         );
       },
     },
@@ -61,15 +32,10 @@ export const useColumns = (
       header: 'Date',
       accessorKey: 'createdAt',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: Ticket} }) => {
         return (
           <div className="flex items-center gap-2">
-            <a
-              className="cursor-pointer"
-              onClick={() => handleViewTicket(row.original)}
-            >
-              {dayjs(row.original.createdAt).format('DD/MM/YYYY')}
-            </a>
+            {dayjs(row.original.createdAt).format('DD/MM/YYYY')}
           </div>
         );
       },
@@ -78,7 +44,7 @@ export const useColumns = (
       header: 'Priorité',
       accessorKey: 'priority',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
+      cell: ({ row }: { row: {original: Ticket} }) => {
         const priority =
           row.original.priority === 'low'
             ? 'Faible'
@@ -95,12 +61,7 @@ export const useColumns = (
                   : 'bg-red-500'
             }
           >
-            <a
-              className="cursor-pointer"
-              onClick={() => handleViewTicket(row.original)}
-            >
-              <p className="text-sm text-white">{priority}</p>
-            </a>
+            <p className="text-sm text-white">{priority}</p>
           </Tag>
         );
       },
@@ -109,17 +70,17 @@ export const useColumns = (
       header: '',
       accessorKey: 'status',
       enableSorting: false,
-      cell: ({ row }: { row: any }) => {
-        const status = row.original.status === 'open' ? 'Ouvert' : 'Fermé';
+      cell: ({ row }: { row: {original: Ticket} }) => {
+        const status = row.original.state === 'pending' ? 'Ouvert' : row.original.state === 'canceled' ? 'Annulé' : 'Fermé';
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag
               className={
-                row.original.status === 'open'
+                row.original.state === 'open'
                   ? 'bg-green-500'
-                  : row.original.status === 'closed'
-                    ? 'bg-red-500'
-                    : 'bg-yellow-500'
+                  : row.original.state === 'closed'
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
               }
             >
               <p className="text-sm text-white">{status}</p>
@@ -132,7 +93,7 @@ export const useColumns = (
               <HiPencil size={20} />
             </Button>
             <Button
-              onClick={() => handleDeleteTicket(row.original._id)}
+              onClick={() => handleDeleteTicket(row.original)}
               size="sm"
               variant="twoTone"
             >

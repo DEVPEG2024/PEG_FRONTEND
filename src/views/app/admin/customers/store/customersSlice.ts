@@ -1,9 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
+import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
-import { apiCreateCustomerCategory, apiDeleteCustomerCategory, apiUpdateCustomerCategory, CreateCustomerCategoryRequest, DeleteCustomerCategoryResponse, GetCustomerCategoriesRequest, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
-import { AxiosResponse } from 'axios';
-import { apiDeleteCustomer, apiGetCustomers, DeleteCustomerResponse, GetCustomersRequest, GetCustomersResponse } from '@/services/CustomerServices';
+import { apiDeleteCustomer, apiGetCustomerForEditById, apiGetCustomers, DeleteCustomerResponse, GetCustomersRequest, GetCustomersResponse } from '@/services/CustomerServices';
 
 export const SLICE_NAME = 'customers';
 
@@ -29,19 +27,10 @@ export const getCustomers = createAsyncThunk(
   }
 );
 
-export const createCustomerCategory = createAsyncThunk(
-  SLICE_NAME + '/createCustomerCategory',
-  async (data: CreateCustomerCategoryRequest) : Promise<ApiResponse<{createCustomerCategory: CustomerCategory}>> => {
-    const response: AxiosResponse<ApiResponse<{createCustomerCategory: CustomerCategory}>> = await apiCreateCustomerCategory(data);
-    return response.data;
-  }
-);
-
-export const updateCustomerCategory = createAsyncThunk(
-  SLICE_NAME + '/updateCustomerCategory',
-  async (data: Partial<CustomerCategory>): Promise<ApiResponse<{updateCustomerCategory: CustomerCategory}>> => {
-    const response: AxiosResponse<ApiResponse<{updateCustomerCategory: CustomerCategory}>> = await apiUpdateCustomerCategory(data);
-    return response.data;
+export const getCustomerById = createAsyncThunk(
+  SLICE_NAME + '/getCustomerById',
+  async (documentId: string): Promise<{customer: Customer}> => {
+    return await unwrapData(apiGetCustomerForEditById(documentId));
   }
 );
 
@@ -53,13 +42,13 @@ export const deleteCustomer = createAsyncThunk(
   }
 );
 
-const customerCategoriesSlice = createSlice({
+const customersSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setCustomerCategory(state, action: PayloadAction<CustomerCategory | undefined>) {
-      state.customerCategory = action.payload
-  },
+    setCustomer: (state, action) => {
+      state.customer = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getCustomers.pending, (state) => {
@@ -70,33 +59,6 @@ const customerCategoriesSlice = createSlice({
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
-    // UPDATE CUSTOMER CATEGORY
-    builder.addCase(updateCustomerCategory.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(updateCustomerCategory.fulfilled, (state, action) => {
-      state.loading = false;
-      state.customerCategories = state.customerCategories.map((customerCategory: CustomerCategory) =>
-        customerCategory.documentId === action.payload.data.updateCustomerCategory.documentId
-          ? action.payload.data.updateCustomerCategory
-          : customerCategory
-      );
-    });
-    builder.addCase(updateCustomerCategory.rejected, (state) => {
-      state.loading = false;
-    });
-    // CREATE CUSTOMER CATEGORY
-    builder.addCase(createCustomerCategory.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(createCustomerCategory.fulfilled, (state, action) => {
-      state.loading = false;
-      state.customerCategories.push(action.payload.data.createCustomerCategory);
-      state.total = state.customerCategories.length
-    });
-    builder.addCase(createCustomerCategory.rejected, (state) => {
-      state.loading = false;
-    });
     // DELETE CUSTOMER
     builder.addCase(deleteCustomer.pending, (state) => {
       state.loading = true;
@@ -104,13 +66,24 @@ const customerCategoriesSlice = createSlice({
     builder.addCase(deleteCustomer.fulfilled, (state, action) => {
       state.loading = false;
       state.customers = state.customers.filter((customer: Customer) => customer.documentId !== action.payload.documentId);
-      state.total = state.customers.length
+      state.total -= 1
+    });
+    
+    builder.addCase(getCustomerById.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getCustomerById.fulfilled, (state, action) => {
+      state.loading = false;
+      state.customer = action.payload.customer;
+    });
+    builder.addCase(getCustomerById.rejected, (state) => {
+      state.loading = false;
     });
   },
 });
 
 export const {
-  setCustomerCategory,
-} = customerCategoriesSlice.actions;
+  setCustomer,
+} = customersSlice.actions;
 
-export default customerCategoriesSlice.reducer;
+export default customersSlice.reducer;

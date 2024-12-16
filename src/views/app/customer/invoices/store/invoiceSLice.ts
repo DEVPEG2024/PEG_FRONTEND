@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { WritableDraft } from 'immer';
-import { Invoice } from '@/@types/invoice';
+import { InvoiceOld } from '@/@types/invoice';
 import {
   apiCreateInvoice,
   apiDeleteInvoice,
@@ -10,11 +10,11 @@ import {
 } from '@/services/InvoicesServices';
 
 export type ProjectListState = {
-  invoices: Invoice[];
+  invoices: InvoiceOld[];
   total: number;
   result: boolean;
   message: string;
-  selectedInvoice: Invoice | null;
+  selectedInvoice: InvoiceOld | null;
   newInvoiceDialog: boolean;
   editInvoiceDialog: boolean;
   loading: boolean;
@@ -44,7 +44,7 @@ export const getInvoices = createAsyncThunk(
 );
 
 type CreateInvoiceRequest = {
-  invoice: Invoice;
+  invoice: InvoiceOld;
   sellerId: string;
 };
 
@@ -69,7 +69,7 @@ export const deleteInvoice = createAsyncThunk(
 );
 
 type UpdateInvoiceRequest = {
-  invoice: Invoice;
+  invoice: InvoiceOld;
   invoiceId: string;
 };
 
@@ -114,7 +114,7 @@ const projectListSlice = createSlice({
     builder.addCase(getInvoices.fulfilled, (state, action) => {
       state.loading = false;
       state.invoices = action.payload
-        .invoices as unknown as WritableDraft<Invoice>[];
+        .invoices as unknown as WritableDraft<InvoiceOld>[];
       state.total = action.payload.total;
     });
     // CREATE INVOICE
@@ -141,7 +141,7 @@ const projectListSlice = createSlice({
         invoice._id === action.payload.invoiceId
           ? action.payload.invoice
           : invoice
-      ) as WritableDraft<Invoice>[];
+      ) as WritableDraft<InvoiceOld>[];
     });
     builder.addCase(updateInvoice.rejected, (state, action) => {
       state.loading = false;

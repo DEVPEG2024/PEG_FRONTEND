@@ -8,7 +8,6 @@ import {
   useAppSelector,
 } from '../store';
 import EditForm from './EditForm';
-import { Form } from '@/@types/form';
 
 function EditFormModal() {
   const { newFormDialog, form } = useAppSelector(

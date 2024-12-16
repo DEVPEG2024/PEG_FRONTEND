@@ -1,4 +1,3 @@
-import { CustomerCategory } from '@/@types/customer';
 import { Button, Dialog, Input } from '@/components/ui';
 
 import { useAppDispatch } from '@/store';

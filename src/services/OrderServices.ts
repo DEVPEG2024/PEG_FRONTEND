@@ -19,6 +19,7 @@ export async function apiCreateOrderItem(data: CreateOrderItemRequest): Promise<
     mutation CreateOrderItem($data: OrderItemInput!) {
         createOrderItem(data: $data) {
             documentId
+            price
         }
     }
   `,
@@ -40,35 +41,7 @@ export async function apiCreateOrderItem(data: CreateOrderItemRequest): Promise<
     })
 }
 
-// Create order
-export type CreateOrderRequest = Omit<Order, 'documentId'>
-
-// A supprimer
-export async function apiCreateOrder(data: CreateOrderRequest): Promise<AxiosResponse<ApiResponse<{createOrder: Order}>>> {
-    const query = `
-    mutation CreateOrder($data: OrderInput!) {
-        createOrder(data: $data) {
-            documentId
-        }
-    }
-  `,
-  variables = {
-    data: {
-        orderItems: data.orderItems.map((orderItem) => orderItem.documentId),
-        customer: data.customer.documentId,
-        paymentState: data.paymentState
-    }
-  }
-    return ApiService.fetchData<ApiResponse<{createOrder: Order}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
-    })
-}
-
+// Get order items
 export type GetOrderItemsRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
@@ -172,46 +145,11 @@ export async function apiUpdateOrderItem(orderItem: Partial<OrderItem>): Promise
 
 
 
-type OrdersResponse = {
-    orders: IOrder[]
-    total: number
-    result: string
-    message: string
-}
-export async function apiGetOrders(page: number, pageSize: number, searchTerm: string = "") {
-    return ApiService.fetchData<OrdersResponse>({
-        url: GET_ORDERS_API_URL,
-        method: 'get',
-        params: { page, pageSize, searchTerm }
-    })
-}
-
-type GetOrderByIdResponse = {
-    order: IOrder
-    message: string
-    result: string
-}
-
-// get order by id
-export async function apiGetOrderById(id: string) {
-    return ApiService.fetchData<GetOrderByIdResponse>({
-        url: `${GET_ORDERS_API_URL}` + '/' + id,
-        method: 'get'
-    })
-}
-
 type UpdateOrderResponse = {
     order: IOrder;
 };
 
-// update status order
-export async function apiUpdateStatusOrder(data: Record<string, unknown>) {
-    return ApiService.fetchData<UpdateOrderResponse>({
-        url: PUT_ORDER_STATUS_API_URL,
-        method: 'put',
-        data 
-    })
-}
+
 
 // update payment status order
 export async function apiUpdatePaymentStatusOrder(data: Record<string, unknown>) {

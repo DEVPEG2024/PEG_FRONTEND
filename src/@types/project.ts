@@ -3,6 +3,7 @@ import { Customer } from './customer';
 import { IOrder, OrderItem } from './order';
 import { IUser } from './user';
 import { Producer } from './producer';
+import { Invoice } from './invoice';
 
 export interface IComment {
   _id: string;
@@ -77,13 +78,14 @@ export type Project = {
   remainingPrice: number;
   progress: number;
   paymentMethod: string;
-  paymentStatus: string;
+  paymentState: string;
   paymentDate: Date;
   comments: Comment[];
   //files: IFile[];
   tasks: Task[];
   orderItem?: OrderItem;
   //deleted: boolean;
+  invoices: Invoice[];
 }
 
 export type Task = {
@@ -92,8 +94,8 @@ export type Task = {
   description: string;
   state: string;
   priority: string;
-  startDate: string;
-  endDate: string;
+  startDate: Date;
+  endDate: Date;
 }
 
 export type Comment = {

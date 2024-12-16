@@ -8,7 +8,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { Image } from '@/@types/product';
+import { Image, Product } from '@/@types/product';
 
 interface Options {
   value: string;
@@ -17,11 +17,8 @@ interface Options {
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>;
 
-export type FormModel = {
+export type FormModel = Omit<Product, 'documentId' | 'sizes' | 'customerCategories' | 'customers' | 'productCategory' | 'form' | 'images'> & {
   documentId?: string;
-  name: string;
-  price: number;
-  description: string;
   sizes: string[];
   customerCategories: string[];
   customers: string[];
@@ -74,35 +71,18 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   } = props;
 
   const onFileAdd = async (
-    file: File,
-    setSubmitting: (isSubmitting: boolean) => void
+    file: File
   ) => {
-    try {
-      setSubmitting(true);
-      setImages([...images, {file, name: file.name}]);
-      setSubmitting(false);
-    } catch (error) {
-      console.error("Erreur lors de l'upload du fichier :", error);
-      setSubmitting(false);
-    }
+    setImages([...images, {file, name: file.name}]);
   };
 
   const onFileRemove = (
-    fileName: string,
-    setSubmitting: (isSubmitting: boolean) => void
+    fileName: string
   ) => {
-    try {
-      setSubmitting(true);
-      const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
 
-      if (imageToDelete) {
-        //apiDeleteFile(imageToDelete.id);
-        setImages(images.filter(({name}) => name !== fileName));
-      }
-
-      setSubmitting(false);
-    } catch (error) {
-      console.error('Erreur lors de la suppression du fichier :', error);
+    if (imageToDelete) {
+      setImages(images.filter(({name}) => name !== fileName));
     }
   };
 
@@ -154,8 +134,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
           values,
           touched,
           errors,
-          isSubmitting,
-          setSubmitting,
+          isSubmitting
         }) => (
           <Form>
             <FormContainer>
@@ -182,10 +161,10 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
                     onFileAdd={(file) =>
-                      onFileAdd(file, setSubmitting)
+                      onFileAdd(file)
                     }
                     onFileRemove={(file) =>
-                      onFileRemove(file, setSubmitting)
+                      onFileRemove(file)
                     }
                     field={{ name: 'images' }}
                     fileList={images.map(({file}) => file)}

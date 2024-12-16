@@ -143,7 +143,7 @@ const ShowProduct = () => {
                 <img
                   src={product.images[0]?.url}
                   alt={product.name}
-                  className="w-full h-auto rounded-lg shadow-md object-cover"
+                  className="w-full h-auto rounded-lg shadow-md object-cover bg-slate-50"
                 />
               </div>
 

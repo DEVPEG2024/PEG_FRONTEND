@@ -2,7 +2,6 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Image, Product } from '@/@types/product';
 import {
   apiGetProducts,
-  apiPutStatusProduct,
   apiDeleteProduct,
   apiUpdateProduct,
   apiGetProductsByCategory,
@@ -13,8 +12,7 @@ import {
   apiGetProductForEditById,
 } from '@/services/ProductServices';
 import { apiGetImages } from '@/services/FileServices';
-import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
-import { AxiosResponse } from 'axios';
+import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'products';
 
@@ -62,18 +60,6 @@ export const getProductsByCategory = createAsyncThunk(
   }
 );
 
-type PutStatusProductRequest = {
-  id: string;
-};
-
-export const putStatusProduct = createAsyncThunk(
-  SLICE_NAME + '/putStatusProduct',
-  async (data: PutStatusProductRequest) => {
-    const response = await apiPutStatusProduct(data.id);
-    return response.data;
-  }
-);
-
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (product: Product) => {
@@ -96,9 +82,9 @@ export const duplicateProduct = createAsyncThunk(
 
 export const updateProduct = createAsyncThunk(
   SLICE_NAME + '/updateProduct',
-  async (data: Partial<Product>): Promise<ApiResponse<{updateProduct: Product}>> => {
-    const response: AxiosResponse<ApiResponse<{updateProduct: Product}>> = await apiUpdateProduct(data);
-    return response.data;
+  async (data: Partial<Product>): Promise<Product> => {
+    const {updateProduct} : {updateProduct: Product} = await unwrapData(apiUpdateProduct(data));
+    return updateProduct;
   }
 );
 
@@ -147,24 +133,9 @@ const productSlice = createSlice({
     });
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.nodes as Product[];
+      state.products = action.payload.nodes;
     });
     builder.addCase(getProducts.rejected, (state) => {
-      state.loading = false;
-    });
-    builder.addCase(putStatusProduct.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(putStatusProduct.fulfilled, (state, action) => {
-      state.loading = false;
-      state.products = state.products.map((product) => {
-        if (product._id === action.payload.product._id) {
-          return action.payload.product;
-        }
-        return product;
-      });
-    });
-    builder.addCase(putStatusProduct.rejected, (state) => {
       state.loading = false;
     });
     builder.addCase(deleteProduct.pending, (state) => {
@@ -175,6 +146,7 @@ const productSlice = createSlice({
       state.products = state.products.filter(
         (product) => product.documentId !== action.payload.documentId
       );
+      state.total -= 1
     });
     builder.addCase(deleteProduct.rejected, (state) => {
       state.loading = false;
@@ -185,8 +157,8 @@ const productSlice = createSlice({
     builder.addCase(updateProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products = state.products.map((product) => {
-        if (product.documentId === action.payload.data.updateProduct.documentId) {
-          return action.payload.data.updateProduct;
+        if (product.documentId === action.payload.documentId) {
+          return action.payload;
         }
         return product;
       });

@@ -33,8 +33,8 @@ const Categories = () => {
   );
 
   useEffect(() => {
-    dispatch(getProductCategories({ pagination: {page: 1, pageSize}, searchTerm: '' }));
-  }, [dispatch]);
+    dispatch(getProductCategories({ pagination: {page: currentPage, pageSize}, searchTerm }));
+  }, [dispatch, searchTerm, currentPage, pageSize]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);

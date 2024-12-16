@@ -1,19 +1,26 @@
-import { IBanner } from "./banner";
-import { IOrder } from "./order";
+import { Banner } from "./banner";
 import { Product } from "./product";
 
 export type CustomerCategory = {
-    documentId: string;
-    name: string;
-    banner?: IBanner;
-    products: Product[],
-    customers: Customer[];
-  }
+  documentId: string;
+  name: string;
+  banner?: Banner;
+  products: Product[],
+  customers: Customer[];
+}
 
 export type Customer = {
   documentId: string;
   name: string;
+  email: string;
+  phoneNumber: string;
+  vatNumber: string;
+  siretNumber: string;
+  address: string;
+  city: string;
+  zipCode: string;
+  country: string;
   customerCategory: CustomerCategory;
-  banner: IBanner;
-  orders: IOrder[];
+  banner: Banner;
+  website: string;
 }

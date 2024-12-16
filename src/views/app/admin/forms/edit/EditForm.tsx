@@ -58,9 +58,6 @@ function EditForm({onValidate, onCancel, fields, name} : {onValidate: (name: str
           display: 'form',
           components
         }}
-        options={{
-          noDefaultSubmitButton: true
-        }}
         onChange={onComponentsChange}
       />
       <div className="flex flex-row gap-2 justify-end">

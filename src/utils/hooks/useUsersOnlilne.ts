@@ -1,5 +1,4 @@
 import { API_BASE_URL } from '@/configs/api.config'
-import { apiDeleteCategory, apiGetCategories } from '@/services/CategoryServices'
 import axios from 'axios'
 
 

@@ -2,7 +2,7 @@ import FileUplaodDragLight from '@/components/shared/Upload/light';
 import { Button, Dialog, Input } from '@/components/ui';
 import {  useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ProductCategory } from '@/@types/product';
+import { Image, ProductCategory } from '@/@types/product';
 import { useAppDispatch } from '@/store';
 import { createProductCategory } from '../store';
 
@@ -19,11 +19,11 @@ function ModalAddProductCategory({
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState<string>(productCategory?.name ?? '');
-  const [image, setImage] = useState<string | null>(null);
+  const [image, setImage] = useState<Partial<Image> | undefined>(productCategory?.image);
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    dispatch(createProductCategory({name, products: [], image: undefined}))
+    dispatch(createProductCategory({name, products: [], image}))
     setName('')
     onClose()
   };
@@ -42,9 +42,7 @@ function ModalAddProductCategory({
             onChange={(e) => setName(e.target.value)}
           />
           <FileUplaodDragLight
-            image={image || ''}
             setImage={setImage}
-            setFileType={(type: string) => {}}
           />
         </div>
         <div className="text-right mt-6">

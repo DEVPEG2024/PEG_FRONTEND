@@ -12,10 +12,10 @@ import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
 import { Size, SizeSelection } from '@/@types/product';
-import ModalCompleteForm from '@/views/app/customer/products/modal/ModalCompleteForm';
 
 injectReducer('showOrder', reducer);
 
+// TODO: revoir pour récupérer un documentId dans URL + modifier les navigations à cette page
 const ShowOrder = () => {
   const dispatch = useAppDispatch();
   const { product, sizesSelected } = useAppSelector(
