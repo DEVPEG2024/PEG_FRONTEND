@@ -1,9 +1,9 @@
 import { Button, Tag } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { HiPencil, HiPrinter, HiTrash, HiUserCircle } from 'react-icons/hi';
-import { Invoice } from '@/@types/invoice';
+import { InvoiceOld } from '@/@types/invoice';
 import dayjs from 'dayjs';
 
-export const useColumns = (handlePrintInvoice: (invoice: Invoice) => void) => {
+export const useColumns = (handlePrintInvoice: (invoice: InvoiceOld) => void) => {
   return [
     {
       header: 'Facture N°',

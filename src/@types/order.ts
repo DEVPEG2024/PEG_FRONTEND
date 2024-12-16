@@ -31,6 +31,7 @@ export type OrderItem = {
   formAnswer: FormAnswer | null;
   price: number;
   state: string;
+  // TODO: A supprimer car porté par Invoice
   paymentState: string;
   customer: Customer;
 }

@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 import { apiGetHomeProducer } from '@/services/HomeProducerService';
 import { IProject } from '@/@types/project';
 import ProjectListContent from '../projects/lists/components/ProjectListContent';
-import GridItem from '../projects/lists/components/GridItem';
+import ProjectItem from '../../common/projects/lists/components/ProjectItem';
 import { User } from '@/@types/user';
 
 const Home = () => {
@@ -85,7 +85,7 @@ const Home = () => {
             <h3>Mes projets en cours</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
               {projects.map((project) => (
-                <GridItem key={project._id} data={project} />
+                <ProjectItem key={project._id} data={project} />
               ))}
               <Card className="gap-4">
                 <div className="flex justify-between">

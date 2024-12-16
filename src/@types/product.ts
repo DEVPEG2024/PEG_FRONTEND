@@ -39,7 +39,7 @@ export type Image = {
 export type ProductCategory = {
   documentId: string;
   name: string;
-  image: Image;
+  image?: Image;
   products: Product[];
 };
 

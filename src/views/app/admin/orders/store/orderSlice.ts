@@ -1,12 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { WritableDraft } from 'immer';
 import {
-  apiGetOrderById,
   apiGetOrderItems,
-  apiGetOrders,
   apiUpdateOrderItem,
-  apiUpdatePaymentStatusOrder,
-  apiUpdateStatusOrder,
   GetOrderItemsRequest,
   GetOrderItemsResponse,
 } from '@/services/OrderServices';
@@ -49,42 +44,6 @@ export const updateOrderItem = createAsyncThunk(
   async (data: Partial<OrderItem>): Promise<ApiResponse<{updateOrderItem: OrderItem}>> => {
     const response: AxiosResponse<ApiResponse<{updateOrderItem: OrderItem}>> = await apiUpdateOrderItem(data);
     return response.data;
-  }
-);
-
-/*type GetOrder = {
-  orderId: string;
-};
-
-export const getOrder = createAsyncThunk(
-  SLICE_NAME + '/getOrder',
-  async (data: GetOrder) => {
-    const response = await apiGetOrderById(data.orderId);
-    return response.data;
-  }
-);*/
-
-type UpdatePaymentStatusOrderRequest = {
-  order: IOrder;
-};
-
-export const validatePayment = createAsyncThunk(
-  SLICE_NAME + '/updatePaymentStatusOrder',
-  async (data: UpdatePaymentStatusOrderRequest) => {
-    await apiUpdatePaymentStatusOrder({
-      orderId: data.order._id,
-      status: 'RECEIVED',
-    });
-  }
-);
-
-export const invalidatePayment = createAsyncThunk(
-  SLICE_NAME + '/updatePaymentStatusOrder',
-  async (data: UpdatePaymentStatusOrderRequest) => {
-    await apiUpdatePaymentStatusOrder({
-      orderId: data.order._id,
-      status: 'PENDING',
-    });
   }
 );
 

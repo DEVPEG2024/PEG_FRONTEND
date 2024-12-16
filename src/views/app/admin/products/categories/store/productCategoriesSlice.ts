@@ -1,8 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { ProductCategory } from '@/@types/product';
+import { Image, ProductCategory } from '@/@types/product';
 
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiCreateProductCategory, apiDeleteProductCategory, apiGetProductCategories, CreateProductCategoryRequest, DeleteProductCategoryResponse, GetProductCategoriesRequest, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import { apiUploadFile } from '@/services/FileServices';
 
 export const SLICE_NAME = 'productCategories';
 
@@ -34,7 +35,8 @@ export const deleteProductCategory = createAsyncThunk(
 export const createProductCategory = createAsyncThunk(
   SLICE_NAME + '/createProductCategory',
   async (data: CreateProductCategoryRequest) : Promise<ProductCategory> => {
-    const {createProductCategory} : {createProductCategory: ProductCategory} = await unwrapData(apiCreateProductCategory(data));
+    const imageUploaded: Image | undefined = data.image ? await apiUploadFile(data.image.file) : undefined
+    const {createProductCategory} : {createProductCategory: ProductCategory} = await unwrapData(apiCreateProductCategory({...data, image: imageUploaded?.id ?? undefined}));
     return createProductCategory;
   }
 );
@@ -75,7 +77,7 @@ const productCategoriesSlice = createSlice({
     builder.addCase(createProductCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.productCategories.push(action.payload);
-      state.total = state.productCategories.length
+      state.total += 1
     });
     builder.addCase(createProductCategory.rejected, (state) => {
       state.loading = false;
@@ -86,7 +88,7 @@ const productCategoriesSlice = createSlice({
     builder.addCase(deleteProductCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.productCategories = state.productCategories.filter((productCategory) => productCategory.documentId !== action.payload.documentId);
-      state.total = state.productCategories.length
+      state.total -= 1
     });
     builder.addCase(deleteProductCategory.rejected, (state) => {
       state.loading = false;

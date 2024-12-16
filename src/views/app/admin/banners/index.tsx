@@ -12,11 +12,10 @@ import reducer, {
   setSelectedBanner,
   useAppSelector,
 } from './store';
-import ModalNewBanner from './modals/newBanner';
+import ModalNewBanner from './modals/ModalNewBanner';
 
-import { useNavigate } from 'react-router-dom';
-import { IBanner } from '@/@types/banner';
-import ModalEditBanner from './modals/editBanner';
+import { Banner } from '@/@types/banner';
+import ModalEditBanner from './modals/ModalEditBanner';
 
 injectReducer('banners', reducer);
 
@@ -25,16 +24,10 @@ const Banners = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { banners, total } = useAppSelector((state) => state.banners.data);
+  const { banners, total, selectedBanner } = useAppSelector((state) => state.banners.data);
 
   useEffect(() => {
-    dispatch(
-      getBanners({
-        page: currentPage,
-        pageSize: pageSize,
-        searchTerm: searchTerm,
-      })
-    );
+    dispatch(getBanners({ pagination: {page: currentPage, pageSize}, searchTerm }));
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -42,11 +35,11 @@ const Banners = () => {
     setCurrentPage(1);
   };
 
-  const handleDeleteBanner = (bannerId: string) => {
-    dispatch(deleteBanner({ bannerId }));
+  const handleDeleteBanner = (banner: Banner) => {
+    dispatch(deleteBanner(banner.documentId));
   };
 
-  const handleUpdateBanner = (banner: IBanner) => {
+  const handleUpdateBanner = (banner: Banner) => {
     dispatch(setSelectedBanner(banner));
     dispatch(setEditBannerDialog(true));
   };
@@ -97,7 +90,7 @@ const Banners = () => {
         />
       </div>
       <ModalNewBanner />
-      <ModalEditBanner />
+      {selectedBanner && <ModalEditBanner />}
     </Container>
   );
 };

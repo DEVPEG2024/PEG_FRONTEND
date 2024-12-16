@@ -30,6 +30,7 @@ injectReducer('products', reducer);
 const ProductsList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  // TODO: ajouter pageSize, currentPage, searchTerm
   const [productToDelete, setProductToDelete] = useState<Product>();
   const { products, modalDelete, loading } = useAppSelector(
     (state) => state.products.data

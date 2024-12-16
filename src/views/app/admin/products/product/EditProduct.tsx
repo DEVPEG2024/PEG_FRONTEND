@@ -6,7 +6,7 @@ import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServic
 import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
-import { apiGetImages, apiUploadFile } from '@/services/FileServices';
+import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
 import reducer, { getProductById, setProduct, useAppDispatch, useAppSelector } from '../store';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
@@ -46,7 +46,8 @@ const EditProduct = () => {
     customerCategories: product?.customerCategories.map((customerCategory) => customerCategory.documentId) || [],
     productCategory: product?.productCategory?.documentId || null,
     customers: product?.customers.map((customer) => customer.documentId) || [],
-    form: product?.form?.documentId || null
+    form: product?.form?.documentId || null,
+    active: product?.active || false
   }
   const dispatch = useAppDispatch();
 
@@ -75,29 +76,11 @@ const EditProduct = () => {
 
   const fetchFiles = async (): Promise<void> => {
     if (product?.images && product?.images?.length > 0){
-      const imagesLoaded: Image[] = await apiGetImages(product?.images);
-      const imagesWithFile : Image[] = []
-      for (const image of imagesLoaded) {
-        const imageAsFile : File = await convertImageUrlToFile(image.url, image.name)
+      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(product?.images)
 
-        imagesWithFile.push({...image, file: imageAsFile})
-      }
-      setImages(imagesWithFile);
+      setImages(imagesLoaded);
     }
   };
-
-  const convertImageUrlToFile = async(url: string, fileName: string) : Promise<File> => {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch image from URL: ${response.statusText}`);
-    }
-
-    const blob = await response.blob(),
-      file = new File([blob], fileName, { type: blob.type });
-
-    return file; 
-  }
 
   const fetchForms = async () => {
     const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms());

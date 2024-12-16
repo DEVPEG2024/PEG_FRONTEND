@@ -1,81 +1,56 @@
-import { forwardRef, useEffect } from 'react';
+import { forwardRef } from 'react';
 import { FormContainer } from '@/components/ui/Form';
 import Button from '@/components/ui/Button';
-import hooks from '@/components/ui/hooks';
 import StickyFooter from '@/components/shared/StickyFooter';
 import { Form, Formik, FormikProps } from 'formik';
-import BasicInformationFields from './BasicInformationFields';
-import OrganizationFields from './OrganizationFields';
+import CustomerFields from './CustomerFields';
+import CompanyFields from './CompanyFields';
 import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
-import { ICategoryCustomer } from '@/services/CustomerServices';
 import { t } from 'i18next';
-import { IUser } from '@/@types/user';
 import { countries } from '@/constants/countries.constant';
+import { Options } from '../EditCustomer';
+import { Customer } from '@/@types/customer';
 
 type FormikRef = FormikProps<any>;
 
-type InitialData = IUser;
-
-export type FormModel = Omit<InitialData, 'tags' | 'category'> & {
-  tags: { label: string; value: string }[] | string[];
-  category: { label: string; value: string }[] | string[];
+export type FormModel = Omit<Customer, 'banner' | 'customerCategory' | 'orderItems'> & {
+  banner: string | null;
+  customerCategory: string | null;
 };
 
 export type SetSubmitting = (isSubmitting: boolean) => void;
 
 type CustomerForm = {
-  initialData?: InitialData;
-  type: 'edit' | 'new';
-  categories: ICategoryCustomer[];
+  initialData?: FormModel;
+  customerCategories: Options[];
   onDiscard?: () => void;
   onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void;
 };
 
-const { useUniqueId } = hooks;
-
 const validationSchema = Yup.object().shape({
-  companyName: Yup.string().required(t('cust.error.companyName')),
-  lastName: Yup.string().required(t('cust.error.lastName')),
-  firstName: Yup.string().required(t('cust.error.firstName')),
-  phone: Yup.string().required(t('cust.error.phone')),
+  website: Yup.string(),
+  siretNumber: Yup.string().required(t('cust.error.siretNumber')),
+  vatNumber: Yup.string().required(t('cust.error.vatNumber')),
+  customerCategory: Yup.string().required(t('cust.error.customerCategory')),
+  name: Yup.string().required(t('cust.error.name')),
   address: Yup.string().required(t('cust.error.address')),
-  zip: Yup.string().required(t('cust.error.zip')),
+  zipCode: Yup.string().required(t('cust.error.zipCode')),
   city: Yup.string().required(t('cust.error.city')),
   country: Yup.string().required(t('cust.error.country')),
-  description: Yup.string().required(t('cust.error.description')),
-  website: Yup.string().required(t('cust.error.website')),
-  siret: Yup.string().required(t('cust.error.siret')),
-  vat: Yup.string().required(t('cust.error.vat')),
-  email: Yup.string().required(t('cust.error.email')),
-  category: Yup.string().required(t('cust.error.category')),
+  email: Yup.string().email(t('cust.error.invalidEmail')).required(t('cust.error.email')),
+  //phone: Yup.string().matches(/^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/, 'Numéro de téléphone invalide').required(t('cust.error.phone')),
+  //phone: Yup.string().matches(/^((\+[1-9]{1,4}[ -]?)|(\([0-9]{2,3}\)[ -]?)|([0-9]{2,4})[ -]?)*?[0-9]{3,4}[ -]?[0-9]{3,4}$/, 'Numéro de téléphone invalide').required(t('cust.error.phone')),
+  phoneNumber: Yup.string().matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide').required(t('cust.error.phoneNumber')),
 });
 
 const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
-  const newId = useUniqueId('customer-');
   const {
-    type,
-    initialData = {
-      companyName: '',
-      lastName: '',
-      firstName: '',
-      phone: '',
-      address: '',
-      zip: '',
-      city: '',
-      country: '',
-      description: '',
-      website: '',
-      siret: '',
-      vat: '',
-      qrCode: newId,
-      email: '',
-      tags: [],
-    },
+    initialData,
     onFormSubmit,
     onDiscard,
-    categories,
+    customerCategories,
   } = props;
 
   return (
@@ -84,43 +59,34 @@ const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
         innerRef={ref}
         initialValues={{
           ...initialData,
-
-          tags: initialData?.tags
-            ? initialData.tags.map((value) => ({
-                label: value,
-                value,
-              }))
-            : [],
         }}
         validationSchema={validationSchema}
         onSubmit={(values: FormModel, { setSubmitting }) => {
+          console.log('ici')
           const formData = cloneDeep(values);
-          formData.tags = formData.tags.map((tag) => {
-            if (typeof tag !== 'string') {
-              return tag.value;
-            }
-            return tag;
-          });
           onFormSubmit?.(formData, setSubmitting);
         }}
       >
-        {({ values, touched, errors, isSubmitting }) => (
+        {({ values, touched, errors, isSubmitting, setFieldValue }) => {
+          return (
           <Form>
             <FormContainer>
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-2">
-                  <BasicInformationFields
-                    touched={touched}
-                    errors={errors}
-                    countries={countries}
-                  />
-                </div>
-                <div className="lg:col-span-2">
-                  <OrganizationFields
+                  <CustomerFields
                     touched={touched}
                     errors={errors}
                     values={values}
-                    categories={categories}
+                    countries={countries}
+                    setFieldValue={setFieldValue}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <CompanyFields
+                    touched={touched}
+                    errors={errors}
+                    values={values}
+                    customerCategories={customerCategories}
                   />
                 </div>
               </div>
@@ -150,7 +116,7 @@ const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
               </StickyFooter>
             </FormContainer>
           </Form>
-        )}
+        )}}
       </Formik>
     </>
   );

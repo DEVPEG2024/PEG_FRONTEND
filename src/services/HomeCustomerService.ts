@@ -1,9 +1,8 @@
-import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IBanner } from '@/@types/banner';
 import { AxiosResponse } from 'axios';
 import { ApiResponse } from '@/utils/serviceHelper';
-import { Customer, CustomerCategory } from '@/@types/customer';
+import { Customer } from '@/@types/customer';
 
 // TODO: déplacer dans CustomerService
 export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: Customer}>>> {

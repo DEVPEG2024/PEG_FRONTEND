@@ -1,13 +1,11 @@
-import { ICategoryCustomer } from '@/services/CustomerServices';
-import { IUser } from './user';
+import { Customer, CustomerCategory } from './customer';
+import { Image } from './product';
 
-export interface IBanner {
-  _id: string;
-  title: string;
-  customer: IUser;
-  customerCategory: ICategoryCustomer;
-  image: string;
-  link: string;
-  status: string;
-  createdAt: Date;
+export type Banner = {
+  documentId: string;
+  name: string;
+  customer: Customer;
+  customerCategory: CustomerCategory;
+  image: Image;
+  active: boolean;
 }

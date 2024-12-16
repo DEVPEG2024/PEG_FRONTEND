@@ -32,34 +32,7 @@ export const priorityTextData = {
   medium: 'Moyen',
   high: 'Elevé',
 };
-export const statsDataTask = [
-  {
-    value: 'pending',
-    label: 'En cours',
-  },
-  {
-    value: 'completed',
-    label: 'Terminé',
-  },
-];
-export const statusData = [
-  {
-    value: 'pending',
-    label: 'En cours',
-  },
-  {
-    value: 'completed',
-    label: 'Terminé',
-  },
-  {
-    value: 'waiting',
-    label: 'En attente',
-  },
-  {
-    value: 'canceled',
-    label: 'Annulé',
-  },
-];
+
 export const priorityData = [
   {
     value: 'low',
@@ -75,14 +48,18 @@ export const priorityData = [
   },
 ];
 
-export const paymentStatusData = [
+export const paymentStateData = [
   {
-    value: 'unpaid',
+    value: 'pending',
     label: 'En attente',
   },
   {
-    value: 'paid',
+    value: 'fulfilled',
     label: 'Payé',
+  },
+  {
+    value: 'canceled',
+    label: 'Rejeté',
   },
 ];
 

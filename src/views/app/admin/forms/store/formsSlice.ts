@@ -96,7 +96,7 @@ const formsSlice = createSlice({
       console.log(action.payload);
       state.loading = false;
       state.forms = state.forms.filter((form) => form.documentId !== action.payload.documentId);
-      state.total = state.forms.length
+      state.total -= 1
     });
     builder.addCase(updateForm.pending, (state) => {
       state.loading = true;
@@ -118,7 +118,7 @@ const formsSlice = createSlice({
     builder.addCase(createForm.fulfilled, (state, action) => {
       state.loading = false;
       state.forms.push(action.payload.data.createForm);
-      state.total = state.forms.length
+      state.total += 1
     });
     builder.addCase(createForm.rejected, (state) => {
       state.loading = false;

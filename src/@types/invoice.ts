@@ -1,8 +1,10 @@
+import { Customer } from './customer';
 import { IOffer } from './offer';
+import { Order, OrderItem } from './order';
 import { IProject } from './project';
 import { IUser } from './user';
 
-export interface Invoice {
+export interface InvoiceOld {
   _id: string; // Identifiant
   sellerId: IUser; // Identifiant du vendeur
   customerId: IUser; // Identifiant du client
@@ -31,4 +33,22 @@ export interface Items {
   quantity: number; // Quantité de l'item
   price: number; // Prix unitaire de l'item
   total: number; // Montant total de l'item
+}
+
+export type Invoice = {
+  documentId: string;
+  customer: Customer;
+  orderItems: OrderItem[];
+  amount: number;
+  vatAmount: number;
+  totalAmount: number;
+  name: string;
+  date: Date;
+  dueDate: Date;
+  paymentDate: Date;
+  paymentMethod: string;
+  paymentState: string;
+  paymentReference: string;
+  paymentAmount: number;
+  state: string;
 }

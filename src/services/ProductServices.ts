@@ -1,63 +1,8 @@
-import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IProduct, Product, Image, Size } from '@/@types/product'
+import { Product, Size } from '@/@types/product'
 import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
-
-type ProductsResponse = {
-    products: IProduct[]
-    total: number
-    result: string
-    message: string
-}
-
-export async function apiGetProductsByCategoryOld(id: string) {
-    return ApiService.fetchData<ProductsResponse>({
-        url: `${API_BASE_URL}/products/category/${id}`,
-        method: 'get',
-    })
-}
-
-type CreateProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
-
-export async function apiNewProduct(data: IProduct) {
-    return ApiService.fetchData<CreateProductResponse>({
-        url: `${API_BASE_URL}/products/admin/create`,
-        method: 'post',
-        data: data
-    })
-}
-
-type UpdateProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
-
-export async function apiUpdateProductOld(data: IProduct) {
-    return ApiService.fetchData<UpdateProductResponse>({
-        url: `${API_BASE_URL}/products/admin/update`,
-        method: 'put',
-        data: data
-    })
-}
-
-type PutStatusProductResponse = {
-    product: IProduct
-    message: string
-    result: string
-}
-
-export async function apiPutStatusProduct(id: string) {
-    return ApiService.fetchData<PutStatusProductResponse>({
-        url: `${API_BASE_URL}/products/admin/update-status/${id}`,
-        method: 'put',
-    })
-}
 
 // get product by id for show
 export async function apiGetProductForShowById(documentId: string): Promise<AxiosResponse<ApiResponse<{product: Product}>>> {
@@ -385,7 +330,7 @@ export async function apiGetProductSizes(): Promise<AxiosResponse<ApiResponse<{s
     })
 }
 
-// update project
+// update product
 export async function apiUpdateProduct(product: Partial<Product>): Promise<AxiosResponse<ApiResponse<{updateProduct: Product}>>> {
     const query = `
     mutation UpdateProduct($documentId: ID!, $data: ProductInput!) {

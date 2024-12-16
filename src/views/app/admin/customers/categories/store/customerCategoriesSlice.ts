@@ -92,7 +92,7 @@ const customerCategoriesSlice = createSlice({
     builder.addCase(createCustomerCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.customerCategories.push(action.payload.data.createCustomerCategory);
-      state.total = state.customerCategories.length
+      state.total += 1
     });
     builder.addCase(createCustomerCategory.rejected, (state) => {
       state.loading = false;
@@ -104,7 +104,7 @@ const customerCategoriesSlice = createSlice({
     builder.addCase(deleteCustomerCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.customerCategories = state.customerCategories.filter((customerCategory: CustomerCategory) => customerCategory.documentId !== action.payload.documentId);
-      state.total = state.customerCategories.length
+      state.total -= 1
     });
   },
 });

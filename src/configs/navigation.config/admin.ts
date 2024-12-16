@@ -26,7 +26,7 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
-  /*{
+  {
     key: "admin.banners",
     path: "/admin/banners",
     title: "Bannières",
@@ -35,7 +35,7 @@ const navigationAdmin: NavigationTree[] = [
     type: NAV_ITEM_TYPE_ITEM,
     authority: [SUPER_ADMIN],
     subMenu: [],
-  },*/
+  },
   {
     key: "admin.store",
     path: "/admin/store",
@@ -195,7 +195,7 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
-  {
+  /*{
     key: "admin.teams",
     path: "/admin/teams",
     title: "Équipe",
@@ -204,7 +204,7 @@ const navigationAdmin: NavigationTree[] = [
     type: NAV_ITEM_TYPE_ITEM,
     authority: [SUPER_ADMIN],
     subMenu: [],
-  },
+  },*/
   
   {
     key: "default.support",

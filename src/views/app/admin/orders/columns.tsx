@@ -65,6 +65,7 @@ export const useColumns = (
         );
       },
     },
+    // TODO: A supprimer car porté par facture
     {
       header: 'Paiement',
       accessorKey: 'paymentState',
