@@ -28,6 +28,7 @@ export type SizeSelection = {
   quantity: number;
 };
 
+// TODO: A deplacer dans fichier à part
 export type Image = {
   documentId: string;
   id: string;

@@ -5,7 +5,6 @@ import Select from '@/components/ui/Select';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { t } from 'i18next';
 import { Options } from '../EditCustomer';
-import { Customer } from '@/@types/customer';
 
 type FormFieldsName = {
   customerCategory: string;
@@ -18,7 +17,7 @@ type CompanyFieldsProps = {
   customerCategories: Options[];
   touched: FormikTouched<FormFieldsName>;
   errors: FormikErrors<FormFieldsName>;
-  values: Customer
+  values: FormFieldsName
 };
 
 const CompanyFields = (props: CompanyFieldsProps) => {

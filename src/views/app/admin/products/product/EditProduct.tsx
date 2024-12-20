@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Image, Product, ProductCategory, Size } from '@/@types/product';
-import ProductForm, { FormModel, SetSubmitting } from './Forms/ProductForm';
+import ProductForm, { ProductFormModel, SetSubmitting } from './Forms/ProductForm';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
 import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
@@ -37,7 +37,7 @@ const EditProduct = () => {
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
   const [images, setImages] = useState<Image[]>([]);
-  const initialData: FormModel = {
+  const initialData: ProductFormModel = {
     documentId: documentId ?? '',
     name: product?.name || '',
     price: product?.price || 0,
@@ -143,7 +143,7 @@ const EditProduct = () => {
   }
 
   const handleFormSubmit = async (
-    values: FormModel,
+    values: ProductFormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);

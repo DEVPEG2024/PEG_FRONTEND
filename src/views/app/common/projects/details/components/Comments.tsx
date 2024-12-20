@@ -8,66 +8,98 @@ import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
 import type { TimeLineItemProps } from '@/components/ui/Timeline';
-import { Comment, Project } from '@/@types/project';
+import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
-import { RootState, useAppDispatch, useAppSelector } from '@/store';
-import { setAddComment, setAddFile, setDeleteComment } from '../store';
+import { RootState, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
+import { createComment, deleteComment, setLoading, useAppSelector } from '../store';
 import dayjs from 'dayjs';
-import FileUplaodCustom from '@/components/shared/Upload';
-import {
-  createComment,
-  deleteComment,
-} from '@/utils/hooks/projects/useComments';
-import { FaFilePdf, FaFileAlt } from 'react-icons/fa';
-import { API_URL_IMAGE } from '@/configs/api.config';
 import { User } from '@/@types/user';
+import { Image } from '@/@types/product';
+import { apiUploadFile } from '@/services/FileServices';
+import { Upload } from '@/components/ui';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
-  projectId: string;
 };
 
-const Comments = ({ project }: { project: Project }) => {
-  const [commentText, setCommentText] = useState('');
-  const [image, setImage] = useState<string>('');
-  const [fileType, setFileType] = useState('');
+const Comments = () => {
+  const [commentText, setCommentText] = useState<string>('');
+  const [images, setImages] = useState<Image[]>([])
   const dispatch = useAppDispatch();
-  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
+  const {user}: {user: User} = useRootAppSelector((state: RootState) => state.auth.user);
+  const {project, comments, loading} = useAppSelector((state) => state.projectDetails.data);
+
   const submitComment = async () => {
     if (commentText.trim()) {
+      const newImages: Image[] = []
+
+      dispatch(setLoading(true))
+      for (const image of images) {
+        if (image.id) {
+          newImages.push(image)
+        } else {
+          const imageUploaded: Image = await apiUploadFile(image.file)
+          newImages.push(imageUploaded)
+        }
+      }
+
       const comment: Omit<Comment, 'documentId'> = {
         content: commentText,
         user: user,
-        createdAt: dayjs().toDate()
-        /*file: image,
-        fileType: fileType,*/
+        images: newImages.map(({id}) => id),
       };
 
-      const resp = await createComment(comment);
-      if (resp.status === 'success' && resp.data) {
-        setCommentText(''); // Réinitialiser le texte du commentaire
-        setImage('');
-        setFileType('');
-        dispatch(
-          setAddComment({
-            _id: resp.data._id,
-            comment: resp.data.comment,
-            user: user,
-            createdAt: resp.data.createdAt,
-            file: resp.data.file,
-            fileType: resp.data.fileType,
-          })
-        );
-        dispatch(
-          setAddFile({
-            _id: resp.file._id,
-            file: resp.file.file,
-            fileType: resp.file.fileType,
-            createdAt: resp.file.createdAt,
-          })
-        );
+      dispatch(createComment({comment, project}))
+      setCommentText('')
+      setImages([])
+    }
+  };
+
+  // TODO: Voir pour mettre en commun dans un composant Upload dédié --> EditProduct utilise également + Files.tsx
+  const onFileAdd = async (
+    file: File
+  ) => {
+    setImages([...images, {file, name: file.name}]);
+  };
+
+  const onFileRemove = (
+    fileName: string
+  ) => {
+    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+
+    if (imageToDelete) {
+      setImages(images.filter(({name}) => name !== fileName));
+    }
+  };
+
+  const beforeUpload = (files: FileList | null) => {
+    let valid: string | boolean = true;
+
+    const allowedFileType = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/webp',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+    ];
+    if (files) {
+      for (const file of files) {
+        if (!allowedFileType.includes(file.type)) {
+          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
+        }
       }
     }
+
+    return valid;
   };
 
   return (
@@ -78,14 +110,13 @@ const Comments = ({ project }: { project: Project }) => {
             <div>
               <h4>Commentaires</h4>
               <Timeline>
-                {project.comments.map((comment) => (
+                {comments.map((comment) => (
                   <TimelineComment
                     key={comment.documentId}
-                    projectId={project.documentId}
-                    comment={comment as Comment}
+                    comment={comment}
                     isLast={
                       comment.documentId ===
-                      project.comments[project.comments.length - 1].documentId
+                      comments[comments.length - 1].documentId
                     }
                   />
                 ))}
@@ -102,12 +133,22 @@ const Comments = ({ project }: { project: Project }) => {
                 </div>
               </div>
               <div className="flex flex-row items-center justify-end gap-2">
-                <FileUplaodCustom
-                  image={image}
-                  setImage={setImage}
-                  setFileType={setFileType}
+                <Upload
+                  multiple
+                  showList
+                  draggable
+                  uploadLimit={4}
+                  beforeUpload={beforeUpload}
+                  onFileAdd={(file) =>
+                    onFileAdd(file)
+                  }
+                  onFileRemove={(file) =>
+                    onFileRemove(file)
+                  }
+                  field={{ name: 'images' }}
+                  fileList={images.map(({file}) => file)}
                 />
-                <Button variant="solid" onClick={submitComment}>
+                <Button variant="solid" onClick={submitComment} loading={loading}>
                   Ajouter
                 </Button>
               </div>
@@ -122,98 +163,13 @@ const Comments = ({ project }: { project: Project }) => {
 
 const TimelineComment = ({
   comment,
-  projectId,
   ...rest
 }: TimelineCommentProps) => {
-  const userName =
-    typeof comment.user === 'string'
-      ? comment.user
-      : `${comment.user.firstName} ${comment.user.lastName}`;
+  const userName = `${comment.user.firstName} ${comment.user.lastName}`;
   const dispatch = useAppDispatch();
+
   const handleDeleteComment = async () => {
-    const resp = await deleteComment({
-      _id: comment.documentId,
-      projectId: projectId,
-    });
-    if (resp.status === 'success') {
-      dispatch(setDeleteComment(comment.documentId));
-    }
-  };
-  const renderFilePreview = () => {
-    if (!comment.file) return null;
-
-    const fileType = comment.fileType.split('/')[0];
-    const fileExtension = comment.fileType.split('/')[1];
-
-    switch (fileType) {
-      case 'image':
-        return (
-          <a
-            href={API_URL_IMAGE + comment.file}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center"
-          >
-            <div className=" bg-gray-900 rounded-md">
-              <img
-                src={API_URL_IMAGE + comment.file}
-                alt="comment"
-                className="w-20 h-20 object-cover rounded-md"
-              />
-            </div>
-            <p className="text-gray-500"> Télécharger</p>
-          </a>
-        );
-      case 'application':
-        if (fileExtension === 'pdf') {
-          return (
-            <div className="flex flex-col items-center justify-center">
-              <div className=" bg-gray-900 rounded-md">
-                <a
-                  href={API_URL_IMAGE + comment.file}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-20 h-12 flex items-center justify-center"
-                >
-                  <FaFilePdf size={30} className="text-red-500" />
-                </a>
-              </div>
-              <p className="text-gray-500"> Télécharger</p>
-            </div>
-          );
-        }
-        return (
-          <div className="flex flex-col items-center justify-center">
-            <div className=" bg-gray-900 rounded-md">
-              <a
-                href={API_URL_IMAGE + comment.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-20 h-12 flex items-center justify-center"
-              >
-                <FaFileAlt size={30} className="text-gray-500" />
-              </a>
-            </div>
-            <p className="text-gray-500"> Télécharger</p>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center">
-            <div className=" bg-gray-900 rounded-md">
-              <a
-                href={API_URL_IMAGE + comment.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-20 h-12 flex items-center justify-center"
-              >
-                <FaFileAlt size={30} className="text-gray-500" />
-              </a>
-            </div>
-            <p className="text-gray-500"> Télécharger</p>
-          </div>
-        );
-    }
+    dispatch(deleteComment(comment.documentId))
   };
 
   return (
@@ -236,7 +192,7 @@ const TimelineComment = ({
       <div className="grid grid-cols-12 gap-4 mt-4">
         <Card
           bordered
-          className={`${comment.file ? 'col-span-11' : 'col-span-12'}`}
+          className={`${comment.images.length > 0 ? 'col-span-11' : 'col-span-12'}`}
         >
           <p>{comment.content}</p>
           <p
@@ -246,9 +202,24 @@ const TimelineComment = ({
             Supprimer
           </p>
         </Card>
-        {comment.file && (
+        {comment.images.length > 0 && (
           <div className="col-span-1 flex flex-col items-center justify-center">
-            {renderFilePreview()}
+            {comment.images.map((image: Image) => (
+              <div className=" bg-gray-900 rounded-md">
+                <a href={image.url} target="_blank">
+                  <img
+                    src={image.url}
+                    alt={image.name}
+                    className="rounded-lg bg-slate-50"
+                    style={{
+                      height: '250px',
+                      width: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </a>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -39,20 +39,20 @@ const protectedAdminRoutes = [
   {
     key: "admin.producers.list",
     path: "/admin/producers/list",
-    component: lazy(() => import("@/views/app/admin/producers/lists")),
+    component: lazy(() => import("@/views/app/admin/producers/lists/ProducersList")),
     authority: [SUPER_ADMIN],
   },
   {
     key: "admin.producers.add",
     path: "/admin/producers/add",
     component: lazy(
-      () => import("@/views/app/admin/producers/lists/NewProducer")
+      () => import("@/views/app/admin/producers/lists/EditProducer")
     ),
     authority: [SUPER_ADMIN],
   },
   {
     key: "admin.producers.edit",
-    path: "/admin/producers/edit/:id",
+    path: "/admin/producers/edit/:documentId",
     component: lazy(
       () => import("@/views/app/admin/producers/lists/EditProducer")
     ),
@@ -61,7 +61,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.producers.categories",
     path: "/admin/producers/categories",
-    component: lazy(() => import("@/views/app/admin/producers/categories")),
+    component: lazy(() => import("@/views/app/admin/producers/categories/ProducerCategoriesList")),
     authority: [SUPER_ADMIN],
   },
   // projects
@@ -85,7 +85,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.store.lists",
     path: "/admin/store/lists",
-    component: lazy(() => import("@/views/app/admin/products/list")),
+    component: lazy(() => import("@/views/app/admin/products/ProductsList")),
     authority: [SUPER_ADMIN],
   },
 
@@ -93,13 +93,13 @@ const protectedAdminRoutes = [
   {
     key: "admin.store.new",
     path: "/admin/store/new",
-    component: lazy(() => import("@/views/app/admin/products/product/index")), // TODO: pourquoi devoir mettre index ?
+    component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
     authority: [SUPER_ADMIN],
   },
   {
     key: "admin.store.edit",
     path: "/admin/store/edit/:documentId",
-    component: lazy(() => import("@/views/app/admin/products/product/index")),
+    component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
     authority: [SUPER_ADMIN],
   },
 
@@ -132,7 +132,7 @@ const protectedAdminRoutes = [
   {
     key: "admin.store.orders",
     path: "/admin/store/orders",
-    component: lazy(() => import("@/views/app/admin/orders")),
+    component: lazy(() => import("@/views/app/admin/orders/OrderItemsList")),
     authority: [SUPER_ADMIN],
   },
   //forms
@@ -142,30 +142,30 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/forms/FormsList")),
     authority: [SUPER_ADMIN],
   },
-  //teams
-  /*{
-    key: "admin.teams",
-    path: "/admin/teams",
-    component: lazy(() => import("@/views/app/admin/teams/TeamsList")),
+  //users
+  {
+    key: "admin.users",
+    path: "/admin/users",
+    component: lazy(() => import("@/views/app/admin/users/UsersList")),
     authority: [SUPER_ADMIN],
   },
   {
-    key: "admin.teams.add",
-    path: "/admin/teams/add",
-    component: lazy(() => import("@/views/app/admin/teams/NewTeam")),
+    key: "admin.users.add",
+    path: "/admin/users/add",
+    component: lazy(() => import("@/views/app/admin/users/EditUser")),
     authority: [SUPER_ADMIN],
   },
   {
-    key: "admin.teams.edit",
-    path: "/admin/teams/edit/:id",
-    component: lazy(() => import("@/views/app/admin/teams/EditTeam")),
+    key: "admin.users.edit",
+    path: "/admin/users/edit/:documentId",
+    component: lazy(() => import("@/views/app/admin/users/EditUser")),
     authority: [SUPER_ADMIN],
-  },*/
+  },
   //invoices
   {
     key: "admin.invoices",
     path: "/admin/invoices",
-    component: lazy(() => import("@/views/app/admin/invoices/InvoicesList")),
+    component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),
     authority: [SUPER_ADMIN],
   },
   //banners
@@ -198,13 +198,13 @@ const protectedCustomersRoutes = [
   {
     key: "customer.product",
     path: "/customer/product/:documentId",
-    component: lazy(() => import("@/views/app/customer/products/show")),
+    component: lazy(() => import("@/views/app/customer/products/show/ShowProduct")),
     authority: [CUSTOMER],
   },
   {
     key: "customer.product",
     path: "/customer/product/:id/edit",
-    component: lazy(() => import("@/views/app/customer/products/show")),
+    component: lazy(() => import("@/views/app/customer/products/show/ShowProduct")),
     authority: [CUSTOMER],
   },
   {
@@ -243,7 +243,7 @@ const protectedCustomersRoutes = [
   {
     key: "customer.invoices",
     path: "/customer/invoices",
-    component: lazy(() => import("@/views/app/customer/invoices")),
+    component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),
     authority: [CUSTOMER],
   },
 ];
@@ -280,8 +280,8 @@ const protectedProducerRoutes = [
 const protectedCommonRoutes = [
   {
     key: "common.order.show",
-    path: "/common/order/show",
-    component: lazy(() => import("@/views/app/common/order/show/ShowOrder")),
+    path: "/common/orderItem/:documentId",
+    component: lazy(() => import("@/views/app/common/orderItem/ShowOrderItem")),
     authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, ADMIN],
     meta: {
       pageContainerType: "gutterless",

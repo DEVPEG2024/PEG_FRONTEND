@@ -1,18 +1,17 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Comment, IFile, Project, Task } from '@/@types/project';
 import {
-  apiGetInvoicesProject,
-  apiUpdateInvoice,
   apiGetProjectById,
   DeleteProjectResponse,
   apiDeleteProject,
   apiUpdateProject,
 } from '@/services/ProjectServices';
 import { WritableDraft } from 'immer';
-import { Invoice, InvoiceOld } from '@/@types/invoice';
+import { Invoice } from '@/@types/invoice';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiCreateTask, apiDeleteTask, apiUpdateTask, CreateTaskRequest, DeleteTaskResponse } from '@/services/TaskService';
-import { apiCreateInvoice, apiDeleteInvoice, CreateInvoiceRequest, DeleteInvoiceResponse } from '@/services/InvoicesServices';
+import { apiUpdateInvoice } from '@/services/InvoicesServices';
+import { apiCreateComment, apiDeleteComment, CreateCommentRequest } from '@/services/CommentServices';
 
 export const SLICE_NAME = 'projectDetails';
 
@@ -20,11 +19,12 @@ export type ProjectDetailsState = {
   project: Project;
   tasks: Task[];
   invoices: Invoice[];
+  comments: Comment[];
   selectedTask: Task | null;
-  selectedInvoice: InvoiceOld | null;
+  selectedInvoice: Invoice | null;
   editProjectDialog: boolean;
-  newInvoiceDialog: boolean;
   editInvoiceDialog: boolean;
+  printInvoiceDialog: boolean;
   newDialogTask: boolean;
   editDialogTask: boolean;
   selectedTab: string;
@@ -87,57 +87,47 @@ export const updateTask = createAsyncThunk(
   }
 );
 
-export const createInvoice = createAsyncThunk(
-  SLICE_NAME + '/createInvoice',
-  async (data: CreateInvoiceRequest) : Promise<Invoice> => {
-    const {createInvoice} : {createInvoice: Invoice} = await unwrapData(apiCreateInvoice(data));
-    return createInvoice;
-  }
-);
-
-export const deleteInvoice = createAsyncThunk(
-  SLICE_NAME + '/deleteInvoice',
-  async (documentId: string): Promise<DeleteInvoiceResponse> => {
-    const {deleteInvoice} : {deleteInvoice: DeleteInvoiceResponse} = await unwrapData(apiDeleteInvoice(documentId));
-    return deleteInvoice;
-  }
-);
-
-type GetInvoicesProjectRequest = {
-  projectId: string;
-};
-
-export const getInvoicesProject = createAsyncThunk(
-  SLICE_NAME + '/getInvoicesProject',
-  async (data: GetInvoicesProjectRequest) => {
-    const response = await apiGetInvoicesProject(data);
-    return response.data;
-  }
-);
-
-type UpdateInvoiceRequest = {
-  invoice: InvoiceOld;
-  invoiceId: string;
-};
-
 export const updateInvoice = createAsyncThunk(
   SLICE_NAME + '/updateInvoice',
-  async (data: UpdateInvoiceRequest) => {
-    const response = await apiUpdateInvoice(data);
-    return response.data;
+  async (data: Partial<Invoice>): Promise<Invoice> => {
+    const {updateInvoice} : {updateInvoice: Invoice} = await unwrapData(apiUpdateInvoice(data));
+    return updateInvoice;
+  }
+);
+
+export type CreateComment = {
+  comment: CreateCommentRequest;
+  project: Project;
+}
+
+export const createComment = createAsyncThunk(
+  SLICE_NAME + '/createComment',
+  async (data: CreateComment) : Promise<Comment> => {
+    const {createComment} : {createComment: Comment} = await unwrapData(apiCreateComment(data.comment));
+    await apiUpdateProject({documentId: data.project.documentId, comments: [...data.project.comments.map(({documentId}) => documentId), createComment.documentId]})
+    return createComment;
+  }
+);
+
+export const deleteComment = createAsyncThunk(
+  SLICE_NAME + '/deleteComment',
+  async (documentId: string): Promise<DeleteTaskResponse> => {
+    const {deleteComment} : {deleteComment: DeleteTaskResponse} = await unwrapData(apiDeleteComment(documentId));
+    return deleteComment;
   }
 );
 
 const initialState: ProjectDetailsState = {
   invoices: [],
   tasks: [],
+  comments: [],
   project: undefined,
   editProjectDialog: false,
-  newInvoiceDialog: false,
   selectedInvoice: null,
   editInvoiceDialog: false,
   newDialogTask: false,
   editDialogTask: false,
+  printInvoiceDialog: false,
   selectedTask: null,
   loading: false,
   selectedTab: 'Accueil',
@@ -148,6 +138,12 @@ const projectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setProject: (state, action) => {
+      state.project = action.payload;
+    },
     setEditDescription: (state, action) => {
       state.editDescription = action.payload;
     },
@@ -214,11 +210,11 @@ const projectListSlice = createSlice({
         );
       }
     },
-    setNewInvoiceDialog: (state, action) => {
-      state.newInvoiceDialog = action.payload;
-    },
     setEditInvoiceDialog: (state, action) => {
       state.editInvoiceDialog = action.payload;
+    },
+    setPrintInvoiceDialog: (state, action) => {
+      state.printInvoiceDialog = action.payload;
     },
     setSelectedInvoice: (state, action) => {
       state.selectedInvoice = action.payload;
@@ -232,6 +228,7 @@ const projectListSlice = createSlice({
       state.project = action.payload.project;
       state.tasks = action.payload.project.tasks
       state.invoices = action.payload.project.invoices
+      state.comments = action.payload.project.comments
       state.loading = false;
     });
     // UPDATE PROJECT
@@ -275,30 +272,28 @@ const projectListSlice = createSlice({
     builder.addCase(updateTask.rejected, (state) => {
       state.loading = false;
     });
-    // GET INVOICES PROJECT
-    builder.addCase(getInvoicesProject.pending, (state) => {
+    // CREATE COMMENT
+    builder.addCase(createComment.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getInvoicesProject.fulfilled, (state, action) => {
-      state.invoices = action.payload.invoices as never;
+    builder.addCase(createComment.fulfilled, (state, action) => {
       state.loading = false;
+      state.comments.push(action.payload);
+      state.project!.comments = state.comments
     });
-    builder.addCase(getInvoicesProject.rejected, (state, action) => {
-      state.loading = false;
-      state.message = action.error.message as string;
-    });
-    // CREATE INVOICE
-    builder.addCase(createInvoice.pending, (state) => {
+    // DELETE COMMENT
+    builder.addCase(deleteComment.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(createInvoice.fulfilled, (state, action) => {
+    builder.addCase(deleteComment.fulfilled, (state, action) => {
       state.loading = false;
-      state.newInvoiceDialog = false;
-      state.invoices.push(action.payload.invoice as never);
+      state.comments = state.comments.filter(
+        (comment) => comment.documentId !== action.payload.documentId
+      );
+      state.project!.comments = state.comments
     });
-    builder.addCase(createInvoice.rejected, (state, action) => {
+    builder.addCase(deleteComment.rejected, (state, action) => {
       state.loading = false;
-      state.message = action.error.message as string;
     });
     // UPDATE INVOICE
     builder.addCase(updateInvoice.pending, (state) => {
@@ -306,34 +301,21 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.editInvoiceDialog = false;
       state.invoices = state.invoices.map((invoice) =>
-        invoice._id === action.payload.invoice._id
-          ? action.payload.invoice
-          : invoice
-      ) as WritableDraft<InvoiceOld>[];
-    });
-    builder.addCase(updateInvoice.rejected, (state, action) => {
-      state.loading = false;
-      state.message = action.error.message as string;
-    });
-    // DELETE INVOICE
-    builder.addCase(deleteInvoice.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(deleteInvoice.fulfilled, (state, action) => {
-      state.loading = false;
-      state.invoices = state.invoices.filter(
-        (invoice) => invoice.documentId !== action.payload.documentId
+        invoice.documentId === action.payload.documentId ? action.payload : invoice
       );
+      state.editInvoiceDialog = false
+      state.selectedInvoice = null
     });
-    builder.addCase(deleteInvoice.rejected, (state, action) => {
+    builder.addCase(updateInvoice.rejected, (state) => {
       state.loading = false;
     });
   },
 });
 
 export const {
+  setProject,
+  setLoading,
   setEditProjectDialog,
   setSelectedTab,
   setAddComment,
@@ -346,8 +328,8 @@ export const {
   setEditTaskSelected,
   setDeleteTask,
   setSelectedTask,
-  setNewInvoiceDialog,
   setEditInvoiceDialog,
+  setPrintInvoiceDialog,
   setSelectedInvoice,
   setEditDescription,
 } = projectListSlice.actions;

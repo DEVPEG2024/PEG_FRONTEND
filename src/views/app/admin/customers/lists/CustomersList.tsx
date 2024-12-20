@@ -1,7 +1,7 @@
 import { Container, DataTable, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
-import { useColumns } from './columns';
+import { useColumns } from './CustomerColumns';
 import { Input } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import { CUSTOMERS_NEW } from '@/constants/navigation.constant';

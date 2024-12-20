@@ -1,7 +1,7 @@
 import { Container, DataTable } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
-import { useColumns } from './columns';
+import { useColumns } from './BannerColumns';
 import { Input } from '@/components/ui';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {

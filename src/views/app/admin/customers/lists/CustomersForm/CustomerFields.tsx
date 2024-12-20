@@ -5,6 +5,7 @@ import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { t } from 'i18next';
 import { Select } from '@/components/ui';
 import { Customer } from '@/@types/customer';
+import { CustomerFormModel } from './CustomerForm';
 type country = {
   label: string;
   dialCode: string;
@@ -13,9 +14,9 @@ type country = {
 
 type CustomerFields = {
   countries: country[];
-  touched: FormikTouched<Customer>;
-  errors: FormikErrors<Customer>;
-  values: Customer;
+  touched: FormikTouched<CustomerFormModel>;
+  errors: FormikErrors<CustomerFormModel>;
+  values: CustomerFormModel;
   setFieldValue: (
     field: string,
     value: any,
@@ -24,7 +25,7 @@ type CustomerFields = {
 };
 
 const CustomerFields = (props: CustomerFields) => {
-  const { countries, touched, errors, setFieldValue } = props;
+  const { countries, errors, setFieldValue } = props;
 
   const formatPhoneNumber = (value: string): string => {
     // Retirer tous les espaces
@@ -99,6 +100,7 @@ const CustomerFields = (props: CustomerFields) => {
             name="city"
             placeholder={t('city')}
             component={Input}
+            value={props.values.city}
           />
         </FormItem>
         <FormItem

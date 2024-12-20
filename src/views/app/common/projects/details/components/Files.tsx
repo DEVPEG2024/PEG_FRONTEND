@@ -2,102 +2,131 @@ import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
-import { HiTrash } from 'react-icons/hi';
-import { Project } from '@/@types/project';
 import DetailsRight from './DetailsRight';
+import { Image } from '@/@types/product';
+import { Upload } from '@/components/ui';
 import { useAppDispatch } from '@/store';
-import { setAddFile, setDeleteFile } from '../store';
-import FileUplaodDragCustom from '@/components/shared/Upload/drag';
-import { FaFilePdf } from 'react-icons/fa';
-import { API_URL_IMAGE } from '@/configs/api.config';
-import {
-  deleteFileFromProject,
-  uploadNewFileToProject,
-} from '@/utils/hooks/projects/useFile';
+import { setLoading, updateProject, useAppSelector } from '../store';
+import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { Loading } from '@/components/shared';
 
-const Files = ({ project }: { project: Project }) => {
-  const [image, setImage] = useState<string>('');
-  const [fileType, setFileType] = useState('');
+const Files = () => {
+  const [images, setImages] = useState<Image[]>([])
+  const [imagesChanged, setImagesChanged] = useState<boolean>(false);
   const dispatch = useAppDispatch();
+  const {project, loading} = useAppSelector((state) => state.projectDetails.data);
+  
   useEffect(() => {
-    if (image) {
-      handleUpload();
-    }
-  }, [image]);
-  const handleUpload = async () => {
-    const data = {
-      file: image,
-      fileType: fileType,
-      projectId: project.documentId,
-    };
-    const resp = await uploadNewFileToProject(data);
-    if (resp.status === 'success' && resp.data) {
-      setImage('');
-      setFileType('');
-      dispatch(
-        setAddFile({
-          _id: resp.data._id,
-          file: resp.data.file,
-          fileType: resp.data.fileType,
-          createdAt: resp.data.createdAt,
-        })
-      );
+      fetchFiles();
+    }, [project]);
+
+  const fetchFiles = async (): Promise<void> => {
+    if (project?.images?.length > 0){
+      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(project?.images)
+
+      setImages(imagesLoaded);
     }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
-    const data = {
-      fileId: fileId,
-      projectId: project.documentId,
-    };
-    const resp = await deleteFileFromProject(data);
-    if (resp.status === 'success') {
-      dispatch(setDeleteFile(fileId));
+  const onFileAdd = async (
+    file: File
+  ) => {
+    setImages([...images, {file, name: file.name}]);
+    setImagesChanged(true);
+  };
+
+  const onFileRemove = (
+    fileName: string
+  ) => {
+    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+
+    if (imageToDelete) {
+      setImages(images.filter(({name}) => name !== fileName));
+      setImagesChanged(true);
     }
   };
+
+  const beforeUpload = (files: FileList | null) => {
+    let valid: string | boolean = true;
+
+    const allowedFileType = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/webp',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+    ];
+    if (files) {
+      for (const file of files) {
+        if (!allowedFileType.includes(file.type)) {
+          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
+        }
+      }
+    }
+
+    return valid;
+  };
+
+  const handleSubmit = async () => {
+    const newImages: Image[] = []
+    
+    dispatch(setLoading(true))
+    for (const image of images) {
+      if (image.id) {
+        newImages.push(image)
+      } else {
+        const imageUploaded: Image = await apiUploadFile(image.file)
+        newImages.push(imageUploaded)
+      }
+    }
+
+    dispatch(updateProject({documentId: project.documentId, images: newImages.map(({id}) => id)}))
+    setImages([])
+    setImagesChanged(false);
+  }
 
   return (
     <Container className="h-full">
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdaptableCard rightSideBorder bodyClass="p-5">
-            <FileUplaodDragCustom
-              image={image}
-              setImage={setImage}
-              setFileType={setFileType}
-            />
-            <div className="flex flex-wrap gap-11 w-full mt-4">
-              {project.files.map((file) => {
-                const fileType = file.fileType.split('/')[0];
-                return (
-                  <div key={file._id} className=" col-span-1">
-                    <a
-                      href={API_URL_IMAGE + file.file}
-                      target="_blank"
-                      className="bg-gray-900 rounded-md w-40 h-40 cursor-pointer justify-center items-center flex flex-col"
-                    >
-                      {fileType === 'image' ? (
-                        <img
-                          src={API_URL_IMAGE + file.file}
-                          alt="file"
-                          className=" object-cover rounded-md"
-                        />
-                      ) : (
-                        <FaFilePdf size={100} className="text-red-500" />
-                      )}
-                    </a>
-                    <Button
-                      className="flex justify-center items-center mt-2 gap-2"
-                      onClick={() => handleDeleteFile(file._id)}
-                    >
-                      <HiTrash size={15} className="text-gray-500" />
-                      <p className="text-sm text-gray-500">Supprimer</p>
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </AdaptableCard>
+          <Loading loading={loading}>
+            <AdaptableCard rightSideBorder bodyClass="p-5">
+              <Upload
+                multiple
+                showList
+                draggable
+                beforeUpload={beforeUpload}
+                onFileAdd={(file) =>
+                  onFileAdd(file)
+                }
+                onFileRemove={(file) =>
+                  onFileRemove(file)
+                }
+                field={{ name: 'images' }}
+                fileList={images.map((image) => {
+                  const file = image.file
+
+                  file.previewUrl = image.url
+                  return file
+                })}
+                clickable
+              />
+              {imagesChanged && (
+                <Button variant="solid" onClick={handleSubmit} loading={loading}>
+                  Enregistrer
+                </Button>
+              )}
+            </AdaptableCard>
+          </Loading>
         </div>
         <DetailsRight />
       </div>

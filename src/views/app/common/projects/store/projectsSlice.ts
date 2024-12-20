@@ -1,9 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Project } from '@/@types/project';
 import {
-  apiGetInvoicesProject,
-  apiDeleteInvoice,
-  apiUpdateInvoice,
   GetProjectsResponse,
   apiGetCustomerProjects,
   apiGetProjects,
@@ -11,7 +8,6 @@ import {
   apiDeleteProject,
   apiUpdateProject,
 } from '@/services/ProjectServices';
-import { InvoiceOld } from '@/@types/invoice';
 import { PaginationRequest, unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
@@ -66,43 +62,6 @@ export const updateProject = createAsyncThunk(
   async (data: Partial<Project>): Promise<Project> => {
     const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject(data));
     return updateProject;
-  }
-);
-
-type GetInvoicesProjectRequest = {
-  projectId: string;
-};
-
-export const getInvoicesProject = createAsyncThunk(
-  SLICE_NAME + '/getInvoicesProject',
-  async (data: GetInvoicesProjectRequest) => {
-    const response = await apiGetInvoicesProject(data);
-    return response.data;
-  }
-);
-
-type DeleteInvoiceRequest = {
-  invoiceId: string;
-};
-
-export const deleteInvoice = createAsyncThunk(
-  SLICE_NAME + '/deleteInvoice',
-  async (data: DeleteInvoiceRequest) => {
-    const response = await apiDeleteInvoice(data);
-    return response.data;
-  }
-);
-
-type UpdateInvoiceRequest = {
-  invoice: InvoiceOld;
-  invoiceId: string;
-};
-
-export const updateInvoice = createAsyncThunk(
-  SLICE_NAME + '/updateInvoice',
-  async (data: UpdateInvoiceRequest) => {
-    const response = await apiUpdateInvoice(data);
-    return response.data;
   }
 );
 

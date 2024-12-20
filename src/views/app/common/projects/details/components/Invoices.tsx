@@ -1,40 +1,35 @@
 import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
-import { HiPencil, HiPrinter, HiTrash } from 'react-icons/hi';
-import { Project } from '@/@types/project';
+import { HiBan, HiPencil, HiPrinter, HiTrash } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
 import {
-  deleteInvoice,
   setEditInvoiceDialog,
-  setNewInvoiceDialog,
+  setPrintInvoiceDialog,
   setSelectedInvoice,
+  updateInvoice,
   useAppSelector,
 } from '../store';
 import { Card, Checkbox } from '@/components/ui';
 import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
-import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { Invoice, InvoiceOld } from '@/@types/invoice';
-
-import ModalPrintInvoice from '../../modals/ModalPrintInvoice';
+import { Invoice } from '@/@types/invoice';
 import { hasRole } from '@/utils/permissions';
 import { SUPER_ADMIN } from '@/constants/roles.constant';
-import ModalEditInvoice from '@/views/app/admin/invoices/modals/ModalEditInvoice';
+import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
+import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvoice';
+import { stateData } from '@/views/app/common/invoices/constants';
 
-// TODO SUITE:  édition print -> utiliser les Modal de admin/invoices mais voir pour la utualisation car store spécifique
 const Invoices = () => {
   const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   const dispatch = useAppDispatch();
-  const { invoices } = useAppSelector((state) => state.projectDetails.data);
-  const [modalPrintInvoice, setModalPrintInvoice] = useState(false);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const { invoices, editInvoiceDialog, selectedInvoice, printInvoiceDialog, loading } = useAppSelector((state) => state.projectDetails.data);
 
-  const handleDeleteInvoice = (invoice: Invoice) => {
-    dispatch(deleteInvoice(invoice.documentId));
+  const handleCancelInvoice = (invoice: Invoice) => {
+    dispatch(updateInvoice({documentId: invoice.documentId, state: 'canceled'}));
   };
 
   const handleUpdateInvoice = (invoice: Invoice) => {
@@ -43,8 +38,8 @@ const Invoices = () => {
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {
-    setInvoice(invoice);
-    setModalPrintInvoice(true);
+    dispatch(setSelectedInvoice(invoice));
+    dispatch(setPrintInvoiceDialog(true));
   };
 
   return (
@@ -54,15 +49,6 @@ const Invoices = () => {
           <AdaptableCard rightSideBorder bodyClass="p-5">
             <div className="flex justify-between items-center mb-4">
               <h4>Factures</h4>
-              {/*hasRole(user, [SUPER_ADMIN]) && (
-                <Button
-                  variant="twoTone"
-                  size="sm"
-                  onClick={() => dispatch(setNewInvoiceDialog(true))}
-                >
-                  Créer une facture
-                </Button>
-              )*/}
             </div>
             <div className="flex flex-col gap-2">
               {invoices.length > 0 ? (
@@ -80,7 +66,12 @@ const Invoices = () => {
                                 {invoice.name}
                               </span>
                             </div>
-                            <div className="cursor-pointer  items-center justify-end gap-2 hidden md:block">
+                            <div className="gap-2 hidden md:block">
+                              <span className="text-sm text-gray-500">
+                                {stateData.find(({value}) => value === invoice.state)?.label ?? 'Statut indéterminé'}
+                              </span>
+                            </div>
+                            <div className="gap-2 hidden md:block">
                               <span className="text-sm text-gray-500">
                                 {dayjs(invoice.date).format('DD/MM/YYYY')}
                               </span>
@@ -118,9 +109,10 @@ const Invoices = () => {
                           <Button
                             variant="twoTone"
                             size="xs"
-                            onClick={() => handleDeleteInvoice(invoice)}
+                            onClick={() => handleCancelInvoice(invoice)}
+                            disabled={invoice?.state === 'canceled'}
                           >
-                            <HiTrash size={15} />
+                            <HiBan size={15} />
                           </Button>
                           )}
                         </div>
@@ -140,19 +132,24 @@ const Invoices = () => {
         </div>
         <DetailsRight />
       </div>
-      {/*{hasRole(user, [SUPER_ADMIN]) && (
-        <ModalNewInvoice />
-      )}*/}
-      {hasRole(user, [SUPER_ADMIN]) && (
-        <ModalEditInvoice />
-      )}
-      {invoice && (
-        <ModalPrintInvoice
-          invoice={invoice as InvoiceOld}
-          isOpen={modalPrintInvoice}
-          onClose={() => setModalPrintInvoice(false)}
-        />
-      )}
+      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN]) &&
+        <ModalEditInvoice
+          editInvoiceDialog={editInvoiceDialog}
+          selectedInvoice={selectedInvoice}
+          setEditInvoiceDialog={setEditInvoiceDialog}
+          setSelectedInvoice={setSelectedInvoice}
+          updateInvoice={updateInvoice}
+          dispatch={dispatch}
+          loading={loading} />
+      }
+      {selectedInvoice && printInvoiceDialog &&
+        <ModalPrintInvoice 
+          printInvoiceDialog={printInvoiceDialog}
+          selectedInvoice={selectedInvoice}
+          setPrintInvoiceDialog={setPrintInvoiceDialog}
+          setSelectedInvoice={setSelectedInvoice}
+          dispatch={dispatch}/>
+      }
     </Container>
   );
 };

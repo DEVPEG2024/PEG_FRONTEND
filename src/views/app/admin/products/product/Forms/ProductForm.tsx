@@ -17,7 +17,7 @@ interface Options {
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>;
 
-export type FormModel = Omit<Product, 'documentId' | 'sizes' | 'customerCategories' | 'customers' | 'productCategory' | 'form' | 'images'> & {
+export type ProductFormModel = Omit<Product, 'documentId' | 'sizes' | 'customerCategories' | 'customers' | 'productCategory' | 'form' | 'images'> & {
   documentId?: string;
   sizes: string[];
   customerCategories: string[];
@@ -33,11 +33,11 @@ export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
 type OnDelete = (callback: OnDeleteCallback) => void;
 
 type ProductForm = {
-  initialData?: FormModel;
+  initialData?: ProductFormModel;
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
-  onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void;
+  onFormSubmit: (formData: ProductFormModel, setSubmitting: SetSubmitting) => void;
   sizes: Options[];
   customerCategories: Options[];
   categories: Options[];
@@ -124,7 +124,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
           ...initialData
         }}
         validationSchema={validationSchema}
-        onSubmit={(values: FormModel, { setSubmitting }) => {
+        onSubmit={(values: ProductFormModel, { setSubmitting }) => {
           console.log('Form submitted with values:', values);
           const formData = cloneDeep(values);
           onFormSubmit?.(formData, setSubmitting);

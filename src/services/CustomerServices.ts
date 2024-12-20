@@ -1,27 +1,8 @@
 import { API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { IUser } from '@/@types/user'
-import { PUT_CUSTOMERS_STATUS_API_URL } from '@/constants/api.constant'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { Customer } from '@/@types/customer'
 import { AxiosResponse } from 'axios'
-
-// TODO: Services
-type CustomerResponse = {
-    customers: IUser[]
-    total: number
-    result: string
-    message: string
-}
-
-// update status customer
-export async function apiUpdateStatusCustomer(data: Record<string, unknown>) {
-    return ApiService.fetchData<CustomerResponse>({
-        url: PUT_CUSTOMERS_STATUS_API_URL,
-        method: 'put',
-        data 
-    })
-}
 
 // get customers
 export type GetCustomersRequest = {
@@ -100,24 +81,26 @@ export async function apiGetCustomerForEditById(documentId: string): Promise<Axi
     query GetCustomerForEditById($documentId: ID!) {
         customer(documentId: $documentId) {
             documentId
-            address
             banner {
                 documentId
                 name
             }
-            city
-            country
             customerCategory {
                 documentId
                 name
             }
-            email
+            companyInformations {
+                email
+                phoneNumber
+                siretNumber
+                vatNumber
+                website
+                zipCode
+                city
+                country
+                address
+            }
             name
-            phoneNumber
-            siretNumber
-            vatNumber
-            website
-            zipCode 
         }
     }
   `,
