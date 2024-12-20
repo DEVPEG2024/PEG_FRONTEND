@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { apiGetHomeProducer } from '@/services/HomeProducerService';
 import { IProject } from '@/@types/project';
-import ProjectListContent from '../projects/lists/components/ProjectListContent';
 import ProjectItem from '../../common/projects/lists/components/ProjectItem';
 import { User } from '@/@types/user';
 

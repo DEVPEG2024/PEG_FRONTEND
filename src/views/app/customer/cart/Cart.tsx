@@ -12,13 +12,13 @@ import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderServices';
+import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderItemServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { apiCreateProject, apiUpdateProject } from '@/services/ProjectServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import PaymentContent from './PaymentContent';
 import { unwrapData } from '@/utils/serviceHelper';
-import { OrderItem } from '@/@types/order';
+import { OrderItem } from '@/@types/orderItem';
 import { Project } from '@/@types/project';
 import { User } from '@/@types/user';
 import { apiCreateInvoice } from '@/services/InvoicesServices';
@@ -63,8 +63,6 @@ function Cart() {
             (amount, size) => amount + size.quantity * item.product.price,
             0
           ),
-          // TODO: A supprimer car porté par facture
-          paymentState: paymentInformations.paymentMethod === 'manual' ? 'pending' : '',
           state: 'pending',
           customer: user.customer!
         };
@@ -150,8 +148,7 @@ function Cart() {
   };
 
   const addInvoiceToProject = (project: Project, invoice: Invoice) => {
-    project.invoices.push(invoice)
-    apiUpdateProject({documentId: project.documentId, invoices: project.invoices.map(({documentId}) => documentId)})
+    apiUpdateProject({documentId: project.documentId, invoices: [...project.invoices.map(({documentId}) => documentId), invoice.documentId]})
   }
 
   const createOrderAndClearCart = async (paymentInformations: PaymentInformations) : Promise<void> => {

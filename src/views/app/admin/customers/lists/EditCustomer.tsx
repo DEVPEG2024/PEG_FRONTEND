@@ -1,5 +1,5 @@
 import CustomerForm, {
-  FormModel,
+  CustomerFormModel,
   SetSubmitting,
 } from '@/views/app/admin/customers/lists/CustomersForm';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -31,20 +31,20 @@ const EditCustomer = () => {
   const { documentId } = useParams<EditCustomerParams>() as EditCustomerParams;
   const { customer } = useAppSelector((state) => state.customers.data);
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
-  const initialData: FormModel = {
+  const initialData: CustomerFormModel = {
     documentId: documentId ?? '',
     name: customer?.name || '',
     banner: customer?.banner?.documentId || null,
     customerCategory: customer?.customerCategory?.documentId || null,
-    email: customer?.email || '',
-    phoneNumber: customer?.phoneNumber || '',
-    vatNumber: customer?.vatNumber || '',
-    siretNumber: customer?.siretNumber || '',
-    address: customer?.address || '',
-    zipCode: customer?.zipCode || '',
-    city: customer?.city || '',
-    country: customer?.country || '',
-    website: customer?.website || '',
+    email: customer?.companyInformations.email || '',
+    phoneNumber: customer?.companyInformations.phoneNumber || '',
+    vatNumber: customer?.companyInformations.vatNumber || '',
+    siretNumber: customer?.companyInformations.siretNumber || '',
+    address: customer?.companyInformations.address || '',
+    zipCode: customer?.companyInformations.zipCode || '',
+    city: customer?.companyInformations.city || '',
+    country: customer?.companyInformations.country || '',
+    website: customer?.companyInformations.website || '',
   }
 
   useEffect(() => {
@@ -74,23 +74,36 @@ const EditCustomer = () => {
     setCustomerCategories(customerCategories);
   };
 
-  const updateOrCreateCustomer = async (data: Customer) : Promise<Customer> => {
+  const updateOrCreateCustomer = async (data: CustomerFormModel) : Promise<Customer> => {
+    const customer: Omit<Customer, 'documentId'> = {
+      banner: data.banner,
+      companyInformations: {
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        siretNumber: data.siretNumber,
+        vatNumber: data.vatNumber,
+        website: data.website,
+        zipCode: data.zipCode
+      },
+      customerCategory: data.customerCategory,
+      name: data.name,
+    }
     if (onEdition) {
-      const {updateCustomer} : {updateCustomer: Customer} = await unwrapData(apiUpdateCustomer(data));
+      const {updateCustomer} : {updateCustomer: Customer} = await unwrapData(apiUpdateCustomer({documentId: data.documentId, ...customer}));
       return updateCustomer
     }
-    const {createCustomer} : {createCustomer: Customer} = await unwrapData(apiCreateCustomer(data));
+    const {createCustomer} : {createCustomer: Customer} = await unwrapData(apiCreateCustomer(customer));
     return createCustomer
   }
 
   const handleFormSubmit = async (
-    values: FormModel,
+    values: CustomerFormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    if (!onEdition) {
-      delete values.documentId
-    }
     await updateOrCreateCustomer(values)
     setSubmitting(false);
     navigate(CUSTOMERS_LIST);

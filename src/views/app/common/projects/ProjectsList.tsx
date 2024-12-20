@@ -50,6 +50,7 @@ const ProjectsList = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProjects = async () => {
+    // Récupérer les projets si customer ou admin
     dispatch(
       getProjects({
         user,

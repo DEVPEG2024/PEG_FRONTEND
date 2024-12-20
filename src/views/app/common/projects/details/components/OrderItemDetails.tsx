@@ -6,26 +6,20 @@ import {
   HiBookOpen,
   HiInformationCircle,
 } from 'react-icons/hi';
-import { OrderItem } from '@/@types/order';
+import { OrderItem } from '@/@types/orderItem';
 import { SizeSelection } from '@/@types/product';
 import { Button } from '@/components/ui';
-import { injectReducer, useAppDispatch } from '@/store';
 import { useNavigate } from 'react-router-dom';
-import reducer, { showOrder } from '@/views/app/admin/orders/store'; // TODO: A gérer différemment --> appel de admin depuis customer
 import { Customer } from '@/@types/customer';
 
-injectReducer('orders', reducer);
-
 const OrderItemDetails = ({ orderItem, customer }: { orderItem: OrderItem, customer: Customer }) => {
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;
   const productSizes: SizeSelection[] = orderItem.sizeSelections;
 
-  const handleShowProduct = (orderItem: OrderItem) => {
-    dispatch(showOrder(orderItem));
-    navigate('/common/order/show');
+  const handleShowOrderItem = (orderItem: OrderItem) => {
+    navigate('/common/orderItem/' + orderItem.documentId);
   };
 
   return (
@@ -58,7 +52,7 @@ const OrderItemDetails = ({ orderItem, customer }: { orderItem: OrderItem, custo
           </span>
         </IconText>
         <Button
-          onClick={() => handleShowProduct(orderItem)}
+          onClick={() => handleShowOrderItem(orderItem)}
           size="sm"
           variant="twoTone"
           icon={<HiInformationCircle size={20} />}

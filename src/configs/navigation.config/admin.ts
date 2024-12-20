@@ -195,16 +195,16 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
-  /*{
-    key: "admin.teams",
-    path: "/admin/teams",
-    title: "Équipe",
-    translateKey: "nav.teams",
-    icon: "teams",
+  {
+    key: "admin.users",
+    path: "/admin/users",
+    title: "Utilisateurs",
+    translateKey: "nav.users",
+    icon: "users",
     type: NAV_ITEM_TYPE_ITEM,
     authority: [SUPER_ADMIN],
     subMenu: [],
-  },*/
+  },
   
   {
     key: "default.support",

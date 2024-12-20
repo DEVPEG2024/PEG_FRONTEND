@@ -131,7 +131,7 @@ const ProductFields = (props: ProductFields) => {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="col-span-1">
           <p className="font-bold mb-2">Tailles produit</p>
           <Field name="sizes">
@@ -151,7 +151,7 @@ const ProductFields = (props: ProductFields) => {
             )}
           </Field>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="col-span-1">
           <p className="font-bold mb-2">Formulaire</p>
           <Field name="form">
             {({ field, form }: FieldProps) => (

@@ -1,7 +1,7 @@
 import { Container, DataTable, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
-import { useColumns } from './columns';
+import { useColumns } from './CustomerCategoryColumns';
 import { Input } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import ModalEditCustomerCategory from './modals/ModalEditCustomerCategory';
@@ -101,7 +101,7 @@ const CustomerCategoriesList = () => {
           />
         </Loading>
       </div>
-      {customerCategory && (
+      {customerCategory && isOpenEdit && (
         <ModalEditCustomerCategory
           mode="edit"
           title={t('cat.editCategory')}
@@ -109,13 +109,14 @@ const CustomerCategoriesList = () => {
           handleCloseModal={handleCloseModal}
         />
       )}
-      <ModalEditCustomerCategory
+      {isOpen && (
+        <ModalEditCustomerCategory
         mode="add"
         title={t('cat.addCategory')}
         isOpen={isOpen}
         handleCloseModal={handleCloseModal}
-      />
-      {customerCategory && (
+      />)}
+      {customerCategory && isOpenDelete && (
         <ModalDeleteCustomerCategory
           title={t('cat.deleteCategory')}
           isOpen={isOpenDelete}

@@ -88,6 +88,7 @@ const convertImageUrlToFile = async(url: string, fileName: string) : Promise<Fil
     return file; 
 }
 
+// TODO: Voir pour mettre en place un cache de l'ensemble des fichiers qui se MAJ quand ajout et delete + permet de faire la conversion de documentId à id
 export async function apiDeleteFile(id: string) {    
     const response = await ApiService.fetchData<Image[]>({
         url: API_BASE_URL + "/upload/files/:" + id,

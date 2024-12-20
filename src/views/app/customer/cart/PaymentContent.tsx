@@ -1,7 +1,7 @@
 import { CartItem } from '@/@types/cart';
 import { AdaptableCard } from '@/components/shared';
 import { Button } from '@/components/ui';
-import { PaymentInformations } from '@/services/OrderServices';
+import { PaymentInformations } from '@/services/OrderItemServices';
 import { useState } from 'react';
 
 

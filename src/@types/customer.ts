@@ -9,9 +9,7 @@ export type CustomerCategory = {
   customers: Customer[];
 }
 
-export type Customer = {
-  documentId: string;
-  name: string;
+export type CompanyInformations = {
   email: string;
   phoneNumber: string;
   vatNumber: string;
@@ -20,7 +18,13 @@ export type Customer = {
   city: string;
   zipCode: string;
   country: string;
+  website: string;
+}
+
+export type Customer = {
+  documentId: string;
+  name: string;
+  companyInformations: CompanyInformations;
   customerCategory: CustomerCategory;
   banner: Banner;
-  website: string;
 }

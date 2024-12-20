@@ -64,13 +64,10 @@ export type UserFrontResponse = UserResponse & {
   _id: string;
 };
 
-type Role = {
+export type Role = {
   documentId: string;
   name: string;
-  description: string;
-  type: string;
 };
-
 
 export type User = {
   documentId: string;
@@ -82,4 +79,5 @@ export type User = {
   producer?: Producer;
   role: Role;
   authority: string[];
+  blocked: boolean;
 }

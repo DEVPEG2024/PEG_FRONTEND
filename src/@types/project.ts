@@ -1,9 +1,9 @@
-import { UserState } from '@/store';
 import { Customer } from './customer';
-import { IOrder, OrderItem } from './order';
-import { IUser } from './user';
+import { IOrder, OrderItem } from './orderItem';
+import { IUser, User } from './user';
 import { Producer } from './producer';
 import { Invoice } from './invoice';
+import { Image } from './product';
 
 export interface IComment {
   _id: string;
@@ -81,7 +81,7 @@ export type Project = {
   paymentState: string;
   paymentDate: Date;
   comments: Comment[];
-  //files: IFile[];
+  images: Image[];
   tasks: Task[];
   orderItem?: OrderItem;
   //deleted: boolean;
@@ -101,8 +101,9 @@ export type Task = {
 export type Comment = {
   documentId: string;
   content: string;
-  user: UserState;
+  user: User;
   createdAt: Date;
+  images: Image[];
   /*file: string;
   fileType: string;*/
 }

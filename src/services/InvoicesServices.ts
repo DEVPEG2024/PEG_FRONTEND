@@ -1,92 +1,8 @@
-import { Invoice, InvoiceOld } from '@/@types/invoice';
+import { Invoice } from '@/@types/invoice';
 import ApiService from './ApiService'
-import {
-    DELETE_INVOICES_API_URL,
-  GET_INVOICES_API_URL,
-  GET_INVOICES_BY_USER_ID_API_URL,
-  POST_INVOICES_API_URL,
-  PUT_INVOICES_API_URL,
-  PUT_INVOICES_STATUS_API_URL,
-} from "@/constants/api.constant";
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 import { AxiosResponse } from 'axios';
-
-// TODO: Services
-type InvoicesResponse = {
-  invoices: InvoiceOld[];
-  total: number;
-  result: string;
-  message: string;
-};
-
-
-
-type InvoicesCreateResponse = {
-    result: boolean
-    message: string
-    invoice: InvoiceOld
-}
-
-type InvoicesDeleteResponse = {
-    invoiceId: string
-    result: boolean
-    message: string
-}
-
-// get invoices
-export async function apiGetInvoicesOld(page: number, pageSize: number, searchTerm: string = "") {
-    return ApiService.fetchData<InvoicesResponse>({
-        url: GET_INVOICES_API_URL,
-        method: 'get',
-        params: { page, pageSize, searchTerm }
-    })
-}
-
-// create invoice
-export async function apiCreateInvoiceOld(data: Record<string, unknown>) {
-    return ApiService.fetchData<InvoicesCreateResponse>({
-        url: POST_INVOICES_API_URL,
-        method: 'post',
-        data 
-    })
-}
-
-// update invoice
-export async function apiUpdateInvoiceOld(data: Record<string, unknown>) {
-    return ApiService.fetchData<InvoicesCreateResponse>({
-        url: PUT_INVOICES_API_URL +'/' + data.invoiceId,
-        method: 'put',
-        data 
-    })
-}
-
-// update status invoice
-export async function apiUpdateStatusInvoice(data: Record<string, unknown>) {
-    return ApiService.fetchData<InvoicesResponse>({
-        url: PUT_INVOICES_STATUS_API_URL,
-        method: 'put',
-        data 
-    })
-}
-
-// delete invoice
-export async function apiDeleteInvoiceOld(data: Record<string, unknown>) {
-    return ApiService.fetchData<InvoicesDeleteResponse>({
-        url: DELETE_INVOICES_API_URL + '/' + data._id,
-        method: 'delete',
-        data 
-    })
-}
-
-// get invoice by user id
-export async function apiGetInvoiceByUserId(page: number, pageSize: number, searchTerm: string = "", userId: string = "") {
-    return ApiService.fetchData<InvoicesResponse>({
-        url: GET_INVOICES_BY_USER_ID_API_URL,
-        params: { page, pageSize, searchTerm, userId },
-        method: 'get'
-    })
-}
 
 // create invoice
 export type CreateInvoiceRequest = Omit<Invoice, "documentId">
@@ -113,8 +29,11 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
             totalAmount
             name
             state
+            paymentDate
             paymentState
             paymentMethod
+            date
+            dueDate
         }
     }
   `,
@@ -169,8 +88,80 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
                 totalAmount
                 name
                 state
+                paymentDate
                 paymentState
                 paymentMethod
+                date
+                dueDate
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{invoices_connection: GetInvoicesResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get customer invoices
+export type GetCustomerInvoicesRequest = {
+    customerDocumentId: string;
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = {customerDocumentId: '', pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{invoices_connection: GetInvoicesResponse}>>> {
+    const query = `
+    query GetCustomerInvoices($customerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+        invoices_connection(filters: {
+            and: [
+            {
+                customer: {
+                documentId: {eq: $customerDocumentId}
+                }
+            },
+            {
+                name: {contains: $searchTerm}
+            }
+            ]
+            }, pagination: $pagination) {
+            nodes {
+                documentId
+                orderItems {
+                    documentId
+                    product {
+                        name
+                    }
+                    sizeSelections
+                    price
+                }
+                customer {
+                    documentId
+                    name
+                }
+                amount
+                vatAmount
+                totalAmount
+                name
+                state
+                paymentDate
+                paymentState
+                paymentMethod
+                date
+                dueDate
             }
             pageInfo {
                 page
@@ -217,8 +208,11 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
             totalAmount
             name
             state
+            paymentDate
             paymentState
             paymentMethod
+            date
+            dueDate
         }
     }
   `,

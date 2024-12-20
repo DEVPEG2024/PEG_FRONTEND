@@ -15,18 +15,27 @@ import { Customer } from '@/@types/customer';
 
 type FormikRef = FormikProps<any>;
 
-export type FormModel = Omit<Customer, 'banner' | 'customerCategory' | 'orderItems'> & {
+export type CustomerFormModel = Omit<Customer, 'banner' | 'customerCategory' | 'orderItems' | 'companyInformations'> & {
   banner: string | null;
   customerCategory: string | null;
+  email: string;
+  phoneNumber: string;
+  vatNumber: string;
+  siretNumber: string;
+  address: string;
+  zipCode: string;
+  city: string;
+  country: string;
+  website: string;
 };
 
 export type SetSubmitting = (isSubmitting: boolean) => void;
 
 type CustomerForm = {
-  initialData?: FormModel;
+  initialData?: CustomerFormModel;
   customerCategories: Options[];
   onDiscard?: () => void;
-  onFormSubmit: (formData: FormModel, setSubmitting: SetSubmitting) => void;
+  onFormSubmit: (formData: CustomerFormModel, setSubmitting: SetSubmitting) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -61,8 +70,7 @@ const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
           ...initialData,
         }}
         validationSchema={validationSchema}
-        onSubmit={(values: FormModel, { setSubmitting }) => {
-          console.log('ici')
+        onSubmit={(values: CustomerFormModel, { setSubmitting }) => {
           const formData = cloneDeep(values);
           onFormSubmit?.(formData, setSubmitting);
         }}

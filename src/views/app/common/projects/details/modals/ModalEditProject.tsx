@@ -56,6 +56,7 @@ function ModalEditProject() {
     paymentDate: project?.paymentDate || new Date(0),
     comments: project?.comments || [],
     tasks: project?.tasks || [],
+    invoices: project?.invoices || [],
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
