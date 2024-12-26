@@ -7,6 +7,9 @@ import {
   DeleteProjectResponse,
   apiDeleteProject,
   apiUpdateProject,
+  apiGetProducerProjects,
+  apiCreateProject,
+  CreateProjectRequest,
 } from '@/services/ProjectServices';
 import { PaginationRequest, unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
@@ -40,7 +43,7 @@ export const getProjects = createAsyncThunk(
       const {projects_connection} : {projects_connection: GetProjectsResponse}= await unwrapData(apiGetCustomerProjects({...data, customerDocumentId: data.user.customer!.documentId}));
       return projects_connection
     } else if (hasRole(data.user, [PRODUCER])) {
-      const {projects_connection} : {projects_connection: GetProjectsResponse}= await unwrapData(apiGetProducerProjects(data));
+      const {projects_connection} : {projects_connection: GetProjectsResponse}= await unwrapData(apiGetProducerProjects({...data, producerDocumentId: data.user.producer!.documentId}));
       return projects_connection
     }
     return {nodes: [], pageInfo: {page: 1, pageCount: 1, pageSize: 0, total: 0}}
@@ -62,6 +65,14 @@ export const updateProject = createAsyncThunk(
   async (data: Partial<Project>): Promise<Project> => {
     const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject(data));
     return updateProject;
+  }
+);
+
+export const createProject = createAsyncThunk(
+  SLICE_NAME + '/createProject',
+  async (data: CreateProjectRequest): Promise<Project> => {
+    const {createProject} : {createProject: Project} = await unwrapData(apiCreateProject(data));
+    return createProject;
   }
 );
 
@@ -112,6 +123,19 @@ const projectListSlice = createSlice({
       state.total -= 1
     });
     builder.addCase(deleteProject.rejected, (state) => {
+      state.loading = false;
+    });
+
+    // CREATE PROJECT
+    builder.addCase(createProject.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(createProject.fulfilled, (state, action) => {
+      state.loading = false;
+      state.projects.push(action.payload);
+      state.total += 1
+    });
+    builder.addCase(createProject.rejected, (state) => {
       state.loading = false;
     });
   },

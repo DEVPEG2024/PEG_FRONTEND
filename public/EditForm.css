@@ -5,4 +5,14 @@
 .input {
   color: black
 }
+
+.checkbox {
+  width: 100%;
+  height: 100%;
+}
+
+.radio {
+  width: 100%;
+  height: 100%;
+}
   

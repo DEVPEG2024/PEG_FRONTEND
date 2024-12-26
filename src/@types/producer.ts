@@ -1,4 +1,5 @@
 import { CompanyInformations } from "./customer";
+import { Project } from "./project";
 
 export type ProducerCategory = {
   documentId: string;
@@ -11,4 +12,5 @@ export type Producer = {
   name: string;
   companyInformations: CompanyInformations;
   producerCategory: ProducerCategory;
+  projects: Project[]
 }

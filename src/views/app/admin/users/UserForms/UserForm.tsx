@@ -16,7 +16,7 @@ export type SetSubmitting = (isSubmitting: boolean) => void;
 
 type UserForm = {
   initialData?: UserFormModel;
-  type: 'edit' | 'new';
+  onEdition: boolean;
   onDiscard?: () => void;
   onFormSubmit: (formData: UserFormModel, setSubmitting: SetSubmitting) => void;
   customers: Options[];
@@ -25,17 +25,17 @@ type UserForm = {
 };
 
 const validationSchema = Yup.object().shape({
-  userName: Yup.string().required(t('cust.error.lastName')),
+  username: Yup.string().required(t('cust.error.username')),
   lastName: Yup.string().required(t('cust.error.lastName')),
   firstName: Yup.string().required(t('cust.error.firstName')),
   //phone: Yup.string().required(t('cust.error.phone')),
   email: Yup.string().required(t('cust.error.email')),
-  authority: Yup.string().required(t('cust.error.category')),
+  role: Yup.string().required(t('cust.error.role')),
 });
 
 const UserForm = forwardRef<FormikRef, UserForm>((props, ref) => {
   const {
-    type,
+    onEdition,
     initialData,
     onFormSubmit,
     onDiscard,
@@ -66,7 +66,7 @@ const UserForm = forwardRef<FormikRef, UserForm>((props, ref) => {
                     values={values}
                     touched={touched}
                     errors={errors}
-                    type={type}
+                    onEdition={onEdition}
                     customers={customers}
                     producers={producers}
                     roles={roles}

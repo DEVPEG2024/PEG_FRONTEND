@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { IProduct, Product, ProductCategory } from '@/@types/product';
+import { Product, ProductCategory } from '@/@types/product';
 import {
   apiGetProducts,
   apiGetProductsByCategory,
@@ -16,7 +16,6 @@ export const SLICE_NAME = 'catalogue';
 export type StateData = {
   loading: boolean;
   products: Product[];
-  product: IProduct | null;
   total: number;
   result: boolean;
   message: string;
@@ -62,7 +61,6 @@ export const getProductCategoryById = createAsyncThunk(
 const initialState: StateData = {
   loading: false,
   products: [],
-  product: null,
   total: 0,
   result: false,
   message: '',
@@ -87,11 +85,6 @@ const catalogueSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setProduct: (state, action) => {
-      state.product =
-        state.products.find((product) => product._id === action.payload) ??
-        null;
-    },
     clearStateSpecificCategory: (state) => {
       state.products = []
       state.productCategory = undefined

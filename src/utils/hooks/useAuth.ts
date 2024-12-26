@@ -11,9 +11,9 @@ import { REDIRECT_URL_KEY } from '@/constants/app.constant'
 import { useNavigate } from 'react-router-dom'
 import useQuery from './useQuery'
 import type { SignInCredential, SignUpCredential } from '@/@types/auth'
-import { ADMIN, CUSTOMER } from '@/constants/roles.constant'
+import { ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant'
 import { API_BASE_URL } from '@/configs/api.config'
-import { getUser } from '@/services/UserService'
+import { apiGetAllUsers, getUser } from '@/services/UserService'
 import { User } from '@/@types/user'
 
 type Status = 'success' | 'failed'
@@ -46,10 +46,8 @@ function useAuth() {
                 if (user) {
                     dispatch(setUser(user))
                     const userRole = user.authority[0]
-                    if (userRole === ADMIN) {
-                        navigate("/admin/home")
-                    } else if (userRole === CUSTOMER) {
-                        navigate("/customer/home")
+                    if ([ADMIN, CUSTOMER, PRODUCER].includes(userRole)) {
+                        navigate("/home")
                     } else {
                         navigate("/")
                     }

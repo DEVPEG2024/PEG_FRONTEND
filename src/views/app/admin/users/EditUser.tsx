@@ -4,7 +4,7 @@ import UserForm, {
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
-import reducer, { getUserById, setUser, useAppDispatch, useAppSelector } from './store';
+import reducer, { getCustomersIdTable, getProducersIdTable, getRolesIdTable, getUserById, getUsersIdTable, setUser, useAppDispatch, useAppSelector } from './store';
 import { Role, User } from '@/@types/user';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -37,7 +37,7 @@ const EditUser = () => {
   const onEdition: boolean =
       useLocation().pathname.split('/').slice(-2).shift() === 'edit';
   const { documentId } = useParams<EditUserParams>() as EditUserParams;
-  const { user } = useAppSelector((state) => state.users.data);
+  const { user, usersId, rolesId, customersId, producersId } = useAppSelector((state) => state.users.data);
   const [customers, setCustomers] = useState<Options[]>([]);
   const [producers, setProducers] = useState<Options[]>([]);
   const [roles, setRoles] = useState<Options[]>([]);
@@ -57,9 +57,11 @@ const EditUser = () => {
   useEffect(() => {
     if (!user && onEdition) {
       dispatch(getUserById(documentId));
-    } else {
-      
     }
+    dispatch(getUsersIdTable())
+    dispatch(getRolesIdTable())
+    dispatch(getCustomersIdTable())
+    dispatch(getProducersIdTable())
     return () => {
       dispatch(setUser(null))
     }
@@ -100,38 +102,42 @@ const EditUser = () => {
     setRoles(roles);
   };
 
-  const updateOrCreateUser = async (data: User) : Promise<User> => {
+  const updateOrCreateUser = async (data: User) : Promise<{data: User}> => {
     if (onEdition) {
-      const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: User} = await unwrapData(apiUpdateUser(data));
+      const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: {data: User}} = await unwrapData(apiUpdateUser(data, usersId.find(({documentId}) => documentId === data.documentId)!.id));
       return updateUsersPermissionsUser
     }
-    const {createUsersPermissionsUser} : {createUsersPermissionsUser: User} = await unwrapData(apiCreateUser(data));
-    return createUsersPermissionsUser
+    const user = await apiCreateUser(data);
+    const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: {data: User}} = await unwrapData(apiUpdateUser(data, user.data.user.id));
+    return updateUsersPermissionsUser
   }
   
-    const handleFormSubmit = async (
-      values: UserFormModel,
-      setSubmitting: SetSubmitting
-    ) => {
-      const data: User = {
-        ...values
-      };
-      if (!onEdition) {
-        delete data.documentId
-      }
-  
-      await updateOrCreateUser(data)
-      setSubmitting(false);
-      navigate('/admin/users');
+  const handleFormSubmit = async (
+    values: UserFormModel,
+    setSubmitting: SetSubmitting
+  ) => {
+    const data: User = {
+      ...values,
+      role: rolesId.find(({documentId}) => documentId === values.role)!.id,
+      customer: customersId.find(({documentId}) => documentId === values.customer)?.id,
+      producer: producersId.find(({documentId}) => documentId === values.producer)?.id
     };
-  
-    const handleDiscard = () => {
-      navigate('/admin/store/lists');
-    };
+    if (!onEdition) {
+      delete data.documentId
+    }
+
+    await updateOrCreateUser(data)
+    setSubmitting(false);
+    navigate('/admin/users');
+  };
+
+  const handleDiscard = () => {
+    navigate('/admin/users');
+  };
 
   return (!onEdition || user) && (
     <UserForm
-      type="edit"
+      onEdition={onEdition}
       initialData={initialData}
       onFormSubmit={handleFormSubmit}
       onDiscard={handleDiscard}

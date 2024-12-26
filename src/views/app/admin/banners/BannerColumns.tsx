@@ -65,12 +65,12 @@ export const useColumns = (
       accessorKey: 'status',
       enableSorting: false,
       cell: ({ row }: { row: {original: Banner} }) => {
-        //const status = row.original.active ? 'Actif' : 'Inactif'; // TODO: voir pour remettre
+        const status = row.original.active ? 'Actif' : 'Inactif';
         return (
           <div className="flex justify-end items-center gap-2">
-            {/*<Tag className={row.original.active? 'bg-green-500' : 'bg-red-500'} >
+            <Tag className={row.original.active? 'bg-green-500' : 'bg-red-500'} >
               <p className="text-sm text-white">{status}</p>
-            </Tag> */}
+            </Tag>
             <Button
               onClick={() => handleEditBanner(row.original)}
               size="sm"

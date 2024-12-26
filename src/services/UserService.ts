@@ -1,30 +1,32 @@
 import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { Role, User, UserFrontResponse, UserResponse } from '@/@types/user'
+import { Role, User } from '@/@types/user'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { AxiosResponse } from 'axios'
+import { Customer } from '@/@types/customer'
+import { Producer } from '@/@types/producer'
 
-export async function getUserREST(token: string) : Promise<UserFrontResponse>{
-    const {data} : {data: UserResponse} = await ApiService.fetchData<UserResponse>({
-        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer',
-        headers: {'Authorization': `Bearer ${token}`}
-    })
-    return mapUser(data)
-}
+// TODO: Voir si à un moment on peut se passer des ids pour n'utiliser que les documentIds --> voir évolutions du plugin Users & permissions
 
 export async function getUser(token: string) : Promise<User>{
     const {data} : {data: Omit<User, 'authority'>} = await ApiService.fetchData<User>({
-        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer',
+        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer',
         headers: {'Authorization': `Bearer ${token}`}
     })
     return {...data, authority: [data.role.name]}
 }
 
-function mapUser(userResponse: UserResponse) : UserFrontResponse {
-    return {
-        ...userResponse,
-        _id: userResponse.id.toString()
-    }
+export type UserWithId = User & {
+    id: string;
+}
+
+export async function apiGetAllUsers() : Promise<UserWithId[]> {    
+    const response = await ApiService.fetchData<UserWithId[]>({
+        url: API_BASE_URL + "/users/",
+        method: 'get'
+    })
+    
+    return response.data
 }
 
 // get users
@@ -128,10 +130,10 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
 }
 
 // update user
-export async function apiUpdateUser(product: Partial<User>): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: User}>>> {
+export async function apiUpdateUser(product: Partial<User>, id: string): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
     const query = `
-    mutation UpdateUser($documentId: ID!, $data: UserInput!) {
-        updateUsersPermissionsUser(documentId: $documentId, data: $data) {
+    mutation UpdateUser($updateUsersPermissionsUserId: ID!, $data: UsersPermissionsUserInput!) {
+        updateUsersPermissionsUser(id: $updateUsersPermissionsUserId, data: $data) {
             data {
                 documentId
                 username
@@ -159,10 +161,10 @@ export async function apiUpdateUser(product: Partial<User>): Promise<AxiosRespon
   `,
   {documentId, ...data} = product,
   variables = {
-    documentId,
+    updateUsersPermissionsUserId: id,
     data
   }
-    return ApiService.fetchData<ApiResponse<{updateUsersPermissionsUser: User}>>({
+    return ApiService.fetchData<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -177,18 +179,20 @@ export type DeleteUserResponse = {
     documentId: string
 }
 
-export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<ApiResponse<{deleteUsersPermissionsUser: DeleteUserResponse}>>> {
+export async function apiDeleteUser(id: string): Promise<AxiosResponse<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>> {
     const query = `
-    mutation DeleteUser($documentId: ID!) {
-        deleteUsersPermissionsUser(documentId: $documentId) {
-            documentId
+    mutation DeleteUser($deleteUsersPermissionsUserId: ID!) {
+        deleteUsersPermissionsUser(id: $deleteUsersPermissionsUserId) {
+            data {
+                documentId
+            }
         }
     }
   `,
   variables = {
-    documentId
+    deleteUsersPermissionsUserId: id
   }
-    return ApiService.fetchData<ApiResponse<{deleteUsersPermissionsUser: DeleteUserResponse}>>({
+    return ApiService.fetchData<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -201,42 +205,14 @@ export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<A
 // create user
 export type CreateUserRequest = Omit<User, "documentId">
 
-export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<ApiResponse<{createUsersPermissionsUser: User}>>> {
-    const query = `
-    mutation CreateUser($data: UserInput!) {
-        createUsersPermissionsUser(data: $data) {
-            documentId
-            username
-            email
-            blocked
-            firstName
-            lastName
-            customer {
-                documentId
-                name
-            }
-            producer {
-                documentId
-                name
-            }
-            role {
-                documentId
-                name
-                type
-                description
-            }
-        }
-    }
-  `,
-  variables = {
-    data
-  }
-    return ApiService.fetchData<ApiResponse<{createUsersPermissionsUser: User}>>({
-        url: API_GRAPHQL_URL,
+export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<{user: UserWithId}>> {
+    return ApiService.fetchData<{user: UserWithId}>({
+        url: API_BASE_URL + "/auth/local/register",
         method: 'post',
         data: {
-            query,
-            variables
+            username: data.username,
+            email: data.email,
+            password: 'Peg2025',
         }
     })
 }
@@ -259,4 +235,44 @@ export async function apiGetUsersPermissionsRoles(): Promise<AxiosResponse<ApiRe
             query
         }
     })
+}
+
+export type RoleWithId = Role & {
+    id: string;
+}
+
+export async function apiGetAllRoles() : Promise<{roles: RoleWithId[]}> {    
+    const response = await ApiService.fetchData<{roles: RoleWithId[]}>({
+        url: API_BASE_URL + "/users-permissions/roles/",
+        method: 'get'
+    })
+    
+    return response.data
+}
+
+// Ne devrait pas être ici mais spécifique au plugin User donc ici en attendant une évol du plugin
+export type CustomerWithId = Customer & {
+    id: string;
+}
+
+export async function apiGetAllCustomers() : Promise<{data: CustomerWithId[]}> {    
+    const response = await ApiService.fetchData<{data: CustomerWithId[]}>({
+        url: API_BASE_URL + "/customers/",
+        method: 'get'
+    })
+    
+    return response.data
+}
+
+export type ProducerWithId = Producer & {
+    id: string;
+}
+
+export async function apiGetAllProducers() : Promise<{data: ProducerWithId[]}> {    
+    const response = await ApiService.fetchData<{data: ProducerWithId[]}>({
+        url: API_BASE_URL + "/producers/",
+        method: 'get'
+    })
+    
+    return response.data
 }

@@ -38,10 +38,10 @@ export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
   async (data: CreateBannerRequest) : Promise<Banner> => {
     let imageUploaded : Image | undefined = undefined
-    if(data.image) {
+    if (data.image) {
       imageUploaded = await apiUploadFile(data.image.file)
     }
-    const {createBanner} : {createBanner: Banner} = await unwrapData(apiCreateBanner({...data, image: imageUploaded?.id ?? undefined}));
+    const {createBanner} : {createBanner: Banner} = await unwrapData(apiCreateBanner({...data, image: imageUploaded?.id ?? null}));
     return createBanner;
   }
 );
@@ -54,10 +54,19 @@ export const deleteBanner = createAsyncThunk(
   }
 );
 
+export type UpdateBanner = {
+  banner: Partial<Banner>;
+  imageModified: boolean;
+}
+
 export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
-  async (data: Partial<Banner>): Promise<Banner> => {
-    const {updateBanner} : {updateBanner: Banner} = await unwrapData(apiUpdateBanner(data));
+  async (data: UpdateBanner): Promise<Banner> => {
+    let imageUploaded : Image | undefined = undefined
+    if (data.imageModified && data.banner.image) {
+      imageUploaded = await apiUploadFile(data.banner.image.file)
+    }
+    const {updateBanner} : {updateBanner: Banner} = await unwrapData(apiUpdateBanner({...data.banner, image: data.imageModified ? imageUploaded?.id ?? null : undefined}));
     return updateBanner;
   }
 );

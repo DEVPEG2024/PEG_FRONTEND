@@ -172,17 +172,11 @@ const protectedAdminRoutes = [
   {
     key: "admin.banners",
     path: "/admin/banners",
-    component: lazy(() => import("@/views/app/admin/banners")),
+    component: lazy(() => import("@/views/app/admin/banners/BannersList")),
     authority: [SUPER_ADMIN],
   },
 ];
 const protectedCustomersRoutes = [
-  {
-    key: "customer.home",
-    path: "/customer/home",
-    component: lazy(() => import("@/views/Home")),
-    authority: [CUSTOMER],
-  },
   {
     key: "default.support",
     path: "/support",
@@ -212,15 +206,6 @@ const protectedCustomersRoutes = [
     path: "/customer/projects",
     component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
     authority: [CUSTOMER],
-  },
-  {
-    key: "customer.projects.details",
-    path: "/customer/projects/details/:documentId",
-    component: lazy(() => import("@/views/app/common/projects/details/ProjectDetails")),
-    authority: [CUSTOMER],
-    meta: {
-      pageContainerType: "gutterless",
-    },
   },
   {
     key: "customer.catalogue",
@@ -254,15 +239,6 @@ const protectedProducerRoutes = [
     component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
     authority: [PRODUCER],
   },
-  {
-    key: "producer.projects.details",
-    path: "/producer/projects/details/:documentId",
-    component: lazy(() => import("@/views/app/common/projects/details/ProjectDetails")),
-    authority: [PRODUCER],
-    meta: {
-      pageContainerType: "gutterless",
-    },
-  },
   /*{
     key: "producer.piscine",
     path: "/producer/piscine",
@@ -286,7 +262,16 @@ const protectedCommonRoutes = [
     meta: {
       pageContainerType: "gutterless",
     },
-  }
+  },
+  {
+    key: "common.projects.details",
+    path: "/common/projects/details/:documentId",
+    component: lazy(() => import("@/views/app/common/projects/details/ProjectDetails")),
+    authority: [CUSTOMER, PRODUCER, ADMIN],
+    meta: {
+      pageContainerType: "gutterless",
+    },
+  },
 ]
 
 const protectedDefaultRoutes = [

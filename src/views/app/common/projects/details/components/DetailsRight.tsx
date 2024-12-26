@@ -64,14 +64,16 @@ const DetailsRight = () => {
         >
           <span className="font-semibold">{project.files.length} fichiers</span>
         </IconText>*/}
-        <IconText
+        {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+          <IconText
           className="mb-4"
           icon={<FaEuroSign className="text-lg opacity-70" />}
-        >
-          <span className="font-semibold">
-            Montant total : {project.price.toFixed(2)} €
-          </span>
-        </IconText>
+          >
+            <span className="font-semibold">
+              Montant total : {project.price.toFixed(2)} €
+            </span>
+          </IconText>
+        )}
         <IconText
           className={`mb-4 ${priorityColor}`}
           icon={<HiLightningBolt className="text-lg opacity-70" />}

@@ -2,7 +2,7 @@ import ApiService from './ApiService'
 import { API_BASE_URL } from '@/configs/api.config'
 import { Image } from '@/@types/product';
 
-export async function apiUploadFileToEntity(file: File, ref: string, refId: string, field: string) {
+/*export async function apiUploadFileToEntity(file: File, ref: string, refId: string, field: string) {
     const formData = new FormData();
     
     formData.append("files", file);
@@ -20,7 +20,7 @@ export async function apiUploadFileToEntity(file: File, ref: string, refId: stri
     })
     
     return response.data
-}
+}*/
 
 export async function apiUploadFile(file: File): Promise<Image> {
     const formData = new FormData();
@@ -98,7 +98,7 @@ export async function apiDeleteFile(id: string) {
     return response.data
 }
 
-export async function apiUploadFileTest(file: any, ref: string, refId: string, field: string) {
+/*export async function apiUploadFileTest(file: any, ref: string, refId: string, field: string) {
     const formData = new FormData();
     
     formData.append("files", file);
@@ -112,7 +112,7 @@ export async function apiUploadFileTest(file: any, ref: string, refId: string, f
     });
     
     return await response.json()
-}
+}*/
 
 export async function apiDeleteFiles(filesName: string[]) {
     await Promise.all(filesName.map(fileName => apiDeleteFile(fileName)));

@@ -8,7 +8,7 @@ import { Options, UserFormModel } from '../EditUser';
 
 type UserFields = {
   values: UserFormModel;
-  type: string;
+  onEdition: boolean;
   touched: FormikTouched<UserFormModel>;
   errors: FormikErrors<UserFormModel>;
   customers: Options[];
@@ -17,17 +17,17 @@ type UserFields = {
 };
 
 const UserFields = (props: UserFields) => {
-  const { type, touched, errors, customers, producers, roles } = props;
+  const { onEdition, touched, errors, customers, producers, roles } = props;
 
   return (
     <AdaptableCard className="mb-4">
       <h5>
-        {type === 'edit'
+        {onEdition
           ? 'Modifier les informations de base'
           : 'Ajouter des informations de base'}
       </h5>
       <p className="mb-6">
-        {type === 'edit'
+        {onEdition
           ? 'Modifier les informations de base'
           : 'Ajouter des informations de base'}
       </p>

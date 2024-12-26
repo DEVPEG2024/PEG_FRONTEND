@@ -19,12 +19,12 @@ import ModalEditBanner from './modals/ModalEditBanner';
 
 injectReducer('banners', reducer);
 
-const Banners = () => {
+const BannersList = () => {
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { banners, total, selectedBanner } = useAppSelector((state) => state.banners.data);
+  const { banners, total, selectedBanner, newBannerDialog, editBannerDialog } = useAppSelector((state) => state.banners.data);
 
   useEffect(() => {
     dispatch(getBanners({ pagination: {page: currentPage, pageSize}, searchTerm }));
@@ -89,10 +89,10 @@ const Banners = () => {
           }}
         />
       </div>
-      <ModalNewBanner />
-      {selectedBanner && <ModalEditBanner />}
+      {newBannerDialog && <ModalNewBanner />}
+      {editBannerDialog && selectedBanner && <ModalEditBanner />}
     </Container>
   );
 };
 
-export default Banners;
+export default BannersList;

@@ -1,9 +1,9 @@
 import { User } from '@/@types/user';
 import { AuthorityCheck } from '@/components/shared';
 import { useAppSelector } from '@/store';
-import Dashboard from '@/views/app/admin/home';
-import DashboardCustomer from '@/views/app/customer/home';
-import DashboardProducer from '@/views/app/producer/home';
+import DashboardAdmin from '@/views/app/admin/home/DashboardAdmin';
+import DashboardCustomer from '@/views/app/customer/home/DashboardCustomer';
+import DashboardProducer from '@/views/app/producer/home/DashboardProducer';
 import { Suspense } from 'react';
 
 const Home = () => {
@@ -14,7 +14,7 @@ const Home = () => {
         authority={['super_admin']}
         userAuthority={user?.authority || []}
       >
-        <Dashboard />
+        <DashboardAdmin />
       </AuthorityCheck>
       <AuthorityCheck
         authority={['customer']}

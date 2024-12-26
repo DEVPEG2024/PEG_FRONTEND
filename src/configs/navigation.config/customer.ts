@@ -8,7 +8,7 @@ import { CUSTOMER } from '@/constants/roles.constant';
 const navigationCustomer: NavigationTree[] = [
   {
     key: "customer.home",
-    path: "/customer/home",
+    path: "/home",
     title: "Accueil",
     translateKey: "nav.home",
     icon: "home",

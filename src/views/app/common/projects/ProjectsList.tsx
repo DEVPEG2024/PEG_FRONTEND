@@ -17,6 +17,7 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { Project } from '@/@types/project';
+import ModalNewProject from './modals/ModalNewProject';
 
 injectReducer('projects', reducer);
 
@@ -41,7 +42,7 @@ const ProjectsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const dispatch = useAppDispatch();
 
-  const { total, projects, loading } = useAppSelector(
+  const { total, projects, loading, newProjectDialog } = useAppSelector(
     (state) => state.projects.data
   );
 
@@ -50,7 +51,6 @@ const ProjectsList = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProjects = async () => {
-    // Récupérer les projets si customer ou admin
     dispatch(
       getProjects({
         user,
@@ -120,6 +120,7 @@ const ProjectsList = () => {
           </div>
         </div>
       </div>
+      {newProjectDialog && <ModalNewProject />}
     </Container>
   );
 };

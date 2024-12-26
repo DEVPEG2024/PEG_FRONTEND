@@ -3,87 +3,82 @@ import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { createProject } from '@/utils/hooks/projects/useCreateProject';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
+  createProject,
   setNewProjectDialog,
   useAppDispatch,
   useAppSelector,
 } from '../store';
-import useCustomer from '@/utils/hooks/customers/useCustomer';
-import useProducer from '@/utils/hooks/producers/useProducer';
-import useUniqueId from '@/components/ui/hooks/useUniqueId';
-import { priorityData, statusData } from '../lists/constants';
+import { priorityData, stateData } from '../lists/constants';
+import { unwrapData } from '@/utils/serviceHelper';
+import { GetCustomersResponse, apiGetCustomers } from '@/services/CustomerServices';
+import { Customer } from '@/@types/customer';
+import { GetProducersResponse, apiGetProducers } from '@/services/ProducerServices';
+import { Producer } from '@/@types/producer';
+import { Project } from '@/@types/project';
 
 type Option = {
-  value: number;
+  value: string;
   label: string;
 };
 
+type ProjectFormModel = Omit<Project, 'documentId' | 'customer' | 'producer' | 'comments' | 'images' | 'tasks' | 'orderItem' | 'invoices' | 'paymentDate' | 'paymentMethod' | 'paymentState'> & {
+  documentId?: string;
+  customer: string | null;
+  producer: string | null;
+}
+
 function ModalNewProject() {
-  const { newProjectDialog } = useAppSelector(
+  const { newProjectDialog, loading } = useAppSelector(
     (state) => state.projects.data
   );
-  const newId = useUniqueId('PR-', 10);
   const dispatch = useAppDispatch();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    ref: newId,
+  const [formData, setFormData] = useState<ProjectFormModel>({
+    name: '',
     description: '',
-    priority: 'low',
-    status: 'pending',
-    amount: 0,
-    amountProducers: 0,
-    customer: '',
-    producer: '',
     startDate: dayjs().toDate(),
     endDate: dayjs().add(30, 'day').toDate(),
+    state: 'pending',
+    customer: '',
+    producer: '',
+    priority: 'low',
+    price: 0,
+    producerPrice: 0,
+    paidPrice: 0,
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
-  const { getCustomers } = useCustomer();
-  const { getProducers } = useProducer();
 
   useEffect(() => {
-    getUsers();
+    fetchCustomers();
+    fetchProducers();
   }, []);
 
-  const getUsers = async () => {
-    const res = await getCustomers(1, 10000, '');
-    const resProducer = await getProducers(1, 10000, '');
-    if (res && res.data) {
-      setCustomers(
-        res.data.map((item: any) => ({
-          _id: item._id,
-          label:
-            item.companyName + ' - ' + item.firstName + ' ' + item.lastName,
-          value: item._id,
-        }))
-      );
-    }
-    if (resProducer && resProducer.data) {
-      setProducers(
-        resProducer.data.map((item: any) => ({
-          _id: item._id,
-          label:
-            item.companyName + ' - ' + item.firstName + ' ' + item.lastName,
-          value: item._id,
-        }))
-      );
-    }
+  const fetchCustomers = async () => {
+    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const customersList = customers_connection.nodes || [];
+    const customers = customersList.map((customer: Customer) => ({
+      value: customer.documentId || '',
+      label: customer.name,
+    }));
+    setCustomers(customers);
   };
+
+  const fetchProducers = async () => {
+    const {producers_connection} : {producers_connection: GetProducersResponse}= await unwrapData(apiGetProducers());
+    const producersList = producers_connection.nodes || [];
+    const producers = producersList.map((producer: Producer) => ({
+      value: producer.documentId || '',
+      label: producer.name,
+    }));
+    setProducers(producers);
+  };
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    const resp = await createProject(formData);
-    if (resp.status === 'success') {
-      setIsLoading(false);
-      handleClose();
-    } else {
-      setIsLoading(false);
-    }
+    dispatch(createProject({...formData, customer: formData.customer !== '' ? {documentId: formData.customer} : null, producer: formData.producer !== '' ? {documentId: formData.producer} : null}));
+    handleClose();
   };
   const handleClose = () => {
     dispatch(setNewProjectDialog(false));
@@ -96,9 +91,9 @@ function ModalNewProject() {
           <h5 className="mb-4">{t('projects.add')}</h5>
           <FieldCustom
             placeholder={t('projects.projectName')}
-            value={formData.title}
+            value={formData.name}
             setValue={(e: any) => {
-              setFormData({ ...formData, title: e });
+              setFormData({ ...formData, name: e });
             }}
           />
           <Input
@@ -117,9 +112,9 @@ function ModalNewProject() {
               <Input
                 type="number"
                 placeholder={t('projects.amount')}
-                value={formData.amount}
+                value={formData.price}
                 onChange={(e) => {
-                  setFormData({ ...formData, amount: Number(e.target.value) });
+                  setFormData({ ...formData, price: Number(e.target.value) });
                 }}
               />
             </div>
@@ -127,13 +122,24 @@ function ModalNewProject() {
               <p className="text-sm text-gray-200">Commission du producteur</p>
               <Input
                 type="number"
-                placeholder={t('projects.amountProducers')}
-                value={formData.amountProducers}
+                placeholder={t('projects.producerPrice')}
+                value={formData.producerPrice}
                 onChange={(e) => {
                   setFormData({
                     ...formData,
-                    amountProducers: Number(e.target.value),
+                    producerPrice: Number(e.target.value),
                   });
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-1/2">
+              <p className="text-sm text-gray-200">Montant payé par le client</p>
+              <Input
+                type="number"
+                placeholder={t('projects.paidPrice')}
+                value={formData.paidPrice}
+                onChange={(e) => {
+                  setFormData({ ...formData, paidPrice: Number(e.target.value) });
                 }}
               />
             </div>
@@ -182,10 +188,10 @@ function ModalNewProject() {
               <p className="text-sm text-gray-200 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
-                options={statusData}
+                options={stateData}
                 noOptionsMessage={() => 'Aucun statut trouvé'}
                 onChange={(e: any) => {
-                  setFormData({ ...formData, status: e?.value || '' });
+                  setFormData({ ...formData, state: e?.value || '' });
                 }}
               />
             </div>
@@ -228,7 +234,7 @@ function ModalNewProject() {
             >
               {t('cancel')}
             </Button>
-            <Button variant="solid" onClick={handleSubmit} loading={isLoading}>
+            <Button variant="solid" onClick={handleSubmit} loading={loading}>
               {t('save')}
             </Button>
           </div>

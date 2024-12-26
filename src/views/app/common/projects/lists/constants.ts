@@ -1,18 +1,18 @@
 export const statusColorData = {
   pending: 'bg-blue-500',
-  completed: 'bg-green-500',
+  fulfilled: 'bg-green-500',
   waiting: 'bg-yellow-500',
   canceled: 'bg-red-500',
 };
 export const statusColorText = {
   pending: 'text-blue-500',
-  completed: 'text-green-500',
+  fulfilled: 'text-green-500',
   waiting: 'text-yellow-500',
   canceled: 'text-red-500',
 };
 export const statusTextData = {
   pending: 'En cours',
-  completed: 'Terminé',
+  fulfilled: 'Terminé',
   waiting: 'En attente',
   canceled: 'Annulé',
 };
@@ -42,13 +42,13 @@ export const statsDataTask = [
     label: 'Terminé',
   },
 ];
-export const statusData = [
+export const stateData = [
   {
     value: 'pending',
     label: 'En cours',
   },
   {
-    value: 'completed',
+    value: 'fulfilled',
     label: 'Terminé',
   },
   {
@@ -72,35 +72,5 @@ export const priorityData = [
   {
     value: 'high',
     label: 'Elevé',
-  },
-];
-
-export const paymentStatusData = [
-  {
-    value: 'unpaid',
-    label: 'En attente',
-  },
-  {
-    value: 'paid',
-    label: 'Payé',
-  },
-];
-
-export const paymentModeData = [
-  {
-    value: 'cash',
-    label: 'Espèces',
-  },
-  {
-    value: 'cheque',
-    label: 'Chèque',
-  },
-  {
-    value: 'transfer',
-    label: 'Virement',
-  },
-  {
-    value: 'card',
-    label: 'Carte bancaire',
   },
 ];
