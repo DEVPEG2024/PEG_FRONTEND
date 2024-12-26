@@ -1,4 +1,4 @@
-import { Button, Dialog, Input, Select } from '@/components/ui';
+import { Button, Dialog, Input, Select, Switcher } from '@/components/ui';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -12,6 +12,7 @@ import { Customer, CustomerCategory } from '@/@types/customer';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
 import { Image } from '@/@types/product';
+import { Banner } from '@/@types/banner';
 
 type Option = {
   value: string;
@@ -68,9 +69,13 @@ function ModalNewBanner() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(
-      createBanner({...formData, image})
-    );
+    const bannerToCreate: Omit<Banner, 'documentId'> = {
+      ...formData,
+      customer: formData.customer !== '' ? formData.customer : null,
+      customerCategory: formData.customerCategory !== '' ? formData.customerCategory : null,
+      image
+    }
+    dispatch(createBanner(bannerToCreate));
     setFormData({
       name: '',
       customer: '',
@@ -88,13 +93,25 @@ function ModalNewBanner() {
     <div>
       <Dialog isOpen={newBannerDialog} onClose={handleClose} width={1200}>
         <div className="flex flex-col justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-2 ">
+          <div className="flex flex-row gap-2 justify-center">
+            <div className="flex w-3/4">
               <Input
                 value={formData.name}
                 placeholder="Nom"
                 onChange={(e: any) => {
                   setFormData({ ...formData, name: e.target.value });
+                }}
+              />
+            </div>
+            <div className="flex justify-center items-center mt-4 w-1/4 gap-2">
+              <span className="text-sm text-gray-200">Active</span>
+              <Switcher
+                checked={formData.active}
+                onChange={(e: any) => {
+                  setFormData({
+                    ...formData,
+                    active: !e,
+                  });
                 }}
               />
             </div>

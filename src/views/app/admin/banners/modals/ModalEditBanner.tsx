@@ -1,4 +1,4 @@
-import { Button, Dialog, Input, Select } from '@/components/ui';
+import { Button, Dialog, Input, Select, Switcher } from '@/components/ui';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -18,6 +18,7 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { BannerFormModel } from './ModalNewBanner';
 import { Image } from '@/@types/product';
 import { apiLoadImagesAndFiles } from '@/services/FileServices';
+import { Banner } from '@/@types/banner';
 
 type Option = {
   value: string;
@@ -30,14 +31,15 @@ function ModalEditBanner() {
   );
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
+  const [imageModified, setImageModified] = useState<boolean>(false);
   const [image, setImage] = useState<Image | undefined>(undefined)
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<BannerFormModel>({
     documentId: selectedBanner?.documentId || '',
     name: selectedBanner?.name || '',
-    customer: selectedBanner?.customer.documentId || '',
-    customerCategory: selectedBanner?.customerCategory.documentId || '',
-    active: selectedBanner?.active || true
+    customer: selectedBanner?.customer?.documentId || '',
+    customerCategory: selectedBanner?.customerCategory?.documentId || '',
+    active: selectedBanner?.active ?? true
   });
 
   useEffect(() => {
@@ -81,9 +83,13 @@ function ModalEditBanner() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(
-      updateBanner({...formData, image: image?.id ?? null})
-    );
+    const bannerToUpdate: Banner = {
+      ...formData,
+      customer: formData.customer !== '' ? formData.customer : null,
+      customerCategory: formData.customerCategory !== '' ? formData.customerCategory : null,
+      image
+    }
+    dispatch(updateBanner({banner: bannerToUpdate, imageModified}));
     setFormData({
       name: '',
       customer: '',
@@ -98,17 +104,34 @@ function ModalEditBanner() {
     dispatch(setSelectedBanner(null));
   };
 
+  const updateImage = (image: {file: File, name: string}) => {
+    setImage(image)
+    setImageModified(true)
+  }
+
   return (
     <div>
       <Dialog isOpen={editBannerDialog} onClose={handleClose} width={1200}>
         <div className="flex flex-col justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-2 ">
+          <div className="flex flex-row gap-2 justify-center">
+            <div className="flex w-3/4">
               <Input
                 value={formData.name}
-                placeholder="Titre"
+                placeholder="Nom"
                 onChange={(e: any) => {
                   setFormData({ ...formData, name: e.target.value });
+                }}
+              />
+            </div>
+            <div className="flex justify-center items-center mt-4 w-1/4 gap-2">
+              <span className="text-sm text-gray-200">Active</span>
+              <Switcher
+                checked={formData.active}
+                onChange={(e: any) => {
+                  setFormData({
+                    ...formData,
+                    active: !e,
+                  });
                 }}
               />
             </div>
@@ -117,6 +140,7 @@ function ModalEditBanner() {
             <div className="flex flex-col gap-2 w-1/2">
               <p className="text-sm text-gray-200 mb-2 mt-4">Client</p>
               <Select
+                isClearable={true}
                 placeholder="Clients"
                 options={customers}
                 noOptionsMessage={() => 'Aucun client trouvé'}
@@ -133,6 +157,7 @@ function ModalEditBanner() {
                 Catégorie client
               </p>
               <Select
+                isClearable={true}
                 placeholder="Catégorie client"
                 options={customerCategories}
                 noOptionsMessage={() => 'Aucune catégorie client trouvée'}
@@ -152,7 +177,7 @@ function ModalEditBanner() {
           <div className="flex flex-col gap-2 mt-4">
             <FileUplaodCustom
               image={image}
-              setImage={setImage}
+              setImage={updateImage}
             />
           </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">

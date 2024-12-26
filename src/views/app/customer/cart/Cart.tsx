@@ -69,7 +69,6 @@ function Cart() {
       const {createOrderItem} : {createOrderItem: OrderItem}= await unwrapData(apiCreateOrderItem(orderItem));
       // TODO : envoyer mail création commande OK
       try {
-        // TODO: Ajouter producer
         const project: Omit<Project, 'documentId'> = {
           name: 'Commande ' +
             item.product.name +
@@ -90,8 +89,6 @@ function Cart() {
           price: orderItem.price,
           producerPrice: 0,
           paidPrice: paymentInformations.paymentMethod === 'manual' ? 0 : 0,
-          remainingPrice: paymentInformations.paymentMethod === 'manual' ? orderItem.price : orderItem.price,
-          progress: 0,
           paymentMethod: paymentInformations.paymentMethod,
           paymentState: paymentInformations.paymentStatus,
           paymentDate: paymentInformations.paymentDate,
@@ -99,9 +96,10 @@ function Cart() {
           priority: 'medium',
           comments: [],
           tasks: [],
-          invoices: []
+          invoices: [],
+          images: []
         }
-        const {createProject} : {createProject: Project}= await unwrapData(apiCreateProject(project));
+        const {createProject} : {createProject: Project} = await unwrapData(apiCreateProject(project));
         return {orderItem: createOrderItem, project: createProject}
       } catch (error) {
         // TODO: envoyer mail erreur création projet

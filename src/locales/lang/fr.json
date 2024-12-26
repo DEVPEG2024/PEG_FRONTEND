@@ -75,6 +75,8 @@
       "website": "Le site web est invalide",
       "lastName": "Le nom est invalide",
       "firstName": "Le prénom est invalide",
+      "username": "Le nom d'utilisateur est invalide",
+      "role": "Le role est invalide",
       "add": "Erreur lors de l'ajout du client",
       "update": "Erreur lors de la mise à jour du client"
     }
@@ -97,7 +99,9 @@
     "selectProducer": "Sélectionner un ou des producteurs",
     "selectState": "Sélectionner un statut",
     "amount": "Montant",
-    "amountProducers": "Montant pour les producteurs",
+    "producerPrice": "Montant pour les producteurs",
+    "paidPrice": "Montant payé par le client",
+    "progress": "Progression",
     "projectName": "Nom du projet",
     "projectDescription": "Description du projet",
     "projectStartDate": "Date de début du projet",

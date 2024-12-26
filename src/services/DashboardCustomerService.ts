@@ -4,16 +4,22 @@ import { AxiosResponse } from 'axios';
 import { ApiResponse } from '@/utils/serviceHelper';
 import { Customer } from '@/@types/customer';
 
-// TODO: déplacer dans CustomerService
-export async function apiGetCustomer(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: Customer}>>> {
+export async function apiGetDashboardCustomerInformations(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: Customer}>>> {
   const query = `
-    query CustomerQuery($documentId: ID!) {
+    query DashboardCustomerInformationsQuery($documentId: ID!) {
       customer(documentId: $documentId) {
         documentId
         customerCategory {
           documentId
         }
         name
+        banner {
+          documentId
+          image {
+            documentId
+            url
+          }
+        }
       }
     }
   `,

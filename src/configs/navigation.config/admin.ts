@@ -8,7 +8,7 @@ import { ADMIN,  SUPER_ADMIN } from "@/constants/roles.constant";
 const navigationAdmin: NavigationTree[] = [
   {
     key: "admin.home",
-    path: "/admin/home",
+    path: "/home",
     title: "ACCUEIL",
     translateKey: "nav.home",
     icon: "home",
@@ -176,7 +176,7 @@ const navigationAdmin: NavigationTree[] = [
             path: "/admin/producers/categories",
             title: "Catégories",
             translateKey: "nav.producersCategories",
-            icon: "customers",
+            icon: "producers",
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
             subMenu: [],

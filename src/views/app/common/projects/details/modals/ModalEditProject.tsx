@@ -6,13 +6,12 @@ import { useEffect, useState } from 'react';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
   setEditProjectDialog,
-  setSelectedProject,
   updateProject,
   useAppDispatch,
   useAppSelector,
 } from '../store';
 import _ from 'lodash';
-import { priorityData, statusData } from '../../lists/constants';
+import { priorityData, stateData } from '../../lists/constants';
 import { Project } from '@/@types/project';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
@@ -25,7 +24,7 @@ type Option = {
   label: string;
 };
 
-export type ProjectFormModel = Omit<Project, 'customer' | 'producer' | 'documentId'> & {
+export type ProjectFormModel = Omit<Project, 'customer' | 'producer' | 'documentId' | 'images'> & {
   documentId?: string;
   customer: string | null;
   producer: string | null;
@@ -49,10 +48,8 @@ function ModalEditProject() {
     startDate: dayjs(project?.startDate).toDate(),
     endDate: dayjs(project?.endDate).toDate(),
     paidPrice: project?.paidPrice || 0,
-    remainingPrice: project?.remainingPrice || 0,
     paymentMethod: project?.paymentMethod || '',
     paymentState: project?.paymentState || '',
-    progress: project?.progress || 0,
     paymentDate: project?.paymentDate || new Date(0),
     comments: project?.comments || [],
     tasks: project?.tasks || [],
@@ -133,7 +130,7 @@ function ModalEditProject() {
             </div>
             <div className="flex flex-col gap-2 w-1/2">
               <FieldCustom
-                placeholder={t('projects.amountProducers')}
+                placeholder={t('projects.producerPrice')}
                 value={formData.producerPrice as number}
                 type='number'
                 setValue={(e: any) => {
@@ -191,9 +188,9 @@ function ModalEditProject() {
               <p className="text-sm text-gray-200 mb-2 mt-4">Status</p>
               <Select
                 placeholder={t('projects.selectState')}
-                options={statusData}
+                options={stateData}
                 noOptionsMessage={() => 'Aucun statut trouvé'}
-                value={statusData.find(
+                value={stateData.find(
                   (status) => status.value == formData.state
                 )}
                 onChange={(e: any) => {

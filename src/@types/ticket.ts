@@ -1,5 +1,5 @@
 import { Image } from './product';
-import { IUser, User } from './user';
+import { User } from './user';
 
 export type Ticket = {
   documentId: string;

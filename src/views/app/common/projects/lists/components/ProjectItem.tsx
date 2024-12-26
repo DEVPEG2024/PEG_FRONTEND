@@ -14,7 +14,7 @@ import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { useState } from 'react';
 import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
 
 const ProjectItem = ({
@@ -22,7 +22,7 @@ const ProjectItem = ({
   handleDeleteProject,
 }: {
   project: Project;
-  handleDeleteProject: (project: Project) => void;
+  handleDeleteProject?: (project: Project) => void;
 }) => {
   const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   const isSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN])
@@ -33,7 +33,7 @@ const ProjectItem = ({
   const statusText = statusTextData[project.state as keyof typeof statusTextData];
 
   const handleNavigateDetails = () => {
-    navigate((isSuperAdmin ? '/admin' : '/customer') + `/projects/details/${project.documentId}`);
+    navigate((isSuperAdmin ? '/admin' : '/common') + `/projects/details/${project.documentId}`);
   };
 
   const completedTasksCount = project.tasks.filter(
@@ -60,7 +60,7 @@ const ProjectItem = ({
             {isSuperAdmin && (
               <ItemDropdown
                 project={project}
-                handleDeleteProject={handleDeleteProject}
+                handleDeleteProject={handleDeleteProject!}
                 setIsPayProducerOpen={setIsPayProducerOpen}
               />
             )}
@@ -75,7 +75,7 @@ const ProjectItem = ({
           <ProgressionBar progression={Number(percentageComplete)} />
           <div className="flex items-center justify-between mt-2">
             <AvatarName entity={project.customer} type="Client" />
-            {isSuperAdmin && (
+            {hasRole(user, [SUPER_ADMIN, PRODUCER]) && (
               <AvatarName entity={project.producer} type="Producteur" />
             )}
             <div className="flex items-center rounded-full font-semibold text-xs">
@@ -91,11 +91,12 @@ const ProjectItem = ({
           </div>
         </div>
       </div>
-      <ModalPayProducer
-        project={project}
-        isPayProducerOpen={isPayProducerOpen}
-        onClosePayProducer={() => setIsPayProducerOpen(false)}
-      />
+      {isPayProducerOpen && (
+        <ModalPayProducer
+          project={project}
+          isPayProducerOpen={isPayProducerOpen}
+          onClosePayProducer={() => setIsPayProducerOpen(false)}/>
+      )}
     </Card>
   );
 };

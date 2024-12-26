@@ -1,12 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Comment, IFile, Project, Task } from '@/@types/project';
+import { Comment, Project, Task } from '@/@types/project';
 import {
   apiGetProjectById,
   DeleteProjectResponse,
   apiDeleteProject,
   apiUpdateProject,
 } from '@/services/ProjectServices';
-import { WritableDraft } from 'immer';
 import { Invoice } from '@/@types/invoice';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiCreateTask, apiDeleteTask, apiUpdateTask, CreateTaskRequest, DeleteTaskResponse } from '@/services/TaskService';
@@ -154,30 +153,6 @@ const projectListSlice = createSlice({
     setSelectedTab: (state, action) => {
       state.selectedTab = action.payload;
     },
-    setAddComment: (state, action) => {
-      if (state.project) {
-        state.project.comments.push(action.payload);
-      }
-    },
-    setDeleteComment: (state, action) => {
-      if (state.project) {
-        state.project.comments = state.project.comments.filter(
-          (comment: Comment) => comment.documentId !== action.payload
-        );
-      }
-    },
-    setAddFile: (state, action) => {
-      if (state.project) {
-        state.project.files.push(action.payload);
-      }
-    },
-    setDeleteFile: (state, action) => {
-      if (state.project) {
-        state.project.files = state.project.files.filter(
-          (file: WritableDraft<IFile>) => file._id !== action.payload
-        );
-      }
-    },
     setNewDialogTask: (state, action) => {
       state.newDialogTask = action.payload;
     },
@@ -186,11 +161,6 @@ const projectListSlice = createSlice({
     },
     setSelectedTask: (state, action) => {
       state.selectedTask = action.payload;
-    },
-    setAddTask: (state, action) => {
-      if (state.project) {
-        state.project.tasks.push(action.payload);
-      }
     },
     setEditTaskSelected: (state, action) => {
       console.log('action.payload', action.payload);
@@ -201,13 +171,6 @@ const projectListSlice = createSlice({
         );
         // Mise à jour de selectedTask
         state.selectedTask = action.payload;
-      }
-    },
-    setDeleteTask: (state, action) => {
-      if (state.project) {
-        state.project.tasks = state.project.tasks.filter(
-          (task: Task) => task.documentId !== action.payload
-        );
       }
     },
     setEditInvoiceDialog: (state, action) => {
@@ -318,15 +281,9 @@ export const {
   setLoading,
   setEditProjectDialog,
   setSelectedTab,
-  setAddComment,
-  setDeleteComment,
-  setAddFile,
-  setDeleteFile,
   setNewDialogTask,
   setEditDialogTask,
-  setAddTask,
   setEditTaskSelected,
-  setDeleteTask,
   setSelectedTask,
   setEditInvoiceDialog,
   setPrintInvoiceDialog,

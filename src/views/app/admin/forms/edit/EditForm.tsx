@@ -4,6 +4,8 @@ import { JSONValue } from '@/@types/form';
 import classNames from 'classnames';
 import { Input } from '@/components/ui';
 
+// TODO SUITE : valeur par défaut pour url et provider pour fichier --> https://github.com/formio/formio.js/issues/2625
+
 function EditForm({onValidate, onCancel, fields, name} : {onValidate: (name: string, components: any) => void, onCancel: () => void, fields: JSONValue, name: string}) {
   const [newName, setNewName] = useState<string>(name),
     [components, setComponents] = useState<any>(JSON.parse(JSON.stringify(fields)))

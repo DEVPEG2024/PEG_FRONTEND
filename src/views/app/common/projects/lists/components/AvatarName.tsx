@@ -1,4 +1,5 @@
 import { Customer } from '@/@types/customer';
+import { Producer } from '@/@types/producer';
 import { Avatar } from '@/components/ui/Avatar';
 import { Tooltip } from '@/components/ui/Tooltip';
 import acronym from '@/utils/acronym';

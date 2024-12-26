@@ -1,6 +1,8 @@
 import { Customer } from "./customer";
 import { Producer } from "./producer";
 
+// TODO: supprimer reste
+
 export interface ICategory {
   _id: string; // Identifiant unique
   title: string; // Titre
@@ -44,25 +46,6 @@ export interface IUser {
   status: boolean; // Indique si le produit est supprimé
   tags: string[]; // Tags
 }
-
-export type UserResponse = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  userName: string;
-  authority: string[];
-  role: Role;
-  createdAt: Date; // Date de création
-  updatedAt: Date; // Date de mise à jour
-  deletedAt: Date | null; // Date de suppression
-  deleted: boolean;
-  customer: any;
-};
-
-export type UserFrontResponse = UserResponse & {
-  _id: string;
-};
 
 export type Role = {
   documentId: string;

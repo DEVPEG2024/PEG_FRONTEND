@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 
-const Home = () => {
+const DashboardAdmin = () => {
   const { t } = useTranslation();
   const {user}: {user: User} = useSelector((state: RootState) => state.auth.user);
   return (
@@ -31,4 +31,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default DashboardAdmin;

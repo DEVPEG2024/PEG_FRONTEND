@@ -1,21 +1,5 @@
-export const statusColorData = {
-  pending: 'bg-blue-500',
-  completed: 'bg-green-500',
-  waiting: 'bg-yellow-500',
-  canceled: 'bg-red-500',
-};
-export const statusColorText = {
-  pending: 'text-blue-500',
-  completed: 'text-green-500',
-  waiting: 'text-yellow-500',
-  canceled: 'text-red-500',
-};
-export const statusTextData = {
-  pending: 'En cours',
-  completed: 'Terminé',
-  waiting: 'En attente',
-  canceled: 'Annulé',
-};
+
+
 
 export const priorityColorData = {
   low: 'bg-green-500',

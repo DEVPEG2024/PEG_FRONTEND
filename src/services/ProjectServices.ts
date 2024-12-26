@@ -92,8 +92,10 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             price
             priority
             producerPrice
-            progress
-            remainingPrice
+            producer {
+                documentId
+                name
+            }
             startDate
             state
             tasks {
@@ -208,8 +210,10 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             price
             priority
             producerPrice
-            progress
-            remainingPrice
+            producer {
+                documentId
+                name
+            }
             startDate
             state
             tasks {
@@ -228,7 +232,8 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
         ...data,
         customer: data.customer?.documentId,
         orderItem: data.orderItem?.documentId,
-        invoice: data.invoice?.documentId
+        invoices: data.invoices?.map((invoice) => invoice.documentId),
+        producer: data.producer?.documentId,
     }
   }
     return ApiService.fetchData<ApiResponse<{createProject: Project}>>({
@@ -325,8 +330,10 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             price
             priority
             producerPrice
-            progress
-            remainingPrice
+            producer {
+                documentId
+                name
+            }
             startDate
             state
             tasks {
@@ -381,7 +388,10 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 name
                 paymentState
                 price
-                progress
+                producer {
+                    documentId
+                    name
+                }
                 startDate
                 state
                 tasks {
@@ -425,7 +435,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
             and: [
             {
                 customer: {
-                documentId: {eq: $customerDocumentId}
+                    documentId: {eq: $customerDocumentId}
                 }
             },
             {
@@ -445,7 +455,78 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 name
                 paymentState
                 price
-                progress
+                producer {
+                    documentId
+                    name
+                }
+                startDate
+                state
+                tasks {
+                    documentId
+                    state
+                }
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get producer projects
+export type GetProducerProjectsRequest = {
+    producerDocumentId: string;
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export async function apiGetProducerProjects(data: GetProducerProjectsRequest = {producerDocumentId: '', pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
+    const query = `
+    query getProducerProjects($producerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+        projects_connection (filters: {
+            and: [
+            {
+                producer: {
+                    documentId: {eq: $producerDocumentId}
+                }
+            },
+            {
+                name: {contains: $searchTerm}
+            }
+            ]
+            }, pagination: $pagination){
+            nodes {
+                documentId
+                comments {
+                    content
+                }
+                customer {
+                    documentId
+                    name
+                }
+                producer {
+                    documentId
+                    name
+                }
+                endDate
+                name
+                paymentState
+                price
                 startDate
                 state
                 tasks {

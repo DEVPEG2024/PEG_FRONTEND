@@ -6,12 +6,12 @@ import {
   HiTrash,
   HiUserCircle,
 } from 'react-icons/hi';
-import { getUserRoleText } from '@/constants/roles.constant';
 
 export const useColumns = (
   handleEditUser: (user: User) => void,
-  handleBlockUser: (user: User) => void,
-  handleDeleteUser: (user: User) => void
+  handleBlockUser: (user: User, id: string) => void,
+  handleDeleteUser: (id: string) => void,
+  usersId: {id: string, documentId: string}[]
 ) => {
   const { t } = useTranslation();
 
@@ -80,7 +80,7 @@ export const useColumns = (
           <Switcher
             checked={!row.original.blocked}
             disabled={row.original.role.name === 'super_admin'}
-            onChange={() => handleBlockUser(row.original)}
+            onChange={() => handleBlockUser(row.original, usersId.find(({documentId}) => documentId === row.original.documentId)!.id)}
           />
           <Button
             onClick={() => handleEditUser(row.original)}
@@ -91,7 +91,7 @@ export const useColumns = (
             <HiPencil size={20} />
           </Button>
           <Button
-            onClick={() => handleDeleteUser(row.original)}
+            onClick={() => handleDeleteUser(usersId.find(({documentId}) => documentId === row.original.documentId)!.id)}
             disabled={row.original.role.name === 'super_admin'}
             size="sm"
             variant="twoTone"

@@ -1,5 +1,5 @@
 const dev = {
-    API_ENDPOINT_URL: 'https://ideal-space-parakeet-wrrj467p9w4fg64-1337.app.github.dev'
+    API_ENDPOINT_URL: 'https://1337-mguldner-pegstrapi-w6xvie5q322.ws-eu117.gitpod.io'
   };
   
   // API HEROKU

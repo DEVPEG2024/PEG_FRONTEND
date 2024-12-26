@@ -6,7 +6,7 @@ import { Input } from '@/components/ui';
 import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { deleteUser, getUsers, updateUser, useAppSelector } from './store';
+import reducer, { deleteUser, getUsers, getUsersIdTable, updateUser, useAppSelector } from './store';
 
 injectReducer('users', reducer);
 
@@ -17,7 +17,7 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { users, total, loading } = useAppSelector((state) => state.users.data);
+  const { users, total, loading, usersId } = useAppSelector((state) => state.users.data);
 
   useEffect(() => {
     fetchUsers();
@@ -25,6 +25,7 @@ const UsersList = () => {
 
   const fetchUsers = async () => {
     dispatch(getUsers({pagination: {page: currentPage, pageSize}, searchTerm}))
+    dispatch(getUsersIdTable())
   };
 
   const handleSearch = (value: string) => {
@@ -36,15 +37,15 @@ const UsersList = () => {
     navigate(`/admin/users/edit/${user.documentId}`);
   };
 
-  const handleBlockUser = async (user: User) => {
-    dispatch(updateUser({documentId: user.documentId, blocked: !user.blocked}))
+  const handleBlockUser = async (user: User, id: string) => {
+    dispatch(updateUser({user: {blocked: !user.blocked}, id}))
   };
   
-  const handleDeleteUser = (user: User) => {
-    dispatch(deleteUser(user.documentId));
+  const handleDeleteUser = (id: string) => {
+    dispatch(deleteUser(id));
   };
 
-  const columns = useColumns(handleEditUser, handleBlockUser, handleDeleteUser);
+  const columns = useColumns(handleEditUser, handleBlockUser, handleDeleteUser, usersId);
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
   };

@@ -18,6 +18,7 @@ import { AiOutlineProject } from "react-icons/ai";
 import { RiTeamLine } from "react-icons/ri";
 import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
+import { FaPenNib } from 'react-icons/fa';
 
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -31,7 +32,7 @@ const navigationIcon: NavigationIcons = {
     settings: <HiOutlineCog />,
     markets: <MdOutlineStorefront />,
     users: <HiUsers />,
-    producers: <LuUsers />,
+    producers: <FaPenNib />,
     offers: <MdOutlineWorkOutline />,
     forms: <MdOutlineWorkOutline />,
     store: <PiStorefront />,
