@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
 import ProductCategoryListContent from './components/CategoryList';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getProductCategories, useAppSelector } from './store';
+import reducer, { getCatalogueProductCategories, useAppSelector } from './store';
 
 injectReducer('catalogue', reducer);
 
@@ -31,7 +31,7 @@ const Categories = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProductCategories = async () => {
-    dispatch(getProductCategories({pagination: {page: currentPage, pageSize}, searchTerm}))
+    dispatch(getCatalogueProductCategories({pagination: {page: currentPage, pageSize}, searchTerm}))
   };
 
   const handleSearch = (value: string) => {

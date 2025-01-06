@@ -1,5 +1,5 @@
 import { Dialog } from '@/components/ui';
-import { useAppDispatch, setFormDialog } from '../store';
+import { useAppDispatch, setOrderItemFormDialog } from '../store';
 import ShowForm from '@/views/app/customer/products/modal/ShowForm';
 import { FormAnswer } from '@/@types/formAnswer';
 
@@ -7,7 +7,7 @@ function ModalShowForm({ formAnswer, formDialog }: { formAnswer: FormAnswer, for
   const dispatch = useAppDispatch();
 
   const handleClose = (): void => {
-    dispatch(setFormDialog(false));
+    dispatch(setOrderItemFormDialog(false));
   };
 
   return (

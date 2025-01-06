@@ -3,7 +3,6 @@ import Tabs from '@/components/ui/Tabs';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_BASE_URL } from '@/configs/api.config';
 
 const Profile = lazy(() => import('./components/Profile'));
 const Password = lazy(() => import('./components/Password'));
@@ -56,7 +55,7 @@ const Settings = () => {
         <div className="px-4 py-6">
           <Suspense fallback={<></>}>
             {currentTab === 'profile' && <Profile />}
-            {currentTab === 'password' && <Password />}
+            {currentTab === 'password' && <Password onTabChange={onTabChange} />}
           </Suspense>
         </div>
       </AdaptableCard>

@@ -10,13 +10,13 @@ export const SLICE_NAME = 'showOrderItem';
 export type StateData = {
   loading: boolean;
   orderItem: OrderItem | null;
-  formDialog: boolean;
+  orderItemFormDialog: boolean;
 };
 
 const initialState: StateData = {
   loading: false,
   orderItem: null,
-  formDialog: false,
+  orderItemFormDialog: false,
 };
 
 export const getOrderItemById = createAsyncThunk(
@@ -30,11 +30,11 @@ const showOrderItemSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setFormDialog: (state, action) => {
-      state.formDialog = action.payload;
+    setOrderItemFormDialog: (state, action) => {
+      state.orderItemFormDialog = action.payload;
     },
-    clearState: (state) => {
-      state.formDialog = false;
+    clearOrderItemState: (state) => {
+      state.orderItemFormDialog = false;
       state.orderItem = null;
     },
   },
@@ -50,8 +50,8 @@ const showOrderItemSlice = createSlice({
 });
 
 export const {
-  clearState,
-  setFormDialog
+  clearOrderItemState,
+  setOrderItemFormDialog
 } = showOrderItemSlice.actions;
 
 export default showOrderItemSlice.reducer;

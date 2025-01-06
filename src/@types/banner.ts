@@ -1,5 +1,5 @@
 import { Customer, CustomerCategory } from './customer';
-import { Image } from './product';
+import { Image } from './image';
 
 export type Banner = {
   documentId: string;

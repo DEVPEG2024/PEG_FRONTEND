@@ -10,7 +10,6 @@ import {
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetProductCategories, apiGetProductCategoryById, GetProductCategoriesRequest, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
 
-// TODO: Voir si cette slice est nécessaire: redondante avec productSlice
 export const SLICE_NAME = 'catalogue';
 
 export type StateData = {
@@ -35,24 +34,24 @@ export type StatsTypesResponses = {
 };
 
 
-export const getProducts = createAsyncThunk(
-  SLICE_NAME + '/getProducts',
+export const getCatalogueProducts = createAsyncThunk(
+  SLICE_NAME + '/getCatalogueProducts',
   async (data: GetProductsRequest): Promise<GetProductsResponse> => {
     const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProducts(data));
     return products_connection
   }
 );
 
-export const getProductsByCategory = createAsyncThunk(
-  SLICE_NAME + '/getProductsByCategory',
+export const getCatalogueProductsByCategory = createAsyncThunk(
+  SLICE_NAME + '/getCatalogueProductsByCategory',
   async (data: GetProductsByCategoryRequest): Promise<GetProductsResponse> => {
     const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProductsByCategory(data));
     return products_connection
   }
 );
 
-export const getProductCategoryById = createAsyncThunk(
-  SLICE_NAME + '/getProductCategoryById',
+export const getCatalogueProductCategoryById = createAsyncThunk(
+  SLICE_NAME + '/getCatalogueProductCategoryById',
   async (documentId: string): Promise<{productCategory: ProductCategory}> => {
     return await unwrapData(apiGetProductCategoryById(documentId));
   }
@@ -73,8 +72,8 @@ const initialState: StateData = {
   productCategory: undefined,
 };
 
-export const getProductCategories = createAsyncThunk(
-  SLICE_NAME + '/getProductCategories',
+export const getCatalogueProductCategories = createAsyncThunk(
+  SLICE_NAME + '/getCatalogueProductCategories',
   async (data: GetProductCategoriesRequest) : Promise<GetProductCategoriesResponse> => {
     const {productCategories_connection} : {productCategories_connection: GetProductCategoriesResponse} = await unwrapData(apiGetProductCategories(data));
     return productCategories_connection;
@@ -91,50 +90,49 @@ const catalogueSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
-    builder.addCase(getProducts.pending, (state) => {
+    builder.addCase(getCatalogueProducts.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProducts.fulfilled, (state, action) => {
+    builder.addCase(getCatalogueProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.nodes as Product;
+      state.products = action.payload.nodes;
     });
-    builder.addCase(getProducts.rejected, (state) => {
+    builder.addCase(getCatalogueProducts.rejected, (state) => {
       state.loading = false;
     });
-    builder.addCase(getProductsByCategory.pending, (state) => {
+    builder.addCase(getCatalogueProductsByCategory.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProductsByCategory.fulfilled, (state, action) => {
+    builder.addCase(getCatalogueProductsByCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.products = action.payload.nodes;
       state.total = action.payload.pageInfo.total
     });
-    builder.addCase(getProductsByCategory.rejected, (state) => {
+    builder.addCase(getCatalogueProductsByCategory.rejected, (state) => {
       state.loading = false;
     });
-    builder.addCase(getProductCategories.pending, (state) => {
+    builder.addCase(getCatalogueProductCategories.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProductCategories.fulfilled, (state, action) => {
+    builder.addCase(getCatalogueProductCategories.fulfilled, (state, action) => {
       state.productCategories = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
-    builder.addCase(getProductCategoryById.pending, (state) => {
+    builder.addCase(getCatalogueProductCategoryById.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProductCategoryById.fulfilled, (state, action) => {
+    builder.addCase(getCatalogueProductCategoryById.fulfilled, (state, action) => {
       state.loading = false;
       state.productCategory = action.payload.productCategory;
     });
-    builder.addCase(getProductCategoryById.rejected, (state) => {
+    builder.addCase(getCatalogueProductCategoryById.rejected, (state) => {
       state.loading = false;
     });
   },
 });
 
 export const {
-  setProduct,
   clearStateSpecificCategory,
 } = catalogueSlice.actions;
 

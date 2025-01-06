@@ -1,4 +1,4 @@
-import { Button, DatePicker, Dialog, Input, Select } from '@/components/ui';
+import { Button, DatePicker, Dialog, Input, Select, Switcher } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from '../../modals/components/fileds';
 import dayjs from 'dayjs';
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
   setEditProjectDialog,
-  updateProject,
+  updateCurrentProject,
   useAppDispatch,
   useAppSelector,
 } from '../store';
@@ -48,12 +48,11 @@ function ModalEditProject() {
     startDate: dayjs(project?.startDate).toDate(),
     endDate: dayjs(project?.endDate).toDate(),
     paidPrice: project?.paidPrice || 0,
-    paymentMethod: project?.paymentMethod || '',
-    paymentState: project?.paymentState || '',
-    paymentDate: project?.paymentDate || new Date(0),
+    producerPaidPrice: project?.producerPaidPrice || 0,
     comments: project?.comments || [],
     tasks: project?.tasks || [],
     invoices: project?.invoices || [],
+    poolable: project?.poolable || false,
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
@@ -87,7 +86,7 @@ function ModalEditProject() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(updateProject(formData));
+    dispatch(updateCurrentProject(formData));
     handleClose();
   };
   
@@ -139,8 +138,30 @@ function ModalEditProject() {
               />
             </div>
           </div>
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 mt-4">
             <div className="flex flex-col gap-2 w-1/2">
+              <FieldCustom
+                placeholder={t('projects.paidPrice')}
+                value={formData.paidPrice as number}
+                type='number'
+                setValue={(e: any) => {
+                  setFormData({ ...formData, paidPrice: parseFloat(e) });
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-1/2">
+              <FieldCustom
+                placeholder={t('projects.producerPaidPrice')}
+                value={formData.producerPaidPrice as number}
+                type='number'
+                setValue={(e: any) => {
+                  setFormData({ ...formData, producerPaidPrice: parseFloat(e) });
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex flex-row gap-2">
+            <div className="flex flex-col gap-2 w-4/12">
               <p className="text-sm text-gray-200 mb-2 mt-4">Client</p>
               <Select
                 placeholder={t('projects.selectCustomer')}
@@ -154,7 +175,7 @@ function ModalEditProject() {
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
+            <div className="flex flex-col gap-2 w-6/12">
               <p className="text-sm text-gray-200 mb-2 mt-4">Producteur</p>
               <Select
                 placeholder={t('projects.selectProducer')}
@@ -168,6 +189,14 @@ function ModalEditProject() {
                 }}
               />
             </div>
+            <div className="flex flex-col gap-2 w-2/12">
+              <span className="text-sm text-gray-200 mb-2 mt-4">Dans la piscine</span>
+              <Switcher
+                className="self-center"
+                checked={formData.poolable}
+                onChange={() => setFormData({ ...formData, poolable: !formData.poolable })}
+              />
+            </div>
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
@@ -175,7 +204,7 @@ function ModalEditProject() {
               <Select
                 placeholder="Choisir une priorité"
                 options={priorityData}
-                noOptionsMessage={() => 'Aucune priorité trouvé'}
+                noOptionsMessage={() => 'Aucune priorité trouvée'}
                 value={priorityData.find(
                   (priority) => priority.value == formData.priority
                 )}

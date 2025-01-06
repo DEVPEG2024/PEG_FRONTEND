@@ -14,7 +14,7 @@ import { User } from '@/@types/user';
 import { RootState, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
 import { hasRole } from '@/utils/permissions';
 import { SUPER_ADMIN } from '@/constants/roles.constant';
-import { useAppSelector, updateProject, setEditDescription } from '../store';
+import { useAppSelector, updateCurrentProject, setEditDescription } from '../store';
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
     <div className="text-center">
@@ -41,7 +41,7 @@ const Summary = ({ project }: { project: Project }) => {
   }
   
   const onEditComplete = () => {
-    dispatch(updateProject({...project, description}))
+    dispatch(updateCurrentProject({...project, description}))
   };
 
   const onEdit = (val: string) => {

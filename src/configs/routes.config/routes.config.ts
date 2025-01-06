@@ -64,68 +64,36 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/producers/categories/ProducerCategoriesList")),
     authority: [SUPER_ADMIN],
   },
-  // projects
-  {
-    key: "admin.projects.list",
-    path: "/admin/projects/list",
-    component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
-    authority: [SUPER_ADMIN],
-  },
-  {
-    key: "admin.projects.details",
-    path: "/admin/projects/details/:documentId",
-    component: lazy(() => import("@/views/app/common/projects/details/ProjectDetails")),
-    authority: [SUPER_ADMIN],
-    meta: {
-      pageContainerType: "gutterless",
-    },
-  },
 
   // products
   {
-    key: "admin.store.lists",
-    path: "/admin/store/lists",
+    key: "admin.products",
+    path: "/admin/products",
     component: lazy(() => import("@/views/app/admin/products/ProductsList")),
     authority: [SUPER_ADMIN],
   },
-
-
   {
-    key: "admin.store.new",
-    path: "/admin/store/new",
+    key: "admin.products.new",
+    path: "/admin/products/new",
     component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
     authority: [SUPER_ADMIN],
   },
   {
-    key: "admin.store.edit",
-    path: "/admin/store/edit/:documentId",
+    key: "admin.products.edit",
+    path: "/admin/products/edit/:documentId",
     component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
     authority: [SUPER_ADMIN],
   },
-
-
-  /*{
-    key: "admin.store.new",
-    path: "/admin/store/new",
-    component: lazy(() => import("@/views/app/admin/products/lists/new")),
-    authority: [SUPER_ADMIN],
-  },
   {
-    key: "admin.store.edit",
-    path: "/admin/store/edit/:id",
-    component: lazy(() => import("@/views/app/admin/products/lists/edit")),
-    authority: [SUPER_ADMIN],
-  },*/
-  {
-    key: "admin.store.categories",
-    path: "/admin/store/categories",
+    key: "admin.products.categories",
+    path: "/admin/products/categories",
     component: lazy(() => import("@/views/app/admin/products/categories/ProductCategories")),
     authority: [SUPER_ADMIN],
   },
   {
-    key: "admin.store.categories.products",
-    path: "/admin/store/categories/:documentId",
-    component: lazy(() => import("@/views/app/admin/products/categories/ProductsLists")),
+    key: "admin.products.categories.products",
+    path: "/admin/products/categories/:documentId",
+    component: lazy(() => import("@/views/app/admin/products/categories/AdminProductsOfCategory")),
     authority: [SUPER_ADMIN],
   },
   //orders
@@ -202,12 +170,6 @@ const protectedCustomersRoutes = [
     authority: [CUSTOMER],
   },
   {
-    key: "customer.projects",
-    path: "/customer/projects",
-    component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
-    authority: [CUSTOMER],
-  },
-  {
     key: "customer.catalogue",
     path: "/customer/catalogue",
     component: lazy(() => import("@/views/app/customer/catalogue")),
@@ -216,7 +178,7 @@ const protectedCustomersRoutes = [
   {
     key: "customer.catalogue.categories.products",
     path: "/customer/catalogue/categories/:documentId",
-    component: lazy(() => import("@/views/app/customer/catalogue/ProductsOfCategory")),
+    component: lazy(() => import("@/views/app/customer/catalogue/CustomerProductsOfCategory")),
     authority: [CUSTOMER],
   },
   {
@@ -234,23 +196,17 @@ const protectedCustomersRoutes = [
 ];
 const protectedProducerRoutes = [
   {
-    key: "producer.projects",
-    path: "/producer/projects",
-    component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
-    authority: [PRODUCER],
-  },
-  /*{
-    key: "producer.piscine",
-    path: "/producer/piscine",
-    component: lazy(() => import("@/views/app/producer/piscine")),
+    key: "producer.pool",
+    path: "/producer/pool",
+    component: lazy(() => import("@/views/app/producer/pool/PoolProjectsList")),
     authority: [PRODUCER],
   },
   {
     key: "producer.wallet",
     path: "/producer/wallet",
-    component: lazy(() => import("@/views/app/producer/wallet")),
+    component: lazy(() => import("@/views/app/producer/wallet/TransactionsList")),
     authority: [PRODUCER],
-  },*/
+  },
 ];
 
 const protectedCommonRoutes = [
@@ -267,10 +223,16 @@ const protectedCommonRoutes = [
     key: "common.projects.details",
     path: "/common/projects/details/:documentId",
     component: lazy(() => import("@/views/app/common/projects/details/ProjectDetails")),
-    authority: [CUSTOMER, PRODUCER, ADMIN],
+    authority: [CUSTOMER, PRODUCER, ADMIN, SUPER_ADMIN],
     meta: {
       pageContainerType: "gutterless",
     },
+  },
+  {
+    key: "common.projects",
+    path: "/common/projects",
+    component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
+    authority: [CUSTOMER, PRODUCER, ADMIN, SUPER_ADMIN],
   },
 ]
 

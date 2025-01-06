@@ -25,7 +25,7 @@ type EditUserParams = {
   documentId: string;
 };
 
-export type UserFormModel = Omit<User, 'documentId' | 'role' | 'customer' | 'producer' | 'authority'> & {
+export type UserFormModel = Omit<User, 'id' | 'documentId' | 'role' | 'customer' | 'producer' | 'authority' | 'avatar'> & {
   documentId?: string;
   role: string | null;
   customer: string | null;

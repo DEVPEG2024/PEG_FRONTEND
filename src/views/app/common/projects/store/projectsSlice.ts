@@ -15,6 +15,8 @@ import { PaginationRequest, unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { apiCreateTransaction, CreateTransactionRequest } from '@/services/TransactionsServices';
+import { Transaction } from '@/@types/transaction';
 
 export const SLICE_NAME = 'projects';
 
@@ -76,6 +78,20 @@ export const createProject = createAsyncThunk(
   }
 );
 
+export type PayProducer = {
+  transaction: Omit<Transaction, 'documentId'>;
+  project: Project;
+}
+
+export const payProducer = createAsyncThunk(
+  SLICE_NAME + '/payProducer',
+  async (data: PayProducer) : Promise<Project> => {
+    await apiCreateTransaction(data.transaction);
+    const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject({documentId: data.project.documentId, producerPaidPrice: data.project.producerPaidPrice + data.transaction.amount}));
+    return updateProject;
+  }
+);
+
 const initialState: ProjectsState = {
   projects: [],
   selectedProject: null,
@@ -107,7 +123,7 @@ const projectListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getProjects.fulfilled, (state, action) => {
-      state.projects = action.payload.nodes as Project[];
+      state.projects = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -136,6 +152,20 @@ const projectListSlice = createSlice({
       state.total += 1
     });
     builder.addCase(createProject.rejected, (state) => {
+      state.loading = false;
+    });
+
+    // PAY PRODUCER
+    builder.addCase(payProducer.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(payProducer.fulfilled, (state, action) => {
+      state.loading = false;
+      state.projects = state.projects.map((project) =>
+        project.documentId === action.payload.documentId ? action.payload : project
+      );
+    });
+    builder.addCase(payProducer.rejected, (state) => {
       state.loading = false;
     });
   },

@@ -48,7 +48,7 @@ const navigationIcon: NavigationIcons = {
     invoices: <GoFileDiff />,
     mail: <MdOutlineMail />,
     banners: <PiFlagBannerBold />,
-    piscine: <PiSwimmingPoolBold />,
+    pool: <PiSwimmingPoolBold />,
 }
 
 export default navigationIcon

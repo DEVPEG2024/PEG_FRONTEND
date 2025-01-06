@@ -19,7 +19,7 @@ function PaymentContent({cart, createOrderAndClearCart} : {cart: CartItem[], cre
   
 
   const validatePayment = async () : Promise<{paymentValidated: boolean, paymentInformations: PaymentInformations}> => {
-    return {paymentValidated: true, paymentInformations: { paymentMethod: 'manual', paymentDate: new Date(0), paymentStatus: 'pending'}};
+    return {paymentValidated: true, paymentInformations: { paymentMethod: 'card', paymentDate: new Date(0), paymentState: 'pending'}};
   };
 
   const totalPrice: number = cart.reduce(

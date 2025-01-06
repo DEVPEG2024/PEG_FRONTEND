@@ -18,7 +18,7 @@ const navigationAdmin: NavigationTree[] = [
   },
   {
     key: "admin.projects.list",
-    path: "/admin/projects/list",
+    path: "/common/projects",
     title: "Projets",
     translateKey: "nav.projects",
     icon: "projects",
@@ -65,8 +65,8 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
-            key: "admin.store.lists",
-            path: "/admin/store/lists",
+            key: "admin.products",
+            path: "/admin/products",
             title: "Liste des produits",
             translateKey: "nav.storeList",
             icon: "store",
@@ -75,8 +75,8 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
-            key: "admin.store.categories",
-            path: "/admin/store/categories",
+            key: "admin.products.categories",
+            path: "/admin/products/categories",
             title: "Catégories",
             translateKey: "nav.storeCategories",
             icon: "store",

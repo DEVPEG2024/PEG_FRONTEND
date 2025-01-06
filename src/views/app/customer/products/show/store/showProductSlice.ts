@@ -26,8 +26,8 @@ const initialState: StateData = {
   cartItemId: '',
 };
 
-export const getProductById = createAsyncThunk(
-  SLICE_NAME + '/getProduct',
+export const getProductToShow = createAsyncThunk(
+  SLICE_NAME + '/getProductToShow',
   async (documentId: string): Promise<{product: Product}> => {
     return await unwrapData(apiGetProductForShowById(documentId));
   }
@@ -64,14 +64,14 @@ const productSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getProductById.pending, (state) => {
+    builder.addCase(getProductToShow.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProductById.fulfilled, (state, action) => {
+    builder.addCase(getProductToShow.fulfilled, (state, action) => {
       state.loading = false;
       state.product = action.payload.product;
     });
-    builder.addCase(getProductById.rejected, (state) => {
+    builder.addCase(getProductToShow.rejected, (state) => {
       state.loading = false;
     });
   },

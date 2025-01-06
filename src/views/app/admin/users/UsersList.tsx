@@ -10,7 +10,6 @@ import reducer, { deleteUser, getUsers, getUsersIdTable, updateUser, useAppSelec
 
 injectReducer('users', reducer);
 
-// TODO SUITE
 const UsersList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -37,11 +36,11 @@ const UsersList = () => {
     navigate(`/admin/users/edit/${user.documentId}`);
   };
 
-  const handleBlockUser = async (user: User, id: string) => {
+  const handleBlockUser = async (user: User, id: number) => {
     dispatch(updateUser({user: {blocked: !user.blocked}, id}))
   };
   
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = (id: number) => {
     dispatch(deleteUser(id));
   };
 

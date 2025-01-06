@@ -6,10 +6,10 @@ import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
 import {
-  setEditInvoiceDialog,
-  setPrintInvoiceDialog,
-  setSelectedInvoice,
-  updateInvoice,
+  setEditProjectInvoiceDialog,
+  setPrintProjectInvoiceDialog,
+  setSelectedProjectInvoice,
+  updateProjectInvoice,
   useAppSelector,
 } from '../store';
 import { Card, Checkbox } from '@/components/ui';
@@ -26,20 +26,20 @@ import { stateData } from '@/views/app/common/invoices/constants';
 const Invoices = () => {
   const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   const dispatch = useAppDispatch();
-  const { invoices, editInvoiceDialog, selectedInvoice, printInvoiceDialog, loading } = useAppSelector((state) => state.projectDetails.data);
+  const { invoices, editProjectInvoiceDialog: editInvoiceDialog, selectedProjectInvoice: selectedInvoice, printProjectInvoiceDialog: printInvoiceDialog, loading } = useAppSelector((state) => state.projectDetails.data);
 
   const handleCancelInvoice = (invoice: Invoice) => {
-    dispatch(updateInvoice({documentId: invoice.documentId, state: 'canceled'}));
+    dispatch(updateProjectInvoice({documentId: invoice.documentId, state: 'canceled'}));
   };
 
   const handleUpdateInvoice = (invoice: Invoice) => {
-    dispatch(setSelectedInvoice(invoice));
-    dispatch(setEditInvoiceDialog(true));
+    dispatch(setSelectedProjectInvoice(invoice));
+    dispatch(setEditProjectInvoiceDialog(true));
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {
-    dispatch(setSelectedInvoice(invoice));
-    dispatch(setPrintInvoiceDialog(true));
+    dispatch(setSelectedProjectInvoice(invoice));
+    dispatch(setPrintProjectInvoiceDialog(true));
   };
 
   return (
@@ -136,9 +136,9 @@ const Invoices = () => {
         <ModalEditInvoice
           editInvoiceDialog={editInvoiceDialog}
           selectedInvoice={selectedInvoice}
-          setEditInvoiceDialog={setEditInvoiceDialog}
-          setSelectedInvoice={setSelectedInvoice}
-          updateInvoice={updateInvoice}
+          setEditInvoiceDialog={setEditProjectInvoiceDialog}
+          setSelectedInvoice={setSelectedProjectInvoice}
+          updateInvoice={updateProjectInvoice}
           dispatch={dispatch}
           loading={loading} />
       }
@@ -146,8 +146,8 @@ const Invoices = () => {
         <ModalPrintInvoice 
           printInvoiceDialog={printInvoiceDialog}
           selectedInvoice={selectedInvoice}
-          setPrintInvoiceDialog={setPrintInvoiceDialog}
-          setSelectedInvoice={setSelectedInvoice}
+          setPrintInvoiceDialog={setPrintProjectInvoiceDialog}
+          setSelectedInvoice={setSelectedProjectInvoice}
           dispatch={dispatch}/>
       }
     </Container>

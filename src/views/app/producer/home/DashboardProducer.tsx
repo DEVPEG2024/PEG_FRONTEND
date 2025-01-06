@@ -63,7 +63,8 @@ const DashboardProducer = () => {
                 </div>
               )}
             </div>
-            <Card className="gap-4 w-1/4">
+            { // TODO : Voir pour ajouter plus tard
+            /*<Card className="gap-4 w-1/4">
               <div className="flex justify-between">
                 <div className="flex flex-col">
                   <h3>Mon portefeuille</h3>
@@ -88,7 +89,7 @@ const DashboardProducer = () => {
                   Voir les détails
                 </Button>
               </div>
-            </Card>
+            </Card>*/}
           </div>
         </Container>
       </Suspense>

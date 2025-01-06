@@ -1,4 +1,4 @@
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { Upload } from '@/components/ui'
 const beforeUpload = (files: FileList | null) => {
   let valid: string | boolean = true

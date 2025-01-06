@@ -2,7 +2,8 @@ import FileUplaodDragLight from '@/components/shared/Upload/light';
 import { Button, Dialog, Input } from '@/components/ui';
 import {  useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, ProductCategory } from '@/@types/product';
+import { ProductCategory } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { useAppDispatch } from '@/store';
 import { createProductCategory } from '../store';
 

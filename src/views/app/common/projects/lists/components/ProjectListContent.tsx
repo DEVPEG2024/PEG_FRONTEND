@@ -7,7 +7,7 @@ const ProjectListContent = ({
   handleDeleteProject,
 }: {
   projects: Project[];
-  handleDeleteProject: (project: Project) => void;
+  handleDeleteProject?: (project: Project) => void;
 }) => {
   return (
     <div className={classNames('mt-6 h-full flex flex-col')}>

@@ -1,15 +1,22 @@
 import {
   Button,
   Dialog,
-  Notification,
-  toast,
+  Select
 } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import { useState } from 'react';
-import useUniqueId from '@/components/ui/hooks/useUniqueId';
 import { Project } from '@/@types/project';
-import { apiPayProducer } from '@/services/ProjectServices';
+import { useAppDispatch } from '@/store';
+import { payProducer } from '../store';
+import { Transaction } from '@/@types/transaction';
+import { paymentProducerProjectTypes } from '../lists/constants';
+import { form } from '@formio/react';
+
+type PayProducerFormModel = {
+  amount: number;
+  type: string;
+}
 
 function ModalPayProducer({
   project,
@@ -20,31 +27,23 @@ function ModalPayProducer({
   isPayProducerOpen: boolean;
   onClosePayProducer: () => void;
 }) {
-  const newId = useUniqueId('PAY-PRODUCER-', 10);
-  const [formData, setFormData] = useState({
-    ref: newId,
+  const dispatch = useAppDispatch();
+  const [formData, setFormData] = useState<PayProducerFormModel>({
     amount: project.producerPrice,
+    type: 'projectPayment'
   });
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    const response = await apiPayProducer({
-      ref: formData.ref,
-      projectId: project.documentId,
-      producerId: '' /*project.producer._id*/,
+    const transaction: Omit<Transaction, 'documentId'> = {
       amount: formData.amount,
-    });
-    setFormData({
-      ref: newId,
-      amount: project.producerPrice,
-    });
-    if (response.status === 200) {
-      toast.push(<Notification type="success" title="Paiement effectué" />);
-    } else {
-      toast.push(
-        <Notification type="danger" title="Erreur lors du paiement" />
-      );
+      project,
+      producer: project.producer!.documentId,
+      type: formData.type,
+      date: new Date(),
+      description: '',
     }
+    dispatch(payProducer({ project, transaction }));
     handleClose();
   };
   const handleClose = () => {
@@ -63,6 +62,20 @@ function ModalPayProducer({
               setFormData({ ...formData, amount: e });
             }}
           />
+          <div className='mt-4'>
+            <p className="text-sm text-gray-200 mb-2">Type de paiement</p>
+            <Select
+              placeholder="Type de paiement"
+              options={paymentProducerProjectTypes}
+              noOptionsMessage={() => 'Aucun type trouvé'}
+              value={paymentProducerProjectTypes.find(
+                (type) => type.value == formData.type
+              )}
+              onChange={(e: any) => {
+                setFormData({ ...formData, type: e?.value || null });
+              }}
+            />
+          </div>
           <div className="text-right mt-6">
             <Button
               className="ltr:mr-2 rtl:ml-2"

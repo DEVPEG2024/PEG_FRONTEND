@@ -1,5 +1,6 @@
 import { Customer, CustomerCategory } from './customer';
 import { Form } from './form';
+import { Image } from './image';
 
 export type Product = {
   active: boolean;
@@ -25,15 +26,6 @@ export type Size = {
 export type SizeSelection = {
   size: Size;
   quantity: number;
-};
-
-// TODO: A deplacer dans fichier à part
-export type Image = {
-  documentId: string;
-  id: string;
-  url: string;
-  name: string;
-  file: File;
 };
 
 export type ProductCategory = {

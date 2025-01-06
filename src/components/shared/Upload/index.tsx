@@ -1,4 +1,4 @@
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { Avatar, Upload } from '@/components/ui'
 import { PiUploadDuotone } from "react-icons/pi";
 

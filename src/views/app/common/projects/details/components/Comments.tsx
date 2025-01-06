@@ -14,7 +14,7 @@ import { RootState, useAppDispatch, useAppSelector as useRootAppSelector } from 
 import { createComment, deleteComment, setLoading, useAppSelector } from '../store';
 import dayjs from 'dayjs';
 import { User } from '@/@types/user';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { apiUploadFile } from '@/services/FileServices';
 import { Upload } from '@/components/ui';
 

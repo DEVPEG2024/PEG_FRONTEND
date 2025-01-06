@@ -21,7 +21,7 @@ type ForgotPasswordFormSchema = {
 };
 
 const validationSchema = Yup.object().shape({
-  email: Yup.string().required('Please enter your email'),
+  email: Yup.string().required('Veuillez renseigner votre email'),
 });
 
 const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
@@ -116,8 +116,7 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                 {emailSent ? 'Renvoyer le code' : 'Envoyer le code'}
               </Button>
               <div className="mt-4 text-center">
-                <span>Retour à la page de connexion</span>
-                <ActionLink to={signInUrl}> Se connecter</ActionLink>
+                <ActionLink to={signInUrl}>Retour à la page de connexion</ActionLink>
               </div>
             </FormContainer>
           </Form>

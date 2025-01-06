@@ -28,7 +28,7 @@ const navigationCustomer: NavigationTree[] = [
   },
   {
     key: "customer.projects",
-    path: "/customer/projects",
+    path: "/common/projects",
     title: "Mes projets",
     translateKey: "nav.mesprojets",
     icon: "projects",

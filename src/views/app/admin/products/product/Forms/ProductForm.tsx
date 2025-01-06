@@ -8,7 +8,8 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { Image, Product } from '@/@types/product';
+import { Product } from '@/@types/product';
+import { Image } from '@/@types/image';
 
 interface Options {
   value: string;

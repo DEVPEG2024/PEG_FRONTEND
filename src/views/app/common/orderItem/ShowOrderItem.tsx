@@ -1,9 +1,9 @@
 import { injectReducer } from '@/store';
 import { useEffect } from 'react';
 import reducer, {
-  clearState,
+  clearOrderItemState,
   getOrderItemById,
-  setFormDialog,
+  setOrderItemFormDialog,
   useAppDispatch,
   useAppSelector,
 } from './store';
@@ -24,7 +24,7 @@ type ShowOrderItemParams = {
 const ShowOrderItem = () => {
   const { documentId } = useParams<ShowOrderItemParams>() as ShowOrderItemParams;
   const dispatch = useAppDispatch();
-  const { orderItem, formDialog } = useAppSelector(
+  const { orderItem, orderItemFormDialog: formDialog } = useAppSelector(
     (state) => state.showOrderItem.data
   );
 
@@ -34,12 +34,12 @@ const ShowOrderItem = () => {
     }
 
     return () => {
-      dispatch(clearState())
+      dispatch(clearOrderItemState())
     }
   }, [dispatch]);
 
   const handleShowForm = () => {
-    dispatch(setFormDialog(true));
+    dispatch(setOrderItemFormDialog(true));
   };
 
   return (

@@ -12,7 +12,7 @@ import { useAppDispatch } from '@/store';
 import { setEditProjectDialog, setSelectedProject } from '../../store';
 import { Project } from '@/@types/project';
 
-const ItemDropdown = ({
+const ProjectItemDropdown = ({
   handleDeleteProject,
   project: project,
   setIsPayProducerOpen,
@@ -21,7 +21,7 @@ const ItemDropdown = ({
   project: Project;
   setIsPayProducerOpen: (value: boolean) => void;
 }) => {
-  const [validDelete, setValidDelete] = useState(false);
+  const [isValidDeleteOpen, setIsValidDeleteOpen] = useState(false);
   const dispatch = useAppDispatch();
   const dropdownList = [
     {
@@ -29,26 +29,29 @@ const ItemDropdown = ({
       value: 'edit',
       icon: <HiOutlinePencil />,
       action: () => handleEditProject(),
+      condition: () => true,
     },
     {
       label: 'Supprimer',
       value: 'delete',
       icon: <HiOutlineTrash />,
       action: () => handleDelete(),
+      condition: () => true,
     },
     {
       label: 'Payer le producteur',
       value: 'payProducer',
       icon: <TbPigMoney />,
       action: () => setIsPayProducerOpen(true),
+      condition: (selectedProject: Project) => selectedProject.producer,
     },
   ];
   const handleDelete = () => {
-    setValidDelete(true);
+    setIsValidDeleteOpen(true);
   };
   const handleConfirmDelete = () => {
     handleDeleteProject(project);
-    setValidDelete(false);
+    setIsValidDeleteOpen(false);
   };
   const handleEditProject = () => {
     dispatch(setSelectedProject(project));
@@ -57,7 +60,7 @@ const ItemDropdown = ({
   return (
     <>
       <Dropdown placement="bottom-end" renderTitle={<EllipsisButton />}>
-        {dropdownList.map((item) => (
+        {dropdownList.filter((dropdownItem) => dropdownItem.condition(project)).map((item) => (
           <Dropdown.Item
             key={item.value}
             eventKey={item.value}
@@ -68,7 +71,7 @@ const ItemDropdown = ({
           </Dropdown.Item>
         ))}
       </Dropdown>
-      <Dialog isOpen={validDelete} onClose={() => setValidDelete(false)}>
+      <Dialog isOpen={isValidDeleteOpen} onClose={() => setIsValidDeleteOpen(false)}>
         <div className="flex flex-col items-center justify-center">
           <HiExclamationCircle className="text-7xl text-red-500" />
           <h1 className="text-2xl font-bold mt-4">Suppression du projet</h1>
@@ -77,7 +80,7 @@ const ItemDropdown = ({
           <p>Voulez-vous vraiment supprimer ce projet ?</p>
         </div>
         <div className="flex flex-grow items-center justify-center gap-2 mt-10">
-          <Button onClick={() => setValidDelete(false)}>Annuler</Button>
+          <Button onClick={() => setIsValidDeleteOpen(false)}>Annuler</Button>
           <Button
             onClick={handleConfirmDelete}
             className="bg-red-500 text-white"
@@ -91,4 +94,4 @@ const ItemDropdown = ({
   );
 };
 
-export default ItemDropdown;
+export default ProjectItemDropdown;

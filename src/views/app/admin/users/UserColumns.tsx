@@ -9,9 +9,9 @@ import {
 
 export const useColumns = (
   handleEditUser: (user: User) => void,
-  handleBlockUser: (user: User, id: string) => void,
-  handleDeleteUser: (id: string) => void,
-  usersId: {id: string, documentId: string}[]
+  handleBlockUser: (user: User, id: number) => void,
+  handleDeleteUser: (id: number) => void,
+  usersId: {id: number, documentId: string}[]
 ) => {
   const { t } = useTranslation();
 

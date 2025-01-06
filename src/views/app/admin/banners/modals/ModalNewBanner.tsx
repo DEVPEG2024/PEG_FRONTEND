@@ -11,7 +11,7 @@ import {
 import { Customer, CustomerCategory } from '@/@types/customer';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { Banner } from '@/@types/banner';
 
 type Option = {

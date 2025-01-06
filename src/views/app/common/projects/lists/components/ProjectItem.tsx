@@ -1,5 +1,5 @@
 import Card from '@/components/ui/Card';
-import ItemDropdown from './ItemDropdown';
+import ProjectItemDropdown from './ProjectItemDropdown';
 import AvatarName from './AvatarName';
 import ProgressionBar from './ProgressionBar';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { useState } from 'react';
 import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
-import { PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
 
 const ProjectItem = ({
@@ -33,7 +33,7 @@ const ProjectItem = ({
   const statusText = statusTextData[project.state as keyof typeof statusTextData];
 
   const handleNavigateDetails = () => {
-    navigate((isSuperAdmin ? '/admin' : '/common') + `/projects/details/${project.documentId}`);
+    navigate(`/common/projects/details/${project.documentId}`);
   };
 
   const completedTasksCount = project.tasks.filter(
@@ -58,7 +58,7 @@ const ProjectItem = ({
               <Tag className={`${statusColor} text-white`}>{statusText}</Tag>
             </div>
             {isSuperAdmin && (
-              <ItemDropdown
+              <ProjectItemDropdown
                 project={project}
                 handleDeleteProject={handleDeleteProject!}
                 setIsPayProducerOpen={setIsPayProducerOpen}
@@ -69,6 +69,16 @@ const ProjectItem = ({
         {isSuperAdmin && (
           <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
           Total projet: {project.price} € - Total producteur: {project.producerPrice} €
+        </p>
+        )}
+        {hasRole(user, [PRODUCER]) && (
+          <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
+          Total producteur: {project.producerPrice} €
+        </p>
+        )}
+        {hasRole(user, [CUSTOMER]) && (
+          <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
+          Total projet: {project.price} €
         </p>
         )}
         <div className="mt-3 cursor-pointer" onClick={handleNavigateDetails}>

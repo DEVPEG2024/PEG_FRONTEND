@@ -6,7 +6,7 @@ import reducer, {
   setFormDialog,
   useAppDispatch,
   useAppSelector,
-  getProductById,
+  getProductToShow,
   setSizesSelected,
 } from './store';
 import {
@@ -45,7 +45,7 @@ const ShowProduct = () => {
       if (onEdition) {
         navigate('/customer/cart');
       } else {
-        dispatch(getProductById(documentId));
+        dispatch(getProductToShow(documentId));
       }
     }
   }, [dispatch]);

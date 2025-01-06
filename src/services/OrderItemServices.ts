@@ -6,7 +6,7 @@ import { AxiosResponse } from 'axios'
 
 export type PaymentInformations = {
     paymentMethod: string;
-    paymentStatus: string;
+    paymentState: string;
     paymentDate: Date;
 }
 

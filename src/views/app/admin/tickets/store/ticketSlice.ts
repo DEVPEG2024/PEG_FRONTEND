@@ -13,7 +13,7 @@ import {
 
 import { Ticket } from '@/@types/ticket';
 import { unwrapData } from '@/utils/serviceHelper';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { apiUploadFile } from '@/services/FileServices';
 
 export const SLICE_NAME = 'tickets';

@@ -10,14 +10,14 @@ const ProductCategoryCard = ({
   productCategory: ProductCategory;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
 }) => {
-  //const navigate = useNavigate(); // TODO: à voir pour remettre en place la consultation d'un catégorie
+  const navigate = useNavigate();
 
   return (
     <Card
       bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center"
     >
       <div className="flex flex-col justify-center items-center">
-        {/*<a className="cursor-pointer" onClick={() => navigate(`/admin/store/categories/${productCategory.documentId}`)}>*/}
+        <a className="cursor-pointer" onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}>
           <h6 className="flex flex-col justify-center flex-grow items-center gap-2">
             <img
               src={productCategory.image?.url}
@@ -26,7 +26,7 @@ const ProductCategoryCard = ({
             />
             {productCategory.name}
           </h6>
-        {/*</a>*/}
+        </a>
         <div className="flex items-center justify-center  mt-2">
           <div className="flex items-center rounded-full font-semibold text-xs">
             <div

@@ -1,6 +1,6 @@
-import { apiSignIn, apiSignOut, apiSignUp } from '@/services/AuthService'
+import { apiSignIn } from '@/services/AuthService'
 import {
-    setUser,
+    setOwnUser,
     signInSuccess,
     signOutSuccess,
     useAppSelector,
@@ -12,8 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import useQuery from './useQuery'
 import type { SignInCredential, SignUpCredential } from '@/@types/auth'
 import { ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant'
-import { API_BASE_URL } from '@/configs/api.config'
-import { apiGetAllUsers, getUser } from '@/services/UserService'
+import { getUser } from '@/services/UserService'
 import { User } from '@/@types/user'
 
 type Status = 'success' | 'failed'
@@ -44,7 +43,7 @@ function useAuth() {
                 dispatch(signInSuccess(token))
                 localStorage.setItem('token', token)
                 if (user) {
-                    dispatch(setUser(user))
+                    dispatch(setOwnUser(user))
                     const userRole = user.authority[0]
                     if ([ADMIN, CUSTOMER, PRODUCER].includes(userRole)) {
                         navigate("/home")
@@ -69,47 +68,11 @@ function useAuth() {
         }
     }
 
-    const signUp = async (values: SignUpCredential) => {
-        try {
-            const resp = await apiSignUp(values)
-            if (resp.data) {
-                const { token } = resp.data
-                dispatch(signInSuccess(token))
-                if (resp.data.user) {
-                    dispatch(
-                        setUser(
-                            resp.data.user || {
-                                avatar: '',
-                                userName: 'Anonymous',
-                                authority: ['USER'],
-                                email: '',
-                            }
-                        )
-                    )
-                }
-                const redirectUrl = query.get(REDIRECT_URL_KEY)
-                navigate(
-                    redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath
-                )
-                return {
-                    status: 'success',
-                    message: '',
-                }
-            }
-            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        } catch (errors: any) {
-            return {
-                status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
-            }
-        }
-    }
-
     const handleSignOut = () => {
         dispatch(signOutSuccess())
         dispatch(
-            setUser({
-                avatar: '',
+            setOwnUser({
+                avatar: undefined,
                 userName: '',
                 email: '',
                 authority: [],
@@ -128,7 +91,6 @@ function useAuth() {
     return {
         authenticated: token && signedIn,
         signIn,
-        signUp,
         signOut,
     }
 }

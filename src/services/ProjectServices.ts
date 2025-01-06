@@ -1,12 +1,8 @@
 import ApiService from './ApiService'
-import { PAY_PRODUCER_API_URL } from '@/constants/api.constant'
 import { Project } from '@/@types/project'
 import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { API_GRAPHQL_URL } from '@/configs/api.config'
-
-
-// TODO: Services
 
 // update project
 export async function apiUpdateProject(project: Partial<Project>): Promise<AxiosResponse<ApiResponse<{updateProject: Project}>>> {
@@ -88,7 +84,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 state
             }
             paidPrice
-            paymentState
+            poolable
             price
             priority
             producerPrice
@@ -112,7 +108,12 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
   {documentId, ...data} = project,
   variables = {
     documentId,
-    data
+    data: {
+        ...data,
+        invoices: data.invoices?.map((invoice) => invoice.documentId),
+        comments: data.comments?.map((comment) => comment.documentId),
+        tasks: data.tasks?.map((task) => task.documentId),
+    }
   }
     return ApiService.fetchData<ApiResponse<{updateProject: Project}>>({
         url: API_GRAPHQL_URL,
@@ -206,7 +207,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 state
             }
             paidPrice
-            paymentState
+            poolable
             price
             priority
             producerPrice
@@ -326,7 +327,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 state
             }
             paidPrice
-            paymentState
+            poolable
             price
             priority
             producerPrice
@@ -386,12 +387,14 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 }
                 endDate
                 name
-                paymentState
+                poolable
                 price
                 producer {
                     documentId
                     name
                 }
+                producerPrice
+                producerPaidPrice
                 startDate
                 state
                 tasks {
@@ -453,7 +456,6 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
                 endDate
                 name
-                paymentState
                 price
                 producer {
                     documentId
@@ -525,8 +527,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 }
                 endDate
                 name
-                paymentState
-                price
+                producerPrice
                 startDate
                 state
                 tasks {
@@ -547,6 +548,80 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
     ...data
   }
     return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get pool projects
+export type GetPoolProjectsRequest = {
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export type GetPoolProjectsResponse = {
+    nodes: Project[]
+    pageInfo: PageInfo
+};
+
+export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetPoolProjectsResponse}>>> {
+    const query = `
+    query getPoolProjects($searchTerm: String, $pagination: PaginationArg) {
+        projects_connection(filters: {
+          and: [
+            {
+              name: {contains: $searchTerm}
+            },
+            {
+              poolable: {eq: true}
+            },
+            {
+              producer: {documentId: {null: true}}
+            }
+          ]
+        }, pagination: $pagination) {
+            nodes {
+                documentId
+                comments {
+                    content
+                }
+                customer {
+                    documentId
+                    name
+                }
+                endDate
+                name
+                poolable
+                price
+                producer {
+                    documentId
+                    name
+                }
+                producerPrice
+                startDate
+                state
+                tasks {
+                    documentId
+                    state
+                }
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{projects_connection: GetPoolProjectsResponse}>>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -579,20 +654,5 @@ export async function apiDeleteProject(documentId: string): Promise<AxiosRespons
             query,
             variables
         }
-    })
-}
-// Factures
-type PayProducerRequest = {
-    projectId: string
-    producerId: string
-    amount: number
-    ref: string
-}
-
-export async function apiPayProducer(data: PayProducerRequest) {
-    return ApiService.fetchData<PayProducerRequest>({
-        url: PAY_PRODUCER_API_URL,
-        method: 'post',
-        data: data
     })
 }

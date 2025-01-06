@@ -3,56 +3,70 @@ import reducer, {
   getProducts,
   useAppDispatch,
   useAppSelector,
-  setModalDeleteOpen,
-  setModalDeleteClose,
+  setModalDeleteProductOpen,
+  setModalDeleteProductClose,
   deleteProduct,
   duplicateProduct,
   updateProduct,
 } from './store';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
   Dialog,
+  Input,
   Notification,
+  Pagination,
+  Select,
   Switcher,
   Tooltip,
   toast,
 } from '@/components/ui';
-import { HiDuplicate, HiPencil, HiPlusCircle, HiTrash } from 'react-icons/hi';
+import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { isEmpty } from 'lodash';
 import { Product } from '@/@types/product';
-import { Loading } from '@/components/shared';
+import { Container, Loading } from '@/components/shared';
+import HeaderTitle from '@/components/template/HeaderTitle';
 
 injectReducer('products', reducer);
 
 const ProductsList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  // TODO: ajouter pageSize, currentPage, searchTerm
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product>();
-  const { products, modalDelete, loading } = useAppSelector(
+  const { products, modalDeleteProduct: modalDelete, loading, total } = useAppSelector(
     (state) => state.products.data
   );
   useEffect(() => {
-    dispatch(getProducts({ pagination: {page: 1, pageSize: 10}, searchTerm: '' }));
-  }, [dispatch]);
+    dispatch(getProducts({ pagination: {page: currentPage, pageSize}, searchTerm }));
+  }, [currentPage, pageSize, searchTerm]);
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   const onDeleted = () => {
     productToDelete && dispatch(deleteProduct(productToDelete.documentId));
-    dispatch(setModalDeleteClose());
+    dispatch(setModalDeleteProductClose());
   };
+
   const onEdit = (product: Product) => {
-    navigate(`/admin/store/edit/${product.documentId}`);
+    navigate(`/admin/products/edit/${product.documentId}`);
   };
+
   const onDeleteModalOpen = (product: Product) => {
     setProductToDelete(product);
-    dispatch(setModalDeleteOpen());
+    dispatch(setModalDeleteProductOpen());
   };
+  
   const onDeleteModalClose = () => {
     setProductToDelete(undefined);
-    dispatch(setModalDeleteClose());
+    dispatch(setModalDeleteProductClose());
   };
 
   const onActivate = (product: Product, checked: boolean) => {
@@ -81,32 +95,58 @@ const ProductsList = () => {
     );
   };
 
-  return (
-    <>
-      <div className="lg:grid lg:grid-cols-3 items-center justify-between mb-4">
-        <h3 className="mb-4 lg:mb-0 col-span-1">Produits</h3>
-        <div className="flex col-span-2 items-center justify-end">
-          <Link className="ml-4" to="/admin/store/new">
-            <Button block variant="solid" size="sm" icon={<HiPlusCircle />}>
-              Ajouter un produit
-            </Button>
-          </Link>
-        </div>
-      </div>
+  const handlePaginationChange = (page: number) => {
+    if (!loading) {
+      setCurrentPage(page)
+    }
+  }
 
+  const pageSizeOption = useMemo(
+    () =>
+      [10, 25, 50, 100].map((number) => ({
+        value: number,
+        label: `${number} / page`,
+      })),
+    [10, 25, 50, 100]
+  )
+
+  const handleSelectChange = (value?: number) => {
+    if (!loading) {
+      setPageSize(Number(value));
+      setCurrentPage(1);
+    }
+  }
+
+  return (
+    <Container>
+      <HeaderTitle
+        title="Produits"
+        description="Gérer les produits"
+        total={total}
+        buttonTitle="Ajouter un produit"
+        link="/admin/products/new"
+        addAction={true}
+      />
+      <div className="mb-4">
+        <Input
+          placeholder={'Rechercher un produit'}
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+      </div>
       <Loading loading={loading}>
         {/* {isEmpty(products) && (
           <div className="h-full flex flex-col items-center justify-center">
             <DoubleSidedImage
               src="/img/others/img-2.png"
               darkModeSrc="/img/others/img-2-dark.png"
-              alt="Aucun licencié trouvé"
+              alt="Aucun produit trouvé"
             />
             <h3 className="mt-8">Aucun produit trouvé</h3>
           </div>
         )} */}
         {!isEmpty(products) && (
-          <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
             {products.map((product) => (
               <Card key={product.documentId}>
                 <div className="flex flex-col gap-4">
@@ -177,7 +217,7 @@ const ProductsList = () => {
                   <Button
                     variant="plain"
                     onClick={() => {
-                      dispatch(setModalDeleteClose());
+                      dispatch(setModalDeleteProductClose());
                     }}
                   >
                     Annuler
@@ -190,8 +230,28 @@ const ProductsList = () => {
             </Dialog>
           </div>
         )}
+        <div className="flex items-center justify-between mt-4">
+          <Pagination
+            pageSize={pageSize}
+            currentPage={currentPage}
+            total={total}
+            onChange={handlePaginationChange}
+          />
+          <div style={{ minWidth: 130 }}>
+            <Select
+              size="sm"
+              menuPlacement="top"
+              isSearchable={false}
+              value={pageSizeOption.filter(
+                  (option) => option.value === pageSize
+              )}
+              options={pageSizeOption}
+              onChange={(option) => handleSelectChange(option?.value)}
+            />
+          </div>
+        </div>
       </Loading>
-    </>
+    </Container>
   );
 };
 
