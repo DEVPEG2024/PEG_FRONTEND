@@ -14,7 +14,7 @@ import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.consta
 
 export const SLICE_NAME = 'invoices';
 
-export type ProjectListState = {
+export type InvoiceListState = {
   invoices: Invoice[];
   total: number;
   selectedInvoice: Invoice | null;
@@ -38,7 +38,7 @@ export const getInvoices = createAsyncThunk(
       const {invoices_connection} : {invoices_connection: GetInvoicesResponse}= await unwrapData(apiGetCustomerInvoices({...data.request, customerDocumentId: data.user.customer!.documentId}));
       return invoices_connection
     } else if (hasRole(data.user, [PRODUCER])) {
-      const {projects_connection} : {projects_connection: GetInvoicesResponse}= await unwrapData(apiGetProducerInvoices(data));
+      const {projects_connection} : {projects_connection: GetInvoicesResponse}= await unwrapData(apiGetProducerInvoices(data)); // TODO: à corriger (est-ce nécessaire pour le producteur?)
       return projects_connection
     }
     return {nodes: [], pageInfo: {page: 1, pageCount: 1, pageSize: 0, total: 0}}
@@ -53,7 +53,7 @@ export const updateInvoice = createAsyncThunk(
   }
 );
 
-const initialState: ProjectListState = {
+const initialState: InvoiceListState = {
   invoices: [],
   selectedInvoice: null,
   editInvoiceDialog: false,
@@ -62,7 +62,7 @@ const initialState: ProjectListState = {
   total: 0,
 };
 
-const projectListSlice = createSlice({
+const invoiceListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
@@ -105,6 +105,6 @@ const projectListSlice = createSlice({
 });
 
 export const { setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice } =
-  projectListSlice.actions;
+  invoiceListSlice.actions;
 
-export default projectListSlice.reducer;
+export default invoiceListSlice.reducer;

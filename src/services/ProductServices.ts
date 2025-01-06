@@ -175,7 +175,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
     }
   `,
   variables = {
-    data
+    ...data
   }
     return ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
         url: API_GRAPHQL_URL,

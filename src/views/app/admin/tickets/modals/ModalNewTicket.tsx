@@ -7,7 +7,7 @@ import { RichTextEditor } from '@/components/shared';
 import { createTicket, setNewTicketDialog } from '../store/ticketSlice';
 import FileUplaodCustom from '@/components/shared/Upload';
 import { TicketFormModel } from './ModalEditTicket';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { User } from '@/@types/user';
 
 function ModalNewTicket() {

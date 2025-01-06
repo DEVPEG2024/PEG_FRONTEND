@@ -38,8 +38,8 @@ type Query = {
 type GetProductListRequest = Query;
 export const SLICE_NAME = 'products';
 
-export const getProducts = createAsyncThunk(
-  SLICE_NAME + '/getProducts',
+export const getCustomerProducts = createAsyncThunk(
+  SLICE_NAME + '/getCustomerProducts',
   async (data: GetProductListRequest): Promise<{products: Product[]}> => {
     const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(
       data.customerDocumentId,
@@ -76,14 +76,14 @@ const productSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getProducts.pending, (state) => {
+    builder.addCase(getCustomerProducts.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProducts.fulfilled, (state, action) => {
+    builder.addCase(getCustomerProducts.fulfilled, (state, action) => {
       state.loading = false;
       state.products = action.payload.products;
     });
-    builder.addCase(getProducts.rejected, (state) => {
+    builder.addCase(getCustomerProducts.rejected, (state) => {
       state.loading = false;
     });
   },

@@ -1,3 +1,5 @@
+import { paymentTypes } from "@/views/app/producer/wallet/constants";
+
 export const statusColorData = {
   pending: 'bg-blue-500',
   fulfilled: 'bg-green-500',
@@ -74,3 +76,5 @@ export const priorityData = [
     label: 'Elevé',
   },
 ];
+
+export const paymentProducerProjectTypes = paymentTypes.filter(({value}) => ['projectPayment', 'advancePayment', 'milestonePayment'].includes(value));

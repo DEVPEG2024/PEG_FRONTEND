@@ -1,13 +1,14 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Image, Product, ProductCategory, Size } from '@/@types/product';
+import { Product, ProductCategory, Size } from '@/@types/product';
+import { Image } from '@/@types/image';
 import ProductForm, { ProductFormModel, SetSubmitting } from './Forms/ProductForm';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
 import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
 import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
-import reducer, { getProductById, setProduct, useAppDispatch, useAppSelector } from '../store';
+import reducer, { getProductById, setProductToEdit, useAppDispatch, useAppSelector } from '../store';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
@@ -30,7 +31,7 @@ const EditProduct = () => {
   const onEdition: boolean =
     useLocation().pathname.split('/').slice(-2).shift() === 'edit';
   const { documentId } = useParams<EditProductParams>() as EditProductParams;
-  const { product } = useAppSelector((state) => state.products.data);
+  const { productToEdit: product } = useAppSelector((state) => state.products.data);
   const [customers, setCustomers] = useState<Options[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
@@ -58,7 +59,7 @@ const EditProduct = () => {
       
     }
     return () => {
-      dispatch(setProduct(null))
+      dispatch(setProductToEdit(null))
     }
   }, [dispatch]);
 
@@ -170,11 +171,11 @@ const EditProduct = () => {
 
     await updateOrCreateProduct(data)
     setSubmitting(false);
-    navigate('/admin/store/lists');
+    navigate('/admin/products');
   };
 
   const handleDiscard = () => {
-    navigate('/admin/store/lists');
+    navigate('/admin/products');
   };
 
   return (!onEdition || product) && (

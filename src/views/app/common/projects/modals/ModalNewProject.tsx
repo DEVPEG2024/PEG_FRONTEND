@@ -1,4 +1,4 @@
-import { Button, DatePicker, Dialog, Input, Select } from '@/components/ui';
+import { Button, DatePicker, Dialog, Input, Select, Switcher } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
@@ -23,7 +23,7 @@ type Option = {
   label: string;
 };
 
-type ProjectFormModel = Omit<Project, 'documentId' | 'customer' | 'producer' | 'comments' | 'images' | 'tasks' | 'orderItem' | 'invoices' | 'paymentDate' | 'paymentMethod' | 'paymentState'> & {
+type ProjectFormModel = Omit<Project, 'documentId' | 'customer' | 'producer' | 'comments' | 'images' | 'tasks' | 'orderItem' | 'invoices'> & {
   documentId?: string;
   customer: string | null;
   producer: string | null;
@@ -46,6 +46,8 @@ function ModalNewProject() {
     price: 0,
     producerPrice: 0,
     paidPrice: 0,
+    producerPaidPrice: 0,
+    poolable: false,
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
@@ -143,9 +145,20 @@ function ModalNewProject() {
                 }}
               />
             </div>
+            <div className="flex flex-col gap-2 w-1/2">
+              <p className="text-sm text-gray-200">Montant payé au producteur</p>
+              <Input
+                type="number"
+                placeholder={t('projects.producerPaidPrice')}
+                value={formData.producerPaidPrice}
+                onChange={(e) => {
+                  setFormData({ ...formData, producerPaidPrice: Number(e.target.value) });
+                }}
+              />
+            </div>
           </div>
           <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
+            <div className="flex flex-col gap-2 w-4/12">
               <p className="text-sm text-gray-200 mb-2 mt-4">
                 {t('projects.selectCustomer')}
               </p>
@@ -158,7 +171,7 @@ function ModalNewProject() {
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
+            <div className="flex flex-col gap-2 w-6/12">
               <p className="text-sm text-gray-200 mb-2 mt-4">
                 {t('projects.selectProducer')}
               </p>
@@ -169,6 +182,14 @@ function ModalNewProject() {
                 onChange={(e: any) => {
                   setFormData({ ...formData, producer: e?.value || '' });
                 }}
+              />
+            </div>
+            <div className="flex flex-col gap-2 w-2/12">
+              <span className="text-sm text-gray-200 mb-2 mt-4">Dans la piscine</span>
+              <Switcher
+                className="self-center"
+                checked={formData.poolable}
+                onChange={() => setFormData({ ...formData, poolable: !formData.poolable })}
               />
             </div>
           </div>

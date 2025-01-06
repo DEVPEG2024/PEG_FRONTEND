@@ -20,10 +20,10 @@ export type ProjectDetailsState = {
   invoices: Invoice[];
   comments: Comment[];
   selectedTask: Task | null;
-  selectedInvoice: Invoice | null;
+  selectedProjectInvoice: Invoice | null;
   editProjectDialog: boolean;
-  editInvoiceDialog: boolean;
-  printInvoiceDialog: boolean;
+  editProjectInvoiceDialog: boolean;
+  printProjectInvoiceDialog: boolean;
   newDialogTask: boolean;
   editDialogTask: boolean;
   selectedTab: string;
@@ -38,18 +38,18 @@ export const getProjectById = createAsyncThunk(
   }
 );
 
-export const deleteProject = createAsyncThunk(
-  SLICE_NAME + '/deleteProject',
+export const deleteCurrentProject = createAsyncThunk(
+  SLICE_NAME + '/deleteCurrentProject',
   async (documentId: string): Promise<DeleteProjectResponse> => {
     const {deleteProject} : {deleteProject: DeleteProjectResponse} = await unwrapData(apiDeleteProject(documentId));
-    //TODO: à remettre
+    //TODO: à remettre et voir pour autrer part la suppression de fichiers
     //apiDeleteFiles(data.project.images.map(({ fileNameBack }) => fileNameBack));
     return deleteProject;
   }
 );
 
-export const updateProject = createAsyncThunk(
-  SLICE_NAME + '/updateProject',
+export const updateCurrentProject = createAsyncThunk(
+  SLICE_NAME + '/updateCurrentProject',
   async (data: Partial<Project>): Promise<Project> => {
     const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject(data));
     return updateProject;
@@ -63,10 +63,10 @@ export type CreateTask = {
 
 export const createTask = createAsyncThunk(
   SLICE_NAME + '/createTask',
-  async (data: CreateTask) : Promise<Task> => {
+  async (data: CreateTask) : Promise<Project> => {
     const {createTask} : {createTask: Task} = await unwrapData(apiCreateTask(data.task));
-    await apiUpdateProject({documentId: data.project.documentId, tasks: [...data.project.tasks.map(({documentId}) => documentId), createTask.documentId]})
-    return createTask;
+    const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject({documentId: data.project.documentId, tasks: [...data.project.tasks, createTask]}))
+    return updateProject;
   }
 );
 
@@ -86,8 +86,8 @@ export const updateTask = createAsyncThunk(
   }
 );
 
-export const updateInvoice = createAsyncThunk(
-  SLICE_NAME + '/updateInvoice',
+export const updateProjectInvoice = createAsyncThunk(
+  SLICE_NAME + '/updateProjectInvoice',
   async (data: Partial<Invoice>): Promise<Invoice> => {
     const {updateInvoice} : {updateInvoice: Invoice} = await unwrapData(apiUpdateInvoice(data));
     return updateInvoice;
@@ -103,7 +103,7 @@ export const createComment = createAsyncThunk(
   SLICE_NAME + '/createComment',
   async (data: CreateComment) : Promise<Comment> => {
     const {createComment} : {createComment: Comment} = await unwrapData(apiCreateComment(data.comment));
-    await apiUpdateProject({documentId: data.project.documentId, comments: [...data.project.comments.map(({documentId}) => documentId), createComment.documentId]})
+    await apiUpdateProject({documentId: data.project.documentId, comments: [...data.project.comments, createComment]})
     return createComment;
   }
 );
@@ -122,17 +122,18 @@ const initialState: ProjectDetailsState = {
   comments: [],
   project: undefined,
   editProjectDialog: false,
-  selectedInvoice: null,
-  editInvoiceDialog: false,
+  selectedProjectInvoice: null,
+  editProjectInvoiceDialog: false,
   newDialogTask: false,
   editDialogTask: false,
-  printInvoiceDialog: false,
+  printProjectInvoiceDialog: false,
   selectedTask: null,
   loading: false,
   selectedTab: 'Accueil',
   editDescription: false,
 };
 
+// TODO SUITE ici de renommage
 const projectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
@@ -173,14 +174,14 @@ const projectListSlice = createSlice({
         state.selectedTask = action.payload;
       }
     },
-    setEditInvoiceDialog: (state, action) => {
-      state.editInvoiceDialog = action.payload;
+    setEditProjectInvoiceDialog: (state, action) => {
+      state.editProjectInvoiceDialog = action.payload;
     },
-    setPrintInvoiceDialog: (state, action) => {
-      state.printInvoiceDialog = action.payload;
+    setPrintProjectInvoiceDialog: (state, action) => {
+      state.printProjectInvoiceDialog = action.payload;
     },
-    setSelectedInvoice: (state, action) => {
-      state.selectedInvoice = action.payload;
+    setSelectedProjectInvoice: (state, action) => {
+      state.selectedProjectInvoice = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -195,15 +196,15 @@ const projectListSlice = createSlice({
       state.loading = false;
     });
     // UPDATE PROJECT
-    builder.addCase(updateProject.pending, (state) => {
+    builder.addCase(updateCurrentProject.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(updateProject.fulfilled, (state, action) => {
+    builder.addCase(updateCurrentProject.fulfilled, (state, action) => {
       state.loading = false;
       state.project = action.payload;
       state.editDescription = false;
     });
-    builder.addCase(updateProject.rejected, (state) => {
+    builder.addCase(updateCurrentProject.rejected, (state) => {
       state.loading = false;
     });
     // CREATE TASK
@@ -212,9 +213,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(createTask.fulfilled, (state, action) => {
       state.loading = false;
-      if (state.project) {
-        state.project.tasks.push(action.payload);
-      }
+      state.project = action.payload;
+      state.tasks = action.payload.tasks
       state.newDialogTask = false;
     });
     builder.addCase(createTask.rejected, (state) => {
@@ -259,18 +259,18 @@ const projectListSlice = createSlice({
       state.loading = false;
     });
     // UPDATE INVOICE
-    builder.addCase(updateInvoice.pending, (state) => {
+    builder.addCase(updateProjectInvoice.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(updateInvoice.fulfilled, (state, action) => {
+    builder.addCase(updateProjectInvoice.fulfilled, (state, action) => {
       state.loading = false;
       state.invoices = state.invoices.map((invoice) =>
         invoice.documentId === action.payload.documentId ? action.payload : invoice
       );
-      state.editInvoiceDialog = false
-      state.selectedInvoice = null
+      state.editProjectInvoiceDialog = false
+      state.selectedProjectInvoice = null
     });
-    builder.addCase(updateInvoice.rejected, (state) => {
+    builder.addCase(updateProjectInvoice.rejected, (state) => {
       state.loading = false;
     });
   },
@@ -285,9 +285,9 @@ export const {
   setEditDialogTask,
   setEditTaskSelected,
   setSelectedTask,
-  setEditInvoiceDialog,
-  setPrintInvoiceDialog,
-  setSelectedInvoice,
+  setEditProjectInvoiceDialog,
+  setPrintProjectInvoiceDialog,
+  setSelectedProjectInvoice,
   setEditDescription,
 } = projectListSlice.actions;
 

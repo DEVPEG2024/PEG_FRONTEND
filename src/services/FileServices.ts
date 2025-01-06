@@ -1,6 +1,6 @@
 import ApiService from './ApiService'
 import { API_BASE_URL } from '@/configs/api.config'
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 
 /*export async function apiUploadFileToEntity(file: File, ref: string, refId: string, field: string) {
     const formData = new FormData();

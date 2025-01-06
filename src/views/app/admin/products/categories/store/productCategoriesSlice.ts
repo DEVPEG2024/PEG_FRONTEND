@@ -1,16 +1,20 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Image, ProductCategory } from '@/@types/product';
+import { Product, ProductCategory } from '@/@types/product';
+import { Image } from '@/@types/image';
 
 import { unwrapData } from '@/utils/serviceHelper';
-import { apiCreateProductCategory, apiDeleteProductCategory, apiGetProductCategories, CreateProductCategoryRequest, DeleteProductCategoryResponse, GetProductCategoriesRequest, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import { apiCreateProductCategory, apiDeleteProductCategory, apiGetProductCategories, apiGetProductCategoryById, CreateProductCategoryRequest, DeleteProductCategoryResponse, GetProductCategoriesRequest, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
 import { apiUploadFile } from '@/services/FileServices';
+import { apiGetProductsByCategory, GetProductsByCategoryRequest, GetProductsResponse } from '@/services/ProductServices';
 
 export const SLICE_NAME = 'productCategories';
 
 export type StateData = {
   loading: boolean;
   productCategories: ProductCategory[];
-  modalDelete: boolean;
+  products: Product[];
+  productCategory?: ProductCategory;
+  modalDeleteProductCategoryOpen: boolean;
   total: number;
 };
 
@@ -41,22 +45,39 @@ export const createProductCategory = createAsyncThunk(
   }
 );
 
+export const getProductsByCategory = createAsyncThunk(
+  SLICE_NAME + '/getProductsByCategory',
+  async (data: GetProductsByCategoryRequest) => {
+      const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProductsByCategory(data));
+      return products_connection
+  }
+);
+
+export const getProductCategoryById = createAsyncThunk(
+  SLICE_NAME + '/getProductCategoryById',
+  async (documentId: string): Promise<{productCategory: ProductCategory}> => {
+    return await unwrapData(apiGetProductCategoryById(documentId));
+  }
+);
+
 const initialState: StateData = {
   loading: false,
   productCategories: [],
-  modalDelete: false,
-  total: 0
+  products: [],
+  modalDeleteProductCategoryOpen: false,
+  productCategory: undefined,
+  total: 0,
 };
 
 const productCategoriesSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setModalDeleteOpen: (state) => {
-      state.modalDelete = true;
+    setModalDeleteProductCategoryOpen: (state) => {
+      state.modalDeleteProductCategoryOpen = true;
     },
-    setModalDeleteClose: (state) => {
-      state.modalDelete = false;
+    setModalDeleteProductCategoryClose: (state) => {
+      state.modalDeleteProductCategoryOpen = false;
     },
   },
   extraReducers: (builder) => {
@@ -65,7 +86,7 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(getProductCategories.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategories = action.payload.nodes as ProductCategory[];
+      state.productCategories = action.payload.nodes;
       state.total = action.payload.pageInfo.total
     });
     builder.addCase(getProductCategories.rejected, (state) => {
@@ -93,12 +114,36 @@ const productCategoriesSlice = createSlice({
     builder.addCase(deleteProductCategory.rejected, (state) => {
       state.loading = false;
     });
+
+    // GET PRODUCTS BY CATEGORY
+    builder.addCase(getProductsByCategory.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProductsByCategory.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = action.payload.nodes;
+    });
+    builder.addCase(getProductsByCategory.rejected, (state) => {
+      state.loading = false;
+    });
+
+    // GET PRODUCT CATEGORY BY ID
+    builder.addCase(getProductCategoryById.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProductCategoryById.fulfilled, (state, action) => {
+      state.loading = false;
+      state.productCategory = action.payload.productCategory;
+    });
+    builder.addCase(getProductCategoryById.rejected, (state) => {
+      state.loading = false;
+    });
   },
 });
 
 export const {
-  setModalDeleteOpen,
-  setModalDeleteClose,
+  setModalDeleteProductCategoryOpen,
+  setModalDeleteProductCategoryClose,
 } = productCategoriesSlice.actions;
 
 export default productCategoriesSlice.reducer;

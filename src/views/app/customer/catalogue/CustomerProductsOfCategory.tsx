@@ -2,9 +2,8 @@ import { injectReducer } from '@/store';
 import reducer, {
   useAppDispatch,
   useAppSelector,
-  setProduct,
-  getProductsByCategory,
-  getProductCategoryById,
+  getCatalogueProductsByCategory,
+  getCatalogueProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
 import { useEffect } from 'react';
@@ -16,22 +15,22 @@ import CustomerProductCard from '../products/lists/CustomerProductCard';
 
 injectReducer('catalogue', reducer);
 
-type ShowProductCategoryParams = {
+type ShowCustomerProductsOfCategoryParams = {
   documentId: string;
 };
 
-const ProductsOfCategory = () => {
-  const { documentId } = useParams<ShowProductCategoryParams>() as ShowProductCategoryParams;
+const CustomerProductsOfCategory = () => {
+  const { documentId } = useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
   const dispatch = useAppDispatch();
   const { products, productCategory, loading } = useAppSelector(
     (state) => state.catalogue.data
   );
+  
   useEffect(() => {
     if (!productCategory) {
-      dispatch(getProductCategoryById(documentId));
+      dispatch(getCatalogueProductCategoryById(documentId));
     } else {
-      dispatch(getProductsByCategory({pagination: {page: 1, pageSize: 10}, searchTerm: '', productCategoryDocumentId: productCategory?.documentId}));
-      dispatch(setProduct(null));
+      dispatch(getCatalogueProductsByCategory({pagination: {page: 1, pageSize: 10}, searchTerm: '', productCategoryDocumentId: productCategory?.documentId}));
     }
   }, [dispatch, productCategory]);
 
@@ -52,7 +51,7 @@ const ProductsOfCategory = () => {
           <DoubleSidedImage
             src="/img/others/img-2.png"
             darkModeSrc="/img/others/img-2-dark.png"
-            alt="Aucun licencié trouvé"
+            alt="Aucun produit trouvé"
           />
           <h3 className="mt-8">Aucun produit trouvé</h3>
         </div>
@@ -68,4 +67,4 @@ const ProductsOfCategory = () => {
   );
 };
 
-export default ProductsOfCategory;
+export default CustomerProductsOfCategory;

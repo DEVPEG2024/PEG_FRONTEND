@@ -17,6 +17,7 @@ export async function apiGetDashboardProducerInformations(documentId: string): P
             documentId
             name
           }
+          producerPrice
           startDate
           endDate
           state

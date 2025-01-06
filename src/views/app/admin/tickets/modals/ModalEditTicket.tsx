@@ -7,7 +7,7 @@ import { RichTextEditor } from '@/components/shared';
 import { setEditTicketDialog, setSelectedTicket, updateTicket } from '../store/ticketSlice';
 import { Ticket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { apiLoadImagesAndFiles } from '@/services/FileServices';
 
 export type TicketFormModel = Omit<Ticket, 'user' | 'image' | 'orderItems' | 'documentId' | 'createdAt'> & {

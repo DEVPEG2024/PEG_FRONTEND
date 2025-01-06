@@ -3,10 +3,10 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { Upload } from '@/components/ui';
 import { useAppDispatch } from '@/store';
-import { setLoading, updateProject, useAppSelector } from '../store';
+import { setLoading, updateCurrentProject, useAppSelector } from '../store';
 import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 
@@ -89,7 +89,7 @@ const Files = () => {
       }
     }
 
-    dispatch(updateProject({documentId: project.documentId, images: newImages.map(({id}) => id)}))
+    dispatch(updateCurrentProject({documentId: project.documentId, images: newImages.map(({id}) => id)}))
     setImages([])
     setImagesChanged(false);
   }

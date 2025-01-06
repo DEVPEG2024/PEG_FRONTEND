@@ -1,10 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Image, Product } from '@/@types/product';
+import { Product } from '@/@types/product';
+import { Image } from '@/@types/image';
 import {
   apiGetProducts,
   apiDeleteProduct,
   apiUpdateProduct,
-  apiGetProductsByCategory,
   GetProductsRequest,
   GetProductsResponse,
   apiCreateProduct,
@@ -19,8 +19,8 @@ export const SLICE_NAME = 'products';
 export type StateData = {
   loading: boolean;
   products: Product[];
-  product: Product | null;
-  modalDelete: boolean;
+  productToEdit: Product | null;
+  modalDeleteProduct: boolean;
   total: number;
   result: boolean;
   message: string;
@@ -49,14 +49,6 @@ export const getProductById = createAsyncThunk(
   SLICE_NAME + '/getProduct',
   async (documentId: string): Promise<{product: Product}> => {
     return await unwrapData(apiGetProductForEditById(documentId));
-  }
-);
-
-export const getProductsByCategory = createAsyncThunk(
-  SLICE_NAME + '/getProductsByCategory',
-  async (id: string) => {
-    const response = await apiGetProductsByCategory(id);
-    return response.data;
   }
 );
 
@@ -101,8 +93,8 @@ export const deleteProduct = createAsyncThunk(
 const initialState: StateData = {
   loading: false,
   products: [],
-  product: null,
-  modalDelete: false,
+  productToEdit: null,
+  modalDeleteProduct: false,
   total: 0,
   result: false,
   message: '',
@@ -117,14 +109,14 @@ const productSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setProduct: (state, action) => {
-      state.product = action.payload;
+    setProductToEdit: (state, action) => {
+      state.productToEdit = action.payload;
     },
-    setModalDeleteOpen: (state) => {
-      state.modalDelete = true;
+    setModalDeleteProductOpen: (state) => {
+      state.modalDeleteProduct = true;
     },
-    setModalDeleteClose: (state) => {
-      state.modalDelete = false;
+    setModalDeleteProductClose: (state) => {
+      state.modalDeleteProduct = false;
     },
   },
   extraReducers: (builder) => {
@@ -134,6 +126,7 @@ const productSlice = createSlice({
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
       state.products = action.payload.nodes;
+      state.total = action.payload.pageInfo.total
     });
     builder.addCase(getProducts.rejected, (state) => {
       state.loading = false;
@@ -172,18 +165,9 @@ const productSlice = createSlice({
     builder.addCase(duplicateProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products.push(action.payload);
+      state.total += 1;
     });
     builder.addCase(duplicateProduct.rejected, (state) => {
-      state.loading = false;
-    });
-    builder.addCase(getProductsByCategory.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getProductsByCategory.fulfilled, (state, action) => {
-      state.loading = false;
-      state.products = action.payload.products;
-    });
-    builder.addCase(getProductsByCategory.rejected, (state) => {
       state.loading = false;
     });
 
@@ -192,7 +176,7 @@ const productSlice = createSlice({
     });
     builder.addCase(getProductById.fulfilled, (state, action) => {
       state.loading = false;
-      state.product = action.payload.product;
+      state.productToEdit = action.payload.product;
     });
     builder.addCase(getProductById.rejected, (state) => {
       state.loading = false;
@@ -201,9 +185,9 @@ const productSlice = createSlice({
 });
 
 export const {
-  setProduct,
-  setModalDeleteOpen,
-  setModalDeleteClose,
+  setProductToEdit,
+  setModalDeleteProductOpen,
+  setModalDeleteProductClose,
 } = productSlice.actions;
 
 export default productSlice.reducer;

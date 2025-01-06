@@ -88,16 +88,15 @@ function Cart() {
           customer: user.customer!,
           price: orderItem.price,
           producerPrice: 0,
-          paidPrice: paymentInformations.paymentMethod === 'manual' ? 0 : 0,
-          paymentMethod: paymentInformations.paymentMethod,
-          paymentState: paymentInformations.paymentStatus,
-          paymentDate: paymentInformations.paymentDate,
+          paidPrice: 0,
+          producerPaidPrice: 0,
           orderItem: createOrderItem,
           priority: 'medium',
           comments: [],
           tasks: [],
           invoices: [],
-          images: []
+          images: [],
+          poolable: false,
         }
         const {createProject} : {createProject: Project} = await unwrapData(apiCreateProject(project));
         return {orderItem: createOrderItem, project: createProject}
@@ -118,7 +117,7 @@ function Cart() {
         orderItems: OrderItem[] = orderItemsAndProjects.filter(({orderItem}) => orderItem).map(({orderItem}) => orderItem as OrderItem),
         orderItemsAmount = orderItems.reduce((tempAmount, orderItem) => tempAmount + orderItem.price, 0)
 
-      const invoice: Omit<Invoice, 'documentId' | 'paymentDate'> = {
+      const invoice: Omit<Invoice, 'documentId'> = {
         customer: user.customer!,
         orderItems,
         amount: orderItemsAmount,
@@ -128,10 +127,11 @@ function Cart() {
         date: dayjs().toDate(),
         dueDate: dayjs().add(30, 'day').toDate(),
         state: 'pending',
-        paymentMethod: 'transfer',
+        paymentMethod: paymentInformations.paymentMethod ?? 'transfer',
         paymentAmount: 0,
         paymentReference: '',
-        paymentState: 'pending',
+        paymentState: paymentInformations.paymentState ?? 'pending',
+        paymentDate: paymentInformations.paymentDate ?? new Date(0),
       }
       // TODO: Déplacer cette création côté backend dans une route personnalisée et retirer la permission de création de facture par le client (plugin user Strapi)
       const {createInvoice} : {createInvoice: Invoice}= await unwrapData(apiCreateInvoice(invoice));
@@ -146,14 +146,14 @@ function Cart() {
   };
 
   const addInvoiceToProject = (project: Project, invoice: Invoice) => {
-    apiUpdateProject({documentId: project.documentId, invoices: [...project.invoices.map(({documentId}) => documentId), invoice.documentId]})
+    apiUpdateProject({documentId: project.documentId, invoices: [...project.invoices, invoice]})
   }
 
   const createOrderAndClearCart = async (paymentInformations: PaymentInformations) : Promise<void> => {
     const respOrderCreation = await createOrder(paymentInformations);
     if (respOrderCreation.status === 'success') {
       dispatch(clearCart());
-      navigate('/customer/projects');
+      navigate('/common/projects');
     }
   };
 

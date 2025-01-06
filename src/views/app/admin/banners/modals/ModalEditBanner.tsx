@@ -16,7 +16,7 @@ import { Customer, CustomerCategory } from '@/@types/customer';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { BannerFormModel } from './ModalNewBanner';
-import { Image } from '@/@types/product';
+import { Image } from '@/@types/image';
 import { apiLoadImagesAndFiles } from '@/services/FileServices';
 import { Banner } from '@/@types/banner';
 

@@ -3,7 +3,7 @@ import { OrderItem } from './orderItem';
 import { User } from './user';
 import { Producer } from './producer';
 import { Invoice } from './invoice';
-import { Image } from './product';
+import { Image } from './image';
 
 export type Project = {
   documentId: string;
@@ -18,15 +18,14 @@ export type Project = {
   price: number;
   producerPrice: number;
   paidPrice: number;
-  paymentMethod: string;
-  paymentState: string;
-  paymentDate: Date;
+  producerPaidPrice: number;
   comments: Comment[];
   images: Image[];
   tasks: Task[];
   orderItem?: OrderItem;
   //deleted: boolean;
   invoices: Invoice[];
+  poolable: boolean;
 }
 
 export type Task = {
