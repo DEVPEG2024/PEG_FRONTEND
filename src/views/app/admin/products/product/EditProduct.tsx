@@ -4,7 +4,7 @@ import { Product, ProductCategory, Size } from '@/@types/product';
 import { Image } from '@/@types/image';
 import ProductForm, { ProductFormModel, SetSubmitting } from './Forms/ProductForm';
 import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
-import { apiCreateProduct, apiGetProductSizes, apiUpdateProduct } from '@/services/ProductServices';
+import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
 import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
@@ -14,6 +14,7 @@ import { Customer, CustomerCategory } from '@/@types/customer';
 import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
 import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
 import { injectReducer } from '@/store';
+import { apiGetProductCategorySizes, apiGetSizes, GetSizesResponse } from '@/services/SizeServices';
 
 injectReducer('products', reducer);
 
@@ -68,8 +69,8 @@ const EditProduct = () => {
     fetchCustomerCategories();
     fetchProductCategories();
     fetchForms();
-    fetchProductSizes();
-  }, []);
+    fetchSizes();
+  }, [product]);
 
   useEffect(() => {
     fetchFiles();
@@ -125,14 +126,22 @@ const EditProduct = () => {
     setProductCategories(productCategories);
   };
 
-  const fetchProductSizes = async () => {
-    const {sizes} : {sizes: Size[]}= await unwrapData(apiGetProductSizes());
+  const fetchSizes = async () => {
+    updateSizesList(product?.productCategory?.documentId || '');
+  };
+
+  const filterSizesListByProductCategory = async (productCategoryDocumentId: string) => {
+    updateSizesList(productCategoryDocumentId);
+  }
+
+  const updateSizesList = async (productCategoryDocumentId: string) => {
+    const {sizes} : {sizes: Size[]} = await unwrapData(apiGetProductCategorySizes(productCategoryDocumentId || ''));
     const productSizes = sizes.map((size: Size) => ({
       value: size.documentId || '',
       label: size.name || '',
     }));
     setSizes(productSizes);
-  };
+  }
 
   const updateOrCreateProduct = async (data: Product) : Promise<Product> => {
     if (onEdition) {
@@ -191,6 +200,7 @@ const EditProduct = () => {
       images={images}
       setImages={setImages}
       initialData={initialData}
+      filterSizesListByProductCategory={filterSizesListByProductCategory}
     />
   );
 };

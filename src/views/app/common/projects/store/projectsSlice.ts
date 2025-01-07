@@ -25,7 +25,6 @@ export type ProjectsState = {
   total: number;
   selectedProject: Project | null;
   newProjectDialog: boolean;
-  editProjectDialog: boolean;
   loading: boolean;
 };
 
@@ -96,7 +95,6 @@ const initialState: ProjectsState = {
   projects: [],
   selectedProject: null,
   newProjectDialog: false,
-  editProjectDialog: false,
   loading: false,
   total: 0,
 };
@@ -105,17 +103,8 @@ const projectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setProjectList: (state, action) => {
-      state.projects = action.payload;
-    },
-    setSelectedProject: (state, action) => {
-      state.selectedProject = action.payload;
-    },
     setNewProjectDialog: (state, action) => {
       state.newProjectDialog = action.payload;
-    },
-    setEditProjectDialog: (state, action) => {
-      state.editProjectDialog = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -172,10 +161,7 @@ const projectListSlice = createSlice({
 });
 
 export const {
-  setProjectList,
-  setSelectedProject,
   setNewProjectDialog,
-  setEditProjectDialog,
 } = projectListSlice.actions;
 
 export default projectListSlice.reducer;

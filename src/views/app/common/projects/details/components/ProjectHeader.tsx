@@ -11,14 +11,14 @@ import ModalNewTask from '../modals/ModalNewTask';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
-import { setEditProjectDialog } from '../store';
+import { setEditCurrentProjectDialog } from '../store';
 
 const ProjectHeader = ({ project }: { project: Project }) => {
   const dispatch = useAppDispatch();
   const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
   
   const handleEditProject = () => {
-    dispatch(setEditProjectDialog(true));
+    dispatch(setEditCurrentProjectDialog(true));
   };
 
   return (

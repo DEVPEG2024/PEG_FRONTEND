@@ -1,15 +1,12 @@
 import Dropdown from '@/components/ui/Dropdown';
 import {
   HiExclamationCircle,
-  HiOutlinePencil,
   HiOutlineTrash,
 } from 'react-icons/hi';
 import EllipsisButton from '@/components/shared/EllipsisButton';
 import { TbPigMoney } from 'react-icons/tb';
 import { useState } from 'react';
 import { Button, Dialog } from '@/components/ui';
-import { useAppDispatch } from '@/store';
-import { setEditProjectDialog, setSelectedProject } from '../../store';
 import { Project } from '@/@types/project';
 
 const ProjectItemDropdown = ({
@@ -22,15 +19,7 @@ const ProjectItemDropdown = ({
   setIsPayProducerOpen: (value: boolean) => void;
 }) => {
   const [isValidDeleteOpen, setIsValidDeleteOpen] = useState(false);
-  const dispatch = useAppDispatch();
   const dropdownList = [
-    {
-      label: 'Modifier',
-      value: 'edit',
-      icon: <HiOutlinePencil />,
-      action: () => handleEditProject(),
-      condition: () => true,
-    },
     {
       label: 'Supprimer',
       value: 'delete',
@@ -52,10 +41,6 @@ const ProjectItemDropdown = ({
   const handleConfirmDelete = () => {
     handleDeleteProject(project);
     setIsValidDeleteOpen(false);
-  };
-  const handleEditProject = () => {
-    dispatch(setSelectedProject(project));
-    dispatch(setEditProjectDialog(true));
   };
   return (
     <>

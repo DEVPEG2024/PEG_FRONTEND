@@ -85,6 +85,16 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
+            key: "admin.products.sizes",
+            path: "/admin/products/sizes",
+            title: "Tailles des produits",
+            translateKey: "nav.storeSizes",
+            icon: "store",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
             key: "admin.store.orders",
             path: "/admin/store/orders",
             title: "Commandes",

@@ -21,7 +21,7 @@ export type ProjectDetailsState = {
   comments: Comment[];
   selectedTask: Task | null;
   selectedProjectInvoice: Invoice | null;
-  editProjectDialog: boolean;
+  editCurrentProjectDialog: boolean;
   editProjectInvoiceDialog: boolean;
   printProjectInvoiceDialog: boolean;
   newDialogTask: boolean;
@@ -121,7 +121,7 @@ const initialState: ProjectDetailsState = {
   tasks: [],
   comments: [],
   project: undefined,
-  editProjectDialog: false,
+  editCurrentProjectDialog: false,
   selectedProjectInvoice: null,
   editProjectInvoiceDialog: false,
   newDialogTask: false,
@@ -147,8 +147,8 @@ const projectListSlice = createSlice({
     setEditDescription: (state, action) => {
       state.editDescription = action.payload;
     },
-    setEditProjectDialog: (state, action) => {
-      state.editProjectDialog = action.payload;
+    setEditCurrentProjectDialog: (state, action) => {
+      state.editCurrentProjectDialog = action.payload;
     },
 
     setSelectedTab: (state, action) => {
@@ -279,7 +279,7 @@ const projectListSlice = createSlice({
 export const {
   setProject,
   setLoading,
-  setEditProjectDialog,
+  setEditCurrentProjectDialog,
   setSelectedTab,
   setNewDialogTask,
   setEditDialogTask,

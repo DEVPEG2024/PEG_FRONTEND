@@ -8,10 +8,9 @@ import FieldCustom from './components/fileds';
 import { useState } from 'react';
 import { Project } from '@/@types/project';
 import { useAppDispatch } from '@/store';
-import { payProducer } from '../store';
+import { payProducer, updateProject } from '../store';
 import { Transaction } from '@/@types/transaction';
 import { paymentProducerProjectTypes } from '../lists/constants';
-import { form } from '@formio/react';
 
 type PayProducerFormModel = {
   amount: number;
@@ -44,6 +43,7 @@ function ModalPayProducer({
       description: '',
     }
     dispatch(payProducer({ project, transaction }));
+    dispatch(updateProject({ documentId: project.documentId, producerPaidPrice: project.producerPaidPrice + formData.amount }));
     handleClose();
   };
   const handleClose = () => {

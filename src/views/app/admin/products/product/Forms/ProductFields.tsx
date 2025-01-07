@@ -4,7 +4,7 @@ import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { Select } from '@/components/ui';
-import { Product, Size } from '@/@types/product';
+import { Product, ProductCategory, Size } from '@/@types/product';
 
 type Options = {
   label: string;
@@ -21,6 +21,7 @@ type ProductFields = {
   categories: Options[];
   customers: Options[];
   forms: Options[];
+  filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
 };
 
 const ProductFields = (props: ProductFields) => {
@@ -33,6 +34,7 @@ const ProductFields = (props: ProductFields) => {
     categories,
     customers,
     forms,
+    filterSizesListByProductCategory,
   } = props;
 
   return (
@@ -105,6 +107,7 @@ const ProductFields = (props: ProductFields) => {
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
                   form.setFieldValue(field.name, value);
+                  filterSizesListByProductCategory(value)
                 }}
               />
             )}

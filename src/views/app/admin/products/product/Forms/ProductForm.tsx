@@ -8,7 +8,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { Product } from '@/@types/product';
+import { Product, ProductCategory } from '@/@types/product';
 import { Image } from '@/@types/image';
 
 interface Options {
@@ -45,7 +45,8 @@ type ProductForm = {
   customers: Options[];
   forms: Options[];
   images: Image[];
-  setImages: (images: Image[]) => void
+  setImages: (images: Image[]) => void;
+  filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -69,6 +70,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     customers,
     images,
     setImages,
+    filterSizesListByProductCategory,
   } = props;
 
   const onFileAdd = async (
@@ -151,6 +153,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     customerCategories={customerCategories}
                     categories={categories}
                     customers={customers}
+                    filterSizesListByProductCategory={filterSizesListByProductCategory}
                   />
                 </div>
                 <div className="lg:col-span-1">

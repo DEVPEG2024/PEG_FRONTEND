@@ -66,12 +66,12 @@ export const InvoicesListColumns = (
     },
     {
       header: 'Total',
-      accessorKey: 'amount',
+      accessorKey: 'totalAmount',
       enableSorting: false,
       cell: ({ row }: { row: {original: Invoice} }) => {
         return (
           <Tag>
-            <p className="text-sm">{row.original.amount.toFixed(2)} €</p>
+            <p className="text-sm">{row.original.totalAmount.toFixed(2)} €</p>
           </Tag>
         );
       },

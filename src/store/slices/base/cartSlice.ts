@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_CART_NAME } from './constants'
 import { CartItem } from '@/@types/cart'
-import { setCartItemId, setFormAnswer, setFormCompleted, setProduct, setSizesSelected } from '@/views/app/customer/products/show/store'
+import { setCartItemId, setFormAnswer, setFormCompleted, setProductToShow, setSizesSelected } from '@/views/app/customer/products/show/store'
 import { AppDispatch } from '@/store/storeSetup'
 import { FormAnswer } from '@/@types/formAnswer'
 import { SizeSelection } from '@/@types/product'
@@ -27,7 +27,7 @@ export type CartItemFormAnswerEdition = {
 
 export const editItem = (item: CartItem) => (dispatch: AppDispatch) => {
       dispatch(setCartItemId(item.id));
-      dispatch(setProduct(item.product));
+      dispatch(setProductToShow(item.product));
       dispatch(setFormAnswer(item.formAnswer));
       dispatch(setFormCompleted(true));
       dispatch(setSizesSelected(item.sizes));

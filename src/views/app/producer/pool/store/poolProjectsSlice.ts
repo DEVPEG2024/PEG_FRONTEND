@@ -49,14 +49,7 @@ const initialState: PoolProjectsState = {
 const poolProjectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
-  reducers: {
-    setProjectList: (state, action) => {
-      state.projects = action.payload;
-    },
-    setSelectedProject: (state, action) => {
-      state.selectedProject = action.payload;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getPoolProjects.pending, (state) => {
       state.loading = true;
@@ -70,8 +63,6 @@ const poolProjectListSlice = createSlice({
 });
 
 export const {
-  setProjectList,
-  setSelectedProject,
 } = poolProjectListSlice.actions;
 
 export default poolProjectListSlice.reducer;
