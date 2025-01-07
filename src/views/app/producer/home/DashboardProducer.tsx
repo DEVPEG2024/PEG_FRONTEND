@@ -53,16 +53,14 @@ const DashboardProducer = () => {
         </div>
         <Container className="mt-4 lg:p-0 p-4">
           <div className="flex flex-col gap-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-              {producer.projects.length > 0 && (
-                <div>
-                  <h3 className="mb-2">Mes projets en cours</h3>
-                  {producer.projects.map((project: Project) => (
-                    <ProjectItem key={project.documentId} project={project} />
-                  ))}
-                </div>
-              )}
-            </div>
+            <h3 className="mb-2">Mes projets en cours</h3>
+            {producer.projects.length > 0 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                {producer.projects.map((project: Project) => (
+                  <ProjectItem key={project.documentId} project={project} />
+                ))}
+              </div>
+            )}
             { // TODO : Voir pour ajouter plus tard
             /*<Card className="gap-4 w-1/4">
               <div className="flex justify-between">

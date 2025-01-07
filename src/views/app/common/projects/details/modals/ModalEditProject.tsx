@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
-  setEditProjectDialog,
+  setEditCurrentProjectDialog,
   updateCurrentProject,
   useAppDispatch,
   useAppSelector,
@@ -31,7 +31,7 @@ export type ProjectFormModel = Omit<Project, 'customer' | 'producer' | 'document
 };
 
 function ModalEditProject() {
-  const {editProjectDialog, project, loading} = useAppSelector(
+  const {editCurrentProjectDialog, project, loading} = useAppSelector(
     (state) => state.projectDetails.data
   );
   const dispatch = useAppDispatch();
@@ -91,12 +91,12 @@ function ModalEditProject() {
   };
   
   const handleClose = () => {
-    dispatch(setEditProjectDialog(false));
+    dispatch(setEditCurrentProjectDialog(false));
   };
 
   return (
     <div>
-      <Dialog isOpen={editProjectDialog} onClose={handleClose} width={800}>
+      <Dialog isOpen={editCurrentProjectDialog} onClose={handleClose} width={800}>
         <div className="flex flex-col h-full justify-between">
           <h5 className="mb-4">{t('projects.editProject')}</h5>
           <FieldCustom
@@ -178,6 +178,7 @@ function ModalEditProject() {
             <div className="flex flex-col gap-2 w-6/12">
               <p className="text-sm text-gray-200 mb-2 mt-4">Producteur</p>
               <Select
+                isClearable={true}
                 placeholder={t('projects.selectProducer')}
                 options={producers}
                 noOptionsMessage={() => 'Aucun producteur trouvé'}

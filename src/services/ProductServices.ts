@@ -97,7 +97,7 @@ export type GetProductsByCategoryRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
     productCategoryDocumentId: string;
-  };
+};
 
 export async function apiGetProductsByCategory(data: GetProductsByCategoryRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: '', productCategoryDocumentId: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
     const query = `
@@ -108,7 +108,7 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
             {productCategory: {documentId: {eq: $productCategoryDocumentId}}},
             {active: {eq: true}}
         ]},
-        pagination: $pagination) {
+        pagination: $pagination, sort: "name") {
             nodes {
                 documentId
                 name
@@ -154,7 +154,7 @@ export type GetProductsResponse = {
 export async function apiGetProducts(data: GetProductsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
     const query = `
     query getProducts($searchTerm: String, $pagination: PaginationArg) {
-        products_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        products_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination, sort: "name") {
             nodes {
                 documentId
                 name
@@ -304,28 +304,6 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
         data: {
         query,
         variables
-        }
-    })
-}
-
-// get product sizes
-export async function apiGetProductSizes(): Promise<AxiosResponse<ApiResponse<{sizes: Size[]}>>> {
-    const query = `
-    query getSizes {
-        sizes {
-            documentId
-            name
-            value
-            description
-        }
-    }
-  `
-
-  return ApiService.fetchData<ApiResponse<{sizes: Size[]}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query
         }
     })
 }

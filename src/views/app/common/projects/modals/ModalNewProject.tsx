@@ -163,6 +163,7 @@ function ModalNewProject() {
                 {t('projects.selectCustomer')}
               </p>
               <Select
+                isClearable={true}
                 placeholder={t('projects.selectCustomer')}
                 options={customers}
                 noOptionsMessage={() => 'Aucun client trouvé'}
@@ -176,6 +177,7 @@ function ModalNewProject() {
                 {t('projects.selectProducer')}
               </p>
               <Select
+                isClearable={true}
                 placeholder={t('projects.selectProducer')}
                 options={producers}
                 noOptionsMessage={() => 'Aucun producteur trouvé'}

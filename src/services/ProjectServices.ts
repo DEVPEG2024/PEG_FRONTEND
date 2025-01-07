@@ -331,6 +331,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             price
             priority
             producerPrice
+            producerPaidPrice
             producer {
                 documentId
                 name

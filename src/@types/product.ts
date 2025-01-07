@@ -18,9 +18,10 @@ export type Product = {
 
 export type Size = {
   documentId: string;
-  name: string,
-  value: string,
-  description: string
+  name: string;
+  value: string;
+  description: string;
+  productCategory: ProductCategory;
 }
 
 export type SizeSelection = {

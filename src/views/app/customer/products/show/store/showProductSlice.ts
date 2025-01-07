@@ -52,7 +52,7 @@ const productSlice = createSlice({
     setCartItemId: (state, action) => {
       state.cartItemId = action.payload;
     },
-    setProduct: (state, action) => {
+    setProductToShow: (state, action) => {
       state.product = action.payload;
     },
     clearState: (state) => {
@@ -84,7 +84,7 @@ export const {
   setFormAnswer,
   setSizesSelected,
   setCartItemId,
-  setProduct,
+  setProductToShow,
 } = productSlice.actions;
 
 export default productSlice.reducer;
