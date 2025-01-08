@@ -120,6 +120,7 @@ function ModalNewBanner() {
             <div className="flex flex-col gap-2 w-1/2">
               <p className="text-sm text-gray-200 mb-2 mt-4">Client</p>
               <Select
+                isClearable={true}
                 placeholder="Client"
                 options={customers}
                 noOptionsMessage={() => 'Aucun client trouvé'}
@@ -133,6 +134,7 @@ function ModalNewBanner() {
                 Catégorie client
               </p>
               <Select
+                isClearable={true}
                 placeholder="Catégorie client"
                 options={customerCategories}
                 noOptionsMessage={() => 'Aucune catégorie client trouvée'}
