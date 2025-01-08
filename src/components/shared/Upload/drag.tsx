@@ -1,6 +1,5 @@
-import { Avatar, Upload } from '@/components/ui'
-import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config'
-import { PiUploadDuotone } from "react-icons/pi";
+import { Upload } from '@/components/ui'
+import { API_BASE_URL } from '@/configs/api.config'
 const beforeUpload = (files: FileList | null) => {
   let valid: string | boolean = true
 

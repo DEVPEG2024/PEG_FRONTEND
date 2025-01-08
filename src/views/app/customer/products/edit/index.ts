@@ -1,3 +1,3 @@
-import EditProduct from './EditProduct'
+import EditProduct from './EditProduct';
 
-export default EditProduct
+export default EditProduct;

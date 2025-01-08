@@ -1,26 +1,12 @@
-import { IconType } from 'react-icons';
+export type Form = {
+  documentId: string;
+  name: string;
+  fields: JSONValue;
+};
 
-export type IField = {
-  id: string;
-  type: string;
-  label: string;
-  placeholder: string;
-  icon: IconType;
-  options?: string[];
-  inputType?: string;
-  rows?: number;
-  defaultDate?: Date | null;
-  acceptedFileTypes?: string;
-  min?: number;
-  max?: number;
-  defaultColor?: string;
-}
-
-
-export type IForm = {
-  _id: string;
-  title: string;
-  fields: IField[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type JSONValue =
+    | string
+    | number
+    | boolean
+    | { [x: string]: JSONValue }
+    | Array<JSONValue>;

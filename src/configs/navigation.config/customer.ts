@@ -8,7 +8,7 @@ import { CUSTOMER } from '@/constants/roles.constant';
 const navigationCustomer: NavigationTree[] = [
   {
     key: "customer.home",
-    path: "/customer/home",
+    path: "/home",
     title: "Accueil",
     translateKey: "nav.home",
     icon: "home",
@@ -28,7 +28,7 @@ const navigationCustomer: NavigationTree[] = [
   },
   {
     key: "customer.projects",
-    path: "/customer/projects",
+    path: "/common/projects",
     title: "Mes projets",
     translateKey: "nav.mesprojets",
     icon: "projects",
@@ -58,7 +58,7 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
-    key: "default.settings",
+    key: "customer.settings",
     path: "/settings/profile",
     title: "PARAMÈTRES",
     translateKey: "nav.settings",

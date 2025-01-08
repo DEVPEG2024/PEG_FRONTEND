@@ -1,6 +1,5 @@
-import { Avatar, Upload } from '@/components/ui'
-import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config'
-import { PiUploadDuotone } from "react-icons/pi";
+import { Image } from '@/@types/image';
+import { Upload } from '@/components/ui'
 const beforeUpload = (files: FileList | null) => {
   let valid: string | boolean = true
 
@@ -18,47 +17,33 @@ const beforeUpload = (files: FileList | null) => {
 
   return valid
 }
+
 function FileUplaodDragLight({
   setImage,
-  setFileType,
 }: {
-  image: string;
-  setImage: (image: string) => void;
-  setFileType: (type: string) => void;
+  setImage: (image: Partial<Image> | undefined) => void;
 }) {
-  const onFileUpload = async (
-    files: File[],
-    setImage: (image: string) => void,
-    setFileType: (fileType: string) => void
+  const onFileAdd = async (
+    file: File
   ) => {
-    const formData = new FormData();
-    formData.append("file", files[0]);
-    try {
-      const response = await fetch(API_BASE_URL + "/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      const fileUrl = data.fileName;
-      setImage(fileUrl);
-      setFileType(files[0].type);
-    } catch (error) {
-      console.error("Error uploading file:", error);
-    }
+    setImage({file, name: file.name});
   };
+
+  const onFileRemove = (
+  ) => {
+    setImage(undefined);
+  };
+
   return (
     <Upload
       className="cursor-pointer"
       uploadLimit={1}
       draggable
       beforeUpload={beforeUpload}
-      onChange={(files) => onFileUpload(files, setImage, setFileType)}
-      onFileRemove={() => {
-        setImage("");
-        setFileType("");
-      }}
+      onFileAdd={onFileAdd}
+      onFileRemove={onFileRemove}
     />
   );
 }
 
-  export default FileUplaodDragLight
+export default FileUplaodDragLight

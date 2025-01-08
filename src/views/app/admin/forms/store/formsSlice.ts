@@ -1,96 +1,81 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { IForm } from "@/@types/form";
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { Form } from '@/@types/form';
 import {
   apiCreateForm,
   apiDeleteForm,
   apiGetForms,
-  apiUpdateForm
-} from "@/services/FormServices";
+  apiUpdateForm,
+  CreateFormRequest,
+  DeleteFormResponse,
+  GetFormsRequest,
+  GetFormsResponse,
+} from '@/services/FormServices';
+import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
+import { AxiosResponse } from 'axios';
 
-export type StateData = {
+export const SLICE_NAME = 'forms';
+
+export type FormsStateData = {
+  forms: Form[];
+  form: Form | null;
   loading: boolean;
-  forms: IForm[];
-  form: IForm | null;
-  modalDelete: boolean;
   total: number;
-  result: boolean;
-  message: string;
+  newFormDialog: boolean;
 };
 
-type Query = {
-  page: number;
-  pageSize: number;
-  searchTerm: string;
-};
-
-type GetProductListRequest = Query;
-export const SLICE_NAME = "forms";
-
-/// forms
-
-export const getForms = createAsyncThunk(
-  SLICE_NAME + "/getForms",
-  async (data: GetProductListRequest) => {
-    const response = await apiGetForms(
-      data.page,
-      data.pageSize,
-      data.searchTerm
-    );
-    return response.data;
-  }
-);
-
-export const createForm = createAsyncThunk(
-  SLICE_NAME + "/createForm",
-  async (data: IForm) => {
-    const response = await apiCreateForm(data);
-    return response.data;
-  }
-);
-
-export const updateForm = createAsyncThunk(
-  SLICE_NAME + "/updateForm",
-  async (data: IForm) => {
-    const response = await apiUpdateForm(data);
-    return response.data;
-  }
-);
-
-// delete form
-export const deleteForm = createAsyncThunk(
-  SLICE_NAME + "/deleteForm",
-  async (id: string) => {
-     await apiDeleteForm(id);
-    return id;
-  }
-);
-
-const initialState: StateData = {
-  loading: false,
-  modalDelete: false,
+const initialState: FormsStateData = {
   forms: [],
   form: null,
+  loading: false,
   total: 0,
-  result: false,
-  message: "",
+  newFormDialog: false
 };
+
+/// forms
+export const getForms = createAsyncThunk(
+  SLICE_NAME + '/getForms',
+  async (data: GetFormsRequest): Promise<GetFormsResponse> => {
+    const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms(data));
+    return forms_connection
+  }
+);
+
+// MODELE UPDATE
+export const updateForm = createAsyncThunk(
+  SLICE_NAME + '/updateForm',
+  async (data: Partial<Form>): Promise<ApiResponse<{updateForm: Form}>> => {
+    const response: AxiosResponse<ApiResponse<{updateForm: Form}>> = await apiUpdateForm(data);
+    return response.data;
+  }
+);
+
+// MODELE CREATE
+export const createForm = createAsyncThunk(
+  SLICE_NAME + '/createForm',
+  async (data: CreateFormRequest) : Promise<ApiResponse<{createForm: Form}>> => {
+    const response: AxiosResponse<ApiResponse<{createForm: Form}>> = await apiCreateForm(data);
+    return response.data;
+  }
+);
+
+export const deleteForm = createAsyncThunk(
+  SLICE_NAME + '/deleteForm',
+  async (documentId: string): Promise<DeleteFormResponse> => {
+    const {deleteForm} : {deleteForm: DeleteFormResponse} = await unwrapData(apiDeleteForm(documentId));
+    return deleteForm;
+  }
+);
 
 const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setTableData: (state, action) => {
-      state.forms = action.payload;
-    },
     setForm: (state, action) => {
       state.form = action.payload;
     },
-    setModalDeleteOpen: (state) => {
-      state.modalDelete = true;
-    },
-    setModalDeleteClose: (state) => {
-      state.modalDelete = false;
-    },
+    setNewFormDialog: (state, action) => {
+      state.newFormDialog = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(getForms.pending, (state) => {
@@ -98,8 +83,8 @@ const formsSlice = createSlice({
     });
     builder.addCase(getForms.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = action.payload.forms as unknown as IForm[];
-      state.total = action.payload.total;
+      state.forms = action.payload.nodes as Form[];
+      state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getForms.rejected, (state) => {
       state.loading = false;
@@ -108,18 +93,42 @@ const formsSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(deleteForm.fulfilled, (state, action) => {
-        console.log(action.payload);
+      console.log(action.payload);
       state.loading = false;
-      state.forms = state.forms.filter((form) => form._id !== action.payload);
-    })
+      state.forms = state.forms.filter((form) => form.documentId !== action.payload.documentId);
+      state.total -= 1
+    });
+    builder.addCase(updateForm.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateForm.fulfilled, (state, action) => {
+      state.loading = false;
+      state.forms = state.forms.map((form) =>
+        form.documentId === action.payload.data.updateForm.documentId
+          ? action.payload.data.updateForm
+          : form
+      );
+    });
+    builder.addCase(updateForm.rejected, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(createForm.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(createForm.fulfilled, (state, action) => {
+      state.loading = false;
+      state.forms.push(action.payload.data.createForm);
+      state.total += 1
+    });
+    builder.addCase(createForm.rejected, (state) => {
+      state.loading = false;
+    });
   },
 });
 
 export const {
-  setTableData,
   setForm,
-  setModalDeleteOpen,
-  setModalDeleteClose,
+  setNewFormDialog,
 } = formsSlice.actions;
 
 export default formsSlice.reducer;

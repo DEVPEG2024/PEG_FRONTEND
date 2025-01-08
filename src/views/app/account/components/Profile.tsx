@@ -1,264 +1,209 @@
-import classNames from 'classnames'
-import Input from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
-import Notification from '@/components/ui/Notification'
-import toast from '@/components/ui/toast'
-import { FormContainer } from '@/components/ui/Form'
-import FormDesription from './FormDesription'
-import FormRow from './FormRow'
-import { Field, FieldProps, Form, Formik } from 'formik'
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import { FormContainer } from '@/components/ui/Form';
+import FormDescription from './FormDescription';
+import FormRow from './FormRow';
+import { Field, Form, Formik } from 'formik';
 
-import * as Yup from 'yup'
-import { setUser, useAppDispatch, useAppSelector } from '@/store'
-import { Avatar, Upload } from '@/components/ui'
-import { HiOutlineUser } from 'react-icons/hi'
-import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config'
-import { apiUpdateUser } from '@/services/AccountServices'
+import * as Yup from 'yup';
+import { updateOwnUser, useAppDispatch, useAppSelector } from '@/store';
+import { Avatar, Upload } from '@/components/ui';
+import { HiOutlineUser } from 'react-icons/hi';
+import { User } from '@/@types/user';
+import { useEffect, useState } from 'react';
+import { Image } from '@/@types/image';
+import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { useNavigate } from 'react-router-dom';
 
-type UserInformations = {
-    avatar: string
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    address: string
-    companyName: string
-    city: string
-    zip: string
-}
+type UserFormModel = Omit<User, 'role' | 'customer' | 'producer' | 'authority' | 'id' | 'documentId' | 'blocked' | 'avatar'>;
 
 const validationSchema = Yup.object().shape({
-    firstName: Yup.string().required('Nom Requis'),
-    lastName: Yup.string().required('Prénom Requis'),
-    email: Yup.string().email('Email invalide').required('Email Requis'),
-    phone: Yup.string().required('Téléphone Requis'),
-    address: Yup.string().required('Adresse Requis'),
-    city: Yup.string().required('Ville Requis'),
-    zip: Yup.string().required('Code postal Requis'),
-    companyName: Yup.string().required('Nom de l\'entreprise Requis'),
-})
+  username: Yup.string().required('Nom d\'utilisateur Requis'),
+  firstName: Yup.string().required('Nom Requis'),
+  lastName: Yup.string().required('Prénom Requis'),
+  email: Yup.string().email('Email invalide').required('Email Requis')
+});
 
-const Profil = ({ data }: { data?: UserInformations[] }) => {
-    const dispatch = useAppDispatch()
-    const userData = useAppSelector((state) => state.auth.user)
-    const onFormSubmit = async (
-        values: UserInformations,
-        setSubmitting: (isSubmitting: boolean) => void
-    ) => {
-      const data = {
-        ...values,
-        _id: userData._id
-      }
-      const response = await apiUpdateUser(data)
-      if(response.data.result){
-        toast.push(<Notification title={'Informations personnelles mises à jour'} type="success" />, {
-            placement: 'top-center',
-        })
-        dispatch(setUser(response.data.user))
-        setSubmitting(false)
+const Profile = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const {user} : {user: User} = useAppSelector((state) => state.auth.user);
+  const [avatar, setAvatar] = useState<Image | undefined>(undefined);
+  const initialData: UserFormModel = {
+    username: user.username || '',
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+  }
+  
+  useEffect(() => {
+    fetchAvatar();
+  }, []);
+
+  const fetchAvatar = async (): Promise<void> => {
+    if (user?.avatar){
+      const imageLoaded: Image = (await apiLoadImagesAndFiles([user.avatar]))[0]
+
+      setAvatar(imageLoaded);
+    }
+  };
+
+  const onFormSubmit = async (
+    values: UserFormModel,
+    setSubmitting: (isSubmitting: boolean) => void
+  ) => {
+    let newAvatar = undefined
+
+    if (avatar) {
+      if (avatar.id) {
+        newAvatar = avatar
       } else {
-        toast.push(<Notification title={'Erreur lors de la mise à jour des informations personnelles'} type="danger" />, {
-            placement: 'top-center',
-        })
-        setSubmitting(false)
+        const avatarUploaded: Image = await apiUploadFile(avatar.file)
+        newAvatar = avatarUploaded
       }
-      
+    }
+    const data: User = {
+      ...values,
+      avatar: newAvatar ? newAvatar.id : undefined
+    };
+
+    dispatch(updateOwnUser({user: data, id: user.id}));
+    setSubmitting(false);
+    navigate('/settings/profile');
+  };
+
+  const onFileAdd = async (
+    file: File
+  ) => {
+    setAvatar({file, name: file.name});
+  };
+
+  const beforeUpload = (files: FileList | null) => {
+    let valid: string | boolean = true;
+
+    const allowedFileType = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/webp',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+      'application/pdf',
+      'application/x-pdf',
+    ];
+    if (files) {
+      for (const file of files) {
+        if (!allowedFileType.includes(file.type)) {
+          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
+        }
+      }
     }
 
-    const onFileUpload = async (
-        files: File[],
-        setFieldValue: (
-          field: string,
-          value: any,
-          shouldValidate?: boolean,
-        ) => void,
-        field: string,
-      ) => {
-        const formData = new FormData();
-        formData.append("file", files[0]);
-        try {
-          const response = await fetch(API_BASE_URL + "/upload/avatar/" + userData._id, {
-            method: "POST",
-            body: formData,
-          });
-          const data = await response.json();
-          const fileUrl = data.fileName
-          setFieldValue(field, fileUrl);
-        } catch (error) {
-          console.error("Erreur lors de l'upload du fichier :", error);
-        }
-      };
+    return valid;
+  };
 
-    return (
-      <>
-        <Formik
-          initialValues={{
-            avatar: userData.avatar || "",
-            firstName: userData.firstName || "",
-            lastName: userData.lastName || "",
-            email: userData.email || "",
-            phone: userData.phone || "",
-            address: userData.address || "",
-            companyName: userData.companyName || "",
-            city: userData.city || "",
-            zip: userData.zip || "",
-          }}
-          validationSchema={validationSchema}
-          onSubmit={(values, { setSubmitting }) => {
-            setSubmitting(true);
-            setTimeout(() => {
-              onFormSubmit(values, setSubmitting);
-            }, 1000);
-          }}
-        >
-          {({ touched, errors, isSubmitting, resetForm }) => {
-            const validatorProps = { touched, errors };
-            return (
-              <Form>
-                <FormContainer>
-                  <FormDesription
-                    title="Informations personnelles"
-                    desc="Vos informations personnelles"
-                  />
-                  <FormRow
-                    name="avatar"
-                    label="Image de profil"
-                    {...validatorProps}
+  return (
+    <>
+      <Formik
+        initialValues={{
+          ...initialData
+        }}
+        validationSchema={validationSchema}
+        onSubmit={(values, { setSubmitting }) => {
+          setSubmitting(true);
+          setTimeout(() => {
+            onFormSubmit(values, setSubmitting);
+          }, 1000);
+        }}
+      >
+        {({ touched, errors, isSubmitting }) => {
+          const validatorProps = { touched, errors };
+          return (
+            <Form>
+              <FormContainer>
+                <FormDescription
+                  title="Informations personnelles"
+                  desc="Vos informations personnelles"
+                />
+                <div className="flex items-center justify-between mb-4 mt-4">
+                  <div className="ml-0 font-semibold">Avatar</div>
+                  <Upload
+                    className="cursor-pointer absolute left-1/2"
+                    showList={true}
+                    uploadLimit={1}
+                    beforeUpload={beforeUpload}
+                    onFileAdd={(file) =>
+                      onFileAdd(file)
+                    }
+                    onFileRemove={() =>
+                      setAvatar(undefined)
+                    }
+                    fileList={avatar ? [avatar?.file] : []}
                   >
-                    <Field name="avatar">
-                      {({ field, form }: FieldProps) => {
-                        const avatarProps = field.value
-                          ? { src: API_URL_IMAGE + field.value }
-                          : {};
-                        return (
-                          <div className="flex justify-center">
-                            <Upload
-                              className="cursor-pointer"
-                              showList={false}
-                              uploadLimit={1}
-                              onChange={(files) =>
-                                onFileUpload(
-                                  files,
-                                  form.setFieldValue,
-                                  field.name
-                                )
-                              }
-                              onFileRemove={(files) =>
-                                form.setFieldValue(
-                                  field.name,
-                                  URL.createObjectURL(files[0])
-                                )
-                              }
-                            >
-                              <Avatar
-                                className="border-2 border-white dark:border-gray-800 shadow-lg"
-                                size={100}
-                                shape="circle"
-                                icon={<HiOutlineUser />}
-                                {...avatarProps}
-                              />
-                            </Upload>
-                          </div>
-                        );
-                      }}
-                    </Field>
-                  </FormRow>
-                  <FormRow name="companyName" label="Nom de l'entreprise" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="companyName"
-                      placeholder="Nom de l'entreprise"
-                      component={Input}
+                    <Avatar
+                      className="border-2 border-white dark:border-gray-800 shadow-lg"
+                      size={100}
+                      shape="circle"
+                      icon={<HiOutlineUser />}
+                      src={avatar?.url}
                     />
-                  </FormRow>
-                  <FormRow name="lastName" label="Nom" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="lastName"
-                      placeholder="Nom"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="firstName" label="Prénom" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="firstName"
-                      placeholder="Prénom"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="email" label="Email" {...validatorProps}>
-                    <Field
-                      type="email"
-                      autoComplete="off"
-                      name="email"
-                      placeholder="Email"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="phone" label="Téléphone" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="phone"
-                      placeholder="Téléphone"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="address" label="Adresse" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="address"
-                      placeholder="Adresse"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="zip" label="Code postal" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="zip"
-                      placeholder="Code postal"
-                      component={Input}
-                    />
-                  </FormRow>
-                  <FormRow name="city" label="Ville" {...validatorProps}>
-                    <Field
-                      type="text"
-                      autoComplete="off"
-                      name="city"
-                      placeholder="Ville"
-                      component={Input}
-                    />
-                  </FormRow>
+                  </Upload>
+                </div>
+                <FormRow name="username" label="Nom d'utilisateur" {...validatorProps}>
+                  <Field
+                    type="text"
+                    autoComplete="off"
+                    name="username"
+                    placeholder="Nom d'utilisateur"
+                    component={Input}
+                  />
+                </FormRow>
+                <FormRow name="lastName" label="Nom" {...validatorProps}>
+                  <Field
+                    type="text"
+                    autoComplete="off"
+                    name="lastName"
+                    placeholder="Nom"
+                    component={Input}
+                  />
+                </FormRow>
+                <FormRow name="firstName" label="Prénom" {...validatorProps}>
+                  <Field
+                    type="text"
+                    autoComplete="off"
+                    name="firstName"
+                    placeholder="Prénom"
+                    component={Input}
+                  />
+                </FormRow>
+                <FormRow name="email" label="Email" {...validatorProps}>
+                  <Field
+                    type="email"
+                    autoComplete="off"
+                    name="email"
+                    placeholder="Email"
+                    component={Input}
+                  />
+                </FormRow>
 
-                  <div className="mt-4 ltr:text-right">
-                    <Button
-                      className="ltr:mr-2 rtl:ml-2"
-                      type="button"
-                      onClick={() => resetForm()}
-                    >
-                      Reset
-                    </Button>
-                    <Button
-                      variant="solid"
-                      loading={isSubmitting}
-                      type="submit"
-                    >
-                      {isSubmitting ? "Modification..." : "Modifier"}
-                    </Button>
-                  </div>
-                </FormContainer>
-              </Form>
-            );
-          }}
-        </Formik>
-      </>
-    );
-}
+                <div className="mt-4 ltr:text-right">
+                  <Button variant="solid" loading={isSubmitting} type="submit">
+                    {isSubmitting ? 'Modification...' : 'Modifier'}
+                  </Button>
+                </div>
+              </FormContainer>
+            </Form>
+          );
+        }}
+      </Formik>
+    </>
+  );
+};
 
-export default Profil
+export default Profile;
