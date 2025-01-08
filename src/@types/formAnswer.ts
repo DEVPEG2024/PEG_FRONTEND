@@ -1,11 +1,13 @@
-import { FileNameBackFront } from "./file";
+import { Form, JSONValue } from './form';
 
-export type IFormAnswer = {
-  form: string;
-  answers: IFieldAnswer[]
-}
+export type FormAnswer = {
+  documentId: string;
+  form: Form;
+  answer: FormioSubmission;
+};
 
-export type IFieldAnswer = {
-  fieldId: string;
-  value: string | string[] | FileNameBackFront[];
+type FormioSubmission = {
+  data: JSONValue;
+  metadata: JSONValue;
+  state: string;
 }

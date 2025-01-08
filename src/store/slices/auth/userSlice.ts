@@ -1,62 +1,76 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_BASE_NAME } from './constants'
-import { ICategory } from '@/@types/user'
+import { User } from '@/@types/user'
+import { unwrapData } from '@/utils/serviceHelper';
+import { apiUpdateUser, apiUpdateUserPassword } from '@/services/UserService';
+
+export const SLICE_NAME = 'userAuth';
 
 export type UserState = {
-    _id?: string
-    avatar?: string
-    firstName?: string
-    lastName?: string
-    userName?: string
-    email?: string
-    authority?: string[]
-    category?: ICategory
-    phone?: string
-    address?: string
-    city?: string
-    zip?: string
-    country?: string
-    companyName?: string
+    user: User;
 }
 
 const initialState: UserState = {
-    _id: '',
-    avatar: '',
-    firstName: '',
-    lastName: '',
-    userName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    zip: '',
-    country: '',
-    authority: [],
-    companyName: '',
+    user: {
+        documentId: '',
+        email: '',
+        username: '',
+        firstName: '',
+        lastName: '',
+        authority: ['public'],
+        role: {
+            documentId: '',
+            description: 'public',
+            name: 'public',
+            type: 'public'
+        }
+    },
 }
+
+export type UpdateUser = {
+  user: Partial<User>;
+  id: number;
+}
+
+export const updateOwnUser = createAsyncThunk(
+  SLICE_NAME + '/updateOwnUser',
+  async (data: UpdateUser): Promise<User> => {
+    const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: {data: User}} = await unwrapData(apiUpdateUser(data.user, data.id));
+    return updateUsersPermissionsUser.data
+  }
+);
+
+export type UpdateUserPassword = {
+  newPassword: string;
+  id: number;
+}
+
+export const updateUserPassword = createAsyncThunk(
+  SLICE_NAME + '/updateUserPassword',
+  async (data: UpdateUserPassword): Promise<User> => {
+    const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: {data: User}} = await unwrapData(apiUpdateUserPassword(data.newPassword, data.id));
+    return updateUsersPermissionsUser.data
+  }
+);
 
 const userSlice = createSlice({
     name: `${SLICE_BASE_NAME}/user`,
     initialState,
     reducers: {
-        setUser(state, action: PayloadAction<UserState>) {
-            state._id = action.payload?._id
-            state.avatar = action.payload?.avatar
-            state.firstName = action.payload?.firstName
-            state.lastName = action.payload?.lastName
-            state.email = action.payload?.email
-            state.userName = action.payload?.userName
-            state.phone = action.payload?.phone
-            state.address = action.payload?.address
-            state.city = action.payload?.city
-            state.zip = action.payload?.zip
-            state.country = action.payload?.country
-            state.authority = action.payload?.authority
-            state.companyName = action.payload?.companyName
-            state.category = action.payload?.category
-        },
+      setOwnUser(state, action: PayloadAction<User>) {
+          state.user = action.payload
+      },
     },
+    extraReducers: (builder) => {
+      builder.addCase(updateOwnUser.fulfilled, (state, action) => {
+        state.user.avatar = action.payload.avatar;
+        state.user.username = action.payload.username;
+        state.user.firstName = action.payload.firstName;
+        state.user.lastName = action.payload.lastName;
+        state.user.email = action.payload.email;
+      });
+    }
 })
 
-export const { setUser } = userSlice.actions
+export const { setOwnUser } = userSlice.actions
 export default userSlice.reducer

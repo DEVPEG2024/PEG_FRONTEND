@@ -1,108 +1,100 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { IProduct } from '@/@types/product'
-import { apiGetProducts, apiPutStatusProduct, apiDeleteProduct, apiUpdateProduct, apiGetProductsByCategory, apiNewProduct } from '@/services/ProductServices'
-import { apiDeleteFiles } from '@/services/FileServices'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { Product } from '@/@types/product';
+import { Image } from '@/@types/image';
+import {
+  apiGetProducts,
+  apiDeleteProduct,
+  apiUpdateProduct,
+  GetProductsRequest,
+  GetProductsResponse,
+  apiCreateProduct,
+  DeleteProductResponse,
+  apiGetProductForEditById,
+} from '@/services/ProductServices';
+import { apiGetImages } from '@/services/FileServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
-type Products = IProduct[]
+export const SLICE_NAME = 'products';
 
 export type StateData = {
-    loading: boolean
-    products: Products
-    product: IProduct | null
-    modalDelete: boolean
-    total: number
-    result: boolean
-    message: string
-    stats: {
-        depense: number
-        recette: number
-        bilan: number
-    }
-}
+  loading: boolean;
+  products: Product[];
+  productToEdit: Product | null;
+  modalDeleteProduct: boolean;
+  total: number;
+  result: boolean;
+  message: string;
+  stats: {
+    depense: number;
+    recette: number;
+    bilan: number;
+  };
+};
 
 export type StatsTypesResponses = {
-    depense: number
-    recette: number
-    bilan: number
-}
-type Query = {
-    page: number, pageSize: number, searchTerm: string 
- }
- 
- type GetProductListRequest = Query
-export const SLICE_NAME = 'products'
-
+  depense: number;
+  recette: number;
+  bilan: number;
+};
 
 export const getProducts = createAsyncThunk(
-    SLICE_NAME + '/getProducts',
-    async (data: GetProductListRequest) => {
-        const response = await apiGetProducts(data.page, data.pageSize, data.searchTerm)
-        return response.data
-    }
-)
-
-export const getProductsByCategory = createAsyncThunk(
-    SLICE_NAME + '/getProductsByCategory',
-    async (id: string) => {
-        const response = await apiGetProductsByCategory(id)
-        return response.data
-    }
-)
-
-type PutStatusProductRequest = {
-  id: string
-}
-
-export const putStatusProduct = createAsyncThunk(
-  SLICE_NAME + "/putStatusProduct",
-  async (data: PutStatusProductRequest) => {
-    const response = await apiPutStatusProduct(data.id)
-    return response.data
-}
+  SLICE_NAME + '/getProducts',
+  async (data: GetProductsRequest): Promise<GetProductsResponse> => {
+    const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProducts(data));
+    return products_connection
+  }
 );
 
-type DuplicateProductRequest = {
-  product: IProduct
-}
+export const getProductById = createAsyncThunk(
+  SLICE_NAME + '/getProduct',
+  async (documentId: string): Promise<{product: Product}> => {
+    return await unwrapData(apiGetProductForEditById(documentId));
+  }
+);
 
 export const duplicateProduct = createAsyncThunk(
-  SLICE_NAME + "/duplicateProduct",
-  async (data: DuplicateProductRequest) => {
-    const response = await apiNewProduct(data.product)
-    return response.data
-}
+  SLICE_NAME + '/duplicateProduct',
+  async (product: Product) => {
+    const {product: productToDuplicate} : {product: Product} = await unwrapData(apiGetProductForEditById(product.documentId))
+    const {documentId, images, ...duplicatedProduct} = productToDuplicate
+    const imagesLoaded : Image[] = await apiGetImages(images)
+    const newProduct: Product = {
+      ...duplicatedProduct,
+      images: imagesLoaded.map(({id}) => id),
+      sizes: duplicatedProduct.sizes.map(({documentId}) => documentId),
+      form: duplicatedProduct.form?.documentId,
+      productCategory: duplicatedProduct.productCategory?.documentId,
+      customerCategories: duplicatedProduct.customerCategories.map(({documentId}) => documentId),
+      customers: duplicatedProduct.customers.map(({documentId}) => documentId),
+    }
+    const {createProduct} : {createProduct: Product}= await unwrapData(apiCreateProduct(newProduct));
+    return createProduct;
+  }
 );
-
-type UpdateProductRequest = {
-  product: IProduct
-}
 
 export const updateProduct = createAsyncThunk(
-  SLICE_NAME + "/updateProduct",
-  async (data: UpdateProductRequest) => {
-    const response = await apiUpdateProduct(data.product)
-    return response.data
-}
+  SLICE_NAME + '/updateProduct',
+  async (data: Partial<Product>): Promise<Product> => {
+    const {updateProduct} : {updateProduct: Product} = await unwrapData(apiUpdateProduct(data));
+    return updateProduct;
+  }
 );
 
-type DeleteProductRequest = {
-  product: IProduct;
-}
-
 export const deleteProduct = createAsyncThunk(
-  SLICE_NAME + "/deleteProduct",
-  async (data: DeleteProductRequest, {getState}) => {
-    const response = await apiDeleteProduct(data.product._id)
-    apiDeleteFiles(data.product.images.map(({fileNameBack}) => fileNameBack))
-    return response.data
-}
+  SLICE_NAME + '/deleteProduct',
+  async (documentId: string): Promise<DeleteProductResponse> => {
+    const {deleteProduct} : {deleteProduct: DeleteProductResponse} = await unwrapData(apiDeleteProduct(documentId));
+    //TODO: à remettre
+    //apiDeleteFiles(data.product.images.map(({ fileNameBack }) => fileNameBack));
+    return deleteProduct;
+  }
 );
 
 const initialState: StateData = {
   loading: false,
   products: [],
-  product: null,
-  modalDelete: false,
+  productToEdit: null,
+  modalDeleteProduct: false,
   total: 0,
   result: false,
   message: '',
@@ -114,128 +106,88 @@ const initialState: StateData = {
 };
 
 const productSlice = createSlice({
-    name: `${SLICE_NAME}/state`,
-    initialState,
-    reducers: {
-        setTableData: (state, action) => {
-            state.products = action.payload
-        },
-        setProduct: (state, action) => {
-            state.product = state.products.find((product) => product._id === action.payload) ?? null
-        },
-        setModalDeleteOpen: (state) => {
-            state.modalDelete = true
-        },
-        setModalDeleteClose: (state) => {
-            state.modalDelete = false
-        },
-        setEditProduct: (state, action) => {
-            const product = state.products.find((product) => product._id === action.payload._id);
-            if (product) {
-                state.product = product;
-            }
-        },
-        setEditingProduct: (state, action) => {
-            state.product = action.payload
-        },
-        setActiveProduct: (state, action) => {
-            console.log(action.payload)
-            const productId = action.payload.id;
-            const isActive = action.payload.mode;
-
-            const product = state.products.find((product) => product._id === productId);
-            if (product) {
-                product.isActive = isActive;
-            }
-        },
-        setDeleteProduct: (state, action) => {
-            state.product = state.products.find((product) => product._id === action.payload) ?? null
-        },
-
+  name: `${SLICE_NAME}/state`,
+  initialState,
+  reducers: {
+    setProductToEdit: (state, action) => {
+      state.productToEdit = action.payload;
     },
-    extraReducers: (builder) => {
-        builder.addCase(getProducts.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(getProducts.fulfilled, (state, action) => {
-            state.loading = false
-            state.products = action.payload.products
-        })
-        builder.addCase(getProducts.rejected, (state) => {
-            state.loading = false
-        })
-        builder.addCase(putStatusProduct.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(putStatusProduct.fulfilled, (state, action) => {
-            state.loading = false
-            state.products = state.products.map((product) => {
-                if (product._id === action.payload.product._id) {
-                    return action.payload.product
-                }
-                return product
-            })
-        })
-        builder.addCase(putStatusProduct.rejected, (state) => {
-            state.loading = false
-        })
-        builder.addCase(deleteProduct.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(deleteProduct.fulfilled, (state, action) => {
-            state.loading = false
-            state.products = state.products.filter((product) => product._id !== action.payload.product._id)
-        })
-        builder.addCase(deleteProduct.rejected, (state) => {
-            state.loading = false
-        })
-        builder.addCase(updateProduct.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(updateProduct.fulfilled, (state, action) => {
-            state.loading = false
-            state.products = state.products.map((product) => {
-                if (product._id === action.payload.product._id) {
-                    return action.payload.product
-                }   
-                return product
-            })
-        })
-        builder.addCase(updateProduct.rejected, (state) => {
-            state.loading = false
-        })
-        builder.addCase(duplicateProduct.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(duplicateProduct.fulfilled, (state, action) => {
-            state.loading = false
-            state.products.push(action.payload.product)
-        })
-        builder.addCase(duplicateProduct.rejected, (state) => {
-            state.loading = false
-        })
-        builder.addCase(getProductsByCategory.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(getProductsByCategory.fulfilled, (state, action) => {
-            state.loading = false
-            state.products = action.payload.products
-        })
-        builder.addCase(getProductsByCategory.rejected, (state) => {
-            state.loading = false
-        })
+    setModalDeleteProductOpen: (state) => {
+      state.modalDeleteProduct = true;
     },
-  
-})
+    setModalDeleteProductClose: (state) => {
+      state.modalDeleteProduct = false;
+    },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(getProducts.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProducts.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = action.payload.nodes;
+      state.total = action.payload.pageInfo.total
+    });
+    builder.addCase(getProducts.rejected, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(deleteProduct.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteProduct.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = state.products.filter(
+        (product) => product.documentId !== action.payload.documentId
+      );
+      state.total -= 1
+    });
+    builder.addCase(deleteProduct.rejected, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(updateProduct.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateProduct.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = state.products.map((product) => {
+        if (product.documentId === action.payload.documentId) {
+          return action.payload;
+        }
+        return product;
+      });
+    });
+    builder.addCase(updateProduct.rejected, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(duplicateProduct.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(duplicateProduct.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products.push(action.payload);
+      state.total += 1;
+    });
+    builder.addCase(duplicateProduct.rejected, (state) => {
+      state.loading = false;
+    });
+
+    builder.addCase(getProductById.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(getProductById.fulfilled, (state, action) => {
+      state.loading = false;
+      state.productToEdit = action.payload.product;
+    });
+    builder.addCase(getProductById.rejected, (state) => {
+      state.loading = false;
+    });
+  },
+});
 
 export const {
-    setTableData,
-    setProduct,
-    setModalDeleteOpen,
-    setModalDeleteClose,
-    setDeleteProduct,
-    setActiveProduct,
-    setEditingProduct,
-} = productSlice.actions
+  setProductToEdit,
+  setModalDeleteProductOpen,
+  setModalDeleteProductClose,
+} = productSlice.actions;
 
-export default productSlice.reducer
+export default productSlice.reducer;

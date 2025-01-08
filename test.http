@@ -1,0 +1,3 @@
+### GET Request to fetch products
+GET https://ideal-space-parakeet-wrrj467p9w4fg64-1337.app.github.dev/api/upload/files
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzMjk1OTAyLCJleHAiOjE3MzU4ODc5MDJ9.5JgVo8qHiYiFBehW55sEfc_zEJuBUbHtqvR_LOzfL8s

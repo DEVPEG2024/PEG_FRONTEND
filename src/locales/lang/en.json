@@ -160,7 +160,7 @@
   "address": "Address",
   "city": "City",
   "state": "State",
-  "zip": "Zip code",
+  "zipCode": "Zip code",
   "country": "Country",
   "refund": "Refund",
   "refunded": "Refunded",

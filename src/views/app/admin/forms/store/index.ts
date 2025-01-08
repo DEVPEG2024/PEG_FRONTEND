@@ -1,22 +1,22 @@
-import { combineReducers } from '@reduxjs/toolkit'
-import reducers, { SLICE_NAME, StateData } from './formsSlice'
-import { useSelector } from 'react-redux'
+import { combineReducers } from '@reduxjs/toolkit';
+import reducers, { SLICE_NAME, FormsStateData } from './formsSlice';
+import { useSelector } from 'react-redux';
 
-import type { TypedUseSelectorHook } from 'react-redux'
-import type { RootState } from '@/store'
+import type { TypedUseSelectorHook } from 'react-redux';
+import type { RootState } from '@/store';
 
 const reducer = combineReducers({
-    data: reducers,
-})
+  data: reducers,
+});
 
 export const useAppSelector: TypedUseSelectorHook<
-    RootState & {
-        [SLICE_NAME]: {
-            data: StateData
-        }
-    }
-> = useSelector
+  RootState & {
+    [SLICE_NAME]: {
+      data: FormsStateData;
+    };
+  }
+> = useSelector;
 
-export * from './formsSlice'
-export { useAppDispatch } from '@/store'
-export default reducer
+export * from './formsSlice';
+export { useAppDispatch } from '@/store';
+export default reducer;

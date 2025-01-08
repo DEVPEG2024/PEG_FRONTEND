@@ -9,12 +9,13 @@ const FileIcon = ({ children }: CommonProps) => {
 }
 
 export interface FileItemProps extends CommonProps {
-    file: File
+    file: File;
+    clickable: boolean;
 }
 
 const FileItem = (props: FileItemProps) => {
-    const { file, children } = props
-    const { type, name, size } = file
+    const { file, clickable, children } = props
+    const { type, name, size, previewUrl } = file
 
     const renderThumbnail = () => {
         const isImageFile = type.split('/')[0] === 'image'
@@ -57,7 +58,7 @@ const FileItem = (props: FileItemProps) => {
             <div className="flex">
                 <div className="upload-file-thumbnail">{renderThumbnail()}</div>
                 <div className="upload-file-info">
-                    <h6 className="upload-file-name">{name}</h6>
+                    {clickable ? <a className="upload-file-name font-bold" target="_blank" href={previewUrl}>{name}</a> : <h6 className="upload-file-name">{name}</h6>}
                     <span className="upload-file-size">{getKB(size)} kb</span>
                 </div>
             </div>

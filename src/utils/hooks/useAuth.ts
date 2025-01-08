@@ -1,6 +1,6 @@
-import { apiSignIn, apiSignOut, apiSignUp } from '@/services/AuthService'
+import { apiSignIn } from '@/services/AuthService'
 import {
-    setUser,
+    setOwnUser,
     signInSuccess,
     signOutSuccess,
     useAppSelector,
@@ -11,7 +11,9 @@ import { REDIRECT_URL_KEY } from '@/constants/app.constant'
 import { useNavigate } from 'react-router-dom'
 import useQuery from './useQuery'
 import type { SignInCredential, SignUpCredential } from '@/@types/auth'
-import { ADMIN, CUSTOMER } from '@/constants/roles.constant'
+import { ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant'
+import { getUser } from '@/services/UserService'
+import { User } from '@/@types/user'
 
 type Status = 'success' | 'failed'
 
@@ -36,29 +38,18 @@ function useAuth() {
         try {
             const resp = await apiSignIn(values)
             if (resp.data) {
-                const { token } = resp.data
+                const { jwt: token } = resp.data
+                const user: User = await getUser(token)
                 dispatch(signInSuccess(token))
                 localStorage.setItem('token', token)
-                if (resp.data.user) {
-                    dispatch(
-                        setUser(
-                            resp.data.user || {
-                                avatar: '',
-                                userName: 'Anonymous',
-                                authority: ['USER'],
-                                email: '',
-                            }
-                        )
-                    )
-             
-                const userRole = resp.data.user?.authority[0]
-                if (userRole === ADMIN) {
-                    navigate("/admin/home")
-                } else if (userRole === CUSTOMER) {
-                    navigate("/customer/home")
-                } else {
-                    navigate("/")
-                }
+                if (user) {
+                    dispatch(setOwnUser(user))
+                    const userRole = user.authority[0]
+                    if ([ADMIN, CUSTOMER, PRODUCER].includes(userRole)) {
+                        navigate("/home")
+                    } else {
+                        navigate("/")
+                    }
                 }
                 // navigate(
                 //     redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath
@@ -77,47 +68,11 @@ function useAuth() {
         }
     }
 
-    const signUp = async (values: SignUpCredential) => {
-        try {
-            const resp = await apiSignUp(values)
-            if (resp.data) {
-                const { token } = resp.data
-                dispatch(signInSuccess(token))
-                if (resp.data.user) {
-                    dispatch(
-                        setUser(
-                            resp.data.user || {
-                                avatar: '',
-                                userName: 'Anonymous',
-                                authority: ['USER'],
-                                email: '',
-                            }
-                        )
-                    )
-                }
-                const redirectUrl = query.get(REDIRECT_URL_KEY)
-                navigate(
-                    redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath
-                )
-                return {
-                    status: 'success',
-                    message: '',
-                }
-            }
-            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        } catch (errors: any) {
-            return {
-                status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
-            }
-        }
-    }
-
     const handleSignOut = () => {
         dispatch(signOutSuccess())
         dispatch(
-            setUser({
-                avatar: '',
+            setOwnUser({
+                avatar: undefined,
                 userName: '',
                 email: '',
                 authority: [],
@@ -136,7 +91,6 @@ function useAuth() {
     return {
         authenticated: token && signedIn,
         signIn,
-        signUp,
         signOut,
     }
 }

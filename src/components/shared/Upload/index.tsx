@@ -1,6 +1,7 @@
+import { Image } from '@/@types/image';
 import { Avatar, Upload } from '@/components/ui'
-import { API_BASE_URL, API_URL_IMAGE } from '@/configs/api.config'
 import { PiUploadDuotone } from "react-icons/pi";
+
 const beforeUpload = (files: FileList | null) => {
   let valid: string | boolean = true
 
@@ -18,27 +19,15 @@ const beforeUpload = (files: FileList | null) => {
 
   return valid
 }
-function FileUplaodCustom({setImage, setFileType}: {image: string, setImage: (image: string) => void, setFileType: (type: string) => void}) {
-  const onFileUpload = async (
-    files: File[],
-    setImage: (image: string) => void,
-    setFileType: (fileType: string) => void
+function FileUplaodCustom({image, setImage}: {image?: Image | undefined, setImage: (image: Image | undefined) => void}) {
+  const onFileAdd = async (
+    file: File
   ) => {
-    const formData = new FormData();
-    formData.append("file", files[0]);
-    try {
-      const response = await fetch(API_BASE_URL + "/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
+    setImage({file, name: file.name});
+  };
 
-      const fileUrl = data.fileName;
-      setImage(fileUrl);
-      setFileType(files[0].type);
-    } catch (error) {
-      console.error("Error uploading file:", error);
-    }
+  const onFileRemove = () => {
+    setImage(undefined);
   };
   return (
     <Upload
@@ -46,11 +35,9 @@ function FileUplaodCustom({setImage, setFileType}: {image: string, setImage: (im
       uploadLimit={1}
       showList
       beforeUpload={beforeUpload}
-      onChange={(files) => onFileUpload(files, setImage, setFileType)}
-      onFileRemove={() => {
-        setImage("");
-        setFileType("");
-      }}
+      onFileAdd={onFileAdd}
+      onFileRemove={onFileRemove}
+      fileList={image ? [image.file] : []}
     >
       <Avatar
         size={45}
