@@ -7,6 +7,7 @@ import { Customer } from '@/@types/customer'
 import { Producer } from '@/@types/producer'
 
 // TODO: Voir si à un moment on peut se passer des ids pour n'utiliser que les documentIds --> voir évolutions du plugin Users & permissions
+// VOir https://github.com/strapi/strapi/pull/22321 --> ajout de documentId dans le retour de l'appel à /me
 
 export async function getUser(token: string) : Promise<UserWithId>{
     const {data} : {data: Omit<User, 'authority'>} = await ApiService.fetchData<User>({
