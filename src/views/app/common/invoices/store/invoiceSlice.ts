@@ -33,7 +33,7 @@ export const getInvoices = createAsyncThunk(
   async (data: GetInvoices): Promise<GetInvoicesResponse> => {
     if (hasRole(data.user, [SUPER_ADMIN, ADMIN])) {
       const {invoices_connection} : {invoices_connection: GetInvoicesResponse} = await unwrapData(apiGetInvoices(data.request));
-    return invoices_connection;
+      return invoices_connection;
     } else if (hasRole(data.user, [CUSTOMER])) {
       const {invoices_connection} : {invoices_connection: GetInvoicesResponse}= await unwrapData(apiGetCustomerInvoices({...data.request, customerDocumentId: data.user.customer!.documentId}));
       return invoices_connection

@@ -31,8 +31,29 @@ export type ProjectDetailsState = {
   loading: boolean;
 };
 
+
+
+// TODO: Voir pour filtrer dès la requête par la visibilité --> implique d'ajouter un resolver côté backend
+// Ce qui donnerait côté frontend ce qui est en commentaire ci-dessous
+/*export type GetIProjectById = {
+  documentId: string;
+  user: User;
+}
+
 export const getProjectById = createAsyncThunk(
-  SLICE_NAME + '/getProject',
+  SLICE_NAME + '/getProjectById',
+  async (data: GetIProjectById): Promise<{project: Project}> => {
+    if (hasRole(data.user, [CUSTOMER])) {
+      return await unwrapData(apiGetProjectById(data.documentId, ['all', CUSTOMER]));
+    } else if (hasRole(data.user, [PRODUCER])) {
+      return await unwrapData(apiGetProjectById(data.documentId, ['all', PRODUCER]));
+    }
+    return await unwrapData(apiGetProjectById(data.documentId, ['all', SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER]));
+  }
+);*/
+
+export const getProjectById = createAsyncThunk(
+  SLICE_NAME + '/getProjectById',
   async (documentId: string): Promise<{project: Project}> => {
     return await unwrapData(apiGetProjectById(documentId));
   }
@@ -133,7 +154,6 @@ const initialState: ProjectDetailsState = {
   editDescription: false,
 };
 
-// TODO SUITE ici de renommage
 const projectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,

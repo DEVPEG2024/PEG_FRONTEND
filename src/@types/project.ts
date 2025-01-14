@@ -44,6 +44,5 @@ export type Comment = {
   user: User;
   createdAt: Date;
   images: Image[];
-  /*file: string;
-  fileType: string;*/
+  visibility: string;
 }
