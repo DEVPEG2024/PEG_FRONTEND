@@ -11,10 +11,18 @@ import { debounce } from 'lodash';
 import { HiPencil } from 'react-icons/hi';
 import { RichTextEditor } from '@/components/shared';
 import { User } from '@/@types/user';
-import { RootState, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
+import {
+  RootState,
+  useAppDispatch,
+  useAppSelector as useRootAppSelector,
+} from '@/store';
 import { hasRole } from '@/utils/permissions';
 import { SUPER_ADMIN } from '@/constants/roles.constant';
-import { useAppSelector, updateCurrentProject, setEditDescription } from '../store';
+import {
+  useAppSelector,
+  updateCurrentProject,
+  setEditDescription,
+} from '../store';
 const CircleCustomInfo = ({ percent }: { percent: number }) => {
   return (
     <div className="text-center">
@@ -25,8 +33,12 @@ const CircleCustomInfo = ({ percent }: { percent: number }) => {
 };
 
 const Summary = ({ project }: { project: Project }) => {
-  const {user}: {user: User} = useRootAppSelector((state: RootState) => state.auth.user);
-  const {loading, editDescription} = useAppSelector((state) => state.projectDetails.data);
+  const { user }: { user: User } = useRootAppSelector(
+    (state: RootState) => state.auth.user
+  );
+  const { loading, editDescription } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
   const dispatch = useAppDispatch();
   const [description, setDescription] = useState(project.description);
 
@@ -38,10 +50,10 @@ const Summary = ({ project }: { project: Project }) => {
 
   const onEditModeActive = () => {
     dispatch(setEditDescription(true));
-  }
-  
+  };
+
   const onEditComplete = () => {
-    dispatch(updateCurrentProject({...project, description}))
+    dispatch(updateCurrentProject({ ...project, description }));
   };
 
   const onEdit = (val: string) => {
@@ -79,7 +91,10 @@ const Summary = ({ project }: { project: Project }) => {
               <hr className="my-6" />
               {project.orderItem ? (
                 <div className="flex items-center justify-between mb-4">
-                  <OrderItemDetails orderItem={project.orderItem} customer={project.customer!} />
+                  <OrderItemDetails
+                    orderItem={project.orderItem}
+                    customer={project.customer!}
+                  />
                 </div>
               ) : (
                 <div className="text-base">

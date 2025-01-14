@@ -7,7 +7,11 @@ import { useTranslation } from 'react-i18next';
 import ModalEditCustomerCategory from './modals/ModalEditCustomerCategory';
 import ModalDeleteCustomerCategory from './modals/ModalDeleteCustomerCategory';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getCustomerCategories, setCustomerCategory, useAppSelector } from './store';
+import reducer, {
+  getCustomerCategories,
+  setCustomerCategory,
+  useAppSelector,
+} from './store';
 import { CustomerCategory } from '@/@types/customer';
 
 injectReducer('customerCategories', reducer);
@@ -21,9 +25,8 @@ const CustomerCategoriesList = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
   const [isOpenDelete, setIsOpenDelete] = useState<boolean>(false);
-  const { total, customerCategories, loading, customerCategory } = useAppSelector(
-    (state) => state.customerCategories.data
-  );
+  const { total, customerCategories, loading, customerCategory } =
+    useAppSelector((state) => state.customerCategories.data);
 
   useEffect(() => {
     fetchCustomerCategories();
@@ -51,7 +54,12 @@ const CustomerCategoriesList = () => {
   };
 
   const fetchCustomerCategories = async () => {
-    dispatch(getCustomerCategories({pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getCustomerCategories({
+        pagination: { page: currentPage, pageSize },
+        searchTerm,
+      })
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -111,11 +119,12 @@ const CustomerCategoriesList = () => {
       )}
       {isOpen && (
         <ModalEditCustomerCategory
-        mode="add"
-        title={t('cat.addCategory')}
-        isOpen={isOpen}
-        handleCloseModal={handleCloseModal}
-      />)}
+          mode="add"
+          title={t('cat.addCategory')}
+          isOpen={isOpen}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
       {customerCategory && isOpenDelete && (
         <ModalDeleteCustomerCategory
           title={t('cat.deleteCategory')}

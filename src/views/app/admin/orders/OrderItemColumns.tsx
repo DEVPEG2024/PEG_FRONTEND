@@ -13,12 +13,10 @@ export const useColumns = (
       header: 'Client',
       accessorKey: 'customer',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
           <div className="flex flex-col" key={row.original.documentId}>
-            <span className="font-bold">
-              {row.original.customer.name}
-            </span>
+            <span className="font-bold">{row.original.customer.name}</span>
           </div>
         );
       },
@@ -27,9 +25,12 @@ export const useColumns = (
       header: 'Produit',
       accessorKey: 'product',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
-          <div className="flex items-center gap-2" key={row.original.documentId}>
+          <div
+            className="flex items-center gap-2"
+            key={row.original.documentId}
+          >
             {row.original.product
               ? row.original.product.name
               : 'PRODUIT SUPPRIME'}
@@ -41,9 +42,12 @@ export const useColumns = (
       header: 'Tailles',
       accessorKey: 'sizeSelections',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
-          <div className="flex-col justify-center gap-2" key={row.original.documentId}>
+          <div
+            className="flex-col justify-center gap-2"
+            key={row.original.documentId}
+          >
             {row.original.sizeSelections.map((sizeSelection: SizeSelection) => (
               <p>
                 {sizeSelection.size.name} : {sizeSelection.quantity}
@@ -57,9 +61,14 @@ export const useColumns = (
       header: 'Montant',
       accessorKey: 'price',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
-          <div className="flex items-center gap-2" key={row.original.documentId}>{row.original.price} €</div>
+          <div
+            className="flex items-center gap-2"
+            key={row.original.documentId}
+          >
+            {row.original.price} €
+          </div>
         );
       },
     },
@@ -68,7 +77,7 @@ export const useColumns = (
       header: 'Demande',
       accessorKey: '',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
           <div className="flex items-center" key={row.original.documentId}>
             <Tooltip title="Consulter les détails">
@@ -88,11 +97,14 @@ export const useColumns = (
       header: 'Statut',
       accessorKey: 'state',
       enableSorting: false,
-      cell: ({ row }: { row: {original: OrderItem} }) => {
+      cell: ({ row }: { row: { original: OrderItem } }) => {
         const state =
           row.original.state === 'pending' ? 'En attente' : 'Terminée';
         return (
-          <div className="flex justify-end items-center gap-2" key={row.original.documentId}>
+          <div
+            className="flex justify-end items-center gap-2"
+            key={row.original.documentId}
+          >
             <Tag
               className={
                 row.original.state === 'pending'

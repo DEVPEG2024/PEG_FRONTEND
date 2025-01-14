@@ -113,7 +113,8 @@ const UserFields = (props: UserFields) => {
             )}
           </Field>
         </FormItem>
-        {props.values.role === roles.find(({label}) => label === 'customer')?.value && (
+        {props.values.role ===
+          roles.find(({ label }) => label === 'customer')?.value && (
           <FormItem label="Client" className="w-1/2">
             <Field name="customer">
               {({ field, form }: FieldProps) => (
@@ -132,7 +133,8 @@ const UserFields = (props: UserFields) => {
             </Field>
           </FormItem>
         )}
-        {props.values.role === roles.find(({label}) => label === 'producer')?.value && (
+        {props.values.role ===
+          roles.find(({ label }) => label === 'producer')?.value && (
           <FormItem label="Producteur" className="w-1/2">
             <Field name="producer">
               {({ field, form }: FieldProps) => (

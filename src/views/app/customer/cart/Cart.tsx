@@ -12,7 +12,10 @@ import { HiPencil, HiTrash } from 'react-icons/hi';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderItemServices';
+import {
+  apiCreateOrderItem,
+  PaymentInformations,
+} from '@/services/OrderItemServices';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { apiCreateProject, apiUpdateProject } from '@/services/ProjectServices';
 import { FormAnswer } from '@/@types/formAnswer';
@@ -28,10 +31,10 @@ import createUID from '@/components/ui/utils/createUid';
 type OrderItemAndProject = {
   orderItem?: OrderItem;
   project?: Project;
-}
+};
 
 function Cart() {
-  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -45,14 +48,18 @@ function Cart() {
     item: CartItem
   ): Promise<FormAnswer | null> => {
     if (item.product.form) {
-      const {createFormAnswer} : {createFormAnswer: FormAnswer}= await unwrapData(apiCreateFormAnswer(item.formAnswer));
-      
-      return createFormAnswer
+      const { createFormAnswer }: { createFormAnswer: FormAnswer } =
+        await unwrapData(apiCreateFormAnswer(item.formAnswer));
+
+      return createFormAnswer;
     }
     return null;
   };
 
-  const createOrderItemAndProject = async (item: CartItem, paymentInformations: PaymentInformations) : Promise<OrderItemAndProject> => {
+  const createOrderItemAndProject = async (
+    item: CartItem,
+    paymentInformations: PaymentInformations
+  ): Promise<OrderItemAndProject> => {
     try {
       const formAnswer: FormAnswer | null = await createFormAnswer(item),
         orderItem: Omit<OrderItem, 'documentId'> = {
@@ -64,19 +71,22 @@ function Cart() {
             0
           ),
           state: 'pending',
-          customer: user.customer!
+          customer: user.customer!,
         };
-      const {createOrderItem} : {createOrderItem: OrderItem}= await unwrapData(apiCreateOrderItem(orderItem));
+      const { createOrderItem }: { createOrderItem: OrderItem } =
+        await unwrapData(apiCreateOrderItem(orderItem));
       // TODO : envoyer mail création commande OK
       try {
         const project: Omit<Project, 'documentId'> = {
-          name: 'Commande ' +
+          name:
+            'Commande ' +
             item.product.name +
             ' pour ' +
             user.firstName +
             ' ' +
             user.lastName,
-          description: 'Commande ' +
+          description:
+            'Commande ' +
             item.product.name +
             ' pour ' +
             user.firstName +
@@ -97,25 +107,41 @@ function Cart() {
           invoices: [],
           images: [],
           poolable: false,
-        }
-        const {createProject} : {createProject: Project} = await unwrapData(apiCreateProject(project));
-        return {orderItem: createOrderItem, project: createProject}
+        };
+        const { createProject }: { createProject: Project } = await unwrapData(
+          apiCreateProject(project)
+        );
+        return { orderItem: createOrderItem, project: createProject };
       } catch (error) {
         // TODO: envoyer mail erreur création projet
       }
-      return {orderItem: createOrderItem};
+      return { orderItem: createOrderItem };
     } catch (error) {
       // TODO: envoyer mail erreur création commande
     }
-    return {}
+    return {};
   };
 
   const createOrder = async (paymentInformations: PaymentInformations) => {
     try {
-      const promises = await Promise.allSettled(cart.map((item) => createOrderItemAndProject(item, paymentInformations))),
-        orderItemsAndProjects: OrderItemAndProject[] = promises.filter((result) => result.status === 'fulfilled').map((result) => (result as PromiseFulfilledResult<OrderItemAndProject>).value),
-        orderItems: OrderItem[] = orderItemsAndProjects.filter(({orderItem}) => orderItem).map(({orderItem}) => orderItem as OrderItem),
-        orderItemsAmount = orderItems.reduce((tempAmount, orderItem) => tempAmount + orderItem.price, 0)
+      const promises = await Promise.allSettled(
+          cart.map((item) =>
+            createOrderItemAndProject(item, paymentInformations)
+          )
+        ),
+        orderItemsAndProjects: OrderItemAndProject[] = promises
+          .filter((result) => result.status === 'fulfilled')
+          .map(
+            (result) =>
+              (result as PromiseFulfilledResult<OrderItemAndProject>).value
+          ),
+        orderItems: OrderItem[] = orderItemsAndProjects
+          .filter(({ orderItem }) => orderItem)
+          .map(({ orderItem }) => orderItem as OrderItem),
+        orderItemsAmount = orderItems.reduce(
+          (tempAmount, orderItem) => tempAmount + orderItem.price,
+          0
+        );
 
       const invoice: Omit<Invoice, 'documentId'> = {
         customer: user.customer!,
@@ -132,10 +158,16 @@ function Cart() {
         paymentReference: '',
         paymentState: paymentInformations.paymentState ?? 'pending',
         paymentDate: paymentInformations.paymentDate ?? new Date(0),
-      }
+      };
       // TODO: Déplacer cette création côté backend dans une route personnalisée et retirer la permission de création de facture par le client (plugin user Strapi)
-      const {createInvoice} : {createInvoice: Invoice}= await unwrapData(apiCreateInvoice(invoice));
-      Promise.allSettled(orderItemsAndProjects.filter(({project}) => project).map(({project}) => addInvoiceToProject(project!, createInvoice)))
+      const { createInvoice }: { createInvoice: Invoice } = await unwrapData(
+        apiCreateInvoice(invoice)
+      );
+      Promise.allSettled(
+        orderItemsAndProjects
+          .filter(({ project }) => project)
+          .map(({ project }) => addInvoiceToProject(project!, createInvoice))
+      );
       return { status: 'success' };
     } catch (errors: any) {
       return {
@@ -146,10 +178,15 @@ function Cart() {
   };
 
   const addInvoiceToProject = (project: Project, invoice: Invoice) => {
-    apiUpdateProject({documentId: project.documentId, invoices: [...project.invoices, invoice]})
-  }
+    apiUpdateProject({
+      documentId: project.documentId,
+      invoices: [...project.invoices, invoice],
+    });
+  };
 
-  const createOrderAndClearCart = async (paymentInformations: PaymentInformations) : Promise<void> => {
+  const createOrderAndClearCart = async (
+    paymentInformations: PaymentInformations
+  ): Promise<void> => {
     const respOrderCreation = await createOrder(paymentInformations);
     if (respOrderCreation.status === 'success') {
       dispatch(clearCart());
@@ -195,7 +232,9 @@ function Cart() {
                       <div className="flex-col justify-center gap-2">
                         {item.sizes.map((size) => (
                           <p key={size.size.value}>
-                            {size.size.value === 'DEFAULT' ? 'Quantité' : size.size.name}{' '}
+                            {size.size.value === 'DEFAULT'
+                              ? 'Quantité'
+                              : size.size.name}{' '}
                             : {size.quantity}
                           </p>
                         ))}
@@ -227,7 +266,10 @@ function Cart() {
               </div>
             </AdaptableCard>
           </div>
-          <PaymentContent cart={cart} createOrderAndClearCart={createOrderAndClearCart} />
+          <PaymentContent
+            cart={cart}
+            createOrderAndClearCart={createOrderAndClearCart}
+          />
         </div>
       </Loading>
     </Container>

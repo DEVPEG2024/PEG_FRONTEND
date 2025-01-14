@@ -3,7 +3,7 @@ import { FormItem } from '@/components/ui/Form';
 import type { PropsWithChildren } from 'react';
 import type { FormikTouched, FormikErrors } from 'formik';
 
-type FormRow<T> = PropsWithChildren<{
+type FormRowProps<T> = PropsWithChildren<{
   label: string;
   errors: FormikErrors<T>;
   touched: FormikTouched<T>;
@@ -12,7 +12,7 @@ type FormRow<T> = PropsWithChildren<{
   alignCenter?: boolean;
 }>;
 
-const FormRow = <T extends Record<string, unknown>>(props: FormRow<T>) => {
+const FormRow = <T extends Record<string, unknown>>(props: FormRowProps<T>) => {
   const {
     label,
     children,

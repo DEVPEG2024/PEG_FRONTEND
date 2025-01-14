@@ -4,7 +4,6 @@ import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { t } from 'i18next';
 import { Select } from '@/components/ui';
-import { Producer } from '@/@types/producer';
 import { ProducerFormModel } from './ProducerForm';
 type country = {
   label: string;
@@ -19,9 +18,9 @@ type ProducerFields = {
   values: ProducerFormModel;
   setFieldValue: (
     field: string,
-    value: any,
+    value: string,
     shouldValidate?: boolean
-  ) => void,
+  ) => void;
 };
 
 const ProducerFields = (props: ProducerFields) => {

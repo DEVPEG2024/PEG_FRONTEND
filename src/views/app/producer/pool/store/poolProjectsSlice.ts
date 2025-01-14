@@ -3,7 +3,6 @@ import { Project } from '@/@types/project';
 import {
   GetPoolProjectsResponse,
   apiGetPoolProjects,
-  apiUpdateProject,
 } from '@/services/ProjectServices';
 import { PaginationRequest, unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
@@ -18,24 +17,20 @@ export type PoolProjectsState = {
 };
 
 export type GetPoolProjectsRequest = {
-    user: User;
-    pagination: PaginationRequest;
-    searchTerm: string;
-  };
+  user: User;
+  pagination: PaginationRequest;
+  searchTerm: string;
+};
 
 export const getPoolProjects = createAsyncThunk(
   SLICE_NAME + '/getPoolProjects',
   async (data: GetPoolProjectsRequest): Promise<GetPoolProjectsResponse> => {
-    const {projects_connection} : {projects_connection: GetPoolProjectsResponse}= await unwrapData(apiGetPoolProjects(data));
-    return projects_connection
-  }
-);
-
-export const updatePoolProject = createAsyncThunk(
-  SLICE_NAME + '/updatePoolProject',
-  async (data: Partial<Project>): Promise<Project> => {
-    const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject(data));
-    return updateProject;
+    const {
+      projects_connection,
+    }: { projects_connection: GetPoolProjectsResponse } = await unwrapData(
+      apiGetPoolProjects(data)
+    );
+    return projects_connection;
   }
 );
 
@@ -61,8 +56,5 @@ const poolProjectListSlice = createSlice({
     });
   },
 });
-
-export const {
-} = poolProjectListSlice.actions;
 
 export default poolProjectListSlice.reducer;

@@ -9,7 +9,10 @@ import {
 import { Form } from '@/@types/form';
 
 import ShowForm from './ShowForm';
-import { CartItemFormAnswerEdition, editFormAnswerCartItem } from '@/store/slices/base/cartSlice';
+import {
+  CartItemFormAnswerEdition,
+  editFormAnswerCartItem,
+} from '@/store/slices/base/cartSlice';
 import { FormAnswer } from '@/@types/formAnswer';
 
 function ModalCompleteForm({
@@ -30,16 +33,18 @@ function ModalCompleteForm({
   };
 
   const onSubmit = async (submission: any) => {
-    const formAnswer: Partial<FormAnswer> = {form, answer: submission}
+    const formAnswer: Partial<FormAnswer> = { form, answer: submission };
     if (onEdition) {
       handleEditFormAnswerCartItem(formAnswer);
     }
     dispatch(setFormAnswer(formAnswer));
-    dispatch(setFormCompleted(true))
-    handleClose()
-  }
+    dispatch(setFormCompleted(true));
+    handleClose();
+  };
 
-  const handleEditFormAnswerCartItem = (formAnswer: Partial<FormAnswer>): void => {
+  const handleEditFormAnswerCartItem = (
+    formAnswer: Partial<FormAnswer>
+  ): void => {
     dispatch(
       editFormAnswerCartItem({
         cartItemId,
@@ -55,8 +60,18 @@ function ModalCompleteForm({
 
   return (
     <div>
-      <Dialog isOpen={formDialog} onClose={handleClose} width={1200} contentClassName='dialog-formbuilder'>
-        <ShowForm onSubmit={onSubmit} fields={form.fields} formAnswer={formAnswer} readOnly={false}/>
+      <Dialog
+        isOpen={formDialog}
+        onClose={handleClose}
+        width={1200}
+        contentClassName="dialog-formbuilder"
+      >
+        <ShowForm
+          onSubmit={onSubmit}
+          fields={form.fields}
+          formAnswer={formAnswer}
+          readOnly={false}
+        />
       </Dialog>
     </div>
   );

@@ -15,11 +15,9 @@ export const InvoicesListColumns = (
       header: 'Référence',
       accessorKey: 'name',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => {
+      cell: ({ row }: { row: { original: Invoice } }) => {
         return (
-          <div className="flex items-center gap-2">
-            {row.original.name}
-          </div>
+          <div className="flex items-center gap-2">{row.original.name}</div>
         );
       },
     },
@@ -27,36 +25,37 @@ export const InvoicesListColumns = (
       header: 'Client',
       accessorKey: 'customerName',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => (
+      cell: ({ row }: { row: { original: Invoice } }) => (
         <div className="flex items-center gap-2">
           <HiUserCircle size={40} />
           <div className="flex flex-col">
             <span className="font-bold">
               {row.original.customer?.name ?? ''}
             </span>
-            </div>
+          </div>
         </div>
       ),
     },
-    
+
     {
       header: 'Statut',
       accessorKey: 'state',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => (
+      cell: ({ row }: { row: { original: Invoice } }) => (
         <div className="flex items-center gap-2">
           <span className="font-bold">
-            {stateData.find(({value}) => value === row.original.state)?.label ?? 'Statut non déterminé'}
+            {stateData.find(({ value }) => value === row.original.state)
+              ?.label ?? 'Statut non déterminé'}
           </span>
         </div>
       ),
     },
 
     {
-      header: 'Date d\'émission',
+      header: "Date d'émission",
       accessorKey: 'date',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => {
+      cell: ({ row }: { row: { original: Invoice } }) => {
         return (
           <div className="flex items-center gap-2">
             {dayjs(row.original.date).format('DD/MM/YYYY')}
@@ -68,7 +67,7 @@ export const InvoicesListColumns = (
       header: 'Total',
       accessorKey: 'totalAmount',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => {
+      cell: ({ row }: { row: { original: Invoice } }) => {
         return (
           <Tag>
             <p className="text-sm">{row.original.totalAmount.toFixed(2)} €</p>
@@ -80,7 +79,7 @@ export const InvoicesListColumns = (
       header: '',
       accessorKey: 'paymentState',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Invoice} }) => {
+      cell: ({ row }: { row: { original: Invoice } }) => {
         const paymentState =
           row.original.paymentState === 'fulfilled' ? 'Payé' : 'Non payé';
         return (

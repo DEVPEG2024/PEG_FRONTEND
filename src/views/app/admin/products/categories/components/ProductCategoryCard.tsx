@@ -13,11 +13,14 @@ const ProductCategoryCard = ({
   const navigate = useNavigate();
 
   return (
-    <Card
-      bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center"
-    >
+    <Card bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center">
       <div className="flex flex-col justify-center items-center">
-        <a className="cursor-pointer" onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}>
+        <a
+          className="cursor-pointer"
+          onClick={() =>
+            navigate(`/admin/products/categories/${productCategory.documentId}`)
+          }
+        >
           <h6 className="flex flex-col justify-center flex-grow items-center gap-2">
             <img
               src={productCategory.image?.url}
@@ -40,7 +43,10 @@ const ProductCategoryCard = ({
         </div>
       </div>
       <div className="flex justify-center mt-4">
-        <Button variant="twoTone" onClick={() => handleDeleteProductCategory(productCategory)}>
+        <Button
+          variant="twoTone"
+          onClick={() => handleDeleteProductCategory(productCategory)}
+        >
           Supprimer
         </Button>
       </div>

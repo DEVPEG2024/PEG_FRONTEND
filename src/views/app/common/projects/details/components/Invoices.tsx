@@ -1,7 +1,7 @@
 import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
-import { HiBan, HiPencil, HiPrinter, HiTrash } from 'react-icons/hi';
+import { HiBan, HiPencil, HiPrinter } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
@@ -24,12 +24,25 @@ import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvo
 import { stateData } from '@/views/app/common/invoices/constants';
 
 const Invoices = () => {
-  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
+  const { user }: { user: User } = useAppSelector(
+    (state: RootState) => state.auth.user
+  );
   const dispatch = useAppDispatch();
-  const { invoices, editProjectInvoiceDialog: editInvoiceDialog, selectedProjectInvoice: selectedInvoice, printProjectInvoiceDialog: printInvoiceDialog, loading } = useAppSelector((state) => state.projectDetails.data);
+  const {
+    invoices,
+    editProjectInvoiceDialog: editInvoiceDialog,
+    selectedProjectInvoice: selectedInvoice,
+    printProjectInvoiceDialog: printInvoiceDialog,
+    loading,
+  } = useAppSelector((state) => state.projectDetails.data);
 
   const handleCancelInvoice = (invoice: Invoice) => {
-    dispatch(updateProjectInvoice({documentId: invoice.documentId, state: 'canceled'}));
+    dispatch(
+      updateProjectInvoice({
+        documentId: invoice.documentId,
+        state: 'canceled',
+      })
+    );
   };
 
   const handleUpdateInvoice = (invoice: Invoice) => {
@@ -54,7 +67,11 @@ const Invoices = () => {
               {invoices.length > 0 ? (
                 invoices.map((invoice: Invoice, index: number) => {
                   return (
-                    <Card key={invoice.documentId} bordered className=" bg-gray-900">
+                    <Card
+                      key={invoice.documentId}
+                      bordered
+                      className=" bg-gray-900"
+                    >
                       <div className="grid grid-cols-12 justify-between">
                         <div className="col-span-6 ">
                           <div className="flex justify-between w-full">
@@ -68,7 +85,9 @@ const Invoices = () => {
                             </div>
                             <div className="gap-2 hidden md:block">
                               <span className="text-sm text-gray-500">
-                                {stateData.find(({value}) => value === invoice.state)?.label ?? 'Statut indéterminé'}
+                                {stateData.find(
+                                  ({ value }) => value === invoice.state
+                                )?.label ?? 'Statut indéterminé'}
                               </span>
                             </div>
                             <div className="gap-2 hidden md:block">
@@ -106,14 +125,14 @@ const Invoices = () => {
                             </Button>
                           )}
                           {hasRole(user, [SUPER_ADMIN]) && (
-                          <Button
-                            variant="twoTone"
-                            size="xs"
-                            onClick={() => handleCancelInvoice(invoice)}
-                            disabled={invoice?.state === 'canceled'}
-                          >
-                            <HiBan size={15} />
-                          </Button>
+                            <Button
+                              variant="twoTone"
+                              size="xs"
+                              onClick={() => handleCancelInvoice(invoice)}
+                              disabled={invoice?.state === 'canceled'}
+                            >
+                              <HiBan size={15} />
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -132,7 +151,7 @@ const Invoices = () => {
         </div>
         <DetailsRight />
       </div>
-      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN]) &&
+      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN]) && (
         <ModalEditInvoice
           editInvoiceDialog={editInvoiceDialog}
           selectedInvoice={selectedInvoice}
@@ -140,16 +159,18 @@ const Invoices = () => {
           setSelectedInvoice={setSelectedProjectInvoice}
           updateInvoice={updateProjectInvoice}
           dispatch={dispatch}
-          loading={loading} />
-      }
-      {selectedInvoice && printInvoiceDialog &&
-        <ModalPrintInvoice 
+          loading={loading}
+        />
+      )}
+      {selectedInvoice && printInvoiceDialog && (
+        <ModalPrintInvoice
           printInvoiceDialog={printInvoiceDialog}
           selectedInvoice={selectedInvoice}
           setPrintInvoiceDialog={setPrintProjectInvoiceDialog}
           setSelectedInvoice={setSelectedProjectInvoice}
-          dispatch={dispatch}/>
-      }
+          dispatch={dispatch}
+        />
+      )}
     </Container>
   );
 };

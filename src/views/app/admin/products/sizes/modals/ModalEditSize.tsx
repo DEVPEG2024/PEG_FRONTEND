@@ -10,7 +10,10 @@ import {
 import { unwrapData } from '@/utils/serviceHelper';
 import { SizeFormModel } from './ModalNewSize';
 import { ProductCategory, Size } from '@/@types/product';
-import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import {
+  apiGetProductCategories,
+  GetProductCategoriesResponse,
+} from '@/services/ProductCategoryServices';
 
 type Option = {
   value: string;
@@ -36,7 +39,10 @@ function ModalEditSize() {
   }, []);
 
   const fetchProductCategories = async () => {
-    const {productCategories_connection} : {productCategories_connection: GetProductCategoriesResponse}= await unwrapData(apiGetProductCategories());
+    const {
+      productCategories_connection,
+    }: { productCategories_connection: GetProductCategoriesResponse } =
+      await unwrapData(apiGetProductCategories());
     const productCategoriesList = productCategories_connection.nodes || [];
     const productCategories = productCategoriesList.map(
       (productCategory: ProductCategory) => ({
@@ -51,8 +57,9 @@ function ModalEditSize() {
     e.preventDefault();
     const sizeToUpdate: Size = {
       ...formData,
-      productCategory: formData.productCategory !== '' ? formData.productCategory : null,
-    }
+      productCategory:
+        formData.productCategory !== '' ? formData.productCategory : null,
+    };
     dispatch(updateSize(sizeToUpdate));
     setFormData({
       name: '',
@@ -62,7 +69,7 @@ function ModalEditSize() {
     });
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setEditSizeDialog(false));
     dispatch(setSelectedSize(null));
@@ -72,7 +79,7 @@ function ModalEditSize() {
     <div>
       <Dialog isOpen={editSizeDialog} onClose={handleClose} width={1200}>
         <div className="flex flex-col justify-between gap-2">
-        <div className="flex flex-row w-3/4">
+          <div className="flex flex-row w-3/4">
             <Input
               value={formData.name}
               placeholder="Nom"

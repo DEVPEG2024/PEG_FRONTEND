@@ -15,34 +15,46 @@ import { Image } from '@/@types/image';
 import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { useNavigate } from 'react-router-dom';
 
-type UserFormModel = Omit<User, 'role' | 'customer' | 'producer' | 'authority' | 'id' | 'documentId' | 'blocked' | 'avatar'>;
+type UserFormModel = Omit<
+  User,
+  | 'role'
+  | 'customer'
+  | 'producer'
+  | 'authority'
+  | 'id'
+  | 'documentId'
+  | 'blocked'
+  | 'avatar'
+>;
 
 const validationSchema = Yup.object().shape({
-  username: Yup.string().required('Nom d\'utilisateur Requis'),
+  username: Yup.string().required("Nom d'utilisateur Requis"),
   firstName: Yup.string().required('Nom Requis'),
   lastName: Yup.string().required('Prénom Requis'),
-  email: Yup.string().email('Email invalide').required('Email Requis')
+  email: Yup.string().email('Email invalide').required('Email Requis'),
 });
 
 const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const {user} : {user: User} = useAppSelector((state) => state.auth.user);
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const [avatar, setAvatar] = useState<Image | undefined>(undefined);
   const initialData: UserFormModel = {
     username: user.username || '',
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     email: user.email || '',
-  }
-  
+  };
+
   useEffect(() => {
     fetchAvatar();
   }, []);
 
   const fetchAvatar = async (): Promise<void> => {
-    if (user?.avatar){
-      const imageLoaded: Image = (await apiLoadImagesAndFiles([user.avatar]))[0]
+    if (user?.avatar) {
+      const imageLoaded: Image = (
+        await apiLoadImagesAndFiles([user.avatar])
+      )[0];
 
       setAvatar(imageLoaded);
     }
@@ -52,30 +64,28 @@ const Profile = () => {
     values: UserFormModel,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
-    let newAvatar = undefined
+    let newAvatar = undefined;
 
     if (avatar) {
       if (avatar.id) {
-        newAvatar = avatar
+        newAvatar = avatar;
       } else {
-        const avatarUploaded: Image = await apiUploadFile(avatar.file)
-        newAvatar = avatarUploaded
+        const avatarUploaded: Image = await apiUploadFile(avatar.file);
+        newAvatar = avatarUploaded;
       }
     }
     const data: User = {
       ...values,
-      avatar: newAvatar ? newAvatar.id : undefined
+      avatar: newAvatar ? newAvatar.id : undefined,
     };
 
-    dispatch(updateOwnUser({user: data, id: user.id}));
+    dispatch(updateOwnUser({ user: data, id: user.id }));
     setSubmitting(false);
     navigate('/settings/profile');
   };
 
-  const onFileAdd = async (
-    file: File
-  ) => {
-    setAvatar({file, name: file.name});
+  const onFileAdd = async (file: File) => {
+    setAvatar({ file, name: file.name });
   };
 
   const beforeUpload = (files: FileList | null) => {
@@ -112,7 +122,7 @@ const Profile = () => {
     <>
       <Formik
         initialValues={{
-          ...initialData
+          ...initialData,
         }}
         validationSchema={validationSchema}
         onSubmit={(values, { setSubmitting }) => {
@@ -138,12 +148,8 @@ const Profile = () => {
                     showList={true}
                     uploadLimit={1}
                     beforeUpload={beforeUpload}
-                    onFileAdd={(file) =>
-                      onFileAdd(file)
-                    }
-                    onFileRemove={() =>
-                      setAvatar(undefined)
-                    }
+                    onFileAdd={(file) => onFileAdd(file)}
+                    onFileRemove={() => setAvatar(undefined)}
                     fileList={avatar ? [avatar?.file] : []}
                   >
                     <Avatar
@@ -155,7 +161,11 @@ const Profile = () => {
                     />
                   </Upload>
                 </div>
-                <FormRow name="username" label="Nom d'utilisateur" {...validatorProps}>
+                <FormRow
+                  name="username"
+                  label="Nom d'utilisateur"
+                  {...validatorProps}
+                >
                   <Field
                     type="text"
                     autoComplete="off"

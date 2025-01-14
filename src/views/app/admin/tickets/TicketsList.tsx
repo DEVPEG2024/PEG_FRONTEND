@@ -24,14 +24,17 @@ const TicketsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { tickets, total, loading, newTicketDialog, editTicketDialog } = useAppSelector((state) => state.tickets.data);
+  const { tickets, total, loading, newTicketDialog, editTicketDialog } =
+    useAppSelector((state) => state.tickets.data);
 
   useEffect(() => {
-    fetchTickets()
+    fetchTickets();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchTickets = async () => {
-    dispatch(getTickets({pagination: {page: currentPage, pageSize}, searchTerm}))
+    dispatch(
+      getTickets({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -52,10 +55,7 @@ const TicketsList = () => {
     dispatch(setNewTicketDialog(true));
   };
 
-  const columns = useColumns(
-    handleEditTicket,
-    handleDeleteTicket
-  );
+  const columns = useColumns(handleEditTicket, handleDeleteTicket);
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
   };

@@ -1,6 +1,3 @@
-
-
-
 export const priorityColorData = {
   low: 'bg-green-500',
   medium: 'bg-yellow-500',

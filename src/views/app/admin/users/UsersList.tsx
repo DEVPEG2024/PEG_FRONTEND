@@ -6,7 +6,13 @@ import { Input } from '@/components/ui';
 import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { deleteUser, getUsers, getUsersIdTable, updateUser, useAppSelector } from './store';
+import reducer, {
+  deleteUser,
+  getUsers,
+  getUsersIdTable,
+  updateUser,
+  useAppSelector,
+} from './store';
 
 injectReducer('users', reducer);
 
@@ -16,15 +22,19 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { users, total, loading, usersId } = useAppSelector((state) => state.users.data);
+  const { users, total, loading, usersId } = useAppSelector(
+    (state) => state.users.data
+  );
 
   useEffect(() => {
     fetchUsers();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchUsers = async () => {
-    dispatch(getUsers({pagination: {page: currentPage, pageSize}, searchTerm}))
-    dispatch(getUsersIdTable())
+    dispatch(
+      getUsers({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
+    dispatch(getUsersIdTable());
   };
 
   const handleSearch = (value: string) => {
@@ -37,14 +47,19 @@ const UsersList = () => {
   };
 
   const handleBlockUser = async (user: User, id: number) => {
-    dispatch(updateUser({user: {blocked: !user.blocked}, id}))
+    dispatch(updateUser({ user: { blocked: !user.blocked }, id }));
   };
-  
+
   const handleDeleteUser = (id: number) => {
     dispatch(deleteUser(id));
   };
 
-  const columns = useColumns(handleEditUser, handleBlockUser, handleDeleteUser, usersId);
+  const columns = useColumns(
+    handleEditUser,
+    handleBlockUser,
+    handleDeleteUser,
+    usersId
+  );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -66,7 +81,7 @@ const UsersList = () => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={"Rechercher un utilisateur"}
+            placeholder={'Rechercher un utilisateur'}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -85,7 +100,6 @@ const UsersList = () => {
             }}
           />
         </Loading>
-        
       </div>
     </Container>
   );

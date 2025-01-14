@@ -19,10 +19,10 @@ function ModalDeleteProducerCategory({
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    dispatch(deleteProducerCategory(producerCategory!.documentId))
+    dispatch(deleteProducerCategory(producerCategory!.documentId));
     handleCloseModal();
   };
-  
+
   return (
     <Dialog
       isOpen={isOpen}

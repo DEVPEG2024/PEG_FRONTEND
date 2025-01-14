@@ -1,10 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
-import {
-  HiPencil,
-  HiTrash,
-  HiUserCircle,
-} from 'react-icons/hi';
+import { HiPencil, HiTrash, HiUserCircle } from 'react-icons/hi';
 import { Customer, CustomerCategory } from '@/@types/customer';
 import { useAppDispatch } from '@/store';
 import { deleteCustomer } from '../store';
@@ -16,14 +12,14 @@ export const useColumns = (
   const dispatch = useAppDispatch();
 
   const handleDeleteCustomer = async (customer: Customer) => {
-    dispatch(deleteCustomer(customer.documentId))
+    dispatch(deleteCustomer(customer.documentId));
   };
   return [
     {
       header: t('title'),
       accessorKey: 'title',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Customer} }) => (
+      cell: ({ row }: { row: { original: Customer } }) => (
         <div className="flex items-center gap-2">
           <HiUserCircle size={40} />
           <div className="flex flex-col">
@@ -53,7 +49,7 @@ export const useColumns = (
       header: t('category'),
       accessorKey: 'category',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Customer} }) => {
+      cell: ({ row }: { row: { original: Customer } }) => {
         const category: CustomerCategory = row.original.customerCategory;
         return <div className="flex items-center gap-2">{category?.name}</div>;
       },
@@ -62,7 +58,7 @@ export const useColumns = (
       header: t('status'),
       accessorKey: 'status',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Customer} }) => (
+      cell: ({ row }: { row: { original: Customer } }) => (
         <div className="flex justify-end items-center gap-2">
           <Button onClick={() => handleEditCustomer(row.original)} size="sm">
             <HiPencil size={20} />

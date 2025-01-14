@@ -116,7 +116,9 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                 {emailSent ? 'Renvoyer le code' : 'Envoyer le code'}
               </Button>
               <div className="mt-4 text-center">
-                <ActionLink to={signInUrl}>Retour à la page de connexion</ActionLink>
+                <ActionLink to={signInUrl}>
+                  Retour à la page de connexion
+                </ActionLink>
               </div>
             </FormContainer>
           </Form>

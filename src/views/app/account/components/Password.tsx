@@ -8,7 +8,6 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { updateUserPassword, useAppDispatch, useAppSelector } from '@/store';
 import { User } from '@/@types/user';
-import { useNavigate } from 'react-router-dom';
 
 type UserPasswordFormModel = {
   newPassword: string;
@@ -16,30 +15,36 @@ type UserPasswordFormModel = {
 };
 
 const validationSchema = Yup.object().shape({
-  newPassword: Yup.string().required('Nouveau mot de passe requis').min(5, 'Mot de passe trop court'),
-  confirmNewPassword: Yup.string().required('Confirmation requise').oneOf([Yup.ref('newPassword')], 'Les mots de passe ne correspondent pas'),
+  newPassword: Yup.string()
+    .required('Nouveau mot de passe requis')
+    .min(5, 'Mot de passe trop court'),
+  confirmNewPassword: Yup.string()
+    .required('Confirmation requise')
+    .oneOf([Yup.ref('newPassword')], 'Les mots de passe ne correspondent pas'),
 });
 
-const Password = ({onTabChange}: {onTabChange: (val: string) => void}) => {
+const Password = ({ onTabChange }: { onTabChange: (val: string) => void }) => {
   const dispatch = useAppDispatch();
-  const {user} : {user: User} = useAppSelector((state) => state.auth.user);
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const initialData: UserPasswordFormModel = {
     newPassword: '',
     confirmNewPassword: '',
-  }
+  };
 
   const onFormSubmit = async (
     values: UserPasswordFormModel,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
-    dispatch(updateUserPassword({newPassword: values.newPassword, id: user.id}));
+    dispatch(
+      updateUserPassword({ newPassword: values.newPassword, id: user.id })
+    );
     setSubmitting(false);
     onTabChange('profile');
   };
 
   return (
     <Formik
-      initialValues={{...initialData}}
+      initialValues={{ ...initialData }}
       validationSchema={validationSchema}
       onSubmit={(values, { setSubmitting }) => {
         setSubmitting(true);

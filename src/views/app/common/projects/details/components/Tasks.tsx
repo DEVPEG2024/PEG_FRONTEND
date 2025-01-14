@@ -10,7 +10,9 @@ import { useAppSelector } from '../store';
 import TaskCard from './TaskCard';
 
 const Tasks = () => {
-  const {tasks, selectedTask, loading} = useAppSelector((state) => state.projectDetails.data);
+  const { tasks, selectedTask, loading } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
 
   return (
     <Container className="h-full">
@@ -24,7 +26,12 @@ const Tasks = () => {
               <div className="flex flex-col gap-2">
                 {tasks.length > 0 ? (
                   tasks.map((task: Task, index: number) => (
-                    <TaskCard key={task.documentId} task={task} index={index} loading={loading}/>
+                    <TaskCard
+                      key={task.documentId}
+                      task={task}
+                      index={index}
+                      loading={loading}
+                    />
                   ))
                 ) : (
                   <div className="flex flex-col gap-2 justify-center items-center">
@@ -39,7 +46,7 @@ const Tasks = () => {
         </div>
         <DetailsRight />
       </div>
-      {selectedTask && (<ModalEditTask />)}
+      {selectedTask && <ModalEditTask />}
     </Container>
   );
 };

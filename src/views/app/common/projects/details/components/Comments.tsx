@@ -10,8 +10,17 @@ import { HiUserCircle } from 'react-icons/hi';
 import type { TimeLineItemProps } from '@/components/ui/Timeline';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
-import { RootState, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
-import { createComment, deleteComment, setLoading, useAppSelector } from '../store';
+import {
+  RootState,
+  useAppDispatch,
+  useAppSelector as useRootAppSelector,
+} from '@/store';
+import {
+  createComment,
+  deleteComment,
+  setLoading,
+  useAppSelector,
+} from '../store';
 import dayjs from 'dayjs';
 import { User } from '@/@types/user';
 import { Image } from '@/@types/image';
@@ -26,56 +35,62 @@ type TimelineCommentProps = TimeLineItemProps & {
   user: User;
 };
 
-// TODO SUITE: Continuer et vérifier si ok en testant
 const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
   const [visibility, setVisibility] = useState<string>('all');
-  const [images, setImages] = useState<Image[]>([])
+  const [images, setImages] = useState<Image[]>([]);
   const dispatch = useAppDispatch();
-  const {user}: {user: User} = useRootAppSelector((state: RootState) => state.auth.user);
-  const {project, comments, loading} = useAppSelector((state) => state.projectDetails.data);
+  const { user }: { user: User } = useRootAppSelector(
+    (state: RootState) => state.auth.user
+  );
+  const { project, comments, loading } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
 
   const submitComment = async () => {
     if (commentText.trim()) {
-      const newImages: Image[] = []
+      const newImages: Image[] = [];
 
-      dispatch(setLoading(true))
+      dispatch(setLoading(true));
       for (const image of images) {
         if (image.id) {
-          newImages.push(image)
+          newImages.push(image);
         } else {
-          const imageUploaded: Image = await apiUploadFile(image.file)
-          newImages.push(imageUploaded)
+          const imageUploaded: Image = await apiUploadFile(image.file);
+          newImages.push(imageUploaded);
         }
       }
 
       const comment: Omit<Comment, 'documentId'> = {
         content: commentText,
         user: user,
-        images: newImages.map(({id}) => id),
-        visibility: user.role.name === 'customer' ? 'customer' : user.role.name === 'producer' ? 'producer' : visibility,
+        images: newImages.map(({ id }) => id),
+        visibility:
+          user.role.name === 'customer'
+            ? 'customer'
+            : user.role.name === 'producer'
+              ? 'producer'
+              : visibility,
       };
 
-      dispatch(createComment({comment, project}))
-      setCommentText('')
-      setImages([])
+      dispatch(createComment({ comment, project }));
+      setCommentText('');
+      setImages([]);
     }
   };
 
   // TODO: Voir pour mettre en commun dans un composant Upload dédié --> EditProduct utilise également + Files.tsx
-  const onFileAdd = async (
-    file: File
-  ) => {
-    setImages([...images, {file, name: file.name}]);
+  const onFileAdd = async (file: File) => {
+    setImages([...images, { file, name: file.name }]);
   };
 
-  const onFileRemove = (
-    fileName: string
-  ) => {
-    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+  const onFileRemove = (fileName: string) => {
+    const imageToDelete: Image | undefined = images.find(
+      ({ name }) => name === fileName
+    );
 
     if (imageToDelete) {
-      setImages(images.filter(({name}) => name !== fileName));
+      setImages(images.filter(({ name }) => name !== fileName));
     }
   };
 
@@ -109,13 +124,19 @@ const Comments = () => {
     return valid;
   };
 
-  const determineVisibleComments = (comments: Comment[], user: User): Comment[] => {
+  const determineVisibleComments = (
+    comments: Comment[],
+    user: User
+  ): Comment[] => {
     if (hasRole(user, [SUPER_ADMIN, ADMIN])) {
-      return comments
+      return comments;
     } else {
-      return comments.filter(({visibility}) => visibility === 'all' || visibility === user.role.name)
+      return comments.filter(
+        ({ visibility }) =>
+          visibility === 'all' || visibility === user.role.name
+      );
     }
-  }
+  };
 
   return (
     <Container className="h-full">
@@ -156,14 +177,10 @@ const Comments = () => {
                     draggable
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
-                    onFileAdd={(file) =>
-                      onFileAdd(file)
-                    }
-                    onFileRemove={(file) =>
-                      onFileRemove(file)
-                    }
+                    onFileAdd={(file) => onFileAdd(file)}
+                    onFileRemove={(file) => onFileRemove(file)}
                     field={{ name: 'images' }}
-                    fileList={images.map(({file}) => file)}
+                    fileList={images.map(({ file }) => file)}
                   />
                   {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                     <div className="flex flex-row self-start w-1/2 items-center gap-4">
@@ -173,14 +190,20 @@ const Comments = () => {
                         className="w-3/4 justify-self-start"
                         placeholder={'Visibilité'}
                         options={visibilityData}
-                        value={visibilityData.find(({value}) => value === visibility)}
+                        value={visibilityData.find(
+                          ({ value }) => value === visibility
+                        )}
                         onChange={(e: any) => {
                           setVisibility(e.value);
                         }}
                       />
                     </div>
                   )}
-                  <Button variant="solid" onClick={submitComment} loading={loading}>
+                  <Button
+                    variant="solid"
+                    onClick={submitComment}
+                    loading={loading}
+                  >
                     Ajouter
                   </Button>
                 </div>
@@ -194,11 +217,7 @@ const Comments = () => {
   );
 };
 
-const TimelineComment = ({
-  comment,
-  user,
-  ...rest
-}: TimelineCommentProps) => {
+const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
   const determineAuthorRoleLabel = (user: User): string => {
     switch (user.role.name) {
       case 'customer':
@@ -210,17 +229,20 @@ const TimelineComment = ({
       default:
         return '';
     }
-  }
+  };
   const authorLabel = `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})`;
   const dispatch = useAppDispatch();
 
   const handleDeleteComment = async () => {
-    dispatch(deleteComment(comment.documentId))
+    dispatch(deleteComment(comment.documentId));
   };
 
   const determineCommentVisibility = (visibility: string): string => {
-    return visibilityData.find(({value}) => value === visibility)?.label || visibilityData.find(({value}) => value === 'all')!.label;
-  }
+    return (
+      visibilityData.find(({ value }) => value === visibility)?.label ||
+      visibilityData.find(({ value }) => value === 'all')!.label
+    );
+  };
 
   return (
     <Timeline.Item
@@ -259,7 +281,7 @@ const TimelineComment = ({
           <div className="col-span-1 flex flex-col items-center justify-center">
             {comment.images.map((image: Image) => (
               <div className=" bg-gray-900 rounded-md">
-                <a href={image.url} target="_blank">
+                <a href={image.url} target="_blank" rel="noreferrer">
                   <img
                     src={image.url}
                     alt={image.name}

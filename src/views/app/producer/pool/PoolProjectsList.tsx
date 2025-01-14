@@ -30,7 +30,7 @@ const options: Option[] = [
 
 const PoolProjectsList = () => {
   const { t } = useTranslation();
-  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
@@ -51,9 +51,9 @@ const PoolProjectsList = () => {
         user,
         pagination: {
           page: currentPage,
-          pageSize
+          pageSize,
         },
-        searchTerm
+        searchTerm,
       })
     );
   };

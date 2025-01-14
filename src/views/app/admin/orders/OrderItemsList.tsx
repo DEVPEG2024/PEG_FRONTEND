@@ -21,14 +21,17 @@ const OrderItemsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { orderItems, total, loading } = useAppSelector((state) => state.orders.data);
+  const { orderItems, total, loading } = useAppSelector(
+    (state) => state.orders.data
+  );
 
   useEffect(() => {
     dispatch(
-      getOrderItems({ pagination: {
-        page: currentPage,
-        pageSize: pageSize,
-      },
+      getOrderItems({
+        pagination: {
+          page: currentPage,
+          pageSize: pageSize,
+        },
         searchTerm: searchTerm,
       })
     );
@@ -44,13 +47,19 @@ const OrderItemsList = () => {
   };
 
   const handleFinishOrder = async (orderItem: OrderItem) => {
-    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, state: 'fulfilled'}
+    const orderItemUpdate: Partial<OrderItem> = {
+      documentId: orderItem.documentId,
+      state: 'fulfilled',
+    };
     await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
     //dispatch(getOrder({ orderId: order.documentId }));
   };
 
   const handlePendOrder = async (orderItem: OrderItem) => {
-    const orderItemUpdate : Partial<OrderItem> = {documentId: orderItem.documentId, state: 'pending'}
+    const orderItemUpdate: Partial<OrderItem> = {
+      documentId: orderItem.documentId,
+      state: 'pending',
+    };
     await dispatch(updateOrderItem(orderItemUpdate)).unwrap();
     //dispatch(getOrder({ orderId: order.documentId }));
   };

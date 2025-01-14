@@ -34,8 +34,8 @@ const options: Option[] = [
 ];
 const ProjectsList = () => {
   const { t } = useTranslation();
-  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
-  const isAdminOrSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN])
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
+  const isAdminOrSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
@@ -56,9 +56,9 @@ const ProjectsList = () => {
         user,
         pagination: {
           page: currentPage,
-          pageSize
+          pageSize,
         },
-        searchTerm
+        searchTerm,
       })
     );
   };
@@ -100,7 +100,10 @@ const ProjectsList = () => {
         </div>
         {/*List view *Project*/}
         <Loading loading={loading}>
-          <ProjectListContent projects={projects} handleDeleteProject={handleDeleteProject} />
+          <ProjectListContent
+            projects={projects}
+            handleDeleteProject={handleDeleteProject}
+          />
         </Loading>
         <div className="flex justify-end mt-10">
           <Pagination
