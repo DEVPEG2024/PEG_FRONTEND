@@ -20,11 +20,18 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                     customer {
                         name
                     }
+                    producer {
+                        name
+                    }
+                    role {
+                        name
+                    }
                 }
                 images {
                     url
                     name
                 }
+                visibility
             }
             customer {
                 documentId
@@ -133,22 +140,6 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
     mutation CreateProject($data: ProjectInput!) {
         createProject(data: $data) {
             documentId
-            comments {
-                documentId
-                content
-                createdAt
-                user {
-                    firstName
-                    lastName
-                    customer {
-                        name
-                    }
-                }
-                images {
-                    url
-                    name
-                }
-            }
             customer {
                 documentId
                 name
@@ -250,7 +241,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
 // get project by id
 export async function apiGetProjectById(documentId: string): Promise<AxiosResponse<ApiResponse<{project: Project}>>> {
     const query = `
-    query GetProject($documentId: ID!) {
+    query GetProjectById($documentId: ID!) {
         project(documentId: $documentId) {
             documentId
             comments {
@@ -263,11 +254,18 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                     customer {
                         name
                     }
+                    producer {
+                        name
+                    }
+                    role {
+                        name
+                    }
                 }
                 images {
                     url
                     name
                 }
+                visibility
             }
             customer {
                 documentId
@@ -379,9 +377,6 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
         projects_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
-                comments {
-                    content
-                }
                 customer {
                     documentId
                     name
@@ -449,9 +444,6 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
             }, pagination: $pagination){
             nodes {
                 documentId
-                comments {
-                    content
-                }
                 customer {
                     name
                 }
@@ -515,9 +507,6 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
             }, pagination: $pagination){
             nodes {
                 documentId
-                comments {
-                    content
-                }
                 customer {
                     documentId
                     name
@@ -587,9 +576,6 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
         }, pagination: $pagination) {
             nodes {
                 documentId
-                comments {
-                    content
-                }
                 customer {
                     documentId
                     name

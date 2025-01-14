@@ -16,10 +16,20 @@ export async function apiCreateComment(data: CreateCommentRequest): Promise<Axio
             user {
                 firstName
                 lastName
+                customer {
+                    name
+                }
+                producer {
+                    name
+                }
+                role {
+                    name
+                }
             }
             images {
                 url
             }
+            visibility
         }
     }
   `,

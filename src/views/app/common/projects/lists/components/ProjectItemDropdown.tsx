@@ -11,7 +11,7 @@ import { Project } from '@/@types/project';
 
 const ProjectItemDropdown = ({
   handleDeleteProject,
-  project: project,
+  project,
   setIsPayProducerOpen,
 }: {
   handleDeleteProject: (project: Project) => void;

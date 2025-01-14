@@ -1,3 +1,4 @@
+import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from "@/constants/roles.constant";
 import { paymentTypes } from "@/views/app/producer/wallet/constants";
 
 export const statusColorData = {
@@ -78,3 +79,26 @@ export const priorityData = [
 ];
 
 export const paymentProducerProjectTypes = paymentTypes.filter(({value}) => ['projectPayment', 'advancePayment', 'milestonePayment'].includes(value));
+
+export const visibilityData = [
+  {
+    value: 'all',
+    label: 'Tous les utilisateurs',
+  },
+  {
+    value: PRODUCER,
+    label: 'Producteur uniquement',
+  },
+  {
+    value: CUSTOMER,
+    label: 'Client uniquement',
+  },
+  {
+    value: ADMIN,
+    label: 'Administrateur uniquement',
+  },
+  {
+    value: SUPER_ADMIN,
+    label: 'Super administrateur uniquement',
+  },
+];
