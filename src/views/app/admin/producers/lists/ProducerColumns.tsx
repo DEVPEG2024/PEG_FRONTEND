@@ -1,10 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
-import {
-  HiPencil,
-  HiTrash,
-  HiUserCircle,
-} from 'react-icons/hi';
+import { HiPencil, HiTrash, HiUserCircle } from 'react-icons/hi';
 import { Producer, ProducerCategory } from '@/@types/producer';
 import { useAppDispatch } from '@/store';
 import { deleteProducer } from '../store';
@@ -16,14 +12,14 @@ export const useColumns = (
   const dispatch = useAppDispatch();
 
   const handleDeleteProducer = async (producer: Producer) => {
-    dispatch(deleteProducer(producer.documentId))
+    dispatch(deleteProducer(producer.documentId));
   };
   return [
     {
       header: t('title'),
       accessorKey: 'title',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Producer} }) => (
+      cell: ({ row }: { row: { original: Producer } }) => (
         <div className="flex items-center gap-2">
           <HiUserCircle size={40} />
           <div className="flex flex-col">
@@ -53,7 +49,7 @@ export const useColumns = (
       header: t('category'),
       accessorKey: 'category',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Producer} }) => {
+      cell: ({ row }: { row: { original: Producer } }) => {
         const category: ProducerCategory = row.original.producerCategory;
         return <div className="flex items-center gap-2">{category?.name}</div>;
       },
@@ -62,7 +58,7 @@ export const useColumns = (
       header: t('status'),
       accessorKey: 'status',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Producer} }) => (
+      cell: ({ row }: { row: { original: Producer } }) => (
         <div className="flex justify-end items-center gap-2">
           <Button onClick={() => handleEditProducer(row.original)} size="sm">
             <HiPencil size={20} />

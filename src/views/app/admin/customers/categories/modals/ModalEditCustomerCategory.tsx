@@ -3,7 +3,11 @@ import { Button, Dialog, Input } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createCustomerCategory, updateCustomerCategory, useAppSelector } from '../store';
+import {
+  createCustomerCategory,
+  updateCustomerCategory,
+  useAppSelector,
+} from '../store';
 
 function ModalEditCustomerCategory({
   mode,
@@ -20,14 +24,26 @@ function ModalEditCustomerCategory({
   const { customerCategory } = useAppSelector(
     (state) => state.customerCategories.data
   );
-  const [newName, setNewName] = useState(customerCategory?.name?? '');
+  const [newName, setNewName] = useState(customerCategory?.name ?? '');
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
     if (mode === 'add') {
-      dispatch(createCustomerCategory({name: newName, banner: undefined, products: [], customers: []}))
+      dispatch(
+        createCustomerCategory({
+          name: newName,
+          banner: undefined,
+          products: [],
+          customers: [],
+        })
+      );
     } else {
-      dispatch(updateCustomerCategory({documentId: customerCategory!.documentId, name: newName}))
+      dispatch(
+        updateCustomerCategory({
+          documentId: customerCategory!.documentId,
+          name: newName,
+        })
+      );
     }
     handleCloseModal();
   };

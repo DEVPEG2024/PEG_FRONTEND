@@ -15,7 +15,10 @@ import { Producer } from '@/@types/producer';
 
 type FormikRef = FormikProps<any>;
 
-export type ProducerFormModel = Omit<Producer, 'producerCategory' | 'companyInformations'> & {
+export type ProducerFormModel = Omit<
+  Producer,
+  'producerCategory' | 'companyInformations'
+> & {
   producerCategory: string | null;
   email: string;
   phoneNumber: string;
@@ -34,7 +37,10 @@ type ProducerForm = {
   initialData?: ProducerFormModel;
   producerCategories: Options[];
   onDiscard?: () => void;
-  onFormSubmit: (formData: ProducerFormModel, setSubmitting: SetSubmitting) => void;
+  onFormSubmit: (
+    formData: ProducerFormModel,
+    setSubmitting: SetSubmitting
+  ) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -47,19 +53,18 @@ const validationSchema = Yup.object().shape({
   zipCode: Yup.string().required(t('p.error.zipCode')),
   city: Yup.string().required(t('p.error.city')),
   country: Yup.string().required(t('p.error.country')),
-  email: Yup.string().email(t('p.error.invalidEmail')).required(t('p.error.email')),
+  email: Yup.string()
+    .email(t('p.error.invalidEmail'))
+    .required(t('p.error.email')),
   //phone: Yup.string().matches(/^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/, 'Numéro de téléphone invalide').required(t('p.error.phone')),
   //phone: Yup.string().matches(/^((\+[1-9]{1,4}[ -]?)|(\([0-9]{2,3}\)[ -]?)|([0-9]{2,4})[ -]?)*?[0-9]{3,4}[ -]?[0-9]{3,4}$/, 'Numéro de téléphone invalide').required(t('p.error.phone')),
-  phoneNumber: Yup.string().matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide').required(t('p.error.phoneNumber')),
+  phoneNumber: Yup.string()
+    .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
+    .required(t('p.error.phoneNumber')),
 });
 
 const ProducerForm = forwardRef<FormikRef, ProducerForm>((props, ref) => {
-  const {
-    initialData,
-    onFormSubmit,
-    onDiscard,
-    producerCategories,
-  } = props;
+  const { initialData, onFormSubmit, onDiscard, producerCategories } = props;
 
   return (
     <>
@@ -70,61 +75,62 @@ const ProducerForm = forwardRef<FormikRef, ProducerForm>((props, ref) => {
         }}
         validationSchema={validationSchema}
         onSubmit={(values: ProducerFormModel, { setSubmitting }) => {
-          console.log('ici')
+          console.log('ici');
           const formData = cloneDeep(values);
           onFormSubmit?.(formData, setSubmitting);
         }}
       >
         {({ values, touched, errors, isSubmitting, setFieldValue }) => {
           return (
-          <Form>
-            <FormContainer>
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-2">
-                  <ProducerFields
-                    touched={touched}
-                    errors={errors}
-                    values={values}
-                    countries={countries}
-                    setFieldValue={setFieldValue}
-                  />
+            <Form>
+              <FormContainer>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                  <div className="lg:col-span-2">
+                    <ProducerFields
+                      touched={touched}
+                      errors={errors}
+                      values={values}
+                      countries={countries}
+                      setFieldValue={setFieldValue}
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <CompanyFields
+                      touched={touched}
+                      errors={errors}
+                      values={values}
+                      producerCategories={producerCategories}
+                    />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <CompanyFields
-                    touched={touched}
-                    errors={errors}
-                    values={values}
-                    producerCategories={producerCategories}
-                  />
-                </div>
-              </div>
-              <StickyFooter
-                className="-mx-8 px-8 flex items-center justify-end py-4"
-                stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-              >
-                <div className="md:flex items-end">
-                  <Button
-                    size="sm"
-                    className="ltr:mr-3 rtl:ml-3"
-                    type="button"
-                    onClick={() => onDiscard?.()}
-                  >
-                    {t('cancel')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="solid"
-                    loading={isSubmitting}
-                    icon={<AiOutlineSave />}
-                    type="submit"
-                  >
-                    {t('save')}
-                  </Button>
-                </div>
-              </StickyFooter>
-            </FormContainer>
-          </Form>
-        )}}
+                <StickyFooter
+                  className="-mx-8 px-8 flex items-center justify-end py-4"
+                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                >
+                  <div className="md:flex items-end">
+                    <Button
+                      size="sm"
+                      className="ltr:mr-3 rtl:ml-3"
+                      type="button"
+                      onClick={() => onDiscard?.()}
+                    >
+                      {t('cancel')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="solid"
+                      loading={isSubmitting}
+                      icon={<AiOutlineSave />}
+                      type="submit"
+                    >
+                      {t('save')}
+                    </Button>
+                  </div>
+                </StickyFooter>
+              </FormContainer>
+            </Form>
+          );
+        }}
       </Formik>
     </>
   );

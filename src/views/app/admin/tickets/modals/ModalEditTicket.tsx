@@ -2,23 +2,36 @@ import { Button, Dialog, Input, Select } from '@/components/ui';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
-import { ticketPriorityData, ticketStatusData, ticketTypeData } from '../constants';
+import {
+  ticketPriorityData,
+  ticketStatusData,
+  ticketTypeData,
+} from '../constants';
 import { RichTextEditor } from '@/components/shared';
-import { setEditTicketDialog, setSelectedTicket, updateTicket } from '../store/ticketSlice';
+import {
+  setEditTicketDialog,
+  setSelectedTicket,
+  updateTicket,
+} from '../store/ticketSlice';
 import { Ticket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
 import { Image } from '@/@types/image';
 import { apiLoadImagesAndFiles } from '@/services/FileServices';
 
-export type TicketFormModel = Omit<Ticket, 'user' | 'image' | 'orderItems' | 'documentId' | 'createdAt'> & {
+export type TicketFormModel = Omit<
+  Ticket,
+  'user' | 'image' | 'orderItems' | 'documentId' | 'createdAt'
+> & {
   documentId?: string;
   user: string | null;
 };
 
 function ModalEditTicket() {
   const dispatch = useAppDispatch();
-  const { editTicketDialog, selectedTicket } = useAppSelector((state) => state.tickets.data);
-  const [image, setImage] = useState<Image | undefined>(undefined)
+  const { editTicketDialog, selectedTicket } = useAppSelector(
+    (state) => state.tickets.data
+  );
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const [formData, setFormData] = useState<TicketFormModel>({
     documentId: selectedTicket?.documentId ?? '',
     name: selectedTicket?.name || '',
@@ -27,15 +40,17 @@ function ModalEditTicket() {
     state: selectedTicket?.state || '',
     priority: selectedTicket?.priority || '',
     type: selectedTicket?.type || '',
-    });
+  });
 
   useEffect(() => {
     fetchImage();
   }, [selectedTicket]);
 
   const fetchImage = async (): Promise<void> => {
-    if (selectedTicket?.image){
-      const imageLoaded: Image = (await apiLoadImagesAndFiles([selectedTicket.image]))[0]
+    if (selectedTicket?.image) {
+      const imageLoaded: Image = (
+        await apiLoadImagesAndFiles([selectedTicket.image])
+      )[0];
 
       setImage(imageLoaded);
     }
@@ -43,7 +58,7 @@ function ModalEditTicket() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(updateTicket({...formData, image: image?.id ?? null}));
+    dispatch(updateTicket({ ...formData, image: image?.id ?? null }));
     setFormData({
       documentId: '',
       name: '',
@@ -131,10 +146,7 @@ function ModalEditTicket() {
             />
           </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
-            <FileUplaodCustom
-              image={image}
-              setImage={setImage}
-            />
+            <FileUplaodCustom image={image} setImage={setImage} />
             <Button
               className="ltr:mr-2 rtl:ml-2"
               variant="plain"

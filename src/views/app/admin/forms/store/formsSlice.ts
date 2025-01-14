@@ -28,23 +28,25 @@ const initialState: FormsStateData = {
   form: null,
   loading: false,
   total: 0,
-  newFormDialog: false
+  newFormDialog: false,
 };
 
 /// forms
 export const getForms = createAsyncThunk(
   SLICE_NAME + '/getForms',
   async (data: GetFormsRequest): Promise<GetFormsResponse> => {
-    const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms(data));
-    return forms_connection
+    const { forms_connection }: { forms_connection: GetFormsResponse } =
+      await unwrapData(apiGetForms(data));
+    return forms_connection;
   }
 );
 
 // MODELE UPDATE
 export const updateForm = createAsyncThunk(
   SLICE_NAME + '/updateForm',
-  async (data: Partial<Form>): Promise<ApiResponse<{updateForm: Form}>> => {
-    const response: AxiosResponse<ApiResponse<{updateForm: Form}>> = await apiUpdateForm(data);
+  async (data: Partial<Form>): Promise<ApiResponse<{ updateForm: Form }>> => {
+    const response: AxiosResponse<ApiResponse<{ updateForm: Form }>> =
+      await apiUpdateForm(data);
     return response.data;
   }
 );
@@ -52,8 +54,11 @@ export const updateForm = createAsyncThunk(
 // MODELE CREATE
 export const createForm = createAsyncThunk(
   SLICE_NAME + '/createForm',
-  async (data: CreateFormRequest) : Promise<ApiResponse<{createForm: Form}>> => {
-    const response: AxiosResponse<ApiResponse<{createForm: Form}>> = await apiCreateForm(data);
+  async (
+    data: CreateFormRequest
+  ): Promise<ApiResponse<{ createForm: Form }>> => {
+    const response: AxiosResponse<ApiResponse<{ createForm: Form }>> =
+      await apiCreateForm(data);
     return response.data;
   }
 );
@@ -61,7 +66,9 @@ export const createForm = createAsyncThunk(
 export const deleteForm = createAsyncThunk(
   SLICE_NAME + '/deleteForm',
   async (documentId: string): Promise<DeleteFormResponse> => {
-    const {deleteForm} : {deleteForm: DeleteFormResponse} = await unwrapData(apiDeleteForm(documentId));
+    const { deleteForm }: { deleteForm: DeleteFormResponse } = await unwrapData(
+      apiDeleteForm(documentId)
+    );
     return deleteForm;
   }
 );
@@ -75,7 +82,7 @@ const formsSlice = createSlice({
     },
     setNewFormDialog: (state, action) => {
       state.newFormDialog = action.payload;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getForms.pending, (state) => {
@@ -95,8 +102,10 @@ const formsSlice = createSlice({
     builder.addCase(deleteForm.fulfilled, (state, action) => {
       console.log(action.payload);
       state.loading = false;
-      state.forms = state.forms.filter((form) => form.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.forms = state.forms.filter(
+        (form) => form.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
     builder.addCase(updateForm.pending, (state) => {
       state.loading = true;
@@ -118,7 +127,7 @@ const formsSlice = createSlice({
     builder.addCase(createForm.fulfilled, (state, action) => {
       state.loading = false;
       state.forms.push(action.payload.data.createForm);
-      state.total += 1
+      state.total += 1;
     });
     builder.addCase(createForm.rejected, (state) => {
       state.loading = false;
@@ -126,9 +135,6 @@ const formsSlice = createSlice({
   },
 });
 
-export const {
-  setForm,
-  setNewFormDialog,
-} = formsSlice.actions;
+export const { setForm, setNewFormDialog } = formsSlice.actions;
 
 export default formsSlice.reducer;

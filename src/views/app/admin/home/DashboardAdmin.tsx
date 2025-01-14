@@ -7,7 +7,9 @@ import { useSelector } from 'react-redux';
 
 const DashboardAdmin = () => {
   const { t } = useTranslation();
-  const {user}: {user: User} = useSelector((state: RootState) => state.auth.user);
+  const { user }: { user: User } = useSelector(
+    (state: RootState) => state.auth.user
+  );
   return (
     <Container className="h-full">
       <div className="h-full flex flex-col items-center justify-center">

@@ -11,7 +11,7 @@ export const useColumns = (
       header: 'Nom',
       accessorKey: 'name',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Size} }) => (
+      cell: ({ row }: { row: { original: Size } }) => (
         <div className="flex items-center gap-2">
           <span className="font-bold">{row.original.name}</span>
         </div>
@@ -21,7 +21,7 @@ export const useColumns = (
       header: 'Valeur',
       accessorKey: 'value',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Size} }) => (
+      cell: ({ row }: { row: { original: Size } }) => (
         <div className="flex items-center gap-2">
           <span className="font-bold">{row.original.value}</span>
         </div>
@@ -31,10 +31,12 @@ export const useColumns = (
       header: 'Catégorie produit',
       accessorKey: 'productCategory',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Size} }) => {
+      cell: ({ row }: { row: { original: Size } }) => {
         return (
           <div className="flex items-center gap-2">
-            <span className="font-bold">{row.original.productCategory.name}</span>
+            <span className="font-bold">
+              {row.original.productCategory.name}
+            </span>
           </div>
         );
       },
@@ -44,7 +46,7 @@ export const useColumns = (
       header: '',
       accessorKey: 'actions',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Size} }) => {
+      cell: ({ row }: { row: { original: Size } }) => {
         return (
           <div className="flex justify-end items-center gap-2">
             <Button

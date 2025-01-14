@@ -26,15 +26,22 @@ const initialState: OrderState = {
 export const getOrderItems = createAsyncThunk(
   SLICE_NAME + '/getOrderItems',
   async (data: GetOrderItemsRequest): Promise<GetOrderItemsResponse> => {
-    const {orderItems_connection} : {orderItems_connection: GetOrderItemsResponse}= await unwrapData(apiGetOrderItems(data));
-    return orderItems_connection
+    const {
+      orderItems_connection,
+    }: { orderItems_connection: GetOrderItemsResponse } = await unwrapData(
+      apiGetOrderItems(data)
+    );
+    return orderItems_connection;
   }
 );
 
 export const updateOrderItem = createAsyncThunk(
   SLICE_NAME + '/updateOrderItem',
-  async (data: Partial<OrderItem>): Promise<ApiResponse<{updateOrderItem: OrderItem}>> => {
-    const response: AxiosResponse<ApiResponse<{updateOrderItem: OrderItem}>> = await apiUpdateOrderItem(data);
+  async (
+    data: Partial<OrderItem>
+  ): Promise<ApiResponse<{ updateOrderItem: OrderItem }>> => {
+    const response: AxiosResponse<ApiResponse<{ updateOrderItem: OrderItem }>> =
+      await apiUpdateOrderItem(data);
     return response.data;
   }
 );
@@ -63,7 +70,9 @@ const orderSlice = createSlice({
     builder.addCase(updateOrderItem.fulfilled, (state, action) => {
       state.loading = false;
       state.orderItems = state.orderItems.map((orderItem) =>
-        orderItem.documentId === action.payload.data.updateOrderItem.documentId ? action.payload.data.updateOrderItem : orderItem
+        orderItem.documentId === action.payload.data.updateOrderItem.documentId
+          ? action.payload.data.updateOrderItem
+          : orderItem
       );
     });
     builder.addCase(updateOrderItem.rejected, (state) => {

@@ -1,17 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Switcher, Button } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { User } from '@/@types/user';
-import {
-  HiPencil,
-  HiTrash,
-  HiUserCircle,
-} from 'react-icons/hi';
+import { HiPencil, HiTrash, HiUserCircle } from 'react-icons/hi';
 
 export const useColumns = (
   handleEditUser: (user: User) => void,
   handleBlockUser: (user: User, id: number) => void,
   handleDeleteUser: (id: number) => void,
-  usersId: {id: number, documentId: string}[]
+  usersId: { id: number; documentId: string }[]
 ) => {
   const { t } = useTranslation();
 
@@ -20,7 +16,7 @@ export const useColumns = (
       header: t('name'),
       accessorKey: 'firstName',
       enableSorting: false,
-      cell: ({ row }: { row: {original: User} }) => (
+      cell: ({ row }: { row: { original: User } }) => (
         <div className="flex items-center gap-2">
           <HiUserCircle size={40} />
           <div className="flex flex-col">
@@ -35,7 +31,7 @@ export const useColumns = (
       header: t('email'),
       accessorKey: 'email',
       enableSorting: false,
-      cell: ({ row }: { row: {original: User} }) => (
+      cell: ({ row }: { row: { original: User } }) => (
         <div className="flex items-center gap-2">{row.original.email}</div>
       ),
     },
@@ -51,7 +47,7 @@ export const useColumns = (
       header: 'Rôle',
       accessorKey: 'authority',
       enableSorting: false,
-      cell: ({ row }: { row: {original: User} }) => {
+      cell: ({ row }: { row: { original: User } }) => {
         return (
           <div className="flex items-center gap-2">
             {row.original.role.name}
@@ -75,12 +71,19 @@ export const useColumns = (
       header: t('status'),
       accessorKey: 'status',
       enableSorting: false,
-      cell: ({ row }: { row: {original: User} }) => (
+      cell: ({ row }: { row: { original: User } }) => (
         <div className="flex items-center gap-2">
           <Switcher
             checked={!row.original.blocked}
             disabled={row.original.role.name === 'super_admin'}
-            onChange={() => handleBlockUser(row.original, usersId.find(({documentId}) => documentId === row.original.documentId)!.id)}
+            onChange={() =>
+              handleBlockUser(
+                row.original,
+                usersId.find(
+                  ({ documentId }) => documentId === row.original.documentId
+                )!.id
+              )
+            }
           />
           <Button
             onClick={() => handleEditUser(row.original)}
@@ -91,7 +94,13 @@ export const useColumns = (
             <HiPencil size={20} />
           </Button>
           <Button
-            onClick={() => handleDeleteUser(usersId.find(({documentId}) => documentId === row.original.documentId)!.id)}
+            onClick={() =>
+              handleDeleteUser(
+                usersId.find(
+                  ({ documentId }) => documentId === row.original.documentId
+                )!.id
+              )
+            }
             disabled={row.original.role.name === 'super_admin'}
             size="sm"
             variant="twoTone"

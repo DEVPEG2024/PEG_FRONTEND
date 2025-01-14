@@ -1,8 +1,4 @@
-import {
-  Button,
-  Dialog,
-  Select
-} from '@/components/ui';
+import { Button, Dialog, Select } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import { useState } from 'react';
@@ -15,7 +11,7 @@ import { paymentProducerProjectTypes } from '../lists/constants';
 type PayProducerFormModel = {
   amount: number;
   type: string;
-}
+};
 
 function ModalPayProducer({
   project,
@@ -29,7 +25,7 @@ function ModalPayProducer({
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<PayProducerFormModel>({
     amount: project.producerPrice,
-    type: 'projectPayment'
+    type: 'projectPayment',
   });
 
   const handleSubmit = async (e: any) => {
@@ -41,9 +37,14 @@ function ModalPayProducer({
       type: formData.type,
       date: new Date(),
       description: '',
-    }
+    };
     dispatch(payProducer({ project, transaction }));
-    dispatch(updateProject({ documentId: project.documentId, producerPaidPrice: project.producerPaidPrice + formData.amount }));
+    dispatch(
+      updateProject({
+        documentId: project.documentId,
+        producerPaidPrice: project.producerPaidPrice + formData.amount,
+      })
+    );
     handleClose();
   };
   const handleClose = () => {
@@ -62,7 +63,7 @@ function ModalPayProducer({
               setFormData({ ...formData, amount: e });
             }}
           />
-          <div className='mt-4'>
+          <div className="mt-4">
             <p className="text-sm text-gray-200 mb-2">Type de paiement</p>
             <Select
               placeholder="Type de paiement"

@@ -1,7 +1,14 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { unwrapData } from '@/utils/serviceHelper';
-import { Customer, CustomerCategory } from '@/@types/customer';
-import { apiDeleteCustomer, apiGetCustomerForEditById, apiGetCustomers, DeleteCustomerResponse, GetCustomersRequest, GetCustomersResponse } from '@/services/CustomerServices';
+import { Customer } from '@/@types/customer';
+import {
+  apiDeleteCustomer,
+  apiGetCustomerForEditById,
+  apiGetCustomers,
+  DeleteCustomerResponse,
+  GetCustomersRequest,
+  GetCustomersResponse,
+} from '@/services/CustomerServices';
 
 export const SLICE_NAME = 'customers';
 
@@ -9,7 +16,7 @@ export type CustomersState = {
   customers: Customer[];
   total: number;
   loading: boolean;
-  customer?: Customer,
+  customer?: Customer;
 };
 
 const initialState: CustomersState = {
@@ -21,15 +28,19 @@ const initialState: CustomersState = {
 
 export const getCustomers = createAsyncThunk(
   SLICE_NAME + '/getCustomers',
-  async (data: GetCustomersRequest) : Promise<GetCustomersResponse> => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse} = await unwrapData(apiGetCustomers(data));
+  async (data: GetCustomersRequest): Promise<GetCustomersResponse> => {
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } = await unwrapData(
+      apiGetCustomers(data)
+    );
     return customers_connection;
   }
 );
 
 export const getCustomerById = createAsyncThunk(
   SLICE_NAME + '/getCustomerById',
-  async (documentId: string): Promise<{customer: Customer}> => {
+  async (documentId: string): Promise<{ customer: Customer }> => {
     return await unwrapData(apiGetCustomerForEditById(documentId));
   }
 );
@@ -37,7 +48,8 @@ export const getCustomerById = createAsyncThunk(
 export const deleteCustomer = createAsyncThunk(
   SLICE_NAME + '/deleteCustomer',
   async (documentId: string): Promise<DeleteCustomerResponse> => {
-    const {deleteCustomer} : {deleteCustomer: DeleteCustomerResponse} = await unwrapData(apiDeleteCustomer(documentId));
+    const { deleteCustomer }: { deleteCustomer: DeleteCustomerResponse } =
+      await unwrapData(apiDeleteCustomer(documentId));
     return deleteCustomer;
   }
 );
@@ -65,10 +77,13 @@ const customersSlice = createSlice({
     });
     builder.addCase(deleteCustomer.fulfilled, (state, action) => {
       state.loading = false;
-      state.customers = state.customers.filter((customer: Customer) => customer.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.customers = state.customers.filter(
+        (customer: Customer) =>
+          customer.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
-    
+
     builder.addCase(getCustomerById.pending, (state) => {
       state.loading = true;
     });
@@ -82,8 +97,6 @@ const customersSlice = createSlice({
   },
 });
 
-export const {
-  setCustomer,
-} = customersSlice.actions;
+export const { setCustomer } = customersSlice.actions;
 
 export default customersSlice.reducer;

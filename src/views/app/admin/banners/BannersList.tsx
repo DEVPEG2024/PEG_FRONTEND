@@ -24,10 +24,13 @@ const BannersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { banners, total, selectedBanner, newBannerDialog, editBannerDialog } = useAppSelector((state) => state.banners.data);
+  const { banners, total, selectedBanner, newBannerDialog, editBannerDialog } =
+    useAppSelector((state) => state.banners.data);
 
   useEffect(() => {
-    dispatch(getBanners({ pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getBanners({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {

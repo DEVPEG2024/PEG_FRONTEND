@@ -1,6 +1,4 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Product, SizeSelection } from '@/@types/product';
-import { FormAnswer } from '@/@types/formAnswer';
 import { OrderItem } from '@/@types/orderItem';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetOrderItemById } from '@/services/OrderItemServices';
@@ -21,7 +19,7 @@ const initialState: StateData = {
 
 export const getOrderItemById = createAsyncThunk(
   SLICE_NAME + '/getOrderItemById',
-  async (documentId: string): Promise<{orderItem: OrderItem}> => {
+  async (documentId: string): Promise<{ orderItem: OrderItem }> => {
     return await unwrapData(apiGetOrderItemById(documentId));
   }
 );
@@ -49,9 +47,7 @@ const showOrderItemSlice = createSlice({
   },
 });
 
-export const {
-  clearOrderItemState,
-  setOrderItemFormDialog
-} = showOrderItemSlice.actions;
+export const { clearOrderItemState, setOrderItemFormDialog } =
+  showOrderItemSlice.actions;
 
 export default showOrderItemSlice.reducer;

@@ -22,7 +22,7 @@ function ModalDeleteProductCategory({
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    dispatch(deleteProductCategory(productCategory.documentId))
+    dispatch(deleteProductCategory(productCategory.documentId));
     onDialogClose();
   };
   return (

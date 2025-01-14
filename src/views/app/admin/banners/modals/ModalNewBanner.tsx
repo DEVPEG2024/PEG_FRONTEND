@@ -10,7 +10,10 @@ import {
 } from '@/services/CustomerServices';
 import { Customer, CustomerCategory } from '@/@types/customer';
 import { unwrapData } from '@/utils/serviceHelper';
-import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
+import {
+  apiGetCustomerCategories,
+  GetCustomerCategoriesResponse,
+} from '@/services/CustomerCategoryServices';
 import { Image } from '@/@types/image';
 import { Banner } from '@/@types/banner';
 
@@ -25,11 +28,11 @@ export type BannerFormModel = {
   customer: string | null;
   customerCategory: string | null;
   active: boolean;
-}
+};
 
 function ModalNewBanner() {
   const { newBannerDialog } = useAppSelector((state) => state.banners.data);
-  const [image, setImage] = useState<Image | undefined>(undefined)
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const dispatch = useAppDispatch();
@@ -37,11 +40,14 @@ function ModalNewBanner() {
     name: '',
     customer: '',
     customerCategory: '',
-    active: true
+    active: true,
   });
 
   const fetchCustomers = async () => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } =
+      await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
     const customers = customersList.map((customer: Customer) => ({
       value: customer.documentId || '',
@@ -51,7 +57,10 @@ function ModalNewBanner() {
   };
 
   const fetchCustomerCategories = async () => {
-    const {customerCategories_connection} : {customerCategories_connection: GetCustomerCategoriesResponse}= await unwrapData(apiGetCustomerCategories());
+    const {
+      customerCategories_connection,
+    }: { customerCategories_connection: GetCustomerCategoriesResponse } =
+      await unwrapData(apiGetCustomerCategories());
     const customerCategoriesList = customerCategories_connection.nodes || [];
     const customerCategories = customerCategoriesList.map(
       (customerCategory: CustomerCategory) => ({
@@ -72,19 +81,20 @@ function ModalNewBanner() {
     const bannerToCreate: Omit<Banner, 'documentId'> = {
       ...formData,
       customer: formData.customer !== '' ? formData.customer : null,
-      customerCategory: formData.customerCategory !== '' ? formData.customerCategory : null,
-      image
-    }
+      customerCategory:
+        formData.customerCategory !== '' ? formData.customerCategory : null,
+      image,
+    };
     dispatch(createBanner(bannerToCreate));
     setFormData({
       name: '',
       customer: '',
       customerCategory: '',
-      active: true
+      active: true,
     });
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setNewBannerDialog(false));
   };

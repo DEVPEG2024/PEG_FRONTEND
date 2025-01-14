@@ -1,18 +1,29 @@
 import { useEffect } from 'react';
-import { Form as FormViewer  } from '@formio/react';
+import { Form as FormViewer } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
 
-function ShowForm({ fields, formAnswer, readOnly, onSubmit } : {fields: JSONValue, formAnswer: Partial<FormAnswer> | null, readOnly: boolean, onSubmit: (submission: any) => void}) {
-  
+function ShowForm({
+  fields,
+  formAnswer,
+  readOnly,
+  onSubmit,
+}: {
+  fields: JSONValue;
+  formAnswer: Partial<FormAnswer> | null;
+  readOnly: boolean;
+  onSubmit: (submission: any) => void;
+}) {
   useEffect(() => {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css';
+    link.href =
+      'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css';
     document.head.appendChild(link);
     const link2 = document.createElement('link');
     link2.rel = 'stylesheet';
-    link2.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css';
+    link2.href =
+      'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css';
     document.head.appendChild(link2);
     const link3 = document.createElement('link');
     link3.rel = 'stylesheet';
@@ -32,17 +43,20 @@ function ShowForm({ fields, formAnswer, readOnly, onSubmit } : {fields: JSONValu
 
   return (
     <div className="flex flex-col gap-4">
-      <FormViewer form={{
-        type: 'form',
-        display: 'form',
-        components: JSON.parse(JSON.stringify(fields))}}
+      <FormViewer
+        form={{
+          type: 'form',
+          display: 'form',
+          components: JSON.parse(JSON.stringify(fields)),
+        }}
         submission={formAnswer?.answer}
         options={{
           readOnly,
         }}
-        onSubmit={onSubmit} />
+        onSubmit={onSubmit}
+      />
     </div>
-  )
+  );
 }
 
 export default ShowForm;

@@ -6,11 +6,21 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CUSTOMERS_LIST } from '@/constants/navigation.constant';
 import { useEffect, useState } from 'react';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getCustomerById, setCustomer, useAppSelector } from '../store';
-import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
+import reducer, {
+  getCustomerById,
+  setCustomer,
+  useAppSelector,
+} from '../store';
+import {
+  apiGetCustomerCategories,
+  GetCustomerCategoriesResponse,
+} from '@/services/CustomerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
-import { apiCreateCustomer, apiUpdateCustomer } from '@/services/CustomerServices';
+import {
+  apiCreateCustomer,
+  apiUpdateCustomer,
+} from '@/services/CustomerServices';
 
 injectReducer('customers', reducer);
 
@@ -45,26 +55,28 @@ const EditCustomer = () => {
     city: customer?.companyInformations.city || '',
     country: customer?.companyInformations.country || '',
     website: customer?.companyInformations.website || '',
-  }
+  };
 
   useEffect(() => {
     if (!customer && onEdition) {
       dispatch(getCustomerById(documentId));
-    } else {
-      
     }
     return () => {
-      dispatch(setCustomer(null))
-    }
+      dispatch(setCustomer(null));
+    };
   }, [dispatch]);
-  
+
   useEffect(() => {
     fetchCustomerCategories();
   }, []);
 
   const fetchCustomerCategories = async () => {
-    const {customerCategories_connection} : {customerCategories_connection: GetCustomerCategoriesResponse}= await unwrapData(apiGetCustomerCategories());
-    const customerCategoriesList: CustomerCategory[] = customerCategories_connection.nodes || [];
+    const {
+      customerCategories_connection,
+    }: { customerCategories_connection: GetCustomerCategoriesResponse } =
+      await unwrapData(apiGetCustomerCategories());
+    const customerCategoriesList: CustomerCategory[] =
+      customerCategories_connection.nodes || [];
     const customerCategories = customerCategoriesList.map(
       (customerCategory: CustomerCategory) => ({
         value: customerCategory.documentId || '',
@@ -74,7 +86,9 @@ const EditCustomer = () => {
     setCustomerCategories(customerCategories);
   };
 
-  const updateOrCreateCustomer = async (data: CustomerFormModel) : Promise<Customer> => {
+  const updateOrCreateCustomer = async (
+    data: CustomerFormModel
+  ): Promise<Customer> => {
     const customer: Omit<Customer, 'documentId'> = {
       banner: data.banner,
       companyInformations: {
@@ -86,25 +100,29 @@ const EditCustomer = () => {
         siretNumber: data.siretNumber,
         vatNumber: data.vatNumber,
         website: data.website,
-        zipCode: data.zipCode
+        zipCode: data.zipCode,
       },
       customerCategory: data.customerCategory,
       name: data.name,
-    }
+    };
     if (onEdition) {
-      const {updateCustomer} : {updateCustomer: Customer} = await unwrapData(apiUpdateCustomer({documentId: data.documentId, ...customer}));
-      return updateCustomer
+      const { updateCustomer }: { updateCustomer: Customer } = await unwrapData(
+        apiUpdateCustomer({ documentId: data.documentId, ...customer })
+      );
+      return updateCustomer;
     }
-    const {createCustomer} : {createCustomer: Customer} = await unwrapData(apiCreateCustomer(customer));
-    return createCustomer
-  }
+    const { createCustomer }: { createCustomer: Customer } = await unwrapData(
+      apiCreateCustomer(customer)
+    );
+    return createCustomer;
+  };
 
   const handleFormSubmit = async (
     values: CustomerFormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    await updateOrCreateCustomer(values)
+    await updateOrCreateCustomer(values);
     setSubmitting(false);
     navigate(CUSTOMERS_LIST);
   };
@@ -112,15 +130,17 @@ const EditCustomer = () => {
   const handleDiscard = () => {
     navigate(CUSTOMERS_LIST);
   };
-  return (!onEdition || customer) && (
-    <>
-      <CustomerForm
-        initialData={initialData}
-        customerCategories={customerCategories}
-        onFormSubmit={handleFormSubmit}
-        onDiscard={handleDiscard}
-      />
-    </>
+  return (
+    (!onEdition || customer) && (
+      <>
+        <CustomerForm
+          initialData={initialData}
+          customerCategories={customerCategories}
+          onFormSubmit={handleFormSubmit}
+          onDiscard={handleDiscard}
+        />
+      </>
+    )
   );
 };
 

@@ -28,7 +28,9 @@ const CustomersList = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchCustomers = async () => {
-    dispatch(getCustomers({pagination: {page: currentPage, pageSize}, searchTerm}))
+    dispatch(
+      getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   };
 
   const handleSearch = (value: string) => {

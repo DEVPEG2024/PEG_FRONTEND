@@ -14,7 +14,7 @@ export const useColumns = (
       header: t('title'),
       accessorKey: 'name',
       enableSorting: false,
-      cell: ({ row }: { row: { original: CustomerCategory} }) => (
+      cell: ({ row }: { row: { original: CustomerCategory } }) => (
         <div className="flex items-center gap-2">
           <HiFolderOpen size={20} />
           {row.original.name}
@@ -26,8 +26,10 @@ export const useColumns = (
       header: t('cust.total_customers'),
       accessorKey: 'customers',
       enableSorting: false,
-      cell: ({ row }: { row: { original: CustomerCategory} }) => (
-        <div className="flex items-center gap-2">{row.original.customers.length}</div>
+      cell: ({ row }: { row: { original: CustomerCategory } }) => (
+        <div className="flex items-center gap-2">
+          {row.original.customers.length}
+        </div>
       ),
     },
 
@@ -35,7 +37,7 @@ export const useColumns = (
       header: '',
       accessorKey: 'actions',
       enableSorting: false,
-      cell: ({ row }: { row: { original: CustomerCategory} }) => (
+      cell: ({ row }: { row: { original: CustomerCategory } }) => (
         <div className="flex justify-end items-center gap-2">
           <Button onClick={() => handleEditCategory(row.original)}>
             <HiPencil size={20} />

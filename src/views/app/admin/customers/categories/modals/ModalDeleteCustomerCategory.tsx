@@ -19,10 +19,10 @@ function ModalDeleteCustomerCategory({
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    dispatch(deleteCustomerCategory(customerCategory!.documentId))
+    dispatch(deleteCustomerCategory(customerCategory!.documentId));
     handleCloseModal();
   };
-  
+
   return (
     <Dialog
       isOpen={isOpen}

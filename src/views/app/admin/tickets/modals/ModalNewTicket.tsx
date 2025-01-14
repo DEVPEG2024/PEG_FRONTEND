@@ -11,9 +11,11 @@ import { Image } from '@/@types/image';
 import { User } from '@/@types/user';
 
 function ModalNewTicket() {
-  const {user}: {user: User} = useAppSelector((state: any) => state.auth.user);
+  const { user }: { user: User } = useAppSelector(
+    (state: any) => state.auth.user
+  );
   const { newTicketDialog } = useAppSelector((state) => state.tickets.data);
-  const [image, setImage] = useState<Image | undefined>(undefined)
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<TicketFormModel>({
     name: '',
@@ -26,7 +28,7 @@ function ModalNewTicket() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(createTicket({...formData, image}));
+    dispatch(createTicket({ ...formData, image }));
     setFormData({
       name: '',
       user: '',
