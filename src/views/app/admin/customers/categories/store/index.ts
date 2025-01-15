@@ -1,5 +1,8 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, CustomerCategoriesState } from './customerCategoriesSlice';
+import reducers, {
+  SLICE_NAME,
+  CustomerCategoriesState,
+} from './customerCategoriesSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';

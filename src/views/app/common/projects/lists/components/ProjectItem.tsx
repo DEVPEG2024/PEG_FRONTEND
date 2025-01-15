@@ -2,7 +2,7 @@ import Card from '@/components/ui/Card';
 import ProjectItemDropdown from './ProjectItemDropdown';
 import AvatarName from './AvatarName';
 import ProgressionBar from './ProgressionBar';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Project } from '@/@types/project';
 import { LiaBusinessTimeSolid } from 'react-icons/lia';
 import { MdAccessTime } from 'react-icons/md';
@@ -10,7 +10,7 @@ import { MdAccessTime } from 'react-icons/md';
 import dayjs from 'dayjs';
 import { Tag } from '@/components/ui';
 import { statusColorData, statusTextData } from '../constants';
-import { RootState, useAppDispatch, useAppSelector } from '@/store';
+import { RootState, useAppSelector } from '@/store';
 import { useState } from 'react';
 import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
@@ -24,13 +24,17 @@ const ProjectItem = ({
   project: Project;
   handleDeleteProject?: (project: Project) => void;
 }) => {
-  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
-  const isSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN])
+  const { user }: { user: User } = useAppSelector(
+    (state: RootState) => state.auth.user
+  );
+  const isSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN]);
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
   const duration = dayjs(project.endDate).diff(project.startDate, 'day');
-  const statusColor = statusColorData[project.state as keyof typeof statusColorData];
-  const statusText = statusTextData[project.state as keyof typeof statusTextData];
+  const statusColor =
+    statusColorData[project.state as keyof typeof statusColorData];
+  const statusText =
+    statusTextData[project.state as keyof typeof statusTextData];
 
   const handleNavigateDetails = () => {
     navigate(`/common/projects/details/${project.documentId}`);
@@ -41,7 +45,7 @@ const ProjectItem = ({
   ).length;
 
   const totalProgress =
-  project.tasks.length > 0 ? completedTasksCount / project.tasks.length : 0;
+    project.tasks.length > 0 ? completedTasksCount / project.tasks.length : 0;
   const percentageComplete = (totalProgress * 100).toFixed(0);
   return (
     <Card bodyClass="h-full bg-gray-900 rounded-lg project-card">
@@ -68,18 +72,19 @@ const ProjectItem = ({
         </div>
         {isSuperAdmin && (
           <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
-          Total projet: {project.price} € - Total producteur: {project.producerPrice} €
-        </p>
+            Total projet: {project.price} € - Total producteur:{' '}
+            {project.producerPrice} €
+          </p>
         )}
         {hasRole(user, [PRODUCER]) && (
           <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
-          Total producteur: {project.producerPrice} €
-        </p>
+            Total producteur: {project.producerPrice} €
+          </p>
         )}
         {hasRole(user, [CUSTOMER]) && (
           <p className="mt-4 cursor-pointer" onClick={handleNavigateDetails}>
-          Total projet: {project.price} €
-        </p>
+            Total projet: {project.price} €
+          </p>
         )}
         <div className="mt-3 cursor-pointer" onClick={handleNavigateDetails}>
           <ProgressionBar progression={Number(percentageComplete)} />
@@ -105,7 +110,8 @@ const ProjectItem = ({
         <ModalPayProducer
           project={project}
           isPayProducerOpen={isPayProducerOpen}
-          onClosePayProducer={() => setIsPayProducerOpen(false)}/>
+          onClosePayProducer={() => setIsPayProducerOpen(false)}
+        />
       )}
     </Card>
   );

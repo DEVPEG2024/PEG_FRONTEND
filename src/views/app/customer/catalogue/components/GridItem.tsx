@@ -8,7 +8,9 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
   return (
     <Card
       bodyClass=" bg-gray-900 rounded-lg project-card justify-center items-center"
-      onClick={() => navigate(`/customer/catalogue/categories/${data.documentId}`)}
+      onClick={() =>
+        navigate(`/customer/catalogue/categories/${data.documentId}`)
+      }
     >
       <div className="flex flex-col justify-center items-center">
         <a className="cursor-pointer">

@@ -1,4 +1,3 @@
-
 export const priorityColorData = {
   low: 'bg-green-500',
   medium: 'bg-yellow-500',
@@ -29,5 +28,3 @@ export const priorityData = [
     label: 'Elevé',
   },
 ];
-
-

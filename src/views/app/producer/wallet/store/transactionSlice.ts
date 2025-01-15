@@ -2,7 +2,11 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 import { Transaction } from '@/@types/transaction';
-import { apiGetTransactions, GetTransactionsRequest, GetTransactionsResponse } from '@/services/TransactionsServices';
+import {
+  apiGetTransactions,
+  GetTransactionsRequest,
+  GetTransactionsResponse,
+} from '@/services/TransactionsServices';
 import { paymentAddTypes, paymentRemoveTypes } from '../constants';
 
 export const SLICE_NAME = 'transactions';
@@ -17,13 +21,17 @@ export type TransactionListState = {
 export type GetTransactions = {
   request: GetTransactionsRequest;
   user: User;
-}
+};
 
 export const getOwnTransactions = createAsyncThunk(
   SLICE_NAME + '/getOwnTransactions',
   async (data: GetTransactions): Promise<GetTransactionsResponse> => {
-    const {transactions_connection} : {transactions_connection: GetTransactionsResponse}= await unwrapData(apiGetTransactions(data.request, data.user.documentId));
-    return transactions_connection
+    const {
+      transactions_connection,
+    }: { transactions_connection: GetTransactionsResponse } = await unwrapData(
+      apiGetTransactions(data.request, data.user.documentId)
+    );
+    return transactions_connection;
   }
 );
 
@@ -41,17 +49,23 @@ const transactionListSlice = createSlice({
   extraReducers: (builder) => {
     // GET TRANSACTIONS
     builder.addCase(getOwnTransactions.pending, (state) => {
-          state.loading = true;
-        });
+      state.loading = true;
+    });
     builder.addCase(getOwnTransactions.fulfilled, (state, action) => {
       state.transactions = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
       state.amount = action.payload.nodes.reduce((acc, transaction) => {
-        if (paymentAddTypes.map(({value}) => value).includes(transaction.type)) {
+        if (
+          paymentAddTypes.map(({ value }) => value).includes(transaction.type)
+        ) {
           acc += transaction.amount;
         }
-        if (paymentRemoveTypes.map(({value}) => value).includes(transaction.type)) {
+        if (
+          paymentRemoveTypes
+            .map(({ value }) => value)
+            .includes(transaction.type)
+        ) {
           acc -= transaction.amount;
         }
         return acc;

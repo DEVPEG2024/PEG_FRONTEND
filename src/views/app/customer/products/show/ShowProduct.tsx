@@ -64,14 +64,20 @@ const ShowProduct = () => {
   useEffect(() => {
     setCanAddToCart(
       product &&
-      ((product.sizes.length > 0 && sizesSelected.length > 0) || product.sizes.length === 0) &&
-      ((product.form && formCompleted) || !product.form)
+        ((product.sizes.length > 0 && sizesSelected.length > 0) ||
+          product.sizes.length === 0) &&
+        ((product.form && formCompleted) || !product.form)
     );
   }, [sizesSelected, formCompleted, product]);
 
   const handleAddToCart = () => {
     dispatch(
-      addToCart({ id: Math.random().toString(16).slice(2), product, formAnswer, sizes: sizesSelected } as CartItem)
+      addToCart({
+        id: Math.random().toString(16).slice(2),
+        product,
+        formAnswer,
+        sizes: sizesSelected,
+      } as CartItem)
     );
     toast.push(
       <Notification type="success" title="Ajouté">
@@ -202,7 +208,8 @@ const ShowProduct = () => {
                       name="Quantité"
                       value={
                         sizesSelected.find(
-                          (sizeSelected) => sizeSelected.size.value === 'DEFAULT'
+                          (sizeSelected) =>
+                            sizeSelected.size.value === 'DEFAULT'
                         )?.quantity
                       }
                       type="number"
@@ -211,7 +218,7 @@ const ShowProduct = () => {
                         handleSizesChanged(parseInt(e.target.value), {
                           name: 'Default',
                           value: 'DEFAULT',
-                          description: 'Default'
+                          description: 'Default',
                         })
                       }
                     />

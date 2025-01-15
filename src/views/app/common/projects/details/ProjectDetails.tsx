@@ -17,9 +17,12 @@ type ProjectDetailsParams = {
 };
 
 const ProjectDetails = () => {
-  const { documentId } = useParams<ProjectDetailsParams>() as ProjectDetailsParams;
+  const { documentId } =
+    useParams<ProjectDetailsParams>() as ProjectDetailsParams;
   const dispatch = useAppDispatch();
-  const {project, selectedTab} = useAppSelector((state) => state.projectDetails.data);
+  const { project, selectedTab } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
 
   useEffect(() => {
     if (!project) {
@@ -27,22 +30,24 @@ const ProjectDetails = () => {
     }
 
     return () => {
-      dispatch(setProject(undefined))
-    }
+      dispatch(setProject(undefined));
+    };
   }, [dispatch]);
 
-  return project && (
-    <>
-      <ProjectHeader project={project} />
-      <Container className="h-full">
-        {/* <Board /> */}
-        {selectedTab === 'Accueil' && <Summary project={project} />}
-        {selectedTab === 'Commentaires' && <Comments />}
-        {selectedTab === 'Fichiers' && <Files />}
-        {selectedTab === 'Tâches' && <Tasks />}
-        {selectedTab === 'Factures' && <Invoices />}
-      </Container>
-    </>
+  return (
+    project && (
+      <>
+        <ProjectHeader project={project} />
+        <Container className="h-full">
+          {/* <Board /> */}
+          {selectedTab === 'Accueil' && <Summary project={project} />}
+          {selectedTab === 'Commentaires' && <Comments />}
+          {selectedTab === 'Fichiers' && <Files />}
+          {selectedTab === 'Tâches' && <Tasks />}
+          {selectedTab === 'Factures' && <Invoices />}
+        </Container>
+      </>
+    )
   );
 };
 

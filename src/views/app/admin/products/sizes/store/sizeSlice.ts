@@ -2,7 +2,16 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import { unwrapData } from '@/utils/serviceHelper';
 import { Size } from '@/@types/product';
-import { apiCreateSize, apiDeleteSize, apiGetSizes, apiUpdateSize, CreateSizeRequest, DeleteSizeResponse, GetSizesRequest, GetSizesResponse } from '@/services/SizeServices';
+import {
+  apiCreateSize,
+  apiDeleteSize,
+  apiGetSizes,
+  apiUpdateSize,
+  CreateSizeRequest,
+  DeleteSizeResponse,
+  GetSizesRequest,
+  GetSizesResponse,
+} from '@/services/SizeServices';
 
 export const SLICE_NAME = 'sizes';
 
@@ -17,16 +26,19 @@ export type SizesState = {
 
 export const getSizes = createAsyncThunk(
   SLICE_NAME + '/getSizes',
-  async (data: GetSizesRequest) : Promise<GetSizesResponse> => {
-    const {sizes_connection} : {sizes_connection: GetSizesResponse} = await unwrapData(apiGetSizes(data));
+  async (data: GetSizesRequest): Promise<GetSizesResponse> => {
+    const { sizes_connection }: { sizes_connection: GetSizesResponse } =
+      await unwrapData(apiGetSizes(data));
     return sizes_connection;
   }
 );
 
 export const createSize = createAsyncThunk(
   SLICE_NAME + '/createSize',
-  async (data: CreateSizeRequest) : Promise<Size> => {
-    const {createSize} : {createSize: Size} = await unwrapData(apiCreateSize(data));
+  async (data: CreateSizeRequest): Promise<Size> => {
+    const { createSize }: { createSize: Size } = await unwrapData(
+      apiCreateSize(data)
+    );
     return createSize;
   }
 );
@@ -34,7 +46,9 @@ export const createSize = createAsyncThunk(
 export const deleteSize = createAsyncThunk(
   SLICE_NAME + '/deleteSize',
   async (documentId: string): Promise<DeleteSizeResponse> => {
-    const {deleteSize} : {deleteSize: DeleteSizeResponse} = await unwrapData(apiDeleteSize(documentId));
+    const { deleteSize }: { deleteSize: DeleteSizeResponse } = await unwrapData(
+      apiDeleteSize(documentId)
+    );
     return deleteSize;
   }
 );
@@ -42,7 +56,9 @@ export const deleteSize = createAsyncThunk(
 export const updateSize = createAsyncThunk(
   SLICE_NAME + '/updateSize',
   async (data: Partial<Size>): Promise<Size> => {
-    const {updateSize} : {updateSize: Size} = await unwrapData(apiUpdateSize(data));
+    const { updateSize }: { updateSize: Size } = await unwrapData(
+      apiUpdateSize(data)
+    );
     return updateSize;
   }
 );
@@ -90,7 +106,7 @@ const sizeSlice = createSlice({
     builder.addCase(createSize.fulfilled, (state, action) => {
       state.loading = false;
       state.sizes.push(action.payload);
-      state.total += 1
+      state.total += 1;
     });
     builder.addCase(createSize.rejected, (state) => {
       state.loading = false;
@@ -114,8 +130,10 @@ const sizeSlice = createSlice({
     });
     builder.addCase(deleteSize.fulfilled, (state, action) => {
       state.loading = false;
-      state.sizes = state.sizes.filter((size) => size.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.sizes = state.sizes.filter(
+        (size) => size.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
     builder.addCase(deleteSize.rejected, (state) => {
       state.loading = false;

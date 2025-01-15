@@ -8,7 +8,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { Product, ProductCategory } from '@/@types/product';
+import { Product } from '@/@types/product';
 import { Image } from '@/@types/image';
 
 interface Options {
@@ -18,14 +18,23 @@ interface Options {
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>;
 
-export type ProductFormModel = Omit<Product, 'documentId' | 'sizes' | 'customerCategories' | 'customers' | 'productCategory' | 'form' | 'images'> & {
+export type ProductFormModel = Omit<
+  Product,
+  | 'documentId'
+  | 'sizes'
+  | 'customerCategories'
+  | 'customers'
+  | 'productCategory'
+  | 'form'
+  | 'images'
+> & {
   documentId?: string;
   sizes: string[];
   customerCategories: string[];
   customers: string[];
   productCategory: string | null;
   form: string | null;
-}
+};
 
 export type SetSubmitting = (isSubmitting: boolean) => void;
 
@@ -38,7 +47,10 @@ type ProductForm = {
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
-  onFormSubmit: (formData: ProductFormModel, setSubmitting: SetSubmitting) => void;
+  onFormSubmit: (
+    formData: ProductFormModel,
+    setSubmitting: SetSubmitting
+  ) => void;
   sizes: Options[];
   customerCategories: Options[];
   categories: Options[];
@@ -73,19 +85,17 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     filterSizesListByProductCategory,
   } = props;
 
-  const onFileAdd = async (
-    file: File
-  ) => {
-    setImages([...images, {file, name: file.name}]);
+  const onFileAdd = async (file: File) => {
+    setImages([...images, { file, name: file.name }]);
   };
 
-  const onFileRemove = (
-    fileName: string
-  ) => {
-    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+  const onFileRemove = (fileName: string) => {
+    const imageToDelete: Image | undefined = images.find(
+      ({ name }) => name === fileName
+    );
 
     if (imageToDelete) {
-      setImages(images.filter(({name}) => name !== fileName));
+      setImages(images.filter(({ name }) => name !== fileName));
     }
   };
 
@@ -124,7 +134,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
       <Formik
         innerRef={ref}
         initialValues={{
-          ...initialData
+          ...initialData,
         }}
         validationSchema={validationSchema}
         onSubmit={(values: ProductFormModel, { setSubmitting }) => {
@@ -133,12 +143,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
           onFormSubmit?.(formData, setSubmitting);
         }}
       >
-        {({
-          values,
-          touched,
-          errors,
-          isSubmitting
-        }) => (
+        {({ values, touched, errors, isSubmitting }) => (
           <Form>
             <FormContainer>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -153,7 +158,9 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     customerCategories={customerCategories}
                     categories={categories}
                     customers={customers}
-                    filterSizesListByProductCategory={filterSizesListByProductCategory}
+                    filterSizesListByProductCategory={
+                      filterSizesListByProductCategory
+                    }
                   />
                 </div>
                 <div className="lg:col-span-1">
@@ -164,14 +171,10 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     draggable
                     uploadLimit={4}
                     beforeUpload={beforeUpload}
-                    onFileAdd={(file) =>
-                      onFileAdd(file)
-                    }
-                    onFileRemove={(file) =>
-                      onFileRemove(file)
-                    }
+                    onFileAdd={(file) => onFileAdd(file)}
+                    onFileRemove={(file) => onFileRemove(file)}
                     field={{ name: 'images' }}
-                    fileList={images.map(({file}) => file)}
+                    fileList={images.map(({ file }) => file)}
                   />
                 </div>
               </div>

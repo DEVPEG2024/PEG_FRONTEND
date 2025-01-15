@@ -3,11 +3,13 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { TransactionsListColumns } from './TransactionsListColumns';
 import { Button, Input } from '@/components/ui';
-import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
-import reducer, {
-  getOwnTransactions,
-  useAppSelector,
-} from './store';
+import {
+  injectReducer,
+  useAppDispatch,
+  useAppSelector as useRootAppSelector,
+  RootState,
+} from '@/store';
+import reducer, { getOwnTransactions, useAppSelector } from './store';
 import { User } from '@/@types/user';
 
 injectReducer('transactions', reducer);
@@ -18,15 +20,24 @@ const TransactionsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const {user}: {user: User} = useRootAppSelector((state: RootState) => state.auth.user);
-  const { amount, transactions, total, loading } = useAppSelector((state) => state.transactions.data);
+  const { user }: { user: User } = useRootAppSelector(
+    (state: RootState) => state.auth.user
+  );
+  const { amount, transactions, total, loading } = useAppSelector(
+    (state) => state.transactions.data
+  );
 
   useEffect(() => {
     fetchTransactions();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchTransactions = async () => {
-    dispatch(getOwnTransactions({request: {pagination: {page: currentPage, pageSize}, searchTerm}, user}))
+    dispatch(
+      getOwnTransactions({
+        request: { pagination: { page: currentPage, pageSize }, searchTerm },
+        user,
+      })
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -47,13 +58,15 @@ const TransactionsList = () => {
   const handleTakeDeposit = () => {
     // TODO: Voir comment implémenter la fonctionnalité de retrait de fonds: mail dans un premier temps ?
     console.log('Take deposit');
-  }
+  };
 
   return (
     <Container>
-      <div className='mb-4 flex gap-4 items-center'>
+      <div className="mb-4 flex gap-4 items-center">
         <h1 className="text-2xl font-bold">{`Montant disponible : ${amount}€`}</h1>
-        <Button variant="solid" size="sm" onClick={handleTakeDeposit}>Retirer les fonds</Button>
+        <Button variant="solid" size="sm" onClick={handleTakeDeposit}>
+          Retirer les fonds
+        </Button>
       </div>
       <HeaderTitle
         title="Transactions du wallet"

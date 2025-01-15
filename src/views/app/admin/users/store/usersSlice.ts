@@ -1,7 +1,19 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
-import { apiDeleteUser, apiGetAllCustomers, apiGetAllProducers, apiGetAllRoles, apiGetAllUsers, apiGetUserForEditById, apiGetUsers, apiUpdateUser, DeleteUserResponse, GetUsersRequest, GetUsersResponse } from '@/services/UserService';
+import {
+  apiDeleteUser,
+  apiGetAllCustomers,
+  apiGetAllProducers,
+  apiGetAllRoles,
+  apiGetAllUsers,
+  apiGetUserForEditById,
+  apiGetUsers,
+  apiUpdateUser,
+  DeleteUserResponse,
+  GetUsersRequest,
+  GetUsersResponse,
+} from '@/services/UserService';
 
 export const SLICE_NAME = 'users';
 
@@ -11,55 +23,58 @@ export type UsersStateData = {
   user: User | null;
   modalDeleteUser: boolean;
   total: number;
-  usersId: {id: number, documentId: string}[]
-  rolesId: {id: number, documentId: string}[]
-  customersId: {id: number, documentId: string}[]
-  producersId: {id: number, documentId: string}[]
+  usersId: { id: number; documentId: string }[];
+  rolesId: { id: number; documentId: string }[];
+  customersId: { id: number; documentId: string }[];
+  producersId: { id: number; documentId: string }[];
 };
 
 export const getUsers = createAsyncThunk(
   SLICE_NAME + '/getUsers',
   async (data: GetUsersRequest): Promise<GetUsersResponse> => {
-    const {usersPermissionsUsers_connection} : {usersPermissionsUsers_connection: GetUsersResponse}= await unwrapData(apiGetUsers(data));
-    return usersPermissionsUsers_connection
+    const {
+      usersPermissionsUsers_connection,
+    }: { usersPermissionsUsers_connection: GetUsersResponse } =
+      await unwrapData(apiGetUsers(data));
+    return usersPermissionsUsers_connection;
   }
 );
 
 export const getUsersIdTable = createAsyncThunk(
   SLICE_NAME + '/getUsersIdTable',
-  async (): Promise<{id: number, documentId: string}[]> => {
-    const users = await apiGetAllUsers()
-    return users.map(({id, documentId}) => ({id, documentId}))
+  async (): Promise<{ id: number; documentId: string }[]> => {
+    const users = await apiGetAllUsers();
+    return users.map(({ id, documentId }) => ({ id, documentId }));
   }
 );
 
 export const getRolesIdTable = createAsyncThunk(
   SLICE_NAME + '/getRolesIdTable',
-  async (): Promise<{id: number, documentId: string}[]> => {
-    const roles = await apiGetAllRoles()
-    return roles.roles.map(({id, documentId}) => ({id, documentId}))
+  async (): Promise<{ id: number; documentId: string }[]> => {
+    const roles = await apiGetAllRoles();
+    return roles.roles.map(({ id, documentId }) => ({ id, documentId }));
   }
 );
 
 export const getCustomersIdTable = createAsyncThunk(
   SLICE_NAME + '/getCustomersIdTable',
-  async (): Promise<{id: number, documentId: string}[]> => {
-    const customers = await apiGetAllCustomers()
-    return customers.data.map(({id, documentId}) => ({id, documentId}))
+  async (): Promise<{ id: number; documentId: string }[]> => {
+    const customers = await apiGetAllCustomers();
+    return customers.data.map(({ id, documentId }) => ({ id, documentId }));
   }
 );
 
 export const getProducersIdTable = createAsyncThunk(
   SLICE_NAME + '/getProducersIdTable',
-  async (): Promise<{id: number, documentId: string}[]> => {
-    const producers = await apiGetAllProducers()
-    return producers.data.map(({id, documentId}) => ({id, documentId}))
+  async (): Promise<{ id: number; documentId: string }[]> => {
+    const producers = await apiGetAllProducers();
+    return producers.data.map(({ id, documentId }) => ({ id, documentId }));
   }
 );
 
 export const getUserById = createAsyncThunk(
   SLICE_NAME + '/getUserById',
-  async (documentId: string): Promise<{usersPermissionsUser: User}> => {
+  async (documentId: string): Promise<{ usersPermissionsUser: User }> => {
     return await unwrapData(apiGetUserForEditById(documentId));
   }
 );
@@ -67,12 +82,16 @@ export const getUserById = createAsyncThunk(
 export type UserRequest = {
   user: Partial<User>;
   id: number;
-}
+};
 
 export const updateUser = createAsyncThunk(
   SLICE_NAME + '/updateUser',
   async (data: UserRequest): Promise<User> => {
-    const {updateUsersPermissionsUser} : {updateUsersPermissionsUser: {data: User}} = await unwrapData(apiUpdateUser(data.user, data.id));
+    const {
+      updateUsersPermissionsUser,
+    }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
+      apiUpdateUser(data.user, data.id)
+    );
     return updateUsersPermissionsUser.data;
   }
 );
@@ -80,7 +99,10 @@ export const updateUser = createAsyncThunk(
 export const deleteUser = createAsyncThunk(
   SLICE_NAME + '/deleteUser',
   async (id: number): Promise<DeleteUserResponse> => {
-    const {deleteUsersPermissionsUser} : {deleteUsersPermissionsUser: {data: DeleteUserResponse}} = await unwrapData(apiDeleteUser(id));
+    const {
+      deleteUsersPermissionsUser,
+    }: { deleteUsersPermissionsUser: { data: DeleteUserResponse } } =
+      await unwrapData(apiDeleteUser(id));
     return deleteUsersPermissionsUser.data;
   }
 );
@@ -94,7 +116,7 @@ const initialState: UsersStateData = {
   usersId: [],
   rolesId: [],
   customersId: [],
-  producersId: []
+  producersId: [],
 };
 
 const productSlice = createSlice({
@@ -176,7 +198,7 @@ const productSlice = createSlice({
       state.users = state.users.filter(
         (user) => user.documentId !== action.payload.documentId
       );
-      state.total -= 1
+      state.total -= 1;
     });
     builder.addCase(deleteUser.rejected, (state) => {
       state.loading = false;
@@ -209,10 +231,7 @@ const productSlice = createSlice({
   },
 });
 
-export const {
-  setUser,
-  setModalDeleteUserOpen,
-  setModalDeleteUserClose,
-} = productSlice.actions;
+export const { setUser, setModalDeleteUserOpen, setModalDeleteUserClose } =
+  productSlice.actions;
 
 export default productSlice.reducer;

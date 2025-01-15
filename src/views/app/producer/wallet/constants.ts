@@ -1,6 +1,3 @@
-
-
-
 export const priorityColorData = {
   low: 'bg-green-500',
   medium: 'bg-yellow-500',
@@ -85,7 +82,7 @@ export const paymentAddTypes = [
   },
   {
     value: 'advancePayment',
-    label: 'Paiement d\'avance',
+    label: "Paiement d'avance",
     type: 'add',
   },
   {
@@ -95,13 +92,12 @@ export const paymentAddTypes = [
   },
   {
     value: 'milestonePayment',
-    label: 'Paiement d\'étape',
+    label: "Paiement d'étape",
     type: 'add',
   },
-]
+];
 
 export const paymentRemoveTypes = [
-  
   {
     value: 'withdrawal',
     label: 'Retrait',

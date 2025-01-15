@@ -8,6 +8,9 @@ module.exports = {
       jsx: true, // Enable JSX
     },
   },
+  plugins: [
+    '@typescript-eslint',
+  ],
   settings: {
     react: {
       version: 'detect', // Automatically detect the version of React
@@ -16,12 +19,15 @@ module.exports = {
   extends: [
     'eslint:recommended', // Use recommended rules
     'plugin:react/recommended', // Use recommended React rules
-    'plugin:prettier/recommended', // Use Prettier's recommended configuration
+    'plugin:prettier/recommended', // Use Prettier's recommended configuration,
+    'plugin:@typescript-eslint/recommended', // Use recommended TypeScript rules
   ],
   rules: {
     // Customize rules as needed
     'react/prop-types': 'off', // Disable prop-types as we use TypeScript
     'prettier/prettier': 'error', // Show Prettier errors as ESLint errors
     'react/react-in-jsx-scope': 'off',
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': ['error']
   },
 };

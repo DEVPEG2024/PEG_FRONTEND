@@ -12,7 +12,13 @@ import { Button } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 import { Customer } from '@/@types/customer';
 
-const OrderItemDetails = ({ orderItem, customer }: { orderItem: OrderItem, customer: Customer }) => {
+const OrderItemDetails = ({
+  orderItem,
+  customer,
+}: {
+  orderItem: OrderItem;
+  customer: Customer;
+}) => {
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;

@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { InvoicesListColumns } from './InvoicesListColumns';
 import { Input } from '@/components/ui';
 import { Invoice } from '@/@types/invoice';
-import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
+import {
+  injectReducer,
+  useAppDispatch,
+  useAppSelector as useRootAppSelector,
+  RootState,
+} from '@/store';
 import reducer, {
   getInvoices,
   setEditInvoiceDialog,
@@ -26,16 +31,30 @@ const InvoicesList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const {user}: {user: User} = useRootAppSelector((state: RootState) => state.auth.user);
-  const isAdminOrSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN])
-  const { invoices, total, loading, selectedInvoice, editInvoiceDialog, printInvoiceDialog } = useAppSelector((state) => state.invoices.data);
+  const { user }: { user: User } = useRootAppSelector(
+    (state: RootState) => state.auth.user
+  );
+  const isAdminOrSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
+  const {
+    invoices,
+    total,
+    loading,
+    selectedInvoice,
+    editInvoiceDialog,
+    printInvoiceDialog,
+  } = useAppSelector((state) => state.invoices.data);
 
   useEffect(() => {
     fetchInvoices();
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchInvoices = async () => {
-    dispatch(getInvoices({request: {pagination: {page: currentPage, pageSize}, searchTerm}, user}))
+    dispatch(
+      getInvoices({
+        request: { pagination: { page: currentPage, pageSize }, searchTerm },
+        user,
+      })
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -44,7 +63,9 @@ const InvoicesList = () => {
   };
 
   const handleCancelInvoice = (invoice: Invoice) => {
-    dispatch(updateInvoice({documentId: invoice.documentId, state: 'canceled'}));
+    dispatch(
+      updateInvoice({ documentId: invoice.documentId, state: 'canceled' })
+    );
   };
 
   const handleUpdateInvoice = (invoice: Invoice) => {
@@ -104,24 +125,26 @@ const InvoicesList = () => {
           />
         </Loading>
       </div>
-      {isAdminOrSuperAdmin && selectedInvoice && editInvoiceDialog &&
-        <ModalEditInvoice 
+      {isAdminOrSuperAdmin && selectedInvoice && editInvoiceDialog && (
+        <ModalEditInvoice
           editInvoiceDialog={editInvoiceDialog}
           selectedInvoice={selectedInvoice}
           setEditInvoiceDialog={setEditInvoiceDialog}
           setSelectedInvoice={setSelectedInvoice}
           updateInvoice={updateInvoice}
           dispatch={dispatch}
-          loading={loading} />
-      }
-      {selectedInvoice && printInvoiceDialog &&
-        <ModalPrintInvoice 
+          loading={loading}
+        />
+      )}
+      {selectedInvoice && printInvoiceDialog && (
+        <ModalPrintInvoice
           printInvoiceDialog={printInvoiceDialog}
           selectedInvoice={selectedInvoice}
           setPrintInvoiceDialog={setPrintInvoiceDialog}
           setSelectedInvoice={setSelectedInvoice}
-          dispatch={dispatch}/>
-      }
+          dispatch={dispatch}
+        />
+      )}
     </Container>
   );
 };

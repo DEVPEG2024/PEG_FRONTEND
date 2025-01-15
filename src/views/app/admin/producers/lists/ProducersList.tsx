@@ -28,7 +28,9 @@ const ProducersList = () => {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchProducers = async () => {
-    dispatch(getProducers({pagination: {page: currentPage, pageSize}, searchTerm}))
+    dispatch(
+      getProducers({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   };
 
   const handleSearch = (value: string) => {

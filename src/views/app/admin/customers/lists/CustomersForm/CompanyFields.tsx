@@ -17,14 +17,11 @@ type CompanyFieldsProps = {
   customerCategories: Options[];
   touched: FormikTouched<FormFieldsName>;
   errors: FormikErrors<FormFieldsName>;
-  values: FormFieldsName
+  values: FormFieldsName;
 };
 
 const CompanyFields = (props: CompanyFieldsProps) => {
-  const {
-    customerCategories,
-    errors,
-  } = props;
+  const { customerCategories, errors } = props;
 
   return (
     <AdaptableCard className="mb-4">

@@ -6,11 +6,21 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PRODUCERS_LIST } from '@/constants/navigation.constant';
 import { useEffect, useState } from 'react';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getProducerById, setProducer, useAppSelector } from '../store';
-import { apiGetProducerCategories, GetProducerCategoriesResponse } from '@/services/ProducerCategoryServices';
+import reducer, {
+  getProducerById,
+  setProducer,
+  useAppSelector,
+} from '../store';
+import {
+  apiGetProducerCategories,
+  GetProducerCategoriesResponse,
+} from '@/services/ProducerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Producer, ProducerCategory } from '@/@types/producer';
-import { apiCreateProducer, apiUpdateProducer } from '@/services/ProducerServices';
+import {
+  apiCreateProducer,
+  apiUpdateProducer,
+} from '@/services/ProducerServices';
 
 injectReducer('producers', reducer);
 
@@ -44,26 +54,28 @@ const EditProducer = () => {
     city: producer?.companyInformations.city || '',
     country: producer?.companyInformations.country || '',
     website: producer?.companyInformations.website || '',
-  }
+  };
 
   useEffect(() => {
     if (!producer && onEdition) {
       dispatch(getProducerById(documentId));
-    } else {
-      
     }
     return () => {
-      dispatch(setProducer(null))
-    }
+      dispatch(setProducer(null));
+    };
   }, [dispatch]);
-  
+
   useEffect(() => {
     fetchProducerCategories();
   }, []);
 
   const fetchProducerCategories = async () => {
-    const {producerCategories_connection} : {producerCategories_connection: GetProducerCategoriesResponse}= await unwrapData(apiGetProducerCategories());
-    const producerCategoriesList: ProducerCategory[] = producerCategories_connection.nodes || [];
+    const {
+      producerCategories_connection,
+    }: { producerCategories_connection: GetProducerCategoriesResponse } =
+      await unwrapData(apiGetProducerCategories());
+    const producerCategoriesList: ProducerCategory[] =
+      producerCategories_connection.nodes || [];
     const producerCategories = producerCategoriesList.map(
       (producerCategory: ProducerCategory) => ({
         value: producerCategory.documentId || '',
@@ -73,7 +85,9 @@ const EditProducer = () => {
     setProducerCategories(producerCategories);
   };
 
-  const updateOrCreateProducer = async (data: ProducerFormModel) : Promise<Producer> => {
+  const updateOrCreateProducer = async (
+    data: ProducerFormModel
+  ): Promise<Producer> => {
     const producer: Omit<Producer, 'documentId'> = {
       companyInformations: {
         address: data.address,
@@ -84,25 +98,29 @@ const EditProducer = () => {
         siretNumber: data.siretNumber,
         vatNumber: data.vatNumber,
         website: data.website,
-        zipCode: data.zipCode
+        zipCode: data.zipCode,
       },
       producerCategory: data.producerCategory,
       name: data.name,
-    }
+    };
     if (onEdition) {
-      const {updateProducer} : {updateProducer: Producer} = await unwrapData(apiUpdateProducer({documentId: data.documentId, ...producer}));
-      return updateProducer
+      const { updateProducer }: { updateProducer: Producer } = await unwrapData(
+        apiUpdateProducer({ documentId: data.documentId, ...producer })
+      );
+      return updateProducer;
     }
-    const {createProducer} : {createProducer: Producer} = await unwrapData(apiCreateProducer(producer));
-    return createProducer
-  }
+    const { createProducer }: { createProducer: Producer } = await unwrapData(
+      apiCreateProducer(producer)
+    );
+    return createProducer;
+  };
 
   const handleFormSubmit = async (
     values: ProducerFormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    await updateOrCreateProducer(values)
+    await updateOrCreateProducer(values);
     setSubmitting(false);
     navigate(PRODUCERS_LIST);
   };
@@ -110,15 +128,17 @@ const EditProducer = () => {
   const handleDiscard = () => {
     navigate(PRODUCERS_LIST);
   };
-  return (!onEdition || producer) && (
-    <>
-      <ProducerForm
-        initialData={initialData}
-        producerCategories={producerCategories}
-        onFormSubmit={handleFormSubmit}
-        onDiscard={handleDiscard}
-      />
-    </>
+  return (
+    (!onEdition || producer) && (
+      <>
+        <ProducerForm
+          initialData={initialData}
+          producerCategories={producerCategories}
+          onFormSubmit={handleFormSubmit}
+          onDiscard={handleDiscard}
+        />
+      </>
+    )
   );
 };
 

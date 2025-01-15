@@ -40,14 +40,18 @@ export const SLICE_NAME = 'products';
 
 export const getCustomerProducts = createAsyncThunk(
   SLICE_NAME + '/getCustomerProducts',
-  async (data: GetProductListRequest): Promise<{products: Product[]}> => {
-    const {products_connection} : {products_connection: CustomerProductsResponse} = await unwrapData(apiGetCustomerProducts(
-      data.customerDocumentId,
-      data.customerCategoryDocumentId,
-      {page: data.page, pageSize: data.pageSize},
-      data.searchTerm
-    ));
-    return {products: products_connection.nodes};
+  async (data: GetProductListRequest): Promise<{ products: Product[] }> => {
+    const {
+      products_connection,
+    }: { products_connection: CustomerProductsResponse } = await unwrapData(
+      apiGetCustomerProducts(
+        data.customerDocumentId,
+        data.customerCategoryDocumentId,
+        { page: data.page, pageSize: data.pageSize },
+        data.searchTerm
+      )
+    );
+    return { products: products_connection.nodes };
   }
 );
 
@@ -71,8 +75,9 @@ const productSlice = createSlice({
   reducers: {
     setProduct: (state, action) => {
       state.product =
-        state.products.find((product) => product.documentId === action.payload) ??
-        null;
+        state.products.find(
+          (product) => product.documentId === action.payload
+        ) ?? null;
     },
   },
   extraReducers: (builder) => {
@@ -89,8 +94,6 @@ const productSlice = createSlice({
   },
 });
 
-export const {
-  setProduct,
-} = productSlice.actions;
+export const { setProduct } = productSlice.actions;
 
 export default productSlice.reducer;

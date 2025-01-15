@@ -5,7 +5,10 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { createSize, setNewSizeDialog } from '../store/sizeSlice';
 import { unwrapData } from '@/utils/serviceHelper';
 import { ProductCategory, Size } from '@/@types/product';
-import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import {
+  apiGetProductCategories,
+  GetProductCategoriesResponse,
+} from '@/services/ProductCategoryServices';
 
 type Option = {
   value: string;
@@ -15,7 +18,7 @@ type Option = {
 export type SizeFormModel = Omit<Size, 'documentId' | 'productCategory'> & {
   documentId?: string;
   productCategory: string | null;
-}
+};
 
 function ModalNewSize() {
   const { newSizeDialog } = useAppSelector((state) => state.sizes.data);
@@ -29,7 +32,10 @@ function ModalNewSize() {
   });
 
   const fetchProductCategories = async () => {
-    const {productCategories_connection} : {productCategories_connection: GetProductCategoriesResponse}= await unwrapData(apiGetProductCategories());
+    const {
+      productCategories_connection,
+    }: { productCategories_connection: GetProductCategoriesResponse } =
+      await unwrapData(apiGetProductCategories());
     const productCategoriesList = productCategories_connection.nodes || [];
     const productCategories = productCategoriesList.map(
       (productCategory: ProductCategory) => ({
@@ -48,8 +54,9 @@ function ModalNewSize() {
     e.preventDefault();
     const sizeToCreate: Omit<Size, 'documentId'> = {
       ...formData,
-      productCategory: formData.productCategory !== '' ? formData.productCategory : null,
-    }
+      productCategory:
+        formData.productCategory !== '' ? formData.productCategory : null,
+    };
     dispatch(createSize(sizeToCreate));
     setFormData({
       name: '',
@@ -59,7 +66,7 @@ function ModalNewSize() {
     });
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setNewSizeDialog(false));
   };

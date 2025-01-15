@@ -19,13 +19,19 @@ import { VAT_AMOUNT } from './ModalEditInvoice';
 import { Invoice } from '@/@types/invoice';
 
 // TODO: Voir pour ne charger les infos relatives à l'impression qu'au moment nécessaire
-const ModalPrintInvoice = ({printInvoiceDialog, selectedInvoice, setPrintInvoiceDialog, setSelectedInvoice, dispatch} : {
-    printInvoiceDialog: boolean,
-    selectedInvoice: Invoice,
-    setPrintInvoiceDialog: (printInvoiceDialog: boolean) => any,
-    setSelectedInvoice: (invoice: Invoice | null) => any,
-    dispatch: (fonction: any) => any
-  }) => {
+const ModalPrintInvoice = ({
+  printInvoiceDialog,
+  selectedInvoice,
+  setPrintInvoiceDialog,
+  setSelectedInvoice,
+  dispatch,
+}: {
+  printInvoiceDialog: boolean;
+  selectedInvoice: Invoice;
+  setPrintInvoiceDialog: (printInvoiceDialog: boolean) => any;
+  setSelectedInvoice: (invoice: Invoice | null) => any;
+  dispatch: (fonction: any) => any;
+}) => {
   const customer: Customer = selectedInvoice!.customer;
   const [qrcod, setQrcode] = useState('');
 
@@ -89,7 +95,9 @@ const ModalPrintInvoice = ({printInvoiceDialog, selectedInvoice, setPrintInvoice
                       {customer?.companyInformations.address}
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      {customer?.companyInformations.zipCode + ', ' + customer?.companyInformations.city}
+                      {customer?.companyInformations.zipCode +
+                        ', ' +
+                        customer?.companyInformations.city}
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
                       Siret : {customer?.companyInformations.siretNumber}
@@ -251,75 +259,81 @@ const ModalPrintInvoice = ({printInvoiceDialog, selectedInvoice, setPrintInvoice
                         </Text>
                       </View>
                     </View>
-                    {selectedInvoice?.orderItems.map((orderItem: OrderItem, i: number) => {
-                      let total = orderItem?.price;
-                      return (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            width: '100%',
-                            borderBottom: 1,
-                            borderColor: '#ECECEC',
-                          }}
-                          key={i}
-                        >
-                          <View style={styles.section13}>
-                            <Text style={{ fontSize: 8, padding: 4 }}>
-                              {i + 1}
-                            </Text>
+                    {selectedInvoice?.orderItems.map(
+                      (orderItem: OrderItem, i: number) => {
+                        let total = orderItem?.price;
+                        return (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              width: '100%',
+                              borderBottom: 1,
+                              borderColor: '#ECECEC',
+                            }}
+                            key={i}
+                          >
+                            <View style={styles.section13}>
+                              <Text style={{ fontSize: 8, padding: 4 }}>
+                                {i + 1}
+                              </Text>
+                            </View>
+                            <View style={styles.section14}>
+                              <Text style={{ fontSize: 8, padding: 4 }}>
+                                {orderItem?.product.name}
+                              </Text>
+                            </View>
+                            <View style={styles.section16}>
+                              <Text
+                                style={{
+                                  fontSize: 8,
+                                  padding: 4,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {orderItem?.sizeSelections.reduce(
+                                  (quantity, sizeSelection) =>
+                                    quantity + sizeSelection.quantity,
+                                  0
+                                )}
+                              </Text>
+                            </View>
+                            <View style={styles.section13}>
+                              <Text
+                                style={{
+                                  fontSize: 8,
+                                  padding: 4,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {orderItem?.price.toFixed(2)} €
+                              </Text>
+                            </View>
+                            <View style={styles.section16}>
+                              <Text
+                                style={{
+                                  fontSize: 8,
+                                  padding: 4,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                20%{' '}
+                              </Text>
+                            </View>
+                            <View style={styles.section13}>
+                              <Text
+                                style={{
+                                  fontSize: 8,
+                                  padding: 4,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {total.toFixed(2)} €
+                              </Text>
+                            </View>
                           </View>
-                          <View style={styles.section14}>
-                            <Text style={{ fontSize: 8, padding: 4 }}>
-                              {orderItem?.product.name}
-                            </Text>
-                          </View>
-                          <View style={styles.section16}>
-                            <Text
-                              style={{
-                                fontSize: 8,
-                                padding: 4,
-                                textAlign: 'right',
-                              }}
-                            >
-                              {orderItem?.sizeSelections.reduce((quantity, sizeSelection) => quantity + sizeSelection.quantity, 0)}
-                            </Text>
-                          </View>
-                          <View style={styles.section13}>
-                            <Text
-                              style={{
-                                fontSize: 8,
-                                padding: 4,
-                                textAlign: 'right',
-                              }}
-                            >
-                              {orderItem?.price.toFixed(2)} €
-                            </Text>
-                          </View>
-                          <View style={styles.section16}>
-                            <Text
-                              style={{
-                                fontSize: 8,
-                                padding: 4,
-                                textAlign: 'right',
-                              }}
-                            >
-                              20%{' '}
-                            </Text>
-                          </View>
-                          <View style={styles.section13}>
-                            <Text
-                              style={{
-                                fontSize: 8,
-                                padding: 4,
-                                textAlign: 'right',
-                              }}
-                            >
-                              {total.toFixed(2)} €
-                            </Text>
-                          </View>
-                        </View>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                   </View>
                 </View>
                 <View style={styles.page}>
@@ -357,7 +371,8 @@ const ModalPrintInvoice = ({printInvoiceDialog, selectedInvoice, setPrintInvoice
                     <View style={{ flexDirection: 'row', marginTop: 2 }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 10, padding: 3 }}>
-                          TVA {selectedInvoice!.vatAmount > 0 ? VAT_AMOUNT : 0} %
+                          TVA {selectedInvoice!.vatAmount > 0 ? VAT_AMOUNT : 0}{' '}
+                          %
                         </Text>
                       </View>
                       <View style={styles.section5}>
@@ -403,7 +418,8 @@ const ModalPrintInvoice = ({printInvoiceDialog, selectedInvoice, setPrintInvoice
                       customer?.companyInformations.zipCode +
                       ', ' +
                       customer?.companyInformations.city}{' '}
-                    - RCS : {customer?.companyInformations.siretNumber} - N° TVA : {customer?.companyInformations.vatNumber}
+                    - RCS : {customer?.companyInformations.siretNumber} - N° TVA
+                    : {customer?.companyInformations.vatNumber}
                   </Text>
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}

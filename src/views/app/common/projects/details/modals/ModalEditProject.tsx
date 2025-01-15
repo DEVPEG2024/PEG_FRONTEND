@@ -1,4 +1,11 @@
-import { Button, DatePicker, Dialog, Input, Select, Switcher } from '@/components/ui';
+import {
+  Button,
+  DatePicker,
+  Dialog,
+  Input,
+  Select,
+  Switcher,
+} from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from '../../modals/components/fileds';
 import dayjs from 'dayjs';
@@ -14,9 +21,15 @@ import _ from 'lodash';
 import { priorityData, stateData } from '../../lists/constants';
 import { Project } from '@/@types/project';
 import { unwrapData } from '@/utils/serviceHelper';
-import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
+import {
+  apiGetCustomers,
+  GetCustomersResponse,
+} from '@/services/CustomerServices';
 import { Customer } from '@/@types/customer';
-import { apiGetProducers, GetProducersResponse } from '@/services/ProducerServices';
+import {
+  apiGetProducers,
+  GetProducersResponse,
+} from '@/services/ProducerServices';
 import { Producer } from '@/@types/producer';
 
 type Option = {
@@ -24,14 +37,17 @@ type Option = {
   label: string;
 };
 
-export type ProjectFormModel = Omit<Project, 'customer' | 'producer' | 'documentId' | 'images'> & {
+export type ProjectFormModel = Omit<
+  Project,
+  'customer' | 'producer' | 'documentId' | 'images'
+> & {
   documentId?: string;
   customer: string | null;
   producer: string | null;
 };
 
 function ModalEditProject() {
-  const {editCurrentProjectDialog, project, loading} = useAppSelector(
+  const { editCurrentProjectDialog, project, loading } = useAppSelector(
     (state) => state.projectDetails.data
   );
   const dispatch = useAppDispatch();
@@ -58,12 +74,15 @@ function ModalEditProject() {
   const [producers, setProducers] = useState<Option[]>([]);
 
   useEffect(() => {
-      fetchCustomers();
-      fetchProducers();
-    }, []);
-  
+    fetchCustomers();
+    fetchProducers();
+  }, []);
+
   const fetchCustomers = async () => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } =
+      await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
     const customers = customersList.map((customer: Customer) => ({
       value: customer.documentId || '',
@@ -71,16 +90,17 @@ function ModalEditProject() {
     }));
     setCustomers(customers);
   };
-  
+
   const fetchProducers = async () => {
-    const {producers_connection} : {producers_connection: GetProducersResponse}= await unwrapData(apiGetProducers());
+    const {
+      producers_connection,
+    }: { producers_connection: GetProducersResponse } =
+      await unwrapData(apiGetProducers());
     const producersList = producers_connection.nodes || [];
-    const producers = producersList.map(
-      (producer: Producer) => ({
-        value: producer.documentId || '',
-        label: producer.name || '',
-      })
-    );
+    const producers = producersList.map((producer: Producer) => ({
+      value: producer.documentId || '',
+      label: producer.name || '',
+    }));
     setProducers(producers);
   };
 
@@ -89,14 +109,18 @@ function ModalEditProject() {
     dispatch(updateCurrentProject(formData));
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setEditCurrentProjectDialog(false));
   };
 
   return (
     <div>
-      <Dialog isOpen={editCurrentProjectDialog} onClose={handleClose} width={800}>
+      <Dialog
+        isOpen={editCurrentProjectDialog}
+        onClose={handleClose}
+        width={800}
+      >
         <div className="flex flex-col h-full justify-between">
           <h5 className="mb-4">{t('projects.editProject')}</h5>
           <FieldCustom
@@ -121,7 +145,7 @@ function ModalEditProject() {
               <FieldCustom
                 placeholder={t('projects.amount')}
                 value={formData.price as number}
-                type='number'
+                type="number"
                 setValue={(e: any) => {
                   setFormData({ ...formData, price: parseFloat(e) });
                 }}
@@ -131,7 +155,7 @@ function ModalEditProject() {
               <FieldCustom
                 placeholder={t('projects.producerPrice')}
                 value={formData.producerPrice as number}
-                type='number'
+                type="number"
                 setValue={(e: any) => {
                   setFormData({ ...formData, producerPrice: parseFloat(e) });
                 }}
@@ -143,7 +167,7 @@ function ModalEditProject() {
               <FieldCustom
                 placeholder={t('projects.paidPrice')}
                 value={formData.paidPrice as number}
-                type='number'
+                type="number"
                 setValue={(e: any) => {
                   setFormData({ ...formData, paidPrice: parseFloat(e) });
                 }}
@@ -153,9 +177,12 @@ function ModalEditProject() {
               <FieldCustom
                 placeholder={t('projects.producerPaidPrice')}
                 value={formData.producerPaidPrice as number}
-                type='number'
+                type="number"
                 setValue={(e: any) => {
-                  setFormData({ ...formData, producerPaidPrice: parseFloat(e) });
+                  setFormData({
+                    ...formData,
+                    producerPaidPrice: parseFloat(e),
+                  });
                 }}
               />
             </div>
@@ -191,11 +218,15 @@ function ModalEditProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-2/12">
-              <span className="text-sm text-gray-200 mb-2 mt-4">Dans la piscine</span>
+              <span className="text-sm text-gray-200 mb-2 mt-4">
+                Dans la piscine
+              </span>
               <Switcher
                 className="self-center"
                 checked={formData.poolable}
-                onChange={() => setFormData({ ...formData, poolable: !formData.poolable })}
+                onChange={() =>
+                  setFormData({ ...formData, poolable: !formData.poolable })
+                }
               />
             </div>
           </div>

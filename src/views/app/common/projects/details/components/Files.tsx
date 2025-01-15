@@ -11,37 +11,39 @@ import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 
 const Files = () => {
-  const [images, setImages] = useState<Image[]>([])
+  const [images, setImages] = useState<Image[]>([]);
   const [imagesChanged, setImagesChanged] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-  const {project, loading} = useAppSelector((state) => state.projectDetails.data);
-  
+  const { project, loading } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
+
   useEffect(() => {
-      fetchFiles();
-    }, [project]);
+    fetchFiles();
+  }, [project]);
 
   const fetchFiles = async (): Promise<void> => {
-    if (project?.images?.length > 0){
-      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(project?.images)
+    if (project?.images?.length > 0) {
+      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(
+        project?.images
+      );
 
       setImages(imagesLoaded);
     }
   };
 
-  const onFileAdd = async (
-    file: File
-  ) => {
-    setImages([...images, {file, name: file.name}]);
+  const onFileAdd = async (file: File) => {
+    setImages([...images, { file, name: file.name }]);
     setImagesChanged(true);
   };
 
-  const onFileRemove = (
-    fileName: string
-  ) => {
-    const imageToDelete: Image | undefined = images.find(({name}) => name === fileName)
+  const onFileRemove = (fileName: string) => {
+    const imageToDelete: Image | undefined = images.find(
+      ({ name }) => name === fileName
+    );
 
     if (imageToDelete) {
-      setImages(images.filter(({name}) => name !== fileName));
+      setImages(images.filter(({ name }) => name !== fileName));
       setImagesChanged(true);
     }
   };
@@ -77,22 +79,27 @@ const Files = () => {
   };
 
   const handleSubmit = async () => {
-    const newImages: Image[] = []
-    
-    dispatch(setLoading(true))
+    const newImages: Image[] = [];
+
+    dispatch(setLoading(true));
     for (const image of images) {
       if (image.id) {
-        newImages.push(image)
+        newImages.push(image);
       } else {
-        const imageUploaded: Image = await apiUploadFile(image.file)
-        newImages.push(imageUploaded)
+        const imageUploaded: Image = await apiUploadFile(image.file);
+        newImages.push(imageUploaded);
       }
     }
 
-    dispatch(updateCurrentProject({documentId: project.documentId, images: newImages.map(({id}) => id)}))
-    setImages([])
+    dispatch(
+      updateCurrentProject({
+        documentId: project.documentId,
+        images: newImages.map(({ id }) => id),
+      })
+    );
+    setImages([]);
     setImagesChanged(false);
-  }
+  };
 
   return (
     <Container className="h-full">
@@ -105,23 +112,23 @@ const Files = () => {
                 showList
                 draggable
                 beforeUpload={beforeUpload}
-                onFileAdd={(file) =>
-                  onFileAdd(file)
-                }
-                onFileRemove={(file) =>
-                  onFileRemove(file)
-                }
+                onFileAdd={(file) => onFileAdd(file)}
+                onFileRemove={(file) => onFileRemove(file)}
                 field={{ name: 'images' }}
                 fileList={images.map((image) => {
-                  const file = image.file
+                  const file = image.file;
 
-                  file.previewUrl = image.url
-                  return file
+                  file.previewUrl = image.url;
+                  return file;
                 })}
                 clickable
               />
               {imagesChanged && (
-                <Button variant="solid" onClick={handleSubmit} loading={loading}>
+                <Button
+                  variant="solid"
+                  onClick={handleSubmit}
+                  loading={loading}
+                >
                   Enregistrer
                 </Button>
               )}

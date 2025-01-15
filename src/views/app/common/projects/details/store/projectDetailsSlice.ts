@@ -8,9 +8,19 @@ import {
 } from '@/services/ProjectServices';
 import { Invoice } from '@/@types/invoice';
 import { unwrapData } from '@/utils/serviceHelper';
-import { apiCreateTask, apiDeleteTask, apiUpdateTask, CreateTaskRequest, DeleteTaskResponse } from '@/services/TaskService';
+import {
+  apiCreateTask,
+  apiDeleteTask,
+  apiUpdateTask,
+  CreateTaskRequest,
+  DeleteTaskResponse,
+} from '@/services/TaskService';
 import { apiUpdateInvoice } from '@/services/InvoicesServices';
-import { apiCreateComment, apiDeleteComment, CreateCommentRequest } from '@/services/CommentServices';
+import {
+  apiCreateComment,
+  apiDeleteComment,
+  CreateCommentRequest,
+} from '@/services/CommentServices';
 
 export const SLICE_NAME = 'projectDetails';
 
@@ -31,30 +41,10 @@ export type ProjectDetailsState = {
   loading: boolean;
 };
 
-
-
-// TODO: Voir pour filtrer dès la requête par la visibilité --> implique d'ajouter un resolver côté backend
-// Ce qui donnerait côté frontend ce qui est en commentaire ci-dessous
-/*export type GetIProjectById = {
-  documentId: string;
-  user: User;
-}
-
+// TODO: Voir pour crypter les données envoyées depuis backend et decrypter côté front
 export const getProjectById = createAsyncThunk(
   SLICE_NAME + '/getProjectById',
-  async (data: GetIProjectById): Promise<{project: Project}> => {
-    if (hasRole(data.user, [CUSTOMER])) {
-      return await unwrapData(apiGetProjectById(data.documentId, ['all', CUSTOMER]));
-    } else if (hasRole(data.user, [PRODUCER])) {
-      return await unwrapData(apiGetProjectById(data.documentId, ['all', PRODUCER]));
-    }
-    return await unwrapData(apiGetProjectById(data.documentId, ['all', SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER]));
-  }
-);*/
-
-export const getProjectById = createAsyncThunk(
-  SLICE_NAME + '/getProjectById',
-  async (documentId: string): Promise<{project: Project}> => {
+  async (documentId: string): Promise<{ project: Project }> => {
     return await unwrapData(apiGetProjectById(documentId));
   }
 );
@@ -62,7 +52,8 @@ export const getProjectById = createAsyncThunk(
 export const deleteCurrentProject = createAsyncThunk(
   SLICE_NAME + '/deleteCurrentProject',
   async (documentId: string): Promise<DeleteProjectResponse> => {
-    const {deleteProject} : {deleteProject: DeleteProjectResponse} = await unwrapData(apiDeleteProject(documentId));
+    const { deleteProject }: { deleteProject: DeleteProjectResponse } =
+      await unwrapData(apiDeleteProject(documentId));
     //TODO: à remettre et voir pour autrer part la suppression de fichiers
     //apiDeleteFiles(data.project.images.map(({ fileNameBack }) => fileNameBack));
     return deleteProject;
@@ -72,7 +63,9 @@ export const deleteCurrentProject = createAsyncThunk(
 export const updateCurrentProject = createAsyncThunk(
   SLICE_NAME + '/updateCurrentProject',
   async (data: Partial<Project>): Promise<Project> => {
-    const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject(data));
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject(data)
+    );
     return updateProject;
   }
 );
@@ -80,13 +73,20 @@ export const updateCurrentProject = createAsyncThunk(
 export type CreateTask = {
   task: CreateTaskRequest;
   project: Project;
-}
+};
 
 export const createTask = createAsyncThunk(
   SLICE_NAME + '/createTask',
-  async (data: CreateTask) : Promise<Project> => {
-    const {createTask} : {createTask: Task} = await unwrapData(apiCreateTask(data.task));
-    const {updateProject} : {updateProject: Project} = await unwrapData(apiUpdateProject({documentId: data.project.documentId, tasks: [...data.project.tasks, createTask]}))
+  async (data: CreateTask): Promise<Project> => {
+    const { createTask }: { createTask: Task } = await unwrapData(
+      apiCreateTask(data.task)
+    );
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject({
+        documentId: data.project.documentId,
+        tasks: [...data.project.tasks, createTask],
+      })
+    );
     return updateProject;
   }
 );
@@ -94,7 +94,9 @@ export const createTask = createAsyncThunk(
 export const deleteTask = createAsyncThunk(
   SLICE_NAME + '/deleteTask',
   async (documentId: string): Promise<DeleteTaskResponse> => {
-    const {deleteTask} : {deleteTask: DeleteTaskResponse} = await unwrapData(apiDeleteTask(documentId));
+    const { deleteTask }: { deleteTask: DeleteTaskResponse } = await unwrapData(
+      apiDeleteTask(documentId)
+    );
     return deleteTask;
   }
 );
@@ -102,7 +104,9 @@ export const deleteTask = createAsyncThunk(
 export const updateTask = createAsyncThunk(
   SLICE_NAME + '/updateTask',
   async (data: Partial<Task>): Promise<Task> => {
-    const {updateTask} : {updateTask: Task} = await unwrapData(apiUpdateTask(data));
+    const { updateTask }: { updateTask: Task } = await unwrapData(
+      apiUpdateTask(data)
+    );
     return updateTask;
   }
 );
@@ -110,7 +114,9 @@ export const updateTask = createAsyncThunk(
 export const updateProjectInvoice = createAsyncThunk(
   SLICE_NAME + '/updateProjectInvoice',
   async (data: Partial<Invoice>): Promise<Invoice> => {
-    const {updateInvoice} : {updateInvoice: Invoice} = await unwrapData(apiUpdateInvoice(data));
+    const { updateInvoice }: { updateInvoice: Invoice } = await unwrapData(
+      apiUpdateInvoice(data)
+    );
     return updateInvoice;
   }
 );
@@ -118,13 +124,18 @@ export const updateProjectInvoice = createAsyncThunk(
 export type CreateComment = {
   comment: CreateCommentRequest;
   project: Project;
-}
+};
 
 export const createComment = createAsyncThunk(
   SLICE_NAME + '/createComment',
-  async (data: CreateComment) : Promise<Comment> => {
-    const {createComment} : {createComment: Comment} = await unwrapData(apiCreateComment(data.comment));
-    await apiUpdateProject({documentId: data.project.documentId, comments: [...data.project.comments, createComment]})
+  async (data: CreateComment): Promise<Comment> => {
+    const { createComment }: { createComment: Comment } = await unwrapData(
+      apiCreateComment(data.comment)
+    );
+    await apiUpdateProject({
+      documentId: data.project.documentId,
+      comments: [...data.project.comments, createComment],
+    });
     return createComment;
   }
 );
@@ -132,7 +143,8 @@ export const createComment = createAsyncThunk(
 export const deleteComment = createAsyncThunk(
   SLICE_NAME + '/deleteComment',
   async (documentId: string): Promise<DeleteTaskResponse> => {
-    const {deleteComment} : {deleteComment: DeleteTaskResponse} = await unwrapData(apiDeleteComment(documentId));
+    const { deleteComment }: { deleteComment: DeleteTaskResponse } =
+      await unwrapData(apiDeleteComment(documentId));
     return deleteComment;
   }
 );
@@ -186,9 +198,8 @@ const projectListSlice = createSlice({
     setEditTaskSelected: (state, action) => {
       console.log('action.payload', action.payload);
       if (state.project) {
-        state.project.tasks = state.project.tasks.map(
-          (task: Task) =>
-            task.documentId === action.payload.documentId ? action.payload : task
+        state.project.tasks = state.project.tasks.map((task: Task) =>
+          task.documentId === action.payload.documentId ? action.payload : task
         );
         // Mise à jour de selectedTask
         state.selectedTask = action.payload;
@@ -210,9 +221,9 @@ const projectListSlice = createSlice({
     });
     builder.addCase(getProjectById.fulfilled, (state, action) => {
       state.project = action.payload.project;
-      state.tasks = action.payload.project.tasks
-      state.invoices = action.payload.project.invoices
-      state.comments = action.payload.project.comments
+      state.tasks = action.payload.project.tasks;
+      state.invoices = action.payload.project.invoices;
+      state.comments = action.payload.project.comments;
       state.loading = false;
     });
     // UPDATE PROJECT
@@ -234,7 +245,7 @@ const projectListSlice = createSlice({
     builder.addCase(createTask.fulfilled, (state, action) => {
       state.loading = false;
       state.project = action.payload;
-      state.tasks = action.payload.tasks
+      state.tasks = action.payload.tasks;
       state.newDialogTask = false;
     });
     builder.addCase(createTask.rejected, (state) => {
@@ -249,8 +260,8 @@ const projectListSlice = createSlice({
       state.tasks = state.tasks.map((task) =>
         task.documentId === action.payload.documentId ? action.payload : task
       );
-      state.project!.tasks = state.tasks
-      state.editDialogTask = false
+      state.project!.tasks = state.tasks;
+      state.editDialogTask = false;
     });
     builder.addCase(updateTask.rejected, (state) => {
       state.loading = false;
@@ -262,7 +273,7 @@ const projectListSlice = createSlice({
     builder.addCase(createComment.fulfilled, (state, action) => {
       state.loading = false;
       state.comments.push(action.payload);
-      state.project!.comments = state.comments
+      state.project!.comments = state.comments;
     });
     // DELETE COMMENT
     builder.addCase(deleteComment.pending, (state) => {
@@ -273,9 +284,9 @@ const projectListSlice = createSlice({
       state.comments = state.comments.filter(
         (comment) => comment.documentId !== action.payload.documentId
       );
-      state.project!.comments = state.comments
+      state.project!.comments = state.comments;
     });
-    builder.addCase(deleteComment.rejected, (state, action) => {
+    builder.addCase(deleteComment.rejected, (state) => {
       state.loading = false;
     });
     // UPDATE INVOICE
@@ -285,10 +296,12 @@ const projectListSlice = createSlice({
     builder.addCase(updateProjectInvoice.fulfilled, (state, action) => {
       state.loading = false;
       state.invoices = state.invoices.map((invoice) =>
-        invoice.documentId === action.payload.documentId ? action.payload : invoice
+        invoice.documentId === action.payload.documentId
+          ? action.payload
+          : invoice
       );
-      state.editProjectInvoiceDialog = false
-      state.selectedProjectInvoice = null
+      state.editProjectInvoiceDialog = false;
+      state.selectedProjectInvoice = null;
     });
     builder.addCase(updateProjectInvoice.rejected, (state) => {
       state.loading = false;

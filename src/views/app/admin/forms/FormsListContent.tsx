@@ -20,11 +20,13 @@ function FormsListContent() {
   const dispatch = useAppDispatch();
   const { forms, total, loading } = useAppSelector((state) => state.forms.data);
   useEffect(() => {
-    dispatch(getForms({ pagination: {page: 1, pageSize: 10}, searchTerm: '' }));
+    dispatch(
+      getForms({ pagination: { page: 1, pageSize: 10 }, searchTerm: '' })
+    );
   }, []);
   const handleEdit = (form: Form) => {
     dispatch(setForm(form));
-    setIsOpenNewForm()
+    setIsOpenNewForm();
   };
   const handleDelete = (documentId: string) => {
     dispatch(deleteForm(documentId));
@@ -75,7 +77,6 @@ function FormsListContent() {
           ))}
         </div>
       </Loading>
-      
     </div>
   );
 }
