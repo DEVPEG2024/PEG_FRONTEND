@@ -3,7 +3,11 @@ import { Button, Dialog, Input } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createProducerCategory, updateProducerCategory, useAppSelector } from '../store';
+import {
+  createProducerCategory,
+  updateProducerCategory,
+  useAppSelector,
+} from '../store';
 
 function ModalEditProducerCategory({
   mode,
@@ -25,9 +29,14 @@ function ModalEditProducerCategory({
 
   const onDialogOk = async () => {
     if (mode === 'add') {
-      dispatch(createProducerCategory({name: newName, producers: []}))
+      dispatch(createProducerCategory({ name: newName, producers: [] }));
     } else {
-      dispatch(updateProducerCategory({documentId: producerCategory!.documentId, name: newName}))
+      dispatch(
+        updateProducerCategory({
+          documentId: producerCategory!.documentId,
+          name: newName,
+        })
+      );
     }
     handleCloseModal();
   };

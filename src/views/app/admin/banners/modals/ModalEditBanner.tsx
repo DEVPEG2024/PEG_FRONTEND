@@ -13,7 +13,10 @@ import {
   GetCustomersResponse,
 } from '@/services/CustomerServices';
 import { Customer, CustomerCategory } from '@/@types/customer';
-import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
+import {
+  apiGetCustomerCategories,
+  GetCustomerCategoriesResponse,
+} from '@/services/CustomerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { BannerFormModel } from './ModalNewBanner';
 import { Image } from '@/@types/image';
@@ -32,14 +35,14 @@ function ModalEditBanner() {
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const [imageModified, setImageModified] = useState<boolean>(false);
-  const [image, setImage] = useState<Image | undefined>(undefined)
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<BannerFormModel>({
     documentId: selectedBanner?.documentId || '',
     name: selectedBanner?.name || '',
     customer: selectedBanner?.customer?.documentId || '',
     customerCategory: selectedBanner?.customerCategory?.documentId || '',
-    active: selectedBanner?.active ?? true
+    active: selectedBanner?.active ?? true,
   });
 
   useEffect(() => {
@@ -48,7 +51,10 @@ function ModalEditBanner() {
   }, []);
 
   const fetchCustomers = async () => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } =
+      await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
     const customers = customersList.map((customer: Customer) => ({
       value: customer.documentId || '',
@@ -58,7 +64,10 @@ function ModalEditBanner() {
   };
 
   const fetchCustomerCategories = async () => {
-    const {customerCategories_connection} : {customerCategories_connection: GetCustomerCategoriesResponse}= await unwrapData(apiGetCustomerCategories());
+    const {
+      customerCategories_connection,
+    }: { customerCategories_connection: GetCustomerCategoriesResponse } =
+      await unwrapData(apiGetCustomerCategories());
     const customerCategoriesList = customerCategories_connection.nodes || [];
     const customerCategories = customerCategoriesList.map(
       (customerCategory: CustomerCategory) => ({
@@ -74,8 +83,10 @@ function ModalEditBanner() {
   }, [selectedBanner]);
 
   const fetchImage = async (): Promise<void> => {
-    if (selectedBanner?.image){
-      const imageLoaded: Image = (await apiLoadImagesAndFiles([selectedBanner.image]))[0]
+    if (selectedBanner?.image) {
+      const imageLoaded: Image = (
+        await apiLoadImagesAndFiles([selectedBanner.image])
+      )[0];
 
       setImage(imageLoaded);
     }
@@ -86,28 +97,29 @@ function ModalEditBanner() {
     const bannerToUpdate: Banner = {
       ...formData,
       customer: formData.customer !== '' ? formData.customer : null,
-      customerCategory: formData.customerCategory !== '' ? formData.customerCategory : null,
-      image
-    }
-    dispatch(updateBanner({banner: bannerToUpdate, imageModified}));
+      customerCategory:
+        formData.customerCategory !== '' ? formData.customerCategory : null,
+      image,
+    };
+    dispatch(updateBanner({ banner: bannerToUpdate, imageModified }));
     setFormData({
       name: '',
       customer: '',
       customerCategory: '',
-      active: true
+      active: true,
     });
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setEditBannerDialog(false));
     dispatch(setSelectedBanner(null));
   };
 
-  const updateImage = (image: {file: File, name: string}) => {
-    setImage(image)
-    setImageModified(true)
-  }
+  const updateImage = (image: { file: File; name: string }) => {
+    setImage(image);
+    setImageModified(true);
+  };
 
   return (
     <div>
@@ -175,10 +187,7 @@ function ModalEditBanner() {
             </div>
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <FileUplaodCustom
-              image={image}
-              setImage={updateImage}
-            />
+            <FileUplaodCustom image={image} setImage={updateImage} />
           </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
             <Button

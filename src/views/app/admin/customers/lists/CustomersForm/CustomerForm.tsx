@@ -15,7 +15,10 @@ import { Customer } from '@/@types/customer';
 
 type FormikRef = FormikProps<any>;
 
-export type CustomerFormModel = Omit<Customer, 'banner' | 'customerCategory' | 'orderItems' | 'companyInformations'> & {
+export type CustomerFormModel = Omit<
+  Customer,
+  'banner' | 'customerCategory' | 'orderItems' | 'companyInformations'
+> & {
   banner: string | null;
   customerCategory: string | null;
   email: string;
@@ -35,7 +38,10 @@ type CustomerForm = {
   initialData?: CustomerFormModel;
   customerCategories: Options[];
   onDiscard?: () => void;
-  onFormSubmit: (formData: CustomerFormModel, setSubmitting: SetSubmitting) => void;
+  onFormSubmit: (
+    formData: CustomerFormModel,
+    setSubmitting: SetSubmitting
+  ) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -48,19 +54,18 @@ const validationSchema = Yup.object().shape({
   zipCode: Yup.string().required(t('cust.error.zipCode')),
   city: Yup.string().required(t('cust.error.city')),
   country: Yup.string().required(t('cust.error.country')),
-  email: Yup.string().email(t('cust.error.invalidEmail')).required(t('cust.error.email')),
+  email: Yup.string()
+    .email(t('cust.error.invalidEmail'))
+    .required(t('cust.error.email')),
   //phone: Yup.string().matches(/^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/, 'Numéro de téléphone invalide').required(t('cust.error.phone')),
   //phone: Yup.string().matches(/^((\+[1-9]{1,4}[ -]?)|(\([0-9]{2,3}\)[ -]?)|([0-9]{2,4})[ -]?)*?[0-9]{3,4}[ -]?[0-9]{3,4}$/, 'Numéro de téléphone invalide').required(t('cust.error.phone')),
-  phoneNumber: Yup.string().matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide').required(t('cust.error.phoneNumber')),
+  phoneNumber: Yup.string()
+    .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
+    .required(t('cust.error.phoneNumber')),
 });
 
 const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
-  const {
-    initialData,
-    onFormSubmit,
-    onDiscard,
-    customerCategories,
-  } = props;
+  const { initialData, onFormSubmit, onDiscard, customerCategories } = props;
 
   return (
     <>
@@ -77,54 +82,55 @@ const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
       >
         {({ values, touched, errors, isSubmitting, setFieldValue }) => {
           return (
-          <Form>
-            <FormContainer>
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-2">
-                  <CustomerFields
-                    touched={touched}
-                    errors={errors}
-                    values={values}
-                    countries={countries}
-                    setFieldValue={setFieldValue}
-                  />
+            <Form>
+              <FormContainer>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                  <div className="lg:col-span-2">
+                    <CustomerFields
+                      touched={touched}
+                      errors={errors}
+                      values={values}
+                      countries={countries}
+                      setFieldValue={setFieldValue}
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <CompanyFields
+                      touched={touched}
+                      errors={errors}
+                      values={values}
+                      customerCategories={customerCategories}
+                    />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <CompanyFields
-                    touched={touched}
-                    errors={errors}
-                    values={values}
-                    customerCategories={customerCategories}
-                  />
-                </div>
-              </div>
-              <StickyFooter
-                className="-mx-8 px-8 flex items-center justify-end py-4"
-                stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-              >
-                <div className="md:flex items-end">
-                  <Button
-                    size="sm"
-                    className="ltr:mr-3 rtl:ml-3"
-                    type="button"
-                    onClick={() => onDiscard?.()}
-                  >
-                    {t('cancel')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="solid"
-                    loading={isSubmitting}
-                    icon={<AiOutlineSave />}
-                    type="submit"
-                  >
-                    {t('save')}
-                  </Button>
-                </div>
-              </StickyFooter>
-            </FormContainer>
-          </Form>
-        )}}
+                <StickyFooter
+                  className="-mx-8 px-8 flex items-center justify-end py-4"
+                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                >
+                  <div className="md:flex items-end">
+                    <Button
+                      size="sm"
+                      className="ltr:mr-3 rtl:ml-3"
+                      type="button"
+                      onClick={() => onDiscard?.()}
+                    >
+                      {t('cancel')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="solid"
+                      loading={isSubmitting}
+                      icon={<AiOutlineSave />}
+                      type="submit"
+                    >
+                      {t('save')}
+                    </Button>
+                  </div>
+                </StickyFooter>
+              </FormContainer>
+            </Form>
+          );
+        }}
       </Formik>
     </>
   );

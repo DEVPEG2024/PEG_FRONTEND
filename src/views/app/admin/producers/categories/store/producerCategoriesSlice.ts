@@ -1,6 +1,15 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
-import { apiCreateProducerCategory, apiDeleteProducerCategory, apiGetProducerCategories, apiUpdateProducerCategory, CreateProducerCategoryRequest, DeleteProducerCategoryResponse, GetProducerCategoriesRequest, GetProducerCategoriesResponse } from '@/services/ProducerCategoryServices';
+import {
+  apiCreateProducerCategory,
+  apiDeleteProducerCategory,
+  apiGetProducerCategories,
+  apiUpdateProducerCategory,
+  CreateProducerCategoryRequest,
+  DeleteProducerCategoryResponse,
+  GetProducerCategoriesRequest,
+  GetProducerCategoriesResponse,
+} from '@/services/ProducerCategoryServices';
 import { AxiosResponse } from 'axios';
 import { ProducerCategory } from '@/@types/producer';
 
@@ -22,8 +31,13 @@ const initialState: ProducerCategoriesState = {
 
 export const getProducerCategories = createAsyncThunk(
   SLICE_NAME + '/getProducerCategories',
-  async (data: GetProducerCategoriesRequest) : Promise<GetProducerCategoriesResponse> => {
-    const {producerCategories_connection} : {producerCategories_connection: GetProducerCategoriesResponse} = await unwrapData(apiGetProducerCategories(data));
+  async (
+    data: GetProducerCategoriesRequest
+  ): Promise<GetProducerCategoriesResponse> => {
+    const {
+      producerCategories_connection,
+    }: { producerCategories_connection: GetProducerCategoriesResponse } =
+      await unwrapData(apiGetProducerCategories(data));
     return producerCategories_connection;
   }
 );
@@ -31,16 +45,24 @@ export const getProducerCategories = createAsyncThunk(
 // TODO: à revoir en utilisant directement unwrapData
 export const createProducerCategory = createAsyncThunk(
   SLICE_NAME + '/createProducerCategory',
-  async (data: CreateProducerCategoryRequest) : Promise<ApiResponse<{createProducerCategory: ProducerCategory}>> => {
-    const response: AxiosResponse<ApiResponse<{createProducerCategory: ProducerCategory}>> = await apiCreateProducerCategory(data);
+  async (
+    data: CreateProducerCategoryRequest
+  ): Promise<ApiResponse<{ createProducerCategory: ProducerCategory }>> => {
+    const response: AxiosResponse<
+      ApiResponse<{ createProducerCategory: ProducerCategory }>
+    > = await apiCreateProducerCategory(data);
     return response.data;
   }
 );
 
 export const updateProducerCategory = createAsyncThunk(
   SLICE_NAME + '/updateProducerCategory',
-  async (data: Partial<ProducerCategory>): Promise<ApiResponse<{updateProducerCategory: ProducerCategory}>> => {
-    const response: AxiosResponse<ApiResponse<{updateProducerCategory: ProducerCategory}>> = await apiUpdateProducerCategory(data);
+  async (
+    data: Partial<ProducerCategory>
+  ): Promise<ApiResponse<{ updateProducerCategory: ProducerCategory }>> => {
+    const response: AxiosResponse<
+      ApiResponse<{ updateProducerCategory: ProducerCategory }>
+    > = await apiUpdateProducerCategory(data);
     return response.data;
   }
 );
@@ -48,7 +70,10 @@ export const updateProducerCategory = createAsyncThunk(
 export const deleteProducerCategory = createAsyncThunk(
   SLICE_NAME + '/deleteProducerCategory',
   async (documentId: string): Promise<DeleteProducerCategoryResponse> => {
-    const {deleteProducerCategory} : {deleteProducerCategory: DeleteProducerCategoryResponse} = await unwrapData(apiDeleteProducerCategory(documentId));
+    const {
+      deleteProducerCategory,
+    }: { deleteProducerCategory: DeleteProducerCategoryResponse } =
+      await unwrapData(apiDeleteProducerCategory(documentId));
     return deleteProducerCategory;
   }
 );
@@ -57,9 +82,12 @@ const producerCategoriesSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setProducerCategory(state, action: PayloadAction<ProducerCategory | undefined>) {
-      state.producerCategory = action.payload
-  },
+    setProducerCategory(
+      state,
+      action: PayloadAction<ProducerCategory | undefined>
+    ) {
+      state.producerCategory = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getProducerCategories.pending, (state) => {
@@ -76,10 +104,12 @@ const producerCategoriesSlice = createSlice({
     });
     builder.addCase(updateProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.producerCategories = state.producerCategories.map((producerCategory: ProducerCategory) =>
-        producerCategory.documentId === action.payload.data.updateProducerCategory.documentId
-          ? action.payload.data.updateProducerCategory
-          : producerCategory
+      state.producerCategories = state.producerCategories.map(
+        (producerCategory: ProducerCategory) =>
+          producerCategory.documentId ===
+          action.payload.data.updateProducerCategory.documentId
+            ? action.payload.data.updateProducerCategory
+            : producerCategory
       );
     });
     builder.addCase(updateProducerCategory.rejected, (state) => {
@@ -92,7 +122,7 @@ const producerCategoriesSlice = createSlice({
     builder.addCase(createProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
       state.producerCategories.push(action.payload.data.createProducerCategory);
-      state.total += 1
+      state.total += 1;
     });
     builder.addCase(createProducerCategory.rejected, (state) => {
       state.loading = false;
@@ -103,14 +133,16 @@ const producerCategoriesSlice = createSlice({
     });
     builder.addCase(deleteProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.producerCategories = state.producerCategories.filter((producerCategory: ProducerCategory) => producerCategory.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.producerCategories = state.producerCategories.filter(
+        (producerCategory: ProducerCategory) =>
+          producerCategory.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
   },
 });
 
-export const {
-  setProducerCategory: setProducerCategory,
-} = producerCategoriesSlice.actions;
+export const { setProducerCategory: setProducerCategory } =
+  producerCategoriesSlice.actions;
 
 export default producerCategoriesSlice.reducer;

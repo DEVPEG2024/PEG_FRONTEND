@@ -1,5 +1,10 @@
-import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from "@/constants/roles.constant";
-import { paymentTypes } from "@/views/app/producer/wallet/constants";
+import {
+  ADMIN,
+  CUSTOMER,
+  PRODUCER,
+  SUPER_ADMIN,
+} from '@/constants/roles.constant';
+import { paymentTypes } from '@/views/app/producer/wallet/constants';
 
 export const statusColorData = {
   pending: 'bg-blue-500',
@@ -78,7 +83,9 @@ export const priorityData = [
   },
 ];
 
-export const paymentProducerProjectTypes = paymentTypes.filter(({value}) => ['projectPayment', 'advancePayment', 'milestonePayment'].includes(value));
+export const paymentProducerProjectTypes = paymentTypes.filter(({ value }) =>
+  ['projectPayment', 'advancePayment', 'milestonePayment'].includes(value)
+);
 
 export const visibilityData = [
   {

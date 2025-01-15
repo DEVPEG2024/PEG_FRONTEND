@@ -2,11 +2,10 @@ import { Button, DatePicker, Dialog, Select } from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from '../../modals/components/fileds';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import {
   setEditDialogTask,
-  setEditTaskSelected,
   updateTask,
   useAppDispatch,
   useAppSelector,
@@ -16,8 +15,12 @@ import { RichTextEditor } from '@/components/shared';
 import { TaskFormModel } from './ModalNewTask';
 
 function ModalEditTask() {
-  const { editDialogTask, selectedTask, loading } = useAppSelector((state) => state.projectDetails.data);
-  const [description, setDescription] = useState<string>(selectedTask?.description || '');
+  const { editDialogTask, selectedTask, loading } = useAppSelector(
+    (state) => state.projectDetails.data
+  );
+  const [description, setDescription] = useState<string>(
+    selectedTask?.description || ''
+  );
 
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<TaskFormModel>({
@@ -32,9 +35,9 @@ function ModalEditTask() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(updateTask({...formData, description}));
+    dispatch(updateTask({ ...formData, description }));
   };
-  
+
   const handleClose = () => {
     dispatch(setEditDialogTask(false));
   };

@@ -2,7 +2,7 @@ import { Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
 
-const CustomerProductCard = ({product}: {product: Product}) => {
+const CustomerProductCard = ({ product }: { product: Product }) => {
   const navigate = useNavigate();
 
   const handleClick = (id: string) => {
@@ -11,28 +11,26 @@ const CustomerProductCard = ({product}: {product: Product}) => {
 
   return (
     <Card
-    key={product.documentId}
-    clickable
-    onClick={(e) => handleClick(product.documentId)}
+      key={product.documentId}
+      clickable
+      onClick={() => handleClick(product.documentId)}
     >
-    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <img
-        src={product.images[0]?.url}
-        alt={product.name}
-        className=" rounded-lg bg-slate-50"
-        style={{
+          src={product.images[0]?.url}
+          alt={product.name}
+          className=" rounded-lg bg-slate-50"
+          style={{
             height: '250px',
             width: '100%',
             objectFit: 'cover',
-        }}
+          }}
         />
         <div className="flex flex-col justify-between">
-        <p className="text-lg font-bold">{product.name}</p>
-        <p className="text-lg font-bold text-white">
-            {product.price}€
-        </p>
+          <p className="text-lg font-bold">{product.name}</p>
+          <p className="text-lg font-bold text-white">{product.price}€</p>
         </div>
-    </div>
+      </div>
     </Card>
   );
 };

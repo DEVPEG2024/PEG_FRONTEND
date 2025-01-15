@@ -22,7 +22,8 @@ type ShowOrderItemParams = {
 };
 
 const ShowOrderItem = () => {
-  const { documentId } = useParams<ShowOrderItemParams>() as ShowOrderItemParams;
+  const { documentId } =
+    useParams<ShowOrderItemParams>() as ShowOrderItemParams;
   const dispatch = useAppDispatch();
   const { orderItem, orderItemFormDialog: formDialog } = useAppSelector(
     (state) => state.showOrderItem.data
@@ -34,8 +35,8 @@ const ShowOrderItem = () => {
     }
 
     return () => {
-      dispatch(clearOrderItemState())
-    }
+      dispatch(clearOrderItemState());
+    };
   }, [dispatch]);
 
   const handleShowForm = () => {
@@ -58,14 +59,18 @@ const ShowOrderItem = () => {
 
               <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
                 <div className="flex flex-col justify-between">
-                  <h1 className="text-3xl font-bold">{orderItem.product.name}</h1>
+                  <h1 className="text-3xl font-bold">
+                    {orderItem.product.name}
+                  </h1>
                   <p className="text-2xl font-semibold">
                     {orderItem.product.price.toFixed(2)} €
                   </p>
                 </div>
 
                 <p className="mt-4 leading-relaxed">
-                  {orderItem.product.description?.replace('<p>', '').replace('</p>', '')}
+                  {orderItem.product.description
+                    ?.replace('<p>', '')
+                    .replace('</p>', '')}
                 </p>
 
                 {orderItem.product.sizes && (
@@ -107,7 +112,12 @@ const ShowOrderItem = () => {
             </div>
           </div>
         </Loading>
-        {orderItem.formAnswer && formDialog && <ModalShowForm formAnswer={orderItem.formAnswer} formDialog={formDialog} />}
+        {orderItem.formAnswer && formDialog && (
+          <ModalShowForm
+            formAnswer={orderItem.formAnswer}
+            formDialog={formDialog}
+          />
+        )}
       </Container>
     )
   );

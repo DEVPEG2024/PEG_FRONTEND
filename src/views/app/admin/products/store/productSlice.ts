@@ -40,14 +40,18 @@ export type StatsTypesResponses = {
 export const getProducts = createAsyncThunk(
   SLICE_NAME + '/getProducts',
   async (data: GetProductsRequest): Promise<GetProductsResponse> => {
-    const {products_connection} : {products_connection: GetProductsResponse}= await unwrapData(apiGetProducts(data));
-    return products_connection
+    const {
+      products_connection,
+    }: { products_connection: GetProductsResponse } = await unwrapData(
+      apiGetProducts(data)
+    );
+    return products_connection;
   }
 );
 
 export const getProductById = createAsyncThunk(
   SLICE_NAME + '/getProduct',
-  async (documentId: string): Promise<{product: Product}> => {
+  async (documentId: string): Promise<{ product: Product }> => {
     return await unwrapData(apiGetProductForEditById(documentId));
   }
 );
@@ -55,19 +59,26 @@ export const getProductById = createAsyncThunk(
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (product: Product) => {
-    const {product: productToDuplicate} : {product: Product} = await unwrapData(apiGetProductForEditById(product.documentId))
-    const {documentId, images, ...duplicatedProduct} = productToDuplicate
-    const imagesLoaded : Image[] = await apiGetImages(images)
+    const { product: productToDuplicate }: { product: Product } =
+      await unwrapData(apiGetProductForEditById(product.documentId));
+    const { documentId, images, ...duplicatedProduct } = productToDuplicate;
+    const imagesLoaded: Image[] = await apiGetImages(images);
     const newProduct: Product = {
       ...duplicatedProduct,
-      images: imagesLoaded.map(({id}) => id),
-      sizes: duplicatedProduct.sizes.map(({documentId}) => documentId),
+      images: imagesLoaded.map(({ id }) => id),
+      sizes: duplicatedProduct.sizes.map(({ documentId }) => documentId),
       form: duplicatedProduct.form?.documentId,
       productCategory: duplicatedProduct.productCategory?.documentId,
-      customerCategories: duplicatedProduct.customerCategories.map(({documentId}) => documentId),
-      customers: duplicatedProduct.customers.map(({documentId}) => documentId),
-    }
-    const {createProduct} : {createProduct: Product}= await unwrapData(apiCreateProduct(newProduct));
+      customerCategories: duplicatedProduct.customerCategories.map(
+        ({ documentId }) => documentId
+      ),
+      customers: duplicatedProduct.customers.map(
+        ({ documentId }) => documentId
+      ),
+    };
+    const { createProduct }: { createProduct: Product } = await unwrapData(
+      apiCreateProduct(newProduct)
+    );
     return createProduct;
   }
 );
@@ -75,7 +86,9 @@ export const duplicateProduct = createAsyncThunk(
 export const updateProduct = createAsyncThunk(
   SLICE_NAME + '/updateProduct',
   async (data: Partial<Product>): Promise<Product> => {
-    const {updateProduct} : {updateProduct: Product} = await unwrapData(apiUpdateProduct(data));
+    const { updateProduct }: { updateProduct: Product } = await unwrapData(
+      apiUpdateProduct(data)
+    );
     return updateProduct;
   }
 );
@@ -83,7 +96,8 @@ export const updateProduct = createAsyncThunk(
 export const deleteProduct = createAsyncThunk(
   SLICE_NAME + '/deleteProduct',
   async (documentId: string): Promise<DeleteProductResponse> => {
-    const {deleteProduct} : {deleteProduct: DeleteProductResponse} = await unwrapData(apiDeleteProduct(documentId));
+    const { deleteProduct }: { deleteProduct: DeleteProductResponse } =
+      await unwrapData(apiDeleteProduct(documentId));
     //TODO: à remettre
     //apiDeleteFiles(data.product.images.map(({ fileNameBack }) => fileNameBack));
     return deleteProduct;
@@ -126,7 +140,7 @@ const productSlice = createSlice({
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
       state.products = action.payload.nodes;
-      state.total = action.payload.pageInfo.total
+      state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getProducts.rejected, (state) => {
       state.loading = false;
@@ -139,7 +153,7 @@ const productSlice = createSlice({
       state.products = state.products.filter(
         (product) => product.documentId !== action.payload.documentId
       );
-      state.total -= 1
+      state.total -= 1;
     });
     builder.addCase(deleteProduct.rejected, (state) => {
       state.loading = false;

@@ -2,19 +2,36 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Product, ProductCategory, Size } from '@/@types/product';
 import { Image } from '@/@types/image';
-import ProductForm, { ProductFormModel, SetSubmitting } from './Forms/ProductForm';
-import { apiGetCustomers, GetCustomersResponse } from '@/services/CustomerServices';
+import ProductForm, {
+  ProductFormModel,
+  SetSubmitting,
+} from './Forms/ProductForm';
+import {
+  apiGetCustomers,
+  GetCustomersResponse,
+} from '@/services/CustomerServices';
 import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
 import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
-import reducer, { getProductById, setProductToEdit, useAppDispatch, useAppSelector } from '../store';
+import reducer, {
+  getProductById,
+  setProductToEdit,
+  useAppDispatch,
+  useAppSelector,
+} from '../store';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Customer, CustomerCategory } from '@/@types/customer';
-import { apiGetCustomerCategories, GetCustomerCategoriesResponse } from '@/services/CustomerCategoryServices';
-import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import {
+  apiGetCustomerCategories,
+  GetCustomerCategoriesResponse,
+} from '@/services/CustomerCategoryServices';
+import {
+  apiGetProductCategories,
+  GetProductCategoriesResponse,
+} from '@/services/ProductCategoryServices';
 import { injectReducer } from '@/store';
-import { apiGetProductCategorySizes, apiGetSizes, GetSizesResponse } from '@/services/SizeServices';
+import { apiGetProductCategorySizes } from '@/services/SizeServices';
 
 injectReducer('products', reducer);
 
@@ -32,7 +49,9 @@ const EditProduct = () => {
   const onEdition: boolean =
     useLocation().pathname.split('/').slice(-2).shift() === 'edit';
   const { documentId } = useParams<EditProductParams>() as EditProductParams;
-  const { productToEdit: product } = useAppSelector((state) => state.products.data);
+  const { productToEdit: product } = useAppSelector(
+    (state) => state.products.data
+  );
   const [customers, setCustomers] = useState<Options[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
@@ -45,23 +64,24 @@ const EditProduct = () => {
     price: product?.price || 0,
     description: product?.description || '',
     sizes: product?.sizes.map((size) => size.documentId) || [],
-    customerCategories: product?.customerCategories.map((customerCategory) => customerCategory.documentId) || [],
+    customerCategories:
+      product?.customerCategories.map(
+        (customerCategory) => customerCategory.documentId
+      ) || [],
     productCategory: product?.productCategory?.documentId || null,
     customers: product?.customers.map((customer) => customer.documentId) || [],
     form: product?.form?.documentId || null,
-    active: product?.active || false
-  }
+    active: product?.active || false,
+  };
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (!product && onEdition) {
       dispatch(getProductById(documentId));
-    } else {
-      
     }
     return () => {
-      dispatch(setProductToEdit(null))
-    }
+      dispatch(setProductToEdit(null));
+    };
   }, [dispatch]);
 
   useEffect(() => {
@@ -77,15 +97,18 @@ const EditProduct = () => {
   }, [product]);
 
   const fetchFiles = async (): Promise<void> => {
-    if (product?.images && product?.images?.length > 0){
-      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(product?.images)
+    if (product?.images && product?.images?.length > 0) {
+      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(
+        product?.images
+      );
 
       setImages(imagesLoaded);
     }
   };
 
   const fetchForms = async () => {
-    const {forms_connection} : {forms_connection: GetFormsResponse}= await unwrapData(apiGetForms());
+    const { forms_connection }: { forms_connection: GetFormsResponse } =
+      await unwrapData(apiGetForms());
     const formsList = forms_connection.nodes || [];
     const forms = formsList.map((form: Form) => ({
       value: form.documentId || '',
@@ -95,7 +118,10 @@ const EditProduct = () => {
   };
 
   const fetchCustomers = async () => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } =
+      await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
     const customers = customersList.map((customer: Customer) => ({
       value: customer.documentId || '',
@@ -105,7 +131,10 @@ const EditProduct = () => {
   };
 
   const fetchCustomerCategories = async () => {
-    const {customerCategories_connection} : {customerCategories_connection: GetCustomerCategoriesResponse}= await unwrapData(apiGetCustomerCategories());
+    const {
+      customerCategories_connection,
+    }: { customerCategories_connection: GetCustomerCategoriesResponse } =
+      await unwrapData(apiGetCustomerCategories());
     const customerCategoriesList = customerCategories_connection.nodes || [];
     const customerCategories = customerCategoriesList.map(
       (customerCategory: CustomerCategory) => ({
@@ -117,12 +146,17 @@ const EditProduct = () => {
   };
 
   const fetchProductCategories = async () => {
-    const {productCategories_connection} : {productCategories_connection: GetProductCategoriesResponse}= await unwrapData(apiGetProductCategories());
+    const {
+      productCategories_connection,
+    }: { productCategories_connection: GetProductCategoriesResponse } =
+      await unwrapData(apiGetProductCategories());
     const productCategoriesList = productCategories_connection.nodes || [];
-    const productCategories = productCategoriesList.map((productCategory: ProductCategory) => ({
-      value: productCategory.documentId || '',
-      label: productCategory.name || '',
-    }));
+    const productCategories = productCategoriesList.map(
+      (productCategory: ProductCategory) => ({
+        value: productCategory.documentId || '',
+        label: productCategory.name || '',
+      })
+    );
     setProductCategories(productCategories);
   };
 
@@ -130,55 +164,63 @@ const EditProduct = () => {
     updateSizesList(product?.productCategory?.documentId || '');
   };
 
-  const filterSizesListByProductCategory = async (productCategoryDocumentId: string) => {
+  const filterSizesListByProductCategory = async (
+    productCategoryDocumentId: string
+  ) => {
     updateSizesList(productCategoryDocumentId);
-  }
+  };
 
   const updateSizesList = async (productCategoryDocumentId: string) => {
-    const {sizes} : {sizes: Size[]} = await unwrapData(apiGetProductCategorySizes(productCategoryDocumentId || ''));
+    const { sizes }: { sizes: Size[] } = await unwrapData(
+      apiGetProductCategorySizes(productCategoryDocumentId || '')
+    );
     const productSizes = sizes.map((size: Size) => ({
       value: size.documentId || '',
       label: size.name || '',
     }));
     setSizes(productSizes);
-  }
+  };
 
-  const updateOrCreateProduct = async (data: Product) : Promise<Product> => {
+  const updateOrCreateProduct = async (data: Product): Promise<Product> => {
     if (onEdition) {
-      const {updateProduct} : {updateProduct: Product} = await unwrapData(apiUpdateProduct(data));
-      return updateProduct
+      const { updateProduct }: { updateProduct: Product } = await unwrapData(
+        apiUpdateProduct(data)
+      );
+      return updateProduct;
     }
-    const {createProduct} : {createProduct: Product} = await unwrapData(apiCreateProduct(data));
-    return createProduct
-  }
+    const { createProduct }: { createProduct: Product } = await unwrapData(
+      apiCreateProduct(data)
+    );
+    return createProduct;
+  };
 
   const handleFormSubmit = async (
     values: ProductFormModel,
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    const newImages: Image[] = []
+    const newImages: Image[] = [];
     for (const image of images) {
       if (image.id) {
-        newImages.push(image)
+        newImages.push(image);
       } else {
-        const imageUploaded: Image = await apiUploadFile(image.file)
-        newImages.push(imageUploaded)
+        const imageUploaded: Image = await apiUploadFile(image.file);
+        newImages.push(imageUploaded);
       }
     }
     const data: Product = {
       ...values,
-      images: newImages.map(({id}) => id),
-      active: true
+      images: newImages.map(({ id }) => id),
+      active: true,
     };
     if (values.form === '') {
       delete data.form;
     }
     if (!onEdition) {
-      delete data.documentId
+      delete data.documentId;
     }
 
-    await updateOrCreateProduct(data)
+    await updateOrCreateProduct(data);
     setSubmitting(false);
     navigate('/admin/products');
   };
@@ -187,21 +229,23 @@ const EditProduct = () => {
     navigate('/admin/products');
   };
 
-  return (!onEdition || product) && (
-    <ProductForm
-      type={onEdition ? 'edit' : 'new'}
-      onFormSubmit={handleFormSubmit}
-      onDiscard={handleDiscard}
-      sizes={sizes}
-      customers={customers}
-      customerCategories={customerCategories}
-      categories={productCategories}
-      forms={forms}
-      images={images}
-      setImages={setImages}
-      initialData={initialData}
-      filterSizesListByProductCategory={filterSizesListByProductCategory}
-    />
+  return (
+    (!onEdition || product) && (
+      <ProductForm
+        type={onEdition ? 'edit' : 'new'}
+        onFormSubmit={handleFormSubmit}
+        onDiscard={handleDiscard}
+        sizes={sizes}
+        customers={customers}
+        customerCategories={customerCategories}
+        categories={productCategories}
+        forms={forms}
+        images={images}
+        setImages={setImages}
+        initialData={initialData}
+        filterSizesListByProductCategory={filterSizesListByProductCategory}
+      />
+    )
   );
 };
 

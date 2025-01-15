@@ -10,7 +10,7 @@ import reducer, {
   updateProduct,
 } from './store';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -38,11 +38,16 @@ const ProductsList = () => {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product>();
-  const { products, modalDeleteProduct: modalDelete, loading, total } = useAppSelector(
-    (state) => state.products.data
-  );
+  const {
+    products,
+    modalDeleteProduct: modalDelete,
+    loading,
+    total,
+  } = useAppSelector((state) => state.products.data);
   useEffect(() => {
-    dispatch(getProducts({ pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getProducts({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {
@@ -63,14 +68,16 @@ const ProductsList = () => {
     setProductToDelete(product);
     dispatch(setModalDeleteProductOpen());
   };
-  
+
   const onDeleteModalClose = () => {
     setProductToDelete(undefined);
     dispatch(setModalDeleteProductClose());
   };
 
   const onActivate = (product: Product, checked: boolean) => {
-    dispatch(updateProduct({documentId: product.documentId, active: !checked}))
+    dispatch(
+      updateProduct({ documentId: product.documentId, active: !checked })
+    );
     if (!checked) {
       toast.push(
         <Notification type="success" title="Activé">
@@ -97,9 +104,9 @@ const ProductsList = () => {
 
   const handlePaginationChange = (page: number) => {
     if (!loading) {
-      setCurrentPage(page)
+      setCurrentPage(page);
     }
-  }
+  };
 
   const pageSizeOption = useMemo(
     () =>
@@ -108,14 +115,14 @@ const ProductsList = () => {
         label: `${number} / page`,
       })),
     [10, 25, 50, 100]
-  )
+  );
 
   const handleSelectChange = (value?: number) => {
     if (!loading) {
       setPageSize(Number(value));
       setCurrentPage(1);
     }
-  }
+  };
 
   return (
     <Container>
@@ -243,7 +250,7 @@ const ProductsList = () => {
               menuPlacement="top"
               isSearchable={false}
               value={pageSizeOption.filter(
-                  (option) => option.value === pageSize
+                (option) => option.value === pageSize
               )}
               options={pageSizeOption}
               onChange={(option) => handleSelectChange(option?.value)}

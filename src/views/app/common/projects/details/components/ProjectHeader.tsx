@@ -15,8 +15,10 @@ import { setEditCurrentProjectDialog } from '../store';
 
 const ProjectHeader = ({ project }: { project: Project }) => {
   const dispatch = useAppDispatch();
-  const {user}: {user: User} = useAppSelector((state: RootState) => state.auth.user);
-  
+  const { user }: { user: User } = useAppSelector(
+    (state: RootState) => state.auth.user
+  );
+
   const handleEditProject = () => {
     dispatch(setEditCurrentProjectDialog(true));
   };
@@ -39,19 +41,20 @@ const ProjectHeader = ({ project }: { project: Project }) => {
               )}
             </div>
 
-            {hasRole(user, [SUPER_ADMIN]) && (<Button
-              size="sm"
-              variant="twoTone"
-              icon={<HiOutlinePencil />}
-              onClick={handleEditProject}
-            />)}
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (<BoardAddNewTask />)}
-            
+            {hasRole(user, [SUPER_ADMIN]) && (
+              <Button
+                size="sm"
+                variant="twoTone"
+                icon={<HiOutlinePencil />}
+                onClick={handleEditProject}
+              />
+            )}
+            {hasRole(user, [SUPER_ADMIN, ADMIN]) && <BoardAddNewTask />}
           </div>
         </div>
       </Container>
-      {hasRole(user, [SUPER_ADMIN]) && ( <ModalEditProject />)}
-      {hasRole(user, [SUPER_ADMIN, ADMIN]) && ( <ModalNewTask />)}
+      {hasRole(user, [SUPER_ADMIN]) && <ModalEditProject />}
+      {hasRole(user, [SUPER_ADMIN, ADMIN]) && <ModalNewTask />}
     </div>
   );
 };

@@ -10,7 +10,12 @@ import {
 import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import {
+  ADMIN,
+  CUSTOMER,
+  PRODUCER,
+  SUPER_ADMIN,
+} from '@/constants/roles.constant';
 
 export const SLICE_NAME = 'invoices';
 
@@ -26,29 +31,49 @@ export type InvoiceListState = {
 export type GetInvoices = {
   request: GetInvoicesRequest;
   user: User;
-}
+};
 
 export const getInvoices = createAsyncThunk(
   SLICE_NAME + '/getInvoices',
   async (data: GetInvoices): Promise<GetInvoicesResponse> => {
     if (hasRole(data.user, [SUPER_ADMIN, ADMIN])) {
-      const {invoices_connection} : {invoices_connection: GetInvoicesResponse} = await unwrapData(apiGetInvoices(data.request));
+      const {
+        invoices_connection,
+      }: { invoices_connection: GetInvoicesResponse } = await unwrapData(
+        apiGetInvoices(data.request)
+      );
       return invoices_connection;
     } else if (hasRole(data.user, [CUSTOMER])) {
-      const {invoices_connection} : {invoices_connection: GetInvoicesResponse}= await unwrapData(apiGetCustomerInvoices({...data.request, customerDocumentId: data.user.customer!.documentId}));
-      return invoices_connection
+      const {
+        invoices_connection,
+      }: { invoices_connection: GetInvoicesResponse } = await unwrapData(
+        apiGetCustomerInvoices({
+          ...data.request,
+          customerDocumentId: data.user.customer!.documentId,
+        })
+      );
+      return invoices_connection;
     } else if (hasRole(data.user, [PRODUCER])) {
-      const {projects_connection} : {projects_connection: GetInvoicesResponse}= await unwrapData(apiGetProducerInvoices(data)); // TODO: à corriger (est-ce nécessaire pour le producteur?)
-      return projects_connection
+      const {
+        projects_connection,
+      }: { projects_connection: GetInvoicesResponse } = await unwrapData(
+        apiGetProducerInvoices(data)
+      ); // TODO: à corriger (est-ce nécessaire pour le producteur?)
+      return projects_connection;
     }
-    return {nodes: [], pageInfo: {page: 1, pageCount: 1, pageSize: 0, total: 0}}
+    return {
+      nodes: [],
+      pageInfo: { page: 1, pageCount: 1, pageSize: 0, total: 0 },
+    };
   }
 );
 
 export const updateInvoice = createAsyncThunk(
   SLICE_NAME + '/updateInvoice',
   async (data: Partial<Invoice>): Promise<Invoice> => {
-    const {updateInvoice} : {updateInvoice: Invoice} = await unwrapData(apiUpdateInvoice(data));
+    const { updateInvoice }: { updateInvoice: Invoice } = await unwrapData(
+      apiUpdateInvoice(data)
+    );
     return updateInvoice;
   }
 );
@@ -79,8 +104,8 @@ const invoiceListSlice = createSlice({
   extraReducers: (builder) => {
     // GET INVOICES
     builder.addCase(getInvoices.pending, (state) => {
-          state.loading = true;
-        });
+      state.loading = true;
+    });
     builder.addCase(getInvoices.fulfilled, (state, action) => {
       state.invoices = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
@@ -93,10 +118,12 @@ const invoiceListSlice = createSlice({
     builder.addCase(updateInvoice.fulfilled, (state, action) => {
       state.loading = false;
       state.invoices = state.invoices.map((invoice) =>
-        invoice.documentId === action.payload.documentId ? action.payload : invoice
+        invoice.documentId === action.payload.documentId
+          ? action.payload
+          : invoice
       );
-      state.editInvoiceDialog = false
-      state.selectedInvoice = null
+      state.editInvoiceDialog = false;
+      state.selectedInvoice = null;
     });
     builder.addCase(updateInvoice.rejected, (state) => {
       state.loading = false;
@@ -104,7 +131,10 @@ const invoiceListSlice = createSlice({
   },
 });
 
-export const { setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice } =
-  invoiceListSlice.actions;
+export const {
+  setEditInvoiceDialog,
+  setPrintInvoiceDialog,
+  setSelectedInvoice,
+} = invoiceListSlice.actions;
 
 export default invoiceListSlice.reducer;

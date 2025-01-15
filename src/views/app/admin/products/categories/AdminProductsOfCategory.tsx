@@ -4,7 +4,11 @@ import { Card } from '@/components/ui';
 import { isEmpty } from 'lodash';
 import { useParams } from 'react-router-dom';
 import { DoubleSidedImage, Loading } from '@/components/shared';
-import reducer, { getProductCategoryById, getProductsByCategory, useAppSelector } from './store';
+import reducer, {
+  getProductCategoryById,
+  getProductsByCategory,
+  useAppSelector,
+} from './store';
 
 injectReducer('productCategories', reducer);
 
@@ -13,15 +17,24 @@ type ShowAdminProductsOfCategoryParams = {
 };
 
 const AdminProductsOfCategory = () => {
-  const { documentId } : {documentId: string} = useParams<ShowAdminProductsOfCategoryParams>() as ShowAdminProductsOfCategoryParams;
+  const { documentId }: { documentId: string } =
+    useParams<ShowAdminProductsOfCategoryParams>() as ShowAdminProductsOfCategoryParams;
   const dispatch = useAppDispatch();
-  const { products, productCategory, loading } = useAppSelector((state) => state.productCategories.data);
+  const { products, productCategory, loading } = useAppSelector(
+    (state) => state.productCategories.data
+  );
 
   useEffect(() => {
     if (!productCategory) {
       dispatch(getProductCategoryById(documentId));
     } else {
-      dispatch(getProductsByCategory({pagination: {page: 1, pageSize: 1000}, searchTerm: '', productCategoryDocumentId: productCategory?.documentId}));
+      dispatch(
+        getProductsByCategory({
+          pagination: { page: 1, pageSize: 1000 },
+          searchTerm: '',
+          productCategoryDocumentId: productCategory?.documentId,
+        })
+      );
     }
   }, [dispatch, productCategory]);
 

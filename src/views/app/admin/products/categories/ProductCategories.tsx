@@ -5,7 +5,11 @@ import { Input, Pagination, Select } from '@/components/ui';
 import ProductCategoriesListContent from './components/ProductCategoriesListContent';
 import ModalAddProductCategory from './modals/ModalAddProductCategory';
 import ModalDeleteProductCategory from './modals/ModalDeleteProductCategory';
-import reducer, { getProductCategories, useAppDispatch, useAppSelector } from './store';
+import reducer, {
+  getProductCategories,
+  useAppDispatch,
+  useAppSelector,
+} from './store';
 import { injectReducer } from '@/store';
 import { ProductCategory } from '@/@types/product';
 
@@ -26,14 +30,20 @@ const Categories = () => {
   const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [categorySelected, setCategorySelected] = useState<ProductCategory | null>(null);
+  const [categorySelected, setCategorySelected] =
+    useState<ProductCategory | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const { productCategories, loading, total } = useAppSelector(
     (state) => state.productCategories.data
   );
 
   useEffect(() => {
-    dispatch(getProductCategories({ pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getProductCategories({
+        pagination: { page: currentPage, pageSize },
+        searchTerm,
+      })
+    );
   }, [dispatch, searchTerm, currentPage, pageSize]);
 
   const handleSearch = (value: string) => {
@@ -41,7 +51,9 @@ const Categories = () => {
     setCurrentPage(1);
   };
 
-  const handleDeleteProductCategory = async (productCategory: ProductCategory) => {
+  const handleDeleteProductCategory = async (
+    productCategory: ProductCategory
+  ) => {
     setCategorySelected(productCategory);
     setIsOpenDelete(true);
   };
@@ -101,12 +113,14 @@ const Categories = () => {
         onClose={() => setIsOpen(false)}
         productCategory={null}
       />
-      {categorySelected && <ModalDeleteProductCategory
-        title="Supprimer une catégorie de produit"
-        isOpen={isOpenDelete}
-        setIsOpen={setIsOpenDelete}
-        productCategory={categorySelected}
-      />}
+      {categorySelected && (
+        <ModalDeleteProductCategory
+          title="Supprimer une catégorie de produit"
+          isOpen={isOpenDelete}
+          setIsOpen={setIsOpenDelete}
+          productCategory={categorySelected}
+        />
+      )}
     </Container>
   );
 };

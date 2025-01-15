@@ -6,7 +6,11 @@ import { Input } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 import ModalDeleteProducerCategory from './modals/ModalDeleteProducerCategory';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getProducerCategories, setProducerCategory, useAppSelector } from './store';
+import reducer, {
+  getProducerCategories,
+  setProducerCategory,
+  useAppSelector,
+} from './store';
 import { ProducerCategory } from '@/@types/producer';
 import ModalEditProducerCategory from './modals/ModalEditProducerCategory';
 
@@ -21,9 +25,8 @@ const ProducerCategoriesList = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
   const [isOpenDelete, setIsOpenDelete] = useState<boolean>(false);
-  const { total, producerCategories, loading, producerCategory } = useAppSelector(
-    (state) => state.producerCategories.data
-  );
+  const { total, producerCategories, loading, producerCategory } =
+    useAppSelector((state) => state.producerCategories.data);
 
   useEffect(() => {
     fetchProducerCategories();
@@ -51,7 +54,12 @@ const ProducerCategoriesList = () => {
   };
 
   const fetchProducerCategories = async () => {
-    dispatch(getProducerCategories({pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getProducerCategories({
+        pagination: { page: currentPage, pageSize },
+        searchTerm,
+      })
+    );
   };
 
   const handleSearch = (value: string) => {
@@ -111,11 +119,12 @@ const ProducerCategoriesList = () => {
       )}
       {isOpen && (
         <ModalEditProducerCategory
-        mode="add"
-        title={t('cat.addCategory')}
-        isOpen={isOpen}
-        handleCloseModal={handleCloseModal}
-      />)}
+          mode="add"
+          title={t('cat.addCategory')}
+          isOpen={isOpen}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
       {producerCategory && isOpenDelete && (
         <ModalDeleteProducerCategory
           title={t('cat.deleteCategory')}

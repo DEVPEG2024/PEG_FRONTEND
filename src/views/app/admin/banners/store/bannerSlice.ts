@@ -28,20 +28,23 @@ export type BannerState = {
 
 export const getBanners = createAsyncThunk(
   SLICE_NAME + '/getBanners',
-  async (data: GetBannersRequest) : Promise<GetBannersResponse> => {
-    const {banners_connection} : {banners_connection: GetBannersResponse} = await unwrapData(apiGetBanners(data));
+  async (data: GetBannersRequest): Promise<GetBannersResponse> => {
+    const { banners_connection }: { banners_connection: GetBannersResponse } =
+      await unwrapData(apiGetBanners(data));
     return banners_connection;
   }
 );
 
 export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
-  async (data: CreateBannerRequest) : Promise<Banner> => {
-    let imageUploaded : Image | undefined = undefined
+  async (data: CreateBannerRequest): Promise<Banner> => {
+    let imageUploaded: Image | undefined = undefined;
     if (data.image) {
-      imageUploaded = await apiUploadFile(data.image.file)
+      imageUploaded = await apiUploadFile(data.image.file);
     }
-    const {createBanner} : {createBanner: Banner} = await unwrapData(apiCreateBanner({...data, image: imageUploaded?.id ?? null}));
+    const { createBanner }: { createBanner: Banner } = await unwrapData(
+      apiCreateBanner({ ...data, image: imageUploaded?.id ?? null })
+    );
     return createBanner;
   }
 );
@@ -49,7 +52,8 @@ export const createBanner = createAsyncThunk(
 export const deleteBanner = createAsyncThunk(
   SLICE_NAME + '/deleteBanner',
   async (documentId: string): Promise<DeleteBannerResponse> => {
-    const {deleteBanner} : {deleteBanner: DeleteBannerResponse} = await unwrapData(apiDeleteBanner(documentId));
+    const { deleteBanner }: { deleteBanner: DeleteBannerResponse } =
+      await unwrapData(apiDeleteBanner(documentId));
     return deleteBanner;
   }
 );
@@ -57,16 +61,21 @@ export const deleteBanner = createAsyncThunk(
 export type UpdateBanner = {
   banner: Partial<Banner>;
   imageModified: boolean;
-}
+};
 
 export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
   async (data: UpdateBanner): Promise<Banner> => {
-    let imageUploaded : Image | undefined = undefined
+    let imageUploaded: Image | undefined = undefined;
     if (data.imageModified && data.banner.image) {
-      imageUploaded = await apiUploadFile(data.banner.image.file)
+      imageUploaded = await apiUploadFile(data.banner.image.file);
     }
-    const {updateBanner} : {updateBanner: Banner} = await unwrapData(apiUpdateBanner({...data.banner, image: data.imageModified ? imageUploaded?.id ?? null : undefined}));
+    const { updateBanner }: { updateBanner: Banner } = await unwrapData(
+      apiUpdateBanner({
+        ...data.banner,
+        image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
+      })
+    );
     return updateBanner;
   }
 );
@@ -114,7 +123,7 @@ const bannerSlice = createSlice({
     builder.addCase(createBanner.fulfilled, (state, action) => {
       state.loading = false;
       state.banners.push(action.payload);
-      state.total += 1
+      state.total += 1;
     });
     builder.addCase(createBanner.rejected, (state) => {
       state.loading = false;
@@ -126,7 +135,9 @@ const bannerSlice = createSlice({
     builder.addCase(updateBanner.fulfilled, (state, action) => {
       state.loading = false;
       state.banners = state.banners.map((banner) =>
-        banner.documentId === action.payload.documentId ? action.payload : banner
+        banner.documentId === action.payload.documentId
+          ? action.payload
+          : banner
       );
     });
     builder.addCase(updateBanner.rejected, (state) => {
@@ -138,8 +149,10 @@ const bannerSlice = createSlice({
     });
     builder.addCase(deleteBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = state.banners.filter((banner) => banner.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.banners = state.banners.filter(
+        (banner) => banner.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
     builder.addCase(deleteBanner.rejected, (state) => {
       state.loading = false;

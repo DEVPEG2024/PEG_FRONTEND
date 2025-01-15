@@ -1,8 +1,5 @@
 import Dropdown from '@/components/ui/Dropdown';
-import {
-  HiExclamationCircle,
-  HiOutlineTrash,
-} from 'react-icons/hi';
+import { HiExclamationCircle, HiOutlineTrash } from 'react-icons/hi';
 import EllipsisButton from '@/components/shared/EllipsisButton';
 import { TbPigMoney } from 'react-icons/tb';
 import { useState } from 'react';
@@ -45,18 +42,23 @@ const ProjectItemDropdown = ({
   return (
     <>
       <Dropdown placement="bottom-end" renderTitle={<EllipsisButton />}>
-        {dropdownList.filter((dropdownItem) => dropdownItem.condition(project)).map((item) => (
-          <Dropdown.Item
-            key={item.value}
-            eventKey={item.value}
-            onClick={() => item.action()}
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span className="ml-2 rtl:mr-2">{item.label}</span>
-          </Dropdown.Item>
-        ))}
+        {dropdownList
+          .filter((dropdownItem) => dropdownItem.condition(project))
+          .map((item) => (
+            <Dropdown.Item
+              key={item.value}
+              eventKey={item.value}
+              onClick={() => item.action()}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span className="ml-2 rtl:mr-2">{item.label}</span>
+            </Dropdown.Item>
+          ))}
       </Dropdown>
-      <Dialog isOpen={isValidDeleteOpen} onClose={() => setIsValidDeleteOpen(false)}>
+      <Dialog
+        isOpen={isValidDeleteOpen}
+        onClose={() => setIsValidDeleteOpen(false)}
+      >
         <div className="flex flex-col items-center justify-center">
           <HiExclamationCircle className="text-7xl text-red-500" />
           <h1 className="text-2xl font-bold mt-4">Suppression du projet</h1>

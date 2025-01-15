@@ -1,5 +1,8 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, ProducerCategoriesState } from './producerCategoriesSlice';
+import reducers, {
+  SLICE_NAME,
+  ProducerCategoriesState,
+} from './producerCategoriesSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';

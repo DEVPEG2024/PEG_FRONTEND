@@ -24,10 +24,13 @@ const SizesList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const { sizes, total, selectedSize, newSizeDialog, editSizeDialog } = useAppSelector((state) => state.sizes.data);
+  const { sizes, total, selectedSize, newSizeDialog, editSizeDialog } =
+    useAppSelector((state) => state.sizes.data);
 
   useEffect(() => {
-    dispatch(getSizes({ pagination: {page: currentPage, pageSize}, searchTerm }));
+    dispatch(
+      getSizes({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
   }, [currentPage, pageSize, searchTerm]);
 
   const handleSearch = (value: string) => {

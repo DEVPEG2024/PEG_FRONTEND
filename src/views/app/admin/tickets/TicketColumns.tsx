@@ -12,7 +12,7 @@ export const useColumns = (
       header: 'Nom',
       accessorKey: 'name',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Ticket} }) => (
+      cell: ({ row }: { row: { original: Ticket } }) => (
         <div className="flex items-center gap-2">
           <span className="font-bold">{row.original.name}</span>
         </div>
@@ -22,9 +22,11 @@ export const useColumns = (
       header: 'Crée par',
       accessorKey: 'user',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Ticket} }) => {
+      cell: ({ row }: { row: { original: Ticket } }) => {
         return (
-          <span className="font-bold">{row.original.user.firstName + ' ' + row.original.user.lastName}</span>
+          <span className="font-bold">
+            {row.original.user.firstName + ' ' + row.original.user.lastName}
+          </span>
         );
       },
     },
@@ -32,7 +34,7 @@ export const useColumns = (
       header: 'Date',
       accessorKey: 'createdAt',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Ticket} }) => {
+      cell: ({ row }: { row: { original: Ticket } }) => {
         return (
           <div className="flex items-center gap-2">
             {dayjs(row.original.createdAt).format('DD/MM/YYYY')}
@@ -44,7 +46,7 @@ export const useColumns = (
       header: 'Priorité',
       accessorKey: 'priority',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Ticket} }) => {
+      cell: ({ row }: { row: { original: Ticket } }) => {
         const priority =
           row.original.priority === 'low'
             ? 'Faible'
@@ -70,8 +72,13 @@ export const useColumns = (
       header: '',
       accessorKey: 'status',
       enableSorting: false,
-      cell: ({ row }: { row: {original: Ticket} }) => {
-        const status = row.original.state === 'pending' ? 'Ouvert' : row.original.state === 'canceled' ? 'Annulé' : 'Fermé';
+      cell: ({ row }: { row: { original: Ticket } }) => {
+        const status =
+          row.original.state === 'pending'
+            ? 'Ouvert'
+            : row.original.state === 'canceled'
+              ? 'Annulé'
+              : 'Fermé';
         return (
           <div className="flex justify-end items-center gap-2">
             <Tag

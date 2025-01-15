@@ -20,17 +20,24 @@ type ShowCustomerProductsOfCategoryParams = {
 };
 
 const CustomerProductsOfCategory = () => {
-  const { documentId } = useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
+  const { documentId } =
+    useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
   const dispatch = useAppDispatch();
   const { products, productCategory, loading } = useAppSelector(
     (state) => state.catalogue.data
   );
-  
+
   useEffect(() => {
     if (!productCategory) {
       dispatch(getCatalogueProductCategoryById(documentId));
     } else {
-      dispatch(getCatalogueProductsByCategory({pagination: {page: 1, pageSize: 10}, searchTerm: '', productCategoryDocumentId: productCategory?.documentId}));
+      dispatch(
+        getCatalogueProductsByCategory({
+          pagination: { page: 1, pageSize: 10 },
+          searchTerm: '',
+          productCategoryDocumentId: productCategory?.documentId,
+        })
+      );
     }
   }, [dispatch, productCategory]);
 
@@ -43,7 +50,9 @@ const CustomerProductsOfCategory = () => {
   return (
     <Loading loading={loading}>
       <div className="lg:grid lg:grid-cols-3 items-center justify-between mb-4">
-        <h3 className="mb-4 lg:mb-0 col-span-1">Produits : {productCategory?.name}</h3>
+        <h3 className="mb-4 lg:mb-0 col-span-1">
+          Produits : {productCategory?.name}
+        </h3>
       </div>
 
       {isEmpty(products) && (
@@ -59,11 +68,11 @@ const CustomerProductsOfCategory = () => {
       {!isEmpty(products) && (
         <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {products.map((product: Product) => (
-            <CustomerProductCard product={product} />
+            <CustomerProductCard key={product.documentId} product={product} />
           ))}
         </div>
       )}
-    </Loading> 
+    </Loading>
   );
 };
 

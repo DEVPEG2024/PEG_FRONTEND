@@ -4,7 +4,7 @@ import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { Select } from '@/components/ui';
-import { Product, ProductCategory, Size } from '@/@types/product';
+import { Product } from '@/@types/product';
 
 type Options = {
   label: string;
@@ -107,7 +107,7 @@ const ProductFields = (props: ProductFields) => {
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
                   form.setFieldValue(field.name, value);
-                  filterSizesListByProductCategory(value)
+                  filterSizesListByProductCategory(value);
                 }}
               />
             )}

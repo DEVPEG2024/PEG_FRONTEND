@@ -7,7 +7,7 @@ import DashboardProducer from '@/views/app/producer/home/DashboardProducer';
 import { Suspense } from 'react';
 
 const Home = () => {
-  const {user}: {user: User} = useAppSelector((state) => state.auth.user);
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <AuthorityCheck

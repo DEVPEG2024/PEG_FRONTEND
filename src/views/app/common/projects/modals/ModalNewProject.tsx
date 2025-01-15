@@ -1,4 +1,11 @@
-import { Button, DatePicker, Dialog, Input, Select, Switcher } from '@/components/ui';
+import {
+  Button,
+  DatePicker,
+  Dialog,
+  Input,
+  Select,
+  Switcher,
+} from '@/components/ui';
 import { t } from 'i18next';
 import FieldCustom from './components/fileds';
 import dayjs from 'dayjs';
@@ -12,9 +19,15 @@ import {
 } from '../store';
 import { priorityData, stateData } from '../lists/constants';
 import { unwrapData } from '@/utils/serviceHelper';
-import { GetCustomersResponse, apiGetCustomers } from '@/services/CustomerServices';
+import {
+  GetCustomersResponse,
+  apiGetCustomers,
+} from '@/services/CustomerServices';
 import { Customer } from '@/@types/customer';
-import { GetProducersResponse, apiGetProducers } from '@/services/ProducerServices';
+import {
+  GetProducersResponse,
+  apiGetProducers,
+} from '@/services/ProducerServices';
 import { Producer } from '@/@types/producer';
 import { Project } from '@/@types/project';
 
@@ -23,11 +36,21 @@ type Option = {
   label: string;
 };
 
-type ProjectFormModel = Omit<Project, 'documentId' | 'customer' | 'producer' | 'comments' | 'images' | 'tasks' | 'orderItem' | 'invoices'> & {
+type ProjectFormModel = Omit<
+  Project,
+  | 'documentId'
+  | 'customer'
+  | 'producer'
+  | 'comments'
+  | 'images'
+  | 'tasks'
+  | 'orderItem'
+  | 'invoices'
+> & {
   documentId?: string;
   customer: string | null;
   producer: string | null;
-}
+};
 
 function ModalNewProject() {
   const { newProjectDialog, loading } = useAppSelector(
@@ -58,7 +81,10 @@ function ModalNewProject() {
   }, []);
 
   const fetchCustomers = async () => {
-    const {customers_connection} : {customers_connection: GetCustomersResponse}= await unwrapData(apiGetCustomers());
+    const {
+      customers_connection,
+    }: { customers_connection: GetCustomersResponse } =
+      await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
     const customers = customersList.map((customer: Customer) => ({
       value: customer.documentId || '',
@@ -68,7 +94,10 @@ function ModalNewProject() {
   };
 
   const fetchProducers = async () => {
-    const {producers_connection} : {producers_connection: GetProducersResponse}= await unwrapData(apiGetProducers());
+    const {
+      producers_connection,
+    }: { producers_connection: GetProducersResponse } =
+      await unwrapData(apiGetProducers());
     const producersList = producers_connection.nodes || [];
     const producers = producersList.map((producer: Producer) => ({
       value: producer.documentId || '',
@@ -79,7 +108,15 @@ function ModalNewProject() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(createProject({...formData, customer: formData.customer !== '' ? {documentId: formData.customer} : null, producer: formData.producer !== '' ? {documentId: formData.producer} : null}));
+    dispatch(
+      createProject({
+        ...formData,
+        customer:
+          formData.customer !== '' ? { documentId: formData.customer } : null,
+        producer:
+          formData.producer !== '' ? { documentId: formData.producer } : null,
+      })
+    );
     handleClose();
   };
   const handleClose = () => {
@@ -135,24 +172,34 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">Montant payé par le client</p>
+              <p className="text-sm text-gray-200">
+                Montant payé par le client
+              </p>
               <Input
                 type="number"
                 placeholder={t('projects.paidPrice')}
                 value={formData.paidPrice}
                 onChange={(e) => {
-                  setFormData({ ...formData, paidPrice: Number(e.target.value) });
+                  setFormData({
+                    ...formData,
+                    paidPrice: Number(e.target.value),
+                  });
                 }}
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">Montant payé au producteur</p>
+              <p className="text-sm text-gray-200">
+                Montant payé au producteur
+              </p>
               <Input
                 type="number"
                 placeholder={t('projects.producerPaidPrice')}
                 value={formData.producerPaidPrice}
                 onChange={(e) => {
-                  setFormData({ ...formData, producerPaidPrice: Number(e.target.value) });
+                  setFormData({
+                    ...formData,
+                    producerPaidPrice: Number(e.target.value),
+                  });
                 }}
               />
             </div>
@@ -187,11 +234,15 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-2/12">
-              <span className="text-sm text-gray-200 mb-2 mt-4">Dans la piscine</span>
+              <span className="text-sm text-gray-200 mb-2 mt-4">
+                Dans la piscine
+              </span>
               <Switcher
                 className="self-center"
                 checked={formData.poolable}
-                onChange={() => setFormData({ ...formData, poolable: !formData.poolable })}
+                onChange={() =>
+                  setFormData({ ...formData, poolable: !formData.poolable })
+                }
               />
             </div>
           </div>

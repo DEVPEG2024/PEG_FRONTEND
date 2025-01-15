@@ -1,5 +1,8 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, ProjectDetailsState } from './projectDetailsSlice';
+import reducers, {
+  SLICE_NAME,
+  ProjectDetailsState,
+} from './projectDetailsSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';

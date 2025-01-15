@@ -10,9 +10,7 @@ import {
 import EditForm from './EditForm';
 
 function EditFormModal() {
-  const { newFormDialog, form } = useAppSelector(
-    (state) => state.forms.data
-  );
+  const { newFormDialog, form } = useAppSelector((state) => state.forms.data);
   const dispatch = useAppDispatch();
   const handleClose = () => {
     dispatch(setNewFormDialog(false));
@@ -21,17 +19,33 @@ function EditFormModal() {
 
   const onValidate = (name: string, components: any) => {
     if (form?.documentId) {
-      dispatch(updateForm({documentId: form.documentId, name, fields: JSON.stringify(components)}))
+      dispatch(
+        updateForm({
+          documentId: form.documentId,
+          name,
+          fields: JSON.stringify(components),
+        })
+      );
     } else {
-      dispatch(createForm({name, fields: JSON.stringify(components)}))
+      dispatch(createForm({ name, fields: JSON.stringify(components) }));
     }
-    handleClose()
-  }
+    handleClose();
+  };
 
   return (
     <div>
-      <Dialog isOpen={newFormDialog} onClose={handleClose} width={1200} contentClassName='dialog-formbuilder'>
-        <EditForm onValidate={onValidate} onCancel={handleClose} fields={form?.fields ?? []} name={form?.name ?? ''}/>
+      <Dialog
+        isOpen={newFormDialog}
+        onClose={handleClose}
+        width={1200}
+        contentClassName="dialog-formbuilder"
+      >
+        <EditForm
+          onValidate={onValidate}
+          onCancel={handleClose}
+          fields={form?.fields ?? []}
+          name={form?.name ?? ''}
+        />
       </Dialog>
     </div>
   );

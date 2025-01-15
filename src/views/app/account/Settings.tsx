@@ -55,7 +55,9 @@ const Settings = () => {
         <div className="px-4 py-6">
           <Suspense fallback={<></>}>
             {currentTab === 'profile' && <Profile />}
-            {currentTab === 'password' && <Password onTabChange={onTabChange} />}
+            {currentTab === 'password' && (
+              <Password onTabChange={onTabChange} />
+            )}
           </Suspense>
         </div>
       </AdaptableCard>

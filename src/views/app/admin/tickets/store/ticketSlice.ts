@@ -29,27 +29,30 @@ export type TicketState = {
 
 export const getTickets = createAsyncThunk(
   SLICE_NAME + '/getTickets',
-  async (data: GetTicketsRequest) : Promise<GetTicketsResponse> => {
-    const {tickets_connection} : {tickets_connection: GetTicketsResponse} = await unwrapData(apiGetTickets(data));
+  async (data: GetTicketsRequest): Promise<GetTicketsResponse> => {
+    const { tickets_connection }: { tickets_connection: GetTicketsResponse } =
+      await unwrapData(apiGetTickets(data));
     return tickets_connection;
   }
 );
 
 export const getTicketById = createAsyncThunk(
   SLICE_NAME + '/getTicketById',
-  async (documentId: string): Promise<{ticket: Ticket}> => {
+  async (documentId: string): Promise<{ ticket: Ticket }> => {
     return await unwrapData(apiGetTicketForEditById(documentId));
   }
 );
 
 export const createTicket = createAsyncThunk(
   SLICE_NAME + '/createTicket',
-  async (data: CreateTicketRequest) : Promise<Ticket> => {
-    let imageUploaded : Image | undefined = undefined
-    if(data.image) {
-      imageUploaded = await apiUploadFile(data.image.file)
+  async (data: CreateTicketRequest): Promise<Ticket> => {
+    let imageUploaded: Image | undefined = undefined;
+    if (data.image) {
+      imageUploaded = await apiUploadFile(data.image.file);
     }
-    const {createTicket} : {createTicket: Ticket} = await unwrapData(apiCreateTicket({...data, image: imageUploaded?.id ?? undefined}));
+    const { createTicket }: { createTicket: Ticket } = await unwrapData(
+      apiCreateTicket({ ...data, image: imageUploaded?.id ?? undefined })
+    );
     return createTicket;
   }
 );
@@ -57,7 +60,8 @@ export const createTicket = createAsyncThunk(
 export const deleteTicket = createAsyncThunk(
   SLICE_NAME + '/deleteTicket',
   async (documentId: string): Promise<DeleteTicketResponse> => {
-    const {deleteTicket} : {deleteTicket: DeleteTicketResponse} = await unwrapData(apiDeleteTicket(documentId));
+    const { deleteTicket }: { deleteTicket: DeleteTicketResponse } =
+      await unwrapData(apiDeleteTicket(documentId));
     return deleteTicket;
   }
 );
@@ -65,7 +69,9 @@ export const deleteTicket = createAsyncThunk(
 export const updateTicket = createAsyncThunk(
   SLICE_NAME + '/updateTicket',
   async (data: Partial<Ticket>): Promise<Ticket> => {
-    const {updateTicket} : {updateTicket: Ticket} = await unwrapData(apiUpdateTicket(data));
+    const { updateTicket }: { updateTicket: Ticket } = await unwrapData(
+      apiUpdateTicket(data)
+    );
     return updateTicket;
   }
 );
@@ -117,7 +123,7 @@ const projectListSlice = createSlice({
     builder.addCase(getTicketById.rejected, (state) => {
       state.loading = false;
     });
-    
+
     // CREATE TICKET
     builder.addCase(createTicket.pending, (state) => {
       state.loading = true;
@@ -125,12 +131,12 @@ const projectListSlice = createSlice({
     builder.addCase(createTicket.fulfilled, (state, action) => {
       state.loading = false;
       state.tickets.push(action.payload);
-      state.total += 1
+      state.total += 1;
     });
     builder.addCase(createTicket.rejected, (state) => {
       state.loading = false;
     });
-    
+
     // UPDATE TICKET
     builder.addCase(updateTicket.pending, (state) => {
       state.loading = true;
@@ -138,7 +144,9 @@ const projectListSlice = createSlice({
     builder.addCase(updateTicket.fulfilled, (state, action) => {
       state.loading = false;
       state.tickets = state.tickets.map((ticket) =>
-        ticket.documentId === action.payload.documentId ? action.payload : ticket
+        ticket.documentId === action.payload.documentId
+          ? action.payload
+          : ticket
       );
     });
     builder.addCase(updateTicket.rejected, (state) => {
@@ -151,8 +159,10 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteTicket.fulfilled, (state, action) => {
       state.loading = false;
-      state.tickets = state.tickets.filter((ticket) => ticket.documentId !== action.payload.documentId);
-      state.total -= 1
+      state.tickets = state.tickets.filter(
+        (ticket) => ticket.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
     });
     builder.addCase(deleteTicket.rejected, (state) => {
       state.loading = false;

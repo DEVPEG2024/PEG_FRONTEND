@@ -34,7 +34,7 @@ function ModalNewTask() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(createTask({task: formData, project: project!}));
+    dispatch(createTask({ task: formData, project: project! }));
     setFormData({
       name: '',
       description: '',
@@ -45,7 +45,7 @@ function ModalNewTask() {
     });
     handleClose();
   };
-  
+
   const handleClose = () => {
     dispatch(setNewDialogTask(false));
   };
