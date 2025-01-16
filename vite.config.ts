@@ -25,6 +25,9 @@ export default defineConfig({
     port: process.env.PORT as unknown as number,
   },
   build: {
-    outDir: 'build'
+    outDir: 'build',
+    commonjsOptions: {
+      requireReturnsDefault: 'auto',
+    },
   }
 });
