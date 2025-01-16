@@ -75,6 +75,15 @@ function Cart() {
         };
       const { createOrderItem }: { createOrderItem: OrderItem } =
         await unwrapData(apiCreateOrderItem(orderItem));
+        Email.send({
+          Host : "smtp.hostinger.com",
+          Username : "contact@zoom-project.com",
+          Password : "rUnsan-pagro3-vifsum",
+          To : 'dev@mypeg.fr',
+          From : "contact@zoom-project.com",
+          Subject : "Test",
+          Body : "Contenu du mail",
+        })
       // TODO : envoyer mail création commande OK
       try {
         const project: Omit<Project, 'documentId'> = {
