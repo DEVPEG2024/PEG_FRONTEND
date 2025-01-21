@@ -58,6 +58,16 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "customer.support",
+    path: "/support",
+    title: "Support",
+    translateKey: "nav.support",
+    icon: "support",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [CUSTOMER],
+    subMenu: [],
+  },
+  {
     key: "customer.settings",
     path: "/settings/profile",
     title: "PARAMÈTRES",

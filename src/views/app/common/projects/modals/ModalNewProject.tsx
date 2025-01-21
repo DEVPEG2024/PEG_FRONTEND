@@ -30,6 +30,7 @@ import {
 } from '@/services/ProducerServices';
 import { Producer } from '@/@types/producer';
 import { Project } from '@/@types/project';
+import { Invoice } from '@/@types/invoice';
 
 type Option = {
   value: string;
@@ -119,6 +120,7 @@ function ModalNewProject() {
     );
     handleClose();
   };
+
   const handleClose = () => {
     dispatch(setNewProjectDialog(false));
   };

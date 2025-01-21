@@ -6,7 +6,6 @@ import {
   HiCalendar,
   HiUserCircle,
   HiLightningBolt,
-  HiExclamationCircle,
 } from 'react-icons/hi';
 import dayjs from 'dayjs';
 import {
@@ -25,9 +24,8 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { updateCurrentProject, useAppSelector } from '../store';
-import { Button, Dialog } from '@/components/ui';
-import { MdPersonAdd, MdPersonRemove } from 'react-icons/md';
-import { useState } from 'react';
+import { Button } from '@/components/ui';
+import { MdPersonAdd } from 'react-icons/md';
 
 const DetailsRight = () => {
   const dispatch = useAppDispatch();
@@ -35,7 +33,6 @@ const DetailsRight = () => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
-  const [isValidUnassignMeOpen, setIsValidUnassignMeOpen] = useState(false);
   const status = statusTextData[project.state as keyof typeof statusTextData];
   const statusColor =
     statusColorText[project.state as keyof typeof statusColorText];
@@ -51,27 +48,12 @@ const DetailsRight = () => {
         ? 'moyenne'
         : 'haute';
 
-  const handleUnassignMe = () => {
-    setIsValidUnassignMeOpen(true);
-  };
-
-  const handleConfirmUnassignMe = () => {
-    unassignMeAsProducer();
-    setIsValidUnassignMeOpen(false);
-  };
-
   const assignMeAsProducer = () => {
     dispatch(
       updateCurrentProject({
         documentId: project.documentId,
         producer: user.producer!.documentId,
       })
-    );
-  };
-
-  const unassignMeAsProducer = () => {
-    dispatch(
-      updateCurrentProject({ documentId: project.documentId, producer: null })
     );
   };
 
@@ -103,7 +85,7 @@ const DetailsRight = () => {
             icon={<FaEuroSign className="text-lg opacity-70" />}
           >
             <span className="font-semibold">
-              Montant total : {project.price.toFixed(2)} €
+              Montant total : {project.price?.toFixed(2) ?? 0} €
             </span>
           </IconText>
         )}
@@ -157,17 +139,6 @@ const DetailsRight = () => {
                     {project.producer.name}
                   </span>
                 </IconText>
-                {hasRole(user, [PRODUCER]) &&
-                  project.producer.documentId === user.producer!.documentId && (
-                    <Button
-                      variant="solid"
-                      className="text-sm"
-                      icon={<MdPersonRemove />}
-                      onClick={handleUnassignMe}
-                    >
-                      <span>Me désassigner</span>
-                    </Button>
-                  )}
               </div>
             ) : (
               <div className="flex space-x-5 items-center">
@@ -189,30 +160,6 @@ const DetailsRight = () => {
           </div>
         )}
       </AdaptableCard>
-      <Dialog
-        isOpen={isValidUnassignMeOpen}
-        onClose={() => setIsValidUnassignMeOpen(false)}
-      >
-        <div className="flex flex-col items-center justify-center">
-          <HiExclamationCircle className="text-7xl text-red-500" />
-          <h1 className="text-2xl font-bold mt-4">Désassignement du projet</h1>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <p>Voulez-vous vraiment vous désassignez de ce projet ?</p>
-        </div>
-        <div className="flex flex-grow items-center justify-center gap-2 mt-10">
-          <Button onClick={() => setIsValidUnassignMeOpen(false)}>
-            Annuler
-          </Button>
-          <Button
-            onClick={handleConfirmUnassignMe}
-            className="bg-red-500 text-white"
-            variant="solid"
-          >
-            Me désassigner
-          </Button>
-        </div>
-      </Dialog>
     </div>
   );
 };

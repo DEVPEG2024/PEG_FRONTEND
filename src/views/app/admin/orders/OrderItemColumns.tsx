@@ -6,7 +6,8 @@ import { SizeSelection } from '@/@types/product';
 export const useColumns = (
   handleShowOrderItem: (order: OrderItem) => void,
   handleFinishOrder: (order: OrderItem) => void,
-  handlePendOrder: (order: OrderItem) => void
+  handlePendOrder: (order: OrderItem) => void,
+  handleShowProject: (order: OrderItem) => void
 ) => {
   return [
     {
@@ -88,6 +89,37 @@ export const useColumns = (
                 icon={<HiInformationCircle size={20} />}
               />
             </Tooltip>
+          </div>
+        );
+      },
+    },
+
+    {
+      header: 'Projet',
+      accessorKey: '',
+      enableSorting: false,
+      cell: ({ row }: { row: { original: OrderItem } }) => {
+        return (
+          <div className="flex items-center" key={row.original.documentId}>
+            {row.original.project ? (
+              <Tooltip title="Consulter le projet">
+                <Button
+                  onClick={() => handleShowProject(row.original)}
+                  size="sm"
+                  variant="twoTone"
+                  icon={<HiInformationCircle size={20} />}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title="Projet inexistant">
+                <Button
+                  disabled
+                  size="sm"
+                  variant="twoTone"
+                  icon={<HiBan size={20} />}
+                />
+              </Tooltip>
+            )}
           </div>
         );
       },
