@@ -46,7 +46,6 @@ const navigationProducteur: NavigationTree[] = [
     authority: [PRODUCER],
     subMenu: [],
   },
-  // TODO SUITE: vérifier que accès OK à support + accès au support pour client ? car pas dans son NavigationTree
   {
     key: "producer.support",
     path: "/support",
@@ -57,7 +56,6 @@ const navigationProducteur: NavigationTree[] = [
     authority: [PRODUCER],
     subMenu: [],
   },
-  // TODO SUITE: vérifier que accès OK à paramètres
   {
     key: "producer.settings",
     path: "/settings/profile",
