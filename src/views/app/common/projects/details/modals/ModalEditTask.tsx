@@ -50,7 +50,7 @@ function ModalEditTask() {
     <div>
       <Dialog isOpen={editDialogTask} onClose={handleClose}>
         <div className="flex flex-col h-full justify-between">
-          <h5 className="mb-4">Ajouter une tâche</h5>
+          <h5 className="mb-4">Modifier une tâche</h5>
           <FieldCustom
             placeholder="Titre de la tâche"
             value={formData.name}

@@ -1,4 +1,4 @@
-import { Button, Dialog, Input, Select } from '@/components/ui';
+import { Alert, Button, Dialog, Input, Select } from '@/components/ui';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -20,6 +20,7 @@ type Option = {
   label: string;
 };
 
+// TODO: Mettre en commun avec ModalNewSize
 function ModalEditSize() {
   const { editSizeDialog, selectedSize } = useAppSelector(
     (state) => state.sizes.data
@@ -29,10 +30,10 @@ function ModalEditSize() {
   const [formData, setFormData] = useState<SizeFormModel>({
     documentId: selectedSize?.documentId || '',
     name: selectedSize?.name || '',
-    value: selectedSize?.value || '',
     description: selectedSize?.description || '',
     productCategory: selectedSize?.productCategory?.documentId || '',
   });
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProductCategories();
@@ -55,20 +56,35 @@ function ModalEditSize() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (verifyFormData().length === 0) {
+      handleModifySize()
+    }
+  };
+
+  const verifyFormData = () => {
+    const tempErrors : string[] = [];
+    if (formData.name === '') {
+      tempErrors.push('Le nom est obligatoire');
+    }
+    setErrors(tempErrors);
+    return tempErrors;
+  }
+
+  const handleModifySize = () => {
     const sizeToUpdate: Size = {
       ...formData,
+      value: formData.name,
       productCategory:
         formData.productCategory !== '' ? formData.productCategory : null,
     };
     dispatch(updateSize(sizeToUpdate));
     setFormData({
       name: '',
-      value: '',
       productCategory: '',
       description: '',
     });
     handleClose();
-  };
+  }
 
   const handleClose = () => {
     dispatch(setEditSizeDialog(false));
@@ -78,6 +94,11 @@ function ModalEditSize() {
   return (
     <div>
       <Dialog isOpen={editSizeDialog} onClose={handleClose} width={1200}>
+        {errors.map((error, index) => (
+          <Alert key={index} showIcon type="danger" className="mb-4">
+            {error}
+          </Alert>
+        ))}
         <div className="flex flex-col justify-between gap-2">
           <div className="flex flex-row w-3/4">
             <Input
@@ -85,15 +106,6 @@ function ModalEditSize() {
               placeholder="Nom"
               onChange={(e: any) => {
                 setFormData({ ...formData, name: e.target.value });
-              }}
-            />
-          </div>
-          <div className="flex flex-row w-3/4">
-            <Input
-              value={formData.value}
-              placeholder="Valeur"
-              onChange={(e: any) => {
-                setFormData({ ...formData, value: e.target.value });
               }}
             />
           </div>

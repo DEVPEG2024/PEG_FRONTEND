@@ -46,6 +46,26 @@ const navigationProducteur: NavigationTree[] = [
     authority: [PRODUCER],
     subMenu: [],
   },
+  {
+    key: "producer.support",
+    path: "/support",
+    title: "Support",
+    translateKey: "nav.support",
+    icon: "support",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [PRODUCER],
+    subMenu: [],
+  },
+  {
+    key: "producer.settings",
+    path: "/settings/profile",
+    title: "PARAMÈTRES",
+    translateKey: "nav.settings",
+    icon: "settings",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [PRODUCER],
+    subMenu: [],
+  },
   
   
 ]
