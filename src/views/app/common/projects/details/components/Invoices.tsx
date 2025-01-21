@@ -58,7 +58,6 @@ const Invoices = () => {
     dispatch(setPrintProjectInvoiceDialog(true));
   };
 
-  // TODO: Ajouter un validation de la génération si une facture existe déjà
   const generateInvoice = () : void => {
     const errorsOnGeneration: string[] = verifyGeneration()
     if (errorsOnGeneration.length > 0) {

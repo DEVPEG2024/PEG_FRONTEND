@@ -285,6 +285,17 @@ const projectListSlice = createSlice({
     builder.addCase(updateTask.rejected, (state) => {
       state.loading = false;
     });
+    // DELETE TASK
+    builder.addCase(deleteTask.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteTask.fulfilled, (state, action) => {
+      state.loading = false;
+      state.tasks = state.tasks.filter(
+        (task) => task.documentId !== action.payload.documentId
+      );
+      state.project!.tasks = state.tasks;
+    });
     // CREATE COMMENT
     builder.addCase(createComment.pending, (state) => {
       state.loading = true;

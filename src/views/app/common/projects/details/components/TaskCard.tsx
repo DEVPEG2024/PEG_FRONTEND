@@ -1,5 +1,5 @@
 import Button from '@/components/ui/Button';
-import { HiLightningBolt, HiPencil } from 'react-icons/hi';
+import { HiLightningBolt, HiPencil, HiTrash } from 'react-icons/hi';
 import { Task } from '@/@types/project';
 import { User } from '@/@types/user';
 import {
@@ -15,8 +15,8 @@ import { priorityColorText } from '../../lists/constants';
 import dayjs from 'dayjs';
 import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
 import { hasRole } from '@/utils/permissions';
-import { PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
-import { updateTask, setEditDialogTask, setSelectedTask } from '../store';
+import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { updateTask, setEditDialogTask, setSelectedTask, deleteTask } from '../store';
 
 const TaskCard = ({
   task,
@@ -40,6 +40,10 @@ const TaskCard = ({
   const handleEditTask = (task: Task) => {
     dispatch(setSelectedTask(task));
     dispatch(setEditDialogTask(true));
+  };
+
+  const handleRemoveTask = (task: Task) => {
+    dispatch(deleteTask(task.documentId));
   };
 
   const toggleTask = (taskDocumentId: string) => {
@@ -108,16 +112,28 @@ const TaskCard = ({
       {openTasks[task.documentId] && (
         <div className="flex flex-col gap-2 mt-8 px-4">
           <hr className="my-6" />
-          <div className="flex justify-between ">
+          <div className="flex flex-col justify-between gap-2">
             <div className="">{ReactHtmlParser(task.description || '')}</div>
-            <Button
-              variant="twoTone"
-              size="sm"
-              disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
-              onClick={() => handleEditTask(task)}
-            >
-              <HiPencil size={20} />
-            </Button>
+              {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+                <div className="flex flex-row gap-2">
+                <Button
+                  variant="twoTone"
+                  size="sm"
+                  disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
+                  onClick={() => handleEditTask(task)}
+                >
+                  <HiPencil size={20} />
+                </Button>
+                <Button
+                  variant="twoTone"
+                  size="sm"
+                  disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
+                  onClick={() => handleRemoveTask(task)}
+                >
+                  <HiTrash size={20} />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
