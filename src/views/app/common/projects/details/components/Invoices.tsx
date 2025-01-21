@@ -6,22 +6,24 @@ import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
 import {
+  addInvoice,
   setEditProjectInvoiceDialog,
   setPrintProjectInvoiceDialog,
   setSelectedProjectInvoice,
   updateProjectInvoice,
   useAppSelector,
 } from '../store';
-import { Card, Checkbox } from '@/components/ui';
+import { Card, Checkbox, Notification, toast } from '@/components/ui';
 import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
 import dayjs from 'dayjs';
 import { Invoice } from '@/@types/invoice';
 import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
 import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvoice';
 import { stateData } from '@/views/app/common/invoices/constants';
+import createUID from '@/components/ui/utils/createUid';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -33,6 +35,7 @@ const Invoices = () => {
     editProjectInvoiceDialog: editInvoiceDialog,
     selectedProjectInvoice: selectedInvoice,
     printProjectInvoiceDialog: printInvoiceDialog,
+    project,
     loading,
   } = useAppSelector((state) => state.projectDetails.data);
 
@@ -55,6 +58,50 @@ const Invoices = () => {
     dispatch(setPrintProjectInvoiceDialog(true));
   };
 
+  // TODO: Ajouter un validation de la génération si une facture existe déjà
+  const generateInvoice = () : void => {
+    const errorsOnGeneration: string[] = verifyGeneration()
+    if (errorsOnGeneration.length > 0) {
+      toast.push(
+        <Notification type="danger" title="Erreur à la création de la facture">
+          {errorsOnGeneration.map((errorOnGeneration) => (
+            <div>{errorOnGeneration}</div>
+          ))}
+        </Notification>
+      );
+      
+    } else {
+      const invoice: Omit<Invoice, 'documentId'> = {
+        customer: project.customer,
+        orderItems: [],
+        amount: project.price,
+        vatAmount: project.price * 0.2,
+        totalAmount: project.price * 1.2,
+        name: createUID(10).toUpperCase(),
+        date: dayjs().toDate(),
+        dueDate: dayjs().add(30, 'day').toDate(),
+        state: 'pending',
+        paymentMethod: 'transfer',
+        paymentAmount: 0,
+        paymentReference: '',
+        paymentState: 'pending',
+        paymentDate: new Date(0),
+      };
+      dispatch(addInvoice({invoice, project}));
+    }
+  }
+
+  const verifyGeneration = () : string[] => {
+    const errors : string[] = []
+    if (!project.customer) {
+      errors.push("Aucun client renseigné sur le projet")
+    }
+    if (!project.price || project.price === 0) {
+      errors.push("Le montant du projet est nul")
+    }
+    return errors
+  }
+
   return (
     <Container className="h-full">
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
@@ -63,6 +110,7 @@ const Invoices = () => {
             <div className="flex justify-between items-center mb-4">
               <h4>Factures</h4>
             </div>
+            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (<Button loading={loading} onClick={generateInvoice} className="mb-4">Générer la facture du projet</Button>)}
             <div className="flex flex-col gap-2">
               {invoices.length > 0 ? (
                 invoices.map((invoice: Invoice, index: number) => {

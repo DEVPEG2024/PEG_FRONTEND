@@ -83,6 +83,9 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                 formAnswer {
                     answer
                 }
+                project {
+                    documentId
+                }
             }
             pageInfo {
                 page
@@ -94,7 +97,7 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
     }
   `,
   variables = {
-    data
+    ...data
   }
     return ApiService.fetchData<ApiResponse<{orderItems_connection: GetOrderItemsResponse}>>({
         url: API_GRAPHQL_URL,

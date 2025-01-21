@@ -15,11 +15,12 @@ import {
   CreateTaskRequest,
   DeleteTaskResponse,
 } from '@/services/TaskService';
-import { apiUpdateInvoice } from '@/services/InvoicesServices';
+import { apiCreateInvoice, apiUpdateInvoice, CreateInvoiceRequest } from '@/services/InvoicesServices';
 import {
   apiCreateComment,
   apiDeleteComment,
   CreateCommentRequest,
+  DeleteCommentResponse,
 } from '@/services/CommentServices';
 
 export const SLICE_NAME = 'projectDetails';
@@ -142,10 +143,28 @@ export const createComment = createAsyncThunk(
 
 export const deleteComment = createAsyncThunk(
   SLICE_NAME + '/deleteComment',
-  async (documentId: string): Promise<DeleteTaskResponse> => {
-    const { deleteComment }: { deleteComment: DeleteTaskResponse } =
+  async (documentId: string): Promise<DeleteCommentResponse> => {
+    const { deleteComment }: { deleteComment: DeleteCommentResponse } =
       await unwrapData(apiDeleteComment(documentId));
     return deleteComment;
+  }
+);
+
+export type AddInvoice = {
+  invoice: CreateInvoiceRequest;
+  project: Project;
+};
+
+export const addInvoice = createAsyncThunk(
+  SLICE_NAME + '/addInvoice',
+  async (data: AddInvoice): Promise<Project> => {
+    const { createInvoice }: { createInvoice: Invoice } = await unwrapData(apiCreateInvoice(data.invoice));
+    const { updateProject }: { updateProject: Project } =
+      await unwrapData(apiUpdateProject({
+        documentId: data.project.documentId,
+        invoices: [...data.project.invoices, createInvoice],
+      }));
+    return updateProject;
   }
 );
 
@@ -287,6 +306,18 @@ const projectListSlice = createSlice({
       state.project!.comments = state.comments;
     });
     builder.addCase(deleteComment.rejected, (state) => {
+      state.loading = false;
+    });
+    // ADD INVOICE
+    builder.addCase(addInvoice.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(addInvoice.fulfilled, (state, action) => {
+      state.loading = false;
+      state.project = action.payload;
+      state.invoices = action.payload.invoices;
+    });
+    builder.addCase(addInvoice.rejected, (state) => {
       state.loading = false;
     });
     // UPDATE INVOICE
