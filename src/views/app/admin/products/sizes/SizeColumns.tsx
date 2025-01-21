@@ -18,16 +18,6 @@ export const useColumns = (
       ),
     },
     {
-      header: 'Valeur',
-      accessorKey: 'value',
-      enableSorting: false,
-      cell: ({ row }: { row: { original: Size } }) => (
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{row.original.value}</span>
-        </div>
-      ),
-    },
-    {
       header: 'Catégorie produit',
       accessorKey: 'productCategory',
       enableSorting: false,

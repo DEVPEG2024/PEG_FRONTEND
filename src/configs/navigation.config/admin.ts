@@ -215,9 +215,8 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
-  
   {
-    key: "default.support",
+    key: "admin.support",
     path: "/support",
     title: "Support",
     translateKey: "nav.support",

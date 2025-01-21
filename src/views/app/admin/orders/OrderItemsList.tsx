@@ -12,6 +12,9 @@ import reducer, {
 
 import { OrderItem } from '@/@types/orderItem';
 import { useNavigate } from 'react-router-dom';
+import { Project } from '@/@types/project';
+import { unwrapData } from '@/utils/serviceHelper';
+import { apiGetProjectsLinkedToOrderItem, GetProjectsResponse } from '@/services/ProjectServices';
 
 injectReducer('orders', reducer);
 
@@ -64,10 +67,15 @@ const OrderItemsList = () => {
     //dispatch(getOrder({ orderId: order.documentId }));
   };
 
+  const handleShowProject = async (orderItem: OrderItem) => {
+    navigate(`/common/projects/details/${orderItem.project.documentId}`);
+  };
+
   const columns = useColumns(
     handleShowOrderItem,
     handleFinishOrder,
-    handlePendOrder
+    handlePendOrder,
+    handleShowProject
   );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);

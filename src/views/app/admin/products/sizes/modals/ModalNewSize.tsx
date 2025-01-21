@@ -1,4 +1,4 @@
-import { Button, Dialog, Input, Select } from '@/components/ui';
+import { Alert, Button, Dialog, Input, Select } from '@/components/ui';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -15,7 +15,7 @@ type Option = {
   label: string;
 };
 
-export type SizeFormModel = Omit<Size, 'documentId' | 'productCategory'> & {
+export type SizeFormModel = Omit<Size, 'documentId' | 'productCategory' | 'value'> & {
   documentId?: string;
   productCategory: string | null;
 };
@@ -26,10 +26,10 @@ function ModalNewSize() {
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<SizeFormModel>({
     name: '',
-    value: '',
     description: '',
     productCategory: '',
   });
+  const [errors, setErrors] = useState<string[]>([]);
 
   const fetchProductCategories = async () => {
     const {
@@ -52,20 +52,35 @@ function ModalNewSize() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (verifyFormData().length === 0) {
+      handleCreateSize()
+    }
+  };
+
+  const verifyFormData = () => {
+    const tempErrors : string[] = [];
+    if (formData.name === '') {
+      tempErrors.push('Le nom est obligatoire');
+    }
+    setErrors(tempErrors);
+    return tempErrors;
+  }
+
+  const handleCreateSize = () => {
     const sizeToCreate: Omit<Size, 'documentId'> = {
       ...formData,
+      value: formData.name,
       productCategory:
         formData.productCategory !== '' ? formData.productCategory : null,
     };
     dispatch(createSize(sizeToCreate));
     setFormData({
       name: '',
-      value: '',
       productCategory: '',
       description: '',
     });
     handleClose();
-  };
+  }
 
   const handleClose = () => {
     dispatch(setNewSizeDialog(false));
@@ -74,6 +89,11 @@ function ModalNewSize() {
   return (
     <div>
       <Dialog isOpen={newSizeDialog} onClose={handleClose} width={1200}>
+        {errors.map((error, index) => (
+          <Alert key={index} showIcon type="danger" className="mb-4">
+            {error}
+          </Alert>
+        ))}
         <div className="flex flex-col justify-between gap-2">
           <div className="flex flex-row w-3/4">
             <Input
@@ -81,15 +101,6 @@ function ModalNewSize() {
               placeholder="Nom"
               onChange={(e: any) => {
                 setFormData({ ...formData, name: e.target.value });
-              }}
-            />
-          </div>
-          <div className="flex flex-row w-3/4">
-            <Input
-              value={formData.value}
-              placeholder="Valeur"
-              onChange={(e: any) => {
-                setFormData({ ...formData, value: e.target.value });
               }}
             />
           </div>

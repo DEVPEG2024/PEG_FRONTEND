@@ -643,3 +643,25 @@ export async function apiDeleteProject(documentId: string): Promise<AxiosRespons
         }
     })
 }
+
+// get projects linked to order item
+export async function apiGetProjectsLinkedToOrderItem(orderItemDocumentId: string): Promise<AxiosResponse<ApiResponse<{projects: Project[]}>>> {
+    const query = `
+    query GetProjectsLinkedToOrderItem($orderItemDocumentId: ID!) {
+        projects(filters: {orderItem: {documentId: {eq: $orderItemDocumentId}}}) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    orderItemDocumentId
+  }
+    return ApiService.fetchData<ApiResponse<{projects: Project[]}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
