@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_CART_NAME } from './constants'
 import { CartItem } from '@/@types/cart'
-import { setCartItemId, setFormAnswer, setFormCompleted, setProductToShow, setSizesSelected } from '@/views/app/customer/products/show/store'
+import { setCartItemId, setFormAnswer, setFormCompleted, setProductToShow, setSizeAndColorsSelected } from '@/views/app/customer/products/show/store'
 import { AppDispatch } from '@/store/storeSetup'
 import { FormAnswer } from '@/@types/formAnswer'
-import { SizeSelection } from '@/@types/product'
+import { SizeAndColorSelection } from '@/@types/product'
 
 export type CartState = {
     cart: CartItem[]
@@ -14,10 +14,10 @@ export const initialState: CartState = {
     cart: [],
 }
 
-export type CartItemSizeEdition = {
+export type CartItemSizeAndColorEdition = {
     cartItemId: string
     formAnswer: FormAnswer
-    sizes: SizeSelection[]
+    sizeAndColors: SizeAndColorSelection[]
 }
 
 export type CartItemFormAnswerEdition = {
@@ -30,7 +30,7 @@ export const editItem = (item: CartItem) => (dispatch: AppDispatch) => {
       dispatch(setProductToShow(item.product));
       dispatch(setFormAnswer(item.formAnswer));
       dispatch(setFormCompleted(true));
-      dispatch(setSizesSelected(item.sizes));
+      dispatch(setSizeAndColorsSelected(item.sizeAndColors));
   };
 
 export const cartSlice = createSlice({
@@ -40,10 +40,10 @@ export const cartSlice = createSlice({
         addToCart: (state, action: PayloadAction<CartItem>) => {
             state.cart.push({...action.payload});
         },
-        editSizesCartItem: (state, action: PayloadAction<CartItemSizeEdition>) => {
+        editSizeAndColorsCartItem: (state, action: PayloadAction<CartItemSizeAndColorEdition>) => {
             const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
-                cartItem.sizes = action.payload.sizes
+                cartItem.sizeAndColors = action.payload.sizeAndColors
             }
         },
         editFormAnswerCartItem: (state, action: PayloadAction<CartItemFormAnswerEdition>) => {
@@ -70,6 +70,6 @@ export const cartSlice = createSlice({
 
 })
 
-export const { addToCart, removeFromCart, clearCart, editSizesCartItem, editFormAnswerCartItem } = cartSlice.actions
+export const { addToCart, removeFromCart, clearCart, editSizeAndColorsCartItem, editFormAnswerCartItem } = cartSlice.actions
 
 export default cartSlice.reducer

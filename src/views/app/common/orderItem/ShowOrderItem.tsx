@@ -12,7 +12,7 @@ import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
-import { Size, SizeSelection } from '@/@types/product';
+import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { useParams } from 'react-router-dom';
 
 injectReducer('showOrderItem', reducer);
@@ -73,30 +73,64 @@ const ShowOrderItem = () => {
                     .replace('</p>', '')}
                 </p>
 
-                {orderItem.product.sizes && (
+                {orderItem.product.sizes.length > 0 ? (
                   <div>
                     <p className="font-bold text-yellow-500 mb-4">
-                      Choix des tailles
+                      Tailles choisies
                     </p>
                     <div className="grid grid-cols-7 gap-4 mb-6">
-                      {orderItem.product.sizes.map((size: Size) => (
-                        <div key={size.value} className="grid gap-4">
-                          <span>{size.name}</span>
-                          <Input
-                            name={size.value}
-                            value={
-                              orderItem.sizeSelections.find(
-                                (sizeSelected: SizeSelection) =>
-                                  sizeSelected.size.value === size.value
-                              )?.quantity
-                            }
-                            type="number"
-                            autoComplete="off"
-                            disabled={true}
-                          />
-                        </div>
-                      ))}
+                      {orderItem.product.sizes.map((size: Size) => {
+                        if (orderItem.product.colors.length > 0) {
+                          return orderItem.product.colors.map((color: Color) => (
+                            <div key={size.value + color.value} className="grid gap-4">
+                              <span>{size.name + ' ' + color.name}</span>
+                              <Input
+                                name={size.value + color.name}
+                                value={
+                                  orderItem.sizeAndColorSelections.find(
+                                    (sizeAndColorSelected: SizeAndColorSelection) =>
+                                      sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value
+                                  )?.quantity
+                                }
+                                type="number"
+                                autoComplete="off"
+                                disabled={true}
+                              />
+                            </div>
+                          ))
+                        }
+                        return (
+                          <div key={size.value} className="grid gap-4">
+                            <span>{size.name}</span>
+                            <Input
+                              name={size.value}
+                              value={
+                                orderItem.sizeAndColorSelections.find(
+                                  (sizeSelected: SizeAndColorSelection) =>
+                                    sizeSelected.size.value === size.value
+                                )?.quantity
+                              }
+                              type="number"
+                              autoComplete="off"
+                              disabled={true}
+                            />
+                          </div>
+                        )
+                      })}
                     </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-row gap-4 items-center">
+                    <span>Quantité</span>
+                    <Input
+                      name="Default"
+                      value={
+                        orderItem.sizeAndColorSelections[0].quantity
+                      }
+                      type="number"
+                      autoComplete="off"
+                      disabled={true}
+                    />
                   </div>
                 )}
 

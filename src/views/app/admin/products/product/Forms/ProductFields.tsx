@@ -17,11 +17,13 @@ type ProductFields = {
   type: string;
   values: Product;
   sizes: Options[];
+  colors: Options[];
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
   forms: Options[];
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
+  filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
 
 const ProductFields = (props: ProductFields) => {
@@ -30,11 +32,13 @@ const ProductFields = (props: ProductFields) => {
     errors,
     type,
     sizes,
+    colors,
     customerCategories,
     categories,
     customers,
     forms,
     filterSizesListByProductCategory,
+    filterColorsListByProductCategory,
   } = props;
 
   return (
@@ -108,6 +112,7 @@ const ProductFields = (props: ProductFields) => {
                   const value = selectedOption?.value;
                   form.setFieldValue(field.name, value);
                   filterSizesListByProductCategory(value);
+                  filterColorsListByProductCategory(value);
                 }}
               />
             )}
@@ -134,7 +139,7 @@ const ProductFields = (props: ProductFields) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">
           <p className="font-bold mb-2">Tailles produit</p>
           <Field name="sizes">
@@ -148,6 +153,25 @@ const ProductFields = (props: ProductFields) => {
                 options={sizes}
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
+                  form.setFieldValue(field.name, values);
+                }}
+              />
+            )}
+          </Field>
+        </div>
+        <div className="col-span-1">
+          <p className="font-bold mb-2">Couleurs produit</p>
+          <Field name="colors">
+            {({ field, form }: FieldProps) => (
+              <Select
+                isMulti
+                value={colors.filter((color) =>
+                  field.value?.includes(color.value)
+                )}
+                placeholder="Choisir une ou plusieurs couleurs"
+                options={colors}
+                onChange={(selectedColors) => {
+                  const values = selectedColors.map((selectedColor) => selectedColor.value);
                   form.setFieldValue(field.name, values);
                 }}
               />

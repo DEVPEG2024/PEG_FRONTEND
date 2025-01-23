@@ -70,6 +70,10 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                         name
                         value
                     }
+                    colors {
+                        name
+                        value
+                    }
                     description
                     form {
                         documentId
@@ -79,7 +83,7 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                 customer {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 formAnswer {
                     answer
                 }
@@ -124,7 +128,7 @@ export async function apiUpdateOrderItem(orderItem: Partial<OrderItem>): Promise
             customer {
                 name
             }
-            sizeSelections
+            sizeAndColorSelections
         }
     }
   `,
@@ -163,6 +167,10 @@ export async function apiGetOrderItemById(documentId: string): Promise<AxiosResp
                     name
                     value
                 }
+                colors {
+                    name
+                    value
+                }
             }
             formAnswer {
                 documentId
@@ -175,7 +183,7 @@ export async function apiGetOrderItemById(documentId: string): Promise<AxiosResp
             customer {
                 name
             }
-            sizeSelections
+            sizeAndColorSelections
         }
     }
   `,
