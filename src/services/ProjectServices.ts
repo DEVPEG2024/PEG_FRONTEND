@@ -77,7 +77,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                         documentId
                         name
                     }
-                    sizeSelections
+                    sizeAndColorSelections
                 }
             }
             name
@@ -87,7 +87,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 product {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 state
             }
             paidPrice
@@ -184,7 +184,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                         documentId
                         name
                     }
-                    sizeSelections
+                    sizeAndColorSelections
                 }
             }
             name
@@ -194,7 +194,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 product {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 state
             }
             paidPrice
@@ -311,7 +311,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         documentId
                         name
                     }
-                    sizeSelections
+                    sizeAndColorSelections
                 }
             }
             name
@@ -321,7 +321,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 product {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 state
             }
             paidPrice

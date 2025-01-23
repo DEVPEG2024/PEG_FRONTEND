@@ -67,6 +67,7 @@ export const duplicateProduct = createAsyncThunk(
       ...duplicatedProduct,
       images: imagesLoaded.map(({ id }) => id),
       sizes: duplicatedProduct.sizes.map(({ documentId }) => documentId),
+      colors: duplicatedProduct.colors.map(({ documentId }) => documentId),
       form: duplicatedProduct.form?.documentId,
       productCategory: duplicatedProduct.productCategory?.documentId,
       customerCategories: duplicatedProduct.customerCategories.map(

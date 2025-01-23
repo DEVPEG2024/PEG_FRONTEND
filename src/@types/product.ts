@@ -10,6 +10,7 @@ export type Product = {
   name: string;
   price: number;
   sizes: Size[];
+  colors: Color[];
   form: Form;
   productCategory: ProductCategory;
   customerCategories: CustomerCategory[];
@@ -24,8 +25,17 @@ export type Size = {
   productCategory: ProductCategory;
 }
 
-export type SizeSelection = {
+export type Color = {
+  documentId: string;
+  name: string;
+  value: string;
+  description: string;
+  productCategory: ProductCategory;
+}
+
+export type SizeAndColorSelection = {
   size: Size;
+  color: Color;
   quantity: number;
 };
 

@@ -102,6 +102,12 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/products/sizes/SizesList")),
     authority: [SUPER_ADMIN],
   },
+  {
+    key: "admin.products.colors",
+    path: "/admin/products/colors",
+    component: lazy(() => import("@/views/app/admin/products/colors/ColorsList")),
+    authority: [SUPER_ADMIN],
+  },
   //orders
   {
     key: "admin.store.orders",
