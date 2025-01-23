@@ -1,7 +1,7 @@
 import { Button, Tag, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { HiBan, HiCheck, HiInformationCircle } from 'react-icons/hi';
 import { OrderItem } from '@/@types/orderItem';
-import { SizeSelection } from '@/@types/product';
+import { SizeAndColorSelection } from '@/@types/product';
 
 export const useColumns = (
   handleShowOrderItem: (order: OrderItem) => void,
@@ -41,7 +41,7 @@ export const useColumns = (
     },
     {
       header: 'Tailles',
-      accessorKey: 'sizeSelections',
+      accessorKey: 'sizeAndColorSelections',
       enableSorting: false,
       cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
@@ -49,9 +49,9 @@ export const useColumns = (
             className="flex-col justify-center gap-2"
             key={row.original.documentId}
           >
-            {row.original.sizeSelections.map((sizeSelection: SizeSelection) => (
+            {row.original.sizeAndColorSelections?.map((sizeAndColorSelection: SizeAndColorSelection) => (
               <p>
-                {sizeSelection.size.name} : {sizeSelection.quantity}
+                {sizeAndColorSelection.size.name} : {sizeAndColorSelection.quantity}
               </p>
             ))}
           </div>

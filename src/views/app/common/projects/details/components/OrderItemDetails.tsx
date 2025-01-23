@@ -7,7 +7,7 @@ import {
   HiInformationCircle,
 } from 'react-icons/hi';
 import { OrderItem } from '@/@types/orderItem';
-import { SizeSelection } from '@/@types/product';
+import { SizeAndColorSelection } from '@/@types/product';
 import { Button } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 import { Customer } from '@/@types/customer';
@@ -22,7 +22,7 @@ const OrderItemDetails = ({
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;
-  const productSizes: SizeSelection[] = orderItem.sizeSelections;
+  const productSizes: SizeAndColorSelection[] = orderItem.sizeAndColorSelections;
 
   const handleShowOrderItem = (orderItem: OrderItem) => {
     navigate('/common/orderItem/' + orderItem.documentId);
