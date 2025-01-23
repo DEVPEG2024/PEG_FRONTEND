@@ -22,6 +22,7 @@ export type ProductFormModel = Omit<
   Product,
   | 'documentId'
   | 'sizes'
+  | 'colors'
   | 'customerCategories'
   | 'customers'
   | 'productCategory'
@@ -30,6 +31,7 @@ export type ProductFormModel = Omit<
 > & {
   documentId?: string;
   sizes: string[];
+  colors: string[];
   customerCategories: string[];
   customers: string[];
   productCategory: string | null;
@@ -52,6 +54,7 @@ type ProductForm = {
     setSubmitting: SetSubmitting
   ) => void;
   sizes: Options[];
+  colors: Options[];
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
@@ -59,6 +62,7 @@ type ProductForm = {
   images: Image[];
   setImages: (images: Image[]) => void;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
+  filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -73,6 +77,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   const {
     type,
     sizes,
+    colors,
     forms,
     initialData,
     onFormSubmit,
@@ -83,6 +88,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     images,
     setImages,
     filterSizesListByProductCategory,
+    filterColorsListByProductCategory,
   } = props;
 
   const onFileAdd = async (file: File) => {
@@ -155,11 +161,15 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     type={type}
                     forms={forms}
                     sizes={sizes}
+                    colors={colors}
                     customerCategories={customerCategories}
                     categories={categories}
                     customers={customers}
                     filterSizesListByProductCategory={
                       filterSizesListByProductCategory
+                    }
+                    filterColorsListByProductCategory={
+                      filterColorsListByProductCategory
                     }
                   />
                 </div>

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Product, SizeSelection } from '@/@types/product';
+import { Product, SizeAndColorSelection } from '@/@types/product';
 import { apiGetProductForShowById } from '@/services/ProductServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -12,7 +12,7 @@ export type StateData = {
   formCompleted: boolean;
   formDialog: boolean;
   formAnswer: Partial<FormAnswer> | null;
-  sizesSelected: SizeSelection[];
+  sizeAndColorsSelected: SizeAndColorSelection[];
   cartItemId: string;
 };
 
@@ -22,7 +22,7 @@ const initialState: StateData = {
   formCompleted: false,
   formDialog: false,
   formAnswer: null,
-  sizesSelected: [],
+  sizeAndColorsSelected: [],
   cartItemId: '',
 };
 
@@ -46,8 +46,8 @@ const productSlice = createSlice({
     setFormAnswer: (state, action) => {
       state.formAnswer = action.payload;
     },
-    setSizesSelected: (state, action) => {
-      state.sizesSelected = action.payload;
+    setSizeAndColorsSelected: (state, action) => {
+      state.sizeAndColorsSelected = action.payload;
     },
     setCartItemId: (state, action) => {
       state.cartItemId = action.payload;
@@ -59,7 +59,7 @@ const productSlice = createSlice({
       state.formCompleted = false;
       state.formDialog = false;
       state.product = null;
-      state.sizesSelected = [];
+      state.sizeAndColorsSelected = [];
       state.formAnswer = null;
     },
   },
@@ -82,7 +82,7 @@ export const {
   setFormCompleted,
   setFormDialog,
   setFormAnswer,
-  setSizesSelected,
+  setSizeAndColorsSelected,
   setCartItemId,
   setProductToShow,
 } = productSlice.actions;

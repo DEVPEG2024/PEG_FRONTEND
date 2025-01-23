@@ -1,12 +1,12 @@
 import { Customer } from './customer';
 import { FormAnswer } from './formAnswer';
-import { Product, SizeSelection } from './product';
+import { Product, SizeAndColorSelection } from './product';
 import { Project } from './project';
 
 export type OrderItem = {
   documentId: string;
   product: Product;
-  sizeSelections: SizeSelection[];
+  sizeAndColorSelections: SizeAndColorSelection[];
   formAnswer: FormAnswer | null;
   price: number;
   state: string;

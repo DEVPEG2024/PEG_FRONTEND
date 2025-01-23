@@ -17,7 +17,7 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
                 product {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 price
             }
             customer {
@@ -76,12 +76,22 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
                     product {
                         name
                     }
-                    sizeSelections
+                    sizeAndColorSelections
                     price
                 }
                 customer {
                     documentId
                     name
+                    companyInformations {
+                        email
+                        phoneNumber
+                        siretNumber
+                        vatNumber
+                        zipCode
+                        city
+                        country
+                        address
+                    }
                 }
                 amount
                 vatAmount
@@ -145,7 +155,7 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                     product {
                         name
                     }
-                    sizeSelections
+                    sizeAndColorSelections
                     price
                 }
                 customer {
@@ -196,7 +206,7 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
                 product {
                     name
                 }
-                sizeSelections
+                sizeAndColorSelections
                 price
             }
             customer {

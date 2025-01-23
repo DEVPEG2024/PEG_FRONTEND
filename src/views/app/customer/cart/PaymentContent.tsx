@@ -43,7 +43,7 @@ function PaymentContent({
   };
 
   const totalPrice: number = cart.reduce((total: number, item: CartItem) => {
-    const itemPrice: number = item.sizes.reduce(
+    const itemPrice: number = item.sizeAndColors.reduce(
       (amount, size) => amount + size.quantity * item.product.price,
       0
     );
