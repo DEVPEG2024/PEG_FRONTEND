@@ -64,9 +64,9 @@ function Cart() {
       const formAnswer: FormAnswer | null = await createFormAnswer(item),
         orderItem: Omit<OrderItem, 'documentId'> = {
           product: item.product,
-          sizeSelections: item.sizes,
+          sizeAndColorSelections: item.sizeAndColors,
           formAnswer,
-          price: item.sizes.reduce(
+          price: item.sizeAndColors.reduce(
             (amount, size) => amount + size.quantity * item.product.price,
             0
           ),
@@ -230,7 +230,7 @@ function Cart() {
                       </div>
                       <p>{item.product.price} €</p>
                       <div className="flex-col justify-center gap-2">
-                        {item.sizes.map((size) => (
+                        {item.sizeAndColors.map((size) => (
                           <p key={size.size.value}>
                             {size.size.value === 'DEFAULT'
                               ? 'Quantité'
@@ -240,7 +240,7 @@ function Cart() {
                         ))}
                       </div>
                       <p>
-                        {item.sizes.reduce(
+                        {item.sizeAndColors.reduce(
                           (amount, size) =>
                             amount + size.quantity * item.product.price,
                           0

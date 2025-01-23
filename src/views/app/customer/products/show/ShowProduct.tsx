@@ -7,21 +7,22 @@ import reducer, {
   useAppDispatch,
   useAppSelector,
   getProductToShow,
-  setSizesSelected,
+  setSizeAndColorsSelected,
 } from './store';
 import {
   addToCart,
-  CartItemSizeEdition,
-  editSizesCartItem,
+  CartItemSizeAndColorEdition,
+  editSizeAndColorsCartItem,
 } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 
 import { Button, Notification, toast } from '@/components/ui';
-import { Size, SizeSelection } from '@/@types/product';
+import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
+import SizeAndColorsChoice from './SizeAndColorsChoice';
 
 injectReducer('showProduct', reducer);
 
@@ -34,11 +35,11 @@ const ShowProduct = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
-  const { product, formCompleted, formAnswer, sizesSelected, cartItemId } =
+  const { product, formCompleted, formAnswer, sizeAndColorsSelected, cartItemId } =
     useAppSelector((state) => state.showProduct.data);
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
-  const [sizesChanged, setSizesChanged] = useState<boolean>(false);
+  const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
 
   useEffect(() => {
     if (!product) {
@@ -64,11 +65,11 @@ const ShowProduct = () => {
   useEffect(() => {
     setCanAddToCart(
       product &&
-        ((product.sizes.length > 0 && sizesSelected.length > 0) ||
+        ((product.sizes.length > 0 && sizeAndColorsSelected.length > 0) ||
           product.sizes.length === 0) &&
         ((product.form && formCompleted) || !product.form)
     );
-  }, [sizesSelected, formCompleted, product]);
+  }, [sizeAndColorsSelected, formCompleted, product]);
 
   const handleAddToCart = () => {
     dispatch(
@@ -76,7 +77,7 @@ const ShowProduct = () => {
         id: Math.random().toString(16).slice(2),
         product,
         formAnswer,
-        sizes: sizesSelected,
+        sizeAndColors: sizeAndColorsSelected,
       } as CartItem)
     );
     toast.push(
@@ -91,19 +92,19 @@ const ShowProduct = () => {
     dispatch(setFormDialog(true));
   };
 
-  const handleSizesChanged = (value: number, option: Size) => {
-    const newSizesSelected = determineNewSizes(value, option);
+  const handleSizeAndColorsChanged = (value: number, size: Size, color: Color): void => {
+    const newSizeAndColorsSelected = determineNewSizeAndColors(value, size, color);
 
-    setSizesChanged(true);
-    dispatch(setSizesSelected(newSizesSelected));
+    setSizeAndColorsChanged(true);
+    dispatch(setSizeAndColorsSelected(newSizeAndColorsSelected));
   };
 
-  const handleEditSizesCartItem = () => {
+  const handleEditSizeAndColorsCartItem = () => {
     dispatch(
-      editSizesCartItem({
+      editSizeAndColorsCartItem({
         cartItemId,
-        sizes: sizesSelected,
-      } as CartItemSizeEdition)
+        sizeAndColors: sizeAndColorsSelected,
+      } as CartItemSizeAndColorEdition)
     );
     toast.push(
       <Notification type="success" title="Modifié">
@@ -113,28 +114,29 @@ const ShowProduct = () => {
     navigate('/customer/cart');
   };
 
-  const determineNewSizes = (value: number, option: Size) => {
+  const determineNewSizeAndColors = (value: number, size: Size, color: Color) => {
     if (value > 0) {
-      const index = sizesSelected.findIndex(
-        (sizeSelected) => sizeSelected.size.value === option.value
+      const index = sizeAndColorsSelected.findIndex(
+        (sizeAndColorSelected) => sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value
       );
       // Trouver l'index de l'option actuelle dans le tableau sizeField
-      const newSizeSelected: SizeSelection = {
-        size: option,
+      const newSizeAndColorSelected: SizeAndColorSelection = {
+        size,
+        color,
         quantity: value,
       };
       // Si l'option existe déjà, la mettre à jour, sinon l'ajouter
       if (index > -1) {
-        const newSizesSelected = [...sizesSelected];
-        newSizesSelected[index] = newSizeSelected;
-        return newSizesSelected;
+        const newSizeAndColorsSelected = [...sizeAndColorsSelected];
+        newSizeAndColorsSelected[index] = newSizeAndColorSelected;
+        return newSizeAndColorsSelected;
       } else {
-        return [...sizesSelected, newSizeSelected];
+        return [...sizeAndColorsSelected, newSizeAndColorSelected];
       }
     } else {
       return [
-        ...sizesSelected.filter(
-          (sizeSelected) => sizeSelected.size.value !== option.value
+        ...sizeAndColorsSelected.filter(
+          (sizeAndColorSelected) => !(sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value)
         ),
       ];
     }
@@ -166,70 +168,17 @@ const ShowProduct = () => {
                   {product.description?.replace('<p>', '').replace('</p>', '')}
                 </p>
 
-                {product.sizes.length > 0 ? (
-                  <div>
-                    <p className="font-bold text-yellow-500 mb-4">
-                      Choix des tailles
-                    </p>
-                    <div className="grid grid-cols-7 gap-4 mb-6">
-                      {product.sizes.map((option) => (
-                        <div key={option.value} className="grid gap-4">
-                          <span>{option.name}</span>
-                          <Input
-                            name={option.value}
-                            value={
-                              sizesSelected.find(
-                                (sizeSelected) =>
-                                  sizeSelected.size.value === option.value
-                              )?.quantity
-                            }
-                            type="number"
-                            autoComplete="off"
-                            onChange={(e: any) =>
-                              handleSizesChanged(
-                                parseInt(e.target.value),
-                                option
-                              )
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    {sizesSelected.length === 0 && (
-                      <p className="mt-4 text-green-600">
-                        Veuillez renseigner au moins une taille
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex-auto mt-8 flex-initial w-32">
-                    <span>Quantité</span>
-                    <Input
-                      name="Quantité"
-                      value={
-                        sizesSelected.find(
-                          (sizeSelected) =>
-                            sizeSelected.size.value === 'DEFAULT'
-                        )?.quantity
-                      }
-                      type="number"
-                      autoComplete="off"
-                      onChange={(e: any) =>
-                        handleSizesChanged(parseInt(e.target.value), {
-                          name: 'Default',
-                          value: 'DEFAULT',
-                          description: 'Default',
-                        })
-                      }
-                    />
-                  </div>
-                )}
+                <SizeAndColorsChoice
+                  product={product}
+                  sizeAndColorsSelected={sizeAndColorsSelected}
+                  handleSizeAndColorsChanged={handleSizeAndColorsChanged}
+                />
 
                 {onEdition && (
                   <Button
                     className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    disabled={!sizesChanged}
-                    onClick={handleEditSizesCartItem}
+                    disabled={!sizeAndColorsChanged}
+                    onClick={handleEditSizeAndColorsCartItem}
                   >
                     Enregistrer les tailles
                   </Button>

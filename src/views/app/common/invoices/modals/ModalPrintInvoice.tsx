@@ -17,6 +17,7 @@ import { Customer } from '@/@types/customer';
 import { OrderItem } from '@/@types/orderItem';
 import { VAT_AMOUNT } from './ModalEditInvoice';
 import { Invoice } from '@/@types/invoice';
+import { countries } from '@/constants/countries.constant';
 
 // TODO: Voir pour ne charger les infos relatives à l'impression qu'au moment nécessaire
 const ModalPrintInvoice = ({
@@ -81,35 +82,24 @@ const ModalPrintInvoice = ({
               <Page size="A4">
                 <View style={styles.page}>
                   <View style={styles.section}>
-                    {/* TODO: Ajouter logo customer
                     <Image
-                      src={API_URL_IMAGE + customer?.logo}
+                      src={"../../../../../../public/img/logo/logo-light-full.png"}
                       style={{ width: '200px', height: '70px' }}
-                    />*/}
-                    <Text
-                      style={{ fontSize: 10, marginTop: 10, fontWeight: 700 }}
-                    >
-                      {customer?.name}
+                    />
+                    <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
+                      SAS ZOOM PROJECT
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      {customer?.companyInformations.address}
+                      33 Avenue Roosevelt
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      {customer?.companyInformations.zipCode +
-                        ', ' +
-                        customer?.companyInformations.city}
+                      57800 Freyming-Merlebach
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      Siret : {customer?.companyInformations.siretNumber}
+                      France
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      N° TVA : {customer?.companyInformations.vatNumber}
-                    </Text>
-                    <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      Tél : {customer?.companyInformations.phoneNumber}
-                    </Text>
-                    <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      Email : {customer?.companyInformations.email}
+                      Email : contact@zoom-project.com
                     </Text>
                     <View style={{ flexDirection: 'row', marginTop: 10 }}>
                       <View style={styles.section2}>
@@ -201,36 +191,24 @@ const ModalPrintInvoice = ({
                           {dayjs(selectedInvoice?.date).format('DD.MM.YYYY')}
                         </Text>
                       </View>
+                      <View style={styles.section3}>
+                        <Text style={{ fontSize: 10, textAlign: 'center' }}>
+                          {customer?.name}
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.section4}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          padding: 7,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {customer.name}
+                      <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
+                        {customer?.name}
                       </Text>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          padding: 7,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {customer.companyInformations.address}
+                      <Text style={{ fontSize: 10, marginTop: 3 }}>
+                        {customer?.companyInformations.address}
                       </Text>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          padding: 7,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {customer.companyInformations.zipCode +
-                          ' - ' +
-                          customer.companyInformations.city}
+                      <Text style={{ fontSize: 10, marginTop: 3 }}>
+                        {customer?.companyInformations.zipCode + ', ' + customer?.companyInformations.city}
+                      </Text>
+                      <Text style={{ fontSize: 10, marginTop: 3 }}>
+                        {countries.find((country) => country.value === customer?.companyInformations.country)?.label ?? ''}
                       </Text>
                     </View>
                   </View>
@@ -290,9 +268,9 @@ const ModalPrintInvoice = ({
                                   textAlign: 'right',
                                 }}
                               >
-                                {orderItem?.sizeSelections.reduce(
-                                  (quantity, sizeSelection) =>
-                                    quantity + sizeSelection.quantity,
+                                {orderItem?.sizeAndColorSelections.reduce(
+                                  (quantity, sizeAndColorSelection) =>
+                                    quantity + sizeAndColorSelection.quantity,
                                   0
                                 )}
                               </Text>
@@ -337,6 +315,7 @@ const ModalPrintInvoice = ({
                   </View>
                 </View>
                 <View style={styles.page}>
+                  {/* TODO: Voir pour remettre ce QRCode
                   <View style={styles.section}>
                     <View style={{ flexDirection: 'row' }}>
                       <View style={styles.section22}>
@@ -347,7 +326,7 @@ const ModalPrintInvoice = ({
                       </View>
                       <View style={styles.section00}></View>
                     </View>
-                  </View>
+                  </View>*/}
 
                   <View style={styles.sectionTTC}>
                     <View style={{ flexDirection: 'row', marginTop: 5 }}>
@@ -407,19 +386,25 @@ const ModalPrintInvoice = ({
                     </View>
                   </View>
                 </View>
+                <View style={styles.page}>
+                  <View style={styles.section}>
+                    <Text style={{ fontSize: 10, padding: 3 }}>
+                      IBAN: FR76 1695 8000 0118 6558 7801 641
+                    </Text>
+                    <Text style={{ fontSize: 10, padding: 3 }}>
+                      BIC: QNTOFRP1XXX
+                    </Text>
+                  </View>
+                </View>
                 <View style={styles.sectionFooter}>
-                  <Text
-                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
-                  >
-                    {customer?.name +
-                      ' - ' +
-                      customer?.companyInformations.address +
-                      ' - ' +
-                      customer?.companyInformations.zipCode +
-                      ', ' +
-                      customer?.companyInformations.city}{' '}
-                    - RCS : {customer?.companyInformations.siretNumber} - N° TVA
-                    : {customer?.companyInformations.vatNumber}
+                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                    SAS ZOOM PROJECT
+                  </Text>
+                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                    SIRET 87764973100016 - RCS Sarreguemines B - NAF 7420Z
+                  </Text>
+                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                    TVA intracommunautaire: FR23877649731
                   </Text>
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}

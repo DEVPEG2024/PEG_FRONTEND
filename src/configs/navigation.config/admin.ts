@@ -95,6 +95,16 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
+            key: "admin.products.colors",
+            path: "/admin/products/colors",
+            title: "Couleurs des produits",
+            translateKey: "nav.storeColors",
+            icon: "store",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
             key: "admin.store.orders",
             path: "/admin/store/orders",
             title: "Commandes",

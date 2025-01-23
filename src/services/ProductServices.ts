@@ -20,6 +20,10 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 name
                 value
             }
+            colors {
+                name
+                value
+            }
             form {
                 documentId
                 fields
@@ -57,6 +61,10 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             active
             sizes {
                 documentId
+                name
+                value
+            }
+            colors {
                 name
                 value
             }

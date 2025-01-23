@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Product, ProductCategory, Size } from '@/@types/product';
+import { Color, Product, ProductCategory, Size } from '@/@types/product';
 import { Image } from '@/@types/image';
 import ProductForm, {
   ProductFormModel,
@@ -32,6 +32,7 @@ import {
 } from '@/services/ProductCategoryServices';
 import { injectReducer } from '@/store';
 import { apiGetProductCategorySizes } from '@/services/SizeServices';
+import { apiGetProductCategoryColors } from '@/services/ColorServices';
 
 injectReducer('products', reducer);
 
@@ -55,6 +56,7 @@ const EditProduct = () => {
   const [customers, setCustomers] = useState<Options[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
+  const [colors, setColors] = useState<Options[]>([]);
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
   const [images, setImages] = useState<Image[]>([]);
@@ -63,13 +65,14 @@ const EditProduct = () => {
     name: product?.name || '',
     price: product?.price || 0,
     description: product?.description || '',
-    sizes: product?.sizes.map((size) => size.documentId) || [],
+    sizes: product?.sizes?.map((size) => size.documentId) || [],
+    colors: product?.colors?.map((color) => color.documentId) || [],
     customerCategories:
-      product?.customerCategories.map(
+      product?.customerCategories?.map(
         (customerCategory) => customerCategory.documentId
       ) || [],
     productCategory: product?.productCategory?.documentId || null,
-    customers: product?.customers.map((customer) => customer.documentId) || [],
+    customers: product?.customers?.map((customer) => customer.documentId) || [],
     form: product?.form?.documentId || null,
     active: product?.active || false,
   };
@@ -90,6 +93,7 @@ const EditProduct = () => {
     fetchProductCategories();
     fetchForms();
     fetchSizes();
+    fetchColors();
   }, [product]);
 
   useEffect(() => {
@@ -181,6 +185,27 @@ const EditProduct = () => {
     setSizes(productSizes);
   };
 
+  const fetchColors = async () => {
+    updateColorsList(product?.productCategory?.documentId || '');
+  };
+
+  const filterColorsListByProductCategory = async (
+    productCategoryDocumentId: string
+  ) => {
+    updateColorsList(productCategoryDocumentId);
+  };
+
+  const updateColorsList = async (productCategoryDocumentId: string) => {
+    const { colors }: { colors: Color[] } = await unwrapData(
+      apiGetProductCategoryColors(productCategoryDocumentId || '')
+    );
+    const productColors = colors.map((color: Color) => ({
+      value: color.documentId || '',
+      label: color.name || '',
+    }));
+    setColors(productColors);
+  };
+
   const updateOrCreateProduct = async (data: Product): Promise<Product> => {
     if (onEdition) {
       const { updateProduct }: { updateProduct: Product } = await unwrapData(
@@ -236,6 +261,7 @@ const EditProduct = () => {
         onFormSubmit={handleFormSubmit}
         onDiscard={handleDiscard}
         sizes={sizes}
+        colors={colors}
         customers={customers}
         customerCategories={customerCategories}
         categories={productCategories}
@@ -244,6 +270,7 @@ const EditProduct = () => {
         setImages={setImages}
         initialData={initialData}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
+        filterColorsListByProductCategory={filterColorsListByProductCategory}
       />
     )
   );
