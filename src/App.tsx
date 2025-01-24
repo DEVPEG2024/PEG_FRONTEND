@@ -13,8 +13,9 @@ function App() {
     const pegItem: string = localStorage.getItem(PERSIST_STORE_NAME) ?? ""
 
     if (pegItem.includes('_id')) {
-      console.log('Clearing localstorage')
-      localStorage.clear()
+      console.log('Removing localstorage peg and token key')
+      localStorage.removeItem(PERSIST_STORE_NAME);
+      localStorage.removeItem('token');
     }
   }, []);
 
