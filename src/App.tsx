@@ -10,9 +10,9 @@ import { PERSIST_STORE_NAME } from './constants/app.constant';
 
 function App() {
   useEffect(() => {
-    const tokenItem: string = localStorage.getItem('token') ?? ""
+    const pegItem: string = localStorage.getItem(PERSIST_STORE_NAME) ?? ""
 
-    if (tokenItem.includes('\"_i"\"')) {
+    if (pegItem.includes('_id')) {
       console.log('Removing localstorage peg and token key')
       localStorage.removeItem(PERSIST_STORE_NAME);
       localStorage.removeItem('token');
