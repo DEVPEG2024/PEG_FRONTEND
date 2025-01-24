@@ -1,8 +1,28 @@
 {
-    "rewrites": [
-      {
+  "rewrites": [
+    {
       "source": "/(.*)",
       "destination": "/"
-      }
-     ]
     }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/build/img/(.*)", // Gestion des fichiers statiques
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
