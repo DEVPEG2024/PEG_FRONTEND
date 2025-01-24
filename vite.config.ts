@@ -28,6 +28,6 @@ export default defineConfig({
     outDir: 'build',
     commonjsOptions: {
       requireReturnsDefault: 'auto',
-    }
+    },
   },
 });
