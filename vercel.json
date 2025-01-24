@@ -16,7 +16,7 @@
       ]
     },
     {
-      "source": "/build/img/(.*)", // Gestion des fichiers statiques
+      "source": "/build/img/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
