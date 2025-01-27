@@ -21,6 +21,7 @@ const ColorChoice = ({product, sizeAndColorsSelected, handleSizeAndColorsChanged
                     {product.colors.map((color) => (
                         <TabContent value={color.value} key={color.value}>
                             <SizeChoice
+                                key={color.value}
                                 product={product}
                                 sizeAndColorsSelected={sizeAndColorsSelected}
                                 color={color}
