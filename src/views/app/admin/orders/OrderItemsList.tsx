@@ -12,9 +12,6 @@ import reducer, {
 
 import { OrderItem } from '@/@types/orderItem';
 import { useNavigate } from 'react-router-dom';
-import { Project } from '@/@types/project';
-import { unwrapData } from '@/utils/serviceHelper';
-import { apiGetProjectsLinkedToOrderItem, GetProjectsResponse } from '@/services/ProjectServices';
 
 injectReducer('orders', reducer);
 
