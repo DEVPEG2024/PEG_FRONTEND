@@ -1,5 +1,5 @@
 import { CartItem } from '@/@types/cart';
-import { AdaptableCard, Container, Loading } from '@/components/shared';
+import { AdaptableCard, Container, DataTable, Loading } from '@/components/shared';
 import Empty from '@/components/shared/Empty';
 import { Button } from '@/components/ui';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
@@ -27,6 +27,7 @@ import { User } from '@/@types/user';
 import { apiCreateInvoice } from '@/services/InvoicesServices';
 import { Invoice } from '@/@types/invoice';
 import createUID from '@/components/ui/utils/createUid';
+import { useColumns } from './CartColumns';
 
 type OrderItemAndProject = {
   orderItem?: OrderItem;
@@ -43,6 +44,10 @@ function Cart() {
     dispatch(editItem(item));
     navigate('/customer/product/' + item.product.documentId + '/edit');
   };
+
+  const handleDelete = (item: CartItem) => {
+    dispatch(removeFromCart(item));
+  }
 
   const createFormAnswer = async (
     item: CartItem
@@ -194,6 +199,11 @@ function Cart() {
     }
   };
 
+  const columns = useColumns(
+      handleEdit,
+      handleDelete
+    );
+
   if (cart.length === 0) {
     return (
       <Empty icon={<MdShoppingCart size={120} />}>Votre panier est vide</Empty>
@@ -216,54 +226,11 @@ function Cart() {
                 </div>
               </div>
               <hr className="my-4" />
-              <div className="py-4">
-                {cart?.map((item) => (
-                  <div key={item.id}>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={item.product.images[0]?.url}
-                          alt={item.product.name}
-                          className="w-20 h-20 object-cover rounded-md bg-slate-50"
-                        />
-                        <p>{item.product.name}</p>
-                      </div>
-                      <p>{item.product.price} €</p>
-                      <div className="flex-col justify-center gap-2">
-                        {item.sizeAndColors.map((size) => (
-                          <p key={size.size.value}>
-                            {size.size.value === 'DEFAULT'
-                              ? 'Quantité'
-                              : size.size.name}{' '}
-                            : {size.quantity}
-                          </p>
-                        ))}
-                      </div>
-                      <p>
-                        {item.sizeAndColors.reduce(
-                          (amount, size) =>
-                            amount + size.quantity * item.product.price,
-                          0
-                        )}{' '}
-                        €
-                      </p>
-                      <p className="flex gap-1">
-                        <Button
-                          onClick={() => handleEdit(item)}
-                          size="sm"
-                          icon={<HiPencil />}
-                        />
-                        <Button
-                          onClick={() => dispatch(removeFromCart(item))}
-                          size="sm"
-                          icon={<HiTrash />}
-                        />
-                      </p>
-                    </div>
-                    <hr className="w-full my-4" />
-                  </div>
-                ))}
-              </div>
+              <DataTable
+                columns={columns}
+                data={cart}
+              />
+              
             </AdaptableCard>
           </div>
           <PaymentContent

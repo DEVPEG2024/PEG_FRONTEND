@@ -13,7 +13,7 @@ const SizeChoice = ({product, sizeAndColorsSelected, color, handleSizeAndColorsC
             value={
                 sizeAndColorsSelected.find(
                 (sizeAndColorSelected) =>
-                    sizeAndColorSelected.size.value === size.value
+                    sizeAndColorSelected.size.value === size.value && (!color ||sizeAndColorSelected.color.value === color.value)
                 )?.quantity
             }
             type="number"
