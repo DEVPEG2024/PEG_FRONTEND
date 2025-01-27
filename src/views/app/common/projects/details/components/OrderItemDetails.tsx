@@ -22,7 +22,7 @@ const OrderItemDetails = ({
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;
-  const productSizes: SizeAndColorSelection[] = orderItem.sizeAndColorSelections;
+  const productSizeAndColors: SizeAndColorSelection[] = orderItem.sizeAndColorSelections;
 
   const handleShowOrderItem = (orderItem: OrderItem) => {
     navigate('/common/orderItem/' + orderItem.documentId);
@@ -49,10 +49,10 @@ const OrderItemDetails = ({
           icon={<HiAdjustments className="text-lg opacity-70" />}
         >
           <span className="font-semibold flex-col justify-center gap-2">
-            {productSizes.map((size) => (
-              <p key={size.size.value}>
-                {size.size.value === 'DEFAULT' ? 'Quantité' : size.size.name} :{' '}
-                {size.quantity}
+            {productSizeAndColors.map((sizeAndColor) => (
+              <p key={sizeAndColor.size.value + sizeAndColor.color.value}>
+                {sizeAndColor.size.value === 'DEFAULT' ? 'Quantité' : sizeAndColor.size.name} {sizeAndColor.color.value === 'DEFAULT' ? '' : '(' + sizeAndColor.color.name + ')'} :{' '}
+                {sizeAndColor.quantity}
               </p>
             ))}
           </span>
