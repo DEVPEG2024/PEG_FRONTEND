@@ -5,14 +5,8 @@ import store, { persistor } from './store';
 import Theme from '@/components/template/Theme';
 import Layout from '@/components/layouts';
 import './locales';
-import { useEffect } from 'react';
-import { PERSIST_STORE_NAME } from './constants/app.constant';
 
 function App() {
-  useEffect(() => {
-    localStorage.removeItem(PERSIST_STORE_NAME);
-  }, []);
-
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
