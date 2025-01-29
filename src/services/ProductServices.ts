@@ -65,6 +65,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 value
             }
             colors {
+                documentId
                 name
                 value
             }
