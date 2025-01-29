@@ -16,7 +16,6 @@ import {
 } from '@/store/slices/base/cartSlice';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
-import Input from '@/components/ui/Input';
 
 import { Button, Notification, toast } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';

@@ -14,6 +14,7 @@ import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { useParams } from 'react-router-dom';
+import { color } from 'framer-motion';
 
 injectReducer('showOrderItem', reducer);
 
@@ -79,44 +80,20 @@ const ShowOrderItem = () => {
                       Tailles choisies
                     </p>
                     <div className="grid grid-cols-7 gap-4 mb-6">
-                      {orderItem.product.sizes.map((size: Size) => {
-                        if (orderItem.product.colors.length > 0) {
-                          return orderItem.product.colors.map((color: Color) => (
-                            <div key={size.value + color.value} className="grid gap-4">
-                              <span>{size.name + ' ' + color.name}</span>
-                              <Input
-                                name={size.value + color.name}
-                                value={
-                                  orderItem.sizeAndColorSelections.find(
-                                    (sizeAndColorSelected: SizeAndColorSelection) =>
-                                      sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value
-                                  )?.quantity
-                                }
-                                type="number"
-                                autoComplete="off"
-                                disabled={true}
-                              />
-                            </div>
-                          ))
-                        }
-                        return (
-                          <div key={size.value} className="grid gap-4">
-                            <span>{size.name}</span>
+                      {
+                        orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
+                          <div key={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')} className="grid gap-4">
+                            <span>{sizeAndColorSelected.size.name + (sizeAndColorSelected.color?.name ? ' ' + sizeAndColorSelected.color.name : '')}</span>
                             <Input
-                              name={size.value}
-                              value={
-                                orderItem.sizeAndColorSelections.find(
-                                  (sizeSelected: SizeAndColorSelection) =>
-                                    sizeSelected.size.value === size.value
-                                )?.quantity
-                              }
+                              name={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')}
+                              value={sizeAndColorSelected.quantity}
                               type="number"
                               autoComplete="off"
                               disabled={true}
                             />
                           </div>
-                        )
-                      })}
+                        ))
+                      }
                     </div>
                   </div>
                 ) : (
