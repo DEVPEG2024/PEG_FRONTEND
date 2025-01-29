@@ -83,7 +83,7 @@ const ModalPrintInvoice = ({
                 <View style={styles.page}>
                   <View style={styles.section}>
                     <Image
-                      src={"../../../../../../public/img/logo/logo-light-full.png"}
+                      src={"../../../../../../img/logo/logo-light-full.png"}
                       style={{ width: '200px', height: '70px' }}
                     />
                     <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
