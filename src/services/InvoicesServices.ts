@@ -161,6 +161,16 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                 customer {
                     documentId
                     name
+                    companyInformations {
+                        email
+                        phoneNumber
+                        siretNumber
+                        vatNumber
+                        zipCode
+                        city
+                        country
+                        address
+                    }
                 }
                 amount
                 vatAmount
@@ -212,6 +222,16 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
             customer {
                 documentId
                 name
+                companyInformations {
+                    email
+                    phoneNumber
+                    siretNumber
+                    vatNumber
+                    zipCode
+                    city
+                    country
+                    address
+                }
             }
             amount
             vatAmount
