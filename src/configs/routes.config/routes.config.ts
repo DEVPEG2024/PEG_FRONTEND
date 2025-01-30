@@ -158,12 +158,6 @@ const protectedAdminRoutes = [
 ];
 const protectedCustomersRoutes = [
   {
-    key: "default.support",
-    path: "/support",
-    component: lazy(() => import("@/views/app/admin/tickets/TicketsList")),
-    authority: [],
-  },
-  {
     key: "customer.products",
     path: "/customer/products",
     component: lazy(() => import("@/views/app/customer/products/lists")),
@@ -244,6 +238,12 @@ const protectedCommonRoutes = [
     key: "common.projects",
     path: "/common/projects",
     component: lazy(() => import("@/views/app/common/projects/ProjectsList")),
+    authority: [CUSTOMER, PRODUCER, ADMIN, SUPER_ADMIN],
+  },
+  {
+    key: "default.support",
+    path: "/support",
+    component: lazy(() => import("@/views/app/common/tickets/TicketsList")),
     authority: [CUSTOMER, PRODUCER, ADMIN, SUPER_ADMIN],
   },
 ]

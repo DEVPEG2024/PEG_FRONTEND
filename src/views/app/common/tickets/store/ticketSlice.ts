@@ -9,12 +9,17 @@ import {
   apiGetTicketForEditById,
   CreateTicketRequest,
   DeleteTicketResponse,
+  GetUserTicketsRequest,
+  apiGetUserTickets,
 } from '@/services/TicketServices';
 
 import { Ticket } from '@/@types/ticket';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Image } from '@/@types/image';
 import { apiUploadFile } from '@/services/FileServices';
+import { User } from '@/@types/user';
+import { hasRole } from '@/utils/permissions';
+import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 
 export const SLICE_NAME = 'tickets';
 
@@ -27,11 +32,21 @@ export type TicketState = {
   loading: boolean;
 };
 
+export type GetTickets = {
+  request: GetTicketsRequest;
+  user: User;
+};
+
 export const getTickets = createAsyncThunk(
   SLICE_NAME + '/getTickets',
-  async (data: GetTicketsRequest): Promise<GetTicketsResponse> => {
+  async (data: GetTickets): Promise<GetTicketsResponse> => {
+    if (hasRole(data.user, [ADMIN, SUPER_ADMIN])) {
+      const { tickets_connection }: { tickets_connection: GetTicketsResponse } =
+        await unwrapData(apiGetTickets(data.request));
+      return tickets_connection;
+    }
     const { tickets_connection }: { tickets_connection: GetTicketsResponse } =
-      await unwrapData(apiGetTickets(data));
+      await unwrapData(apiGetUserTickets({...data.request, userDocumentId: data.user.documentId}));
     return tickets_connection;
   }
 );

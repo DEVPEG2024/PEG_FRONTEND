@@ -3,7 +3,7 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './TicketColumns';
 import { Input } from '@/components/ui';
-import { injectReducer, useAppDispatch } from '@/store';
+import { RootState, injectReducer, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
 import reducer, {
   deleteTicket,
   getTickets,
@@ -16,6 +16,7 @@ import ModalNewTicket from './modals/ModalNewTicket';
 
 import { Ticket } from '@/@types/ticket';
 import ModalEditTicket from './modals/ModalEditTicket';
+import { User } from '@/@types/user';
 
 injectReducer('tickets', reducer);
 
@@ -26,6 +27,9 @@ const TicketsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { tickets, total, loading, newTicketDialog, editTicketDialog } =
     useAppSelector((state) => state.tickets.data);
+  const { user }: { user: User } = useRootAppSelector(
+      (state: RootState) => state.auth.user
+    );
 
   useEffect(() => {
     fetchTickets();
@@ -33,7 +37,7 @@ const TicketsList = () => {
 
   const fetchTickets = async () => {
     dispatch(
-      getTickets({ pagination: { page: currentPage, pageSize }, searchTerm })
+      getTickets({request: { pagination: { page: currentPage, pageSize }, searchTerm }, user})
     );
   };
 
