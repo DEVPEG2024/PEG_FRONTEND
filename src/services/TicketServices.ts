@@ -59,6 +59,62 @@ export async function apiGetTickets(data: GetTicketsRequest = {pagination: {page
     })
 }
 
+// get tickets for specific user
+export type GetUserTicketsRequest = {
+    userDocumentId: String;
+    pagination: PaginationRequest;
+    searchTerm: string;
+  };
+
+export async function apiGetUserTickets(data: GetUserTicketsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: '', userDocumentId: ''}): Promise<AxiosResponse<ApiResponse<{tickets_connection: GetTicketsResponse}>>> {
+    const query = `
+    query GetUserTickets($userDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+        tickets_connection(filters: {
+            and: [
+                {name: {contains: $searchTerm}},
+                {user: {documentId: {eq: $userDocumentId}}}
+            ]}, 
+            pagination: $pagination) {
+            nodes {
+                documentId
+                name
+                description
+                state
+                priority
+                image {
+                    documentId
+                    url
+                    name
+                }
+                user {
+                    documentId
+                    firstName
+                    lastName
+                }
+                type
+            }
+            pageInfo {
+                page
+                pageCount
+                pageSize
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{tickets_connection: GetTicketsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
 // get ticket for edit by id
 export async function apiGetTicketForEditById(documentId: string): Promise<AxiosResponse<ApiResponse<{ticket: Ticket}>>> {
     const query = `
