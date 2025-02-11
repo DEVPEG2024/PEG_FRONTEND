@@ -1,0 +1,349 @@
+{
+    "textfield": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "textarea": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "number": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "password": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "checkbox": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "selectboxes": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": false
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "select": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": false
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "radio": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": false
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "file": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "file",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "email": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "url": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "phoneNumber": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "tags": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "address": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "dateTime": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "date": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "time": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "currency": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ],
+    "signature": [
+      {
+        "key": "api",
+        "ignore": true
+      },
+      {
+        "key": "data",
+        "ignore": true
+      },
+      {
+        "key": "logic",
+        "ignore": true
+      },
+      {
+        "key": "layout",
+        "ignore": true
+      }
+    ]
+  }
+  
