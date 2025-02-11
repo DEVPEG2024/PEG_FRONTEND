@@ -3,8 +3,11 @@ import { FormBuilder } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import classNames from 'classnames';
 import { Input } from '@/components/ui';
+import fr from './fr.json'
+import editFormConfig from './editFormConfig.json'
 
 // TODO SUITE : valeur par défaut pour url et provider pour fichier --> https://github.com/formio/formio.js/issues/2625
+// TODO SUITE : voir suite editFormConfig à partir de email
 
 function EditForm({
   onValidate,
@@ -73,6 +76,46 @@ function EditForm({
         form={{
           display: 'form',
           components,
+        }}
+        options={{
+          language: 'fr',
+          i18n: {
+            fr
+          },
+          builder: {
+            basic: {
+              components: {
+                button: false,
+                file: {
+                  title: 'File',
+                  key: 'file',
+                  icon: 'file',
+                  weight: 100,
+                  schema:  {
+                    key: "file",
+                    input: true,
+                    storage: "url",
+                    url: 'https://api.cloudinary.com/v1_1/dpftb1gsy/image/upload',
+                    type: "file",
+                  }
+                },
+              }
+            },
+            advanced: {
+              components: {
+                survey: false
+              }
+            },
+            data: false,
+            layout: {
+              components: {
+                HTML: false,
+                well: false
+              }
+            },
+            premium: false
+          },
+          editForm: editFormConfig
         }}
         onChange={onComponentsChange}
       />
