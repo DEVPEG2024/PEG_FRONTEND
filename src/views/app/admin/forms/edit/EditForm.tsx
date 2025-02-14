@@ -7,8 +7,8 @@ import fr from './fr.json'
 import editFormConfig from './editFormConfig.json'
 
 // TODO SUITE : valeur par défaut pour url et provider pour fichier --> https://github.com/formio/formio.js/issues/2625
-// TODO SUITE : voir suite editFormConfig à partir de email
 
+// Pour modifier un comportement spécifique, se reporter au code du component. Ex: https://github.com/formio/formio.js/blob/master/src/components/datetime/DateTime.js
 function EditForm({
   onValidate,
   onCancel,
@@ -103,14 +103,42 @@ function EditForm({
             },
             advanced: {
               components: {
-                survey: false
+                survey: false,
+                tags: false,
+                address: {
+                  title: 'Address',
+                  key: 'address',
+                  icon: 'home',
+                  weight: 100,
+                  schema: {
+                    key: "address",
+                    input: true,
+                    provider: "nominatim",
+                    type: "address"
+                  }
+                },
+                datetime: {
+                  title: 'Date / Time',
+                  key: 'datetime',
+                  icon: 'calendar',
+                  weight: 40,
+                  schema: {
+                    key: "datetime",
+                    input: true,
+                    timePicker: {
+                      showMeridian: false,
+                    },
+                    type: "datetime"
+                  }
+                }
               }
             },
             data: false,
             layout: {
               components: {
-                HTML: false,
-                well: false
+                htmlelement: false,
+                well: false,
+                fieldset: false
               }
             },
             premium: false
