@@ -577,7 +577,61 @@
       },
       {
         "key": "data",
-        "ignore": false
+        "ignore": false,
+        "components": [
+          {
+            "key": "dataSrc",
+            "ignore": true
+          },
+          {
+            "key": "dataType",
+            "ignore": true
+          },
+          {
+            "key": "defaultValue",
+            "ignore": true
+          },
+          {
+            "key": "persistent",
+            "ignore": true
+          },
+          {
+            "key": "protected",
+            "ignore": true
+          },
+          {
+            "key": "dbIndex",
+            "ignore": true
+          },
+          {
+            "key": "encrypted",
+            "ignore": true
+          },
+          {
+            "key": "redrawOn",
+            "ignore": true
+          },
+          {
+            "key": "clearOnHide",
+            "ignore": true
+          },
+          {
+            "key": "customDefaultValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateServer",
+            "ignore": true
+          },
+          {
+            "key": "allowCalculateOverride",
+            "ignore": true
+          }
+        ]
       },
       {
         "key": "logic",
@@ -688,7 +742,101 @@
       },
       {
         "key": "data",
-        "ignore": false
+        "ignore": false,
+        "components": [
+          {
+            "key": "dataSrc",
+            "ignore": true
+          },
+          {
+            "key": "dataType",
+            "ignore": true
+          },
+          {
+            "key": "defaultValue",
+            "ignore": true
+          },
+          {
+            "key": "persistent",
+            "ignore": true
+          },
+          {
+            "key": "protected",
+            "ignore": true
+          },
+          {
+            "key": "dbIndex",
+            "ignore": true
+          },
+          {
+            "key": "encrypted",
+            "ignore": true
+          },
+          {
+            "key": "redrawOn",
+            "ignore": true
+          },
+          {
+            "key": "clearOnHide",
+            "ignore": true
+          },
+          {
+            "key": "customDefaultValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateServer",
+            "ignore": true
+          },
+          {
+            "key": "allowCalculateOverride",
+            "ignore": true
+          },
+          {
+            "key": "idPath",
+            "ignore": true
+          },
+          {
+            "key": "template",
+            "ignore": true
+          },
+          {
+            "key": "refreshOn",
+            "ignore": true
+          },
+          {
+            "key": "refreshOnBlur",
+            "ignore": true
+          },
+          {
+            "key": "clearOnRefresh",
+            "ignore": true
+          },
+          {
+            "key": "searchEnabled",
+            "ignore": true
+          },
+          {
+            "key": "selectThreshold",
+            "ignore": true
+          },
+          {
+            "key": "readOnlyValue",
+            "ignore": true
+          },
+          {
+            "key": "customOptions",
+            "ignore": true
+          },
+          {
+            "key": "useExactSearch",
+            "ignore": true
+          }
+        ]
       },
       {
         "key": "logic",
@@ -788,6 +936,14 @@
           {
             "key": "inputMasks",
             "ignore": true
+          },
+          {
+            "key": "widget",
+            "ignore": true
+          },
+          {
+            "key": "uniqueOptions",
+            "ignore": true
           }
         ]
       }
@@ -799,7 +955,101 @@
       },
       {
         "key": "data",
-        "ignore": false
+        "ignore": false,
+        "components": [
+          {
+            "key": "dataSrc",
+            "ignore": true
+          },
+          {
+            "key": "dataType",
+            "ignore": true
+          },
+          {
+            "key": "defaultValue",
+            "ignore": true
+          },
+          {
+            "key": "persistent",
+            "ignore": true
+          },
+          {
+            "key": "protected",
+            "ignore": true
+          },
+          {
+            "key": "dbIndex",
+            "ignore": true
+          },
+          {
+            "key": "encrypted",
+            "ignore": true
+          },
+          {
+            "key": "redrawOn",
+            "ignore": true
+          },
+          {
+            "key": "clearOnHide",
+            "ignore": true
+          },
+          {
+            "key": "customDefaultValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateValuePanel",
+            "ignore": true
+          },
+          {
+            "key": "calculateServer",
+            "ignore": true
+          },
+          {
+            "key": "allowCalculateOverride",
+            "ignore": true
+          },
+          {
+            "key": "idPath",
+            "ignore": true
+          },
+          {
+            "key": "template",
+            "ignore": true
+          },
+          {
+            "key": "refreshOn",
+            "ignore": true
+          },
+          {
+            "key": "refreshOnBlur",
+            "ignore": true
+          },
+          {
+            "key": "clearOnRefresh",
+            "ignore": true
+          },
+          {
+            "key": "searchEnabled",
+            "ignore": true
+          },
+          {
+            "key": "selectThreshold",
+            "ignore": true
+          },
+          {
+            "key": "readOnlyValue",
+            "ignore": true
+          },
+          {
+            "key": "customOptions",
+            "ignore": true
+          },
+          {
+            "key": "useExactSearch",
+            "ignore": true
+          }
+        ]
       },
       {
         "key": "validation",

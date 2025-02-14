@@ -6,7 +6,7 @@ import { Input } from '@/components/ui';
 import fr from './fr.json'
 import editFormConfig from './editFormConfig.json'
 
-// TODO SUITE : valeur par défaut pour url et provider pour fichier --> https://github.com/formio/formio.js/issues/2625
+// TODO SUITE : corriger provider fichier cloudinary
 
 // Pour modifier un comportement spécifique, se reporter au code du component. Ex: https://github.com/formio/formio.js/blob/master/src/components/datetime/DateTime.js
 function EditForm({
