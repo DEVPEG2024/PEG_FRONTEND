@@ -26,6 +26,7 @@
     "@nutrition-web-components/nutri-score": "^0.0.1",
     "@react-pdf/renderer": "^3.4.4",
     "@reduxjs/toolkit": "^1.9.3",
+    "@rollup/plugin-commonjs": "^28.0.2",
     "@tanstack/match-sorter-utils": "^8.8.4",
     "@tanstack/react-table": "^8.8.5",
     "@visx/pattern": "^3.0.0",
