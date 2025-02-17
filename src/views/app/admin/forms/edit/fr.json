@@ -216,5 +216,6 @@
     "Displays the checkboxes/radios horizontally.": "Affiche les cases à cocher/radios horizontalement.",
     "Allows multiple values to be entered for this field.": "Permet de saisir plusieurs valeurs pour ce champ.",
     "Data Source Values": "Valeurs",
-    "Values to use as the data source. Labels are shown in the select field. Values are the corresponding values saved with the submission.": "Valeurs à utiliser comme source de données. Les étiquettes sont affichées dans le champ de sélection. Les valeurs sont les valeurs correspondantes enregistrées avec la soumission."
+    "Values to use as the data source. Labels are shown in the select field. Values are the corresponding values saved with the submission.": "Valeurs à utiliser comme source de données. Les étiquettes sont affichées dans le champ de sélection. Les valeurs sont les valeurs correspondantes enregistrées avec la soumission.",
+    "Upload": "Téléchargement"
 }

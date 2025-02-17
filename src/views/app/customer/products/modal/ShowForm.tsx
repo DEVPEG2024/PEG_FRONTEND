@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Form as FormViewer } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
+import fr from '../../../admin/forms/edit/fr.json'
 
 function ShowForm({
   fields,
@@ -29,6 +30,10 @@ function ShowForm({
     link3.rel = 'stylesheet';
     link3.href = 'https://cdn.form.io/formiojs/formio.full.min.css';
     document.head.appendChild(link3);
+    const link4 = document.createElement('link');
+    link4.rel = 'stylesheet';
+    link4.href = '/EditForm.css';
+    document.head.appendChild(link4);
     const script = document.createElement('script');
     script.src = 'https://cdn.form.io/js/formio.full.min.js';
     document.head.appendChild(script);
@@ -37,6 +42,7 @@ function ShowForm({
       document.head.removeChild(link); // Supprime les styles après le démontage du composant
       document.head.removeChild(link2); // Supprime les styles après le démontage du composant
       document.head.removeChild(link3); // Supprime les styles après le démontage du composant
+      document.head.removeChild(link4); // Supprime les styles après le démontage du composant
       document.head.removeChild(script); // Supprime les styles après le démontage du composant
     };
   }, []);
@@ -52,6 +58,10 @@ function ShowForm({
         submission={formAnswer?.answer}
         options={{
           readOnly,
+          language: 'fr',
+          i18n: {
+            fr
+          },
         }}
         onSubmit={onSubmit}
       />
