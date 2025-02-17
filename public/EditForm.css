@@ -9,10 +9,13 @@
 .checkbox {
   width: 100%;
   height: 100%;
+  border-width: 0px;
+  box-shadow: none;
 }
 
 .radio {
-  width: 100%;
-  height: 100%;
+  width: 50%;
+  height: 50%;
+  border-width: 0px;
+  box-shadow: none;
 }
-  
