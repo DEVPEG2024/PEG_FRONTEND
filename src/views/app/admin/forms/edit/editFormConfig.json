@@ -1067,6 +1067,10 @@
         "key": "display",
         "components": [
           {
+            "key": "inline",
+            "ignore": true
+          },
+          {
             "key": "customClass",
             "ignore": true
           },

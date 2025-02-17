@@ -32,7 +32,7 @@
 }
 
 .dialog-formbuilder {
-  @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-white;
+  @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-white max-h-[90vh] overflow-y-auto; 
 }
 
 .dialog-overlay {
