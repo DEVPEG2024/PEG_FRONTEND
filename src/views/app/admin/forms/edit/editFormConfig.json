@@ -649,6 +649,10 @@
         "key": "display",
         "components": [
           {
+            "key": "inline",
+            "ignore": true
+          },
+          {
             "key": "customClass",
             "ignore": true
           },
@@ -1275,6 +1279,34 @@
           {
             "key": "modalEdit",
             "ignore": true
+          },
+          {
+            "key": "prefix",
+            "ignore": true
+          },
+          {
+            "key": "suffix",
+            "ignore": true
+          },
+          {
+            "key": "displayMask",
+            "ignore": true
+          },
+          {
+            "key": "applyMaskOn",
+            "ignore": true
+          },
+          {
+            "key": "autocomplete",
+            "ignore": true
+          },
+          {
+            "key": "mask",
+            "ignore": true
+          },
+          {
+            "key": "spellcheck",
+            "ignore": true
           }
         ]
       }
@@ -1334,6 +1366,34 @@
           {
             "key": "modalEdit",
             "ignore": true
+          },
+          {
+            "key": "prefix",
+            "ignore": true
+          },
+          {
+            "key": "suffix",
+            "ignore": true
+          },
+          {
+            "key": "displayMask",
+            "ignore": true
+          },
+          {
+            "key": "applyMaskOn",
+            "ignore": true
+          },
+          {
+            "key": "autocomplete",
+            "ignore": true
+          },
+          {
+            "key": "mask",
+            "ignore": true
+          },
+          {
+            "key": "spellcheck",
+            "ignore": true
           }
         ]
       }
@@ -1392,6 +1452,46 @@
           },
           {
             "key": "modalEdit",
+            "ignore": true
+          },
+          {
+            "key": "prefix",
+            "ignore": true
+          },
+          {
+            "key": "suffix",
+            "ignore": true
+          },
+          {
+            "key": "inputMask",
+            "ignore": true
+          },
+          {
+            "key": "inputMaskPlaceholderChar",
+            "ignore": true
+          },
+          {
+            "key": "allowMultipleMasks",
+            "ignore": true
+          },  
+          {
+            "key": "displayMask",
+            "ignore": true
+          },
+          {
+            "key": "applyMaskOn",
+            "ignore": true
+          },
+          {
+            "key": "autocomplete",
+            "ignore": true
+          },
+          {
+            "key": "mask",
+            "ignore": true
+          },
+          {
+            "key": "spellcheck",
             "ignore": true
           }
         ]
@@ -1485,6 +1585,14 @@
         "key": "display",
         "components": [
           {
+            "key": "enableManualMode",
+            "ignore": true
+          },
+          {
+            "key": "disableClearIcon",
+            "ignore": true
+          },
+          {
             "key": "customClass",
             "ignore": true
           },
@@ -1553,6 +1661,10 @@
         "components": [
           {
             "key": "displayInTimezone",
+            "ignore": true
+          },
+          {
+            "key": "format",
             "ignore": true
           },
           {
