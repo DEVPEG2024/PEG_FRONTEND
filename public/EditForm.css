@@ -19,3 +19,13 @@
   border-width: 0px;
   box-shadow: none;
 }
+
+.formio-component-radio {
+  display: flex;
+  flex-direction: column;
+}
+
+.formio-component-selectboxes {
+  display: flex;
+  flex-direction: column;
+}
