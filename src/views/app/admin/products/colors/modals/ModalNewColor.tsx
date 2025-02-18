@@ -62,6 +62,9 @@ function ModalNewColor() {
     if (formData.name === '') {
       tempErrors.push('Le nom est obligatoire');
     }
+    if (formData.productCategory === '') {
+      tempErrors.push('La catégorie produit est obligatoire');
+    }
     setErrors(tempErrors);
     return tempErrors;
   }

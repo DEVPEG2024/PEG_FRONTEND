@@ -63,9 +63,9 @@ const ColorsList = () => {
   return (
     <Container>
       <HeaderTitle
-        title="Tailles"
-        buttonTitle="Ajouter une taille"
-        description="Gérer les tailles"
+        title="Couleurs"
+        buttonTitle="Ajouter une couleur"
+        description="Gérer les couleurs"
         link={'/admin/colors/add'}
         addAction={true}
         action={addColor}
@@ -74,7 +74,7 @@ const ColorsList = () => {
       <div className="mt-4">
         <div className="mb-4">
           <Input
-            placeholder={'Rechercher une taille'}
+            placeholder={'Rechercher une couleur'}
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
           />
