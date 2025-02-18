@@ -25,7 +25,7 @@ export const useColumns = (
         return (
           <div className="flex items-center gap-2">
             <span className="font-bold">
-              {row.original.productCategory.name}
+              {row.original.productCategory?.name}
             </span>
           </div>
         );
