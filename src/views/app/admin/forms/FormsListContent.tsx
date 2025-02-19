@@ -2,15 +2,16 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteForm,
+  duplicateForm,
   getForms,
   setForm,
   setNewFormDialog,
   useAppSelector,
 } from './store';
 import { useEffect } from 'react';
-import { Button, Card } from '@/components/ui';
+import { Button, Card, Notification, toast, Tooltip } from '@/components/ui';
 import { Form } from '@/@types/form';
-import { HiPencil, HiTrash } from 'react-icons/hi';
+import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 import { Loading } from '@/components/shared';
 
@@ -24,15 +25,27 @@ function FormsListContent() {
       getForms({ pagination: { page: 1, pageSize: 10 }, searchTerm: '' })
     );
   }, []);
+  
   const handleEdit = (form: Form) => {
     dispatch(setForm(form));
     setIsOpenNewForm();
   };
+  
   const handleDelete = (documentId: string) => {
     dispatch(deleteForm(documentId));
   };
+  
   const setIsOpenNewForm = () => {
     dispatch(setNewFormDialog(true));
+  };
+
+  const handleDuplicate = (form: Form) => {
+    dispatch(duplicateForm(form));
+    toast.push(
+      <Notification type="success" title="Dupliqué">
+        Formulaire dupliqué avec succès
+      </Notification>
+    );
   };
   return (
     <div className="h-full">
@@ -59,18 +72,30 @@ function FormsListContent() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="plain"
-                    size="sm"
-                    onClick={() => handleEdit(form)}
-                    icon={<HiPencil />}
-                  />
-                  <Button
-                    variant="twoTone"
-                    size="sm"
-                    onClick={() => handleDelete(form.documentId)}
-                    icon={<HiTrash />}
-                  />
+                  <Tooltip title="Modifier le formulaire">
+                    <Button
+                      variant="plain"
+                      size="sm"
+                      onClick={() => handleEdit(form)}
+                      icon={<HiPencil />}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Dupliquer le formulaire">
+                    <Button
+                      variant="twoTone"
+                      size="sm"
+                      onClick={() => handleDuplicate(form)}
+                      icon={<HiDuplicate />}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Supprimer le formulaire">
+                    <Button
+                      variant="twoTone"
+                      size="sm"
+                      onClick={() => handleDelete(form.documentId)}
+                      icon={<HiTrash />}
+                    />
+                  </Tooltip>
                 </div>
               </div>
             </Card>
