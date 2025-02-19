@@ -73,6 +73,21 @@ export const deleteForm = createAsyncThunk(
   }
 );
 
+export const duplicateForm = createAsyncThunk(
+  SLICE_NAME + '/duplicateForm',
+  async (form: Form) => {
+    const { documentId, ...duplicatedForm } = form;
+    const newForm: Form = {
+      ...duplicatedForm
+    };
+    const { createForm }: { createForm: Form } = await unwrapData(
+      apiCreateForm(newForm)
+    );
+    return createForm;
+  }
+);
+
+
 const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
@@ -130,6 +145,19 @@ const formsSlice = createSlice({
       state.total += 1;
     });
     builder.addCase(createForm.rejected, (state) => {
+      state.loading = false;
+    });
+
+
+    builder.addCase(duplicateForm.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(duplicateForm.fulfilled, (state, action) => {
+      state.loading = false;
+      state.forms.push(action.payload);
+      state.total += 1;
+    });
+    builder.addCase(duplicateForm.rejected, (state) => {
       state.loading = false;
     });
   },

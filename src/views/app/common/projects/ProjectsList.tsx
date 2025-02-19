@@ -37,7 +37,7 @@ const ProjectsList = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const isAdminOrSuperAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(options[4].value);
 
   const [searchTerm, setSearchTerm] = useState('');
   const dispatch = useAppDispatch();
@@ -116,7 +116,7 @@ const ProjectsList = () => {
             <Select
               size="sm"
               isSearchable={false}
-              defaultValue={options[0]}
+              defaultValue={options[4]}
               options={options}
               onChange={(selected) => onPageSelect(selected as Option)}
             />
