@@ -5,9 +5,11 @@ import { ProductCategory } from '@/@types/product';
 
 const ProductCategoryCard = ({
   productCategory,
+  handleEditProductCategory,
   handleDeleteProductCategory,
 }: {
   productCategory: ProductCategory;
+  handleEditProductCategory: (productCategory: ProductCategory) => void;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
 }) => {
   const navigate = useNavigate();
@@ -41,6 +43,14 @@ const ProductCategoryCard = ({
             </div>
           </div>
         </div>
+      </div>
+      <div className="flex justify-center mt-4">
+        <Button
+          variant="twoTone"
+          onClick={() => handleEditProductCategory(productCategory)}
+        >
+          Modifier
+        </Button>
       </div>
       <div className="flex justify-center mt-4">
         <Button
