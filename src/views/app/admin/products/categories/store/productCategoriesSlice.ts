@@ -1,13 +1,14 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Product, ProductCategory } from '@/@types/product';
 import { Image } from '@/@types/image';
 
-import { unwrapData } from '@/utils/serviceHelper';
+import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
 import {
   apiCreateProductCategory,
   apiDeleteProductCategory,
   apiGetProductCategories,
   apiGetProductCategoryById,
+  apiUpdateProductCategory,
   CreateProductCategoryRequest,
   DeleteProductCategoryResponse,
   GetProductCategoriesRequest,
@@ -19,6 +20,7 @@ import {
   GetProductsByCategoryRequest,
   GetProductsResponse,
 } from '@/services/ProductServices';
+import { AxiosResponse } from 'axios';
 
 export const SLICE_NAME = 'productCategories';
 
@@ -75,6 +77,28 @@ export const createProductCategory = createAsyncThunk(
   }
 );
 
+export type UpdateProductCategory = {
+  productCategory: Partial<ProductCategory>;
+  imageModified: boolean;
+};
+
+export const updateProductCategory = createAsyncThunk(
+  SLICE_NAME + '/updateProductCategory',
+  async (data: UpdateProductCategory): Promise<ProductCategory> => {
+    let imageUploaded: Image | undefined = undefined;
+    if (data.imageModified && data.productCategory.image) {
+      imageUploaded = await apiUploadFile(data.productCategory.image.file);
+    }
+    const { updateProductCategory }: { updateProductCategory: ProductCategory } = await unwrapData(
+      apiUpdateProductCategory({
+        ...data.productCategory,
+        image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
+      })
+    );
+    return updateProductCategory;
+  }
+);
+
 export const getProductsByCategory = createAsyncThunk(
   SLICE_NAME + '/getProductsByCategory',
   async (data: GetProductsByCategoryRequest) => {
@@ -112,6 +136,12 @@ const productCategoriesSlice = createSlice({
     },
     setModalDeleteProductCategoryClose: (state) => {
       state.modalDeleteProductCategoryOpen = false;
+    },
+    setProductCategory(
+      state,
+      action: PayloadAction<ProductCategory | undefined>
+    ) {
+      state.productCategory = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -175,12 +205,30 @@ const productCategoriesSlice = createSlice({
     builder.addCase(getProductCategoryById.rejected, (state) => {
       state.loading = false;
     });
+
+
+    // UPDATE PRODUCT CATEGORY
+    builder.addCase(updateProductCategory.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateProductCategory.fulfilled, (state, action) => {
+      state.loading = false;
+      state.productCategories = state.productCategories.map((productCategory) =>
+        productCategory.documentId === action.payload.documentId
+          ? action.payload
+          : productCategory
+      );
+    });
+    builder.addCase(updateProductCategory.rejected, (state) => {
+      state.loading = false;
+    });
   },
 });
 
 export const {
   setModalDeleteProductCategoryOpen,
   setModalDeleteProductCategoryClose,
+  setProductCategory
 } = productCategoriesSlice.actions;
 
 export default productCategoriesSlice.reducer;

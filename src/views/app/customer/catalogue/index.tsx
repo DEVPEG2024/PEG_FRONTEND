@@ -55,7 +55,7 @@ const Categories = () => {
     <Container>
       <HeaderTitle
         title="Catégorie de produit"
-        buttonTitle="Ajouter une catégorie de produit"
+        buttonTitle=""
         description="Catégorie de produit"
         link={''}
         addAction={false}

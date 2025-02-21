@@ -2,34 +2,32 @@ import { ProductCategory } from '@/@types/product';
 import { Button, Dialog } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { useTranslation } from 'react-i18next';
-import { deleteProductCategory } from '../store';
+import { deleteProductCategory, useAppSelector } from '../store';
 
 function ModalDeleteProductCategory({
   title,
   isOpen,
-  setIsOpen,
-  productCategory,
+  handleCloseModal
 }: {
   title: string;
   isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-  productCategory: ProductCategory;
+  handleCloseModal: () => void;
 }) {
   const { t } = useTranslation();
-  const onDialogClose = () => {
-    setIsOpen(false);
-  };
+  const { productCategory } = useAppSelector(
+    (state) => state.productCategories.data
+  );
   const dispatch = useAppDispatch();
 
   const onDialogOk = async () => {
-    dispatch(deleteProductCategory(productCategory.documentId));
-    onDialogClose();
+    dispatch(deleteProductCategory(productCategory!.documentId));
+    handleCloseModal();
   };
   return (
     <Dialog
       isOpen={isOpen}
-      onClose={onDialogClose}
-      onRequestClose={onDialogClose}
+      onClose={handleCloseModal}
+      onRequestClose={handleCloseModal}
     >
       <div className="flex flex-col h-full justify-between">
         <h5 className="mb-4">{title}</h5>
@@ -38,7 +36,7 @@ function ModalDeleteProductCategory({
           <Button
             className="ltr:mr-2 rtl:ml-2"
             variant="plain"
-            onClick={onDialogClose}
+            onClick={handleCloseModal}
           >
             {t('cancel')}
           </Button>

@@ -4,9 +4,11 @@ import { ProductCategory } from '@/@types/product';
 
 const ProductCategoriesListContent = ({
   productCategories,
+  handleEditProductCategory,
   handleDeleteProductCategory,
 }: {
   productCategories: ProductCategory[];
+  handleEditProductCategory: (productCategory: ProductCategory) => void;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
 }) => {
   return (
@@ -17,6 +19,7 @@ const ProductCategoriesListContent = ({
             key={productCategory.documentId}
             productCategory={productCategory}
             handleDeleteProductCategory={handleDeleteProductCategory}
+            handleEditProductCategory={handleEditProductCategory}
           />
         ))}
       </div>
