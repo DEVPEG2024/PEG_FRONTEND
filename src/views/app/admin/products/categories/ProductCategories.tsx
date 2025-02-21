@@ -3,15 +3,17 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { Input, Pagination, Select } from '@/components/ui';
 import ProductCategoriesListContent from './components/ProductCategoriesListContent';
-import ModalAddProductCategory from './modals/ModalAddProductCategory';
+import ModalEditProductCategory from './modals/ModalEditProductCategory';
 import ModalDeleteProductCategory from './modals/ModalDeleteProductCategory';
 import reducer, {
   getProductCategories,
+  setProductCategory,
   useAppDispatch,
   useAppSelector,
 } from './store';
 import { injectReducer } from '@/store';
 import { ProductCategory } from '@/@types/product';
+import { useTranslation } from 'react-i18next';
 
 injectReducer('productCategories', reducer);
 
@@ -25,15 +27,15 @@ const options: Option[] = [
   { value: 32, label: '32 / page' },
 ];
 const Categories = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [categorySelected, setCategorySelected] =
-    useState<ProductCategory | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { productCategories, loading, total } = useAppSelector(
+  const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
+  const { productCategories, productCategory, loading, total } = useAppSelector(
     (state) => state.productCategories.data
   );
 
@@ -51,19 +53,33 @@ const Categories = () => {
     setCurrentPage(1);
   };
 
+  const handleEditProductCategory = (productCategory: ProductCategory) => {
+    dispatch(setProductCategory(productCategory));
+    setIsOpenEdit(true);
+  };
+
   const handleDeleteProductCategory = async (
     productCategory: ProductCategory
   ) => {
-    setCategorySelected(productCategory);
+    dispatch(setProductCategory(productCategory));
     setIsOpenDelete(true);
   };
 
   const onPageSelect = ({ value }: Option) => {
     setPageSize(value);
   };
+
   const setIsOpenNewCategoryProduct = () => {
     setIsOpen(true);
   };
+  
+  const handleCloseModal = () => {
+    setIsOpen(false);
+    setIsOpenEdit(false);
+    setIsOpenDelete(false);
+    dispatch(setProductCategory(undefined));
+  };
+
   return (
     <Container>
       <HeaderTitle
@@ -86,6 +102,7 @@ const Categories = () => {
         <Loading loading={loading}>
           <ProductCategoriesListContent
             productCategories={productCategories}
+            handleEditProductCategory={handleEditProductCategory}
             handleDeleteProductCategory={handleDeleteProductCategory}
           />
         </Loading>
@@ -107,18 +124,27 @@ const Categories = () => {
           </div>
         </div>
       </div>
-      <ModalAddProductCategory
-        title="Ajouter une catégorie de produit"
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        productCategory={null}
-      />
-      {categorySelected && (
+      {isOpen && (
+        <ModalEditProductCategory
+          mode="add"
+          title={t('cat.addCategory')}
+          isOpen={isOpen}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
+      {productCategory && isOpenEdit && (
+        <ModalEditProductCategory
+          mode="edit"
+          title={t('cat.editCategory')}
+          isOpen={isOpenEdit}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
+      {productCategory && isOpenDelete && (
         <ModalDeleteProductCategory
           title="Supprimer une catégorie de produit"
           isOpen={isOpenDelete}
-          setIsOpen={setIsOpenDelete}
-          productCategory={categorySelected}
+          handleCloseModal={handleCloseModal}
         />
       )}
     </Container>

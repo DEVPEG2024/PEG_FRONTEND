@@ -40,6 +40,7 @@ export async function apiCreateProductCategory(data: CreateProductCategoryReques
             documentId
             image {
                 url
+                documentId
             }
             name
             products {
@@ -61,6 +62,37 @@ export async function apiCreateProductCategory(data: CreateProductCategoryReques
     })
 }
 
+// update product category
+export async function apiUpdateProductCategory(productCategory: Partial<ProductCategory>): Promise<AxiosResponse<ApiResponse<{updateProductCategory: ProductCategory}>>> {
+    const query = `
+    mutation UpdateProductCategory($documentId: ID!, $data: ProductCategoryInput!) {
+        updateProductCategory(documentId: $documentId, data: $data) {
+            documentId
+            image {
+                url
+                documentId
+            }
+            name
+            products {
+                documentId
+            }
+        }
+    }
+  `,
+  {documentId, ...data} = productCategory,
+  variables = {
+    documentId,
+    data
+  }
+    return ApiService.fetchData<ApiResponse<{updateProductCategory: ProductCategory}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
 
 // get product categories
 export type GetProductCategoriesRequest = {
@@ -81,6 +113,7 @@ export async function apiGetProductCategories(data: GetProductCategoriesRequest 
                 documentId
                 image {
                     url
+                    documentId
                 }
                 name
                 products {
