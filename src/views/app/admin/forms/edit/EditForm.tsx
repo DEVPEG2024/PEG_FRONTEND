@@ -5,8 +5,9 @@ import classNames from 'classnames';
 import { Input } from '@/components/ui';
 import fr from './fr.json'
 import editFormConfig from './editFormConfig.json'
-
-// TODO SUITE : corriger provider fichier cloudinary
+import { API_BASE_URL } from '@/configs/api.config';
+import { TOKEN_TYPE } from '@/constants/api.constant';
+import { useAppSelector } from '@/store';
 
 // Pour modifier un comportement spécifique, se reporter au code du component. Ex: https://github.com/formio/formio.js/blob/master/src/components/datetime/DateTime.js
 function EditForm({
@@ -24,6 +25,7 @@ function EditForm({
     [components, setComponents] = useState<any>(
       JSON.parse(JSON.stringify(fields))
     );
+  const { token } = useAppSelector((state) => state.auth.session)
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -95,7 +97,14 @@ function EditForm({
                     key: "file",
                     input: true,
                     storage: "url",
-                    url: 'https://api.cloudinary.com/v1_1/dpftb1gsy/image/upload',
+                    url: API_BASE_URL + '/upload-single',
+                    options: `{
+                      "withCredentials": true,
+                      "headers": {
+                        "Authorization": "${TOKEN_TYPE}${token}"
+                      }
+                    }`,
+                    fileKey: "file",
                     type: "file",
                   }
                 },
