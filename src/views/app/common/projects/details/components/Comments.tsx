@@ -4,12 +4,14 @@ import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { debounce } from 'lodash';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
 import type { TimeLineItemProps } from '@/components/ui/Timeline';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
+import ReactHtmlParser from 'html-react-parser';
 import {
   RootState,
   useAppDispatch,
@@ -29,6 +31,7 @@ import { Select, Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { visibilityData } from '../../lists/constants';
 import { hasRole } from '@/utils/permissions';
+import { RichTextEditor } from '@/components/shared';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
@@ -46,6 +49,16 @@ const Comments = () => {
   const { project, comments, loading } = useAppSelector(
     (state) => state.projectDetails.data
   );
+
+  const onEdit = (val: string) => {
+    debounceFn(val);
+  };
+
+  const debounceFn = debounce(handleDebounceFn, 1000);
+  
+  function handleDebounceFn(val: string) {
+    setCommentText(val);
+  }
 
   const submitComment = async () => {
     if (commentText.trim()) {
@@ -162,10 +175,9 @@ const Comments = () => {
                 <div className="mt-1 mb-3 flex flex-auto gap-4">
                   <Avatar size={30} shape="circle" icon={<HiUserCircle />} />
                   <div className="w-full">
-                    <Input
-                      onChange={(e) => setCommentText(e.target.value)}
+                    <RichTextEditor
+                      onChange={onEdit}
                       value={commentText}
-                      textArea
                       placeholder="Ajouter un commentaire"
                     />
                   </div>
@@ -221,16 +233,16 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
   const determineAuthorRoleLabel = (user: User): string => {
     switch (user.role.name) {
       case 'customer':
-        return 'Client ' + user.customer?.name;
+        return 'Client ' + (user.customer?.name ?? 'Inconnu');
       case 'producer':
-        return 'Producteur ' + user.producer?.name;
+        return 'Producteur ' + (user.producer?.name ?? 'Inconnu');
       case 'super_admin':
         return 'Administrateur';
       default:
         return '';
     }
   };
-  const authorLabel = `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})`;
+  const authorLabel = comment.user ? `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})` : 'Inconnu';
   const dispatch = useAppDispatch();
 
   const handleDeleteComment = async () => {
@@ -269,7 +281,9 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
           bordered
           className={`${comment.images.length > 0 ? 'col-span-11' : 'col-span-12'}`}
         >
-          <p>{comment.content}</p>
+          <p className="prose dark:prose-invert max-w-none text-sm">
+            {ReactHtmlParser(comment.content)}
+          </p>
           <p
             className="text-gray-500 text-end cursor-pointer hover:text-red-500"
             onClick={handleDeleteComment}
