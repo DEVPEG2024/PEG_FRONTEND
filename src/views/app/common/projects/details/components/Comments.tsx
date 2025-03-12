@@ -242,7 +242,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
         return '';
     }
   };
-  const authorLabel = comment.user ? `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})` : 'Inconnu';
+  const authorLabel = comment.user ? `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})` : 'Utilisateur supprimé';
   const dispatch = useAppDispatch();
 
   const handleDeleteComment = async () => {

@@ -17,7 +17,7 @@ export const useColumns = (
       cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
           <div className="flex flex-col" key={row.original.documentId}>
-            <span className="font-bold">{row.original.customer.name}</span>
+            <span className="font-bold">{row.original.customer?.name ?? 'Client supprimé'}</span>
           </div>
         );
       },

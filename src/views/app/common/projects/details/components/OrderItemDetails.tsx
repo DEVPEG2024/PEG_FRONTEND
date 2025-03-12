@@ -36,7 +36,7 @@ const OrderItemDetails = ({
           className="mb-4"
           icon={<HiOfficeBuilding className="text-lg opacity-70" />}
         >
-          <span className="font-semibold">{customer.name}</span>
+          <span className="font-semibold">{customer?.name ?? 'Client supprimé'}</span>
         </IconText>
         <IconText
           className="mb-4"
