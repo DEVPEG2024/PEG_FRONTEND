@@ -3,7 +3,7 @@ import RichTextEditor from '@/components/shared/RichTextEditor';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
-import { Select } from '@/components/ui';
+import { Select, Switcher } from '@/components/ui';
 import { Product } from '@/@types/product';
 
 type Options = {
@@ -76,6 +76,20 @@ const ProductFields = (props: ProductFields) => {
             placeholder="Prix du produit"
             component={Input}
           />
+        </FormItem>
+        <FormItem
+          label="Dans le catalogue"
+          invalid={(errors.inCatalogue && touched.inCatalogue) as boolean}
+          errorMessage={errors.inCatalogue}
+        >
+          <Field name="inCatalogue">
+            {({ field, form }: FieldProps) => (
+              <Switcher
+                checked={props.values.inCatalogue}
+                onChange={() => form.setFieldValue(field.name, !field.value)}
+              />
+            )}
+          </Field>
         </FormItem>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">

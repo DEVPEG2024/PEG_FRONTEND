@@ -75,6 +75,7 @@ const EditProduct = () => {
     customers: product?.customers?.map((customer) => customer.documentId) || [],
     form: product?.form?.documentId || null,
     active: product?.active || false,
+    inCatalogue: product?.inCatalogue || false,
   };
   const dispatch = useAppDispatch();
 
