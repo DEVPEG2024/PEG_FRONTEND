@@ -15,6 +15,7 @@ export type Product = {
   productCategory: ProductCategory;
   customerCategories: CustomerCategory[];
   customers: Customer[];
+  inCatalogue: boolean;
 };
 
 export type Size = {

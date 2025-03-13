@@ -59,6 +59,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 name
             }
             active
+            inCatalogue
             sizes {
                 documentId
                 name
@@ -115,7 +116,8 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
         and: [
             {name: {contains: $searchTerm}},
             {productCategory: {documentId: {eq: $productCategoryDocumentId}}},
-            {active: {eq: true}}
+            {active: {eq: true}},
+            {inCatalogue: {eq: true}}
         ]},
         pagination: $pagination, sort: "name") {
             nodes {
@@ -173,6 +175,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                     url
                 }
                 active
+                inCatalogue
             }
             pageInfo {
                 page
@@ -211,6 +214,7 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
                 url
             }
             active
+            inCatalogue
         }
     }
   `,
@@ -291,6 +295,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 documentId
                 name
                 price
+                inCatalogue
             }
             pageInfo {
                 page
@@ -330,6 +335,7 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
                 url
             }
             active
+            inCatalogue
         }
     }
   `,
