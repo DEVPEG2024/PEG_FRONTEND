@@ -3,9 +3,11 @@ import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 
 const SizeChoice = ({product, sizeAndColorsSelected, color, handleSizeAndColorsChanged} : {product: Product, sizeAndColorsSelected: SizeAndColorSelection[], color?: Color, handleSizeAndColorsChanged: (value: number, size: Size, color: Color) => void}) => {
-  return (
+    const sizesOrder: string[] = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL']
+
+    return (
     <div className="grid grid-cols-7 gap-4 mb-6">
-        {product.sizes.map((size) => (
+        {[...product.sizes].sort((a, b) => sizesOrder.indexOf(a.name) - sizesOrder.indexOf(b.name)).map((size) => (
         <div key={size.value} className="grid gap-4">
             <span>{size.name}</span>
             <Input
