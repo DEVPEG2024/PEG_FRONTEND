@@ -199,3 +199,29 @@ export async function apiGetOrderItemById(documentId: string): Promise<AxiosResp
         }
     })
 }
+
+// delete order item
+export type DeleteOrderItemResponse = {
+    documentId: string
+}
+
+export async function apiDeleteOrderItem(documentId: string): Promise<AxiosResponse<ApiResponse<{deleteOrderItem: DeleteOrderItemResponse}>>> {
+    const query = `
+    mutation DeleteOrderItem($documentId: ID!) {
+        deleteOrderItem(documentId: $documentId) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    documentId
+  }
+    return ApiService.fetchData<ApiResponse<{deleteOrderItem: DeleteOrderItemResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
