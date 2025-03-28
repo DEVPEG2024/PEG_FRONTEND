@@ -84,7 +84,7 @@ const ShowProduct = () => {
         Article ajouté au panier
       </Notification>
     );
-    navigate('/customer/products');
+    navigate(-1);
   };
 
   const handleCompleteForm = () => {
