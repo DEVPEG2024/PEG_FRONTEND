@@ -18,7 +18,7 @@ export type GetSizesResponse = {
 export async function apiGetSizes(data: GetSizesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{sizes_connection: GetSizesResponse}>>> {
     const query = `
     query GetSizes($searchTerm: String, $pagination: PaginationArg) {
-        sizes_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        sizes_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name

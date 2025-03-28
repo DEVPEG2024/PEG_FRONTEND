@@ -18,7 +18,7 @@ export type GetTicketsResponse = {
 export async function apiGetTickets(data: GetTicketsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{tickets_connection: GetTicketsResponse}>>> {
     const query = `
     query GetTickets($searchTerm: String, $pagination: PaginationArg) {
-        tickets_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        tickets_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name
@@ -71,7 +71,7 @@ export async function apiGetUserTickets(data: GetUserTicketsRequest = {paginatio
     query GetUserTickets($userDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
         tickets_connection(filters: {
             and: [
-                {name: {contains: $searchTerm}},
+                {name: {containsi: $searchTerm}},
                 {user: {documentId: {eq: $userDocumentId}}}
             ]}, 
             pagination: $pagination) {

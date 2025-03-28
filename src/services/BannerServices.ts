@@ -18,7 +18,7 @@ export type GetBannersResponse = {
 export async function apiGetBanners(data: GetBannersRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{banners_connection: GetBannersResponse}>>> {
     const query = `
     query GetBanners($searchTerm: String, $pagination: PaginationArg) {
-        banners_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        banners_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 image {

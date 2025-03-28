@@ -17,7 +17,7 @@ export type GetColorsResponse = {
 export async function apiGetColors(data: GetColorsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{colors_connection: GetColorsResponse}>>> {
     const query = `
     query GetColors($searchTerm: String, $pagination: PaginationArg) {
-        colors_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        colors_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name
