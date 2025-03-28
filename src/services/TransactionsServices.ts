@@ -91,7 +91,8 @@ export async function apiGetTransactions(data: GetTransactionsRequest = {paginat
     }
   `,
   variables = {
-    ...data
+    ...data,
+    userDocumentId
   }
     return ApiService.fetchData<ApiResponse<{transactions_connection: GetTransactionsResponse}>>({
         url: API_GRAPHQL_URL,
