@@ -239,8 +239,8 @@ const EditProduct = () => {
       images: newImages.map(({ id }) => id),
       active: true,
     };
-    if (values.form === '') {
-      delete data.form;
+    if (values.form === '' || !values.form) {
+      data.form = null;
     }
     if (!onEdition) {
       delete data.documentId;

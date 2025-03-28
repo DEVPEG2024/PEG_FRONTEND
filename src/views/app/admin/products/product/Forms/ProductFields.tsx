@@ -197,6 +197,7 @@ const ProductFields = (props: ProductFields) => {
           <Field name="form">
             {({ field, form }: FieldProps) => (
               <Select
+                isClearable
                 value={forms.find((option) => {
                   return field.value === option.value;
                 })}
