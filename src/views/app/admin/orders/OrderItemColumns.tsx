@@ -1,13 +1,18 @@
 import { Button, Tag, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
-import { HiBan, HiCheck, HiInformationCircle } from 'react-icons/hi';
+import { HiBan, HiCheck, HiInformationCircle, HiTrash } from 'react-icons/hi';
 import { OrderItem } from '@/@types/orderItem';
 import { SizeAndColorSelection } from '@/@types/product';
+import { User } from '@/@types/user';
+import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { hasRole } from '@/utils/permissions';
 
 export const useColumns = (
   handleShowOrderItem: (order: OrderItem) => void,
   handleFinishOrder: (order: OrderItem) => void,
   handlePendOrder: (order: OrderItem) => void,
-  handleShowProject: (order: OrderItem) => void
+  handleShowProject: (order: OrderItem) => void,
+  handleDeleteOrderItem: (order: OrderItem) => void,
+  user: User
 ) => {
   return [
     {
@@ -134,7 +139,7 @@ export const useColumns = (
           row.original.state === 'pending' ? 'En attente' : 'Terminée';
         return (
           <div
-            className="flex justify-end items-center gap-2"
+            className="flex items-center gap-2"
             key={row.original.documentId}
           >
             <Tag
@@ -168,6 +173,27 @@ export const useColumns = (
                     <HiBan size={20} />
                   )
                 }
+              />
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+
+    {
+      header: 'Actions',
+      accessorKey: '',
+      enableSorting: false,
+      cell: ({ row }: { row: { original: OrderItem } }) => {
+        return (
+          <div className="flex items-center" key={row.original.documentId}>
+            <Tooltip title="Supprimer la commande">
+              <Button
+                onClick={() => handleDeleteOrderItem(row.original)}
+                size="sm"
+                variant="twoTone"
+                icon={<HiTrash size={20} />}
+                disabled={!hasRole(user, [SUPER_ADMIN])}
               />
             </Tooltip>
           </div>

@@ -1,7 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
+  apiDeleteOrderItem,
   apiGetOrderItems,
   apiUpdateOrderItem,
+  DeleteOrderItemResponse,
   GetOrderItemsRequest,
   GetOrderItemsResponse,
 } from '@/services/OrderItemServices';
@@ -46,6 +48,16 @@ export const updateOrderItem = createAsyncThunk(
   }
 );
 
+export const deleteOrderItem = createAsyncThunk(
+  SLICE_NAME + '/deleteOrderItem',
+  async (documentId: string): Promise<DeleteOrderItemResponse> => {
+    const { deleteOrderItem }: { deleteOrderItem: DeleteOrderItemResponse } = await unwrapData(
+      apiDeleteOrderItem(documentId)
+    );
+    return deleteOrderItem;
+  }
+);
+
 const orderSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
@@ -76,6 +88,21 @@ const orderSlice = createSlice({
       );
     });
     builder.addCase(updateOrderItem.rejected, (state) => {
+      state.loading = false;
+    });
+
+    // DELETE ORDER ITEM
+    builder.addCase(deleteOrderItem.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteOrderItem.fulfilled, (state, action) => {
+      state.loading = false;
+      state.orderItems = state.orderItems.filter(
+        (orderItem) => orderItem.documentId !== action.payload.documentId
+      );
+      state.total -= 1;
+    });
+    builder.addCase(deleteOrderItem.rejected, (state) => {
       state.loading = false;
     });
   },
