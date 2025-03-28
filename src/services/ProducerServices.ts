@@ -18,7 +18,7 @@ export type GetProducersResponse = {
 export async function apiGetProducers(data: GetProducersRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{producers_connection: GetProducersResponse}>>> {
     const query = `
     query GetProducers($searchTerm: String, $pagination: PaginationArg) {
-        producers_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        producers_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name

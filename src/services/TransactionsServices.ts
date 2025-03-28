@@ -62,7 +62,7 @@ export async function apiGetTransactions(data: GetTransactionsRequest = {paginat
         {
             and: [
                 {producer: {documentId: {eq: $userDocumentId}}},
-                {project: {name : {contains: $searchTerm}}},
+                {project: {name : {containsi: $searchTerm}}},
             ]
         }
         , pagination: $pagination) {

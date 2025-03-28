@@ -68,7 +68,7 @@ export type GetInvoicesResponse = {
 export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{invoices_connection: GetInvoicesResponse}>>> {
     const query = `
     query GetInvoices($searchTerm: String, $pagination: PaginationArg) {
-        invoices_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        invoices_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 orderItems {
@@ -144,7 +144,7 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                 }
             },
             {
-                name: {contains: $searchTerm}
+                name: {containsi: $searchTerm}
             }
             ]
             }, pagination: $pagination) {

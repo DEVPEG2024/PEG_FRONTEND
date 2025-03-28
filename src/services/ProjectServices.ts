@@ -374,7 +374,7 @@ export type GetProjectsResponse = {
 export async function apiGetProjects(data: GetProjectsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
     const query = `
     query getProjects($searchTerm: String, $pagination: PaginationArg) {
-        projects_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        projects_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 customer {
@@ -438,7 +438,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
             },
             {
-                name: {contains: $searchTerm}
+                name: {containsi: $searchTerm}
             }
             ]
             }, pagination: $pagination){
@@ -501,7 +501,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 }
             },
             {
-                name: {contains: $searchTerm}
+                name: {containsi: $searchTerm}
             }
             ]
             }, pagination: $pagination){
@@ -564,7 +564,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
         projects_connection(filters: {
           and: [
             {
-              name: {contains: $searchTerm}
+              name: {containsi: $searchTerm}
             },
             {
               poolable: {eq: true}

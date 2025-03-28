@@ -70,7 +70,7 @@ export type GetFormsResponse = {
 export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{forms_connection: GetFormsResponse}>>> {
     const query = `
     query getForms($searchTerm: String, $pagination: PaginationArg) {
-        forms_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        forms_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name
@@ -86,7 +86,7 @@ export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1,
     }
   `,
   variables = {
-    data
+    ...data
   }
     return ApiService.fetchData<ApiResponse<{forms_connection: GetFormsResponse}>>({
         url: API_GRAPHQL_URL,

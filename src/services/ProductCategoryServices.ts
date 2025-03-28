@@ -108,7 +108,7 @@ export type GetProductCategoriesResponse = {
 export async function apiGetProductCategories(data: GetProductCategoriesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{productCategories_connection: GetProductCategoriesResponse}>>> {
     const query = `
     query GetProductCategories($searchTerm: String, $pagination: PaginationArg) {
-        productCategories_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        productCategories_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 image {

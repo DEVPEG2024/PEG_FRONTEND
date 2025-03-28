@@ -114,7 +114,7 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
     query getProductsByCategory($searchTerm: String, $productCategoryDocumentId: ID!, $pagination: PaginationArg) {
         products_connection (filters: {
         and: [
-            {name: {contains: $searchTerm}},
+            {name: {containsi: $searchTerm}},
             {productCategory: {documentId: {eq: $productCategoryDocumentId}}},
             {active: {eq: true}},
             {inCatalogue: {eq: true}}
@@ -165,7 +165,7 @@ export type GetProductsResponse = {
 export async function apiGetProducts(data: GetProductsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
     const query = `
     query getProducts($searchTerm: String, $pagination: PaginationArg) {
-        products_connection (filters: {name: {contains: $searchTerm}}, pagination: $pagination, sort: "name") {
+        products_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination, sort: "name") {
             nodes {
                 documentId
                 name
@@ -281,7 +281,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 }
                 ]
             }, {
-                name: {contains: $searchTerm}
+                name: {containsi: $searchTerm}
             }, {
                 active: {eq: true}
             }

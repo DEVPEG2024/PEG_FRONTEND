@@ -44,7 +44,7 @@ export type GetUsersResponse = {
 export async function apiGetUsers(data: GetUsersRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{usersPermissionsUsers_connection: GetUsersResponse}>>> {
     const query = `
     query GetUsers($searchTerm: String, $pagination: PaginationArg) {
-        usersPermissionsUsers_connection(filters: {username: {contains: $searchTerm}}, pagination: $pagination) {
+        usersPermissionsUsers_connection(filters: {username: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 username
