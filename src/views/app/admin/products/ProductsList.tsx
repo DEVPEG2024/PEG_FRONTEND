@@ -1,4 +1,4 @@
-import { injectReducer } from '@/store';
+import { injectReducer, RootState } from '@/store';
 import reducer, {
   getProducts,
   useAppDispatch,
@@ -28,14 +28,21 @@ import { isEmpty } from 'lodash';
 import { Product } from '@/@types/product';
 import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
+import { User } from '@/@types/user';
+import { hasRole } from '@/utils/permissions';
+import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 
 injectReducer('products', reducer);
 
 const ProductsList = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user }: { user: User } = useAppSelector(
+      (state: RootState) => state.auth.user
+    );
+  const isAdminOrSuperAdmin: boolean = hasRole(user, [ADMIN, SUPER_ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(isAdminOrSuperAdmin ? 100 : 10);
   const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product>();
   const {
