@@ -18,7 +18,7 @@ export type GetCustomersResponse = {
 export async function apiGetCustomers(data: GetCustomersRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{customers_connection: GetCustomersResponse}>>> {
     const query = `
     query GetCustomers($searchTerm: String, $pagination: PaginationArg) {
-        customers_connection(filters: {name: {contains: $searchTerm}}, pagination: $pagination) {
+        customers_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
                 name

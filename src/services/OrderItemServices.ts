@@ -54,7 +54,7 @@ export type GetOrderItemsResponse = {
 export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{orderItems_connection: GetOrderItemsResponse}>>> {
     const query = `
     query getOrderItems($searchTerm: String, $pagination: PaginationArg) {
-        orderItems_connection(filters: {product: {name: {contains: $searchTerm}}}, pagination: $pagination) {
+        orderItems_connection(filters: {product: {name: {containsi: $searchTerm}}}, pagination: $pagination) {
             nodes {
                 documentId
                 price
