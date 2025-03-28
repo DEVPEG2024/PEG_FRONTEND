@@ -3,15 +3,17 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './OrderItemColumns';
 import { Input } from '@/components/ui';
-import { injectReducer, useAppDispatch } from '@/store';
+import { injectReducer, useAppDispatch, RootState } from '@/store';
 import reducer, {
   getOrderItems,
   useAppSelector,
   updateOrderItem,
+  deleteOrderItem,
 } from './store';
 
 import { OrderItem } from '@/@types/orderItem';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@/@types/user';
 
 injectReducer('orders', reducer);
 
@@ -24,6 +26,9 @@ const OrderItemsList = () => {
   const { orderItems, total, loading } = useAppSelector(
     (state) => state.orders.data
   );
+  const { user }: { user: User } = useAppSelector(
+      (state: RootState) => state.auth.user
+    );
 
   useEffect(() => {
     dispatch(
@@ -68,11 +73,17 @@ const OrderItemsList = () => {
     navigate(`/common/projects/details/${orderItem.project.documentId}`);
   };
 
+  const handleDeleteOrderItem = (orderItem: OrderItem) => {
+    dispatch(deleteOrderItem(orderItem.documentId));
+  };
+
   const columns = useColumns(
     handleShowOrderItem,
     handleFinishOrder,
     handlePendOrder,
-    handleShowProject
+    handleShowProject,
+    handleDeleteOrderItem,
+    user
   );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
