@@ -22,6 +22,7 @@ import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
+import { RichTextEditor } from '@/components/shared';
 
 injectReducer('showProduct', reducer);
 
@@ -164,7 +165,11 @@ const ShowProduct = () => {
                 </div>
 
                 <p className="mt-4 leading-relaxed">
-                  {product.description?.replace('<p>', '').replace('</p>', '')}
+                  <RichTextEditor
+                    value={product.description}
+                    readOnly={true}
+                    theme='bubble'
+                  />
                 </p>
 
                 <SizeAndColorsChoice
