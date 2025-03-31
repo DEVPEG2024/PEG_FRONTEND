@@ -14,7 +14,6 @@ import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { useParams } from 'react-router-dom';
-import { color } from 'framer-motion';
 
 injectReducer('showOrderItem', reducer);
 
@@ -68,33 +67,45 @@ const ShowOrderItem = () => {
                   </p>
                 </div>
 
-                <p className="mt-4 leading-relaxed">
+                <p className="mt-4 leading-relaxed mb-8">
                   {orderItem.product.description
                     ?.replace('<p>', '')
                     .replace('</p>', '')}
                 </p>
 
                 {orderItem.product.sizes.length > 0 ? (
-                  <div>
-                    <p className="font-bold text-yellow-500 mb-4">
-                      Tailles choisies
-                    </p>
-                    <div className="grid grid-cols-7 gap-4 mb-6">
-                      {
-                        orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
-                          <div key={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')} className="grid gap-4">
-                            <span>{sizeAndColorSelected.size.name + (sizeAndColorSelected.color?.name ? ' ' + sizeAndColorSelected.color.name : '')}</span>
-                            <Input
-                              name={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')}
-                              value={sizeAndColorSelected.quantity}
-                              type="number"
-                              autoComplete="off"
-                              disabled={true}
-                            />
-                          </div>
-                        ))
-                      }
-                    </div>
+                  <div className="grid grid-cols-7 gap-4 mb-6">
+                    {
+                      orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
+                        <div key={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')} className="grid gap-4">
+                          <span>{sizeAndColorSelected.size.name + (sizeAndColorSelected.color?.name ? ' ' + sizeAndColorSelected.color.name : '')}</span>
+                          <Input
+                            name={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')}
+                            value={sizeAndColorSelected.quantity}
+                            type="number"
+                            autoComplete="off"
+                            disabled={true}
+                          />
+                        </div>
+                      ))
+                    }
+                  </div>
+                ) : orderItem.product.colors.length > 0 ? (
+                  <div className="grid grid-cols-7 gap-4 mb-6">
+                    {
+                      orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
+                        <div key={sizeAndColorSelected.color.value} className="grid gap-4">
+                          <span>{sizeAndColorSelected.color.name}</span>
+                          <Input
+                            name={sizeAndColorSelected.color.value}
+                            value={sizeAndColorSelected.quantity}
+                            type="number"
+                            autoComplete="off"
+                            disabled={true}
+                          />
+                        </div>
+                      ))
+                    }
                   </div>
                 ) : (
                   <div className="mt-4 flex flex-row gap-4 items-center">
