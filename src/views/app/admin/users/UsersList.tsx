@@ -54,11 +54,16 @@ const UsersList = () => {
     dispatch(deleteUser(id));
   };
 
+  const isUserMissingInfos = (user: User) => {
+    return user.role.name === 'producer' && !user.producer || user.role.name === 'customer' && !user.customer
+  }
+
   const columns = useColumns(
     handleEditUser,
     handleBlockUser,
     handleDeleteUser,
-    usersId
+    usersId,
+    isUserMissingInfos
   );
   const onPaginationChange = (page: number) => {
     setCurrentPage(page);
@@ -68,6 +73,7 @@ const UsersList = () => {
     setPageSize(Number(value));
     setCurrentPage(1); // Reset to first page when changing page size
   };
+
   return (
     <Container>
       <HeaderTitle
