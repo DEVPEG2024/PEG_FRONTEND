@@ -1,6 +1,7 @@
-import Input from '@/components/ui/Input';
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import ColorChoice from './ColorChoice';
+import QuantityChoice from './DefaultChoice';
+import SizeChoice from './SizeChoice';
 
 export const DEFAULT_CHOICE = {
     name: 'Default',
@@ -9,12 +10,9 @@ export const DEFAULT_CHOICE = {
 }
 
 const SizeAndColorsChoice = ({product, sizeAndColorsSelected, handleSizeAndColorsChanged} : {product: Product, sizeAndColorsSelected: SizeAndColorSelection[], handleSizeAndColorsChanged: (value: number, size: Size, color: Color) => void}) => {
-    if (product.sizes.length > 0) {
+    if (product.colors?.length > 0) {
         return (
             <div>
-            <p className="font-bold text-yellow-500 mb-4">
-                Choix des tailles
-            </p>
             <ColorChoice
                 product={product}
                 sizeAndColorsSelected={sizeAndColorsSelected}
@@ -27,26 +25,19 @@ const SizeAndColorsChoice = ({product, sizeAndColorsSelected, handleSizeAndColor
             )}
             </div>
         )
-    }
-  return (
-    <div className="flex-auto mt-8 flex-initial w-32">
-        <span>Quantité</span>
-        <Input
-        name="Quantité"
-        value={
-            sizeAndColorsSelected.find(
-            (sizeAndColorSelected) =>
-                sizeAndColorSelected.size.value === 'DEFAULT'
-            )?.quantity
-        }
-        type="number"
-        autoComplete="off"
-        onChange={(e: any) =>
-            handleSizeAndColorsChanged(parseInt(e.target.value), DEFAULT_CHOICE as Size, DEFAULT_CHOICE as Color)
-        }
+    } else if (product.sizes.length > 0) {
+        <SizeChoice
+            product={product}
+            sizeAndColorsSelected={sizeAndColorsSelected}
+            handleSizeAndColorsChanged={handleSizeAndColorsChanged}
         />
-    </div>
-  );
+    }
+    return (
+        <QuantityChoice
+            sizeAndColorsSelected={sizeAndColorsSelected}
+            handleSizeAndColorsChanged={handleSizeAndColorsChanged}
+        />
+    );
 };
 
 export default SizeAndColorsChoice;
