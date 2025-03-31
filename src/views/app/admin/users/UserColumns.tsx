@@ -1,13 +1,15 @@
 import { useTranslation } from 'react-i18next';
-import { Switcher, Button } from '@/components/ui'; // Assurez-vous que le chemin est correct
+import { Switcher, Button, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
 import { User } from '@/@types/user';
 import { HiPencil, HiTrash, HiUserCircle } from 'react-icons/hi';
+import { IoWarningOutline } from 'react-icons/io5';
 
 export const useColumns = (
   handleEditUser: (user: User) => void,
   handleBlockUser: (user: User, id: number) => void,
   handleDeleteUser: (id: number) => void,
-  usersId: { id: number; documentId: string }[]
+  usersId: { id: number; documentId: string }[],
+  isUserMissingInfos: (user: User) => boolean
 ) => {
   const { t } = useTranslation();
 
@@ -49,8 +51,14 @@ export const useColumns = (
       enableSorting: false,
       cell: ({ row }: { row: { original: User } }) => {
         return (
-          <div className="flex items-center gap-2">
-            {row.original.role.name}
+          <div className="flex flex-row items-center gap-2">
+            <div className="flex items-center gap-2">
+              {row.original.role.name}
+            </div>
+            {isUserMissingInfos(row.original) && (
+              <Tooltip title="Lien non renseigné">
+                <IoWarningOutline color="yellow" />
+              </Tooltip>) }
           </div>
         );
       },

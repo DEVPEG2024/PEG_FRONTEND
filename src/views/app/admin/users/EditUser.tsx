@@ -132,7 +132,7 @@ const EditUser = () => {
   const fetchRoles = async () => {
     const { usersPermissionsRoles }: { usersPermissionsRoles: Role[] } =
       await unwrapData(apiGetUsersPermissionsRoles());
-    const roles = usersPermissionsRoles.map((role: Role) => ({
+    const roles = usersPermissionsRoles.filter((role: Role) => !['Public', 'Authenticated'].includes(role.name)).map((role: Role) => ({
       value: role.documentId || '',
       label: role.name,
     }));
