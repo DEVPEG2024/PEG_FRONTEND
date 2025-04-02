@@ -37,7 +37,7 @@ export async function apiGetCustomerCategories(data: GetCustomerCategoriesReques
     }
   `,
   variables = {
-    data
+    ...data
   }
     return ApiService.fetchData<ApiResponse<{customerCategories_connection: GetCustomerCategoriesResponse}>>({
         url: API_GRAPHQL_URL,
