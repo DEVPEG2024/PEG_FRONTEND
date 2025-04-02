@@ -68,8 +68,8 @@ const ProjectItemDropdown = ({
         </div>
         <div className="flex flex-grow items-center justify-center gap-2 mt-10">
           <Button onClick={() => setIsValidDeleteOpen(false)}>Annuler</Button>
-          <Button
-            onClick={handleConfirmDelete}
+          
+           <Button onClick={handleConfirmDelete}
             className="bg-red-500 text-white"
             variant="solid"
           >
