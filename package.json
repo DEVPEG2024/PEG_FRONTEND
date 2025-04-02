@@ -27,6 +27,8 @@
     "@react-pdf/renderer": "^3.4.4",
     "@reduxjs/toolkit": "^1.9.3",
     "@rollup/plugin-commonjs": "^28.0.2",
+    "@stripe/react-stripe-js": "^3.6.0",
+    "@stripe/stripe-js": "^7.0.0",
     "@tanstack/match-sorter-utils": "^8.8.4",
     "@tanstack/react-table": "^8.8.5",
     "@visx/pattern": "^3.0.0",

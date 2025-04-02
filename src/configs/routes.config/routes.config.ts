@@ -199,6 +199,18 @@ const protectedCustomersRoutes = [
     component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),
     authority: [CUSTOMER],
   },
+  {
+    key: "customer.checkout.success",
+    path: "/customer/checkout/success",
+    component: lazy(() => import("@/views/app/customer/cart/Success")),
+    authority: [CUSTOMER],
+  },
+  {
+    key: "customer.checkout.cancel",
+    path: "/customer/checkout/cancel",
+    component: lazy(() => import("@/views/app/customer/cart/Cancel")),
+    authority: [CUSTOMER],
+  },
 ];
 const protectedProducerRoutes = [
   {
