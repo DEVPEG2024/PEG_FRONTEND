@@ -1,50 +1,59 @@
 import { CartItem } from '@/@types/cart';
+import { Checkout } from '@/@types/checkout';
 import { AdaptableCard } from '@/components/shared';
 import { Button } from '@/components/ui';
-import { PaymentInformations } from '@/services/OrderItemServices';
 import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { env } from "@/configs/env.config";
+import { API_BASE_URL } from '@/configs/api.config';
+import { useAppSelector } from '@/store';
+import { TOKEN_TYPE } from '@/constants/api.constant';
 
 function PaymentContent({
-  cart,
-  createOrderAndClearCart,
+  cart
 }: {
-  cart: CartItem[];
-  createOrderAndClearCart: (
-    paymentInformations: PaymentInformations
-  ) => Promise<void>;
+  cart: CartItem[]
 }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
+  const { token } = useAppSelector((state) => state.auth.session)
+  const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
 
   const validateCart = async () => {
     setSubmitting(true);
-    const {
-      paymentValidated,
-      paymentInformations,
-    }: { paymentValidated: boolean; paymentInformations: PaymentInformations } =
-      await validatePayment();
-    if (paymentValidated) {
-      await createOrderAndClearCart(paymentInformations);
-    }
+    await validatePayment();
     setSubmitting(false);
   };
 
-  const validatePayment = async (): Promise<{
-    paymentValidated: boolean;
-    paymentInformations: PaymentInformations;
-  }> => {
+  const createCheckout = (cart: CartItem[]): Checkout => {
     return {
-      paymentValidated: true,
-      paymentInformations: {
-        paymentMethod: 'card',
-        paymentDate: new Date(0),
-        paymentState: 'pending',
-      },
+      products: cart.map((cartItem: CartItem) => ({
+        name: cartItem.product.name,
+        price: cartItem.product.price,
+        quantity: cartItem.sizeAndColors.reduce((total, sizeAndColor) => total + sizeAndColor.quantity, 0),
+      }))
     };
+  };
+
+  const validatePayment = async () : Promise<void> => {
+    const response = await fetch(API_BASE_URL + '/stripe/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${TOKEN_TYPE}${token}`
+      },
+      body: JSON.stringify(createCheckout(cart)),
+    }),
+      { id } = await response.json(),
+      stripe = await stripePromise;
+
+    if (stripe) {
+      await stripe.redirectToCheckout({ sessionId: id });
+    }
   };
 
   const totalPrice: number = cart.reduce((total: number, item: CartItem) => {
     const itemPrice: number = item.sizeAndColors.reduce(
-      (amount, size) => amount + size.quantity * item.product.price,
+      (amount, sizeAndColor) => amount + sizeAndColor.quantity * item.product.price,
       0
     );
     return total + itemPrice;
