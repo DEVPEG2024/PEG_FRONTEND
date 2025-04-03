@@ -28,7 +28,7 @@ function PaymentContent({
     return {
       products: cart.map((cartItem: CartItem) => ({
         name: cartItem.product.name,
-        price: cartItem.product.price,
+        price: Math.trunc(cartItem.product.price * 100 * 1.2),
         quantity: cartItem.sizeAndColors.reduce((total, sizeAndColor) => total + sizeAndColor.quantity, 0),
       }))
     };
@@ -53,7 +53,15 @@ function PaymentContent({
 
   const totalPrice: number = cart.reduce((total: number, item: CartItem) => {
     const itemPrice: number = item.sizeAndColors.reduce(
-      (amount, sizeAndColor) => amount + sizeAndColor.quantity * item.product.price,
+      (amount, sizeAndColor) => amount + sizeAndColor.quantity * Math.trunc(item.product.price * 100) / 100,
+      0
+    );
+    return total + itemPrice;
+  }, 0);
+
+  const totalPriceWithVAT: number = cart.reduce((total: number, item: CartItem) => {
+    const itemPrice: number = item.sizeAndColors.reduce(
+      (amount, sizeAndColor) => amount + sizeAndColor.quantity * Math.trunc(item.product.price * 100 * 1.2) / 100,
       0
     );
     return total + itemPrice;
@@ -67,10 +75,10 @@ function PaymentContent({
             Total HT : {totalPrice.toFixed(2)} €
           </span>
           <span className="font-semibold">
-            Tva : {(totalPrice * 0.2).toFixed(2)} €
+            Tva : {(totalPriceWithVAT - totalPrice).toFixed(2)} €
           </span>
           <span className="font-semibold">
-            Total TTC : {(totalPrice * 1.2).toFixed(2)} €
+            Total TTC : {totalPriceWithVAT.toFixed(2)} €
           </span>
         </div>
         <hr className="my-6" />
