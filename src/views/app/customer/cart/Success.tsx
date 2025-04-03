@@ -3,7 +3,7 @@ import { FormAnswer } from '@/@types/formAnswer';
 import { OrderItem } from '@/@types/orderItem';
 import { Project } from '@/@types/project';
 import { User } from '@/@types/user';
-import { Container } from '@/components/shared';
+import { Container, Loading } from '@/components/shared';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { apiCreateOrderItem, PaymentInformations } from '@/services/OrderItemServices';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
@@ -15,7 +15,7 @@ import { apiCreateProject, apiUpdateProject } from '@/services/ProjectServices';
 import { Invoice } from '@/@types/invoice';
 import createUID from '@/components/ui/utils/createUid';
 import { apiCreateInvoice } from '@/services/InvoicesServices';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Button } from '@/components/ui';
@@ -30,14 +30,17 @@ function Success() {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const { token } = useAppSelector((state: RootState) => state.auth.session)
   const cart = useAppSelector((state: RootState) => state.base.cart.cart);
+  const [hasProcessed, setHasProcessed] = useState<boolean>(false);
+  const [processingCreation, setProcessingCreation] = useState<boolean>(true);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     const confirmPayment = async () => {
       const sessionId = new URLSearchParams(window.location.search).get('session_id');
 
-      if (!sessionId) return;
+      if (!sessionId || hasProcessed) return;
 
+      setHasProcessed(true)
       // Vérifier le paiement auprès du backend
       const response = await fetch(API_BASE_URL + '/stripe/confirm-payment', {
         method: 'POST',
@@ -51,16 +54,15 @@ function Success() {
       if (response.ok) {
         const paymentInfo = await response.json();
 
-        // ✅ Appeler la méthode pour créer la commande et vider le panier
-        createOrderAndClearCart(paymentInfo);
-        
-        // Rediriger après confirmation
-        setTimeout(() => navigate('/common/projects'), 2000);
+        await createOrderAndClearCart(paymentInfo);
+        setProcessingCreation(false);
+        navigate('/common/projects');
+        // TODO: Deux projets créés à chaque fois
       }
     };
 
     confirmPayment();
-  }, [navigate]);
+  }, [navigate, hasProcessed]);
 
   const createFormAnswer = async (
       item: CartItem
@@ -181,7 +183,7 @@ function Success() {
           paymentMethod: paymentInformations.paymentMethod ?? 'transfer',
           paymentAmount: 0,
           paymentReference: '',
-          paymentState: paymentInformations.paymentState ?? 'pending',
+          paymentState: paymentInformations.paymentState === 'paid' ? 'fulfilled' : 'pending',
           paymentDate: paymentInformations.paymentDate ?? new Date(0),
         };
         // TODO: Déplacer cette création côté backend dans une route personnalisée et retirer la permission de création de facture par le client (plugin user Strapi)
@@ -216,14 +218,21 @@ function Success() {
       <div className="flex flex-col items-center justify-center h-screen">
         <h1 className="text-2xl font-bold text-green-600">Paiement réussi !</h1>
         <p>Merci pour votre achat 🎉</p>
-        <p>Vous allez être automatiquement redirigés vers la page de vos projets</p>
-        <Button
-          onClick={() => navigate('/common/projects')}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-          variant="solid"
-        >
-          Si ce n'est pas le cas, cliquez ici pour voir vos projets.
-        </Button>
+        {processingCreation && (
+          <div>
+            <p>Création des projets en cours</p>
+            <Loading></Loading>
+          </div>
+        )}
+        {!processingCreation && (
+          <Button
+            onClick={() => navigate('/common/projects')}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            variant="solid"
+          >
+            Voir mes projets
+          </Button>
+        )}
       </div>
     </Container>
   );

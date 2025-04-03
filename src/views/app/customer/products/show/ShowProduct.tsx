@@ -64,12 +64,13 @@ const ShowProduct = () => {
 
   useEffect(() => {
     setCanAddToCart(
-      product &&
-        ((product.sizes.length > 0 && sizeAndColorsSelected.length > 0) ||
-          product.sizes.length === 0) &&
-        ((product.form && formCompleted) || !product.form)
+      (product !== null && isAtLeastOneItemWanted() && ((product.form && formCompleted) || !product.form))
     );
   }, [sizeAndColorsSelected, formCompleted, product]);
+
+  const isAtLeastOneItemWanted = () : boolean => {
+    return sizeAndColorsSelected.reduce((quantity, sizeAndColorSelected) => quantity + sizeAndColorSelected.quantity, 0) > 0
+  }
 
   const handleAddToCart = () => {
     dispatch(
