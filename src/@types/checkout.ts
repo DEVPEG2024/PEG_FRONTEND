@@ -1,9 +1,16 @@
-export type ProductCheckout = {
-  name: string;
-  price: number;
-  quantity: number;
+export type OrderItemCheckout = {
+  documentId: string;
+  productName: string;
+  productPrice: number;
+  productQuantity: number;
+  totalPrice: number;
 }
 
 export type Checkout = {
-  products: ProductCheckout[]
+  orderItemsCheckout: OrderItemCheckout[],
+  totalPrice: number;
+  totalPriceWithVAT: number;
+  customerDocumentId: string;
+  userFirstName: string;
+  userLastName: string;
 }
