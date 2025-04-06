@@ -19,6 +19,11 @@ export async function apiCreateOrderItem(data: CreateOrderItemRequest): Promise<
         createOrderItem(data: $data) {
             documentId
             price
+            product {
+                name
+                price
+            }
+            sizeAndColorSelections
         }
     }
   `,
