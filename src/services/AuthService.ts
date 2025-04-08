@@ -42,3 +42,10 @@ export async function apiResetPassword(data: ResetPassword) {
         data,
     })
 }
+
+export async function apiRefreshToken(data: RefreshToken) {
+    return ApiService.fetchData({
+        url: '/refresh-token',
+        method: 'post',
+    })
+}
