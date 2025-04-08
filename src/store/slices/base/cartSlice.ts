@@ -25,6 +25,11 @@ export type CartItemFormAnswerEdition = {
     formAnswer: FormAnswer
 }
 
+export type CartItemOrderItemDocumentIdEdition = {
+    cartItemId: string
+    orderItemDocumentId: string
+}
+
 export const editItem = (item: CartItem) => (dispatch: AppDispatch) => {
       dispatch(setCartItemId(item.id));
       dispatch(setProductToShow(item.product));
@@ -52,6 +57,12 @@ export const cartSlice = createSlice({
                 cartItem.formAnswer = action.payload.formAnswer
             }
         },
+        editOrderItemDocumentIdCartItem: (state, action: PayloadAction<CartItemOrderItemDocumentIdEdition>) => {
+            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            if (cartItem) {
+                cartItem.orderItemDocumentId = action.payload.orderItemDocumentId
+            }
+        },
         removeFromCart: (state, action: PayloadAction<CartItem>) => {
             state.cart = state.cart.filter((item) => item.id !== action.payload.id)
             /*if (action.payload.product.form) {
@@ -63,6 +74,9 @@ export const cartSlice = createSlice({
                 })
             }*/
         },
+        removeFromCartItemOfOrderItem: (state, action: PayloadAction<string>) => {
+            state.cart = state.cart.filter((item) => item.orderItemDocumentId !== action.payload)
+        },
         clearCart: (state) => {
             state.cart = []
         },
@@ -70,6 +84,6 @@ export const cartSlice = createSlice({
 
 })
 
-export const { addToCart, removeFromCart, clearCart, editSizeAndColorsCartItem, editFormAnswerCartItem } = cartSlice.actions
+export const { addToCart, removeFromCart, clearCart, editSizeAndColorsCartItem, editFormAnswerCartItem, editOrderItemDocumentIdCartItem, removeFromCartItemOfOrderItem } = cartSlice.actions
 
 export default cartSlice.reducer
