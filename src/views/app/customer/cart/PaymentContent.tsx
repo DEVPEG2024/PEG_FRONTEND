@@ -14,7 +14,8 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { apiCreateOrderItem } from '@/services/OrderItemServices';
 import { OrderItem } from '@/@types/orderItem';
 import { User } from '@/@types/user';
-import { removeFromCart } from '@/store/slices/base/cartSlice';
+import { editOrderItemDocumentIdCartItem, removeFromCartItemOfOrderItem } from '@/store/slices/base/cartSlice';
+import { useNavigate } from 'react-router-dom';
 
 function PaymentContent({
   cart
@@ -26,6 +27,7 @@ function PaymentContent({
   const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const createFormAnswer = async (
     item: CartItem
@@ -39,7 +41,7 @@ function PaymentContent({
     return null;
   };
 
-  const createOrderItemAndRemoveFromCart = async(item: CartItem): Promise<OrderItem | undefined> => {
+  const createOrderItem = async(item: CartItem): Promise<OrderItem | undefined> => {
     try {
       const formAnswer: FormAnswer | null = await createFormAnswer(item),
         orderItem: Omit<OrderItem, 'documentId'> = {
@@ -53,21 +55,26 @@ function PaymentContent({
           state: 'pending',
           customer: user.customer!,
         },
-        { createOrderItem }: { createOrderItem: OrderItem } =
+        { createOrderItem: orderItemCreated }: { createOrderItem: OrderItem } =
         await unwrapData(apiCreateOrderItem(orderItem));
       
-      dispatch(removeFromCart(item))
-      return createOrderItem;
+      return orderItemCreated;
     } catch (error) {
       // TODO: envoyer mail erreur création commande
     }
   }
 
-  const createOrdersAndClearCart = async (): Promise<OrderItem[]> => {
+  const createOrdersAndUpdateCartItems = async (): Promise<OrderItem[]> => {
     const promises = await Promise.allSettled(
-      cart.map((item) =>
-        createOrderItemAndRemoveFromCart(item)
-      )
+      cart.map(async (item) => {
+        const orderItemCreated: OrderItem | undefined = await createOrderItem(item)
+
+        if (orderItemCreated) {
+          dispatch(editOrderItemDocumentIdCartItem({cartItemId: item.id, orderItemDocumentId: orderItemCreated.documentId}))
+        }
+
+        return orderItemCreated
+      })
     )
     
     return promises
@@ -80,7 +87,7 @@ function PaymentContent({
 
   const validateCart = async () => {
     setSubmitting(true);
-    const orderItems: OrderItem[] = await createOrdersAndClearCart();
+    const orderItems: OrderItem[] = await createOrdersAndUpdateCartItems();
     await validatePayment(orderItems);
     setSubmitting(false);
   };
@@ -103,7 +110,29 @@ function PaymentContent({
   };
 
   const validatePayment = async (orderItems: OrderItem[]) : Promise<void> => {
-    const response = await fetch(API_BASE_URL + '/stripe/checkout', {
+    if (user.customer!.deferredPayment) {
+      await createProjectAndDeferredInvoice(orderItems)
+    } else {
+      await redirectToStripeCheckout(orderItems)
+    }
+  }
+
+  const createProjectAndDeferredInvoice = async (orderItems: OrderItem[]) : Promise<void> => {
+    await fetch(API_BASE_URL + '/checkout/deferred', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${TOKEN_TYPE}${token}`
+      },
+      body: JSON.stringify(createCheckout(orderItems)),
+    })
+
+    orderItems.map((orderItem: OrderItem) => dispatch(removeFromCartItemOfOrderItem(orderItem.documentId)))
+    navigate('/common/projects')
+  };
+
+  const redirectToStripeCheckout = async (orderItems: OrderItem[]) : Promise<void> => {
+    const response = await fetch(API_BASE_URL + '/checkout/stripe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +140,7 @@ function PaymentContent({
       },
       body: JSON.stringify(createCheckout(orderItems)),
     }),
-      { id } = await response.json(),
+      { id } : {id: string} = await response.json(),
       stripe = await stripePromise;
 
     if (stripe) {

@@ -55,6 +55,7 @@ const EditCustomer = () => {
     city: customer?.companyInformations.city || '',
     country: customer?.companyInformations.country || '',
     website: customer?.companyInformations.website || '',
+    deferredPayment: customer?.deferredPayment || false,
   };
 
   useEffect(() => {
@@ -104,6 +105,7 @@ const EditCustomer = () => {
       },
       customerCategory: data.customerCategory,
       name: data.name,
+      deferredPayment: data.deferredPayment
     };
     if (onEdition) {
       const { updateCustomer }: { updateCustomer: Customer } = await unwrapData(

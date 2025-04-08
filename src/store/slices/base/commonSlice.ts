@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_BASE_NAME } from './constants'
-import { CartItem } from '@/@types/cart'
 
 export type CommonState = {
     currentRouteKey: string
