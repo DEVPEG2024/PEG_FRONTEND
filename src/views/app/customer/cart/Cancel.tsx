@@ -31,16 +31,23 @@ function Cancel() {
   return (
     <Container className="h-full">
       <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold text-red-600">Paiement annulé</h1>
-      <p>Vous pouvez réessayer à tout moment.</p>
-      <Button
-        onClick={() => navigate('/customer/cart')}
-        className="mt-4 px-4 py-2 bg-gray-500 text-white rounded"
-        variant="solid"
-      >
-        Retour au panier
-      </Button>
-    </div>
+        <div className="lg:w-1/2 w-full">
+          <img
+            src="/img/checkout/Checkout_KO.png"
+            alt="Paiement annulé"
+            className="w-full h-auto rounded-lg object-cover"
+          />
+        </div>
+        <h1 className="text-2xl font-bold text-red-600 mt-4">Mission bloquée</h1>
+        <p>Décollage annulé: le carburant bancaire semble insuffisant.</p>
+        <Button
+          onClick={() => navigate('/customer/cart')}
+          className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-full"
+          variant="solid"
+        >
+          Réessayer
+        </Button>
+      </div>
     </Container>
   );
 }
