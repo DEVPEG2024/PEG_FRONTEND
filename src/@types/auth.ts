@@ -24,5 +24,7 @@ export type ForgotPassword = {
 };
 
 export type ResetPassword = {
+  code: string;
   password: string;
+  passwordConfirmation: string;
 };
