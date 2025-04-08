@@ -1,6 +1,6 @@
 import { API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
-import { Product, Size } from '@/@types/product'
+import { Product } from '@/@types/product'
 import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 
