@@ -27,10 +27,9 @@ export async function apiSignOut() {
     })
 }
 
-// TODO: Vérifier fonctionnalité mot de passe oublié
 export async function apiForgotPassword(data: ForgotPassword) {
     return ApiService.fetchData({
-        url: `${API_BASE_URL}/auth/forgotPassword`,
+        url: `${API_BASE_URL}/auth/forgot-password`,
         method: 'post',
         data,
     })
@@ -38,15 +37,8 @@ export async function apiForgotPassword(data: ForgotPassword) {
 
 export async function apiResetPassword(data: ResetPassword) {
     return ApiService.fetchData({
-        url: '/reset-password',
+        url: `${API_BASE_URL}/auth/reset-password`,
         method: 'post',
         data,
-    })
-}
-
-export async function apiRefreshToken(data: RefreshToken) {
-    return ApiService.fetchData({
-        url: '/refresh-token',
-        method: 'post',
     })
 }
