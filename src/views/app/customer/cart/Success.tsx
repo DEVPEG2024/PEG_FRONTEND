@@ -37,14 +37,22 @@ function Success() {
   return (
     <Container className="h-full">
       <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold text-green-600">Paiement réussi !</h1>
-        <p>Merci pour votre achat 🎉</p>
+        <div className="lg:w-1/2 w-full">
+          <img
+            src="/img/checkout/Checkout_OK.png"
+            alt="Paiement réussi"
+            className="w-full h-auto rounded-lg object-cover"
+          />
+        </div>
+        <h1 className="text-2xl font-bold text-green-600 mt-4">Le paiement a franchi l'atmosphère !</h1>
+        <p>Merci, votre paiement a été validé.</p>
+        <p>L'équipe créative est en route vers votre projet !</p>
         <Button
             onClick={() => navigate('/common/projects')}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full"
             variant="solid"
           >
-            Voir mes projets
+            Mes projets
           </Button>
       </div>
     </Container>
