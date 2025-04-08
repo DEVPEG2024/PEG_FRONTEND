@@ -140,10 +140,10 @@ export async function apiUpdateSize(size: Partial<Size>): Promise<AxiosResponse<
 }
 
 // get sizes for specific product category
-export async function apiGetProductCategorySizes(productCategoryDocumentId: string): Promise<AxiosResponse<ApiResponse<{sizes: Size[]}>>> {
+export async function apiGetProductCategorySizes(productCategoryDocumentId: string, pagination: PaginationRequest = {page: 1, pageSize: 1000}): Promise<AxiosResponse<ApiResponse<{sizes: Size[]}>>> {
     const query = `
-    query getProductSizes($productCategoryDocumentId: ID!) {
-        sizes(filters: {productCategory: {documentId: {contains: $productCategoryDocumentId}}}) {
+    query getProductSizes($productCategoryDocumentId: ID!, $pagination: PaginationArg) {
+        sizes(filters: {productCategory: {documentId: {contains: $productCategoryDocumentId}}}, pagination: $pagination) {
             documentId
             name
             value
@@ -156,7 +156,8 @@ export async function apiGetProductCategorySizes(productCategoryDocumentId: stri
     }
   `,
   variables = {
-    productCategoryDocumentId
+    productCategoryDocumentId,
+    pagination
   }
 
   return ApiService.fetchData<ApiResponse<{sizes: Size[]}>>({
