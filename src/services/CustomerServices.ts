@@ -101,6 +101,7 @@ export async function apiGetCustomerForEditById(documentId: string): Promise<Axi
                 address
             }
             name
+            deferredPayment
         }
     }
   `,
@@ -134,6 +135,7 @@ export async function apiCreateCustomer(data: CreateCustomerRequest): Promise<Ax
                 documentId
                 name
             }
+            deferredPayment
         }
     }
   `,
@@ -165,6 +167,7 @@ export async function apiUpdateCustomer(customer: Partial<Customer>): Promise<Ax
                 documentId
                 name
             }
+            deferredPayment
         }
     }
   `,

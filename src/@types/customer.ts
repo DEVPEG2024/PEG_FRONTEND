@@ -27,4 +27,5 @@ export type Customer = {
   companyInformations: CompanyInformations;
   customerCategory: CustomerCategory;
   banner: Banner;
+  deferredPayment: boolean;
 }

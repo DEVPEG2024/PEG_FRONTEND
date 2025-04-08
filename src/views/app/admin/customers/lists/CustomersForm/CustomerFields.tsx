@@ -3,7 +3,7 @@ import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
 import { t } from 'i18next';
-import { Select } from '@/components/ui';
+import { Select, Switcher } from '@/components/ui';
 import { CustomerFormModel } from './CustomerForm';
 type country = {
   label: string;
@@ -38,12 +38,12 @@ const CustomerFields = (props: CustomerFields) => {
 
   return (
     <AdaptableCard className="mb-4">
-      <h5>{t('cust.organization')}</h5>
+      <h5>{t('cust.customer')}</h5>
       <p className="mb-6">{t('cust.customer_description')}</p>
       <div className="flex gap-4">
         <FormItem
           label="Nom du client"
-          className="w-full"
+          className="w-2/3"
           invalid={errors.name ? true : false}
           errorMessage={errors.name}
         >
@@ -55,6 +55,20 @@ const CustomerFields = (props: CustomerFields) => {
             component={Input}
             value={props.values.name}
           />
+        </FormItem>
+        <FormItem
+          label="Paiment différé"
+          invalid={errors.deferredPayment ? true : false}
+          errorMessage={errors.deferredPayment}
+        >
+          <Field name="deferredPayment">
+            {({ field, form }: FieldProps) => (
+              <Switcher
+                checked={props.values.deferredPayment}
+                onChange={() => form.setFieldValue(field.name, !field.value)}
+              />
+            )}
+          </Field>
         </FormItem>
       </div>
       <FormItem
