@@ -24,8 +24,8 @@ function Success() {
           },
           body: JSON.stringify({sessionId}),
         }),
-        { orderItemsValidatedDocumentIds }: { orderItemsValidatedDocumentIds: string } = await response.json(),
-        orderItemsValidatedDocumentIdsParsed: string[] = JSON.parse(orderItemsValidatedDocumentIds);
+        { sessionOrderItemsDocumentIds }: { sessionOrderItemsDocumentIds: string } = await response.json(),
+        orderItemsValidatedDocumentIdsParsed: string[] = JSON.parse(sessionOrderItemsDocumentIds);
         
         orderItemsValidatedDocumentIdsParsed.map((orderItemValidatedDocumentId: string) => dispatch(removeFromCartItemOfOrderItem(orderItemValidatedDocumentId)))
       }
