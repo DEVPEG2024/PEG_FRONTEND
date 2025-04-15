@@ -53,7 +53,12 @@ const Summary = ({ project }: { project: Project }) => {
   };
 
   const onEditComplete = () => {
-    dispatch(updateCurrentProject({ ...project, description }));
+    dispatch(
+      updateCurrentProject({
+        documentId: project.documentId,
+        description,
+      })
+    );
   };
 
   const onEdit = (val: string) => {
