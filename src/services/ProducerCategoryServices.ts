@@ -22,9 +22,8 @@ export async function apiGetProducerCategories(data: GetProducerCategoriesReques
             nodes {
                 documentId
                 name
-                producers {
+                producers (pagination: {limit: 100}){
                     documentId
-                    name
                 }
             }
             pageInfo {
@@ -58,9 +57,8 @@ export async function apiCreateProducerCategory(data: CreateProducerCategoryRequ
         createProducerCategory(data: $data) {
             documentId
             name
-            producers {
+            producers (pagination: {limit: 100}){
                 documentId
-                name
             }
         }
     }
@@ -85,9 +83,8 @@ export async function apiUpdateProducerCategory(producerCategory: Partial<Produc
         updateProducerCategory(documentId: $documentId, data: $data) {
             documentId
             name
-            producers {
+            producers (pagination: {limit: 100}){
                 documentId
-                name
             }
         }
     }

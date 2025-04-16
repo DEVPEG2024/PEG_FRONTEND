@@ -12,7 +12,7 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
     mutation CreateInvoice($data: InvoiceInput!) {
         createInvoice(data: $data) {
             documentId
-            orderItems {
+            orderItems (pagination: {limit: 100}){
                 documentId
                 product {
                     name
@@ -71,7 +71,7 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
         invoices_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
             nodes {
                 documentId
-                orderItems {
+                orderItems (pagination: {limit: 100}){
                     documentId
                     product {
                         name
@@ -150,7 +150,7 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
             }, pagination: $pagination) {
             nodes {
                 documentId
-                orderItems {
+                orderItems (pagination: {limit: 100}){
                     documentId
                     product {
                         name
@@ -211,7 +211,7 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
     mutation UpdateInvoice($documentId: ID!, $data: InvoiceInput!) {
         updateInvoice(documentId: $documentId, data: $data) {
             documentId
-            orderItems {
+            orderItems (pagination: {limit: 100}){
                 documentId
                 product {
                     name
