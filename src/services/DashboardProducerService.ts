@@ -10,7 +10,7 @@ export async function apiGetDashboardProducerInformations(documentId: string): P
       producer(documentId: $documentId) {
         documentId
         name
-        projects {
+        projects (pagination: {limit: 100}){
           documentId
           name
           customer {
@@ -21,7 +21,7 @@ export async function apiGetDashboardProducerInformations(documentId: string): P
           startDate
           endDate
           state
-          tasks {
+          tasks (pagination: {limit: 100}){
             documentId
             state
           }

@@ -22,9 +22,8 @@ export async function apiGetCustomerCategories(data: GetCustomerCategoriesReques
             nodes {
                 documentId
                 name
-                customers {
+                customers (pagination: {limit: 100}){
                     documentId
-                    name
                 }
             }
             pageInfo {
@@ -58,9 +57,8 @@ export async function apiCreateCustomerCategory(data: CreateCustomerCategoryRequ
         createCustomerCategory(data: $data) {
             documentId
             name
-            customers {
+            customers (pagination: {limit: 100}){
                 documentId
-                name
             }
         }
     }
@@ -85,9 +83,8 @@ export async function apiUpdateCustomerCategory(customerCategory: Partial<Custom
         updateCustomerCategory(documentId: $documentId, data: $data) {
             documentId
             name
-            customers {
+            customers (pagination: {limit: 100}){
                 documentId
-                name
             }
         }
     }
