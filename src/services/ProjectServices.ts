@@ -10,7 +10,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
     mutation UpdateProject($documentId: ID!, $data: ProjectInput!) {
         updateProject(documentId: $documentId, data: $data) {
             documentId
-            comments {
+            comments (pagination: {limit: 100}) {
                 documentId
                 content
                 createdAt
@@ -44,7 +44,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 url
                 name
             }
-            invoices {
+            invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
                 name
@@ -70,7 +70,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                         address
                     }
                 }
-                orderItems {
+                orderItems (pagination: {limit: 100}){
                     documentId
                     price
                     product {
@@ -101,7 +101,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             }
             startDate
             state
-            tasks {
+            tasks (pagination: {limit: 100}){
                 documentId
                 name
                 description
@@ -151,7 +151,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 url
                 name
             }
-            invoices {
+            invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
                 name
@@ -177,7 +177,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                         address
                     }
                 }
-                orderItems {
+                orderItems (pagination: {limit: 100}){
                     documentId
                     price
                     product {
@@ -208,7 +208,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             }
             startDate
             state
-            tasks {
+            tasks (pagination: {limit: 100}){
                 documentId
                 name
                 description
@@ -244,7 +244,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
     query GetProjectById($documentId: ID!) {
         project(documentId: $documentId) {
             documentId
-            comments {
+            comments (pagination: {limit: 100}){
                 documentId
                 content
                 createdAt
@@ -278,7 +278,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 url
                 name
             }
-            invoices {
+            invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
                 name
@@ -304,7 +304,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         address
                     }
                 }
-                orderItems {
+                orderItems (pagination: {limit: 100}){
                     documentId
                     price
                     product {
@@ -336,7 +336,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             }
             startDate
             state
-            tasks {
+            tasks (pagination: {limit: 100}){
                 documentId
                 name
                 description
@@ -393,7 +393,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 producerPaidPrice
                 startDate
                 state
-                tasks {
+                tasks (pagination: {limit: 100}){
                     documentId
                     state
                 }
@@ -456,7 +456,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
                 startDate
                 state
-                tasks {
+                tasks (pagination: {limit: 100}){
                     documentId
                     state
                 }
@@ -520,7 +520,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 producerPrice
                 startDate
                 state
-                tasks {
+                tasks (pagination: {limit: 100}){
                     documentId
                     state
                 }
@@ -591,7 +591,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 producerPrice
                 startDate
                 state
-                tasks {
+                tasks (pagination: {limit: 100}){
                     documentId
                     state
                 }

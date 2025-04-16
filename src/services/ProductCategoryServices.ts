@@ -43,7 +43,7 @@ export async function apiCreateProductCategory(data: CreateProductCategoryReques
                 documentId
             }
             name
-            products {
+            products (pagination: {limit: 100}){
                 documentId
             }
         }
@@ -73,7 +73,7 @@ export async function apiUpdateProductCategory(productCategory: Partial<ProductC
                 documentId
             }
             name
-            products {
+            products (pagination: {limit: 100}){
                 documentId
             }
         }
@@ -116,7 +116,7 @@ export async function apiGetProductCategories(data: GetProductCategoriesRequest 
                     documentId
                 }
                 name
-                products {
+                products (pagination: {limit: 100}){
                     documentId
                 }
             }

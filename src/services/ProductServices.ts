@@ -74,17 +74,15 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            customerCategories {
+            customerCategories (pagination: {limit: 100}){
                 documentId
-                name
             }
             productCategory {
                 documentId
                 name
             }
-            customers {
+            customers (pagination: {limit: 100}){
                 documentId
-                name
             }
         }
     }
