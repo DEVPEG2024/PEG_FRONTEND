@@ -125,6 +125,10 @@ const Comments = () => {
       'application/x-pdf',
       'application/pdf',
       'application/x-pdf',
+      'application/zip',
+      'image/vnd.adobe.photoshop',
+      'application/postscript',
+      'application/illustrator'
     ];
     if (files) {
       for (const file of files) {
