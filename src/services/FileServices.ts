@@ -39,9 +39,9 @@ export async function apiUploadFile(file: File): Promise<Image> {
     return response.data[0]
 }
 
-export async function apiGetFile(id: string) {    
+export async function apiGetFile(documentId: string) {    
     const response = await ApiService.fetchData<Image[]>({
-        url: API_BASE_URL + "/upload/files/:" + id,
+        url: API_BASE_URL + "/upload/files?filters[documentId][$eq]=" + documentId,
         method: 'get'
     })
     
@@ -58,10 +58,9 @@ export async function apiGetAllFiles() : Promise<Image[]> {
 }
 
 export async function apiGetImages(fileNames: Image[]): Promise<Image[]> {
-    const allUploadedFiles : Image[] = await apiGetAllFiles(),
-      filesNameToLoadDocumentId : string[] = fileNames.map(({documentId}) => documentId)
+    const filesNameToLoadDocumentId : string[] = fileNames.map(({documentId}) => documentId)
 
-    return allUploadedFiles.filter(({documentId}) => filesNameToLoadDocumentId.includes(documentId))
+    return (await Promise.all(filesNameToLoadDocumentId.map(async (documentId) => await apiGetFile(documentId)))).flat()
 };
 
 export async function apiLoadImagesAndFiles(images: Image[]): Promise<Image[]> {
