@@ -11,12 +11,12 @@ import { DoubleSidedImage, Loading } from '@/components/shared';
 import CustomerProductCard from './CustomerProductCard';
 import { User } from '@/@types/user';
 
-injectReducer('products', reducer);
+injectReducer('customerProducts', reducer);
 
 const CustomerProducts = () => {
   const { user }: { user?: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
-  const { products, loading } = useAppSelector((state) => state.products.data);
+  const { products, loading } = useAppSelector((state) => state.customerProducts.data);
   useEffect(() => {
     dispatch(
       getCustomerProducts({
