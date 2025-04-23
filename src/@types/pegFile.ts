@@ -1,4 +1,4 @@
-export type Image = {
+export type PegFile = {
   documentId: string;
   id: string;
   url: string;

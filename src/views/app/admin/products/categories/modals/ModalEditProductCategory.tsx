@@ -2,10 +2,10 @@ import FileUplaodDragLight from '@/components/shared/Upload/light';
 import { Button, Dialog, Input } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { useAppDispatch } from '@/store';
 import { createProductCategory, updateProductCategory, useAppSelector } from '../store';
-import { apiLoadImagesAndFiles } from '@/services/FileServices';
+import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import FileUplaodCustom from '@/components/shared/Upload';
 
 function ModalEditProductCategory({
@@ -24,7 +24,7 @@ function ModalEditProductCategory({
       (state) => state.productCategories.data
     );
   const [name, setName] = useState<string>(productCategory?.name ?? '');
-  const [image, setImage] = useState<Image | undefined>(undefined);
+  const [image, setImage] = useState<PegFile | undefined>(undefined);
   const [imageModified, setImageModified] = useState<boolean>(false);
   const dispatch = useAppDispatch();
 
@@ -34,8 +34,8 @@ function ModalEditProductCategory({
 
   const fetchImage = async (): Promise<void> => {
     if (productCategory?.image) {
-      const imageLoaded: Image = (
-        await apiLoadImagesAndFiles([productCategory.image])
+      const imageLoaded: PegFile = (
+        await apiLoadPegFilesAndFiles([productCategory.image])
       )[0];
 
       setImage(imageLoaded);

@@ -1,11 +1,11 @@
 import { Customer, CustomerCategory } from './customer';
-import { Image } from './image';
+import { PegFile } from './pegFile';
 
 export type Banner = {
   documentId: string;
   name: string;
   customer: Customer;
   customerCategory: CustomerCategory;
-  image: Image;
+  image: PegFile;
   active: boolean;
 }

@@ -31,6 +31,11 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
+import { OrderItem } from '@/@types/orderItem';
+import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServices';
+import { unwrapData } from '@/utils/serviceHelper';
+import { PegFile } from '@/@types/pegFile';
+import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
 
 injectReducer('products', reducer);
 
@@ -47,7 +52,7 @@ const ProductsList = () => {
   const [productToDelete, setProductToDelete] = useState<Product>();
   const {
     products,
-    modalDeleteProduct: modalDelete,
+    modalDeleteProduct,
     loading,
     total,
   } = useAppSelector((state) => state.products.data);
@@ -62,8 +67,14 @@ const ProductsList = () => {
     setCurrentPage(1);
   };
 
-  const onDeleted = () => {
-    productToDelete && dispatch(deleteProduct(productToDelete.documentId));
+  const onDeleted = async () => {
+    if (productToDelete) {
+      dispatch(deleteProduct(productToDelete.documentId));
+      
+      const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
+    
+      apiDeleteFiles(pegFilesToDelete.map((pegFileToDelete) => pegFileToDelete.id))
+    }
     dispatch(setModalDeleteProductClose());
   };
 
@@ -71,9 +82,19 @@ const ProductsList = () => {
     navigate(`/admin/products/edit/${product.documentId}`);
   };
 
-  const onDeleteModalOpen = (product: Product) => {
-    setProductToDelete(product);
-    dispatch(setModalDeleteProductOpen());
+  const onDeleteModalOpen = async (product: Product) => {
+    const {orderItems: pendingOrderItemsLinkedToProduct}: {orderItems: OrderItem[]} = await unwrapData(apiGetPendingOrderItemsLinkedToProduct(product.documentId))
+
+    if (pendingOrderItemsLinkedToProduct.length > 0) {
+      toast.push(
+        <Notification type="danger" title="Suppression annulée">
+          Au moins une commande en cours est rattachée à ce produit
+        </Notification>
+      );
+    } else {
+      setProductToDelete(product);
+      dispatch(setModalDeleteProductOpen());
+    }
   };
 
   const onDeleteModalClose = () => {
@@ -220,7 +241,7 @@ const ProductsList = () => {
               </Card>
             ))}
             <Dialog
-              isOpen={modalDelete}
+              isOpen={modalDeleteProduct}
               onClose={onDeleteModalClose}
               onRequestClose={onDeleteModalClose}
             >

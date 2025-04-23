@@ -1,4 +1,4 @@
-import { Image } from './image';
+import { PegFile } from './pegFile';
 import { User } from './user';
 
 export type Ticket = {
@@ -6,7 +6,7 @@ export type Ticket = {
   user: User;
   name: string;
   description: string;
-  image: Image;
+  image: PegFile;
   state: string;
   priority: string;
   type: string;

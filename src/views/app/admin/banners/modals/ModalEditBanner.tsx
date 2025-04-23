@@ -19,8 +19,8 @@ import {
 } from '@/services/CustomerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { BannerFormModel } from './ModalNewBanner';
-import { Image } from '@/@types/image';
-import { apiLoadImagesAndFiles } from '@/services/FileServices';
+import { PegFile } from '@/@types/pegFile';
+import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { Banner } from '@/@types/banner';
 
 type Option = {
@@ -35,7 +35,7 @@ function ModalEditBanner() {
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const [imageModified, setImageModified] = useState<boolean>(false);
-  const [image, setImage] = useState<Image | undefined>(undefined);
+  const [image, setImage] = useState<PegFile | undefined>(undefined);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<BannerFormModel>({
     documentId: selectedBanner?.documentId || '',
@@ -84,8 +84,8 @@ function ModalEditBanner() {
 
   const fetchImage = async (): Promise<void> => {
     if (selectedBanner?.image) {
-      const imageLoaded: Image = (
-        await apiLoadImagesAndFiles([selectedBanner.image])
+      const imageLoaded: PegFile = (
+        await apiLoadPegFilesAndFiles([selectedBanner.image])
       )[0];
 
       setImage(imageLoaded);

@@ -12,7 +12,7 @@ import {
   DeleteBannerResponse,
 } from '@/services/BannerServices';
 import { unwrapData } from '@/utils/serviceHelper';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
 
 export const SLICE_NAME = 'banners';
@@ -38,7 +38,7 @@ export const getBanners = createAsyncThunk(
 export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
   async (data: CreateBannerRequest): Promise<Banner> => {
-    let imageUploaded: Image | undefined = undefined;
+    let imageUploaded: PegFile | undefined = undefined;
     if (data.image) {
       imageUploaded = await apiUploadFile(data.image.file);
     }
@@ -66,7 +66,7 @@ export type UpdateBanner = {
 export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
   async (data: UpdateBanner): Promise<Banner> => {
-    let imageUploaded: Image | undefined = undefined;
+    let imageUploaded: PegFile | undefined = undefined;
     if (data.imageModified && data.banner.image) {
       imageUploaded = await apiUploadFile(data.banner.image.file);
     }

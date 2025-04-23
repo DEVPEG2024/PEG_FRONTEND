@@ -1,6 +1,6 @@
 import { Customer } from "./customer";
 import { Producer } from "./producer";
-import { Image } from "./image";
+import { PegFile } from "./pegFile";
 
 export type Role = {
   documentId: string;
@@ -19,5 +19,5 @@ export type User = {
   role: Role;
   authority: string[];
   blocked: boolean;
-  avatar: Image;
+  avatar: PegFile;
 }

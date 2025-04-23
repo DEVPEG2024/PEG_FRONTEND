@@ -25,8 +25,8 @@ import {
 } from '../store';
 import dayjs from 'dayjs';
 import { User } from '@/@types/user';
-import { Image } from '@/@types/image';
-import { apiUploadFile } from '@/services/FileServices';
+import { PegFile } from '@/@types/pegFile';
+import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { Select, Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { visibilityData } from '../../lists/constants';
@@ -41,7 +41,7 @@ type TimelineCommentProps = TimeLineItemProps & {
 const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
   const [visibility, setVisibility] = useState<string>('all');
-  const [images, setImages] = useState<Image[]>([]);
+  const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
@@ -62,22 +62,22 @@ const Comments = () => {
 
   const submitComment = async () => {
     if (commentText.trim()) {
-      const newImages: Image[] = [];
+      const newPegFiles: PegFile[] = [];
 
       dispatch(setLoading(true));
-      for (const image of images) {
-        if (image.id) {
-          newImages.push(image);
+      for (const pegFile of pegFiles) {
+        if (pegFile.id) {
+          newPegFiles.push(pegFile);
         } else {
-          const imageUploaded: Image = await apiUploadFile(image.file);
-          newImages.push(imageUploaded);
+          const pegFileUploaded: PegFile = await apiUploadFile(pegFile.file);
+          newPegFiles.push(pegFileUploaded);
         }
       }
 
       const comment: Omit<Comment, 'documentId'> = {
         content: commentText,
         user: user,
-        images: newImages.map(({ id }) => id),
+        images: newPegFiles.map(({ id }) => id),
         visibility:
           user.role.name === 'customer'
             ? 'customer'
@@ -88,22 +88,22 @@ const Comments = () => {
 
       dispatch(createComment({ comment, project }));
       setCommentText('');
-      setImages([]);
+      setPegFiles([]);
     }
   };
 
   // TODO: Voir pour mettre en commun dans un composant Upload dédié --> EditProduct utilise également + Files.tsx
   const onFileAdd = async (file: File) => {
-    setImages([...images, { file, name: file.name }]);
+    setPegFiles([...pegFiles, { file, name: file.name }]);
   };
 
   const onFileRemove = (fileName: string) => {
-    const imageToDelete: Image | undefined = images.find(
+    const pegFileToDelete: PegFile | undefined = pegFiles.find(
       ({ name }) => name === fileName
     );
 
-    if (imageToDelete) {
-      setImages(images.filter(({ name }) => name !== fileName));
+    if (pegFileToDelete) {
+      setPegFiles(pegFiles.filter(({ name }) => name !== fileName));
     }
   };
 
@@ -126,6 +126,7 @@ const Comments = () => {
       'application/pdf',
       'application/x-pdf',
       'application/zip',
+      'application/x-zip-compressed',
       'image/vnd.adobe.photoshop',
       'application/postscript',
       'application/illustrator'
@@ -133,7 +134,7 @@ const Comments = () => {
     if (files) {
       for (const file of files) {
         if (!allowedFileType.includes(file.type)) {
-          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
+          valid = 'Le format du fichier n\'est pas pris en compte !';
         }
       }
     }
@@ -196,7 +197,7 @@ const Comments = () => {
                     onFileAdd={(file) => onFileAdd(file)}
                     onFileRemove={(file) => onFileRemove(file)}
                     field={{ name: 'images' }}
-                    fileList={images.map(({ file }) => file)}
+                    fileList={pegFiles.map(({ file }) => file)}
                   />
                   {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                     <div className="flex flex-row self-start w-1/2 items-center gap-4">
@@ -251,6 +252,11 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
 
   const handleDeleteComment = async () => {
     dispatch(deleteComment(comment.documentId));
+    const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(comment?.images);
+
+    for (const pegFileToDelete of pegFilesToDelete) {
+      apiDeleteFile(pegFileToDelete.id)
+    }
   };
 
   const determineCommentVisibility = (visibility: string): string => {
@@ -297,7 +303,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
         </Card>
         {comment.images.length > 0 && (
           <div className="col-span-1 flex flex-col items-center justify-center">
-            {comment.images.map((image: Image) => (
+            {comment.images.map((image: PegFile) => (
               <div className=" bg-gray-900 rounded-md">
                 <a href={image.url} target="_blank" rel="noreferrer">
                   <img

@@ -1,12 +1,12 @@
 import { Customer, CustomerCategory } from './customer';
 import { Form } from './form';
-import { Image } from './image';
+import { PegFile } from './pegFile';
 
 export type Product = {
   active: boolean;
   description: string;
   documentId: string;
-  images: Image[];
+  images: PegFile[];
   name: string;
   price: number;
   sizes: Size[];
@@ -43,7 +43,7 @@ export type SizeAndColorSelection = {
 export type ProductCategory = {
   documentId: string;
   name: string;
-  image?: Image;
+  image?: PegFile;
   products: Product[];
 };
 

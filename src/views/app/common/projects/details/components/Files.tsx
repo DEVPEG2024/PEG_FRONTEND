@@ -3,16 +3,17 @@ import Button from '@/components/ui/Button';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { Upload } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { setLoading, updateCurrentProject, useAppSelector } from '../store';
-import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 
 const Files = () => {
-  const [images, setImages] = useState<Image[]>([]);
-  const [imagesChanged, setImagesChanged] = useState<boolean>(false);
+  const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
+  const [pegFilesIdToDelete, setPegFilesIdToDelete] = useState<string[]>([]);
+  const [pegFilesChanged, setPegFilesChanged] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const { project, loading } = useAppSelector(
     (state) => state.projectDetails.data
@@ -24,27 +25,28 @@ const Files = () => {
 
   const fetchFiles = async (): Promise<void> => {
     if (project?.images?.length > 0) {
-      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(
+      const pegFilesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
         project?.images
       );
 
-      setImages(imagesLoaded);
+      setPegFiles(pegFilesLoaded);
     }
   };
 
   const onFileAdd = async (file: File) => {
-    setImages([...images, { file, name: file.name }]);
-    setImagesChanged(true);
+    setPegFiles([...pegFiles, { file, name: file.name }]);
+    setPegFilesChanged(true);
   };
 
   const onFileRemove = (fileName: string) => {
-    const imageToDelete: Image | undefined = images.find(
+    const pegFileToDelete: PegFile | undefined = pegFiles.find(
       ({ name }) => name === fileName
     );
 
-    if (imageToDelete) {
-      setImages(images.filter(({ name }) => name !== fileName));
-      setImagesChanged(true);
+    if (pegFileToDelete) {
+      setPegFilesIdToDelete([...pegFilesIdToDelete, pegFileToDelete.id]);
+      setPegFiles(pegFiles.filter(({ name }) => name !== fileName));
+      setPegFilesChanged(true);
     }
   };
 
@@ -67,6 +69,7 @@ const Files = () => {
       'application/pdf',
       'application/x-pdf',
       'application/zip',
+      'application/x-zip-compressed',
       'image/vnd.adobe.photoshop',
       'application/postscript',
       'application/illustrator'
@@ -74,7 +77,7 @@ const Files = () => {
     if (files) {
       for (const file of files) {
         if (!allowedFileType.includes(file.type)) {
-          valid = 'Veuillez télécharger un fichier .jpeg ou .png!';
+          valid = 'Le format du fichier n\'est pas pris en compte !';
         }
       }
     }
@@ -83,26 +86,30 @@ const Files = () => {
   };
 
   const handleSubmit = async () => {
-    const newImages: Image[] = [];
+    const newPegFiles: PegFile[] = [];
 
     dispatch(setLoading(true));
-    for (const image of images) {
-      if (image.id) {
-        newImages.push(image);
+    for (const pegFile of pegFiles) {
+      if (pegFile.id) {
+        newPegFiles.push(pegFile);
       } else {
-        const imageUploaded: Image = await apiUploadFile(image.file);
-        newImages.push(imageUploaded);
+        const pegFileUploaded: PegFile = await apiUploadFile(pegFile.file);
+        newPegFiles.push(pegFileUploaded);
       }
+    }
+
+    for (const pegFileIdToDelete of pegFilesIdToDelete) {
+      apiDeleteFile(pegFileIdToDelete)
     }
 
     dispatch(
       updateCurrentProject({
         documentId: project.documentId,
-        images: newImages.map(({ id }) => id),
+        images: newPegFiles.map(({ id }) => id),
       })
     );
-    setImages([]);
-    setImagesChanged(false);
+    setPegFiles([]);
+    setPegFilesChanged(false);
   };
 
   return (
@@ -119,15 +126,15 @@ const Files = () => {
                 onFileAdd={(file) => onFileAdd(file)}
                 onFileRemove={(file) => onFileRemove(file)}
                 field={{ name: 'images' }}
-                fileList={images.map((image) => {
-                  const file = image.file;
+                fileList={pegFiles.map((pegFile) => {
+                  const file = pegFile.file;
 
-                  file.previewUrl = image.url;
+                  file.previewUrl = pegFile.url;
                   return file;
                 })}
                 clickable
               />
-              {imagesChanged && (
+              {pegFilesChanged && (
                 <Button
                   variant="solid"
                   onClick={handleSubmit}

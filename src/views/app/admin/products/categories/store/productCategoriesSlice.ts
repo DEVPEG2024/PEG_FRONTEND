@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Product, ProductCategory } from '@/@types/product';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 
 import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
 import {
@@ -62,7 +62,7 @@ export const deleteProductCategory = createAsyncThunk(
 export const createProductCategory = createAsyncThunk(
   SLICE_NAME + '/createProductCategory',
   async (data: CreateProductCategoryRequest): Promise<ProductCategory> => {
-    const imageUploaded: Image | undefined = data.image
+    const imageUploaded: PegFile | undefined = data.image
       ? await apiUploadFile(data.image.file)
       : undefined;
     const {
@@ -85,7 +85,7 @@ export type UpdateProductCategory = {
 export const updateProductCategory = createAsyncThunk(
   SLICE_NAME + '/updateProductCategory',
   async (data: UpdateProductCategory): Promise<ProductCategory> => {
-    let imageUploaded: Image | undefined = undefined;
+    let imageUploaded: PegFile | undefined = undefined;
     if (data.imageModified && data.productCategory.image) {
       imageUploaded = await apiUploadFile(data.productCategory.image.file);
     }

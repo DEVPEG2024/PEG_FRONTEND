@@ -14,7 +14,7 @@ import {
   apiGetCustomerCategories,
   GetCustomerCategoriesResponse,
 } from '@/services/CustomerCategoryServices';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { Banner } from '@/@types/banner';
 
 type Option = {
@@ -32,7 +32,7 @@ export type BannerFormModel = {
 
 function ModalNewBanner() {
   const { newBannerDialog } = useAppSelector((state) => state.banners.data);
-  const [image, setImage] = useState<Image | undefined>(undefined);
+  const [image, setImage] = useState<PegFile | undefined>(undefined);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const dispatch = useAppDispatch();

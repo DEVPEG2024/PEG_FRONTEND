@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Product } from '@/@types/product';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import {
   apiGetProducts,
   apiDeleteProduct,
@@ -11,7 +11,7 @@ import {
   DeleteProductResponse,
   apiGetProductForEditById,
 } from '@/services/ProductServices';
-import { apiGetImages } from '@/services/FileServices';
+import { apiGetPegFiles } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'products';
@@ -62,7 +62,7 @@ export const duplicateProduct = createAsyncThunk(
     const { product: productToDuplicate }: { product: Product } =
       await unwrapData(apiGetProductForEditById(product.documentId));
     const { documentId, images, ...duplicatedProduct } = productToDuplicate;
-    const imagesLoaded: Image[] = await apiGetImages(images);
+    const imagesLoaded: PegFile[] = await apiGetPegFiles(images);
     const newProduct: Product = {
       ...duplicatedProduct,
       images: imagesLoaded.map(({ id }) => id),

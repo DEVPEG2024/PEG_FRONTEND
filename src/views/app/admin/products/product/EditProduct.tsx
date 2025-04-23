@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Color, Product, ProductCategory, Size } from '@/@types/product';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import ProductForm, {
   ProductFormModel,
   SetSubmitting,
@@ -13,7 +13,7 @@ import {
 import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
-import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import reducer, {
   getProductById,
   setProductToEdit,
@@ -59,7 +59,7 @@ const EditProduct = () => {
   const [colors, setColors] = useState<Options[]>([]);
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
-  const [images, setImages] = useState<Image[]>([]);
+  const [images, setImages] = useState<PegFile[]>([]);
   const initialData: ProductFormModel = {
     documentId: documentId ?? '',
     name: product?.name || '',
@@ -103,7 +103,7 @@ const EditProduct = () => {
 
   const fetchFiles = async (): Promise<void> => {
     if (product?.images && product?.images?.length > 0) {
-      const imagesLoaded: Image[] = await apiLoadImagesAndFiles(
+      const imagesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
         product?.images
       );
 
@@ -225,12 +225,12 @@ const EditProduct = () => {
     setSubmitting: SetSubmitting
   ) => {
     setSubmitting(true);
-    const newImages: Image[] = [];
+    const newImages: PegFile[] = [];
     for (const image of images) {
       if (image.id) {
         newImages.push(image);
       } else {
-        const imageUploaded: Image = await apiUploadFile(image.file);
+        const imageUploaded: PegFile = await apiUploadFile(image.file);
         newImages.push(imageUploaded);
       }
     }

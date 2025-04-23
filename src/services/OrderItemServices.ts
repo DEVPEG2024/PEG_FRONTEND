@@ -230,3 +230,29 @@ export async function apiDeleteOrderItem(documentId: string): Promise<AxiosRespo
         }
     })
 }
+
+// get pending order item linked to product
+export async function apiGetPendingOrderItemsLinkedToProduct(productDocumentId: string): Promise<AxiosResponse<ApiResponse<{orderItems: OrderItem[]}>>> {
+    const query = `
+    query GetPendingOrderItemsLinkedToProduct($productDocumentId: ID!) {
+        orderItems(filters: {
+        and: [
+            {product: {documentId: {eq: $productDocumentId}}},
+            {state: {eq: "pending"}},
+        ]}) {
+            documentId
+        }
+    }
+  `,
+  variables = {
+    productDocumentId
+  }
+    return ApiService.fetchData<ApiResponse<{orderItems: OrderItem[]}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
