@@ -15,8 +15,8 @@ import {
 } from '../store/ticketSlice';
 import { Ticket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
-import { Image } from '@/@types/image';
-import { apiLoadImagesAndFiles } from '@/services/FileServices';
+import { PegFile } from '@/@types/pegFile';
+import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 
 export type TicketFormModel = Omit<
   Ticket,
@@ -31,7 +31,7 @@ function ModalEditTicket() {
   const { editTicketDialog, selectedTicket } = useAppSelector(
     (state) => state.tickets.data
   );
-  const [image, setImage] = useState<Image | undefined>(undefined);
+  const [image, setImage] = useState<PegFile | undefined>(undefined);
   const [formData, setFormData] = useState<TicketFormModel>({
     documentId: selectedTicket?.documentId ?? '',
     name: selectedTicket?.name || '',
@@ -48,8 +48,8 @@ function ModalEditTicket() {
 
   const fetchImage = async (): Promise<void> => {
     if (selectedTicket?.image) {
-      const imageLoaded: Image = (
-        await apiLoadImagesAndFiles([selectedTicket.image])
+      const imageLoaded: PegFile = (
+        await apiLoadPegFilesAndFiles([selectedTicket.image])
       )[0];
 
       setImage(imageLoaded);

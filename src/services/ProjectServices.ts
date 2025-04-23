@@ -28,6 +28,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                     }
                 }
                 images {
+                    documentId
                     url
                     name
                 }
@@ -262,6 +263,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                     }
                 }
                 images {
+                    documentId
                     url
                     name
                 }

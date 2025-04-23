@@ -11,8 +11,8 @@ import { Avatar, Upload } from '@/components/ui';
 import { HiOutlineUser } from 'react-icons/hi';
 import { User } from '@/@types/user';
 import { useEffect, useState } from 'react';
-import { Image } from '@/@types/image';
-import { apiLoadImagesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { PegFile } from '@/@types/pegFile';
+import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { useNavigate } from 'react-router-dom';
 
 type UserFormModel = Omit<
@@ -38,7 +38,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
-  const [avatar, setAvatar] = useState<Image | undefined>(undefined);
+  const [avatar, setAvatar] = useState<PegFile | undefined>(undefined);
   const initialData: UserFormModel = {
     username: user.username || '',
     firstName: user.firstName || '',
@@ -52,8 +52,8 @@ const Profile = () => {
 
   const fetchAvatar = async (): Promise<void> => {
     if (user?.avatar) {
-      const imageLoaded: Image = (
-        await apiLoadImagesAndFiles([user.avatar])
+      const imageLoaded: PegFile = (
+        await apiLoadPegFilesAndFiles([user.avatar])
       )[0];
 
       setAvatar(imageLoaded);
@@ -70,7 +70,7 @@ const Profile = () => {
       if (avatar.id) {
         newAvatar = avatar;
       } else {
-        const avatarUploaded: Image = await apiUploadFile(avatar.file);
+        const avatarUploaded: PegFile = await apiUploadFile(avatar.file);
         newAvatar = avatarUploaded;
       }
     }

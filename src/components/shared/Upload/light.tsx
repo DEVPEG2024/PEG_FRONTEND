@@ -1,4 +1,4 @@
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { Upload } from '@/components/ui'
 const beforeUpload = (files: FileList | null) => {
   let valid: string | boolean = true
@@ -21,7 +21,7 @@ const beforeUpload = (files: FileList | null) => {
 function FileUplaodDragLight({
   setImage,
 }: {
-  setImage: (image: Partial<Image> | undefined) => void;
+  setImage: (image: Partial<PegFile> | undefined) => void;
 }) {
   const onFileAdd = async (
     file: File

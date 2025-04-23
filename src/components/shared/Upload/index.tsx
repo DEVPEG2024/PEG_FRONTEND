@@ -1,4 +1,4 @@
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { Avatar, Upload } from '@/components/ui'
 import { PiUploadDuotone } from "react-icons/pi";
 
@@ -19,7 +19,7 @@ const beforeUpload = (files: FileList | null) => {
 
   return valid
 }
-function FileUplaodCustom({image, setImage}: {image?: Image | undefined, setImage: (image: Image | undefined) => void}) {
+function FileUplaodCustom({image, setImage}: {image?: PegFile | undefined, setImage: (image: PegFile | undefined) => void}) {
   const onFileAdd = async (
     file: File
   ) => {

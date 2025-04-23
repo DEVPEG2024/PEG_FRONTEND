@@ -15,7 +15,7 @@ import {
 
 import { Ticket } from '@/@types/ticket';
 import { unwrapData } from '@/utils/serviceHelper';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
@@ -61,7 +61,7 @@ export const getTicketById = createAsyncThunk(
 export const createTicket = createAsyncThunk(
   SLICE_NAME + '/createTicket',
   async (data: CreateTicketRequest): Promise<Ticket> => {
-    let imageUploaded: Image | undefined = undefined;
+    let imageUploaded: PegFile | undefined = undefined;
     if (data.image) {
       imageUploaded = await apiUploadFile(data.image.file);
     }

@@ -9,7 +9,7 @@ import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
 import { Product } from '@/@types/product';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 
 interface Options {
   value: string;
@@ -59,8 +59,8 @@ type ProductForm = {
   categories: Options[];
   customers: Options[];
   forms: Options[];
-  images: Image[];
-  setImages: (images: Image[]) => void;
+  images: PegFile[];
+  setImages: (images: PegFile[]) => void;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
@@ -96,7 +96,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
   };
 
   const onFileRemove = (fileName: string) => {
-    const imageToDelete: Image | undefined = images.find(
+    const imageToDelete: PegFile | undefined = images.find(
       ({ name }) => name === fileName
     );
 

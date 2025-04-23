@@ -3,7 +3,7 @@ import { OrderItem } from './orderItem';
 import { User } from './user';
 import { Producer } from './producer';
 import { Invoice } from './invoice';
-import { Image } from './image';
+import { PegFile } from './pegFile';
 
 export type Project = {
   documentId: string;
@@ -20,7 +20,7 @@ export type Project = {
   paidPrice: number;
   producerPaidPrice: number;
   comments: Comment[];
-  images: Image[];
+  images: PegFile[];
   tasks: Task[];
   orderItem?: OrderItem;
   //deleted: boolean;
@@ -43,6 +43,6 @@ export type Comment = {
   content: string;
   user: User;
   createdAt: Date;
-  images: Image[];
+  images: PegFile[];
   visibility: string;
 }

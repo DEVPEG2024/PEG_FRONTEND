@@ -7,7 +7,7 @@ import { RichTextEditor } from '@/components/shared';
 import { createTicket, setNewTicketDialog } from '../store/ticketSlice';
 import FileUplaodCustom from '@/components/shared/Upload';
 import { TicketFormModel } from './ModalEditTicket';
-import { Image } from '@/@types/image';
+import { PegFile } from '@/@types/pegFile';
 import { User } from '@/@types/user';
 
 function ModalNewTicket() {
@@ -15,7 +15,7 @@ function ModalNewTicket() {
     (state: any) => state.auth.user
   );
   const { newTicketDialog } = useAppSelector((state) => state.tickets.data);
-  const [image, setImage] = useState<Image | undefined>(undefined);
+  const [image, setImage] = useState<PegFile | undefined>(undefined);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<TicketFormModel>({
     name: '',
