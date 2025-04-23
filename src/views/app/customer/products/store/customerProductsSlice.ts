@@ -36,7 +36,7 @@ type Query = {
 };
 
 type GetProductListRequest = Query;
-export const SLICE_NAME = 'products';
+export const SLICE_NAME = 'customerProducts';
 
 export const getCustomerProducts = createAsyncThunk(
   SLICE_NAME + '/getCustomerProducts',
@@ -79,14 +79,10 @@ const productSlice = createSlice({
           (product) => product.documentId === action.payload
         ) ?? null;
     },
-    clearProducts: (state) => {
-      state.products = []
-    }
   },
   extraReducers: (builder) => {
     builder.addCase(getCustomerProducts.pending, (state) => {
       state.loading = true;
-      clearProducts();
     });
     builder.addCase(getCustomerProducts.fulfilled, (state, action) => {
       state.loading = false;
@@ -98,6 +94,6 @@ const productSlice = createSlice({
   },
 });
 
-export const { setProduct, clearProducts } = productSlice.actions;
+export const { setProduct } = productSlice.actions;
 
 export default productSlice.reducer;

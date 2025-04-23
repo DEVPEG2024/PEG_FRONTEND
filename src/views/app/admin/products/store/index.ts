@@ -1,5 +1,5 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, StateData } from './productSlice';
+import reducers, { SLICE_NAME, StateData } from './productsSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -17,6 +17,6 @@ export const useAppSelector: TypedUseSelectorHook<
   }
 > = useSelector;
 
-export * from './productSlice';
+export * from './productsSlice';
 export { useAppDispatch } from '@/store';
 export default reducer;
