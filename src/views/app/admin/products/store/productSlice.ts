@@ -133,10 +133,14 @@ const productSlice = createSlice({
     setModalDeleteProductClose: (state) => {
       state.modalDeleteProduct = false;
     },
+    clearProducts: (state) => {
+      state.products = []
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(getProducts.pending, (state) => {
       state.loading = true;
+      clearProducts();
     });
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
@@ -203,6 +207,7 @@ export const {
   setProductToEdit,
   setModalDeleteProductOpen,
   setModalDeleteProductClose,
+  clearProducts
 } = productSlice.actions;
 
 export default productSlice.reducer;
