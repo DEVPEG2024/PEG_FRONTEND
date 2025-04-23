@@ -257,7 +257,7 @@ const ModalPrintInvoice = ({
                             </View>
                             <View style={styles.section14}>
                               <Text style={{ fontSize: 8, padding: 4 }}>
-                                {orderItem?.product.name}
+                                {orderItem?.product?.name}
                               </Text>
                             </View>
                             <View style={styles.section16}>
