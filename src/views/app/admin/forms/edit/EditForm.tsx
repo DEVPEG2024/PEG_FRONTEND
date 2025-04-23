@@ -75,7 +75,7 @@ function EditForm({
         onChange={onNameChange}
       />
       <FormBuilder
-        form={{
+        initialForm={{
           display: 'form',
           components,
         }}
