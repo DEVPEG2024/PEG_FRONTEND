@@ -7,6 +7,7 @@ import { useAppDispatch } from '@/store';
 import { createProductCategory, updateProductCategory, useAppSelector } from '../store';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import FileUplaodCustom from '@/components/shared/Upload';
+import { Loading } from '@/components/shared';
 
 function ModalEditProductCategory({
   mode,
@@ -26,6 +27,7 @@ function ModalEditProductCategory({
   const [name, setName] = useState<string>(productCategory?.name ?? '');
   const [image, setImage] = useState<PegFile | undefined>(undefined);
   const [imageModified, setImageModified] = useState<boolean>(false);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -33,13 +35,15 @@ function ModalEditProductCategory({
   }, [productCategory]);
 
   const fetchImage = async (): Promise<void> => {
+    setImageLoading(true);
     if (productCategory?.image) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([productCategory.image])
       )[0];
-
+      
       setImage(imageLoaded);
     }
+    setImageLoading(false);
   };
 
   const updateImage = (image: { file: File; name: string }) => {
@@ -80,7 +84,9 @@ function ModalEditProductCategory({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <FileUplaodCustom image={image} setImage={updateImage} />
+          <Loading loading={imageLoading}>
+            <FileUplaodCustom image={image} setImage={updateImage} />
+          </Loading>
         </div>
         <div className="text-right mt-6">
           <Button

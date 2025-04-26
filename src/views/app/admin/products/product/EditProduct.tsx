@@ -60,6 +60,7 @@ const EditProduct = () => {
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
+  const [imagesLoading, setImagesLoading] = useState<boolean>(false);
   const initialData: ProductFormModel = {
     documentId: documentId ?? '',
     name: product?.name || '',
@@ -102,6 +103,7 @@ const EditProduct = () => {
   }, [product]);
 
   const fetchFiles = async (): Promise<void> => {
+    setImagesLoading(true);
     if (product?.images && product?.images?.length > 0) {
       const imagesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
         product?.images
@@ -109,6 +111,7 @@ const EditProduct = () => {
 
       setImages(imagesLoaded);
     }
+    setImagesLoading(false);
   };
 
   const fetchForms = async () => {
@@ -269,6 +272,7 @@ const EditProduct = () => {
         forms={forms}
         images={images}
         setImages={setImages}
+        imagesLoading={imagesLoading}
         initialData={initialData}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
         filterColorsListByProductCategory={filterColorsListByProductCategory}

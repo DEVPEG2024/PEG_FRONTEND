@@ -14,6 +14,7 @@ const Files = () => {
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
   const [pegFilesIdToDelete, setPegFilesIdToDelete] = useState<string[]>([]);
   const [pegFilesChanged, setPegFilesChanged] = useState<boolean>(false);
+  const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const { project, loading } = useAppSelector(
     (state) => state.projectDetails.data
@@ -24,13 +25,15 @@ const Files = () => {
   }, [project]);
 
   const fetchFiles = async (): Promise<void> => {
+    setFilesLoading(true);
     if (project?.images?.length > 0) {
       const pegFilesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
         project?.images
       );
-
+      
       setPegFiles(pegFilesLoaded);
     }
+    setFilesLoading(false);
   };
 
   const onFileAdd = async (file: File) => {
@@ -118,22 +121,24 @@ const Files = () => {
         <div className="lg:col-span-2">
           <Loading loading={loading}>
             <AdaptableCard rightSideBorder bodyClass="p-5">
-              <Upload
-                multiple
-                showList
-                draggable
-                beforeUpload={beforeUpload}
-                onFileAdd={(file) => onFileAdd(file)}
-                onFileRemove={(file) => onFileRemove(file)}
-                field={{ name: 'images' }}
-                fileList={pegFiles.map((pegFile) => {
-                  const file = pegFile.file;
+              <Loading loading={filesLoading}>
+                <Upload
+                  multiple
+                  showList
+                  draggable
+                  beforeUpload={beforeUpload}
+                  onFileAdd={(file) => onFileAdd(file)}
+                  onFileRemove={(file) => onFileRemove(file)}
+                  field={{ name: 'images' }}
+                  fileList={pegFiles.map((pegFile) => {
+                    const file = pegFile.file;
 
-                  file.previewUrl = pegFile.url;
-                  return file;
-                })}
-                clickable
-              />
+                    file.previewUrl = pegFile.url;
+                    return file;
+                  })}
+                  clickable
+                />
+              </Loading>
               {pegFilesChanged && (
                 <Button
                   variant="solid"

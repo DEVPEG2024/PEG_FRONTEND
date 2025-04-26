@@ -7,7 +7,7 @@ import {
   ticketStatusData,
   ticketTypeData,
 } from '../constants';
-import { RichTextEditor } from '@/components/shared';
+import { Loading, RichTextEditor } from '@/components/shared';
 import {
   setEditTicketDialog,
   setSelectedTicket,
@@ -32,6 +32,7 @@ function ModalEditTicket() {
     (state) => state.tickets.data
   );
   const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<TicketFormModel>({
     documentId: selectedTicket?.documentId ?? '',
     name: selectedTicket?.name || '',
@@ -47,13 +48,15 @@ function ModalEditTicket() {
   }, [selectedTicket]);
 
   const fetchImage = async (): Promise<void> => {
+    setImageLoading(true);
     if (selectedTicket?.image) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([selectedTicket.image])
       )[0];
-
+      
       setImage(imageLoaded);
     }
+    setImageLoading(false);
   };
 
   const handleSubmit = async (e: any) => {
@@ -146,7 +149,9 @@ function ModalEditTicket() {
             />
           </div>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
-            <FileUplaodCustom image={image} setImage={setImage} />
+            <Loading loading={imageLoading}>
+              <FileUplaodCustom image={image} setImage={setImage} />
+            </Loading>
             <Button
               className="ltr:mr-2 rtl:ml-2"
               variant="plain"
