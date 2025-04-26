@@ -10,6 +10,7 @@ import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
 import { Product } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
+import { Loading } from '@/components/shared';
 
 interface Options {
   value: string;
@@ -61,6 +62,7 @@ type ProductForm = {
   forms: Options[];
   images: PegFile[];
   setImages: (images: PegFile[]) => void;
+  imagesLoading: boolean;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
@@ -87,6 +89,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     customers,
     images,
     setImages,
+    imagesLoading,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
   } = props;
@@ -175,17 +178,19 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                 </div>
                 <div className="lg:col-span-1">
                   <h5 className="mb-4">Images du produits</h5>
-                  <Upload
-                    multiple
-                    showList
-                    draggable
-                    uploadLimit={4}
-                    beforeUpload={beforeUpload}
-                    onFileAdd={(file) => onFileAdd(file)}
-                    onFileRemove={(file) => onFileRemove(file)}
-                    field={{ name: 'images' }}
-                    fileList={images.map(({ file }) => file)}
-                  />
+                  <Loading loading={imagesLoading}>
+                    <Upload
+                      multiple
+                      showList
+                      draggable
+                      uploadLimit={4}
+                      beforeUpload={beforeUpload}
+                      onFileAdd={(file) => onFileAdd(file)}
+                      onFileRemove={(file) => onFileRemove(file)}
+                      field={{ name: 'images' }}
+                      fileList={images.map(({ file }) => file)}
+                    />
+                  </Loading>
                 </div>
               </div>
               <StickyFooter

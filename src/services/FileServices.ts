@@ -75,7 +75,7 @@ export async function apiLoadPegFilesAndFiles(pegFiles: PegFile[]): Promise<PegF
 };
 
 const convertPegFileUrlToFile = async(url: string, fileName: string) : Promise<File> => {
-    const response = await fetch(url);
+    const response = await fetch(url, {headers: { "Cache-Control": "no-cache" }});
 
     if (!response.ok) {
         throw new Error(`Failed to fetch peg file from URL: ${response.statusText}`);

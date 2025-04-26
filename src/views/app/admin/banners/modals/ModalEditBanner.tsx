@@ -22,6 +22,7 @@ import { BannerFormModel } from './ModalNewBanner';
 import { PegFile } from '@/@types/pegFile';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { Banner } from '@/@types/banner';
+import { Loading } from '@/components/shared';
 
 type Option = {
   value: string;
@@ -36,6 +37,7 @@ function ModalEditBanner() {
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const [imageModified, setImageModified] = useState<boolean>(false);
   const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<BannerFormModel>({
     documentId: selectedBanner?.documentId || '',
@@ -83,6 +85,7 @@ function ModalEditBanner() {
   }, [selectedBanner]);
 
   const fetchImage = async (): Promise<void> => {
+    setImageLoading(true)
     if (selectedBanner?.image) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([selectedBanner.image])
@@ -90,6 +93,7 @@ function ModalEditBanner() {
 
       setImage(imageLoaded);
     }
+    setImageLoading(false)
   };
 
   const handleSubmit = async (e: any) => {
@@ -186,9 +190,11 @@ function ModalEditBanner() {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-2 mt-4">
-            <FileUplaodCustom image={image} setImage={updateImage} />
-          </div>
+          <Loading loading={imageLoading}>
+            <div className="flex flex-col gap-2 mt-4">
+              <FileUplaodCustom image={image} setImage={updateImage} />
+            </div>
+          </Loading>
           <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
             <Button
               className="ltr:mr-2 rtl:ml-2"
