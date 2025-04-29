@@ -12,8 +12,10 @@ import { HiOutlineUser } from 'react-icons/hi';
 import { User } from '@/@types/user';
 import { useEffect, useState } from 'react';
 import { PegFile } from '@/@types/pegFile';
-import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { useNavigate } from 'react-router-dom';
+import { Loading, StickyFooter } from '@/components/shared';
+import { AiOutlineSave } from 'react-icons/ai';
 
 type UserFormModel = Omit<
   User,
@@ -39,6 +41,9 @@ const Profile = () => {
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const [avatar, setAvatar] = useState<PegFile | undefined>(undefined);
+  const [newAvatar, setNewAvatar] = useState<PegFile | undefined>(undefined);
+  const [avatarToDelete, setAvatarToDelete] = useState<PegFile | undefined>(undefined);
+  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const initialData: UserFormModel = {
     username: user.username || '',
     firstName: user.firstName || '',
@@ -51,6 +56,7 @@ const Profile = () => {
   }, []);
 
   const fetchAvatar = async (): Promise<void> => {
+    setAvatarLoading(true)
     if (user?.avatar) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([user.avatar])
@@ -58,34 +64,45 @@ const Profile = () => {
 
       setAvatar(imageLoaded);
     }
+    setAvatarLoading(false)
   };
 
   const onFormSubmit = async (
     values: UserFormModel,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
-    let newAvatar = undefined;
+    /*let newAvatar = undefined;
 
-    if (avatar) {
+    if (newAvatar) {
       if (avatar.id) {
         newAvatar = avatar;
       } else {
         const avatarUploaded: PegFile = await apiUploadFile(avatar.file);
         newAvatar = avatarUploaded;
       }
-    }
-    const data: User = {
-      ...values,
-      avatar: newAvatar ? newAvatar.id : undefined,
-    };
+    } else if (user.avatar) {
+      apiDeleteFile(user.avatar.id)
+    }*/
 
-    dispatch(updateOwnUser({ user: data, id: user.id }));
+    if (newAvatar) {
+      const newAvatarUploaded: PegFile = await apiUploadFile(newAvatar.file);
+
+      if (avatar) {
+        apiDeleteFile(avatar.id)
+      }
+      values.avatar = newAvatarUploaded.id
+    } else if (avatarToDelete) {
+      apiDeleteFile(avatarToDelete.id)
+      values.avatar = null
+    }
+
+    dispatch(updateOwnUser({ user: values, id: user.id }));
     setSubmitting(false);
-    navigate('/settings/profile');
+    navigate('/home');
   };
 
   const onFileAdd = async (file: File) => {
-    setAvatar({ file, name: file.name });
+    setNewAvatar({ file, name: file.name });
   };
 
   const beforeUpload = (files: FileList | null) => {
@@ -118,6 +135,10 @@ const Profile = () => {
     return valid;
   };
 
+  const handleDiscard = () => {
+    navigate('/home');
+  };
+
   return (
     <>
       <Formik
@@ -143,23 +164,29 @@ const Profile = () => {
                 />
                 <div className="flex items-center justify-between mb-4 mt-4">
                   <div className="ml-0 font-semibold">Avatar</div>
-                  <Upload
-                    className="cursor-pointer absolute left-1/2"
-                    showList={true}
-                    uploadLimit={1}
-                    beforeUpload={beforeUpload}
-                    onFileAdd={(file) => onFileAdd(file)}
-                    onFileRemove={() => setAvatar(undefined)}
-                    fileList={avatar ? [avatar?.file] : []}
-                  >
-                    <Avatar
-                      className="border-2 border-white dark:border-gray-800 shadow-lg"
-                      size={100}
-                      shape="circle"
-                      icon={<HiOutlineUser />}
-                      src={avatar?.url}
-                    />
-                  </Upload>
+                  <Loading loading={avatarLoading}>
+                    <Upload
+                      className="cursor-pointer absolute left-1/2"
+                      showList={true}
+                      uploadLimit={1}
+                      beforeUpload={beforeUpload}
+                      onFileAdd={(file) => onFileAdd(file)}
+                      onFileRemove={() => {
+                        setAvatarToDelete(avatar)
+                        setAvatar(undefined)
+                        setNewAvatar(undefined)
+                      }}
+                      fileList={avatar ? [avatar?.file] : []}
+                    >
+                      <Avatar
+                        className="border-2 border-white dark:border-gray-800 shadow-lg"
+                        size={100}
+                        shape="circle"
+                        icon={<HiOutlineUser />}
+                        src={avatar?.url}
+                      />
+                    </Upload>
+                  </Loading>
                 </div>
                 <FormRow
                   name="username"
@@ -202,11 +229,29 @@ const Profile = () => {
                   />
                 </FormRow>
 
-                <div className="mt-4 ltr:text-right">
-                  <Button variant="solid" loading={isSubmitting} type="submit">
-                    {isSubmitting ? 'Modification...' : 'Modifier'}
+                <StickyFooter
+                  className="-mx-8 px-8 flex items-center justify-end py-4"
+                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                >
+                  <Button
+                    size="sm"
+                    className="ltr:mr-3 rtl:ml-3"
+                    type="button"
+                    onClick={() => handleDiscard()}
+                  >
+                    Annuler
                   </Button>
-                </div>
+
+                  <Button
+                    size="sm"
+                    variant="solid"
+                    loading={isSubmitting}
+                    icon={<AiOutlineSave />}
+                    type="submit"
+                  >
+                    Enregistrer
+                  </Button>
+                </StickyFooter>
               </FormContainer>
             </Form>
           );
