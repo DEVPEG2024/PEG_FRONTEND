@@ -11,7 +11,7 @@ import { Producer } from '@/@types/producer'
 
 export async function getUser(token: string) : Promise<UserWithId>{
     const {data} : {data: Omit<User, 'authority'>} = await ApiService.fetchData<User>({
-        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer',
+        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer&populate[3]=avatar',
         headers: {'Authorization': `Bearer ${token}`}
     })
     return {...data, authority: [data.role.name]}
@@ -142,6 +142,9 @@ export async function apiUpdateUser(user: Partial<User>, id: number): Promise<Ax
                 blocked
                 firstName
                 lastName
+                avatar {
+                    documentId
+                }
                 customer {
                     documentId
                     name
