@@ -1,17 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
 import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
 import { debounce } from 'lodash';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
-import type { TimeLineItemProps } from '@/components/ui/Timeline';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
-import ReactHtmlParser from 'html-react-parser';
 import {
   RootState,
   useAppDispatch,
@@ -19,24 +16,19 @@ import {
 } from '@/store';
 import {
   createComment,
-  deleteComment,
   setLoading,
   useAppSelector,
 } from '../store';
-import dayjs from 'dayjs';
 import { User } from '@/@types/user';
 import { PegFile } from '@/@types/pegFile';
-import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { Select, Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { visibilityData } from '../../lists/constants';
 import { hasRole } from '@/utils/permissions';
-import { RichTextEditor } from '@/components/shared';
-
-type TimelineCommentProps = TimeLineItemProps & {
-  comment: Comment;
-  user: User;
-};
+import { Loading, RichTextEditor } from '@/components/shared';
+import TimelineComment from './TimelineComment';
+import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 
 const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
@@ -49,6 +41,16 @@ const Comments = () => {
   const { project, comments, loading } = useAppSelector(
     (state) => state.projectDetails.data
   );
+  const {avatarUrl, fetchAvatarUrl} = useAvatarUrl(user?.avatar)
+  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  
+  useEffect(() => {
+      setAvatarLoading(true)
+      if (!avatarUrl) {
+          fetchAvatarUrl();
+      }
+      setAvatarLoading(false)
+  }, [avatarUrl]);
 
   const onEdit = (val: string) => {
     debounceFn(val);
@@ -164,7 +166,7 @@ const Comments = () => {
             <div>
               <h4>Commentaires</h4>
               <Timeline>
-                {determineVisibleComments(comments, user).map((comment) => (
+                {determineVisibleComments(comments, user).map((comment: Comment) => (
                   <TimelineComment
                     key={comment.documentId}
                     comment={comment}
@@ -178,7 +180,9 @@ const Comments = () => {
               </Timeline>
               <Card className="mt-6">
                 <div className="mt-1 mb-3 flex flex-auto gap-4">
-                  <Avatar size={30} shape="circle" icon={<HiUserCircle />} />
+                  <Loading loading={avatarLoading}>
+                    <Avatar size={30} shape="circle" src={avatarUrl} icon={<HiUserCircle />} />
+                  </Loading>
                   <div className="w-full">
                     <RichTextEditor
                       onChange={onEdit}
@@ -234,95 +238,4 @@ const Comments = () => {
   );
 };
 
-const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
-  const determineAuthorRoleLabel = (user: User): string => {
-    switch (user.role.name) {
-      case 'customer':
-        return 'Client ' + (user.customer?.name ?? 'Inconnu');
-      case 'producer':
-        return 'Producteur ' + (user.producer?.name ?? 'Inconnu');
-      case 'super_admin':
-        return 'Administrateur';
-      default:
-        return '';
-    }
-  };
-  const authorLabel = comment.user ? `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})` : 'Utilisateur supprimé';
-  const dispatch = useAppDispatch();
-
-  const handleDeleteComment = async () => {
-    dispatch(deleteComment(comment.documentId));
-    const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(comment?.images);
-
-    for (const pegFileToDelete of pegFilesToDelete) {
-      apiDeleteFile(pegFileToDelete.id)
-    }
-  };
-
-  const determineCommentVisibility = (visibility: string): string => {
-    return (
-      visibilityData.find(({ value }) => value === visibility)?.label ||
-      visibilityData.find(({ value }) => value === 'all')!.label
-    );
-  };
-
-  return (
-    <Timeline.Item
-      className="w-full mt-4"
-      media={<Avatar size={30} shape="circle" icon={<HiUserCircle />} />}
-      {...rest}
-    >
-      <div className="my-1 flex items-center justify-between">
-        <span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">
-            {authorLabel}
-          </span>
-          <span className="mx-2">a ajouté un commentaire </span>
-          <span className="text-gray-500 text-end">
-            le {dayjs(comment.createdAt).format('DD/MM/YYYY à HH:mm')}
-          </span>
-        </span>
-        {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-          <span>{`Visibilité : ${determineCommentVisibility(comment.visibility)}`}</span>
-        )}
-      </div>
-      <div className="grid grid-cols-12 gap-4 mt-4">
-        <Card
-          bordered
-          className={`${comment.images.length > 0 ? 'col-span-11' : 'col-span-12'}`}
-        >
-          <p className="prose dark:prose-invert max-w-none text-sm">
-            {ReactHtmlParser(comment.content)}
-          </p>
-          <p
-            className="text-gray-500 text-end cursor-pointer hover:text-red-500"
-            onClick={handleDeleteComment}
-          >
-            Supprimer
-          </p>
-        </Card>
-        {comment.images.length > 0 && (
-          <div className="col-span-1 flex flex-col items-center justify-center">
-            {comment.images.map((image: PegFile) => (
-              <div className=" bg-gray-900 rounded-md">
-                <a href={image.url} target="_blank" rel="noreferrer">
-                  <img
-                    src={image.url}
-                    alt={image.name}
-                    className="rounded-lg bg-slate-50"
-                    style={{
-                      height: '250px',
-                      width: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Timeline.Item>
-  );
-};
 export default Comments;

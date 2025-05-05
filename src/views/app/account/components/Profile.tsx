@@ -71,19 +71,6 @@ const Profile = () => {
     values: UserFormModel,
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
-    /*let newAvatar = undefined;
-
-    if (newAvatar) {
-      if (avatar.id) {
-        newAvatar = avatar;
-      } else {
-        const avatarUploaded: PegFile = await apiUploadFile(avatar.file);
-        newAvatar = avatarUploaded;
-      }
-    } else if (user.avatar) {
-      apiDeleteFile(user.avatar.id)
-    }*/
-
     if (newAvatar) {
       const newAvatarUploaded: PegFile = await apiUploadFile(newAvatar.file);
 
