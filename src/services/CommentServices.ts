@@ -14,6 +14,9 @@ export async function apiCreateComment(data: CreateCommentRequest): Promise<Axio
             documentId
             content
             user {
+                avatar {
+                    documentId
+                }
                 firstName
                 lastName
                 customer {

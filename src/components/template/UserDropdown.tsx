@@ -9,6 +9,9 @@ import type { CommonProps } from '@/@types/common'
 import { useAppSelector } from '@/store'
 import { useTranslation } from 'react-i18next'
 import { User } from '@/@types/user'
+import { useEffect, useState } from 'react'
+import { Loading } from '../shared'
+import useAvatarUrl from '@/utils/hooks/useAvatarUrl'
 
 type DropdownList = {
     label: string
@@ -22,9 +25,24 @@ const _UserDropdown = ({ className }: CommonProps) => {
     const { t } = useTranslation()
     const { signOut } = useAuth()
     const {user} : {user: User} = useAppSelector((state) => state.auth.user)
+
+    const {avatarUrl, fetchAvatarUrl} = useAvatarUrl(user?.avatar)
+    const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+    
+    // Spécifique PEG
+    useEffect(() => {
+        setAvatarLoading(true)
+        if (!avatarUrl) {
+            fetchAvatarUrl();
+        }
+        setAvatarLoading(false)
+    }, [avatarUrl]);
+
     const UserAvatar = (
         <div className={classNames(className, 'flex items-center gap-2')}>
-            <Avatar size={32} shape="circle" icon={<HiOutlineUser />} />
+            <Loading loading={avatarLoading}>
+                <Avatar size={32} shape="circle" src={avatarUrl} icon={<HiOutlineUser />} />
+            </Loading>
             <div className="hidden md:block">
                 <div className="text-xs capitalize">{t("hello")}</div>
                 <div className="font-bold">{user?.lastName}</div>
