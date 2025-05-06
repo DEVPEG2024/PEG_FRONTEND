@@ -1,4 +1,4 @@
-import { injectReducer } from '@/store';
+import { injectReducer, RootState, useAppSelector as useRootAppSelector, } from '@/store';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import reducer, {
@@ -23,6 +23,7 @@ import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
 import { RichTextEditor } from '@/components/shared';
+import { User } from '@/@types/user';
 
 injectReducer('showProduct', reducer);
 
@@ -40,6 +41,9 @@ const ShowProduct = () => {
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
+  const { user }: { user: User } = useRootAppSelector(
+      (state: RootState) => state.auth.user
+    );
 
   useEffect(() => {
     if (!product) {
@@ -79,6 +83,7 @@ const ShowProduct = () => {
         product,
         formAnswer,
         sizeAndColors: sizeAndColorsSelected,
+        userDocumentId: user.documentId
       } as CartItem)
     );
     toast.push(

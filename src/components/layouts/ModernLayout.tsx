@@ -14,6 +14,7 @@ import { RootState, useAppSelector } from "@/store";
 import { useTranslation } from "react-i18next";
 import { AuthorityCheck } from "../shared";
 import { Link } from "react-router-dom";
+import useUserCart from "@/utils/hooks/useUserCart";
 
 const HeaderActionsStart = () => {
   return (
@@ -29,7 +30,7 @@ const HeaderActionsEnd = () => {
   const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const cart = useAppSelector((state: RootState) => state.base.cart.cart);
+  const cart = useUserCart(documentId);
   useEffect(() => {
     const clientId = documentId;
 

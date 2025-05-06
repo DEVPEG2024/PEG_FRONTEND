@@ -10,10 +10,12 @@ import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import PaymentContent from './PaymentContent';
 import { useColumns } from './CartColumns';
+import useUserCart from '@/utils/hooks/useUserCart';
 
 
 function Cart() {
-  const cart = useAppSelector((state: RootState) => state.base.cart.cart);
+  const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
+  const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
