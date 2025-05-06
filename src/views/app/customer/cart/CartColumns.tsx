@@ -30,7 +30,7 @@ export const useColumns = (
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
         return (
-          <p>{row.original.product.price} €</p>
+          <p>{row.original.product.price.toFixed(2)} €</p>
         );
       },
     },
@@ -65,9 +65,9 @@ export const useColumns = (
           >
             {row.original.sizeAndColors.reduce(
                           (amount, size) =>
-                            amount + size.quantity * row.original.product.price,
+                            amount + size.quantity * Math.trunc(row.original.product.price * 100) / 100,
                           0
-                        )}{' €'}
+                        ).toFixed(2)}{' €'}
           </div>
         );
       },

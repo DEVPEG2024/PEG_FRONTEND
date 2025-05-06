@@ -7,4 +7,5 @@ export type CartItem = {
   formAnswer: FormAnswer;
   sizeAndColors: SizeAndColorSelection[];
   orderItemDocumentId?: string;
+  userDocumentId: string;
 };

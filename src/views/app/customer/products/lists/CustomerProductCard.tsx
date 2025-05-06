@@ -28,7 +28,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
         />
         <div className="flex flex-col justify-between">
           <p className="text-lg font-bold">{product.name}</p>
-          <p className="text-lg font-bold text-white">{product.price}€</p>
+          <p className="text-lg font-bold text-white">{product.price.toFixed(2)}€</p>
         </div>
       </div>
     </Card>

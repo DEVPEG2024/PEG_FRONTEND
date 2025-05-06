@@ -49,7 +49,7 @@ function PaymentContent({
           sizeAndColorSelections: item.sizeAndColors,
           formAnswer,
           price: item.sizeAndColors.reduce(
-            (amount, size) => amount + size.quantity * item.product.price,
+            (amount, size) => amount + size.quantity * Math.trunc(item.product.price * 100) / 100,
             0
           ),
           state: 'pending',

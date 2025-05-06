@@ -21,7 +21,7 @@ import {
 } from '../store';
 import { User } from '@/@types/user';
 import { PegFile } from '@/@types/pegFile';
-import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import { apiUploadFile } from '@/services/FileServices';
 import { Select, Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { visibilityData } from '../../lists/constants';

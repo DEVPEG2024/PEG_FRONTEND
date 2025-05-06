@@ -198,7 +198,7 @@ const ProductsList = () => {
                   <div className="flex flex-col justify-between">
                     <p className="text-lg font-bold">{product.name}</p>
                     <p className="text-lg font-bold text-white">
-                      {product.price}€
+                      {product.price.toFixed(2)}€
                     </p>
                     <div className="flex gap-4 items-center ">
                       <Button
