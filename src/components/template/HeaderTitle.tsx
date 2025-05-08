@@ -7,6 +7,7 @@ const HeaderTitle = ({
   description,
   action,
   addAction,
+  customAction,
   total,
   link,
 }: {
@@ -17,6 +18,7 @@ const HeaderTitle = ({
   link: string;
   addAction: boolean;
   action?: () => void;
+  customAction?: React.ReactNode;
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate()
@@ -27,11 +29,14 @@ const HeaderTitle = ({
           <h2>{t(title)} ({total})</h2>
           <p>{t(description)}</p>
         </div>
-        {addAction && (
-        <Button variant="solid" size="sm" onClick={action ? action : () => {navigate(link)}}>
-          {t(buttonTitle)} 
-        </Button>
-        )}
+        <div className="flex items-center gap-4">
+          {addAction && (
+          <Button variant="solid" size="sm" onClick={action ? action : () => {navigate(link)}}>
+            {t(buttonTitle)} 
+          </Button>
+          )}
+          {customAction && customAction}
+        </div> 
       </div>
     </div>
   );

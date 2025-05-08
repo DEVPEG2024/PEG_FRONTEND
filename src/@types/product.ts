@@ -43,6 +43,7 @@ export type SizeAndColorSelection = {
 export type ProductCategory = {
   documentId: string;
   name: string;
+  order?: number;
   image?: PegFile;
   products: Product[];
 };

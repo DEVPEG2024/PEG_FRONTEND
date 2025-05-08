@@ -116,6 +116,7 @@ export async function apiGetProductCategories(data: GetProductCategoriesRequest 
                     documentId
                 }
                 name
+                order
                 products (pagination: {limit: 100}){
                     documentId
                 }
