@@ -42,6 +42,23 @@ export const getProductCategories = createAsyncThunk(
       productCategories_connection,
     }: { productCategories_connection: GetProductCategoriesResponse } =
       await unwrapData(apiGetProductCategories(data));
+    
+    if (productCategories_connection.nodes) {
+      productCategories_connection.nodes = productCategories_connection.nodes.sort((a, b) => {
+        if (a.order !== null && a.order !== undefined && 
+            b.order !== null && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        if (a.order !== null && a.order !== undefined) {
+          return -1;
+        }
+        if (b.order !== null && b.order !== undefined) {
+          return 1;
+        }
+        return 0;
+      });
+    }
+    
     return productCategories_connection;
   }
 );

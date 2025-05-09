@@ -1,10 +1,11 @@
 import { Container, Loading } from '@/components/shared';
 import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
-import { Input, Pagination, Select } from '@/components/ui';
+import { Button, Input, Pagination, Select } from '@/components/ui';
 import ProductCategoriesListContent from './components/ProductCategoriesListContent';
 import ModalEditProductCategory from './modals/ModalEditProductCategory';
 import ModalDeleteProductCategory from './modals/ModalDeleteProductCategory';
+import ModalOrderCategory from './modals/ModalOrderCategory';
 import reducer, {
   getProductCategories,
   setProductCategory,
@@ -14,6 +15,7 @@ import reducer, {
 import { injectReducer } from '@/store';
 import { ProductCategory } from '@/@types/product';
 import { useTranslation } from 'react-i18next';
+import { HiOutlineCog } from 'react-icons/hi';
 
 injectReducer('productCategories', reducer);
 
@@ -35,6 +37,7 @@ const Categories = () => {
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
+  const [isOpenOrder, setIsOpenOrder] = useState<boolean>(false);
   const { productCategories, productCategory, loading, total } = useAppSelector(
     (state) => state.productCategories.data
   );
@@ -72,13 +75,44 @@ const Categories = () => {
   const setIsOpenNewCategoryProduct = () => {
     setIsOpen(true);
   };
-  
+
+  const handleOpenOrderModal = () => {
+    setIsOpenOrder(true);
+  };
+
   const handleCloseModal = () => {
+    const wasOrderModalOpen = isOpenOrder;
+
     setIsOpen(false);
     setIsOpenEdit(false);
     setIsOpenDelete(false);
+    setIsOpenOrder(false);
     dispatch(setProductCategory(undefined));
+
+    if (wasOrderModalOpen) {
+      dispatch(
+        getProductCategories({
+          pagination: { page: currentPage, pageSize },
+          searchTerm,
+        })
+      );
+    }
   };
+
+  const orderAction = (
+    <div className="flex items-center">
+      <Button
+        variant="plain"
+        size="sm"
+        icon={<HiOutlineCog className="text-lg" />}
+        onClick={handleOpenOrderModal}
+        className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
+        aria-label={t('cat.reorderCategories', 'Réorganiser les catégories')}
+      >
+        {t('cat.reorder', 'Réorganiser')}
+      </Button>
+    </div>
+  );
 
   return (
     <Container>
@@ -88,6 +122,7 @@ const Categories = () => {
         description="Catégorie de produit"
         link={''}
         addAction={true}
+        customAction={orderAction}
         action={setIsOpenNewCategoryProduct}
         total={total}
       />
@@ -144,6 +179,15 @@ const Categories = () => {
         <ModalDeleteProductCategory
           title="Supprimer une catégorie de produit"
           isOpen={isOpenDelete}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
+      {isOpenOrder && (
+        <ModalOrderCategory
+          title="Réorganiser les catégories de produit"
+          isOpen={isOpenOrder}
+          categories={productCategories}
+          loading={loading}
           handleCloseModal={handleCloseModal}
         />
       )}
