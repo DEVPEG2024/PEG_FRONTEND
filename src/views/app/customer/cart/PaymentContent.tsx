@@ -60,7 +60,6 @@ function PaymentContent({
       
       return orderItemCreated;
     } catch (error) {
-      // TODO: envoyer mail erreur création commande
     }
   }
 
@@ -106,6 +105,7 @@ function PaymentContent({
       customerDocumentId: user.customer!.documentId,
       userFirstName: user.firstName,
       userLastName: user.lastName,
+      userEmail: user.email,
     };
   };
 

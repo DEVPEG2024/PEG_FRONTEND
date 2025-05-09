@@ -13,4 +13,5 @@ export type Checkout = {
   customerDocumentId: string;
   userFirstName: string;
   userLastName: string;
+  userEmail: string;
 }
