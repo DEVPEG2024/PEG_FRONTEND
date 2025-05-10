@@ -83,13 +83,7 @@ const Categories = () => {
   const handleCloseModal = () => {
     const wasOrderModalOpen = isOpenOrder;
 
-    setIsOpen(false);
-    setIsOpenEdit(false);
-    setIsOpenDelete(false);
-    setIsOpenOrder(false);
-    dispatch(setProductCategory(undefined));
-
-    if (wasOrderModalOpen) {
+     if (wasOrderModalOpen) {
       dispatch(
         getProductCategories({
           pagination: { page: currentPage, pageSize },
@@ -97,6 +91,12 @@ const Categories = () => {
         })
       );
     }
+
+    setIsOpen(false);
+    setIsOpenEdit(false);
+    setIsOpenDelete(false);
+    setIsOpenOrder(false);
+    dispatch(setProductCategory(undefined));
   };
 
   const orderAction = (
@@ -116,16 +116,20 @@ const Categories = () => {
 
   return (
     <Container>
-      <HeaderTitle
-        title="Catégorie de produit"
-        buttonTitle="Ajouter une catégorie de produit"
-        description="Catégorie de produit"
-        link={''}
-        addAction={true}
-        customAction={orderAction}
-        action={setIsOpenNewCategoryProduct}
-        total={total}
-      />
+      <div className="flex justify-between items-center">
+        <div className='flex-1 w-3/4'>
+        <HeaderTitle
+          title="Catégorie de produit"
+          buttonTitle="Ajouter une catégorie de produit"
+          description="Catégorie de produit"
+          link={''}
+          addAction={true}
+          action={setIsOpenNewCategoryProduct}
+          total={total}
+        />
+        </div>
+        {orderAction}
+      </div>
       <div className="mt-4">
         <div className="mb-4">
           <Input

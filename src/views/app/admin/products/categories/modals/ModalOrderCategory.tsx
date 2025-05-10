@@ -28,7 +28,6 @@ function ModalOrderCategory({
   const [orderedCategories, setOrderedCategories] = useState<ProductCategory[]>(
     []
   );
-  const [saving, setSaving] = useState(false);
   const [lastMovedIndex, setLastMovedIndex] = useState<number | null>(null);
   const [moveDirection, setMoveDirection] = useState<'up' | 'down' | null>(
     null
@@ -98,7 +97,6 @@ function ModalOrderCategory({
   };
 
   const handleSaveOrder = async () => {
-    setSaving(true);
     try {
       const updatePromises = orderedCategories.map((category, index) => {
         return dispatch(
@@ -117,8 +115,6 @@ function ModalOrderCategory({
       handleCloseModal();
     } catch (error) {
       console.error('Error saving category order', error);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -294,14 +290,12 @@ function ModalOrderCategory({
                 className="mr-2"
                 variant="plain"
                 onClick={handleCloseModal}
-                disabled={saving}
               >
                 {t('cancel')}
               </Button>
               <Button
                 variant="solid"
                 onClick={handleSaveOrder}
-                loading={saving}
                 disabled={orderedCategories.length === 0}
               >
                 {t('save')}

@@ -7,7 +7,6 @@ const HeaderTitle = ({
   description,
   action,
   addAction,
-  customAction,
   total,
   link,
 }: {
@@ -18,7 +17,6 @@ const HeaderTitle = ({
   link: string;
   addAction: boolean;
   action?: () => void;
-  customAction?: React.ReactNode;
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate()
@@ -35,7 +33,6 @@ const HeaderTitle = ({
             {t(buttonTitle)} 
           </Button>
           )}
-          {customAction && customAction}
         </div> 
       </div>
     </div>
