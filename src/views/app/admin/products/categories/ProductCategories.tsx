@@ -49,7 +49,7 @@ const Categories = () => {
         searchTerm,
       })
     );
-  }, [dispatch, searchTerm, currentPage, pageSize]);
+  }, [dispatch, searchTerm, currentPage, pageSize, isOpenOrder]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -81,17 +81,6 @@ const Categories = () => {
   };
 
   const handleCloseModal = () => {
-    const wasOrderModalOpen = isOpenOrder;
-
-     if (wasOrderModalOpen) {
-      dispatch(
-        getProductCategories({
-          pagination: { page: currentPage, pageSize },
-          searchTerm,
-        })
-      );
-    }
-
     setIsOpen(false);
     setIsOpenEdit(false);
     setIsOpenDelete(false);
