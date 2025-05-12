@@ -27,13 +27,11 @@ const HeaderTitle = ({
           <h2>{t(title)} ({total})</h2>
           <p>{t(description)}</p>
         </div>
-        <div className="flex items-center gap-4">
-          {addAction && (
-          <Button variant="solid" size="sm" onClick={action ? action : () => {navigate(link)}}>
-            {t(buttonTitle)} 
-          </Button>
-          )}
-        </div> 
+        {addAction && (
+        <Button variant="solid" size="sm" onClick={action ? action : () => {navigate(link)}}>
+          {t(buttonTitle)} 
+        </Button>
+        )}
       </div>
     </div>
   );
