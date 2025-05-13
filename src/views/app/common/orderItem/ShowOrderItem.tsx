@@ -12,8 +12,9 @@ import Container from '@/components/shared/Container';
 import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
-import { Color, Size, SizeAndColorSelection } from '@/@types/product';
+import { SizeAndColorSelection } from '@/@types/product';
 import { useParams } from 'react-router-dom';
+import ReactHtmlParser from 'html-react-parser';
 
 injectReducer('showOrderItem', reducer);
 
@@ -67,11 +68,9 @@ const ShowOrderItem = () => {
                   </p>
                 </div>
 
-                <p className="mt-4 leading-relaxed mb-8">
-                  {orderItem.product.description
-                    ?.replace('<p>', '')
-                    .replace('</p>', '')}
-                </p>
+                <div className="mt-4 leading-relaxed mb-8 prose dark:prose-invert max-w-none text-sm">
+                  {ReactHtmlParser(orderItem.product.description || '')}
+                </div>
 
                 {orderItem.product.sizes.length > 0 ? (
                   <div className="grid grid-cols-7 gap-4 mb-6">
