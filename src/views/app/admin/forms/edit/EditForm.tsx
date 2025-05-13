@@ -22,9 +22,10 @@ function EditForm({
   name: string;
 }) {
   const [newName, setNewName] = useState<string>(name),
-    [components, setComponents] = useState<any>(
-      JSON.parse(JSON.stringify(fields))
-    );
+    [form, setForm] = useState<any>({
+      display: 'form',
+      components: JSON.parse(JSON.stringify(fields)),
+    });
   const { token } = useAppSelector((state) => state.auth.session)
 
   useEffect(() => {
@@ -64,21 +65,19 @@ function EditForm({
   };
 
   const onComponentsChange = (e: any) => {
-    setComponents(e.components);
+    setForm(e)
   };
 
   return (
     <div className="flex flex-col gap-4">
       <Input
+        className="text-black"
         placeholder={'Nom du formulaire'}
         value={newName}
         onChange={onNameChange}
       />
       <FormBuilder
-        initialForm={{
-          display: 'form',
-          components,
-        }}
+        form={form}
         options={{
           language: 'fr',
           i18n: {
@@ -159,7 +158,7 @@ function EditForm({
       <div className="flex flex-row gap-2 justify-end">
         <button
           className={classNames('btn', 'btn-primary', 'btn-md')}
-          onClick={() => onValidate(newName, components)}
+          onClick={() => onValidate(newName, form.components)}
         >
           Valider
         </button>

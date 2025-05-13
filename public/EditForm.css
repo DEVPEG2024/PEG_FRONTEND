@@ -2,7 +2,7 @@
     visibility: visible;
   }
 
-.input {
+.input:is(.dark *) {
   color: black
 }
 
