@@ -187,7 +187,6 @@ const Comments = () => {
                     <RichTextEditor
                       onChange={onEdit}
                       value={commentText}
-                      placeholder="Ajouter un commentaire"
                     />
                   </div>
                 </div>

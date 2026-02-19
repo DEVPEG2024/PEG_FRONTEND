@@ -1,5 +1,5 @@
 import AdaptableCard from '@/components/shared/AdaptableCard';
-import RichTextEditor from '@/components/shared/RichTextEditor';
+import RichTextEditor from '@/components/app/RichTextEditor';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';

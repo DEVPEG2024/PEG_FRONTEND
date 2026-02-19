@@ -174,7 +174,6 @@ const ShowProduct = () => {
                   <RichTextEditor
                     value={product.description}
                     readOnly={true}
-                    theme='bubble'
                   />
                 </p>
 

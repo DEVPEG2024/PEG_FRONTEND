@@ -141,10 +141,8 @@ function ModalEditTicket() {
           <div className="flex flex-col gap-2 mt-4">
             <RichTextEditor
               value={formData.description}
-              onChange={(value: string, delta: any, source: string) => {
-                if (source === 'user') {
-                  setFormData({ ...formData, description: value });
-                }
+              onChange={(value: string) => {
+                setFormData({ ...formData, description: value });
               }}
             />
           </div>

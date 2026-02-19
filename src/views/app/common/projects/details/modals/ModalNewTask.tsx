@@ -62,13 +62,14 @@ function ModalNewTask() {
               setFormData({ ...formData, name: e });
             }}
           />
-          <RichTextEditor
-            value={formData.description}
-            className="mt-4"
-            onChange={(e: any) => {
-              setFormData({ ...formData, description: e });
-            }}
-          />
+          <div className="mt-4">
+            <RichTextEditor
+              value={formData.description}
+              onChange={(e: any) => {
+                setFormData({ ...formData, description: e });
+              }}
+            />
+          </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
               <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
