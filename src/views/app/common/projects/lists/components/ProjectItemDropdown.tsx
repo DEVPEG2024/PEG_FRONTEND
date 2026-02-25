@@ -66,7 +66,7 @@ const ProjectItemDropdown = ({
         <div className="flex flex-col items-center justify-center">
           <p>Voulez-vous vraiment supprimer ce projet ?</p>
         </div>
-        <div className="flex flex-grow items-center justify-center gap-2 mt-10">
+        <div className="flex grow items-center justify-center gap-2 mt-10">
           <Button onClick={() => setIsValidDeleteOpen(false)}>Annuler</Button>
 
           <Button

@@ -37,8 +37,8 @@ const ProducerFields = (props: ProducerFields) => {
   };
 
   return (
-    <AdaptableCard className="mb-4">
-      <h5>{t('p.organization')}</h5>
+    <AdaptableCard bordered={false} className="mb-4">
+      <h5>{t('p.producer')}</h5>
       <p className="mb-6">{t('p.producer_description')}</p>
       <div className="flex gap-4">
         <FormItem

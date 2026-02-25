@@ -23,7 +23,7 @@ const ProductCategoryCard = ({
             navigate(`/admin/products/categories/${productCategory.documentId}`)
           }
         >
-          <h6 className="flex flex-col justify-center flex-grow items-center gap-2">
+          <h6 className="flex flex-col justify-center grow items-center gap-2">
             <img
               src={productCategory.image?.url}
               alt={productCategory.image?.name}

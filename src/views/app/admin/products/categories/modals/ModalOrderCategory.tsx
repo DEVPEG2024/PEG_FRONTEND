@@ -163,7 +163,7 @@ function ModalOrderCategory({
           <Loading loading={loading}>
             <DragDropContext onDragEnd={onDragEnd}>
               <div
-                className="flex-grow overflow-y-auto max-h-96 custom-scrollbar pr-2"
+                className="grow overflow-y-auto max-h-96 custom-scrollbar pr-2"
                 ref={dragAreaRef}
               >
                 <StrictModeDroppable
@@ -210,11 +210,11 @@ function ModalOrderCategory({
                                 className="flex items-center flex-1 min-w-0 cursor-grab"
                                 {...provided.dragHandleProps}
                               >
-                                <div className="order-number mr-3 flex-shrink-0">
+                                <div className="order-number mr-3 shrink-0">
                                   {index + 1}
                                 </div>
                                 {category.image && (
-                                  <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden mr-3 flex-shrink-0 bg-gray-50">
+                                  <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden mr-3 shrink-0 bg-gray-50">
                                     <img
                                       src={category.image.url}
                                       alt={category.name}
@@ -230,7 +230,7 @@ function ModalOrderCategory({
                                   {category.name}
                                 </span>
                               </div>
-                              <div className="flex space-x-1 flex-shrink-0">
+                              <div className="flex space-x-1 shrink-0">
                                 <button
                                   onClick={() => moveUp(index)}
                                   disabled={index === 0}

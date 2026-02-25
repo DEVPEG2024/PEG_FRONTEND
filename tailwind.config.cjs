@@ -52,7 +52,7 @@ module.exports = {
 				],
 			},
 			screens: {
-				xs: '576',
+				xs: '576px',
 				sm: '640px',
 				md: '768px',
 				lg: '1024px',
@@ -75,32 +75,13 @@ module.exports = {
 				}),
 			},
 		},
+		safelist: [
+    {
+      pattern: /(bg|text|ring|border)-(indigo|blue|red|green)-(50|100|200|300|400|500|600|700|800|900)/,
+      variants: ['hover', 'focus', 'dark', 'dark:hover'],
+    },
+  ],
 	plugins: [
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		require('./twSafelistGenerator')({
-            path: safeListFile,
-            patterns: [
-                `text-{${SAFELIST_COLORS}}`,
-				`bg-{${SAFELIST_COLORS}}`,
-				`dark:bg-{${SAFELIST_COLORS}}`,
-				`dark:hover:bg-{${SAFELIST_COLORS}}`,
-				`dark:active:bg-{${SAFELIST_COLORS}}`,
-				`hover:text-{${SAFELIST_COLORS}}`,
-				`hover:bg-{${SAFELIST_COLORS}}`,
-				`active:bg-{${SAFELIST_COLORS}}`,
-				`ring-{${SAFELIST_COLORS}}`,
-				`hover:ring-{${SAFELIST_COLORS}}`,
-				`focus:ring-{${SAFELIST_COLORS}}`,
-				`focus-within:ring-{${SAFELIST_COLORS}}`,
-				`border-{${SAFELIST_COLORS}}`,
-				`focus:border-{${SAFELIST_COLORS}}`,
-				`focus-within:border-{${SAFELIST_COLORS}}`,
-				`dark:text-{${SAFELIST_COLORS}}`,
-				`dark:hover:text-{${SAFELIST_COLORS}}`,
-				`h-{height}`,
-				`w-{width}`,
-            ],
-        }),
         require('@tailwindcss/typography'),
 	],
 };

@@ -44,7 +44,7 @@ const ProductFields = (props: ProductFields) => {
   } = props;
 
   return (
-    <AdaptableCard divider className="mb-4">
+    <AdaptableCard bordered={false} divider className="mb-4">
       <h5>{type === 'edit' ? 'Modification du produit' : 'Nouveau produit'}</h5>
       <p className="mb-6">
         {type === 'edit'
@@ -219,7 +219,7 @@ const ProductFields = (props: ProductFields) => {
 
       <FormItem
         label="Description"
-        labelClass="!justify-start"
+        labelClass="justify-start!"
         invalid={(errors.description && touched.description) as boolean}
         errorMessage={errors.description}
       >

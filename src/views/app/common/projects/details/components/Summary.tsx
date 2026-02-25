@@ -17,7 +17,7 @@ import {
   useAppSelector as useRootAppSelector,
 } from '@/store';
 import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { SUPER_ADMIN } from '@/constants/roles.constant'; 
 import {
   useAppSelector,
   updateCurrentProject,
@@ -82,7 +82,7 @@ const Summary = ({ project }: { project: Project }) => {
       <Loading loading={loading}>
         <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <AdaptableCard rightSideBorder bodyClass="p-5">
+            <AdaptableCard bodyClass="p-5" bordered={false}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="flex items-center gap-4">
                   <Progress

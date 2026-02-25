@@ -42,7 +42,7 @@ const Settings = () => {
 
   return (
     <Container>
-      <AdaptableCard>
+      <AdaptableCard bordered={false} className="mt-6">
         <Tabs value={currentTab} onChange={(val) => onTabChange(val)}>
           <TabList>
             {Object.keys(settingsMenu).map((key) => (

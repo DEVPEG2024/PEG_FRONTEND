@@ -14,7 +14,7 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
     >
       <div className="flex flex-col justify-center items-center">
         <a className="cursor-pointer">
-          <h6 className="flex flex-col justify-center flex-grow items-center gap-2">
+          <h6 className="flex flex-col justify-center grow items-center gap-2">
             <img
               src={image?.url}
               alt={name}

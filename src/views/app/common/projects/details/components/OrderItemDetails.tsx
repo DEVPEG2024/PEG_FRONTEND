@@ -31,7 +31,7 @@ const OrderItemDetails = ({
 
   return (
     <div>
-      <AdaptableCard bodyClass="p-5">
+      <AdaptableCard bordered={false} bodyClass="p-5">
         <h4 className="mb-6">Détails de la commande</h4>
         <IconText
           className="mb-4"
