@@ -1,20 +1,23 @@
 import { CartItem } from '@/@types/cart';
-import { AdaptableCard, Container, DataTable, Loading } from '@/components/shared';
+import {
+  AdaptableCard,
+  Container,
+  DataTable,
+  Loading,
+} from '@/components/shared';
 import Empty from '@/components/shared/Empty';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
-import {
-  editItem,
-  removeFromCart,
-} from '@/store/slices/base/cartSlice';
+import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { MdShoppingCart } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import PaymentContent from './PaymentContent';
 import { useColumns } from './CartColumns';
 import useUserCart from '@/utils/hooks/useUserCart';
 
-
 function Cart() {
-  const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
+  const { documentId } = useAppSelector(
+    (state: RootState) => state.auth.user.user
+  );
   const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -26,12 +29,9 @@ function Cart() {
 
   const handleDelete = (item: CartItem) => {
     dispatch(removeFromCart(item));
-  }
+  };
 
-  const columns = useColumns(
-      handleEdit,
-      handleDelete
-    );
+  const columns = useColumns(handleEdit, handleDelete);
 
   if (cart.length === 0) {
     return (
@@ -55,16 +55,10 @@ function Cart() {
                 </div>
               </div>
               <hr className="my-4" />
-              <DataTable
-                columns={columns}
-                data={cart}
-              />
-              
+              <DataTable columns={columns} data={cart} />
             </AdaptableCard>
           </div>
-          <PaymentContent
-            cart={cart}
-          />
+          <PaymentContent cart={cart} />
         </div>
       </Loading>
     </Container>

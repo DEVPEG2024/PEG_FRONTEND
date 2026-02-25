@@ -3,7 +3,12 @@ import HeaderTitle from '@/components/template/HeaderTitle';
 import { useEffect, useState } from 'react';
 import { useColumns } from './TicketColumns';
 import { Input } from '@/components/ui';
-import { RootState, injectReducer, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
+import {
+  RootState,
+  injectReducer,
+  useAppDispatch,
+  useAppSelector as useRootAppSelector,
+} from '@/store';
 import reducer, {
   deleteTicket,
   getTickets,
@@ -28,8 +33,8 @@ const TicketsList = () => {
   const { tickets, total, loading, newTicketDialog, editTicketDialog } =
     useAppSelector((state) => state.tickets.data);
   const { user }: { user: User } = useRootAppSelector(
-      (state: RootState) => state.auth.user
-    );
+    (state: RootState) => state.auth.user
+  );
 
   useEffect(() => {
     fetchTickets();
@@ -37,7 +42,10 @@ const TicketsList = () => {
 
   const fetchTickets = async () => {
     dispatch(
-      getTickets({request: { pagination: { page: currentPage, pageSize }, searchTerm }, user})
+      getTickets({
+        request: { pagination: { page: currentPage, pageSize }, searchTerm },
+        user,
+      })
     );
   };
 

@@ -1,4 +1,8 @@
-import { injectReducer, RootState, useAppSelector as useRootAppSelector, } from '@/store';
+import {
+  injectReducer,
+  RootState,
+  useAppSelector as useRootAppSelector,
+} from '@/store';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import reducer, {
@@ -37,14 +41,20 @@ const ShowProduct = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
-  const { product, formCompleted, formAnswer, sizeAndColorsSelected, cartItemId } =
-    useAppSelector((state) => state.showProduct.data);
+  const {
+    product,
+    formCompleted,
+    formAnswer,
+    sizeAndColorsSelected,
+    cartItemId,
+  } = useAppSelector((state) => state.showProduct.data);
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
-  const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
+  const [sizeAndColorsChanged, setSizeAndColorsChanged] =
+    useState<boolean>(false);
   const { user }: { user: User } = useRootAppSelector(
-      (state: RootState) => state.auth.user
-    );
+    (state: RootState) => state.auth.user
+  );
 
   useEffect(() => {
     if (!product) {
@@ -69,13 +79,21 @@ const ShowProduct = () => {
 
   useEffect(() => {
     setCanAddToCart(
-      (product !== null && isAtLeastOneItemWanted() && ((product.form && formCompleted) || !product.form))
+      product !== null &&
+        isAtLeastOneItemWanted() &&
+        ((product.form && formCompleted) || !product.form)
     );
   }, [sizeAndColorsSelected, formCompleted, product]);
 
-  const isAtLeastOneItemWanted = () : boolean => {
-    return sizeAndColorsSelected.reduce((quantity, sizeAndColorSelected) => quantity + sizeAndColorSelected.quantity, 0) > 0
-  }
+  const isAtLeastOneItemWanted = (): boolean => {
+    return (
+      sizeAndColorsSelected.reduce(
+        (quantity, sizeAndColorSelected) =>
+          quantity + sizeAndColorSelected.quantity,
+        0
+      ) > 0
+    );
+  };
 
   const handleAddToCart = () => {
     dispatch(
@@ -84,10 +102,10 @@ const ShowProduct = () => {
         product,
         formAnswer,
         sizeAndColors: sizeAndColorsSelected,
-        userDocumentId: user.documentId
+        userDocumentId: user.documentId,
       } as CartItem)
     );
-    toast.success("Article ajouté au panier")
+    toast.success('Article ajouté au panier');
     navigate(-1);
   };
 
@@ -95,8 +113,16 @@ const ShowProduct = () => {
     dispatch(setFormDialog(true));
   };
 
-  const handleSizeAndColorsChanged = (value: number, size: Size, color: Color): void => {
-    const newSizeAndColorsSelected = determineNewSizeAndColors(value, size, color);
+  const handleSizeAndColorsChanged = (
+    value: number,
+    size: Size,
+    color: Color
+  ): void => {
+    const newSizeAndColorsSelected = determineNewSizeAndColors(
+      value,
+      size,
+      color
+    );
 
     setSizeAndColorsChanged(true);
     dispatch(setSizeAndColorsSelected(newSizeAndColorsSelected));
@@ -109,14 +135,20 @@ const ShowProduct = () => {
         sizeAndColors: sizeAndColorsSelected,
       } as CartItemSizeAndColorEdition)
     );
-    toast.success("Tailles modifiées")
+    toast.success('Tailles modifiées');
     navigate('/customer/cart');
   };
 
-  const determineNewSizeAndColors = (value: number, size: Size, color: Color) => {
+  const determineNewSizeAndColors = (
+    value: number,
+    size: Size,
+    color: Color
+  ) => {
     if (value > 0) {
       const index = sizeAndColorsSelected.findIndex(
-        (sizeAndColorSelected) => sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value
+        (sizeAndColorSelected) =>
+          sizeAndColorSelected.size.value === size.value &&
+          sizeAndColorSelected.color.value === color.value
       );
       // Trouver l'index de l'option actuelle dans le tableau sizeField
       const newSizeAndColorSelected: SizeAndColorSelection = {
@@ -135,7 +167,11 @@ const ShowProduct = () => {
     } else {
       return [
         ...sizeAndColorsSelected.filter(
-          (sizeAndColorSelected) => !(sizeAndColorSelected.size.value === size.value && sizeAndColorSelected.color.value === color.value)
+          (sizeAndColorSelected) =>
+            !(
+              sizeAndColorSelected.size.value === size.value &&
+              sizeAndColorSelected.color.value === color.value
+            )
         ),
       ];
     }
@@ -164,10 +200,7 @@ const ShowProduct = () => {
                 </div>
 
                 <p className="mt-4 leading-relaxed">
-                  <RichTextEditor
-                    value={product.description}
-                    readOnly={true}
-                  />
+                  <RichTextEditor value={product.description} readOnly={true} />
                 </p>
 
                 <SizeAndColorsChoice

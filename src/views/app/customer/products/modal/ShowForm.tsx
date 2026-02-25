@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Form as FormViewer } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
-import fr from '../../../admin/forms/edit/fr.json'
+import fr from '../../../admin/forms/edit/fr.json';
 
 function ShowForm({
   fields,
@@ -60,7 +60,7 @@ function ShowForm({
           readOnly,
           language: 'fr',
           i18n: {
-            fr
+            fr,
           },
         }}
         onSubmit={onSubmit}

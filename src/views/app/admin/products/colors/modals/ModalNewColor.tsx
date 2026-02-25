@@ -15,7 +15,10 @@ type Option = {
   label: string;
 };
 
-export type ColorFormModel = Omit<Color, 'documentId' | 'productCategory' | 'value'> & {
+export type ColorFormModel = Omit<
+  Color,
+  'documentId' | 'productCategory' | 'value'
+> & {
   documentId?: string;
   productCategory: string | null;
 };
@@ -53,12 +56,12 @@ function ModalNewColor() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (verifyFormData().length === 0) {
-      handleCreateColor()
+      handleCreateColor();
     }
   };
 
   const verifyFormData = () => {
-    const tempErrors : string[] = [];
+    const tempErrors: string[] = [];
     if (formData.name === '') {
       tempErrors.push('Le nom est obligatoire');
     }
@@ -67,7 +70,7 @@ function ModalNewColor() {
     }
     setErrors(tempErrors);
     return tempErrors;
-  }
+  };
 
   const handleCreateColor = () => {
     const colorToCreate: Omit<Color, 'documentId'> = {
@@ -83,7 +86,7 @@ function ModalNewColor() {
       description: '',
     });
     handleClose();
-  }
+  };
 
   const handleClose = () => {
     dispatch(setNewColorDialog(false));

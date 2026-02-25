@@ -7,7 +7,11 @@ import { PegFile } from '@/@types/pegFile';
 import { Upload } from '@/components/ui';
 import { useAppDispatch } from '@/store';
 import { setLoading, updateCurrentProject, useAppSelector } from '../store';
-import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import {
+  apiDeleteFile,
+  apiLoadPegFilesAndFiles,
+  apiUploadFile,
+} from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 
 const Files = () => {
@@ -30,7 +34,7 @@ const Files = () => {
       const pegFilesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
         project?.images
       );
-      
+
       setPegFiles(pegFilesLoaded);
     }
     setFilesLoading(false);
@@ -75,12 +79,12 @@ const Files = () => {
       'application/x-zip-compressed',
       'image/vnd.adobe.photoshop',
       'application/postscript',
-      'application/illustrator'
+      'application/illustrator',
     ];
     if (files) {
       for (const file of files) {
         if (!allowedFileType.includes(file.type)) {
-          valid = 'Le format du fichier n\'est pas pris en compte !';
+          valid = "Le format du fichier n'est pas pris en compte !";
         }
       }
     }
@@ -102,7 +106,7 @@ const Files = () => {
     }
 
     for (const pegFileIdToDelete of pegFilesIdToDelete) {
-      apiDeleteFile(pegFileIdToDelete)
+      apiDeleteFile(pegFileIdToDelete);
     }
 
     dispatch(

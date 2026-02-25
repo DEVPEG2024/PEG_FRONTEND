@@ -7,7 +7,7 @@ import { deleteProductCategory, useAppSelector } from '../store';
 function ModalDeleteProductCategory({
   title,
   isOpen,
-  handleCloseModal
+  handleCloseModal,
 }: {
   title: string;
   isOpen: boolean;

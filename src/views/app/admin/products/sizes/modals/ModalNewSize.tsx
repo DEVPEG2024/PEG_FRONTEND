@@ -15,7 +15,10 @@ type Option = {
   label: string;
 };
 
-export type SizeFormModel = Omit<Size, 'documentId' | 'productCategory' | 'value'> & {
+export type SizeFormModel = Omit<
+  Size,
+  'documentId' | 'productCategory' | 'value'
+> & {
   documentId?: string;
   productCategory: string | null;
 };
@@ -53,12 +56,12 @@ function ModalNewSize() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (verifyFormData().length === 0) {
-      handleCreateSize()
+      handleCreateSize();
     }
   };
 
   const verifyFormData = () => {
-    const tempErrors : string[] = [];
+    const tempErrors: string[] = [];
     if (formData.name === '') {
       tempErrors.push('Le nom est obligatoire');
     }
@@ -67,7 +70,7 @@ function ModalNewSize() {
     }
     setErrors(tempErrors);
     return tempErrors;
-  }
+  };
 
   const handleCreateSize = () => {
     const sizeToCreate: Omit<Size, 'documentId'> = {
@@ -83,7 +86,7 @@ function ModalNewSize() {
       description: '',
     });
     handleClose();
-  }
+  };
 
   const handleClose = () => {
     dispatch(setNewSizeDialog(false));

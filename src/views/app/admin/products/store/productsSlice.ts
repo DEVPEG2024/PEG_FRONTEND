@@ -60,7 +60,15 @@ export const getProductById = createAsyncThunk(
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (product: Product, thunkAPI) => {
-    thunkAPI.dispatch(setIndexProductToDuplicate(thunkAPI.getState().products.data.products.findIndex((p: Product) => p.documentId === product.documentId) + 1));
+    thunkAPI.dispatch(
+      setIndexProductToDuplicate(
+        thunkAPI
+          .getState()
+          .products.data.products.findIndex(
+            (p: Product) => p.documentId === product.documentId
+          ) + 1
+      )
+    );
     const { product: productToDuplicate }: { product: Product } =
       await unwrapData(apiGetProductForEditById(product.documentId));
     const { documentId, images, ...duplicatedProduct } = productToDuplicate;
@@ -209,7 +217,7 @@ export const {
   setIndexProductToDuplicate,
   setProductToEdit,
   setModalDeleteProductOpen,
-  setModalDeleteProductClose
+  setModalDeleteProductClose,
 } = productSlice.actions;
 
 export default productSlice.reducer;

@@ -51,9 +51,8 @@ export const updateOrderItem = createAsyncThunk(
 export const deleteOrderItem = createAsyncThunk(
   SLICE_NAME + '/deleteOrderItem',
   async (documentId: string): Promise<DeleteOrderItemResponse> => {
-    const { deleteOrderItem }: { deleteOrderItem: DeleteOrderItemResponse } = await unwrapData(
-      apiDeleteOrderItem(documentId)
-    );
+    const { deleteOrderItem }: { deleteOrderItem: DeleteOrderItemResponse } =
+      await unwrapData(apiDeleteOrderItem(documentId));
     return deleteOrderItem;
   }
 );

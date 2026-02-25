@@ -74,26 +74,43 @@ const ShowOrderItem = () => {
 
                 {orderItem.product.sizes.length > 0 ? (
                   <div className="grid grid-cols-7 gap-4 mb-6">
-                    {
-                      orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
-                        <div key={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')} className="grid gap-4">
-                          <span>{sizeAndColorSelected.size.name + (sizeAndColorSelected.color?.name ? ' ' + sizeAndColorSelected.color.name : '')}</span>
+                    {orderItem.sizeAndColorSelections.map(
+                      (sizeAndColorSelected: SizeAndColorSelection) => (
+                        <div
+                          key={
+                            sizeAndColorSelected.size.value +
+                            (sizeAndColorSelected.color?.value ?? '')
+                          }
+                          className="grid gap-4"
+                        >
+                          <span>
+                            {sizeAndColorSelected.size.name +
+                              (sizeAndColorSelected.color?.name
+                                ? ' ' + sizeAndColorSelected.color.name
+                                : '')}
+                          </span>
                           <Input
-                            name={sizeAndColorSelected.size.value + (sizeAndColorSelected.color?.value ?? '')}
+                            name={
+                              sizeAndColorSelected.size.value +
+                              (sizeAndColorSelected.color?.value ?? '')
+                            }
                             value={sizeAndColorSelected.quantity}
                             type="number"
                             autoComplete="off"
                             disabled={true}
                           />
                         </div>
-                      ))
-                    }
+                      )
+                    )}
                   </div>
                 ) : orderItem.product.colors.length > 0 ? (
                   <div className="grid grid-cols-7 gap-4 mb-6">
-                    {
-                      orderItem.sizeAndColorSelections.map((sizeAndColorSelected: SizeAndColorSelection) => (
-                        <div key={sizeAndColorSelected.color.value} className="grid gap-4">
+                    {orderItem.sizeAndColorSelections.map(
+                      (sizeAndColorSelected: SizeAndColorSelection) => (
+                        <div
+                          key={sizeAndColorSelected.color.value}
+                          className="grid gap-4"
+                        >
                           <span>{sizeAndColorSelected.color.name}</span>
                           <Input
                             name={sizeAndColorSelected.color.value}
@@ -103,17 +120,15 @@ const ShowOrderItem = () => {
                             disabled={true}
                           />
                         </div>
-                      ))
-                    }
+                      )
+                    )}
                   </div>
                 ) : (
                   <div className="mt-4 flex flex-row gap-4 items-center">
                     <span>Quantité</span>
                     <Input
                       name="Default"
-                      value={
-                        orderItem.sizeAndColorSelections[0].quantity
-                      }
+                      value={orderItem.sizeAndColorSelections[0].quantity}
                       type="number"
                       autoComplete="off"
                       disabled={true}

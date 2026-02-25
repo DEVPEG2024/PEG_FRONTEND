@@ -46,7 +46,12 @@ export const getTickets = createAsyncThunk(
       return tickets_connection;
     }
     const { tickets_connection }: { tickets_connection: GetTicketsResponse } =
-      await unwrapData(apiGetUserTickets({...data.request, userDocumentId: data.user.documentId}));
+      await unwrapData(
+        apiGetUserTickets({
+          ...data.request,
+          userDocumentId: data.user.documentId,
+        })
+      );
     return tickets_connection;
   }
 );

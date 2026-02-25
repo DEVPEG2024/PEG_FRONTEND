@@ -21,11 +21,14 @@ const validationSchema = Yup.object().shape({
     .oneOf([Yup.ref('newPassword')], 'Les mots de passe ne correspondent pas'),
 });
 
-const DefinePassword = ({onFormSubmit}: {onFormSubmit: (
-      values: UserPasswordFormModel,
-      setSubmitting: (isSubmitting: boolean) => void)
-    => Promise<void>}) => {
-
+const DefinePassword = ({
+  onFormSubmit,
+}: {
+  onFormSubmit: (
+    values: UserPasswordFormModel,
+    setSubmitting: (isSubmitting: boolean) => void
+  ) => Promise<void>;
+}) => {
   const initialData: UserPasswordFormModel = {
     newPassword: '',
     confirmNewPassword: '',

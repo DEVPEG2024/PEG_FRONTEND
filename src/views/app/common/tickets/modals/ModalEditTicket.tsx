@@ -53,7 +53,7 @@ function ModalEditTicket() {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([selectedTicket.image])
       )[0];
-      
+
       setImage(imageLoaded);
     }
     setImageLoading(false);

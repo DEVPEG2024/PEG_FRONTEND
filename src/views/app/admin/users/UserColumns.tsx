@@ -58,7 +58,8 @@ export const useColumns = (
             {isUserMissingInfos(row.original) && (
               <Tooltip title="Lien non renseigné">
                 <IoWarningOutline color="yellow" />
-              </Tooltip>) }
+              </Tooltip>
+            )}
           </div>
         );
       },

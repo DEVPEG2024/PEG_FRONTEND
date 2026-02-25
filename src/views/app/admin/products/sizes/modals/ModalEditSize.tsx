@@ -57,12 +57,12 @@ function ModalEditSize() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (verifyFormData().length === 0) {
-      handleModifySize()
+      handleModifySize();
     }
   };
 
   const verifyFormData = () => {
-    const tempErrors : string[] = [];
+    const tempErrors: string[] = [];
     if (formData.name === '') {
       tempErrors.push('Le nom est obligatoire');
     }
@@ -71,7 +71,7 @@ function ModalEditSize() {
     }
     setErrors(tempErrors);
     return tempErrors;
-  }
+  };
 
   const handleModifySize = () => {
     const sizeToUpdate: Size = {
@@ -87,7 +87,7 @@ function ModalEditSize() {
       description: '',
     });
     handleClose();
-  }
+  };
 
   const handleClose = () => {
     dispatch(setEditSizeDialog(false));

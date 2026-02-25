@@ -78,7 +78,7 @@ export const duplicateForm = createAsyncThunk(
   async (form: Form) => {
     const { documentId, ...duplicatedForm } = form;
     const newForm: Form = {
-      ...duplicatedForm
+      ...duplicatedForm,
     };
     const { createForm }: { createForm: Form } = await unwrapData(
       apiCreateForm(newForm)
@@ -86,7 +86,6 @@ export const duplicateForm = createAsyncThunk(
     return createForm;
   }
 );
-
 
 const formsSlice = createSlice({
   name: `${SLICE_NAME}/state`,
@@ -147,7 +146,6 @@ const formsSlice = createSlice({
     builder.addCase(createForm.rejected, (state) => {
       state.loading = false;
     });
-
 
     builder.addCase(duplicateForm.pending, (state) => {
       state.loading = true;

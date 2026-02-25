@@ -46,9 +46,8 @@ export const createColor = createAsyncThunk(
 export const deleteColor = createAsyncThunk(
   SLICE_NAME + '/deleteColor',
   async (documentId: string): Promise<DeleteColorResponse> => {
-    const { deleteColor }: { deleteColor: DeleteColorResponse } = await unwrapData(
-      apiDeleteColor(documentId)
-    );
+    const { deleteColor }: { deleteColor: DeleteColorResponse } =
+      await unwrapData(apiDeleteColor(documentId));
     return deleteColor;
   }
 );

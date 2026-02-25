@@ -23,7 +23,9 @@ type ProductFields = {
   customers: Options[];
   forms: Options[];
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
-  filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
+  filterColorsListByProductCategory: (
+    productCategoryDocumentId: string
+  ) => void;
 };
 
 const ProductFields = (props: ProductFields) => {
@@ -185,7 +187,9 @@ const ProductFields = (props: ProductFields) => {
                 placeholder="Choisir une ou plusieurs couleurs"
                 options={colors}
                 onChange={(selectedColors) => {
-                  const values = selectedColors.map((selectedColor) => selectedColor.value);
+                  const values = selectedColors.map(
+                    (selectedColor) => selectedColor.value
+                  );
                   form.setFieldValue(field.name, values);
                 }}
               />

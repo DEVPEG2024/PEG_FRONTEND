@@ -22,7 +22,9 @@ export const useColumns = (
       cell: ({ row }: { row: { original: OrderItem } }) => {
         return (
           <div className="flex flex-col" key={row.original.documentId}>
-            <span className="font-bold">{row.original.customer?.name ?? 'Client supprimé'}</span>
+            <span className="font-bold">
+              {row.original.customer?.name ?? 'Client supprimé'}
+            </span>
           </div>
         );
       },
@@ -54,11 +56,14 @@ export const useColumns = (
             className="flex-col justify-center gap-2"
             key={row.original.documentId}
           >
-            {row.original.sizeAndColorSelections?.map((sizeAndColorSelection: SizeAndColorSelection) => (
-              <p>
-                {sizeAndColorSelection.size.name} : {sizeAndColorSelection.quantity}
-              </p>
-            ))}
+            {row.original.sizeAndColorSelections?.map(
+              (sizeAndColorSelection: SizeAndColorSelection) => (
+                <p>
+                  {sizeAndColorSelection.size.name} :{' '}
+                  {sizeAndColorSelection.quantity}
+                </p>
+              )
+            )}
           </div>
         );
       },

@@ -90,7 +90,9 @@ export const updateProductCategory = createAsyncThunk(
     if (data.imageModified && data.productCategory.image) {
       imageUploaded = await apiUploadFile(data.productCategory.image.file);
     }
-    const { updateProductCategory }: { updateProductCategory: ProductCategory } = await unwrapData(
+    const {
+      updateProductCategory,
+    }: { updateProductCategory: ProductCategory } = await unwrapData(
       apiUpdateProductCategory({
         ...data.productCategory,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
@@ -207,17 +209,17 @@ const productCategoriesSlice = createSlice({
       state.loading = false;
     });
 
-
     // UPDATE PRODUCT CATEGORY
     builder.addCase(updateProductCategory.pending, (state) => {
       state.loading = true;
     });
     builder.addCase(updateProductCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategories = state.productCategories.map((productCategory) =>
-        productCategory.documentId === action.payload.documentId
-          ? action.payload
-          : productCategory
+      state.productCategories = state.productCategories.map(
+        (productCategory) =>
+          productCategory.documentId === action.payload.documentId
+            ? action.payload
+            : productCategory
       );
     });
     builder.addCase(updateProductCategory.rejected, (state) => {
@@ -229,7 +231,7 @@ const productCategoriesSlice = createSlice({
 export const {
   setModalDeleteProductCategoryOpen,
   setModalDeleteProductCategoryClose,
-  setProductCategory
+  setProductCategory,
 } = productCategoriesSlice.actions;
 
 export default productCategoriesSlice.reducer;

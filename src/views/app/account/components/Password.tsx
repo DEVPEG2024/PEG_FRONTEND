@@ -9,7 +9,7 @@ const Password = ({ onTabChange }: { onTabChange: (val: string) => void }) => {
   const onFormSubmit = async (
     values: UserPasswordFormModel,
     setSubmitting: (isSubmitting: boolean) => void
-  ) : Promise<void> => {
+  ): Promise<void> => {
     dispatch(
       updateUserPassword({ newPassword: values.newPassword, id: user.id })
     );
@@ -17,9 +17,7 @@ const Password = ({ onTabChange }: { onTabChange: (val: string) => void }) => {
     onTabChange('profile');
   };
 
-  return (
-    <DefinePassword onFormSubmit={onFormSubmit} />
-  );
+  return <DefinePassword onFormSubmit={onFormSubmit} />;
 };
 
 export default Password;

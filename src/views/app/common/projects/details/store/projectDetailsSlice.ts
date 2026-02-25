@@ -15,7 +15,11 @@ import {
   CreateTaskRequest,
   DeleteTaskResponse,
 } from '@/services/TaskService';
-import { apiCreateInvoice, apiUpdateInvoice, CreateInvoiceRequest } from '@/services/InvoicesServices';
+import {
+  apiCreateInvoice,
+  apiUpdateInvoice,
+  CreateInvoiceRequest,
+} from '@/services/InvoicesServices';
 import {
   apiCreateComment,
   apiDeleteComment,
@@ -158,12 +162,15 @@ export type AddInvoice = {
 export const addInvoice = createAsyncThunk(
   SLICE_NAME + '/addInvoice',
   async (data: AddInvoice): Promise<Project> => {
-    const { createInvoice }: { createInvoice: Invoice } = await unwrapData(apiCreateInvoice(data.invoice));
-    const { updateProject }: { updateProject: Project } =
-      await unwrapData(apiUpdateProject({
+    const { createInvoice }: { createInvoice: Invoice } = await unwrapData(
+      apiCreateInvoice(data.invoice)
+    );
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject({
         documentId: data.project.documentId,
         invoices: [...data.project.invoices, createInvoice],
-      }));
+      })
+    );
     return updateProject;
   }
 );

@@ -9,7 +9,14 @@ import reducer, {
   useAppSelector,
 } from './store';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Input, Pagination, Select, Tooltip } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Input,
+  Pagination,
+  Select,
+  Tooltip,
+} from '@/components/ui';
 import { Form } from '@/@types/form';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
@@ -57,23 +64,23 @@ function FormsListContent() {
       setCurrentPage(1);
     }
   };
-  
+
   const handleEdit = (form: Form) => {
     dispatch(setForm(form));
     setIsOpenNewForm();
   };
-  
+
   const handleDelete = (documentId: string) => {
     dispatch(deleteForm(documentId));
   };
-  
+
   const setIsOpenNewForm = () => {
     dispatch(setNewFormDialog(true));
   };
 
   const handleDuplicate = (form: Form) => {
     dispatch(duplicateForm(form));
-    toast.success("Formulaire dupliqué")
+    toast.success('Formulaire dupliqué');
   };
   return (
     <div className="h-full">
@@ -136,25 +143,25 @@ function FormsListContent() {
             </Card>
           ))}
           <div className="flex items-center justify-between mt-4">
-          <Pagination
-            pageSize={pageSize}
-            currentPage={currentPage}
-            total={total}
-            onChange={handlePaginationChange}
-          />
-          <div style={{ minWidth: 130 }}>
-            <Select
-              size="sm"
-              menuPlacement="top"
-              isSearchable={false}
-              value={pageSizeOption.filter(
-                (option) => option.value === pageSize
-              )}
-              options={pageSizeOption}
-              onChange={(option) => handleSelectChange(option?.value)}
+            <Pagination
+              pageSize={pageSize}
+              currentPage={currentPage}
+              total={total}
+              onChange={handlePaginationChange}
             />
+            <div style={{ minWidth: 130 }}>
+              <Select
+                size="sm"
+                menuPlacement="top"
+                isSearchable={false}
+                value={pageSizeOption.filter(
+                  (option) => option.value === pageSize
+                )}
+                options={pageSizeOption}
+                onChange={(option) => handleSelectChange(option?.value)}
+              />
+            </div>
           </div>
-        </div>
         </div>
       </Loading>
     </div>

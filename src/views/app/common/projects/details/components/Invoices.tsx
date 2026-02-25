@@ -59,10 +59,12 @@ const Invoices = () => {
     dispatch(setPrintProjectInvoiceDialog(true));
   };
 
-  const generateInvoice = () : void => {
-    const errorsOnGeneration: string[] = verifyGeneration()
+  const generateInvoice = (): void => {
+    const errorsOnGeneration: string[] = verifyGeneration();
     if (errorsOnGeneration.length > 0) {
-      errorsOnGeneration.forEach((errorOnGeneration) => toast.error(errorOnGeneration))
+      errorsOnGeneration.forEach((errorOnGeneration) =>
+        toast.error(errorOnGeneration)
+      );
     } else {
       const invoice: Omit<Invoice, 'documentId'> = {
         customer: project.customer,
@@ -80,20 +82,20 @@ const Invoices = () => {
         paymentState: 'pending',
         paymentDate: new Date(0),
       };
-      dispatch(addInvoice({invoice, project}));
+      dispatch(addInvoice({ invoice, project }));
     }
-  }
+  };
 
-  const verifyGeneration = () : string[] => {
-    const errors : string[] = []
+  const verifyGeneration = (): string[] => {
+    const errors: string[] = [];
     if (!project.customer) {
-      errors.push("Aucun client renseigné sur le projet")
+      errors.push('Aucun client renseigné sur le projet');
     }
     if (!project.price || project.price === 0) {
-      errors.push("Le montant du projet est nul")
+      errors.push('Le montant du projet est nul');
     }
-    return errors
-  }
+    return errors;
+  };
 
   return (
     <Container className="h-full">
@@ -103,7 +105,15 @@ const Invoices = () => {
             <div className="flex justify-between items-center mb-4">
               <h4>Factures</h4>
             </div>
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (<Button loading={loading} onClick={generateInvoice} className="mb-4">Générer la facture du projet</Button>)}
+            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+              <Button
+                loading={loading}
+                onClick={generateInvoice}
+                className="mb-4"
+              >
+                Générer la facture du projet
+              </Button>
+            )}
             <div className="flex flex-col gap-2">
               {invoices.length > 0 ? (
                 invoices.map((invoice: Invoice, index: number) => {

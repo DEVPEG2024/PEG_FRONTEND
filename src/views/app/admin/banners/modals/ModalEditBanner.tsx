@@ -85,7 +85,7 @@ function ModalEditBanner() {
   }, [selectedBanner]);
 
   const fetchImage = async (): Promise<void> => {
-    setImageLoading(true)
+    setImageLoading(true);
     if (selectedBanner?.image) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([selectedBanner.image])
@@ -93,7 +93,7 @@ function ModalEditBanner() {
 
       setImage(imageLoaded);
     }
-    setImageLoading(false)
+    setImageLoading(false);
   };
 
   const handleSubmit = async (e: any) => {

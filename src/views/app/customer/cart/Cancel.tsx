@@ -8,24 +8,26 @@ import { useNavigate } from 'react-router-dom';
 
 function Cancel() {
   const navigate = useNavigate();
-  const { token } = useAppSelector((state) => state.auth.session)
+  const { token } = useAppSelector((state) => state.auth.session);
 
   useEffect(() => {
     const cancelOrderItems = async () => {
-      const sessionId = new URLSearchParams(window.location.search).get('session_id');
+      const sessionId = new URLSearchParams(window.location.search).get(
+        'session_id'
+      );
       if (sessionId) {
         await fetch(API_BASE_URL + '/checkout/cancel', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `${TOKEN_TYPE}${token}`
+            Authorization: `${TOKEN_TYPE}${token}`,
           },
-          body: JSON.stringify({sessionId}),
-        })
+          body: JSON.stringify({ sessionId }),
+        });
       }
-    }
-    
-    cancelOrderItems()
+    };
+
+    cancelOrderItems();
   }, []);
 
   return (
@@ -38,7 +40,9 @@ function Cancel() {
             className="w-full h-auto rounded-lg object-cover"
           />
         </div>
-        <h1 className="text-2xl font-bold text-red-600 mt-4">Mission bloquée</h1>
+        <h1 className="text-2xl font-bold text-red-600 mt-4">
+          Mission bloquée
+        </h1>
         <p>Décollage annulé: le carburant bancaire semble insuffisant.</p>
         <Button
           onClick={() => navigate('/customer/cart')}

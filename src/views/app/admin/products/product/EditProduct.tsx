@@ -13,7 +13,10 @@ import {
 import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
-import { apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import {
+  apiLoadPegFilesAndFiles,
+  apiUploadFile,
+} from '@/services/FileServices';
 import reducer, {
   getProductById,
   setProductToEdit,

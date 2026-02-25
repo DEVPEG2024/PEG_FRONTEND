@@ -52,7 +52,7 @@ function ModalCompleteForm({
         formAnswer,
       } as CartItemFormAnswerEdition)
     );
-    toast.success("Formulaire modifié")
+    toast.success('Formulaire modifié');
   };
 
   return (

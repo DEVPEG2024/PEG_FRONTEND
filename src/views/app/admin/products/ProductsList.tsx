@@ -7,16 +7,10 @@ import reducer, {
   setModalDeleteProductClose,
   deleteProduct,
   duplicateProduct,
-  updateProduct
+  updateProduct,
 } from './store';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Dialog,
-  Input,
-  Pagination,
-  Select
-} from '@/components/ui';
+import { Button, Dialog, Input, Pagination, Select } from '@/components/ui';
 import { isEmpty } from 'lodash';
 import { Product } from '@/@types/product';
 import { Container, Loading } from '@/components/shared';
@@ -28,7 +22,10 @@ import { OrderItem } from '@/@types/orderItem';
 import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
-import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
+import {
+  apiDeleteFiles,
+  apiLoadPegFilesAndFiles,
+} from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
 
@@ -37,19 +34,16 @@ injectReducer('products', reducer);
 const ProductsList = () => {
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useAppSelector(
-      (state: RootState) => state.auth.user
-    );
+    (state: RootState) => state.auth.user
+  );
   const isAdminOrSuperAdmin: boolean = hasRole(user, [ADMIN, SUPER_ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(isAdminOrSuperAdmin ? 100 : 10);
   const [searchTerm, setSearchTerm] = useState('');
   const [productToDelete, setProductToDelete] = useState<Product>();
-  const {
-    products,
-    modalDeleteProduct,
-    loading,
-    total,
-  } = useAppSelector((state) => state.products.data);
+  const { products, modalDeleteProduct, loading, total } = useAppSelector(
+    (state) => state.products.data
+  );
   useEffect(() => {
     dispatch(
       getProducts({ pagination: { page: currentPage, pageSize }, searchTerm })
@@ -64,19 +58,27 @@ const ProductsList = () => {
   const onDeleted = async () => {
     if (productToDelete) {
       dispatch(deleteProduct(productToDelete.documentId));
-      
-      const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
-    
-      apiDeleteFiles(pegFilesToDelete.map((pegFileToDelete) => pegFileToDelete.id))
+
+      const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(
+        productToDelete.images
+      );
+
+      apiDeleteFiles(
+        pegFilesToDelete.map((pegFileToDelete) => pegFileToDelete.id)
+      );
     }
     dispatch(setModalDeleteProductClose());
   };
 
   const onDeleteModalOpen = async (product: Product) => {
-    const {orderItems: pendingOrderItemsLinkedToProduct}: {orderItems: OrderItem[]} = await unwrapData(apiGetPendingOrderItemsLinkedToProduct(product.documentId))
+    const {
+      orderItems: pendingOrderItemsLinkedToProduct,
+    }: { orderItems: OrderItem[] } = await unwrapData(
+      apiGetPendingOrderItemsLinkedToProduct(product.documentId)
+    );
 
     if (pendingOrderItemsLinkedToProduct.length > 0) {
-      toast.warn("Au moins une commande en cours est rattachée à ce produit")
+      toast.warn('Au moins une commande en cours est rattachée à ce produit');
     } else {
       setProductToDelete(product);
       dispatch(setModalDeleteProductOpen());
@@ -93,15 +95,15 @@ const ProductsList = () => {
       updateProduct({ documentId: product.documentId, active: !checked })
     );
     if (!checked) {
-      toast.success("Produit activé")
+      toast.success('Produit activé');
     } else {
-      toast.success("Produit désactivé")
+      toast.success('Produit désactivé');
     }
   };
 
   const onDuplicate = async (product: Product) => {
     dispatch(duplicateProduct(product));
-      toast.success("Produit dupliqué")
+    toast.success('Produit dupliqué');
   };
 
   const handlePaginationChange = (page: number) => {
@@ -126,9 +128,12 @@ const ProductsList = () => {
     }
   };
 
-  const handleOnDeleteModalOpenSetProductToDelete = useCallback((product: Product) => {
-    onDeleteModalOpen(product);
-  }, []);
+  const handleOnDeleteModalOpenSetProductToDelete = useCallback(
+    (product: Product) => {
+      onDeleteModalOpen(product);
+    },
+    []
+  );
 
   const handleOnActivate = useCallback((product: Product, checked: boolean) => {
     onActivate(product, checked);
@@ -155,7 +160,7 @@ const ProductsList = () => {
           onChange={(e) => handleSearch(e.target.value)}
         />
       </div>
-      <Loading loading={loading} type='cover'>
+      <Loading loading={loading} type="cover">
         {/* {isEmpty(products) && (
           <div className="h-full flex flex-col items-center justify-center">
             <DoubleSidedImage
@@ -168,7 +173,15 @@ const ProductsList = () => {
         )} */}
         {!isEmpty(products) && (
           <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
-            {products.map((product) => (<ProductCard key={product.documentId} product={product} onDeleteModalOpen={handleOnDeleteModalOpenSetProductToDelete} onActivate={handleOnActivate} onDuplicate={handleOnDuplicate}/>))}
+            {products.map((product) => (
+              <ProductCard
+                key={product.documentId}
+                product={product}
+                onDeleteModalOpen={handleOnDeleteModalOpenSetProductToDelete}
+                onActivate={handleOnActivate}
+                onDuplicate={handleOnDuplicate}
+              />
+            ))}
             <Dialog
               isOpen={modalDeleteProduct}
               onClose={onDeleteModalClose}

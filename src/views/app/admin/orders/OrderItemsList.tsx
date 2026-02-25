@@ -27,8 +27,8 @@ const OrderItemsList = () => {
     (state) => state.orders.data
   );
   const { user }: { user: User } = useAppSelector(
-      (state: RootState) => state.auth.user
-    );
+    (state: RootState) => state.auth.user
+  );
 
   useEffect(() => {
     dispatch(

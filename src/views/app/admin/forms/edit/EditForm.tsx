@@ -3,8 +3,8 @@ import { FormBuilder } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import classNames from 'classnames';
 import { Input } from '@/components/ui';
-import fr from './fr.json'
-import editFormConfig from './editFormConfig.json'
+import fr from './fr.json';
+import editFormConfig from './editFormConfig.json';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { useAppSelector } from '@/store';
@@ -26,7 +26,7 @@ function EditForm({
       display: 'form',
       components: JSON.parse(JSON.stringify(fields)),
     });
-  const { token } = useAppSelector((state) => state.auth.session)
+  const { token } = useAppSelector((state) => state.auth.session);
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -65,7 +65,7 @@ function EditForm({
   };
 
   const onComponentsChange = (e: any) => {
-    setForm(e)
+    setForm(e);
   };
 
   return (
@@ -81,7 +81,7 @@ function EditForm({
         options={{
           language: 'fr',
           i18n: {
-            fr
+            fr,
           },
           builder: {
             basic: {
@@ -92,10 +92,10 @@ function EditForm({
                   key: 'file',
                   icon: 'file',
                   weight: 100,
-                  schema:  {
-                    key: "file",
+                  schema: {
+                    key: 'file',
                     input: true,
-                    storage: "url",
+                    storage: 'url',
                     url: API_BASE_URL + '/upload-single',
                     options: `{
                       "withCredentials": true,
@@ -103,11 +103,11 @@ function EditForm({
                         "Authorization": "${TOKEN_TYPE}${token}"
                       }
                     }`,
-                    fileKey: "file",
-                    type: "file",
-                  }
+                    fileKey: 'file',
+                    type: 'file',
+                  },
                 },
-              }
+              },
             },
             advanced: {
               components: {
@@ -119,11 +119,11 @@ function EditForm({
                   icon: 'home',
                   weight: 100,
                   schema: {
-                    key: "address",
+                    key: 'address',
                     input: true,
-                    provider: "nominatim",
-                    type: "address"
-                  }
+                    provider: 'nominatim',
+                    type: 'address',
+                  },
                 },
                 datetime: {
                   title: 'Date / Time',
@@ -131,27 +131,27 @@ function EditForm({
                   icon: 'calendar',
                   weight: 40,
                   schema: {
-                    key: "datetime",
+                    key: 'datetime',
                     input: true,
                     timePicker: {
                       showMeridian: false,
                     },
-                    type: "datetime"
-                  }
-                }
-              }
+                    type: 'datetime',
+                  },
+                },
+              },
             },
             data: false,
             layout: {
               components: {
                 htmlelement: false,
                 well: false,
-                fieldset: false
-              }
+                fieldset: false,
+              },
             },
-            premium: false
+            premium: false,
           },
-          editForm: editFormConfig
+          editForm: editFormConfig,
         }}
         onChange={onComponentsChange}
       />

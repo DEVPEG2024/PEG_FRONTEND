@@ -106,16 +106,16 @@ const Categories = () => {
   return (
     <Container>
       <div className="flex justify-between items-center">
-        <div className='flex-1 w-3/4'>
-        <HeaderTitle
-          title="Catégorie de produit"
-          buttonTitle="Ajouter une catégorie de produit"
-          description="Catégorie de produit"
-          link={''}
-          addAction={true}
-          action={setIsOpenNewCategoryProduct}
-          total={total}
-        />
+        <div className="flex-1 w-3/4">
+          <HeaderTitle
+            title="Catégorie de produit"
+            buttonTitle="Ajouter une catégorie de produit"
+            description="Catégorie de produit"
+            link={''}
+            addAction={true}
+            action={setIsOpenNewCategoryProduct}
+            total={total}
+          />
         </div>
         {orderAction}
       </div>

@@ -64,7 +64,9 @@ type ProductForm = {
   setImages: (images: PegFile[]) => void;
   imagesLoading: boolean;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
-  filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
+  filterColorsListByProductCategory: (
+    productCategoryDocumentId: string
+  ) => void;
 };
 
 const validationSchema = Yup.object().shape({

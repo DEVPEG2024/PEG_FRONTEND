@@ -29,9 +29,7 @@ export const useColumns = (
       accessorKey: 'price',
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
-        return (
-          <p>{row.original.product.price.toFixed(2)} €</p>
-        );
+        return <p>{row.original.product.price.toFixed(2)} €</p>;
       },
     },
     {
@@ -45,7 +43,10 @@ export const useColumns = (
               <p key={sizeAndColor.size.value}>
                 {sizeAndColor.size.value === 'DEFAULT'
                   ? 'Quantité'
-                  : sizeAndColor.size.name}{' '}{sizeAndColor.color.value !== 'DEFAULT' ? '(' + sizeAndColor.color.name + ')' : ''}{' '}
+                  : sizeAndColor.size.name}{' '}
+                {sizeAndColor.color.value !== 'DEFAULT'
+                  ? '(' + sizeAndColor.color.name + ')'
+                  : ''}{' '}
                 : {sizeAndColor.quantity}
               </p>
             ))}
@@ -59,15 +60,18 @@ export const useColumns = (
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
         return (
-          <div
-            className="flex items-center gap-2"
-            key={row.original.id}
-          >
-            {row.original.sizeAndColors.reduce(
-                          (amount, size) =>
-                            amount + size.quantity * Math.trunc(row.original.product.price * 100) / 100,
-                          0
-                        ).toFixed(2)}{' €'}
+          <div className="flex items-center gap-2" key={row.original.id}>
+            {row.original.sizeAndColors
+              .reduce(
+                (amount, size) =>
+                  amount +
+                  (size.quantity *
+                    Math.trunc(row.original.product.price * 100)) /
+                    100,
+                0
+              )
+              .toFixed(2)}
+            {' €'}
           </div>
         );
       },
@@ -79,27 +83,20 @@ export const useColumns = (
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
         return (
-          <div
-            className="flex gap-1"
-            key={row.original.id}
-          >
-            <Tooltip
-              title='Modifier la demande'
-            >
-             <Button
-              onClick={() => handleEdit(row.original)}
-              size="sm"
-              icon={<HiPencil />}
-            />
+          <div className="flex gap-1" key={row.original.id}>
+            <Tooltip title="Modifier la demande">
+              <Button
+                onClick={() => handleEdit(row.original)}
+                size="sm"
+                icon={<HiPencil />}
+              />
             </Tooltip>
-            <Tooltip
-              title='Annuler la demande'
-            >
-             <Button
-              onClick={() => handleDelete(row.original)}
-              size="sm"
-              icon={<HiTrash />}
-            />
+            <Tooltip title="Annuler la demande">
+              <Button
+                onClick={() => handleDelete(row.original)}
+                size="sm"
+                icon={<HiTrash />}
+              />
             </Tooltip>
           </div>
         );

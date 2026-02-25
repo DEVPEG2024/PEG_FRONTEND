@@ -16,7 +16,12 @@ import dayjs from 'dayjs';
 import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
-import { updateTask, setEditDialogTask, setSelectedTask, deleteTask } from '../store';
+import {
+  updateTask,
+  setEditDialogTask,
+  setSelectedTask,
+  deleteTask,
+} from '../store';
 
 const TaskCard = ({
   task,
@@ -114,8 +119,8 @@ const TaskCard = ({
           <hr className="my-6" />
           <div className="flex flex-col justify-between gap-2">
             <div className="">{ReactHtmlParser(task.description || '')}</div>
-              {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                <div className="flex flex-row gap-2">
+            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+              <div className="flex flex-row gap-2">
                 <Button
                   variant="twoTone"
                   size="sm"

@@ -57,12 +57,12 @@ function ModalEditColor() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (verifyFormData().length === 0) {
-      handleModifyColor()
+      handleModifyColor();
     }
   };
 
   const verifyFormData = () => {
-    const tempErrors : string[] = [];
+    const tempErrors: string[] = [];
     if (formData.name === '') {
       tempErrors.push('Le nom est obligatoire');
     }
@@ -71,7 +71,7 @@ function ModalEditColor() {
     }
     setErrors(tempErrors);
     return tempErrors;
-  }
+  };
 
   const handleModifyColor = () => {
     const colorToUpdate: Color = {
@@ -87,7 +87,7 @@ function ModalEditColor() {
       description: '',
     });
     handleClose();
-  }
+  };
 
   const handleClose = () => {
     dispatch(setEditColorDialog(false));

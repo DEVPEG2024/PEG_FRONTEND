@@ -55,8 +55,11 @@ const UsersList = () => {
   };
 
   const isUserMissingInfos = (user: User) => {
-    return user.role.name === 'producer' && !user.producer || user.role.name === 'customer' && !user.customer
-  }
+    return (
+      (user.role.name === 'producer' && !user.producer) ||
+      (user.role.name === 'customer' && !user.customer)
+    );
+  };
 
   const columns = useColumns(
     handleEditUser,

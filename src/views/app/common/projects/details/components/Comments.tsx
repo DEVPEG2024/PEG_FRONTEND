@@ -14,11 +14,7 @@ import {
   useAppDispatch,
   useAppSelector as useRootAppSelector,
 } from '@/store';
-import {
-  createComment,
-  setLoading,
-  useAppSelector,
-} from '../store';
+import { createComment, setLoading, useAppSelector } from '../store';
 import { User } from '@/@types/user';
 import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
@@ -41,15 +37,15 @@ const Comments = () => {
   const { project, comments, loading } = useAppSelector(
     (state) => state.projectDetails.data
   );
-  const {avatarUrl, fetchAvatarUrl} = useAvatarUrl(user?.avatar)
+  const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(user?.avatar);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
-  
+
   useEffect(() => {
-      setAvatarLoading(true)
-      if (!avatarUrl) {
-          fetchAvatarUrl();
-      }
-      setAvatarLoading(false)
+    setAvatarLoading(true);
+    if (!avatarUrl) {
+      fetchAvatarUrl();
+    }
+    setAvatarLoading(false);
   }, [avatarUrl]);
 
   const onEdit = (val: string) => {
@@ -57,7 +53,7 @@ const Comments = () => {
   };
 
   const debounceFn = debounce(handleDebounceFn, 1000);
-  
+
   function handleDebounceFn(val: string) {
     setCommentText(val);
   }
@@ -131,12 +127,12 @@ const Comments = () => {
       'application/x-zip-compressed',
       'image/vnd.adobe.photoshop',
       'application/postscript',
-      'application/illustrator'
+      'application/illustrator',
     ];
     if (files) {
       for (const file of files) {
         if (!allowedFileType.includes(file.type)) {
-          valid = 'Le format du fichier n\'est pas pris en compte !';
+          valid = "Le format du fichier n'est pas pris en compte !";
         }
       }
     }
@@ -166,28 +162,32 @@ const Comments = () => {
             <div>
               <h4>Commentaires</h4>
               <Timeline>
-                {determineVisibleComments(comments, user).map((comment: Comment) => (
-                  <TimelineComment
-                    key={comment.documentId}
-                    comment={comment}
-                    user={user}
-                    isLast={
-                      comment.documentId ===
-                      comments[comments.length - 1].documentId
-                    }
-                  />
-                ))}
+                {determineVisibleComments(comments, user).map(
+                  (comment: Comment) => (
+                    <TimelineComment
+                      key={comment.documentId}
+                      comment={comment}
+                      user={user}
+                      isLast={
+                        comment.documentId ===
+                        comments[comments.length - 1].documentId
+                      }
+                    />
+                  )
+                )}
               </Timeline>
               <Card className="mt-6">
                 <div className="mt-1 mb-3 flex flex-auto gap-4">
                   <Loading loading={avatarLoading}>
-                    <Avatar size={30} shape="circle" src={avatarUrl} icon={<HiUserCircle />} />
+                    <Avatar
+                      size={30}
+                      shape="circle"
+                      src={avatarUrl}
+                      icon={<HiUserCircle />}
+                    />
                   </Loading>
                   <div className="w-full">
-                    <RichTextEditor
-                      onChange={onEdit}
-                      value={commentText}
-                    />
+                    <RichTextEditor onChange={onEdit} value={commentText} />
                   </div>
                 </div>
                 <div className="flex flex-row items-center justify-between gap-2 mb-4">

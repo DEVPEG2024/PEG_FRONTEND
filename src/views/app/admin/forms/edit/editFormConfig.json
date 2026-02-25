@@ -1,2392 +1,2391 @@
 {
-    "textfield": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "textarea": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          },
-          {
-            "key": "editor",
-            "ignore": true
-          },
-          {
-            "key": "autoExpand",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "number": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "password": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "checkbox": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          },
-          {
-            "key": "shortcut",
-            "ignore": true
-          },
-          {
-            "key": "inputType",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "selectboxes": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": false,
-        "components": [
-          {
-            "key": "dataSrc",
-            "ignore": true
-          },
-          {
-            "key": "dataType",
-            "ignore": true
-          },
-          {
-            "key": "defaultValue",
-            "ignore": true
-          },
-          {
-            "key": "persistent",
-            "ignore": true
-          },
-          {
-            "key": "protected",
-            "ignore": true
-          },
-          {
-            "key": "dbIndex",
-            "ignore": true
-          },
-          {
-            "key": "encrypted",
-            "ignore": true
-          },
-          {
-            "key": "redrawOn",
-            "ignore": true
-          },
-          {
-            "key": "clearOnHide",
-            "ignore": true
-          },
-          {
-            "key": "customDefaultValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateServer",
-            "ignore": true
-          },
-          {
-            "key": "allowCalculateOverride",
-            "ignore": true
-          }
-        ]
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "inline",
-            "ignore": true
-          },
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "select": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": false,
-        "components": [
-          {
-            "key": "dataSrc",
-            "ignore": true
-          },
-          {
-            "key": "dataType",
-            "ignore": true
-          },
-          {
-            "key": "defaultValue",
-            "ignore": true
-          },
-          {
-            "key": "persistent",
-            "ignore": true
-          },
-          {
-            "key": "protected",
-            "ignore": true
-          },
-          {
-            "key": "dbIndex",
-            "ignore": true
-          },
-          {
-            "key": "encrypted",
-            "ignore": true
-          },
-          {
-            "key": "redrawOn",
-            "ignore": true
-          },
-          {
-            "key": "clearOnHide",
-            "ignore": true
-          },
-          {
-            "key": "customDefaultValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateServer",
-            "ignore": true
-          },
-          {
-            "key": "allowCalculateOverride",
-            "ignore": true
-          },
-          {
-            "key": "idPath",
-            "ignore": true
-          },
-          {
-            "key": "template",
-            "ignore": true
-          },
-          {
-            "key": "refreshOn",
-            "ignore": true
-          },
-          {
-            "key": "refreshOnBlur",
-            "ignore": true
-          },
-          {
-            "key": "clearOnRefresh",
-            "ignore": true
-          },
-          {
-            "key": "searchEnabled",
-            "ignore": true
-          },
-          {
-            "key": "selectThreshold",
-            "ignore": true
-          },
-          {
-            "key": "readOnlyValue",
-            "ignore": true
-          },
-          {
-            "key": "customOptions",
-            "ignore": true
-          },
-          {
-            "key": "useExactSearch",
-            "ignore": true
-          }
-        ]
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          },
-          {
-            "key": "widget",
-            "ignore": true
-          },
-          {
-            "key": "uniqueOptions",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "radio": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": false,
-        "components": [
-          {
-            "key": "dataSrc",
-            "ignore": true
-          },
-          {
-            "key": "dataType",
-            "ignore": true
-          },
-          {
-            "key": "defaultValue",
-            "ignore": true
-          },
-          {
-            "key": "persistent",
-            "ignore": true
-          },
-          {
-            "key": "protected",
-            "ignore": true
-          },
-          {
-            "key": "dbIndex",
-            "ignore": true
-          },
-          {
-            "key": "encrypted",
-            "ignore": true
-          },
-          {
-            "key": "redrawOn",
-            "ignore": true
-          },
-          {
-            "key": "clearOnHide",
-            "ignore": true
-          },
-          {
-            "key": "customDefaultValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateValuePanel",
-            "ignore": true
-          },
-          {
-            "key": "calculateServer",
-            "ignore": true
-          },
-          {
-            "key": "allowCalculateOverride",
-            "ignore": true
-          },
-          {
-            "key": "idPath",
-            "ignore": true
-          },
-          {
-            "key": "template",
-            "ignore": true
-          },
-          {
-            "key": "refreshOn",
-            "ignore": true
-          },
-          {
-            "key": "refreshOnBlur",
-            "ignore": true
-          },
-          {
-            "key": "clearOnRefresh",
-            "ignore": true
-          },
-          {
-            "key": "searchEnabled",
-            "ignore": true
-          },
-          {
-            "key": "selectThreshold",
-            "ignore": true
-          },
-          {
-            "key": "readOnlyValue",
-            "ignore": true
-          },
-          {
-            "key": "customOptions",
-            "ignore": true
-          },
-          {
-            "key": "useExactSearch",
-            "ignore": true
-          }
-        ]
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "inline",
-            "ignore": true
-          },
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "widget.type",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "showCharCount",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          },
-          {
-            "key": "inputMasks",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "file": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "file",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "email": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "url": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "phoneNumber": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "inputMask",
-            "ignore": true
-          },
-          {
-            "key": "inputMaskPlaceholderChar",
-            "ignore": true
-          },
-          {
-            "key": "allowMultipleMasks",
-            "ignore": true
-          },  
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "tags": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "address": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "provider",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "enableManualMode",
-            "ignore": true
-          },
-          {
-            "key": "disableClearIcon",
-            "ignore": true
-          },
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "datetime": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "date",
-        "ignore": true
-      },
-      {
-        "key": "time",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "displayInTimezone",
-            "ignore": true
-          },
-          {
-            "key": "format",
-            "ignore": true
-          },
-          {
-            "key": "useLocaleSettings",
-            "ignore": true
-          },
-          {
-            "key": "allowInput",
-            "ignore": true
-          },
-          {
-            "key": "shortcutButtons",
-            "ignore": true
-          },
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "day": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "day",
-        "ignore": true
-      },
-      {
-        "key": "month",
-        "ignore": true
-      },
-      {
-        "key": "year",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "hideInputLabels",
-            "ignore": true
-          },
-          {
-            "key": "inputsLabelPosition",
-            "ignore": true
-          },
-          {
-            "key": "useLocaleSettings",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "time": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "inputType",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "currency": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "prefix",
-            "ignore": true
-          },
-          {
-            "key": "suffix",
-            "ignore": true
-          },
-          {
-            "key": "displayMask",
-            "ignore": true
-          },
-          {
-            "key": "applyMaskOn",
-            "ignore": true
-          },
-          {
-            "key": "showWordCount",
-            "ignore": true
-          },
-          {
-            "key": "autocomplete",
-            "ignore": true
-          },
-          {
-            "key": "mask",
-            "ignore": true
-          },
-          {
-            "key": "spellcheck",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "signature": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "footer",
-            "ignore": true
-          },
-          {
-            "key": "backgroundColor",
-            "ignore": true
-          },
-          {
-            "key": "penColor",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "content": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "refreshOnChange",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "columns": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "autoAdjust",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "fieldset": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "panel": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "table": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          },
-          {
-            "key": "cloneRows",
-            "ignore": true
-          }
-        ]
-      }
-    ],
-    "tabs": [
-      {
-        "key": "api",
-        "ignore": true
-      },
-      {
-        "key": "data",
-        "ignore": true
-      },
-      {
-        "key": "logic",
-        "ignore": true
-      },
-      {
-        "key": "validation",
-        "ignore": true
-      },
-      {
-        "key": "layout",
-        "ignore": true
-      },
-      {
-        "key": "display",
-        "components": [
-          {
-            "key": "customClass",
-            "ignore": true
-          },
-          {
-            "key": "tabindex",
-            "ignore": true
-          },
-          {
-            "key": "hidden",
-            "ignore": true
-          },
-          {
-            "key": "hideLabel",
-            "ignore": true
-          },
-          {
-            "key": "autofocus",
-            "ignore": true
-          },
-          {
-            "key": "disabled",
-            "ignore": true
-          },
-          {
-            "key": "tableView",
-            "ignore": true
-          },
-          {
-            "key": "modalEdit",
-            "ignore": true
-          }
-        ]
-      }
-    ]
-  }
-  
+  "textfield": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "textarea": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        },
+        {
+          "key": "editor",
+          "ignore": true
+        },
+        {
+          "key": "autoExpand",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "number": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "password": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "checkbox": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        },
+        {
+          "key": "shortcut",
+          "ignore": true
+        },
+        {
+          "key": "inputType",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "selectboxes": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": false,
+      "components": [
+        {
+          "key": "dataSrc",
+          "ignore": true
+        },
+        {
+          "key": "dataType",
+          "ignore": true
+        },
+        {
+          "key": "defaultValue",
+          "ignore": true
+        },
+        {
+          "key": "persistent",
+          "ignore": true
+        },
+        {
+          "key": "protected",
+          "ignore": true
+        },
+        {
+          "key": "dbIndex",
+          "ignore": true
+        },
+        {
+          "key": "encrypted",
+          "ignore": true
+        },
+        {
+          "key": "redrawOn",
+          "ignore": true
+        },
+        {
+          "key": "clearOnHide",
+          "ignore": true
+        },
+        {
+          "key": "customDefaultValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateServer",
+          "ignore": true
+        },
+        {
+          "key": "allowCalculateOverride",
+          "ignore": true
+        }
+      ]
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "inline",
+          "ignore": true
+        },
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "select": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": false,
+      "components": [
+        {
+          "key": "dataSrc",
+          "ignore": true
+        },
+        {
+          "key": "dataType",
+          "ignore": true
+        },
+        {
+          "key": "defaultValue",
+          "ignore": true
+        },
+        {
+          "key": "persistent",
+          "ignore": true
+        },
+        {
+          "key": "protected",
+          "ignore": true
+        },
+        {
+          "key": "dbIndex",
+          "ignore": true
+        },
+        {
+          "key": "encrypted",
+          "ignore": true
+        },
+        {
+          "key": "redrawOn",
+          "ignore": true
+        },
+        {
+          "key": "clearOnHide",
+          "ignore": true
+        },
+        {
+          "key": "customDefaultValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateServer",
+          "ignore": true
+        },
+        {
+          "key": "allowCalculateOverride",
+          "ignore": true
+        },
+        {
+          "key": "idPath",
+          "ignore": true
+        },
+        {
+          "key": "template",
+          "ignore": true
+        },
+        {
+          "key": "refreshOn",
+          "ignore": true
+        },
+        {
+          "key": "refreshOnBlur",
+          "ignore": true
+        },
+        {
+          "key": "clearOnRefresh",
+          "ignore": true
+        },
+        {
+          "key": "searchEnabled",
+          "ignore": true
+        },
+        {
+          "key": "selectThreshold",
+          "ignore": true
+        },
+        {
+          "key": "readOnlyValue",
+          "ignore": true
+        },
+        {
+          "key": "customOptions",
+          "ignore": true
+        },
+        {
+          "key": "useExactSearch",
+          "ignore": true
+        }
+      ]
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        },
+        {
+          "key": "widget",
+          "ignore": true
+        },
+        {
+          "key": "uniqueOptions",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "radio": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": false,
+      "components": [
+        {
+          "key": "dataSrc",
+          "ignore": true
+        },
+        {
+          "key": "dataType",
+          "ignore": true
+        },
+        {
+          "key": "defaultValue",
+          "ignore": true
+        },
+        {
+          "key": "persistent",
+          "ignore": true
+        },
+        {
+          "key": "protected",
+          "ignore": true
+        },
+        {
+          "key": "dbIndex",
+          "ignore": true
+        },
+        {
+          "key": "encrypted",
+          "ignore": true
+        },
+        {
+          "key": "redrawOn",
+          "ignore": true
+        },
+        {
+          "key": "clearOnHide",
+          "ignore": true
+        },
+        {
+          "key": "customDefaultValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateValuePanel",
+          "ignore": true
+        },
+        {
+          "key": "calculateServer",
+          "ignore": true
+        },
+        {
+          "key": "allowCalculateOverride",
+          "ignore": true
+        },
+        {
+          "key": "idPath",
+          "ignore": true
+        },
+        {
+          "key": "template",
+          "ignore": true
+        },
+        {
+          "key": "refreshOn",
+          "ignore": true
+        },
+        {
+          "key": "refreshOnBlur",
+          "ignore": true
+        },
+        {
+          "key": "clearOnRefresh",
+          "ignore": true
+        },
+        {
+          "key": "searchEnabled",
+          "ignore": true
+        },
+        {
+          "key": "selectThreshold",
+          "ignore": true
+        },
+        {
+          "key": "readOnlyValue",
+          "ignore": true
+        },
+        {
+          "key": "customOptions",
+          "ignore": true
+        },
+        {
+          "key": "useExactSearch",
+          "ignore": true
+        }
+      ]
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "inline",
+          "ignore": true
+        },
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "widget.type",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "showCharCount",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        },
+        {
+          "key": "inputMasks",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "file": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "file",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "email": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "url": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "phoneNumber": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "inputMask",
+          "ignore": true
+        },
+        {
+          "key": "inputMaskPlaceholderChar",
+          "ignore": true
+        },
+        {
+          "key": "allowMultipleMasks",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "address": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "provider",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "enableManualMode",
+          "ignore": true
+        },
+        {
+          "key": "disableClearIcon",
+          "ignore": true
+        },
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "datetime": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "date",
+      "ignore": true
+    },
+    {
+      "key": "time",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "displayInTimezone",
+          "ignore": true
+        },
+        {
+          "key": "format",
+          "ignore": true
+        },
+        {
+          "key": "useLocaleSettings",
+          "ignore": true
+        },
+        {
+          "key": "allowInput",
+          "ignore": true
+        },
+        {
+          "key": "shortcutButtons",
+          "ignore": true
+        },
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "day": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "day",
+      "ignore": true
+    },
+    {
+      "key": "month",
+      "ignore": true
+    },
+    {
+      "key": "year",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "hideInputLabels",
+          "ignore": true
+        },
+        {
+          "key": "inputsLabelPosition",
+          "ignore": true
+        },
+        {
+          "key": "useLocaleSettings",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "time": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "inputType",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "currency": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "prefix",
+          "ignore": true
+        },
+        {
+          "key": "suffix",
+          "ignore": true
+        },
+        {
+          "key": "displayMask",
+          "ignore": true
+        },
+        {
+          "key": "applyMaskOn",
+          "ignore": true
+        },
+        {
+          "key": "showWordCount",
+          "ignore": true
+        },
+        {
+          "key": "autocomplete",
+          "ignore": true
+        },
+        {
+          "key": "mask",
+          "ignore": true
+        },
+        {
+          "key": "spellcheck",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "signature": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "footer",
+          "ignore": true
+        },
+        {
+          "key": "backgroundColor",
+          "ignore": true
+        },
+        {
+          "key": "penColor",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "content": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "refreshOnChange",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "columns": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "autoAdjust",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "fieldset": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "panel": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "table": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        },
+        {
+          "key": "cloneRows",
+          "ignore": true
+        }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "key": "api",
+      "ignore": true
+    },
+    {
+      "key": "data",
+      "ignore": true
+    },
+    {
+      "key": "logic",
+      "ignore": true
+    },
+    {
+      "key": "validation",
+      "ignore": true
+    },
+    {
+      "key": "layout",
+      "ignore": true
+    },
+    {
+      "key": "display",
+      "components": [
+        {
+          "key": "customClass",
+          "ignore": true
+        },
+        {
+          "key": "tabindex",
+          "ignore": true
+        },
+        {
+          "key": "hidden",
+          "ignore": true
+        },
+        {
+          "key": "hideLabel",
+          "ignore": true
+        },
+        {
+          "key": "autofocus",
+          "ignore": true
+        },
+        {
+          "key": "disabled",
+          "ignore": true
+        },
+        {
+          "key": "tableView",
+          "ignore": true
+        },
+        {
+          "key": "modalEdit",
+          "ignore": true
+        }
+      ]
+    }
+  ]
+}

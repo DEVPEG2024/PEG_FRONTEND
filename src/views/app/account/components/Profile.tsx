@@ -12,7 +12,11 @@ import { HiOutlineUser } from 'react-icons/hi';
 import { User } from '@/@types/user';
 import { useEffect, useState } from 'react';
 import { PegFile } from '@/@types/pegFile';
-import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
+import {
+  apiDeleteFile,
+  apiLoadPegFilesAndFiles,
+  apiUploadFile,
+} from '@/services/FileServices';
 import { useNavigate } from 'react-router-dom';
 import { Loading, StickyFooter } from '@/components/shared';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -42,7 +46,9 @@ const Profile = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const [avatar, setAvatar] = useState<PegFile | undefined>(undefined);
   const [newAvatar, setNewAvatar] = useState<PegFile | undefined>(undefined);
-  const [avatarToDelete, setAvatarToDelete] = useState<PegFile | undefined>(undefined);
+  const [avatarToDelete, setAvatarToDelete] = useState<PegFile | undefined>(
+    undefined
+  );
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
   const initialData: UserFormModel = {
     username: user.username || '',
@@ -56,7 +62,7 @@ const Profile = () => {
   }, []);
 
   const fetchAvatar = async (): Promise<void> => {
-    setAvatarLoading(true)
+    setAvatarLoading(true);
     if (user?.avatar) {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([user.avatar])
@@ -64,7 +70,7 @@ const Profile = () => {
 
       setAvatar(imageLoaded);
     }
-    setAvatarLoading(false)
+    setAvatarLoading(false);
   };
 
   const onFormSubmit = async (
@@ -75,12 +81,12 @@ const Profile = () => {
       const newAvatarUploaded: PegFile = await apiUploadFile(newAvatar.file);
 
       if (avatar) {
-        apiDeleteFile(avatar.id)
+        apiDeleteFile(avatar.id);
       }
-      values.avatar = newAvatarUploaded.id
+      values.avatar = newAvatarUploaded.id;
     } else if (avatarToDelete) {
-      apiDeleteFile(avatarToDelete.id)
-      values.avatar = null
+      apiDeleteFile(avatarToDelete.id);
+      values.avatar = null;
     }
 
     dispatch(updateOwnUser({ user: values, id: user.id }));
@@ -159,9 +165,9 @@ const Profile = () => {
                       beforeUpload={beforeUpload}
                       onFileAdd={(file) => onFileAdd(file)}
                       onFileRemove={() => {
-                        setAvatarToDelete(avatar)
-                        setAvatar(undefined)
-                        setNewAvatar(undefined)
+                        setAvatarToDelete(avatar);
+                        setAvatar(undefined);
+                        setNewAvatar(undefined);
                       }}
                       fileList={avatar ? [avatar?.file] : []}
                     >

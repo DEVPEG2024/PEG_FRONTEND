@@ -22,7 +22,8 @@ const OrderItemDetails = ({
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;
-  const productSizeAndColors: SizeAndColorSelection[] = orderItem.sizeAndColorSelections;
+  const productSizeAndColors: SizeAndColorSelection[] =
+    orderItem.sizeAndColorSelections;
 
   const handleShowOrderItem = (orderItem: OrderItem) => {
     navigate('/common/orderItem/' + orderItem.documentId);
@@ -36,7 +37,9 @@ const OrderItemDetails = ({
           className="mb-4"
           icon={<HiOfficeBuilding className="text-lg opacity-70" />}
         >
-          <span className="font-semibold">{customer?.name ?? 'Client supprimé'}</span>
+          <span className="font-semibold">
+            {customer?.name ?? 'Client supprimé'}
+          </span>
         </IconText>
         <IconText
           className="mb-4"
@@ -51,8 +54,13 @@ const OrderItemDetails = ({
           <span className="font-semibold flex-col justify-center gap-2">
             {productSizeAndColors.map((sizeAndColor) => (
               <p key={sizeAndColor.size.value + sizeAndColor.color.value}>
-                {sizeAndColor.size.value === 'DEFAULT' ? 'Quantité' : sizeAndColor.size.name} {sizeAndColor.color.value === 'DEFAULT' ? '' : '(' + sizeAndColor.color.name + ')'} :{' '}
-                {sizeAndColor.quantity}
+                {sizeAndColor.size.value === 'DEFAULT'
+                  ? 'Quantité'
+                  : sizeAndColor.size.name}{' '}
+                {sizeAndColor.color.value === 'DEFAULT'
+                  ? ''
+                  : '(' + sizeAndColor.color.name + ')'}{' '}
+                : {sizeAndColor.quantity}
               </p>
             ))}
           </span>

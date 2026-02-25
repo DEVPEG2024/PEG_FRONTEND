@@ -105,7 +105,7 @@ const EditCustomer = () => {
       },
       customerCategory: data.customerCategory,
       name: data.name,
-      deferredPayment: data.deferredPayment
+      deferredPayment: data.deferredPayment,
     };
     if (onEdition) {
       const { updateCustomer }: { updateCustomer: Customer } = await unwrapData(

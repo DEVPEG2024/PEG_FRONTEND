@@ -83,10 +83,12 @@ const ModalPrintInvoice = ({
                 <View style={styles.page}>
                   <View style={styles.section}>
                     <Image
-                      src={"../../../../../../img/logo/logo-light-full.png"}
+                      src={'../../../../../../img/logo/logo-light-full.png'}
                       style={{ width: '200px', height: '70px' }}
                     />
-                    <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
+                    <Text
+                      style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}
+                    >
                       SAS ZOOM PROJECT
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
@@ -95,9 +97,7 @@ const ModalPrintInvoice = ({
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
                       57800 Freyming-Merlebach
                     </Text>
-                    <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      France
-                    </Text>
+                    <Text style={{ fontSize: 10, marginTop: 3 }}>France</Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
                       Email : contact@zoom-project.com
                     </Text>
@@ -198,17 +198,25 @@ const ModalPrintInvoice = ({
                       </View>
                     </View>
                     <View style={styles.section4}>
-                      <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
+                      <Text
+                        style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}
+                      >
                         {customer?.name}
                       </Text>
                       <Text style={{ fontSize: 10, marginTop: 3 }}>
                         {customer?.companyInformations.address}
                       </Text>
                       <Text style={{ fontSize: 10, marginTop: 3 }}>
-                        {customer?.companyInformations.zipCode + ', ' + customer?.companyInformations.city}
+                        {customer?.companyInformations.zipCode +
+                          ', ' +
+                          customer?.companyInformations.city}
                       </Text>
                       <Text style={{ fontSize: 10, marginTop: 3 }}>
-                        {countries.find((country) => country.value === customer?.companyInformations.country)?.label ?? ''}
+                        {countries.find(
+                          (country) =>
+                            country.value ===
+                            customer?.companyInformations.country
+                        )?.label ?? ''}
                       </Text>
                     </View>
                   </View>
@@ -397,13 +405,19 @@ const ModalPrintInvoice = ({
                   </View>
                 </View>
                 <View style={styles.sectionFooter}>
-                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                  <Text
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
+                  >
                     SAS ZOOM PROJECT
                   </Text>
-                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                  <Text
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
+                  >
                     SIRET 87764973100016 - RCS Sarreguemines B - NAF 7420Z
                   </Text>
-                  <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
+                  <Text
+                    style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
+                  >
                     TVA intracommunautaire: FR23877649731
                   </Text>
                   <Text
