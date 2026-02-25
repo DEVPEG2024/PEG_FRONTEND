@@ -37,7 +37,7 @@ const CustomerFields = (props: CustomerFields) => {
   };
 
   return (
-    <AdaptableCard className="mb-4">
+    <AdaptableCard bordered={false} className="mb-4">
       <h5>{t('cust.customer')}</h5>
       <p className="mb-6">{t('cust.customer_description')}</p>
       <div className="flex gap-4">

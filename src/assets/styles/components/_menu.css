@@ -10,7 +10,7 @@
   }
 
   &.menu-title-themed {
-    @apply text-gray-100 text-opacity-50;
+    @apply text-gray-100/50;
   }
 }
 

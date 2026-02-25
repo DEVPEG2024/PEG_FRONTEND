@@ -26,14 +26,14 @@
   }
 
   &.menu-item-themed {
-    @apply text-gray-100 text-opacity-80;
+    @apply text-gray-100/80;
 
     &.menu-item-hoverable {
-      @apply hover:text-opacity-100 hover:bg-gray-900 hover:bg-opacity-10;
+      @apply hover:text-gray-100 hover:bg-gray-900/10;
     }
 
     &.menu-item-active {
-      @apply text-gray-100 bg-gray-900 bg-opacity-30 hover:bg-opacity-30;
+      @apply text-gray-100 bg-gray-900/30 hover:bg-gray-900/30;
     }
   }
 
@@ -62,7 +62,7 @@
   }
 
   &.menu-collapse-item-themed {
-    @apply text-gray-100 text-opacity-80 hover:text-opacity-100 hover:bg-gray-900 hover:bg-opacity-10;
+    @apply text-gray-100/80 hover:text-gray-100 hover:bg-gray-900/10;
   }
 
   &.menu-collapse-item-transparent {

@@ -43,7 +43,7 @@ function Cart() {
       <Loading>
         <div className="grid md:grid-cols-1 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-3">
-            <AdaptableCard rightSideBorder bodyClass="p-5">
+            <AdaptableCard bordered={false} bodyClass="p-5">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h3 className="mb-2 font-bold">Panier</h3>

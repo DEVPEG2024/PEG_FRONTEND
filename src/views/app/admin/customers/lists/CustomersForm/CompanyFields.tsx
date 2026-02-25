@@ -24,7 +24,7 @@ const CompanyFields = (props: CompanyFieldsProps) => {
   const { customerCategories, errors } = props;
 
   return (
-    <AdaptableCard className="mb-4">
+    <AdaptableCard bordered={false} className="mb-4">
       <h5>{t('cust.organization')}</h5>
       <p className="mb-6">{t('cust.company_description')}</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

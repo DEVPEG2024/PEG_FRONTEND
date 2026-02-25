@@ -158,9 +158,8 @@ const Comments = () => {
     <Container className="h-full">
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdaptableCard rightSideBorder bodyClass="p-5">
+          <AdaptableCard bordered={false} bodyClass="p-5">
             <div>
-              <h4>Commentaires</h4>
               <Timeline>
                 {determineVisibleComments(comments, user).map(
                   (comment: Comment) => (

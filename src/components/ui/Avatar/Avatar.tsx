@@ -19,7 +19,7 @@ const Avatar = forwardRef<HTMLSpanElement, AvatarProps>((props, ref) => {
         alt,
         className,
         icon,
-        shape = 'rounded',
+        shape = 'rounded-sm',
         size = 'md',
         src,
         srcSet,

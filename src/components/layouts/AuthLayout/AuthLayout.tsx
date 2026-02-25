@@ -9,7 +9,7 @@ const AuthLayout = () => {
     const layoutType = useAppSelector((state) => state.theme.layout.type)
 
     return (
-        <div className="app-layout-blank flex flex-auto flex-col h-[100vh]">
+        <div className="app-layout-blank flex flex-auto flex-col h-screen">
             {layoutType === LAYOUT_TYPE_BLANK ? (
                 <View />
             ) : (

@@ -15,13 +15,10 @@ const Tasks = () => {
   );
 
   return (
-    <Container className="h-full">
+    <Container className="h-full mt-4">
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdaptableCard rightSideBorder bodyClass="p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h4>Tâches</h4>
-            </div>
+          <AdaptableCard bordered={false} bodyClass="p-5">
             <Loading loading={loading}>
               <div className="flex flex-col gap-2">
                 {tasks.length > 0 ? (

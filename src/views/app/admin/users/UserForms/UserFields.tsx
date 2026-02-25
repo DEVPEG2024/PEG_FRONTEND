@@ -20,7 +20,7 @@ const UserFields = (props: UserFields) => {
   const { onEdition, touched, errors, customers, producers, roles } = props;
 
   return (
-    <AdaptableCard className="mb-4">
+    <AdaptableCard bordered={false} className="mb-4">
       <h5>
         {onEdition
           ? 'Modifier les informations de base'

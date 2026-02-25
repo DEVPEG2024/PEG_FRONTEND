@@ -124,7 +124,7 @@ const Files = () => {
       <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <Loading loading={loading}>
-            <AdaptableCard rightSideBorder bodyClass="p-5">
+            <AdaptableCard bordered={false} bodyClass="p-5">
               <Loading loading={filesLoading}>
                 <Upload
                   multiple

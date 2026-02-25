@@ -52,7 +52,7 @@ const ProjectItem = ({
       <div className="flex flex-col justify-between h-full">
         <div className="flex justify-between">
           <a onClick={handleNavigateDetails} className="cursor-pointer">
-            <h6 className="flex flex-grow items-center gap-2">
+            <h6 className="flex grow items-center gap-2">
               <LiaBusinessTimeSolid className="text-2xl" />
               {project.name}
             </h6>

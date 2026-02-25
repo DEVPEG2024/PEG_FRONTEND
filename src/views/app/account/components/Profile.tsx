@@ -155,7 +155,7 @@ const Profile = () => {
                   title="Informations personnelles"
                   desc="Vos informations personnelles"
                 />
-                <div className="flex items-center justify-between mb-4 mt-4">
+                <div className="flex items-center justify-around mb-4 mt-4">
                   <div className="ml-0 font-semibold">Avatar</div>
                   <Loading loading={avatarLoading}>
                     <Upload

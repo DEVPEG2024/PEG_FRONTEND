@@ -3,25 +3,25 @@
   @apply mx-auto;
 }
 
-@screen sm {
+@variant sm {
   .dialog {
     @apply max-w-xl;
   }
 }
 
-@screen md {
+@variant md {
   .dialog {
     @apply max-w-2xl;
   }
 }
 
-@screen lg {
+@variant lg {
   .dialog {
     @apply max-w-4xl;
   }
 }
 
-@screen xl {
+@variant xl {
   .dialog {
     @apply max-w-6xl;
   }
@@ -32,12 +32,12 @@
 }
 
 .dialog-formbuilder {
-  @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-white max-h-[90vh] overflow-y-auto; 
+  @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-white max-h-[90vh] overflow-y-auto;
 }
 
 .dialog-overlay {
   transition: all 0.15s ease-in-out;
-  @apply bg-opacity-60 inset-0 fixed z-30 bg-black dark:bg-opacity-80;
+  @apply bg-black/60 dark:bg-black/80 inset-0 fixed z-30;
 }
 
 .dialog-overlay-after-open {

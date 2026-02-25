@@ -21,7 +21,7 @@ const RichTextEditor = ({ value, onChange, readOnly }: RichTextEditorProps) => {
         editorProps: {
             attributes: {
                 // "prose" de Tailwind Typography rend le HTML joli automatiquement
-                class: `prose prose-sm prose-invert focus:outline-none min-h-[150px] max-w-none p-4 ${
+                class: `prose prose-sm prose-invert focus:outline-hidden min-h-[150px] max-w-none p-4 ${
                     !readOnly ? 'bg-gray-700' : ''
                 }`,
             },
@@ -35,7 +35,7 @@ const RichTextEditor = ({ value, onChange, readOnly }: RichTextEditorProps) => {
     }, [value, editor])
 
     return (
-        <div className={`w-full overflow-hidden ${!readOnly ? 'border border-gray-200 rounded-md shadow-sm bg-gray-700' : ''}`}>
+        <div className={`w-full overflow-hidden ${!readOnly ? 'border border-gray-200 rounded-md shadow-xs bg-gray-700' : ''}`}>
             {!readOnly && <MenuBar editor={editor} />}
             <EditorContent editor={editor} />
         </div>

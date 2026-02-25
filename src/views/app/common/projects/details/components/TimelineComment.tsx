@@ -1,6 +1,12 @@
 import { PegFile } from '@/@types/pegFile';
 import { User } from '@/@types/user';
-import { Avatar, Card, TimeLineItemProps } from '@/components/ui';
+import {
+  Avatar,
+  Button,
+  Card,
+  TimeLineItemProps,
+  Tooltip,
+} from '@/components/ui';
 import {
   apiDeleteFile,
   apiLoadPegFilesAndFiles,
@@ -18,6 +24,7 @@ import ReactHtmlParser from 'html-react-parser';
 import { Comment } from '@/@types/project';
 import { visibilityData } from '../../lists/constants';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
+import { HiTrash } from 'react-icons/hi2';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
@@ -108,12 +115,16 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
           <p className="prose dark:prose-invert max-w-none text-sm">
             {ReactHtmlParser(comment.content)}
           </p>
-          <p
-            className="text-gray-500 text-end cursor-pointer hover:text-red-500"
-            onClick={handleDeleteComment}
-          >
-            Supprimer
-          </p>
+          <div className="justify-self-end">
+            <Tooltip title="Supprimer">
+              <Button
+                variant="default"
+                onClick={handleDeleteComment}
+                size="sm"
+                icon={<HiTrash />}
+              />
+            </Tooltip>
+          </div>
         </Card>
         {comment.images.length > 0 && (
           <div className="col-span-1 flex flex-col items-center justify-center">

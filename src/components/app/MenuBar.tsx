@@ -44,7 +44,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                 <span className="font-bold">H2</span>
             </Button>
 
-            <div className="w-[1px] h-6 bg-gray-300 mx-1 self-center" />
+            <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
 
             {/* Formattage de base */}
             <Button
@@ -72,7 +72,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                 <HiStrikethrough size={18} />
             </Button>
 
-            <div className="w-[1px] h-6 bg-gray-300 mx-1 self-center" />
+            <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
 
             {/* Listes */}
             <Button
@@ -90,7 +90,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
                 <HiQueueList size={18} />
             </Button>
 
-            <div className="w-[1px] h-6 bg-gray-300 mx-1 self-center" />
+            <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
 
             {/* Bloc de citation et Code */}
             <Button

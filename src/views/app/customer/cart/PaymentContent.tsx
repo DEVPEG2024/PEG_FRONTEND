@@ -187,7 +187,7 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
   );
   return (
     <div>
-      <AdaptableCard bodyClass="p-5">
+      <AdaptableCard bordered={false} bodyClass="p-5">
         <h4 className="mb-6">Détails</h4>
         <div className="flex flex-col gap-2">
           <span className="font-semibold">

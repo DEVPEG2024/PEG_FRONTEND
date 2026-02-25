@@ -59,7 +59,7 @@ const DetailsRight = () => {
 
   return (
     <div>
-      <AdaptableCard bodyClass="p-5">
+      <AdaptableCard bodyClass="p-5" bordered={false}>
         <h4 className="mb-6">Détails</h4>
         <IconText
           className={`mb-4 ${statusColor}`}
