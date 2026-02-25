@@ -17,13 +17,14 @@ import {
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 
-import { Button, Notification, toast } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
 import { RichTextEditor } from '@/components/shared';
 import { User } from '@/@types/user';
+import { toast } from 'react-toastify';
 
 injectReducer('showProduct', reducer);
 
@@ -86,11 +87,7 @@ const ShowProduct = () => {
         userDocumentId: user.documentId
       } as CartItem)
     );
-    toast.push(
-      <Notification type="success" title="Ajouté">
-        Article ajouté au panier
-      </Notification>
-    );
+    toast.success("Article ajouté au panier")
     navigate(-1);
   };
 
@@ -112,11 +109,7 @@ const ShowProduct = () => {
         sizeAndColors: sizeAndColorsSelected,
       } as CartItemSizeAndColorEdition)
     );
-    toast.push(
-      <Notification type="success" title="Modifié">
-        Tailles modifiées
-      </Notification>
-    );
+    toast.success("Tailles modifiées")
     navigate('/customer/cart');
   };
 

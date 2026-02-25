@@ -1,4 +1,4 @@
-import { Dialog, Notification, toast } from '@/components/ui';
+import { Dialog } from '@/components/ui';
 import {
   useAppDispatch,
   useAppSelector,
@@ -14,6 +14,7 @@ import {
   editFormAnswerCartItem,
 } from '@/store/slices/base/cartSlice';
 import { FormAnswer } from '@/@types/formAnswer';
+import { toast } from 'react-toastify';
 
 function ModalCompleteForm({
   form,
@@ -51,11 +52,7 @@ function ModalCompleteForm({
         formAnswer,
       } as CartItemFormAnswerEdition)
     );
-    toast.push(
-      <Notification type="success" title="Modifié">
-        Formulaire modifié
-      </Notification>
-    );
+    toast.success("Formulaire modifié")
   };
 
   return (

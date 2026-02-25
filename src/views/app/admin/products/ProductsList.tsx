@@ -7,23 +7,16 @@ import reducer, {
   setModalDeleteProductClose,
   deleteProduct,
   duplicateProduct,
-  updateProduct,
+  updateProduct
 } from './store';
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
-  Card,
   Dialog,
   Input,
-  Notification,
   Pagination,
-  Select,
-  Switcher,
-  Tooltip,
-  toast,
+  Select
 } from '@/components/ui';
-import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { isEmpty } from 'lodash';
 import { Product } from '@/@types/product';
 import { Container, Loading } from '@/components/shared';
@@ -36,12 +29,13 @@ import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServ
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
+import { toast } from 'react-toastify';
+import ProductCard from './ProductCard';
 
 injectReducer('products', reducer);
 
 const ProductsList = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { user }: { user: User } = useAppSelector(
       (state: RootState) => state.auth.user
     );
@@ -78,19 +72,11 @@ const ProductsList = () => {
     dispatch(setModalDeleteProductClose());
   };
 
-  const onEdit = (product: Product) => {
-    navigate(`/admin/products/edit/${product.documentId}`);
-  };
-
   const onDeleteModalOpen = async (product: Product) => {
     const {orderItems: pendingOrderItemsLinkedToProduct}: {orderItems: OrderItem[]} = await unwrapData(apiGetPendingOrderItemsLinkedToProduct(product.documentId))
 
     if (pendingOrderItemsLinkedToProduct.length > 0) {
-      toast.push(
-        <Notification type="danger" title="Suppression annulée">
-          Au moins une commande en cours est rattachée à ce produit
-        </Notification>
-      );
+      toast.warn("Au moins une commande en cours est rattachée à ce produit")
     } else {
       setProductToDelete(product);
       dispatch(setModalDeleteProductOpen());
@@ -107,27 +93,15 @@ const ProductsList = () => {
       updateProduct({ documentId: product.documentId, active: !checked })
     );
     if (!checked) {
-      toast.push(
-        <Notification type="success" title="Activé">
-          Produit activé avec succès
-        </Notification>
-      );
+      toast.success("Produit activé")
     } else {
-      toast.push(
-        <Notification type="success" title="Désactivé">
-          Produit désactivé avec succès
-        </Notification>
-      );
+      toast.success("Produit désactivé")
     }
   };
 
   const onDuplicate = async (product: Product) => {
     dispatch(duplicateProduct(product));
-    toast.push(
-      <Notification type="success" title="Dupliqué">
-        Produit dupliqué avec succès
-      </Notification>
-    );
+      toast.success("Produit dupliqué")
   };
 
   const handlePaginationChange = (page: number) => {
@@ -152,6 +126,18 @@ const ProductsList = () => {
     }
   };
 
+  const handleOnDeleteModalOpenSetProductToDelete = useCallback((product: Product) => {
+    onDeleteModalOpen(product);
+  }, []);
+
+  const handleOnActivate = useCallback((product: Product, checked: boolean) => {
+    onActivate(product, checked);
+  }, []);
+
+  const handleOnDuplicate = useCallback((product: Product) => {
+    onDuplicate(product);
+  }, []);
+
   return (
     <Container>
       <HeaderTitle
@@ -169,7 +155,7 @@ const ProductsList = () => {
           onChange={(e) => handleSearch(e.target.value)}
         />
       </div>
-      <Loading loading={loading}>
+      <Loading loading={loading} type='cover'>
         {/* {isEmpty(products) && (
           <div className="h-full flex flex-col items-center justify-center">
             <DoubleSidedImage
@@ -182,64 +168,7 @@ const ProductsList = () => {
         )} */}
         {!isEmpty(products) && (
           <div className="grid grid-cols-2 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
-            {products.map((product) => (
-              <Card key={product.documentId}>
-                <div className="flex flex-col gap-4">
-                  <img
-                    src={product.images[0]?.url}
-                    alt={product.name}
-                    className="rounded-lg bg-slate-50"
-                    style={{
-                      height: '250px',
-                      width: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                  <div className="flex flex-col justify-between">
-                    <p className="text-lg font-bold">{product.name}</p>
-                    <p className="text-lg font-bold text-white">
-                      {product.price.toFixed(2)}€
-                    </p>
-                    <div className="flex gap-4 items-center ">
-                      <Button
-                        className="mt-4 "
-                        variant="twoTone"
-                        size="sm"
-                        onClick={() => onEdit(product)}
-                        icon={<HiPencil />}
-                      >
-                        Modifier
-                      </Button>
-                      <Tooltip title="Activer/Désactiver le produit">
-                        <Switcher
-                          checked={product.active}
-                          onChange={(checked) => onActivate(product, checked)}
-                          className="mt-4"
-                        />
-                      </Tooltip>
-                      <Tooltip title="Dupliquer le produit">
-                        <Button
-                          className="mt-4 "
-                          variant="plain"
-                          onClick={() => onDuplicate(product)}
-                          size="sm"
-                          icon={<HiDuplicate />}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Supprimer le produit">
-                        <Button
-                          className="mt-4 "
-                          variant="plain"
-                          onClick={() => onDeleteModalOpen(product)}
-                          size="sm"
-                          icon={<HiTrash />}
-                        />
-                      </Tooltip>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+            {products.map((product) => (<ProductCard key={product.documentId} product={product} onDeleteModalOpen={handleOnDeleteModalOpenSetProductToDelete} onActivate={handleOnActivate} onDuplicate={handleOnDuplicate}/>))}
             <Dialog
               isOpen={modalDeleteProduct}
               onClose={onDeleteModalClose}

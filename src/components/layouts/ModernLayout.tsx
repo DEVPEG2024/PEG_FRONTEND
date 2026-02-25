@@ -5,13 +5,9 @@ import MobileNav from "@/components/template/MobileNav";
 import SideNav from "@/components/template/SideNav";
 import View from "@/views";
 import LanguageSelector from "../template/LanguageSelector";
-import { MdOnlinePrediction, MdShoppingCart } from "react-icons/md";
+import { MdShoppingCart } from "react-icons/md";
 import { Alert } from "../ui";
-import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
-import { API_BASE_URL } from "@/configs/api.config";
 import { RootState, useAppSelector } from "@/store";
-import { useTranslation } from "react-i18next";
 import { AuthorityCheck } from "../shared";
 import { Link } from "react-router-dom";
 import useUserCart from "@/utils/hooks/useUserCart";
@@ -26,60 +22,11 @@ const HeaderActionsStart = () => {
 };
 
 const HeaderActionsEnd = () => {
-  const { t } = useTranslation();
   const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
-  const [userCount, setUserCount] = useState<number | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const cart = useUserCart(documentId);
-  useEffect(() => {
-    const clientId = documentId;
-
-    const newSocket = io(API_BASE_URL, {
-      query: { clientId },
-    });
-    setSocket(newSocket);
-    newSocket.on("userCountUpdate", (count: unknown) => {
-      console.log("Received count:", count, "Type:", typeof count);
-      if (typeof count === "number") {
-        setUserCount(count);
-      } else if (typeof count === "object" && count !== null) {
-        // Si c'est un objet, on peut essayer d'extraire la taille
-        const size = Object.keys(count).length;
-        setUserCount(size);
-      } else {
-        console.error("Unexpected userCount type:", typeof count);
-        setUserCount(null);
-      }
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
-  const renderUserCount = () => {
-    if (userCount === null) return "0";
-    return userCount;
-  };
-  const text = (userCount ?? 0) > 1 ? "online_users" : "online_user";
   const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
   return (
     <>
-      <AuthorityCheck
-        userAuthority={userAuthority as string[]}
-        authority={["super_admin"]}
-      >
-        <Alert
-          showIcon
-          type="black"
-          customIcon={<MdOnlinePrediction color="text-emerald" />}
-          className="bg-slate-600"
-        >
-          <span className="text-white">
-            {renderUserCount()} {t(text)}
-          </span>
-        </Alert>
-      </AuthorityCheck>
       <AuthorityCheck
         userAuthority={userAuthority as string[]}
         authority={["customer"]}

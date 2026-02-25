@@ -1,8 +1,7 @@
-import Notification from '@/components/ui/Notification'
 import Button from '@/components/ui/Button'
-import toast from '@/components/ui/toast'
 import { themeConfig } from '@/configs/theme.config'
 import { useAppSelector } from '@/store'
+import { toast } from 'react-toastify'
 
 const CopyButton = () => {
     const theme = useAppSelector((state) => state.theme)
@@ -20,14 +19,7 @@ const CopyButton = () => {
 
         navigator.clipboard.writeText(JSON.stringify(config, null, 2))
 
-        toast.push(
-            <Notification title="Copy Success" type="success">
-                {`Please replace themeConfig in 'src/configs/themeConfig.js'`}
-            </Notification>,
-            {
-                placement: 'top-center',
-            }
-        )
+        toast.success("Please replace themeConfig in 'src/configs/themeConfig.js'")
     }
 
     return (

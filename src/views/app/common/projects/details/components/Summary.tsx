@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
@@ -43,6 +43,12 @@ const Summary = ({ project }: { project: Project }) => {
   const [description, setDescription] = useState(project.description);
 
   const debounceFn = debounce(handleDebounceFn, 1000);
+
+  useEffect(() => {
+    return () => {
+      dispatch(setEditDescription(false));
+    };
+  }, [dispatch]);
 
   function handleDebounceFn(val: string) {
     setDescription(val);

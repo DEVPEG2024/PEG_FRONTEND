@@ -21,6 +21,7 @@ export type StateData = {
   products: Product[];
   productToEdit: Product | null;
   modalDeleteProduct: boolean;
+  indexProductToDuplicate: number;
   total: number;
   result: boolean;
   message: string;
@@ -58,7 +59,8 @@ export const getProductById = createAsyncThunk(
 
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
-  async (product: Product) => {
+  async (product: Product, thunkAPI) => {
+    thunkAPI.dispatch(setIndexProductToDuplicate(thunkAPI.getState().products.data.products.findIndex((p: Product) => p.documentId === product.documentId) + 1));
     const { product: productToDuplicate }: { product: Product } =
       await unwrapData(apiGetProductForEditById(product.documentId));
     const { documentId, images, ...duplicatedProduct } = productToDuplicate;
@@ -110,6 +112,7 @@ const initialState: StateData = {
   products: [],
   productToEdit: null,
   modalDeleteProduct: false,
+  indexProductToDuplicate: -1,
   total: 0,
   result: false,
   message: '',
@@ -126,6 +129,9 @@ const productSlice = createSlice({
   reducers: {
     setProductToEdit: (state, action) => {
       state.productToEdit = action.payload;
+    },
+    setIndexProductToDuplicate: (state, action) => {
+      state.indexProductToDuplicate = action.payload;
     },
     setModalDeleteProductOpen: (state) => {
       state.modalDeleteProduct = true;
@@ -179,7 +185,7 @@ const productSlice = createSlice({
     });
     builder.addCase(duplicateProduct.fulfilled, (state, action) => {
       state.loading = false;
-      state.products.push(action.payload);
+      state.products.splice(state.indexProductToDuplicate, 0, action.payload);
       state.total += 1;
     });
     builder.addCase(duplicateProduct.rejected, (state) => {
@@ -200,6 +206,7 @@ const productSlice = createSlice({
 });
 
 export const {
+  setIndexProductToDuplicate,
   setProductToEdit,
   setModalDeleteProductOpen,
   setModalDeleteProductClose

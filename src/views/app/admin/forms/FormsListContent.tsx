@@ -9,11 +9,12 @@ import reducer, {
   useAppSelector,
 } from './store';
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Input, Notification, Pagination, Select, toast, Tooltip } from '@/components/ui';
+import { Button, Card, Input, Pagination, Select, Tooltip } from '@/components/ui';
 import { Form } from '@/@types/form';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 import { Loading } from '@/components/shared';
+import { toast } from 'react-toastify';
 
 injectReducer('forms', reducer);
 
@@ -72,11 +73,7 @@ function FormsListContent() {
 
   const handleDuplicate = (form: Form) => {
     dispatch(duplicateForm(form));
-    toast.push(
-      <Notification type="success" title="Dupliqué">
-        Formulaire dupliqué avec succès
-      </Notification>
-    );
+    toast.success("Formulaire dupliqué")
   };
   return (
     <div className="h-full">

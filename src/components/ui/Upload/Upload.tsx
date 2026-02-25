@@ -5,10 +5,9 @@ import cloneDeep from 'lodash/cloneDeep'
 import FileItem from './FileItem'
 import Button from '../Button/Button'
 import CloseButton from '../CloseButton'
-import Notification from '../Notification/Notification'
-import toast from '../toast/toast'
 import type { CommonProps } from '../@types/common'
 import type { ReactNode, ChangeEvent, MouseEvent } from 'react'
+import { toast } from 'react-toastify'
 
 export interface UploadProps extends CommonProps {
     accept?: string
@@ -71,14 +70,7 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
     }, [JSON.stringify(fileList)])
 
     const triggerMessage = (msg: string | ReactNode = '') => {
-        toast.push(
-            <Notification type="danger" duration={2000}>
-                {msg || 'Upload Failed!'}
-            </Notification>,
-            {
-                placement: 'top-center',
-            }
-        )
+        toast.error(msg || 'L\'upload a échoué !')
     }
 
     const pushFile = (newFiles: FileList | null, file: File[]) => {

@@ -13,7 +13,7 @@ import {
   updateProjectInvoice,
   useAppSelector,
 } from '../store';
-import { Card, Checkbox, Notification, toast } from '@/components/ui';
+import { Card, Checkbox } from '@/components/ui';
 import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
 import dayjs from 'dayjs';
@@ -24,6 +24,7 @@ import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoic
 import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvoice';
 import { stateData } from '@/views/app/common/invoices/constants';
 import createUID from '@/components/ui/utils/createUid';
+import { toast } from 'react-toastify';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -61,14 +62,7 @@ const Invoices = () => {
   const generateInvoice = () : void => {
     const errorsOnGeneration: string[] = verifyGeneration()
     if (errorsOnGeneration.length > 0) {
-      toast.push(
-        <Notification type="danger" title="Erreur à la création de la facture">
-          {errorsOnGeneration.map((errorOnGeneration) => (
-            <div>{errorOnGeneration}</div>
-          ))}
-        </Notification>
-      );
-      
+      errorsOnGeneration.forEach((errorOnGeneration) => toast.error(errorOnGeneration))
     } else {
       const invoice: Omit<Invoice, 'documentId'> = {
         customer: project.customer,

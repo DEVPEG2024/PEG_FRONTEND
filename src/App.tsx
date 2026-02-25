@@ -7,6 +7,7 @@ import Layout from '@/components/layouts';
 import './locales';
 import { useEffect } from 'react';
 import { PERSIST_STORE_NAME } from './constants/app.constant';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   useEffect(() => {
@@ -25,6 +26,7 @@ function App() {
         <BrowserRouter>
           <Theme>
             <Layout />
+            <ToastContainer position="bottom-right" />
           </Theme>
         </BrowserRouter>
       </PersistGate>
