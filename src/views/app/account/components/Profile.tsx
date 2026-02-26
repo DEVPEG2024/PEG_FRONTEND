@@ -3,7 +3,8 @@ import Button from '@/components/ui/Button';
 import { FormContainer } from '@/components/ui/Form';
 import FormDescription from './FormDescription';
 import FormRow from './FormRow';
-import { Field, Form, Formik } from 'formik';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 import * as Yup from 'yup';
 import { updateOwnUser, useAppDispatch, useAppSelector } from '@/store';
@@ -73,29 +74,34 @@ const Profile = () => {
     setAvatarLoading(false);
   };
 
-  const onFormSubmit = async (
-    values: UserFormModel,
-    setSubmitting: (isSubmitting: boolean) => void
-  ) => {
+  // submit handler returns a promise so RHF can toggle isSubmitting automatically
+  const onFormSubmit = async (values: UserFormModel) => {
+    const updatedValues = { ...values } as any;
+
     if (newAvatar) {
       const newAvatarUploaded: PegFile = await apiUploadFile(newAvatar.file);
 
       if (avatar) {
         apiDeleteFile(avatar.id);
       }
-      values.avatar = newAvatarUploaded.id;
+      updatedValues.avatar = newAvatarUploaded.id;
     } else if (avatarToDelete) {
       apiDeleteFile(avatarToDelete.id);
-      values.avatar = null;
+      updatedValues.avatar = null;
     }
 
-    dispatch(updateOwnUser({ user: values, id: user.id }));
-    setSubmitting(false);
+    dispatch(updateOwnUser({ user: updatedValues, id: user.id }));
     navigate('/home');
   };
 
   const onFileAdd = async (file: File) => {
-    setNewAvatar({ file, name: file.name });
+    setNewAvatar({
+      file,
+      name: file.name,
+      documentId: '',
+      id: '',
+      url: '',
+    } as PegFile);
   };
 
   const beforeUpload = (files: FileList | null) => {
@@ -132,124 +138,156 @@ const Profile = () => {
     navigate('/home');
   };
 
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting, touchedFields },
+  } = useForm<UserFormModel>({
+    resolver: yupResolver(validationSchema),
+    defaultValues: initialData,
+  });
+
+  // React Hook Form will set isSubmitting while this async function is running
+  const onSubmit = async (values: UserFormModel) => {
+    await onFormSubmit(values);
+  };
+
   return (
     <>
-      <Formik
-        initialValues={{
-          ...initialData,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
-          setSubmitting(true);
-          setTimeout(() => {
-            onFormSubmit(values, setSubmitting);
-          }, 1000);
-        }}
-      >
-        {({ touched, errors, isSubmitting }) => {
-          const validatorProps = { touched, errors };
-          return (
-            <Form>
-              <FormContainer>
-                <FormDescription
-                  title="Informations personnelles"
-                  desc="Vos informations personnelles"
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FormContainer>
+          <FormDescription
+            title="Informations personnelles"
+            desc="Vos informations personnelles"
+          />
+          <div className="flex items-center mb-4 mt-4">
+            <div className="ml-0 font-semibold">Avatar</div>
+            <Loading loading={avatarLoading}>
+              <Upload
+                className="cursor-pointer absolute left-1/2"
+                showList={true}
+                uploadLimit={1}
+                beforeUpload={beforeUpload}
+                onFileAdd={(file) => onFileAdd(file)}
+                onFileRemove={() => {
+                  setAvatarToDelete(avatar);
+                  setAvatar(undefined);
+                  setNewAvatar(undefined);
+                }}
+                fileList={avatar ? [avatar?.file] : []}
+              >
+                <Avatar
+                  className="border-2 border-white dark:border-gray-800 shadow-lg"
+                  size={100}
+                  shape="circle"
+                  icon={<HiOutlineUser />}
+                  src={avatar?.url}
                 />
-                <div className="flex items-center justify-around mb-4 mt-4">
-                  <div className="ml-0 font-semibold">Avatar</div>
-                  <Loading loading={avatarLoading}>
-                    <Upload
-                      className="cursor-pointer absolute left-1/2"
-                      showList={true}
-                      uploadLimit={1}
-                      beforeUpload={beforeUpload}
-                      onFileAdd={(file) => onFileAdd(file)}
-                      onFileRemove={() => {
-                        setAvatarToDelete(avatar);
-                        setAvatar(undefined);
-                        setNewAvatar(undefined);
-                      }}
-                      fileList={avatar ? [avatar?.file] : []}
-                    >
-                      <Avatar
-                        className="border-2 border-white dark:border-gray-800 shadow-lg"
-                        size={100}
-                        shape="circle"
-                        icon={<HiOutlineUser />}
-                        src={avatar?.url}
-                      />
-                    </Upload>
-                  </Loading>
-                </div>
-                <FormRow
-                  name="username"
-                  label="Nom d'utilisateur"
-                  {...validatorProps}
-                >
-                  <Field
-                    type="text"
-                    autoComplete="off"
-                    name="username"
-                    placeholder="Nom d'utilisateur"
-                    component={Input}
-                  />
-                </FormRow>
-                <FormRow name="lastName" label="Nom" {...validatorProps}>
-                  <Field
-                    type="text"
-                    autoComplete="off"
-                    name="lastName"
-                    placeholder="Nom"
-                    component={Input}
-                  />
-                </FormRow>
-                <FormRow name="firstName" label="Prénom" {...validatorProps}>
-                  <Field
-                    type="text"
-                    autoComplete="off"
-                    name="firstName"
-                    placeholder="Prénom"
-                    component={Input}
-                  />
-                </FormRow>
-                <FormRow name="email" label="Email" {...validatorProps}>
-                  <Field
-                    type="email"
-                    autoComplete="off"
-                    name="email"
-                    placeholder="Email"
-                    component={Input}
-                  />
-                </FormRow>
+              </Upload>
+            </Loading>
+          </div>
+          <FormRow
+            name="username"
+            label="Nom d'utilisateur"
+            touched={touchedFields}
+            errors={errors}
+          >
+            <Controller
+              name="username"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Nom d'utilisateur"
+                />
+              )}
+            />
+          </FormRow>
+          <FormRow
+            name="lastName"
+            label="Nom"
+            touched={touchedFields}
+            errors={errors}
+          >
+            <Controller
+              name="lastName"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Nom"
+                />
+              )}
+            />
+          </FormRow>
+          <FormRow
+            name="firstName"
+            label="Prénom"
+            touched={touchedFields}
+            errors={errors}
+          >
+            <Controller
+              name="firstName"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Prénom"
+                />
+              )}
+            />
+          </FormRow>
+          <FormRow
+            name="email"
+            label="Email"
+            touched={touchedFields}
+            errors={errors}
+          >
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="email"
+                  autoComplete="off"
+                  placeholder="Email"
+                />
+              )}
+            />
+          </FormRow>
 
-                <StickyFooter
-                  className="-mx-8 px-8 flex items-center justify-end py-4"
-                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                >
-                  <Button
-                    size="sm"
-                    className="ltr:mr-3 rtl:ml-3"
-                    type="button"
-                    onClick={() => handleDiscard()}
-                  >
-                    Annuler
-                  </Button>
+          <StickyFooter
+            className="-mx-8 px-8 flex items-center justify-end py-4"
+            stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          >
+            <Button
+              size="sm"
+              className="ltr:mr-3 rtl:ml-3"
+              type="button"
+              onClick={() => handleDiscard()}
+            >
+              Annuler
+            </Button>
 
-                  <Button
-                    size="sm"
-                    variant="solid"
-                    loading={isSubmitting}
-                    icon={<AiOutlineSave />}
-                    type="submit"
-                  >
-                    Enregistrer
-                  </Button>
-                </StickyFooter>
-              </FormContainer>
-            </Form>
-          );
-        }}
-      </Formik>
+            <Button
+              size="sm"
+              variant="solid"
+              loading={isSubmitting}
+              icon={<AiOutlineSave />}
+              type="submit"
+            >
+              Enregistrer
+            </Button>
+          </StickyFooter>
+        </FormContainer>
+      </form>
     </>
   );
 };

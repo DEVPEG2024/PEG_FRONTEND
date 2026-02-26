@@ -226,11 +226,7 @@ const EditProduct = () => {
     return createProduct;
   };
 
-  const handleFormSubmit = async (
-    values: ProductFormModel,
-    setSubmitting: SetSubmitting
-  ) => {
-    setSubmitting(true);
+  const handleFormSubmit = async (values: ProductFormModel) => {
     const newImages: PegFile[] = [];
     for (const image of images) {
       if (image.id) {
@@ -253,7 +249,6 @@ const EditProduct = () => {
     }
 
     await updateOrCreateProduct(data);
-    setSubmitting(false);
     navigate('/admin/products');
   };
 

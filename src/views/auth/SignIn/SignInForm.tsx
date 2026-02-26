@@ -7,7 +7,8 @@ import PasswordInput from '@/components/shared/PasswordInput';
 import ActionLink from '@/components/shared/ActionLink';
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage';
 import useAuth from '@/utils/hooks/useAuth';
-import { Field, Form, Formik } from 'formik';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import type { CommonProps } from '@/@types/common';
 import { useTranslation } from 'react-i18next';
@@ -44,20 +45,23 @@ const SignInForm = (props: SignInFormProps) => {
 
   const { signIn } = useAuth();
 
-  const onSignIn = async (
-    values: SignInFormSchema,
-    setSubmitting: (isSubmitting: boolean) => void
-  ) => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignInFormSchema>({
+    resolver: yupResolver(validationSchema) as Resolver<SignInFormSchema>,
+    defaultValues: { email: '', password: '', rememberMe: true },
+  });
+
+  const onSignIn = async (values: SignInFormSchema) => {
     const { email, password } = values;
-    setSubmitting(true);
 
     const result = await signIn({ identifier: email, password });
 
     if (result?.status === 'failed') {
       setMessage(result.message);
     }
-
-    setSubmitting(false);
   };
 
   return (
@@ -67,69 +71,72 @@ const SignInForm = (props: SignInFormProps) => {
           <>{message}</>
         </Alert>
       )}
-      <Formik
-        initialValues={{
-          email: '',
-          password: '',
-          rememberMe: true,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
+      <form
+        onSubmit={handleSubmit((values: SignInFormSchema) => {
           if (!disableSubmit) {
-            onSignIn(values, setSubmitting);
-          } else {
-            setSubmitting(false);
+            onSignIn(values);
           }
-        }}
+        })}
       >
-        {({ touched, errors, isSubmitting }) => (
-          <Form>
-            <FormContainer>
-              <FormItem
-                label={t('email_address')}
-                invalid={(errors.email && touched.email) as boolean}
-                errorMessage={errors.email}
-              >
-                <Field
+        <FormContainer>
+          <FormItem
+            label={t('email_address')}
+            invalid={!!errors.email}
+            errorMessage={errors.email?.message}
+          >
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
                   type="text"
                   autoComplete="off"
-                  name="email"
                   placeholder={t('email_address')}
-                  component={Input}
                 />
-              </FormItem>
-              <FormItem
-                label={t('password')}
-                invalid={(errors.password && touched.password) as boolean}
-                errorMessage={errors.password}
-              >
-                <Field
+              )}
+            />
+          </FormItem>
+          <FormItem
+            label={t('password')}
+            invalid={!!errors.password}
+            errorMessage={errors.password?.message}
+          >
+            <Controller
+              name="password"
+              control={control}
+              render={({ field }) => (
+                <PasswordInput
+                  {...field}
                   autoComplete="off"
-                  name="password"
                   placeholder={t('password')}
-                  component={PasswordInput}
                 />
-              </FormItem>
-              <div className="flex justify-between mb-6">
-                <Field className="mb-0" name="rememberMe" component={Checkbox}>
+              )}
+            />
+          </FormItem>
+          <div className="flex justify-between mb-6">
+            <Controller
+              name="rememberMe"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onChange={(checked) => field.onChange(checked)}
+                  className="mb-0"
+                >
                   {t('remember_me')}
-                </Field>
-                <ActionLink to={forgotPasswordUrl}>
-                  {t('forgot_password')}
-                </ActionLink>
-              </div>
-              <Button
-                block
-                loading={isSubmitting}
-                variant="solid"
-                type="submit"
-              >
-                {isSubmitting ? t('sign_in') : t('sign_in')}
-              </Button>
-            </FormContainer>
-          </Form>
-        )}
-      </Formik>
+                </Checkbox>
+              )}
+            />
+            <ActionLink to={forgotPasswordUrl}>
+              {t('forgot_password')}
+            </ActionLink>
+          </div>
+          <Button block loading={isSubmitting} variant="solid" type="submit">
+            {t('sign_in')}
+          </Button>
+        </FormContainer>
+      </form>
     </div>
   );
 };

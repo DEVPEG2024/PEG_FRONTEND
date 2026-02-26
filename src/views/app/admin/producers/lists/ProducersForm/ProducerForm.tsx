@@ -1,8 +1,8 @@
-import { forwardRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { FormContainer } from '@/components/ui/Form';
 import Button from '@/components/ui/Button';
 import StickyFooter from '@/components/shared/StickyFooter';
-import { Form, Formik, FormikProps } from 'formik';
 import ProducerFields from './ProducerFields';
 import CompanyFields from './CompanyFields';
 import cloneDeep from 'lodash/cloneDeep';
@@ -13,11 +13,10 @@ import { countries } from '@/constants/countries.constant';
 import { Options } from '../EditProducer';
 import { Producer } from '@/@types/producer';
 
-type FormikRef = FormikProps<any>;
-
+// remove projects from the form model to avoid deep recursive instantiation
 export type ProducerFormModel = Omit<
   Producer,
-  'producerCategory' | 'companyInformations'
+  'producerCategory' | 'companyInformations' | 'projects'
 > & {
   producerCategory: string | null;
   email: string;
@@ -31,16 +30,11 @@ export type ProducerFormModel = Omit<
   website: string;
 };
 
-export type SetSubmitting = (isSubmitting: boolean) => void;
-
-type ProducerForm = {
+type ProducerFormProps = {
   initialData?: ProducerFormModel;
   producerCategories: Options[];
   onDiscard?: () => void;
-  onFormSubmit: (
-    formData: ProducerFormModel,
-    setSubmitting: SetSubmitting
-  ) => void;
+  onFormSubmit: (formData: ProducerFormModel) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -63,79 +57,77 @@ const validationSchema = Yup.object().shape({
     .required(t('p.error.phoneNumber')),
 });
 
-const ProducerForm = forwardRef<FormikRef, ProducerForm>((props, ref) => {
+const ProducerForm = (props: ProducerFormProps) => {
   const { initialData, onFormSubmit, onDiscard, producerCategories } = props;
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+    setValue,
+  } = useForm<ProducerFormModel>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialData,
+  });
+
+  const onSubmit = async (values: ProducerFormModel) => {
+    const formData = cloneDeep(values);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    onFormSubmit(formData);
+  };
 
   return (
     <>
-      <Formik
-        innerRef={ref}
-        initialValues={{
-          ...initialData,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values: ProducerFormModel, { setSubmitting }) => {
-          console.log('ici');
-          const formData = cloneDeep(values);
-          onFormSubmit?.(formData, setSubmitting);
-        }}
-      >
-        {({ values, touched, errors, isSubmitting, setFieldValue }) => {
-          return (
-            <Form>
-              <FormContainer>
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div className="lg:col-span-2">
-                    <ProducerFields
-                      touched={touched}
-                      errors={errors}
-                      values={values}
-                      countries={countries}
-                      setFieldValue={setFieldValue}
-                    />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <CompanyFields
-                      touched={touched}
-                      errors={errors}
-                      values={values}
-                      producerCategories={producerCategories}
-                    />
-                  </div>
-                </div>
-                <StickyFooter
-                  className="-mx-8 px-8 flex items-center justify-end py-4"
-                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                >
-                  <div className="md:flex items-end">
-                    <Button
-                      size="sm"
-                      className="ltr:mr-3 rtl:ml-3"
-                      type="button"
-                      onClick={() => onDiscard?.()}
-                    >
-                      {t('cancel')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="solid"
-                      loading={isSubmitting}
-                      icon={<AiOutlineSave />}
-                      type="submit"
-                    >
-                      {t('save')}
-                    </Button>
-                  </div>
-                </StickyFooter>
-              </FormContainer>
-            </Form>
-          );
-        }}
-      </Formik>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FormContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-2">
+              <ProducerFields
+                errors={errors}
+                control={control}
+                countries={countries}
+                watch={watch}
+                setValue={setValue}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <CompanyFields
+                control={control}
+                errors={errors as any}
+                producerCategories={producerCategories}
+                watch={watch}
+              />
+            </div>
+          </div>
+          <StickyFooter
+            className="-mx-8 px-8 flex items-center justify-end py-4"
+            stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          >
+            <div className="md:flex items-end">
+              <Button
+                size="sm"
+                className="ltr:mr-3 rtl:ml-3"
+                type="button"
+                onClick={() => onDiscard?.()}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                size="sm"
+                variant="solid"
+                loading={isSubmitting}
+                icon={<AiOutlineSave />}
+                type="submit"
+              >
+                {t('save')}
+              </Button>
+            </div>
+          </StickyFooter>
+        </FormContainer>
+      </form>
     </>
   );
-});
-
-ProducerForm.displayName = 'ProducerForm';
+};
 
 export default ProducerForm;

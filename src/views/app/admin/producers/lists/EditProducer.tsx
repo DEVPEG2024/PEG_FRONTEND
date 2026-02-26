@@ -115,13 +115,8 @@ const EditProducer = () => {
     return createProducer;
   };
 
-  const handleFormSubmit = async (
-    values: ProducerFormModel,
-    setSubmitting: SetSubmitting
-  ) => {
-    setSubmitting(true);
+  const handleFormSubmit = async (values: ProducerFormModel) => {
     await updateOrCreateProducer(values);
-    setSubmitting(false);
     navigate(PRODUCERS_LIST);
   };
 

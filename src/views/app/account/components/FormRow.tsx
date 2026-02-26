@@ -1,18 +1,18 @@
 import classNames from 'classnames';
 import { FormItem } from '@/components/ui/Form';
 import type { PropsWithChildren } from 'react';
-import type { FormikTouched, FormikErrors } from 'formik';
+import type { FieldErrors, FieldValues } from 'react-hook-form';
 
-type FormRowProps<T> = PropsWithChildren<{
+type FormRowProps<T extends FieldValues> = PropsWithChildren<{
   label: string;
-  errors: FormikErrors<T>;
-  touched: FormikTouched<T>;
+  errors: FieldErrors<T>;
+  touched: Partial<Record<keyof T, boolean>>;
   name: keyof T;
   border?: boolean;
   alignCenter?: boolean;
 }>;
 
-const FormRow = <T extends Record<string, unknown>>(props: FormRowProps<T>) => {
+const FormRow = <T extends FieldValues>(props: FormRowProps<T>) => {
   const {
     label,
     children,
@@ -22,6 +22,11 @@ const FormRow = <T extends Record<string, unknown>>(props: FormRowProps<T>) => {
     border = true,
     alignCenter = true,
   } = props;
+
+  const fieldError = errors[name as string];
+  const hasError = fieldError && touched[name];
+  const errorMessage =
+    hasError && fieldError.message ? String(fieldError.message) : '';
 
   return (
     <div
@@ -35,8 +40,8 @@ const FormRow = <T extends Record<string, unknown>>(props: FormRowProps<T>) => {
       <div className="col-span-2">
         <FormItem
           className="mb-0 max-w-[700px]"
-          invalid={(errors[name] && touched[name]) as boolean}
-          errorMessage={errors[name] as string}
+          invalid={!!hasError}
+          errorMessage={errorMessage}
         >
           {children}
         </FormItem>

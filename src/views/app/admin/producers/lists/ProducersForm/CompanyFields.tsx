@@ -2,7 +2,7 @@ import AdaptableCard from '@/components/shared/AdaptableCard';
 import { FormItem } from '@/components/ui/Form';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import { Controller, FieldErrors } from 'react-hook-form';
 import { t } from 'i18next';
 import { Options } from '../EditProducer';
 
@@ -15,13 +15,14 @@ type FormFieldsName = {
 
 type CompanyFieldsProps = {
   producerCategories: Options[];
-  touched: FormikTouched<FormFieldsName>;
-  errors: FormikErrors<FormFieldsName>;
-  values: FormFieldsName;
+  control: any;
+  errors: FieldErrors<FormFieldsName>;
+  watch: any;
 };
 
 const CompanyFields = (props: CompanyFieldsProps) => {
-  const { producerCategories, errors } = props;
+  const { producerCategories, errors, control, watch } = props;
+  const values = watch();
 
   return (
     <AdaptableCard bordered={false} className="mb-4">
@@ -32,24 +33,23 @@ const CompanyFields = (props: CompanyFieldsProps) => {
           <FormItem
             label={t('category')}
             invalid={errors.producerCategory ? true : false}
-            errorMessage={errors.producerCategory}
+            errorMessage={errors.producerCategory?.message}
           >
-            <Field name="producerCategory">
-              {({ field, form }: FieldProps) => (
+            <Controller
+              name="producerCategory"
+              control={control}
+              render={({ field }) => (
                 <Select
                   field={field}
-                  form={form}
                   options={producerCategories}
                   placeholder="Choisissez la catégorie"
                   value={producerCategories.find((option) => {
                     return field.value === option.value;
                   })}
-                  onChange={(option) =>
-                    form.setFieldValue(field.name, option?.value)
-                  }
+                  onChange={(option) => field.onChange(option?.value)}
                 />
               )}
-            </Field>
+            />
           </FormItem>
         </div>
       </div>
@@ -58,15 +58,19 @@ const CompanyFields = (props: CompanyFieldsProps) => {
           <FormItem
             label="N° TVA"
             invalid={errors.vatNumber ? true : false}
-            errorMessage={errors.vatNumber}
+            errorMessage={errors.vatNumber?.message}
           >
-            <Field
-              type="text"
-              autoComplete="off"
+            <Controller
               name="vatNumber"
-              placeholder="N° TVA"
-              component={Input}
-              value={props.values.vatNumber}
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="N° TVA"
+                />
+              )}
             />
           </FormItem>
         </div>
@@ -74,14 +78,19 @@ const CompanyFields = (props: CompanyFieldsProps) => {
           <FormItem
             label="N° SIRET"
             invalid={errors.siretNumber ? true : false}
-            errorMessage={errors.siretNumber}
+            errorMessage={errors.siretNumber?.message}
           >
-            <Field
-              type="text"
-              autoComplete="off"
+            <Controller
               name="siretNumber"
-              placeholder="N° SIRET"
-              component={Input}
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="N° SIRET"
+                />
+              )}
             />
           </FormItem>
         </div>
@@ -89,14 +98,19 @@ const CompanyFields = (props: CompanyFieldsProps) => {
           <FormItem
             label="Site internet"
             invalid={errors.website ? true : false}
-            errorMessage={errors.website}
+            errorMessage={errors.website?.message}
           >
-            <Field
-              type="text"
-              autoComplete="off"
+            <Controller
               name="website"
-              placeholder="Site internet"
-              component={Input}
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Site internet"
+                />
+              )}
             />
           </FormItem>
         </div>

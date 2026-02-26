@@ -1,7 +1,12 @@
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
-import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import {
+  Controller,
+  FieldErrors,
+  UseFormSetValue,
+  UseFormWatch,
+} from 'react-hook-form';
 import { t } from 'i18next';
 import { Select, Switcher } from '@/components/ui';
 import { CustomerFormModel } from './CustomerForm';
@@ -11,20 +16,17 @@ type country = {
   value: string;
 };
 
-type CustomerFields = {
+type CustomerFieldsProps = {
   countries: country[];
-  touched: FormikTouched<CustomerFormModel>;
-  errors: FormikErrors<CustomerFormModel>;
-  values: CustomerFormModel;
-  setFieldValue: (
-    field: string,
-    value: string,
-    shouldValidate?: boolean
-  ) => void;
+  errors: FieldErrors<CustomerFormModel>;
+  control: any;
+  watch: UseFormWatch<CustomerFormModel>;
+  setValue: UseFormSetValue<CustomerFormModel>;
 };
 
-const CustomerFields = (props: CustomerFields) => {
-  const { countries, errors, setFieldValue } = props;
+const CustomerFields = (props: CustomerFieldsProps) => {
+  const { countries, errors, control, watch, setValue } = props;
+  const values = watch();
 
   const formatPhoneNumber = (value: string): string => {
     // Retirer tous les espaces
@@ -45,44 +47,54 @@ const CustomerFields = (props: CustomerFields) => {
           label="Nom du client"
           className="w-2/3"
           invalid={errors.name ? true : false}
-          errorMessage={errors.name}
+          errorMessage={errors.name?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="name"
-            placeholder="Nom du client"
-            component={Input}
-            value={props.values.name}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder="Nom du client"
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label="Paiment différé"
           invalid={errors.deferredPayment ? true : false}
-          errorMessage={errors.deferredPayment}
+          errorMessage={errors.deferredPayment?.message}
         >
-          <Field name="deferredPayment">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="deferredPayment"
+            control={control}
+            render={({ field }) => (
               <Switcher
-                checked={props.values.deferredPayment}
-                onChange={() => form.setFieldValue(field.name, !field.value)}
+                checked={field.value}
+                onChange={(checked) => field.onChange(checked)}
               />
             )}
-          </Field>
+          />
         </FormItem>
       </div>
       <FormItem
         label={t('address')}
         invalid={errors.address ? true : false}
-        errorMessage={errors.address}
+        errorMessage={errors.address?.message}
       >
-        <Field
-          type="text"
-          autoComplete="off"
+        <Controller
           name="address"
-          placeholder={t('address')}
-          component={Input}
-          value={props.values.address}
+          control={control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              type="text"
+              autoComplete="off"
+              placeholder={t('address')}
+            />
+          )}
         />
       </FormItem>
       <div className="flex gap-4">
@@ -90,54 +102,61 @@ const CustomerFields = (props: CustomerFields) => {
           label={t('zipCode')}
           className="w-1/3"
           invalid={errors.zipCode ? true : false}
-          errorMessage={errors.zipCode}
+          errorMessage={errors.zipCode?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="zipCode"
-            placeholder={t('zipCode')}
-            component={Input}
-            value={props.values.zipCode}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('zipCode')}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('city')}
           className="w-1/3"
           invalid={errors.city ? true : false}
-          errorMessage={errors.city}
+          errorMessage={errors.city?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="city"
-            placeholder={t('city')}
-            component={Input}
-            value={props.values.city}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('city')}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('country')}
           className="w-1/3"
           invalid={errors.country ? true : false}
-          errorMessage={errors.country}
+          errorMessage={errors.country?.message}
         >
-          <Field name="country">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="country"
+            control={control}
+            render={({ field }) => (
               <Select
                 field={field}
-                form={form}
                 options={countries}
                 placeholder="Choisissez le pays"
                 value={countries.filter(
                   (country) => country.value === field.value
                 )}
-                onChange={(option) =>
-                  form.setFieldValue(field.name, option?.value)
-                }
+                onChange={(option) => field.onChange(option?.value)}
               />
             )}
-          </Field>
+          />
         </FormItem>
       </div>
       <div className="flex gap-4">
@@ -145,32 +164,42 @@ const CustomerFields = (props: CustomerFields) => {
           label={t('phone')}
           className="w-1/2"
           invalid={errors.phoneNumber ? true : false}
-          errorMessage={errors.phoneNumber}
+          errorMessage={errors.phoneNumber?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="phoneNumber"
-            placeholder={t('phone')}
-            component={Input}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              const formattedNumber = formatPhoneNumber(e.target.value);
-              setFieldValue('phoneNumber', formattedNumber);
-            }}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('phone')}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const formattedNumber = formatPhoneNumber(e.target.value);
+                  field.onChange(formattedNumber);
+                }}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('email')}
           className="w-1/2"
           invalid={errors.email ? true : false}
-          errorMessage={errors.email}
+          errorMessage={errors.email?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="email"
-            placeholder={t('email')}
-            component={Input}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('email')}
+              />
+            )}
           />
         </FormItem>
       </div>

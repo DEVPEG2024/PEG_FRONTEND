@@ -2,20 +2,23 @@ import AdaptableCard from '@/components/shared/AdaptableCard';
 import RichTextEditor from '@/components/app/RichTextEditor';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
-import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import {
+  Controller,
+  FieldErrors,
+  UseFormWatch,
+  UseFormSetValue,
+} from 'react-hook-form';
 import { Select, Switcher } from '@/components/ui';
-import { Product } from '@/@types/product';
+import type { ProductFormModel } from './ProductForm';
 
 type Options = {
   label: string;
   value: string;
 };
 
-type ProductFields = {
-  touched: FormikTouched<Product>;
-  errors: FormikErrors<Product>;
+type ProductFieldsProps = {
+  errors: FieldErrors<ProductFormModel>;
   type: string;
-  values: Product;
   sizes: Options[];
   colors: Options[];
   customerCategories: Options[];
@@ -26,11 +29,13 @@ type ProductFields = {
   filterColorsListByProductCategory: (
     productCategoryDocumentId: string
   ) => void;
+  control: any;
+  watch: UseFormWatch<ProductFormModel>;
+  setValue: UseFormSetValue<ProductFormModel>;
 };
 
-const ProductFields = (props: ProductFields) => {
+const ProductFields = (props: ProductFieldsProps) => {
   const {
-    touched,
     errors,
     type,
     sizes,
@@ -41,7 +46,11 @@ const ProductFields = (props: ProductFields) => {
     forms,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
+    control,
+    watch,
+    setValue,
   } = props;
+  const values = watch();
 
   return (
     <AdaptableCard bordered={false} divider className="mb-4">
@@ -54,51 +63,64 @@ const ProductFields = (props: ProductFields) => {
       <div className="grid grid-cols-4 gap-4">
         <FormItem
           label="Nom du produit"
-          invalid={(errors.name && touched.name) as boolean}
-          errorMessage={errors.name}
+          invalid={!!errors.name}
+          errorMessage={errors.name?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="name"
-            placeholder="Donnez un nom au produit"
-            component={Input}
-            value={props.values.name}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder="Donnez un nom au produit"
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label="Prix"
-          invalid={(errors.price && touched.price) as boolean}
-          errorMessage={errors.price}
+          invalid={!!errors.price}
+          errorMessage={errors.price?.message}
         >
-          <Field
-            type="number"
-            autoComplete="off"
+          <Controller
             name="price"
-            placeholder="Prix du produit"
-            component={Input}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="number"
+                autoComplete="off"
+                placeholder="Prix du produit"
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label="Dans le catalogue"
-          invalid={(errors.inCatalogue && touched.inCatalogue) as boolean}
-          errorMessage={errors.inCatalogue}
+          invalid={!!errors.inCatalogue}
+          errorMessage={errors.inCatalogue?.message}
         >
-          <Field name="inCatalogue">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="inCatalogue"
+            control={control}
+            render={({ field }) => (
               <Switcher
-                checked={props.values.inCatalogue}
-                onChange={() => form.setFieldValue(field.name, !field.value)}
+                checked={field.value}
+                onChange={(val) => field.onChange(val)}
               />
             )}
-          </Field>
+          />
         </FormItem>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">
           <p className="font-bold mb-2">Catégorie client</p>
-          <Field name="customerCategories">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="customerCategories"
+            control={control}
+            render={({ field }) => (
               <Select
                 isMulti
                 value={customerCategories.filter((option) =>
@@ -108,16 +130,18 @@ const ProductFields = (props: ProductFields) => {
                 options={customerCategories}
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
-                  form.setFieldValue(field.name, values);
+                  field.onChange(values);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
         <div className="col-span-1">
           <p className="font-bold mb-2">Catégorie produit</p>
-          <Field name="productCategory">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="productCategory"
+            control={control}
+            render={({ field }) => (
               <Select
                 value={categories.find((option) => {
                   return field.value === option.value;
@@ -125,19 +149,21 @@ const ProductFields = (props: ProductFields) => {
                 placeholder="Choisir une catégorie de produit"
                 options={categories}
                 onChange={(selectedOption) => {
-                  const value = selectedOption?.value;
-                  form.setFieldValue(field.name, value);
+                  const value = selectedOption?.value || '';
+                  field.onChange(value);
                   filterSizesListByProductCategory(value);
                   filterColorsListByProductCategory(value);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
         <div className="col-span-1">
           <p className="font-bold mb-2">Client</p>
-          <Field name="customers">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="customers"
+            control={control}
+            render={({ field }) => (
               <Select
                 isMulti
                 value={customers.filter((option) =>
@@ -147,19 +173,21 @@ const ProductFields = (props: ProductFields) => {
                 options={customers}
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
-                  form.setFieldValue(field.name, values);
+                  field.onChange(values);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">
           <p className="font-bold mb-2">Tailles produit</p>
-          <Field name="sizes">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="sizes"
+            control={control}
+            render={({ field }) => (
               <Select
                 isMulti
                 value={sizes.filter((option) =>
@@ -169,16 +197,18 @@ const ProductFields = (props: ProductFields) => {
                 options={sizes}
                 onChange={(selectedOptions) => {
                   const values = selectedOptions.map((option) => option.value);
-                  form.setFieldValue(field.name, values);
+                  field.onChange(values);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
         <div className="col-span-1">
           <p className="font-bold mb-2">Couleurs produit</p>
-          <Field name="colors">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="colors"
+            control={control}
+            render={({ field }) => (
               <Select
                 isMulti
                 value={colors.filter((color) =>
@@ -190,16 +220,18 @@ const ProductFields = (props: ProductFields) => {
                   const values = selectedColors.map(
                     (selectedColor) => selectedColor.value
                   );
-                  form.setFieldValue(field.name, values);
+                  field.onChange(values);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
         <div className="col-span-1">
           <p className="font-bold mb-2">Formulaire</p>
-          <Field name="form">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="form"
+            control={control}
+            render={({ field }) => (
               <Select
                 isClearable
                 value={forms.find((option) => {
@@ -209,28 +241,30 @@ const ProductFields = (props: ProductFields) => {
                 options={forms}
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
-                  form.setFieldValue(field.name, value);
+                  field.onChange(value);
                 }}
               />
             )}
-          </Field>
+          />
         </div>
       </div>
 
       <FormItem
         label="Description"
         labelClass="justify-start!"
-        invalid={(errors.description && touched.description) as boolean}
-        errorMessage={errors.description}
+        invalid={!!errors.description}
+        errorMessage={errors.description?.message}
       >
-        <Field name="description">
-          {({ field, form }: FieldProps) => (
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
             <RichTextEditor
               value={field.value}
-              onChange={(val) => form.setFieldValue(field.name, val)}
+              onChange={(val) => field.onChange(val)}
             />
           )}
-        </Field>
+        />
       </FormItem>
     </AdaptableCard>
   );
