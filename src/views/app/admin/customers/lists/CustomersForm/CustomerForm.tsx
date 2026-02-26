@@ -1,8 +1,8 @@
-import { forwardRef } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { FormContainer } from '@/components/ui/Form';
 import Button from '@/components/ui/Button';
 import StickyFooter from '@/components/shared/StickyFooter';
-import { Form, Formik, FormikProps } from 'formik';
 import CustomerFields from './CustomerFields';
 import CompanyFields from './CompanyFields';
 import cloneDeep from 'lodash/cloneDeep';
@@ -12,8 +12,6 @@ import { t } from 'i18next';
 import { countries } from '@/constants/countries.constant';
 import { Options } from '../EditCustomer';
 import { Customer } from '@/@types/customer';
-
-type FormikRef = FormikProps<any>;
 
 export type CustomerFormModel = Omit<
   Customer,
@@ -32,16 +30,11 @@ export type CustomerFormModel = Omit<
   website: string;
 };
 
-export type SetSubmitting = (isSubmitting: boolean) => void;
-
-type CustomerForm = {
+type CustomerFormProps = {
   initialData?: CustomerFormModel;
   customerCategories: Options[];
   onDiscard?: () => void;
-  onFormSubmit: (
-    formData: CustomerFormModel,
-    setSubmitting: SetSubmitting
-  ) => void;
+  onFormSubmit: (formData: CustomerFormModel) => void;
 };
 
 const validationSchema = Yup.object().shape({
@@ -64,78 +57,77 @@ const validationSchema = Yup.object().shape({
     .required(t('cust.error.phoneNumber')),
 });
 
-const CustomerForm = forwardRef<FormikRef, CustomerForm>((props, ref) => {
+const CustomerForm = (props: CustomerFormProps) => {
   const { initialData, onFormSubmit, onDiscard, customerCategories } = props;
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+    setValue,
+  } = useForm<CustomerFormModel>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialData,
+  });
+
+  const onSubmit = async (values: CustomerFormModel) => {
+    const formData = cloneDeep(values);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    onFormSubmit(formData);
+  };
 
   return (
     <>
-      <Formik
-        innerRef={ref}
-        initialValues={{
-          ...initialData,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values: CustomerFormModel, { setSubmitting }) => {
-          const formData = cloneDeep(values);
-          onFormSubmit?.(formData, setSubmitting);
-        }}
-      >
-        {({ values, touched, errors, isSubmitting, setFieldValue }) => {
-          return (
-            <Form>
-              <FormContainer>
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div className="lg:col-span-2">
-                    <CustomerFields
-                      touched={touched}
-                      errors={errors}
-                      values={values}
-                      countries={countries}
-                      setFieldValue={setFieldValue}
-                    />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <CompanyFields
-                      touched={touched}
-                      errors={errors}
-                      values={values}
-                      customerCategories={customerCategories}
-                    />
-                  </div>
-                </div>
-                <StickyFooter
-                  className="-mx-8 px-8 flex items-center justify-end py-4"
-                  stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                >
-                  <div className="md:flex items-end">
-                    <Button
-                      size="sm"
-                      className="ltr:mr-3 rtl:ml-3"
-                      type="button"
-                      onClick={() => onDiscard?.()}
-                    >
-                      {t('cancel')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="solid"
-                      loading={isSubmitting}
-                      icon={<AiOutlineSave />}
-                      type="submit"
-                    >
-                      {t('save')}
-                    </Button>
-                  </div>
-                </StickyFooter>
-              </FormContainer>
-            </Form>
-          );
-        }}
-      </Formik>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FormContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-2">
+              <CustomerFields
+                errors={errors}
+                control={control}
+                countries={countries}
+                watch={watch}
+                setValue={setValue}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <CompanyFields
+                control={control}
+                errors={errors as any}
+                customerCategories={customerCategories}
+                watch={watch}
+              />
+            </div>
+          </div>
+          <StickyFooter
+            className="-mx-8 px-8 flex items-center justify-end py-4"
+            stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          >
+            <div className="md:flex items-end">
+              <Button
+                size="sm"
+                className="ltr:mr-3 rtl:ml-3"
+                type="button"
+                onClick={() => onDiscard?.()}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                size="sm"
+                variant="solid"
+                loading={isSubmitting}
+                icon={<AiOutlineSave />}
+                type="submit"
+              >
+                {t('save')}
+              </Button>
+            </div>
+          </StickyFooter>
+        </FormContainer>
+      </form>
     </>
   );
-});
-
-CustomerForm.displayName = 'CustomerForm';
+};
 
 export default CustomerForm;

@@ -162,10 +162,7 @@ const EditUser = () => {
     return updateUsersPermissionsUser;
   };
 
-  const handleFormSubmit = async (
-    values: UserFormModel,
-    setSubmitting: SetSubmitting
-  ) => {
+  const handleFormSubmit = async (values: UserFormModel) => {
     const data: User = {
       ...values,
       role: rolesId.find(({ documentId }) => documentId === values.role)!.id,
@@ -181,7 +178,6 @@ const EditUser = () => {
     }
 
     await updateOrCreateUser(data);
-    setSubmitting(false);
     navigate('/admin/users');
   };
 

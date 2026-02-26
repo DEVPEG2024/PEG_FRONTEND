@@ -145,6 +145,7 @@
     "category_description": "Catégorie du producteur",
    
     "error" : {
+      "name": "Le nom du producteur est invalide",
       "producerCategory": "La catégorie du producteur est invalide",
       "vatNumber": "Le numéro de TVA est invalide",
       "siretNumber": "Le numéro de SIRET est invalide",
@@ -159,7 +160,8 @@
       "lastName": "Le nom est invalide",
       "firstName": "Le prénom est invalide",
       "add": "Erreur lors de l'ajout du producteur",
-      "update": "Erreur lors de la mise à jour du producteur"
+      "update": "Erreur lors de la mise à jour du producteur",
+      "invalidEmail": "L'adresse email est invalide"
     }
   },
   "order": {

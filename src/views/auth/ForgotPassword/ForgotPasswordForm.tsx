@@ -6,7 +6,8 @@ import Alert from '@/components/ui/Alert';
 import ActionLink from '@/components/shared/ActionLink';
 import { apiForgotPassword } from '@/services/AuthService';
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage';
-import { Field, Form, Formik } from 'formik';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import type { CommonProps } from '@/@types/common';
 import type { AxiosError } from 'axios';
@@ -31,15 +32,10 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
 
   const [message, setMessage] = useTimeOutMessage();
 
-  const onSendMail = async (
-    values: ForgotPasswordFormSchema,
-    setSubmitting: (isSubmitting: boolean) => void
-  ) => {
-    setSubmitting(true);
+  const onSendMail = async (values: ForgotPasswordFormSchema) => {
     try {
       const resp = await apiForgotPassword(values);
       if (resp.data) {
-        setSubmitting(false);
         setEmailSent(true);
       }
     } catch (errors) {
@@ -47,9 +43,17 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
         (errors as AxiosError<{ message: string }>)?.response?.data?.message ||
           (errors as Error).toString()
       );
-      setSubmitting(false);
     }
   };
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordFormSchema>({
+    resolver: yupResolver(validationSchema),
+    defaultValues: { email: '' },
+  });
 
   return (
     <div className={className}>
@@ -77,53 +81,43 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
           {message}
         </Alert>
       )}
-      <Formik
-        initialValues={{
-          email: '',
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
+      <form
+        onSubmit={handleSubmit((values) => {
           if (!disableSubmit) {
-            onSendMail(values, setSubmitting);
-          } else {
-            setSubmitting(false);
+            onSendMail(values);
           }
-        }}
+        })}
       >
-        {({ touched, errors, isSubmitting }) => (
-          <Form>
-            <FormContainer>
-              <div className={emailSent ? 'hidden' : ''}>
-                <FormItem
-                  invalid={errors.email && touched.email}
-                  errorMessage={errors.email}
-                >
-                  <Field
+        <FormContainer>
+          <div className={emailSent ? 'hidden' : ''}>
+            <FormItem
+              invalid={!!errors.email}
+              errorMessage={errors.email?.message}
+            >
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
                     type="email"
                     autoComplete="off"
-                    name="email"
                     placeholder="Email"
-                    component={Input}
                   />
-                </FormItem>
-              </div>
-              <Button
-                block
-                loading={isSubmitting}
-                variant="solid"
-                type="submit"
-              >
-                {emailSent ? 'Renvoyer le code' : 'Envoyer le code'}
-              </Button>
-              <div className="mt-4 text-center">
-                <ActionLink to={signInUrl}>
-                  Retour à la page de connexion
-                </ActionLink>
-              </div>
-            </FormContainer>
-          </Form>
-        )}
-      </Formik>
+                )}
+              />
+            </FormItem>
+          </div>
+          <Button block loading={isSubmitting} variant="solid" type="submit">
+            {emailSent ? 'Renvoyer le code' : 'Envoyer le code'}
+          </Button>
+          <div className="mt-4 text-center">
+            <ActionLink to={signInUrl}>
+              Retour à la page de connexion
+            </ActionLink>
+          </div>
+        </FormContainer>
+      </form>
     </div>
   );
 };

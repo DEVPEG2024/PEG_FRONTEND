@@ -1,8 +1,8 @@
-import { forwardRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { FormContainer } from '@/components/ui/Form';
 import Button from '@/components/ui/Button';
 import StickyFooter from '@/components/shared/StickyFooter';
-import { Form, Formik, FormikProps } from 'formik';
 import ProductFields from './ProductFields';
 import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -16,9 +16,6 @@ interface Options {
   value: string;
   label: string;
 }
-// eslint-disable-next-line  @typescript-eslint/no-explicit-any
-type FormikRef = FormikProps<any>;
-
 export type ProductFormModel = Omit<
   Product,
   | 'documentId'
@@ -39,21 +36,16 @@ export type ProductFormModel = Omit<
   form: string | null;
 };
 
-export type SetSubmitting = (isSubmitting: boolean) => void;
-
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
 
 type OnDelete = (callback: OnDeleteCallback) => void;
 
-type ProductForm = {
+type ProductFormProps = {
   initialData?: ProductFormModel;
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
-  onFormSubmit: (
-    formData: ProductFormModel,
-    setSubmitting: SetSubmitting
-  ) => void;
+  onFormSubmit: (formData: ProductFormModel) => void;
   sizes: Options[];
   colors: Options[];
   customerCategories: Options[];
@@ -77,7 +69,7 @@ const validationSchema = Yup.object().shape({
   description: Yup.string().required('Description requise'),
 });
 
-const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
+const ProductForm = (props: ProductFormProps) => {
   const {
     type,
     sizes,
@@ -96,8 +88,27 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
     filterColorsListByProductCategory,
   } = props;
 
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+    setValue,
+  } = useForm<ProductFormModel>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialData,
+  });
+
+  const values = watch();
+
+  const onSubmit = async (values: ProductFormModel) => {
+    const formData = cloneDeep(values);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    onFormSubmit(formData);
+  };
+
   const onFileAdd = async (file: File) => {
-    setImages([...images, { file, name: file.name }]);
+    setImages([...images, { file, name: file.name } as unknown as PegFile]);
   };
 
   const onFileRemove = (fileName: string) => {
@@ -142,90 +153,74 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
 
   return (
     <>
-      <Formik
-        innerRef={ref}
-        initialValues={{
-          ...initialData,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values: ProductFormModel, { setSubmitting }) => {
-          console.log('Form submitted with values:', values);
-          const formData = cloneDeep(values);
-          onFormSubmit?.(formData, setSubmitting);
-        }}
-      >
-        {({ values, touched, errors, isSubmitting }) => (
-          <Form>
-            <FormContainer>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2">
-                  <ProductFields
-                    touched={touched}
-                    errors={errors}
-                    values={values}
-                    type={type}
-                    forms={forms}
-                    sizes={sizes}
-                    colors={colors}
-                    customerCategories={customerCategories}
-                    categories={categories}
-                    customers={customers}
-                    filterSizesListByProductCategory={
-                      filterSizesListByProductCategory
-                    }
-                    filterColorsListByProductCategory={
-                      filterColorsListByProductCategory
-                    }
-                  />
-                </div>
-                <div className="lg:col-span-1">
-                  <h5 className="mb-4">Images du produits</h5>
-                  <Loading loading={imagesLoading}>
-                    <Upload
-                      multiple
-                      showList
-                      draggable
-                      uploadLimit={4}
-                      beforeUpload={beforeUpload}
-                      onFileAdd={(file) => onFileAdd(file)}
-                      onFileRemove={(file) => onFileRemove(file)}
-                      field={{ name: 'images' }}
-                      fileList={images.map(({ file }) => file)}
-                    />
-                  </Loading>
-                </div>
-              </div>
-              <StickyFooter
-                className="-mx-8 px-8 flex items-center justify-end py-4"
-                stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-              >
-                <Button
-                  size="sm"
-                  className="ltr:mr-3 rtl:ml-3"
-                  type="button"
-                  onClick={() => onDiscard?.()}
-                >
-                  Annuler
-                </Button>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FormContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <ProductFields
+                errors={errors}
+                type={type}
+                forms={forms}
+                sizes={sizes}
+                colors={colors}
+                customerCategories={customerCategories}
+                categories={categories}
+                customers={customers}
+                filterSizesListByProductCategory={
+                  filterSizesListByProductCategory
+                }
+                filterColorsListByProductCategory={
+                  filterColorsListByProductCategory
+                }
+                control={control}
+                watch={watch}
+                setValue={setValue}
+              />
+            </div>
+            <div className="lg:col-span-1">
+              <h5 className="mb-4">Images du produit</h5>
+              <Loading loading={imagesLoading}>
+                <Upload
+                  multiple
+                  showList
+                  draggable
+                  uploadLimit={4}
+                  beforeUpload={beforeUpload}
+                  onFileAdd={(file) => onFileAdd(file)}
+                  onFileRemove={(file) => onFileRemove(file)}
+                  field={{ name: 'images' }}
+                  fileList={images.map(({ file }) => file)}
+                />
+              </Loading>
+            </div>
+          </div>
+          <StickyFooter
+            className="-mx-8 px-8 flex items-center justify-end py-4"
+            stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          >
+            <Button
+              size="sm"
+              className="ltr:mr-3 rtl:ml-3"
+              type="button"
+              onClick={() => onDiscard?.()}
+            >
+              Annuler
+            </Button>
 
-                <Button
-                  size="sm"
-                  variant="solid"
-                  loading={isSubmitting}
-                  icon={<AiOutlineSave />}
-                  type="submit"
-                >
-                  Enregistrer
-                </Button>
-              </StickyFooter>
-            </FormContainer>
-          </Form>
-        )}
-      </Formik>
+            <Button
+              size="sm"
+              variant="solid"
+              loading={isSubmitting}
+              icon={<AiOutlineSave />}
+              type="submit"
+            >
+              Enregistrer
+            </Button>
+          </StickyFooter>
+        </FormContainer>
+      </form>
     </>
   );
-});
-
-ProductForm.displayName = 'SaisieForm';
+};
 
 export default ProductForm;

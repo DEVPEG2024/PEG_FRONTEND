@@ -1,7 +1,12 @@
 import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
-import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik';
+import {
+  Controller,
+  FieldErrors,
+  UseFormSetValue,
+  UseFormWatch,
+} from 'react-hook-form';
 import { t } from 'i18next';
 import { Select } from '@/components/ui';
 import { ProducerFormModel } from './ProducerForm';
@@ -11,20 +16,17 @@ type country = {
   value: string;
 };
 
-type ProducerFields = {
+type ProducerFieldsProps = {
   countries: country[];
-  touched: FormikTouched<ProducerFormModel>;
-  errors: FormikErrors<ProducerFormModel>;
-  values: ProducerFormModel;
-  setFieldValue: (
-    field: string,
-    value: string,
-    shouldValidate?: boolean
-  ) => void;
+  errors: FieldErrors<ProducerFormModel>;
+  control: any;
+  watch: UseFormWatch<ProducerFormModel>;
+  setValue: UseFormSetValue<ProducerFormModel>;
 };
 
-const ProducerFields = (props: ProducerFields) => {
-  const { countries, errors, setFieldValue } = props;
+const ProducerFields = (props: ProducerFieldsProps) => {
+  const { countries, errors, control, watch, setValue } = props;
+  const values = watch();
 
   const formatPhoneNumber = (value: string): string => {
     // Retirer tous les espaces
@@ -45,30 +47,38 @@ const ProducerFields = (props: ProducerFields) => {
           label="Nom du producteur"
           className="w-full"
           invalid={errors.name ? true : false}
-          errorMessage={errors.name}
+          errorMessage={errors.name?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="name"
-            placeholder="Nom du producteur"
-            component={Input}
-            value={props.values.name}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder="Nom du producteur"
+              />
+            )}
           />
         </FormItem>
       </div>
       <FormItem
         label={t('address')}
         invalid={errors.address ? true : false}
-        errorMessage={errors.address}
+        errorMessage={errors.address?.message}
       >
-        <Field
-          type="text"
-          autoComplete="off"
+        <Controller
           name="address"
-          placeholder={t('address')}
-          component={Input}
-          value={props.values.address}
+          control={control}
+          render={({ field }) => (
+            <Input
+              {...field}
+              type="text"
+              autoComplete="off"
+              placeholder={t('address')}
+            />
+          )}
         />
       </FormItem>
       <div className="flex gap-4">
@@ -76,54 +86,61 @@ const ProducerFields = (props: ProducerFields) => {
           label={t('zipCode')}
           className="w-1/3"
           invalid={errors.zipCode ? true : false}
-          errorMessage={errors.zipCode}
+          errorMessage={errors.zipCode?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="zipCode"
-            placeholder={t('zipCode')}
-            component={Input}
-            value={props.values.zipCode}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('zipCode')}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('city')}
           className="w-1/3"
           invalid={errors.city ? true : false}
-          errorMessage={errors.city}
+          errorMessage={errors.city?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="city"
-            placeholder={t('city')}
-            component={Input}
-            value={props.values.city}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('city')}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('country')}
           className="w-1/3"
           invalid={errors.country ? true : false}
-          errorMessage={errors.country}
+          errorMessage={errors.country?.message}
         >
-          <Field name="country">
-            {({ field, form }: FieldProps) => (
+          <Controller
+            name="country"
+            control={control}
+            render={({ field }) => (
               <Select
                 field={field}
-                form={form}
                 options={countries}
                 placeholder="Choisissez le pays"
                 value={countries.filter(
                   (country) => country.value === field.value
                 )}
-                onChange={(option) =>
-                  form.setFieldValue(field.name, option?.value)
-                }
+                onChange={(option) => field.onChange(option?.value)}
               />
             )}
-          </Field>
+          />
         </FormItem>
       </div>
       <div className="flex gap-4">
@@ -131,32 +148,42 @@ const ProducerFields = (props: ProducerFields) => {
           label={t('phone')}
           className="w-1/2"
           invalid={errors.phoneNumber ? true : false}
-          errorMessage={errors.phoneNumber}
+          errorMessage={errors.phoneNumber?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="phoneNumber"
-            placeholder={t('phone')}
-            component={Input}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              const formattedNumber = formatPhoneNumber(e.target.value);
-              setFieldValue('phoneNumber', formattedNumber);
-            }}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('phone')}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const formattedNumber = formatPhoneNumber(e.target.value);
+                  field.onChange(formattedNumber);
+                }}
+              />
+            )}
           />
         </FormItem>
         <FormItem
           label={t('email')}
           className="w-1/2"
           invalid={errors.email ? true : false}
-          errorMessage={errors.email}
+          errorMessage={errors.email?.message}
         >
-          <Field
-            type="text"
-            autoComplete="off"
+          <Controller
             name="email"
-            placeholder={t('email')}
-            component={Input}
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('email')}
+              />
+            )}
           />
         </FormItem>
       </div>

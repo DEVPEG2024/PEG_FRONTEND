@@ -119,13 +119,8 @@ const EditCustomer = () => {
     return createCustomer;
   };
 
-  const handleFormSubmit = async (
-    values: CustomerFormModel,
-    setSubmitting: SetSubmitting
-  ) => {
-    setSubmitting(true);
+  const handleFormSubmit = async (values: CustomerFormModel) => {
     await updateOrCreateCustomer(values);
-    setSubmitting(false);
     navigate(CUSTOMERS_LIST);
   };
 

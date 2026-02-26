@@ -3,7 +3,8 @@ import Button from '@/components/ui/Button';
 import { FormContainer } from '@/components/ui/Form';
 import FormDescription from './FormDescription';
 import FormRow from './FormRow';
-import { Field, Form, Formik } from 'formik';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 import * as Yup from 'yup';
 
@@ -24,73 +25,77 @@ const validationSchema = Yup.object().shape({
 const DefinePassword = ({
   onFormSubmit,
 }: {
-  onFormSubmit: (
-    values: UserPasswordFormModel,
-    setSubmitting: (isSubmitting: boolean) => void
-  ) => Promise<void>;
+  onFormSubmit: (values: UserPasswordFormModel) => Promise<void>;
 }) => {
-  const initialData: UserPasswordFormModel = {
-    newPassword: '',
-    confirmNewPassword: '',
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting, touchedFields },
+  } = useForm<UserPasswordFormModel>({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      newPassword: '',
+      confirmNewPassword: '',
+    },
+  });
+
+  const onSubmit = async (values: UserPasswordFormModel) => {
+    await onFormSubmit(values);
   };
 
   return (
-    <Formik
-      initialValues={{ ...initialData }}
-      validationSchema={validationSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        setSubmitting(true);
-        setTimeout(() => {
-          onFormSubmit(values, setSubmitting);
-        }, 1000);
-      }}
-    >
-      {({ touched, errors, isSubmitting }) => {
-        const validatorProps = { touched, errors };
-        return (
-          <Form>
-            <FormContainer>
-              <FormDescription
-                title="Mot de passe"
-                desc="Modifier votre mot de passe"
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <FormContainer>
+        <FormDescription
+          title="Mot de passe"
+          desc="Modifier votre mot de passe"
+        />
+        <FormRow
+          name="newPassword"
+          label="Nouveau mot de passe"
+          touched={touchedFields}
+          errors={errors}
+        >
+          <Controller
+            name="newPassword"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="password"
+                autoComplete="off"
+                placeholder="Nouveau mot de passe"
               />
-              <FormRow
-                name="newPassword"
-                label="Nouveau mot de passe"
-                {...validatorProps}
-              >
-                <Field
-                  type="password"
-                  autoComplete="off"
-                  name="newPassword"
-                  placeholder="Nouveau mot de passe"
-                  component={Input}
-                />
-              </FormRow>
-              <FormRow
-                name="confirmNewPassword"
-                label="Confirmez le nouveau mot de passe"
-                {...validatorProps}
-              >
-                <Field
-                  type="password"
-                  autoComplete="off"
-                  name="confirmNewPassword"
-                  placeholder="Confirmez le nouveau mot de passe"
-                  component={Input}
-                />
-              </FormRow>
+            )}
+          />
+        </FormRow>
+        <FormRow
+          name="confirmNewPassword"
+          label="Confirmez le nouveau mot de passe"
+          touched={touchedFields}
+          errors={errors}
+        >
+          <Controller
+            name="confirmNewPassword"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="password"
+                autoComplete="off"
+                placeholder="Confirmez le nouveau mot de passe"
+              />
+            )}
+          />
+        </FormRow>
 
-              <div className="mt-4 ltr:text-right">
-                <Button variant="solid" loading={isSubmitting} type="submit">
-                  {isSubmitting ? 'Modification...' : 'Modifier'}
-                </Button>
-              </div>
-            </FormContainer>
-          </Form>
-        );
-      }}
-    </Formik>
+        <div className="mt-4 ltr:text-right">
+          <Button variant="solid" loading={isSubmitting} type="submit">
+            {isSubmitting ? 'Modification...' : 'Modifier'}
+          </Button>
+        </div>
+      </FormContainer>
+    </form>
   );
 };
 
