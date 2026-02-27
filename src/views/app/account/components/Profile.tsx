@@ -1,5 +1,6 @@
 import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
+import { Spinner } from "@/components/ui/spinner"
 import { FormContainer } from '@/components/ui/Form';
 import FormDescription from './FormDescription';
 import FormRow from './FormRow';
@@ -278,11 +279,10 @@ const Profile = () => {
 
             <Button
               size="sm"
-              variant="solid"
-              loading={isSubmitting}
-              icon={<AiOutlineSave />}
+              variant="outline"
               type="submit"
             >
+              {isSubmitting ? <Spinner data-icon="inline-start" /> : <AiOutlineSave />}
               Enregistrer
             </Button>
           </StickyFooter>
