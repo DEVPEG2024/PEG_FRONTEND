@@ -10,6 +10,9 @@ import {
 } from 'react-hook-form';
 import { Select, Switcher } from '@/components/ui';
 import type { ProductFormModel } from './ProductForm';
+import { PriceTier } from '@/@types/product';
+import Button from '@/components/ui/Button';
+import { HiOutlineTrash, HiOutlinePlus } from 'react-icons/hi';
 
 type Options = {
   label: string;
@@ -47,11 +50,7 @@ const ProductFields = (props: ProductFieldsProps) => {
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
     control,
-    watch,
-    setValue,
   } = props;
-  const values = watch();
-
   return (
     <AdaptableCard bordered={false} divider className="mb-4">
       <h5>{type === 'edit' ? 'Modification du produit' : 'Nouveau produit'}</h5>
@@ -60,7 +59,7 @@ const ProductFields = (props: ProductFieldsProps) => {
           ? 'Remplissez les informations du produit à modifier'
           : 'Remplissez les informations du nouveau produit'}
       </p>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <FormItem
           label="Nom du produit"
           invalid={!!errors.name}
@@ -75,24 +74,6 @@ const ProductFields = (props: ProductFieldsProps) => {
                 type="text"
                 autoComplete="off"
                 placeholder="Donnez un nom au produit"
-              />
-            )}
-          />
-        </FormItem>
-        <FormItem
-          label="Prix"
-          invalid={!!errors.price}
-          errorMessage={errors.price?.message}
-        >
-          <Controller
-            name="price"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="number"
-                autoComplete="off"
-                placeholder="Prix du produit"
               />
             )}
           />
@@ -113,6 +94,107 @@ const ProductFields = (props: ProductFieldsProps) => {
             )}
           />
         </FormItem>
+      </div>
+      <div className="mb-4">
+        <p className="font-bold mb-2">Paliers de prix</p>
+        {errors.priceTiers && (
+          <p className="text-red-500 text-sm mb-2">
+            {errors.priceTiers.message}
+          </p>
+        )}
+        <Controller
+          name="priceTiers"
+          control={control}
+          render={({ field }) => {
+            const priceTiers: PriceTier[] = field.value || [];
+            return (
+              <div>
+                <div className="border rounded-md">
+                  {priceTiers.length === 0 ? (
+                    <div className="p-4 text-gray-500 text-center">
+                      Aucun palier de prix. Cliquez sur "Ajouter un palier"
+                    </div>
+                  ) : (
+                    priceTiers.map((tier, index) => (
+                      <div key={index} className="p-4 flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium mb-1">
+                            Prix
+                          </label>
+                          <Input
+                            type="number"
+                            value={tier.price}
+                            min={0}
+                            step={0.01}
+                            placeholder="Ex: 10.99"
+                            onChange={(e) => {
+                              const updated = [...priceTiers];
+                              updated[index].price =
+                                parseFloat(e.target.value) || 0;
+                              field.onChange(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium">
+                            Quantité minimale
+                          </label>
+                          <Input
+                            type="number"
+                            value={tier.minQuantity}
+                            min={1}
+                            placeholder="Ex: 1"
+                            onChange={(e) => {
+                              const updated = [...priceTiers];
+                              updated[index].minQuantity =
+                                parseInt(e.target.value) || 0;
+                              field.onChange(updated);
+                            }}
+                            onBlur={() => {
+                              field.onChange([...priceTiers].sort((a, b) => a.minQuantity - b.minQuantity));
+                            }}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="plain"
+                          size="sm"
+                          icon={<HiOutlineTrash />}
+                          onClick={() => {
+                            const updated = priceTiers.filter(
+                              (priceTier, i) => i !== index
+                            );
+                            field.onChange(updated);
+                          }}
+                        />
+                      </div>
+                    ))
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="plain"
+                  size="sm"
+                  icon={<HiOutlinePlus />}
+                  className="mt-4"
+                  onClick={() => {
+                    const newTier: PriceTier = {
+                      minQuantity:
+                        priceTiers.length > 0
+                          ? Math.max(...priceTiers.map((t) => t.minQuantity)) +
+                            1
+                          : 1,
+                      price: 0,
+                    };
+                    field.onChange([...priceTiers, newTier].sort((a, b) => a.minQuantity - b.minQuantity));
+                  }}
+                >
+                  Ajouter un palier
+                </Button>
+              </div>
+            );
+          }}
+        />
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="col-span-1">

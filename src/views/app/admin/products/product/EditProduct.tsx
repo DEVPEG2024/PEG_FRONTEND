@@ -1,11 +1,9 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Color, Product, ProductCategory, Size } from '@/@types/product';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { PegFile } from '@/@types/pegFile';
-import ProductForm, {
-  ProductFormModel,
-  SetSubmitting,
-} from './Forms/ProductForm';
+import ProductForm, { ProductFormModel } from './Forms/ProductForm';
 import {
   apiGetCustomers,
   GetCustomersResponse,
@@ -67,7 +65,12 @@ const EditProduct = () => {
   const initialData: ProductFormModel = {
     documentId: documentId ?? '',
     name: product?.name || '',
-    price: product?.price || 0,
+    priceTiers:
+      product?.priceTiers && product.priceTiers.length > 0
+        ? product.priceTiers
+        : product
+          ? [{ minQuantity: 1, price: getProductBasePrice(product) }]
+          : [{ minQuantity: 1, price: 0 }],
     description: product?.description || '',
     sizes: product?.sizes?.map((size) => size.documentId) || [],
     colors: product?.colors?.map((color) => color.documentId) || [],
@@ -240,6 +243,7 @@ const EditProduct = () => {
       ...values,
       images: newImages.map(({ id }) => id),
       active: true,
+      priceTiers: values.priceTiers,
     };
     if (values.form === '' || !values.form) {
       data.form = null;

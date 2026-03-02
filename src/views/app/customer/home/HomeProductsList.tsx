@@ -1,4 +1,5 @@
 import { Product } from '@/@types/product';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { Card } from '@/components/ui';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,7 +28,9 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
             />
             <div className="flex flex-col justify-center">
               <p className="text-lg font-bold">{product.name}</p>
-              <p className="text-lg font-bold text-white">{product.price}€</p>
+              <p className="text-lg font-bold text-white">
+                {getProductBasePrice(product).toFixed(2)}€
+              </p>
             </div>
           </div>
         </Card>

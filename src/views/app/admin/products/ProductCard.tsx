@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, Switcher, Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { memo } from 'react';
 
 const ProductCard = memo(
@@ -37,7 +38,7 @@ const ProductCard = memo(
           <div className="flex flex-col justify-between">
             <p className="text-lg font-bold">{product.name}</p>
             <p className="text-lg font-bold text-white">
-              {product.price.toFixed(2)}€
+              {getProductBasePrice(product).toFixed(2)}€
             </p>
             <div className="flex gap-4 items-center ">
               <Button

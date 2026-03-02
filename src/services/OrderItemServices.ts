@@ -22,6 +22,7 @@ export async function apiCreateOrderItem(data: CreateOrderItemRequest): Promise<
             product {
                 name
                 price
+                priceTiers
             }
             sizeAndColorSelections
         }
@@ -71,6 +72,7 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                         url
                     }
                     price
+                    priceTiers
                     sizes {
                         name
                         value
@@ -167,6 +169,7 @@ export async function apiGetOrderItemById(documentId: string): Promise<AxiosResp
                     url
                 }
                 price
+                priceTiers
                 description
                 sizes {
                     name

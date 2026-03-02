@@ -8,7 +8,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import * as Yup from 'yup';
 import { Upload } from '@/components/ui';
-import { Product } from '@/@types/product';
+import { Product, PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 
@@ -34,6 +34,7 @@ export type ProductFormModel = Omit<
   customers: string[];
   productCategory: string | null;
   form: string | null;
+  priceTiers: PriceTier[];
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
@@ -63,8 +64,18 @@ type ProductFormProps = {
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Nom du produit requis'),
-  price: Yup.number()
-    .moreThan(0, 'Le prix doit être supérieur à 0')
+  priceTiers: Yup.array()
+    .of(
+      Yup.object().shape({
+        minQuantity: Yup.number()
+          .min(1, 'La quantité minimale doit être >= 1')
+          .required('Quantité minimale requise'),
+        price: Yup.number()
+          .moreThan(0, 'Le prix doit être supérieur à 0')
+          .required('Prix requis'),
+      })
+    )
+    .min(1, 'Au moins un palier de prix est requis')
     .required('Prix requis'),
   description: Yup.string().required('Description requise'),
 });

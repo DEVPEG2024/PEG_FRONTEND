@@ -21,8 +21,9 @@ import {
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 
-import { Button } from '@/components/ui';
+import { Button, Radio } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
@@ -55,6 +56,15 @@ const ShowProduct = () => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
+  const amountSelected = sizeAndColorsSelected.reduce(
+      (amount, { quantity }) => amount + quantity,
+      0
+    ),
+    tierPriceSelected =
+      product?.priceTiers
+        .toReversed()
+        .find((priceTier) => amountSelected >= priceTier.minQuantity)
+        ?.minQuantity || product?.priceTiers[0].minQuantity;
 
   useEffect(() => {
     if (!product) {
@@ -195,13 +205,42 @@ const ShowProduct = () => {
                 <div className="flex flex-col justify-between">
                   <h1 className="text-3xl font-bold">{product.name}</h1>
                   <p className="text-2xl font-semibold">
-                    {product.price.toFixed(2)} €
+                    {getProductBasePrice(product).toFixed(2)} €
                   </p>
                 </div>
 
                 <p className="mt-4 leading-relaxed">
                   <RichTextEditor value={product.description} readOnly={true} />
                 </p>
+
+                {product.priceTiers.length > 1 ? (
+                  <div>
+                    <Radio.Group vertical value={tierPriceSelected}>
+                      {product.priceTiers.map((priceTier, index) => (
+                        <Radio
+                          key={index}
+                          value={priceTier.minQuantity}
+                          disabled={tierPriceSelected !== priceTier.minQuantity}
+                        >
+                          {priceTier.minQuantity}+ pièce{priceTier.minQuantity === 1 ? '(s)' : 's'} :{' '}
+                          {priceTier.price.toFixed(2)} € chacune{' '}
+                          {index > 0 ? (
+                            <i>
+                              - économisez{' '}
+                              {(
+                                ((product.priceTiers[0].price -
+                                  priceTier.price) /
+                                  product.priceTiers[0].price) *
+                                100
+                              ).toFixed(1)}{' '}
+                              %
+                            </i>
+                          ) : null}
+                        </Radio>
+                      ))}
+                    </Radio.Group>
+                  </div>
+                ) : null}
 
                 <SizeAndColorsChoice
                   product={product}
