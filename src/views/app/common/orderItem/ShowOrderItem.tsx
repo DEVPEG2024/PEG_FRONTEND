@@ -13,6 +13,7 @@ import Input from '@/components/ui/Input';
 import { Button } from '@/components/ui';
 import ModalShowForm from './modal/ModalShowForm';
 import { SizeAndColorSelection } from '@/@types/product';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { useParams } from 'react-router-dom';
 import ReactHtmlParser from 'html-react-parser';
 
@@ -64,7 +65,7 @@ const ShowOrderItem = () => {
                     {orderItem.product.name}
                   </h1>
                   <p className="text-2xl font-semibold">
-                    {orderItem.product.price.toFixed(2)} €
+                    {getProductBasePrice(orderItem.product).toFixed(2)} €
                   </p>
                 </div>
 

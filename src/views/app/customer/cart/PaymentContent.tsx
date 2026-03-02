@@ -1,4 +1,5 @@
 import { CartItem } from '@/@types/cart';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { Checkout } from '@/@types/checkout';
 import { AdaptableCard } from '@/components/shared';
 import { Button } from '@/components/ui';
@@ -52,7 +53,9 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
           price: item.sizeAndColors.reduce(
             (amount, size) =>
               amount +
-              (size.quantity * Math.trunc(item.product.price * 100)) / 100,
+              (size.quantity *
+                Math.trunc(getProductBasePrice(item.product) * 100)) /
+                100,
             0
           ),
           state: 'pending',
@@ -101,7 +104,9 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
       orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
         documentId: orderItem.documentId,
         productName: orderItem.product.name,
-        productPrice: Math.trunc(orderItem.product.price * 100 * 1.2),
+        productPrice: Math.trunc(
+          getProductBasePrice(orderItem.product) * 100 * 1.2
+        ),
         productQuantity: orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
@@ -166,7 +171,9 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
     const itemPrice: number = item.sizeAndColors.reduce(
       (amount, sizeAndColor) =>
         amount +
-        (sizeAndColor.quantity * Math.trunc(item.product.price * 100)) / 100,
+        (sizeAndColor.quantity *
+          Math.trunc(getProductBasePrice(item.product) * 100)) /
+          100,
       0
     );
     return total + itemPrice;
@@ -177,7 +184,8 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
       const itemPrice: number = item.sizeAndColors.reduce(
         (amount, sizeAndColor) =>
           amount +
-          (sizeAndColor.quantity * Math.trunc(item.product.price * 100 * 1.2)) /
+          (sizeAndColor.quantity *
+            Math.trunc(getProductBasePrice(item.product) * 100 * 1.2)) /
             100,
         0
       );

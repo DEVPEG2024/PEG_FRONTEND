@@ -19,9 +19,7 @@ const ColorChoice = ({
       <TabList>
         {product.colors.map((color) => (
           <TabNav key={color.value} value={color.value}>
-            <span className="text-sm font-semibold text-gray-100">
-              {color.name}
-            </span>
+            <span className="text-sm font-semibold">{color.name}</span>
           </TabNav>
         ))}
       </TabList>

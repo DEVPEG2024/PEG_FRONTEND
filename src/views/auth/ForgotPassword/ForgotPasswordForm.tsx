@@ -82,9 +82,9 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
         </Alert>
       )}
       <form
-        onSubmit={handleSubmit((values) => {
+        onSubmit={handleSubmit(async (values) => {
           if (!disableSubmit) {
-            onSendMail(values);
+            await onSendMail(values);
           }
         })}
       >

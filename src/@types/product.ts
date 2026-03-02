@@ -2,13 +2,25 @@ import { Customer, CustomerCategory } from './customer';
 import { Form } from './form';
 import { PegFile } from './pegFile';
 
+export type PriceTier = {
+  minQuantity: number;
+  price: number;
+};
+
 export type Product = {
   active: boolean;
   description: string;
   documentId: string;
   images: PegFile[];
   name: string;
-  price: number;
+  /**
+   * Legacy simple price stored in the backend.  Most of the codebase has
+   * been migrated to use `priceTiers` instead.  The helper
+   * `getProductBasePrice` (in `src/utils/productHelpers.ts`) provides a
+   * single entry point for reading the current value.
+   */
+  price?: number;
+  priceTiers: PriceTier[];
   sizes: Size[];
   colors: Color[];
   form: Form;
@@ -24,7 +36,7 @@ export type Size = {
   value: string;
   description: string;
   productCategory: ProductCategory;
-}
+};
 
 export type Color = {
   documentId: string;
@@ -32,7 +44,7 @@ export type Color = {
   value: string;
   description: string;
   productCategory: ProductCategory;
-}
+};
 
 export type SizeAndColorSelection = {
   size: Size;

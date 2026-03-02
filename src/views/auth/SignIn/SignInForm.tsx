@@ -72,9 +72,9 @@ const SignInForm = (props: SignInFormProps) => {
         </Alert>
       )}
       <form
-        onSubmit={handleSubmit((values: SignInFormSchema) => {
+        onSubmit={handleSubmit(async (values: SignInFormSchema) => {
           if (!disableSubmit) {
-            onSignIn(values);
+            await onSignIn(values);
           }
         })}
       >

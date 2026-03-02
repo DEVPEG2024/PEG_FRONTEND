@@ -1,4 +1,5 @@
 import { injectReducer, useAppDispatch } from '@/store';
+import { getProductBasePrice } from '@/utils/productHelpers';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { isEmpty } from 'lodash';
@@ -73,7 +74,7 @@ const AdminProductsOfCategory = () => {
                   <div className="flex flex-col justify-between">
                     <p className="text-lg font-bold">{product.name}</p>
                     <p className="text-lg font-bold text-white">
-                      {product.price.toFixed(2)}€
+                      {getProductBasePrice(product).toFixed(2)}€
                     </p>
                   </div>
                 </div>

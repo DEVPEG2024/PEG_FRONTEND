@@ -13,6 +13,7 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             description
             name
             price
+            priceTiers
             images {
                 url
             }
@@ -53,6 +54,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             description
             name
             price
+            priceTiers
             images {
                 documentId
                 url
@@ -122,6 +124,7 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
                 documentId
                 name
                 price
+                priceTiers
                 images {
                     documentId
                     url
@@ -168,6 +171,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                 documentId
                 name
                 price
+                priceTiers
                 images {
                     documentId
                     url
@@ -207,6 +211,7 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
             documentId
             name
             price
+            priceTiers
             images {
                 documentId
                 url
@@ -293,6 +298,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 documentId
                 name
                 price
+                priceTiers
                 inCatalogue
             }
             pageInfo {
@@ -328,6 +334,7 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
             documentId
             name
             price
+            priceTiers
             images {
                 documentId
                 url
