@@ -23,7 +23,7 @@ import Container from '@/components/shared/Container';
 
 import { Button, Radio } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity } from '@/utils/productHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
@@ -60,11 +60,7 @@ const ShowProduct = () => {
       (amount, { quantity }) => amount + quantity,
       0
     ),
-    tierPriceSelected =
-      product?.priceTiers
-        .toReversed()
-        .find((priceTier) => amountSelected >= priceTier.minQuantity)
-        ?.minQuantity || product?.priceTiers[0].minQuantity;
+    tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
 
   useEffect(() => {
     if (!product) {
@@ -219,8 +215,8 @@ const ShowProduct = () => {
                       {product.priceTiers.map((priceTier, index) => (
                         <Radio
                           key={index}
-                          value={priceTier.minQuantity}
-                          disabled={tierPriceSelected !== priceTier.minQuantity}
+                          value={priceTier.price}
+                          disabled={tierPriceSelected !== priceTier.price}
                         >
                           {priceTier.minQuantity}+ pièce{priceTier.minQuantity === 1 ? '(s)' : 's'} :{' '}
                           {priceTier.price.toFixed(2)} € chacune{' '}

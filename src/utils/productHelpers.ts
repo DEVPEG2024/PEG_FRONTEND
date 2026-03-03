@@ -1,5 +1,4 @@
-import { Product } from '@/@types/product';
-import { PriceTier } from '@/@types/product';
+import { Product, SizeAndColorSelection } from '@/@types/product';
 
 /**
  * Get the effective price for a product.
@@ -24,4 +23,48 @@ export function getProductBasePrice(product: Product): number {
   // `price` is kept around for compatibility with the backend schema;
   // when the API is updated this can eventually be removed.
   return product.price || 0;
+}
+
+export function getProductPriceForQuantity(
+  product: Product,
+  quantity: number
+): number {
+  if (product.priceTiers && product.priceTiers.length > 0) {
+    // Find the most appropriate price tier for the given quantity
+    const applicableTier = [...product.priceTiers]
+      .sort((a, b) => b.minQuantity - a.minQuantity) // Sort tiers in descending order
+      .find((tier) => quantity >= tier.minQuantity); // Find the first tier that applies
+
+    if (applicableTier) {
+      return applicableTier.price;
+    }
+  }
+
+  // Fallback to base price if no tiers apply
+  return getProductBasePrice(product);
+}
+
+export function getProductPriceForSizeAndColors(
+  product: Product,
+  sizeAndColors: SizeAndColorSelection[]
+): number {
+  const totalQuantity = sizeAndColors.reduce(
+    (amount, { quantity }) => amount + quantity,
+    0
+  );
+
+  return getProductPriceForQuantity(product, totalQuantity);
+}
+
+export function getTotalPriceForCartItem(
+  product: Product,
+  sizeAndColors: SizeAndColorSelection[]
+): number {
+  const totalQuantity = sizeAndColors.reduce(
+    (amount, { quantity }) => amount + quantity,
+    0
+  );
+  const pricePerUnit = getProductPriceForQuantity(product, totalQuantity);
+  
+  return pricePerUnit * totalQuantity;
 }

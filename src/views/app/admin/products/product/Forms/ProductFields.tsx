@@ -89,7 +89,7 @@ const ProductFields = (props: ProductFieldsProps) => {
             render={({ field }) => (
               <Switcher
                 checked={field.value}
-                onChange={(val) => field.onChange(val)}
+                onChange={(val) => field.onChange(!val)}
               />
             )}
           />
@@ -151,7 +151,11 @@ const ProductFields = (props: ProductFieldsProps) => {
                               field.onChange(updated);
                             }}
                             onBlur={() => {
-                              field.onChange([...priceTiers].sort((a, b) => a.minQuantity - b.minQuantity));
+                              field.onChange(
+                                [...priceTiers].sort(
+                                  (a, b) => a.minQuantity - b.minQuantity
+                                )
+                              );
                             }}
                           />
                         </div>
@@ -186,7 +190,11 @@ const ProductFields = (props: ProductFieldsProps) => {
                           : 1,
                       price: 0,
                     };
-                    field.onChange([...priceTiers, newTier].sort((a, b) => a.minQuantity - b.minQuantity));
+                    field.onChange(
+                      [...priceTiers, newTier].sort(
+                        (a, b) => a.minQuantity - b.minQuantity
+                      )
+                    );
                   }}
                 >
                   Ajouter un palier

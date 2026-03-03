@@ -73,7 +73,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
             render={({ field }) => (
               <Switcher
                 checked={field.value}
-                onChange={(checked) => field.onChange(checked)}
+                onChange={(checked) => field.onChange(!checked)}
               />
             )}
           />

@@ -1,5 +1,8 @@
 import { CartItem } from '@/@types/cart';
-import { getProductBasePrice } from '@/utils/productHelpers';
+import {
+  getProductPriceForSizeAndColors,
+  getTotalPriceForCartItem,
+} from '@/utils/productHelpers';
 import { Checkout } from '@/@types/checkout';
 import { AdaptableCard } from '@/components/shared';
 import { Button } from '@/components/ui';
@@ -50,14 +53,7 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
           product: item.product,
           sizeAndColorSelections: item.sizeAndColors,
           formAnswer,
-          price: item.sizeAndColors.reduce(
-            (amount, size) =>
-              amount +
-              (size.quantity *
-                Math.trunc(getProductBasePrice(item.product) * 100)) /
-                100,
-            0
-          ),
+          price: getTotalPriceForCartItem(item.product, item.sizeAndColors),
           state: 'pending',
           customer: user.customer!,
         },
@@ -104,9 +100,7 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
       orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
         documentId: orderItem.documentId,
         productName: orderItem.product.name,
-        productPrice: Math.trunc(
-          getProductBasePrice(orderItem.product) * 100 * 1.2
-        ),
+        productPrice: Math.trunc(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections) * 100 * 1.2),
         productQuantity: orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
@@ -168,28 +162,12 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
   };
 
   const totalPrice: number = cart.reduce((total: number, item: CartItem) => {
-    const itemPrice: number = item.sizeAndColors.reduce(
-      (amount, sizeAndColor) =>
-        amount +
-        (sizeAndColor.quantity *
-          Math.trunc(getProductBasePrice(item.product) * 100)) /
-          100,
-      0
-    );
-    return total + itemPrice;
+    return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
   }, 0);
 
   const totalPriceWithVAT: number = cart.reduce(
     (total: number, item: CartItem) => {
-      const itemPrice: number = item.sizeAndColors.reduce(
-        (amount, sizeAndColor) =>
-          amount +
-          (sizeAndColor.quantity *
-            Math.trunc(getProductBasePrice(item.product) * 100 * 1.2)) /
-            100,
-        0
-      );
-      return total + itemPrice;
+      return total + getTotalPriceForCartItem(item.product, item.sizeAndColors) * 1.2;
     },
     0
   );

@@ -1,5 +1,8 @@
 import { Button, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
-import { getProductBasePrice } from '@/utils/productHelpers';
+import {
+  getProductPriceForSizeAndColors,
+  getTotalPriceForCartItem,
+} from '@/utils/productHelpers';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { CartItem } from '@/@types/cart';
 
@@ -30,7 +33,15 @@ export const useColumns = (
       accessorKey: 'price',
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
-        return <p>{getProductBasePrice(row.original.product).toFixed(2)} €</p>;
+        return (
+          <p>
+            {getProductPriceForSizeAndColors(
+              row.original.product,
+              row.original.sizeAndColors
+            ).toFixed(2)}{' '}
+            €
+          </p>
+        );
       },
     },
     {
@@ -62,18 +73,10 @@ export const useColumns = (
       cell: ({ row }: { row: { original: CartItem } }) => {
         return (
           <div className="flex items-center gap-2" key={row.original.id}>
-            {row.original.sizeAndColors
-              .reduce(
-                (amount, size) =>
-                  amount +
-                  (size.quantity *
-                    Math.trunc(
-                      getProductBasePrice(row.original.product) * 100
-                    )) /
-                    100,
-                0
-              )
-              .toFixed(2)}
+            {getTotalPriceForCartItem(
+              row.original.product,
+              row.original.sizeAndColors
+            ).toFixed(2)}
             {' €'}
           </div>
         );
