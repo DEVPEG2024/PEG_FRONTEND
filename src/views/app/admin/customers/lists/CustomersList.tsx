@@ -1,4 +1,3 @@
-// src/views/app/admin/customers/lists/CustomersList.tsx
 import { Container, DataTable, Loading } from '@/components/shared'
 import HeaderTitle from '@/components/template/HeaderTitle'
 import { useEffect, useState } from 'react'
@@ -7,8 +6,8 @@ import { Input } from '@/components/ui'
 import { useTranslation } from 'react-i18next'
 import { CUSTOMERS_NEW } from '@/constants/navigation.constant'
 import { useNavigate } from 'react-router-dom'
-import { injectReducer, useAppDispatch } from '@/store'
-import reducer, { getCustomers, useAppSelector } from '../store'
+import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
+import reducer, { getCustomers } from '../store'
 import { Customer } from '@/@types/customer'
 
 injectReducer('customers', reducer)
@@ -21,16 +20,18 @@ const CustomersList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const dispatch = useAppDispatch()
 
-  const customersState = useAppSelector((state) => state.customers?.data)
-  const total = customersState?.total ?? 0
-  const customers = customersState?.customers ?? []
-  const loading = customersState?.loading ?? false
+  const { total, customers, loading } = useAppSelector(
+    (state) => state.customers.data
+  )
 
   useEffect(() => {
     dispatch(
-      getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })
+      getCustomers({
+        pagination: { page: currentPage, pageSize },
+        searchTerm,
+      })
     )
-  }, [dispatch, currentPage, pageSize, searchTerm])
+  }, [currentPage, pageSize, searchTerm])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
