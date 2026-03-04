@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
-import type { Customer } from '@/@types/customer'
 import {
   apiGetCustomers,
   apiDeleteCustomer,
@@ -10,13 +9,13 @@ import {
   apiUploadFile,
   type GetCustomersRequest,
 } from '@/services/CustomerServices'
+import type { Customer } from '@/@types/customer'
 
 type CustomersState = {
   loading: boolean
   customers: Customer[]
   total: number
   customer: Customer | null
-  error?: string | null
 }
 
 const initialState: CustomersState = {
@@ -24,16 +23,24 @@ const initialState: CustomersState = {
   customers: [],
   total: 0,
   customer: null,
-  error: null,
 }
 
 export const getCustomers = createAsyncThunk(
   'customers/getCustomers',
   async (params: GetCustomersRequest) => {
     const res: any = await apiGetCustomers(params)
-    const data = res?.data?.data ?? res?.data ?? []
+
+    // ✅ supporte plusieurs formats de réponse (Strapi / custom)
+    const root = res?.data ?? res
+    const data =
+      root?.data?.data ?? // strapi classic
+      root?.data ?? // custom
+      root ?? []
+
+    const meta = root?.data?.meta ?? root?.meta
     const total =
-      res?.data?.meta?.pagination?.total ??
+      meta?.pagination?.total ??
+      root?.total ??
       (Array.isArray(data) ? data.length : 0)
 
     return { data: Array.isArray(data) ? data : [], total }
@@ -44,7 +51,8 @@ export const getCustomerForEditById = createAsyncThunk(
   'customers/getCustomerForEditById',
   async (id: string) => {
     const res: any = await apiGetCustomerForEditById(id)
-    return res?.data?.data ?? res?.data ?? null
+    const root = res?.data ?? res
+    return root?.data?.data ?? root?.data ?? root ?? null
   }
 )
 
@@ -56,45 +64,45 @@ export const deleteCustomer = createAsyncThunk(
   }
 )
 
-/**
- * ✅ On accepte un objet "data" qui peut contenir logoFile
- * - Ça évite de casser tes composants existants.
- */
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
-  async (data: any) => {
-    const { logoFile, ...payload } = data ?? {}
+  async ({ data, logoFile }: { data: any; logoFile?: File | null }) => {
+    const payload = { ...data }
 
-    // upload logo si fourni
-    if (logoFile instanceof File) {
+    if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
-      const uploaded = uploadRes?.data?.[0]
-      if (uploaded?.id) {
-        // Strapi media (single) : souvent c’est l’id
-        payload.logo = uploaded.id
-      }
+      const uploaded = uploadRes?.data?.[0] ?? uploadRes?.data?.data?.[0]
+      if (uploaded?.id) payload.logo = uploaded.id
     }
 
     const res: any = await apiCreateCustomer(payload)
-    return res?.data?.data ?? res?.data ?? null
+    const root = res?.data ?? res
+    return root?.data?.data ?? root?.data ?? root ?? null
   }
 )
 
 export const updateCustomer = createAsyncThunk(
   'customers/updateCustomer',
-  async ({ id, data }: { id: string; data: any }) => {
-    const { logoFile, ...payload } = data ?? {}
+  async ({
+    id,
+    data,
+    logoFile,
+  }: {
+    id: string
+    data: any
+    logoFile?: File | null
+  }) => {
+    const payload = { ...data }
 
-    if (logoFile instanceof File) {
+    if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
-      const uploaded = uploadRes?.data?.[0]
-      if (uploaded?.id) {
-        payload.logo = uploaded.id
-      }
+      const uploaded = uploadRes?.data?.[0] ?? uploadRes?.data?.data?.[0]
+      if (uploaded?.id) payload.logo = uploaded.id
     }
 
     const res: any = await apiUpdateCustomer(id, payload)
-    return res?.data?.data ?? res?.data ?? null
+    const root = res?.data ?? res
+    return root?.data?.data ?? root?.data ?? root ?? null
   }
 )
 
@@ -112,68 +120,34 @@ const customersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // LIST
       .addCase(getCustomers.pending, (state) => {
         state.loading = true
-        state.error = null
       })
       .addCase(getCustomers.fulfilled, (state, action) => {
         state.loading = false
         state.customers = action.payload.data
         state.total = action.payload.total
       })
-      .addCase(getCustomers.rejected, (state, action) => {
+      .addCase(getCustomers.rejected, (state) => {
         state.loading = false
-        state.error = action.error.message ?? 'Erreur chargement clients'
       })
 
-      // EDIT LOAD
       .addCase(getCustomerForEditById.pending, (state) => {
         state.loading = true
-        state.error = null
       })
       .addCase(getCustomerForEditById.fulfilled, (state, action) => {
         state.loading = false
         state.customer = action.payload
       })
-      .addCase(getCustomerForEditById.rejected, (state, action) => {
+      .addCase(getCustomerForEditById.rejected, (state) => {
         state.loading = false
-        state.error = action.error.message ?? 'Erreur chargement client'
       })
 
-      // DELETE
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.customers = state.customers.filter(
-          (c: any) =>
-            c?.documentId !== action.payload && c?.id !== action.payload
+          (c: any) => c?.documentId !== action.payload && c?.id !== action.payload
         )
         state.total = Math.max(0, state.total - 1)
-      })
-
-      // CREATE
-      .addCase(createCustomer.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(createCustomer.fulfilled, (state) => {
-        state.loading = false
-      })
-      .addCase(createCustomer.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message ?? 'Erreur création client'
-      })
-
-      // UPDATE
-      .addCase(updateCustomer.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(updateCustomer.fulfilled, (state) => {
-        state.loading = false
-      })
-      .addCase(updateCustomer.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message ?? 'Erreur modification client'
       })
   },
 })
