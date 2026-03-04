@@ -8,21 +8,21 @@ export type GetCustomersRequest = {
 
 export type DeleteCustomerResponse = unknown
 
-// ✅ UPLOAD (Strapi /upload)
+// ✅ Strapi Upload: POST /upload (baseURL contient déjà /api chez toi)
 export const apiUploadFile = (file: File) => {
   const formData = new FormData()
   formData.append('files', file)
 
   return ApiService.fetchData({
-    url: '/upload',
+    url: `/upload`,
     method: 'post',
     data: formData,
-    // important: laisser le browser mettre le bon boundary
-    headers: { 'Content-Type': 'multipart/form-data' },
+    // IMPORTANT: ApiService/axios met souvent le bon header tout seul avec FormData.
+    // Si chez toi ça bug, on ajoutera headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
 
-// ✅ GET LIST (Strapi v4)
+// ✅ Customers endpoints (SANS /api)
 export const apiGetCustomers = (params: GetCustomersRequest) => {
   const page = params.pagination?.page ?? 1
   const pageSize = params.pagination?.pageSize ?? 10
@@ -37,8 +37,9 @@ export const apiGetCustomers = (params: GetCustomersRequest) => {
     query.set('filters[name][$containsi]', searchTerm)
   }
 
-  // si ton tableau a besoin de la catégorie
+  // adapte si ton champ category est différent
   query.set('populate[customerCategory]', 'true')
+  query.set('populate[logo]', 'true')
 
   return ApiService.fetchData({
     url: `/customers?${query.toString()}`,
@@ -46,7 +47,6 @@ export const apiGetCustomers = (params: GetCustomersRequest) => {
   })
 }
 
-// ✅ GET ONE (edit)
 export const apiGetCustomerForEditById = (id: string) => {
   return ApiService.fetchData({
     url: `/customers/${id}?populate=deep`,
@@ -54,7 +54,6 @@ export const apiGetCustomerForEditById = (id: string) => {
   })
 }
 
-// ✅ DELETE
 export const apiDeleteCustomer = (id: string) => {
   return ApiService.fetchData({
     url: `/customers/${id}`,
@@ -62,20 +61,18 @@ export const apiDeleteCustomer = (id: string) => {
   })
 }
 
-// ✅ CREATE (Strapi attend { data: {...} })
 export const apiCreateCustomer = (data: any) => {
   return ApiService.fetchData({
     url: `/customers`,
     method: 'post',
-    data: { data },
+    data,
   })
 }
 
-// ✅ UPDATE
 export const apiUpdateCustomer = (id: string, data: any) => {
   return ApiService.fetchData({
     url: `/customers/${id}`,
     method: 'put',
-    data: { data },
+    data,
   })
 }

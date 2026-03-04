@@ -10,9 +10,15 @@ import { AiOutlineSave } from 'react-icons/ai'
 import * as Yup from 'yup'
 import { t } from 'i18next'
 import { countries } from '@/constants/countries.constant'
+import { Options } from '../EditCustomer'
+import { Customer } from '@/@types/customer'
 
-export type CustomerFormModel = {
-  name: string
+export type CustomerFormModel = Omit<
+  Customer,
+  'banner' | 'customerCategory' | 'orderItems' | 'companyInformations'
+> & {
+  banner: string | null
+  customerCategory: string | null
   email: string
   phoneNumber: string
   vatNumber: string
@@ -21,59 +27,99 @@ export type CustomerFormModel = {
   zipCode: string
   city: string
   country: string
-  website?: string
-  deferredPayment?: boolean
-  customerCategory: string | null
-  banner?: string | null
+  website: string
+
+  // ✅ nouveau: fichier logo
   logoFile?: File | null
-  [key: string]: any
 }
 
-type Options = { label: string; value: string }
 type CustomerFormProps = {
-  initialData?: Partial<CustomerFormModel>
+  initialData?: CustomerFormModel
   customerCategories: Options[]
   onDiscard?: () => void
-  onFormSubmit: (payload: { data: CustomerFormModel; logoFile?: File | null }) => void
+  onFormSubmit: (formData: CustomerFormModel) => void
 }
 
 const validationSchema = Yup.object().shape({
+  website: Yup.string(),
+  siretNumber: Yup.string().required(t('cust.error.siretNumber')),
+  vatNumber: Yup.string().required(t('cust.error.vatNumber')),
+  customerCategory: Yup.string().required(t('cust.error.customerCategory')),
   name: Yup.string().required(t('cust.error.name')),
-  email: Yup.string().email(t('cust.error.invalidEmail')).required(t('cust.error.email')),
-  phoneNumber: Yup.string().required(t('cust.error.phoneNumber')),
   address: Yup.string().required(t('cust.error.address')),
   zipCode: Yup.string().required(t('cust.error.zipCode')),
   city: Yup.string().required(t('cust.error.city')),
   country: Yup.string().required(t('cust.error.country')),
-  vatNumber: Yup.string().required(t('cust.error.vatNumber')),
-  siretNumber: Yup.string().required(t('cust.error.siretNumber')),
-  customerCategory: Yup.string().nullable().required(t('cust.error.customerCategory')),
+  email: Yup.string().email(t('cust.error.invalidEmail')).required(t('cust.error.email')),
+  phoneNumber: Yup.string()
+    .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
+    .required(t('cust.error.phoneNumber')),
+
+  // ✅ logoFile: pas obligatoire
+  logoFile: Yup.mixed().nullable(),
 })
 
-const CustomerForm = ({ initialData, onFormSubmit, onDiscard, customerCategories }: CustomerFormProps) => {
-  const { control, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<CustomerFormModel>({
+const CustomerForm = (props: CustomerFormProps) => {
+  const { initialData, onFormSubmit, onDiscard, customerCategories } = props
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    watch,
+    setValue,
+  } = useForm<CustomerFormModel>({
     resolver: yupResolver(validationSchema) as any,
-    defaultValues: initialData ?? {},
+    defaultValues: initialData,
   })
 
   const onSubmit = async (values: CustomerFormModel) => {
     const formData = cloneDeep(values)
-    const logoFile = formData.logoFile ?? null
-    delete formData.logoFile
-    onFormSubmit({ data: formData, logoFile })
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    onFormSubmit(formData)
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <FormContainer>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <CustomerFields errors={errors} control={control} countries={countries} watch={watch} setValue={setValue} />
-          <CompanyFields control={control} errors={errors as any} customerCategories={customerCategories} watch={watch} />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-2">
+            <CustomerFields
+              errors={errors}
+              control={control}
+              countries={countries}
+              watch={watch}
+              setValue={setValue}
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <CompanyFields
+              control={control}
+              errors={errors as any}
+              customerCategories={customerCategories}
+              watch={watch}
+            />
+          </div>
         </div>
-        <StickyFooter className="-mx-8 px-8 flex items-center justify-end py-4" stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <Button size="sm" type="button" onClick={() => onDiscard?.()}>{t('cancel')}</Button>
-            <Button size="sm" variant="solid" loading={isSubmitting} icon={<AiOutlineSave />} type="submit">{t('save')}</Button>
+
+        <StickyFooter
+          className="-mx-8 px-8 flex items-center justify-end py-4"
+          stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        >
+          <div className="md:flex items-end">
+            <Button size="sm" className="ltr:mr-3 rtl:ml-3" type="button" onClick={() => onDiscard?.()}>
+              {t('cancel')}
+            </Button>
+            <Button
+              size="sm"
+              variant="solid"
+              loading={isSubmitting}
+              icon={<AiOutlineSave />}
+              type="submit"
+            >
+              {t('save')}
+            </Button>
           </div>
         </StickyFooter>
       </FormContainer>
