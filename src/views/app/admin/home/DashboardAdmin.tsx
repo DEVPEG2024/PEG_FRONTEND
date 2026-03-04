@@ -1,13 +1,16 @@
 import Container from '@/components/shared/Container'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 
-import KPICard from './components/KPICard'
-import AlertsPanel from './components/AlertsPanel'
-import RevenueChart from './components/RevenueChart'
-import PipelineFunnel from './components/PipelineFunnel'
-import SupplierRanking from './components/SupplierRanking'
+import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
+import { KPICard } from './components/KPICard'
+import { AlertsPanel } from './components/AlertsPanel'
+import { RevenueChart } from './components/RevenueChart'
+import { PipelineFunnel } from './components/PipelineFunnel'
+import { SupplierRanking } from './components/SupplierRanking'
+
+import BaseService from '@/services/BaseService'
+import ApiService from '@/services/ApiService'
 
 function monthKey(d: Date) {
   const y = d.getFullYear()
@@ -27,14 +30,17 @@ function safeDate(s?: string) {
 }
 function eur(n: number) {
   try {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: 0,
-    }).format(n)
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   } catch {
     return `${Math.round(n)} €`
   }
+}
+
+function absoluteMediaUrl(url?: string | null) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  // ✅ simple: prod
+  return `https://api.mypeg.fr${url}`
 }
 
 export default function DashboardAdmin() {
@@ -45,15 +51,33 @@ export default function DashboardAdmin() {
   const [error, setError] = useState<string | null>(null)
   const [gql, setGql] = useState<any>(null)
 
+  // ✅ Banner states
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null)
+  const [bannerUploading, setBannerUploading] = useState(false)
+
+  // ✅ 1) Fetch dashboard data + banner
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true)
         setError(null)
+
+        // Dashboard GraphQL
         const res = await apiGetDashboardSuperAdminInformations()
         const data = (res as any)?.data?.data ?? (res as any)?.data ?? null
         if (!data) throw new Error('Réponse GraphQL vide')
         setGql(data)
+
+        // Banner REST (Strapi single type)
+        // GET /api/dashboard-setting?populate=dashboardBanner
+        const s = await ApiService.fetchData({
+          url: '/dashboard-setting?populate=dashboardBanner',
+          method: 'get',
+        })
+        const attrs = (s as any)?.data?.data?.attributes ?? {}
+        const url = attrs?.dashboardBanner?.data?.attributes?.url ?? null
+        setBannerUrl(absoluteMediaUrl(url))
       } catch (e: any) {
         setError(e?.message ?? 'Erreur dashboard')
       } finally {
@@ -63,6 +87,49 @@ export default function DashboardAdmin() {
     run()
   }, [month])
 
+  // ✅ 2) When click banner => open file picker
+  const onBannerClick = () => {
+    if (bannerUploading) return
+    fileInputRef.current?.click()
+  }
+
+  // ✅ 3) Upload file to Strapi and set as dashboard banner
+  const onBannerFileSelected = async (file: File) => {
+    try {
+      setBannerUploading(true)
+      setError(null)
+
+      // Upload -> POST /api/upload
+      const form = new FormData()
+      form.append('files', file)
+
+      const up = await BaseService.post('/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      const uploaded = (up as any)?.data?.[0]
+      const mediaId = uploaded?.id
+      const mediaUrl = uploaded?.url
+
+      if (!mediaId) throw new Error("Upload OK mais l'ID du fichier manque")
+
+      // Save in dashboard-setting -> PUT /api/dashboard-setting
+      await ApiService.fetchData({
+        url: '/dashboard-setting',
+        method: 'put',
+        data: { data: { dashboardBanner: mediaId } },
+      })
+
+      setBannerUrl(absoluteMediaUrl(mediaUrl))
+    } catch (e: any) {
+      setError(e?.message ?? 'Erreur upload bannière')
+    } finally {
+      setBannerUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // --- Existing dashboard logic ---
   const projects = gql?.projects_connection?.nodes ?? []
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0
   const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0
@@ -71,7 +138,6 @@ export default function DashboardAdmin() {
   const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0
   const invoices = gql?.invoices_connection?.nodes ?? []
 
-  // CA / encaissé / en attente
   const invoiceTotal = useMemo(
     () => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0),
     [invoices]
@@ -88,7 +154,6 @@ export default function DashboardAdmin() {
 
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
 
-  // Factures en retard (date passée + pas payée)
   const overdueInvoices = useMemo(() => {
     const now = new Date()
     return invoices.filter((x: any) => {
@@ -100,24 +165,17 @@ export default function DashboardAdmin() {
     }).length
   }, [invoices])
 
-  // Projets "à risque" (endDate passée + pas terminé)
   const atRiskProjects = useMemo(() => {
     const now = new Date()
     return projects.filter((p: any) => {
       const end = safeDate(p?.endDate)
       if (!end) return false
       const state = (p?.state ?? '').toString().toLowerCase()
-      const done =
-        state.includes('done') ||
-        state.includes('closed') ||
-        state.includes('term') ||
-        state.includes('livr') ||
-        state.includes('finish')
+      const done = state.includes('done') || state.includes('closed') || state.includes('term') || state.includes('livr')
       return end.getTime() < now.getTime() && !done
     }).length
   }, [projects])
 
-  // Délai moyen
   const avgDeliveryDays = useMemo(() => {
     const pairs = projects
       .map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) }))
@@ -127,7 +185,6 @@ export default function DashboardAdmin() {
     return Math.round(days / pairs.length)
   }, [projects])
 
-  // Revenue 6 mois depuis invoices.date
   const revenue6m = useMemo(() => {
     const now = new Date()
     const months: string[] = []
@@ -146,14 +203,9 @@ export default function DashboardAdmin() {
       by.set(k, { ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0), marge: by.get(k)!.marge })
     }
 
-    return months.map((k) => ({
-      label: monthLabel(k),
-      ca: by.get(k)!.ca,
-      marge: by.get(k)!.marge,
-    }))
+    return months.map((k) => ({ label: monthLabel(k), ca: by.get(k)!.ca, marge: by.get(k)!.marge }))
   }, [invoices])
 
-  // Pipeline (projets par statut)
   const pipeline = useMemo(() => {
     const m = new Map<string, number>()
     for (const p of projects) {
@@ -166,7 +218,6 @@ export default function DashboardAdmin() {
       .slice(0, 10)
   }, [projects])
 
-  // Ranking producteurs
   const topProducers = useMemo(() => {
     const map = new Map<string, { projects: number; revenue: number }>()
     for (const p of projects) {
@@ -177,12 +228,10 @@ export default function DashboardAdmin() {
     return Array.from(map.entries())
       .map(([name, v]) => ({ name, projects: v.projects, revenue: v.revenue }))
       .sort((a, b) => (b.projects - a.projects) || (b.revenue - a.revenue))
-      .slice(0, 6)
   }, [projects])
 
-  // Activité récente (factures + projets)
   const activity = useMemo(() => {
-    const items: { ts: number; user: string; action: string; details: string; to?: string }[] = []
+    const items: { ts: number; user: string; action: string; details: string }[] = []
 
     for (const inv of invoices.slice(0, 30)) {
       const d = safeDate(inv?.date)
@@ -192,7 +241,6 @@ export default function DashboardAdmin() {
         user: inv?.customer?.name ?? 'Client',
         action: `Facture ${inv?.name ?? inv?.documentId ?? ''}`,
         details: `${eur(Number(inv?.totalAmount) || 0)} — ${inv?.paymentState ?? inv?.state ?? ''}`,
-        to: '/admin/invoices',
       })
     }
 
@@ -204,42 +252,34 @@ export default function DashboardAdmin() {
         user: p?.customer?.name ?? 'Client',
         action: `Projet ${p?.name ?? ''}`,
         details: `${p?.state ?? ''} — ${(p?.producer?.name ?? '—')}`,
-        to: '/common/projects',
       })
     }
 
     return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
   }, [invoices, projects])
 
-  // Alerts
   const alerts = useMemo(() => {
-    const a: { level: 'danger' | 'warning' | 'info'; title: string; detail?: string; to?: string }[] = []
-    if (overdueInvoices > 0)
-      a.push({
-        level: 'danger',
-        title: `${overdueInvoices} facture(s) en retard`,
-        detail: 'Vérifie paymentState / date',
-        to: '/admin/invoices',
-      })
-    if (atRiskProjects > 0)
-      a.push({
-        level: 'warning',
-        title: `${atRiskProjects} projet(s) à risque`,
-        detail: 'endDate dépassée et pas terminé',
-        to: '/common/projects',
-      })
+    const a: { level: 'danger' | 'warning' | 'info'; title: string; detail?: string }[] = []
+    if (overdueInvoices > 0) a.push({ level: 'danger', title: `${overdueInvoices} facture(s) en retard`, detail: 'Vérifie paymentState / date' })
+    if (atRiskProjects > 0) a.push({ level: 'warning', title: `${atRiskProjects} projet(s) à risque`, detail: 'endDate dépassée et pas terminé' })
     const openTickets = tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
-    if (openTickets > 0)
-      a.push({
-        level: 'info',
-        title: `${openTickets} ticket(s) ouverts`,
-        detail: 'Support à traiter',
-        to: '/support',
-      })
+    if (openTickets > 0) a.push({ level: 'info', title: `${openTickets} ticket(s) ouverts`, detail: 'Support à traiter' })
     return a
   }, [overdueInvoices, atRiskProjects, tickets])
 
-  // ✅ Routes EXACTES (selon ton routes.config.ts)
+  const kpis = [
+    { title: 'CA total (factures)', value: eur(invoiceTotal), icon: '€' },
+    { title: 'Encaissé', value: eur(invoicePaid), icon: '✅', variant: 'success' as const },
+    { title: 'En attente', value: eur(invoicePending), icon: '⏳', variant: invoicePending > 0 ? ('warning' as const) : ('default' as const) },
+    { title: 'Projets', value: String(projectsTotal), icon: '📦' },
+    { title: 'Projets à risque', value: String(atRiskProjects), icon: '⚠️', variant: atRiskProjects > 0 ? ('danger' as const) : ('default' as const) },
+    { title: 'Clients', value: String(customersTotal), icon: '👥' },
+    { title: 'Producteurs', value: String(producersTotal), icon: '🏭' },
+    { title: 'Tickets', value: String(ticketsTotal), icon: '🎫', variant: ticketsTotal > 0 ? ('warning' as const) : ('default' as const) },
+    { title: 'Factures en retard', value: String(overdueInvoices), icon: '🧾', variant: overdueInvoices > 0 ? ('danger' as const) : ('default' as const) },
+    { title: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: '🕒', subtitle: 'Livraison' },
+  ] as const
+
   const routeForKpi = (title: string) => {
     switch (title) {
       case 'Projets':
@@ -261,55 +301,74 @@ export default function DashboardAdmin() {
     }
   }
 
-  const kpis = [
-    { title: 'CA total (factures)', value: eur(invoiceTotal), icon: '€', variant: 'default' as const },
-    { title: 'Encaissé', value: eur(invoicePaid), icon: '✅', variant: 'success' as const },
-    { title: 'En attente', value: eur(invoicePending), icon: '⏳', variant: invoicePending > 0 ? ('warning' as const) : ('default' as const) },
-    { title: 'Projets', value: String(projectsTotal), icon: '📦', variant: 'default' as const },
-    { title: 'Projets à risque', value: String(atRiskProjects), icon: '⚠️', variant: atRiskProjects > 0 ? ('danger' as const) : ('default' as const) },
-
-    { title: 'Clients', value: String(customersTotal), icon: '👥', variant: 'default' as const },
-    { title: 'Producteurs', value: String(producersTotal), icon: '🏭', variant: 'default' as const },
-    { title: 'Tickets', value: String(ticketsTotal), icon: '🎫', variant: ticketsTotal > 0 ? ('warning' as const) : ('default' as const) },
-    { title: 'Factures en retard', value: String(overdueInvoices), icon: '🧾', variant: overdueInvoices > 0 ? ('danger' as const) : ('default' as const) },
-    { title: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: '🕒', subtitle: 'Livraison', variant: 'default' as const },
-  ] as const
-
   return (
     <Container>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Tableau de bord</h1>
-            <p className="text-sm text-white/60 mt-1">Vue d&apos;ensemble opérationnelle — {month}</p>
+
+        {/* ✅ Banner clickable */}
+        <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03]">
+          <div
+            onClick={onBannerClick}
+            className="relative cursor-pointer"
+            title="Cliquer pour changer la bannière"
+          >
+            {bannerUrl ? (
+              <img
+                src={bannerUrl}
+                alt="Bannière dashboard"
+                style={{ width: '100%', aspectRatio: '4 / 1', objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <div
+                style={{ width: '100%', aspectRatio: '4 / 1' }}
+                className="flex items-center justify-center text-white/60 text-sm"
+              >
+                Cliquer pour ajouter une bannière (format 4:1)
+              </div>
+            )}
+
+            {/* overlay */}
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition" />
+            <div className="absolute bottom-3 right-3 text-xs text-white/80 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
+              {bannerUploading ? 'Upload…' : 'Changer la bannière'}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="bg-white/5 border border-white/10 text-white/80 px-3 py-2 rounded-xl outline-none"
-            >
-              <option>Mars 2026</option>
-              <option>Février 2026</option>
-              <option>Janvier 2026</option>
-            </select>
-
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 px-3 py-2 rounded-xl"
-              title="Rafraîchir"
-            >
-              ⟳
-            </button>
-          </div>
+          {/* hidden input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) onBannerFileSelected(f)
+            }}
+          />
         </div>
 
-        {/* Status */}
-        <div className="text-xs">
-          {loading ? <span className="text-white/60">Chargement…</span> : null}
-          {error ? <span className="text-red-300">{error}</span> : null}
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-bold text-white">Tableau de bord</h1>
+          <p className="text-sm text-white/60">Vue d&apos;ensemble opérationnelle — {month}</p>
+        </div>
+
+        {/* Month selector + status */}
+        <div className="flex items-center justify-between gap-3">
+          <select
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="bg-white/5 border border-white/10 text-white/80 px-3 py-2 rounded-xl outline-none"
+          >
+            <option>Mars 2026</option>
+            <option>Février 2026</option>
+            <option>Janvier 2026</option>
+          </select>
+
+          <div className="text-xs">
+            {loading ? <span className="text-white/60">Chargement…</span> : null}
+            {error ? <span className="text-red-300">{error}</span> : null}
+          </div>
         </div>
 
         {/* KPI Grid */}
@@ -331,52 +390,28 @@ export default function DashboardAdmin() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <RevenueChart
-            title="Chiffre d'affaires & marge"
-            subtitle="6 derniers mois (d’après factures)"
-            data={revenue6m}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <RevenueChart data={revenue6m} />
           <PipelineFunnel
-            title="Pipeline"
-            subtitle="Répartition des projets par statut"
             items={pipeline}
             onItemClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)}
           />
         </div>
 
         {/* Bottom Row */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <AlertsPanel
-            title="Alertes"
-            items={alerts}
-            onItemClick={(to) => {
-              if (to) navigate(to)
-            }}
-          />
-          <SupplierRanking
-            title="Top producteurs"
-            subtitle="Basé sur les projets (top 6)"
-            rows={topProducers}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <AlertsPanel alerts={alerts} />
+          <SupplierRanking rows={topProducers} />
 
           {/* Recent Activity */}
           <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white">Activité récente</h3>
-              <span className="text-[11px] text-white/50">auto</span>
-            </div>
-
+            <h3 className="text-sm font-semibold text-white mb-3">Activité récente</h3>
             <div className="space-y-3">
               {activity.length === 0 ? (
                 <div className="text-xs text-white/60">Aucune activité.</div>
               ) : (
                 activity.map((entry, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => entry.to && navigate(entry.to)}
-                    className="w-full text-left flex items-start gap-2 text-xs rounded-xl p-2 hover:bg-white/5 transition"
-                  >
+                  <div key={idx} className="flex items-start gap-2 text-xs">
                     <div className="h-1.5 w-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-white">
@@ -386,12 +421,13 @@ export default function DashboardAdmin() {
                       <p className="text-white/60 truncate">{entry.details}</p>
                       <p className="text-white/40 text-[10px]">{new Date(entry.ts).toLocaleString('fr-FR')}</p>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
           </div>
         </div>
+
       </div>
     </Container>
   )
