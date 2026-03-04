@@ -1,22 +1,32 @@
-// src/services/CustomerServices.ts
 import ApiService from './ApiService'
 
 export type GetCustomersRequest = {
+  // format Strapi
   pagination?: { page: number; pageSize: number }
+  // format legacy (ce qui te casse aujourd’hui)
+  page?: number
+  pageSize?: number
   searchTerm?: string
 }
 
 export type DeleteCustomerResponse = unknown
 
 /**
- * IMPORTANT
- * - BaseURL ApiService contient déjà "/api"
- * - Donc ici on utilise "/customers" et PAS "/api/customers"
- * - Pagination Strapi: pagination[page] + pagination[pageSize]
+ * Strapi attend:
+ * /customers?pagination[page]=1&pagination[pageSize]=10
+ * On accepte aussi l'ancien format page/pageSize et on le convertit.
  */
 export const apiGetCustomers = (params: GetCustomersRequest) => {
-  const page = params.pagination?.page ?? 1
-  const pageSize = params.pagination?.pageSize ?? 10
+  const page =
+    params.pagination?.page ??
+    params.page ??
+    1
+
+  const pageSize =
+    params.pagination?.pageSize ??
+    params.pageSize ??
+    10
+
   const searchTerm = (params.searchTerm ?? '').trim()
 
   const query = new URLSearchParams()
@@ -28,8 +38,9 @@ export const apiGetCustomers = (params: GetCustomersRequest) => {
     query.set('filters[name][$containsi]', searchTerm)
   }
 
-  // si tu affiches la catégorie dans la liste
+  // adapte si tu as besoin d'autres relations
   query.set('populate[customerCategory]', 'true')
+  query.set('populate[logo]', 'true')
 
   return ApiService.fetchData({
     url: `/customers?${query.toString()}`,
@@ -68,8 +79,8 @@ export const apiUpdateCustomer = (id: string, data: any) => {
 }
 
 /**
- * Upload Strapi: POST /upload (baseURL contient /api)
- * FormData: files
+ * Upload Strapi
+ * baseURL ApiService = .../api  => ici c'est /upload
  */
 export const apiUploadFile = (file: File) => {
   const formData = new FormData()
@@ -79,7 +90,6 @@ export const apiUploadFile = (file: File) => {
     url: `/upload`,
     method: 'post',
     data: formData,
-    // si ton ApiService gère auto le multipart, tu peux enlever headers
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
