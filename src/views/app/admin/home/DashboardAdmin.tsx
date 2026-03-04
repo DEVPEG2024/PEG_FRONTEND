@@ -1,5 +1,5 @@
 import Container from '@/components/shared/Container'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 
@@ -21,19 +21,257 @@ function eur(n: number) {
   }
 }
 
+function monthKey(d: Date) {
+  const y = d.getFullYear()
+  const m = d.getMonth() + 1
+  return `${y}-${String(m).padStart(2, '0')}`
+}
+
+function monthLabel(key: string) {
+  const [, mm] = key.split('-')
+  const m = Number(mm) - 1
+  const names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+  return names[m] ?? key
+}
+
+/** ========= UI (self-contained) ========= */
+
+type KpiVariant = 'default' | 'success' | 'warning' | 'danger'
+
+function kpiRing(variant: KpiVariant) {
+  if (variant === 'success') return 'ring-1 ring-emerald-400/25'
+  if (variant === 'warning') return 'ring-1 ring-amber-400/25'
+  if (variant === 'danger') return 'ring-1 ring-rose-400/25'
+  return 'ring-1 ring-sky-400/15'
+}
+
+function kpiAccent(variant: KpiVariant) {
+  if (variant === 'success') return 'from-emerald-500/20 to-emerald-500/0'
+  if (variant === 'warning') return 'from-amber-500/20 to-amber-500/0'
+  if (variant === 'danger') return 'from-rose-500/20 to-rose-500/0'
+  return 'from-sky-500/18 to-sky-500/0'
+}
+
+function KPI({
+  title,
+  value,
+  subtitle,
+  hint,
+  icon,
+  variant = 'default',
+  onClick,
+}: {
+  title: string
+  value: string
+  subtitle?: string
+  hint?: string
+  icon?: string
+  variant?: KpiVariant
+  onClick?: () => void
+}) {
+  return (
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      className={[
+        'relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] p-4',
+        kpiRing(variant),
+        onClick ? 'cursor-pointer hover:bg-white/[0.055] transition' : '',
+      ].join(' ')}
+      title={onClick ? 'Cliquer pour ouvrir' : title}
+    >
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${kpiAccent(variant)}`} />
+
+      <div className="relative flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-white/55">{title}</div>
+          <div className="mt-1 text-2xl font-extrabold text-white">{value}</div>
+          {subtitle ? <div className="mt-1 text-xs text-white/45">{subtitle}</div> : null}
+          {hint ? <div className="mt-2 text-xs text-white/60">{hint}</div> : null}
+          {onClick ? <div className="mt-2 text-[11px] text-sky-300/80">Ouvrir →</div> : null}
+        </div>
+
+        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/80">
+          {icon ?? '•'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Panel({ title, subtitle, right, children }: { title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-white">{title}</div>
+          {subtitle ? <div className="mt-1 text-xs text-white/50">{subtitle}</div> : null}
+        </div>
+        {right ? <div className="shrink-0">{right}</div> : null}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+/** Chart barres ultra simple en SVG (pas de lib) */
+function BarsChart({
+  data,
+  leftLabel = 'CA',
+  rightLabel = 'Marge',
+}: {
+  data: { label: string; ca: number; marge: number }[]
+  leftLabel?: string
+  rightLabel?: string
+}) {
+  const W = 760
+  const H = 220
+  const padL = 34
+  const padR = 12
+  const padT = 14
+  const padB = 30
+
+  const maxVal = useMemo(() => {
+    let m = 1
+    for (const p of data) m = Math.max(m, p.ca, p.marge)
+    return m
+  }, [data])
+
+  const plotW = W - padL - padR
+  const plotH = H - padT - padB
+  const groupW = data.length ? plotW / data.length : plotW
+  const barW = Math.max(10, Math.min(26, groupW * 0.22))
+  const gap = Math.max(6, Math.min(10, groupW * 0.08))
+
+  const y = (v: number) => padT + (1 - v / maxVal) * plotH
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-4 text-xs text-white/65">
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded bg-sky-400/90" />
+          {leftLabel}
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded bg-emerald-400/90" />
+          {rightLabel}
+        </span>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="220" role="img" aria-label="Chart">
+        {Array.from({ length: 5 }).map((_, i) => {
+          const yy = padT + (plotH * i) / 4
+          return <line key={i} x1={padL} x2={W - padR} y1={yy} y2={yy} stroke="rgba(255,255,255,0.08)" />
+        })}
+
+        {data.map((p, i) => {
+          const cx = padL + i * groupW + groupW / 2
+          const x1 = cx - barW - gap / 2
+          const x2 = cx + gap / 2
+          const caY = y(p.ca)
+          const mgY = y(p.marge)
+
+          return (
+            <g key={p.label}>
+              <rect x={x1} y={caY} width={barW} height={padT + plotH - caY} rx={6} fill="rgba(56,189,248,0.92)" />
+              <rect x={x2} y={mgY} width={barW} height={padT + plotH - mgY} rx={6} fill="rgba(52,211,153,0.92)" />
+              <text x={cx} y={H - 10} textAnchor="middle" fontSize="12" fill="rgba(255,255,255,0.55)">
+                {p.label}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
+function PipelineBars({
+  items,
+  onClick,
+}: {
+  items: { label: string; value: number }[]
+  onClick?: (label: string) => void
+}) {
+  const max = useMemo(() => Math.max(...items.map((i) => i.value), 1), [items])
+
+  return (
+    <div className="space-y-3">
+      {items.map((it) => {
+        const pct = Math.round((it.value / max) * 100)
+        return (
+          <div key={it.label} className="grid grid-cols-[120px_1fr_44px] items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onClick?.(it.label)}
+              className={[
+                'text-left text-xs text-white/70 truncate',
+                onClick ? 'hover:text-white transition' : '',
+              ].join(' ')}
+              title={onClick ? 'Cliquer pour filtrer' : it.label}
+            >
+              {it.label}
+            </button>
+
+            <div className="h-3.5 rounded-full border border-white/10 bg-white/[0.04] overflow-hidden">
+              <div className="h-full bg-sky-400/80" style={{ width: `${pct}%` }} />
+            </div>
+
+            <div className="text-right text-xs text-white/60">{it.value}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function TableMini({
+  rows,
+  onRowClick,
+}: {
+  rows: { left: string; right: string; sub?: string }[]
+  onRowClick?: (idx: number) => void
+}) {
+  return (
+    <div className="divide-y divide-white/10">
+      {rows.length === 0 ? <div className="text-xs text-white/55">Aucune donnée.</div> : null}
+      {rows.map((r, idx) => (
+        <div
+          key={idx}
+          onClick={() => onRowClick?.(idx)}
+          className={['py-2 flex items-start justify-between gap-3', onRowClick ? 'cursor-pointer hover:bg-white/[0.03] px-2 -mx-2 rounded-lg transition' : ''].join(' ')}
+        >
+          <div className="min-w-0">
+            <div className="text-sm text-white/85 truncate">{r.left}</div>
+            {r.sub ? <div className="text-xs text-white/50 truncate">{r.sub}</div> : null}
+          </div>
+          <div className="text-sm text-white/60 shrink-0">{r.right}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** ========= Page ========= */
+
 export default function DashboardAdmin() {
   const navigate = useNavigate()
+  const fileRef = useRef<HTMLInputElement | null>(null)
 
+  // Banner (simple) : on stocke l’image seulement en localStorage
+  // (Plus tard on branchera Strapi settings, mais là tu voulais SIMPLE et fonctionnel)
+  const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [gql, setGql] = useState<any>(null)
+
+  const [month, setMonth] = useState('Mars 2026')
 
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true)
         setError(null)
-
         const res = await apiGetDashboardSuperAdminInformations()
         const data = (res as any)?.data?.data ?? (res as any)?.data ?? null
         if (!data) throw new Error('Réponse GraphQL vide')
@@ -45,14 +283,16 @@ export default function DashboardAdmin() {
       }
     }
     run()
-  }, [])
+  }, [month])
+
+  const projects = gql?.projects_connection?.nodes ?? []
+  const invoices = gql?.invoices_connection?.nodes ?? []
+  const tickets = gql?.tickets_connection?.nodes ?? []
 
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0
   const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0
   const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0
   const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0
-  const invoices = gql?.invoices_connection?.nodes ?? []
-  const projects = gql?.projects_connection?.nodes ?? []
 
   const invoiceTotal = useMemo(
     () => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0),
@@ -68,6 +308,8 @@ export default function DashboardAdmin() {
     }, 0)
   }, [invoices])
 
+  const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
+
   const overdueInvoices = useMemo(() => {
     const now = new Date()
     return invoices.filter((x: any) => {
@@ -79,82 +321,302 @@ export default function DashboardAdmin() {
     }).length
   }, [invoices])
 
+  const atRiskProjects = useMemo(() => {
+    const now = new Date()
+    return projects.filter((p: any) => {
+      const end = safeDate(p?.endDate)
+      if (!end) return false
+      const state = (p?.state ?? '').toString().toLowerCase()
+      const done = state.includes('done') || state.includes('closed') || state.includes('term') || state.includes('livr')
+      return end.getTime() < now.getTime() && !done
+    }).length
+  }, [projects])
+
+  const avgDeliveryDays = useMemo(() => {
+    const pairs = projects
+      .map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) }))
+      .filter((x: any) => x.s && x.e)
+    if (!pairs.length) return 0
+    const days = pairs.reduce((a: number, x: any) => a + Math.max(0, (x.e.getTime() - x.s.getTime()) / 86400000), 0)
+    return Math.round(days / pairs.length)
+  }, [projects])
+
+  const revenue6m = useMemo(() => {
+    const now = new Date()
+    const months: string[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push(monthKey(d))
+    }
+    const by = new Map<string, { ca: number; marge: number }>()
+    months.forEach((k) => by.set(k, { ca: 0, marge: 0 }))
+
+    for (const inv of invoices) {
+      const d = safeDate(inv?.date)
+      if (!d) continue
+      const k = monthKey(d)
+      if (!by.has(k)) continue
+      by.set(k, { ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0), marge: by.get(k)!.marge })
+    }
+
+    return months.map((k) => ({ label: monthLabel(k), ca: by.get(k)!.ca, marge: by.get(k)!.marge }))
+  }, [invoices])
+
+  const pipeline = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const p of projects) {
+      const s = (p?.state ?? 'unknown').toString()
+      m.set(s, (m.get(s) ?? 0) + 1)
+    }
+    return Array.from(m.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8)
+  }, [projects])
+
+  const topProducers = useMemo(() => {
+    const map = new Map<string, { projects: number; revenue: number }>()
+    for (const p of projects) {
+      const name = p?.producer?.name ?? '—'
+      const cur = map.get(name) ?? { projects: 0, revenue: 0 }
+      map.set(name, { projects: cur.projects + 1, revenue: cur.revenue + (Number(p?.price) || 0) })
+    }
+    return Array.from(map.entries())
+      .map(([name, v]) => ({ name, projects: v.projects, revenue: v.revenue }))
+      .sort((a, b) => (b.projects - a.projects) || (b.revenue - a.revenue))
+      .slice(0, 6)
+  }, [projects])
+
+  const activity = useMemo(() => {
+    const items: { ts: number; left: string; right: string; sub?: string }[] = []
+
+    for (const inv of invoices.slice(0, 30)) {
+      const d = safeDate(inv?.date)
+      if (!d) continue
+      items.push({
+        ts: d.getTime(),
+        left: `${inv?.customer?.name ?? 'Client'} — Facture ${inv?.name ?? inv?.documentId ?? ''}`,
+        right: eur(Number(inv?.totalAmount) || 0),
+        sub: `${inv?.paymentState ?? inv?.state ?? ''} • ${d.toLocaleString('fr-FR')}`,
+      })
+    }
+
+    for (const p of projects.slice(0, 30)) {
+      const d = safeDate(p?.startDate) ?? safeDate(p?.endDate)
+      if (!d) continue
+      items.push({
+        ts: d.getTime(),
+        left: `${p?.customer?.name ?? 'Client'} — Projet ${p?.name ?? ''}`,
+        right: (p?.state ?? '').toString(),
+        sub: `${p?.producer?.name ?? '—'} • ${d.toLocaleString('fr-FR')}`,
+      })
+    }
+
+    return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
+  }, [invoices, projects])
+
+  const openTickets = useMemo(() => {
+    return tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
+  }, [tickets])
+
+  const onPickBanner = () => fileRef.current?.click()
+
+  const onBannerFile = async (file?: File | null) => {
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setBannerUrl(url)
+    localStorage.setItem('peg:dashboardBanner', url)
+  }
+
+  const routeForKpi = (title: string) => {
+    switch (title) {
+      case 'Projets':
+      case 'Projets à risque':
+        return '/common/projects'
+      case 'Clients':
+        return '/admin/customers/list'
+      case 'Producteurs':
+        return '/admin/producers/list'
+      case 'Tickets':
+        return '/support'
+      case 'Factures':
+      case 'CA total':
+      case 'Encaissé':
+      case 'En attente':
+      case 'Factures en retard':
+        return '/admin/invoices'
+      default:
+        return null
+    }
+  }
+
   return (
     <Container>
-      <div className="p-4 space-y-4">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-white">Dashboard (mode debug)</h1>
-            <p className="text-sm text-white/60">
-              Si tu vois cette page, le menu/layout fonctionne. On réparera ensuite le design.
-            </p>
+      <div className="space-y-6">
+
+        {/* PREMIUM BANNER 20x5 */}
+        <div
+          className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"
+          style={{ aspectRatio: '4 / 1' }} // 20:5 = 4:1
+        >
+          {bannerUrl ? (
+            <img src={bannerUrl} alt="Dashboard banner" className="h-full w-full object-cover opacity-95" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-sky-500/15 via-white/0 to-emerald-500/10" />
+          )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/0" />
+
+          <div className="absolute left-5 top-5">
+            <div className="text-white text-lg font-extrabold">Tableau de bord</div>
+            <div className="text-white/65 text-sm">Vue d’ensemble opérationnelle — {month}</div>
+          </div>
+
+          <div className="absolute right-4 top-4 flex items-center gap-2">
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-white/10 border border-white/15 text-white/85 px-3 py-2 rounded-xl outline-none"
+            >
+              <option>Mars 2026</option>
+              <option>Février 2026</option>
+              <option>Janvier 2026</option>
+            </select>
+
+            <button
+              onClick={onPickBanner}
+              className="bg-white/10 border border-white/15 text-white/85 px-3 py-2 rounded-xl hover:bg-white/15 transition"
+              title="Changer la bannière"
+            >
+              Changer
+            </button>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => onBannerFile(e.target.files?.[0] ?? null)}
+            />
           </div>
 
           <button
-            className="bg-white/5 border border-white/10 text-white/80 px-3 py-2 rounded-xl"
+            onClick={onPickBanner}
+            className="absolute bottom-4 right-4 text-xs text-white/70 hover:text-white transition"
+            title="Clique sur la bannière pour la changer"
+          >
+            Cliquer pour modifier la bannière →
+          </button>
+        </div>
+
+        {/* STATUS */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs text-white/60">
+            {loading ? 'Chargement…' : null}
+            {error ? <span className="text-rose-300">{error}</span> : null}
+          </div>
+
+          <button
             onClick={() => window.location.reload()}
+            className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs text-white/75 hover:bg-white/[0.06] transition"
           >
             Rafraîchir
           </button>
         </div>
 
-        {loading ? <div className="text-white/60">Chargement…</div> : null}
-        {error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-200 text-sm">
-            <div className="font-semibold">Erreur :</div>
-            <div>{error}</div>
-          </div>
-        ) : null}
+        {/* KPI GRID */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <KPI title="CA total" value={eur(invoiceTotal)} icon="€" onClick={() => navigate(routeForKpi('CA total')!)} />
+          <KPI title="Encaissé" value={eur(invoicePaid)} icon="✅" variant="success" onClick={() => navigate(routeForKpi('Encaissé')!)} />
+          <KPI title="En attente" value={eur(invoicePending)} icon="⏳" variant={invoicePending > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('En attente')!)} />
+          <KPI title="Projets" value={String(projectsTotal)} icon="📦" onClick={() => navigate(routeForKpi('Projets')!)} />
+          <KPI title="Projets à risque" value={String(atRiskProjects)} icon="⚠️" variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Projets à risque')!)} />
+          <KPI title="Clients" value={String(customersTotal)} icon="👥" onClick={() => navigate(routeForKpi('Clients')!)} />
+          <KPI title="Producteurs" value={String(producersTotal)} icon="🏭" onClick={() => navigate(routeForKpi('Producteurs')!)} />
+          <KPI title="Tickets" value={String(ticketsTotal)} icon="🎫" variant={openTickets > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('Tickets')!)} />
+          <KPI title="Factures en retard" value={String(overdueInvoices)} icon="🧾" variant={overdueInvoices > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Factures en retard')!)} />
+          <KPI title="Délai moyen" value={`${avgDeliveryDays}j`} subtitle="Livraison" icon="🕒" />
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <div className="text-xs text-white/60">Projets</div>
-            <div className="text-2xl font-black text-white">{projectsTotal}</div>
-            <button className="text-xs text-blue-300 mt-2" onClick={() => navigate('/common/projects')}>
-              Ouvrir →
-            </button>
-          </div>
+        {/* CHARTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Panel title="Chiffre d'affaires (6 mois)" subtitle="Basé sur les factures">
+            <BarsChart data={revenue6m} leftLabel="CA" rightLabel="Marge (à brancher)" />
+          </Panel>
 
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <div className="text-xs text-white/60">Clients</div>
-            <div className="text-2xl font-black text-white">{customersTotal}</div>
-            <button className="text-xs text-blue-300 mt-2" onClick={() => navigate('/admin/customers/list')}>
-              Ouvrir →
-            </button>
-          </div>
+          <Panel
+            title="Pipeline"
+            subtitle="Répartition des projets par statut"
+            right={
+              <button
+                onClick={() => navigate('/common/projects')}
+                className="text-xs text-sky-300/80 hover:text-sky-200 transition"
+              >
+                Ouvrir projets →
+              </button>
+            }
+          >
+            <PipelineBars
+              items={pipeline}
+              onClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)}
+            />
+          </Panel>
+        </div>
 
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <div className="text-xs text-white/60">Producteurs</div>
-            <div className="text-2xl font-black text-white">{producersTotal}</div>
-            <button className="text-xs text-blue-300 mt-2" onClick={() => navigate('/admin/producers/list')}>
-              Ouvrir →
-            </button>
-          </div>
+        {/* BOTTOM */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <div className="text-xs text-white/60">Tickets</div>
-            <div className="text-2xl font-black text-white">{ticketsTotal}</div>
-            <button className="text-xs text-blue-300 mt-2" onClick={() => navigate('/support')}>
-              Ouvrir →
-            </button>
-          </div>
+          <Panel title="Alertes" subtitle="Ce qui nécessite ton attention">
+            <div className="space-y-2 text-sm">
+              {overdueInvoices > 0 ? (
+                <div className="rounded-xl border border-rose-400/15 bg-rose-500/10 px-3 py-2 text-rose-200">
+                  {overdueInvoices} facture(s) en retard
+                  <div className="text-xs text-rose-200/70">Vérifie paymentState / date</div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/10 px-3 py-2 text-emerald-200">
+                  Aucune facture en retard
+                </div>
+              )}
 
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10 md:col-span-2">
-            <div className="text-xs text-white/60">CA total (factures)</div>
-            <div className="text-2xl font-black text-white">{eur(invoiceTotal)}</div>
-            <div className="text-xs text-white/50 mt-2">Encaissé : {eur(invoicePaid)}</div>
-            <div className="text-xs text-white/50">Retard : {overdueInvoices}</div>
-            <button className="text-xs text-blue-300 mt-2" onClick={() => navigate('/admin/invoices')}>
-              Voir factures →
-            </button>
-          </div>
+              {atRiskProjects > 0 ? (
+                <div className="rounded-xl border border-amber-400/15 bg-amber-500/10 px-3 py-2 text-amber-200">
+                  {atRiskProjects} projet(s) à risque
+                  <div className="text-xs text-amber-200/70">endDate dépassée et pas terminé</div>
+                </div>
+              ) : null}
 
-          <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10 md:col-span-2">
-            <div className="text-xs text-white/60">Debug : projets (3 premiers)</div>
-            <pre className="text-[11px] text-white/60 overflow-auto mt-2 max-h-40">
-              {JSON.stringify(projects.slice(0, 3), null, 2)}
-            </pre>
-          </div>
+              {openTickets > 0 ? (
+                <div className="rounded-xl border border-sky-400/15 bg-sky-500/10 px-3 py-2 text-sky-200">
+                  {openTickets} ticket(s) ouverts
+                  <div className="text-xs text-sky-200/70">Support à traiter</div>
+                </div>
+              ) : null}
+            </div>
+          </Panel>
+
+          <Panel title="Top producteurs" subtitle="Basé sur les projets (top 6)">
+            <TableMini
+              rows={topProducers.map((p) => ({
+                left: p.name,
+                sub: `${p.projects} projet(s)`,
+                right: p.revenue ? eur(p.revenue) : '—',
+              }))}
+              onRowClick={() => navigate('/admin/producers/list')}
+            />
+          </Panel>
+
+          <Panel title="Activité récente" subtitle="Projets & factures">
+            <TableMini
+              rows={activity.map((a) => ({
+                left: a.left,
+                sub: a.sub,
+                right: a.right,
+              }))}
+              onRowClick={() => {}}
+            />
+          </Panel>
+
         </div>
       </div>
     </Container>
