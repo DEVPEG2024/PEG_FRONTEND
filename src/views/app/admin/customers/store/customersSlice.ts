@@ -25,24 +25,16 @@ const initialState: CustomersState = {
   customer: null,
 }
 
-/**
- * GET list customers (Strapi)
- * - support pagination + searchTerm
- */
 export const getCustomers = createAsyncThunk(
   'customers/getCustomers',
   async (params: GetCustomersRequest) => {
     const res: any = await apiGetCustomers(params)
-    // Strapi v4 renvoie souvent: { data: [...], meta: { pagination: { total } } }
     const data = res?.data?.data ?? res?.data ?? []
     const total = res?.data?.meta?.pagination?.total ?? data?.length ?? 0
     return { data, total }
   }
 )
 
-/**
- * GET customer by id (edit)
- */
 export const getCustomerById = createAsyncThunk(
   'customers/getCustomerById',
   async (id: string) => {
@@ -52,15 +44,13 @@ export const getCustomerById = createAsyncThunk(
   }
 )
 
-/**
- * DELETE customer
- */
+// ✅ Alias pour compat avec ton code existant (EditCustomer.tsx)
+export const getCustomerForEditById = getCustomerById
+
 export const deleteCustomer = createAsyncThunk(
   'customers/deleteCustomer',
-  async (id: string, { dispatch }) => {
+  async (id: string) => {
     await apiDeleteCustomer(id)
-    // Optionnel: tu peux re-fetch la liste ici si tu veux, mais souvent c’est géré par le composant
-    // dispatch(getCustomers({ pagination: { page: 1, pageSize: 10 }, searchTerm: '' }))
     return id
   }
 )
@@ -79,7 +69,6 @@ const customersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // getCustomers
       .addCase(getCustomers.pending, (state) => {
         state.loading = true
       })
@@ -92,7 +81,6 @@ const customersSlice = createSlice({
         state.loading = false
       })
 
-      // getCustomerById
       .addCase(getCustomerById.pending, (state) => {
         state.loading = true
       })
@@ -104,9 +92,7 @@ const customersSlice = createSlice({
         state.loading = false
       })
 
-      // deleteCustomer
       .addCase(deleteCustomer.fulfilled, (state, action) => {
-        // On enlève localement (si la liste est chargée)
         state.customers = state.customers.filter(
           (c: any) => c?.documentId !== action.payload && c?.id !== action.payload
         )
@@ -115,7 +101,4 @@ const customersSlice = createSlice({
 })
 
 export const { setCustomer, clearCustomers } = customersSlice.actions
-
-export const useAppSelector = (state: any) => state
-
 export default customersSlice.reducer
