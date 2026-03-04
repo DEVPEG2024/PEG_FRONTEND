@@ -1,3 +1,4 @@
+// src/views/app/admin/customers/store/customersSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import {
@@ -30,17 +31,10 @@ export const getCustomers = createAsyncThunk(
   async (params: GetCustomersRequest) => {
     const res: any = await apiGetCustomers(params)
 
-    // ✅ supporte plusieurs formats de réponse (Strapi / custom)
-    const root = res?.data ?? res
-    const data =
-      root?.data?.data ?? // strapi classic
-      root?.data ?? // custom
-      root ?? []
-
-    const meta = root?.data?.meta ?? root?.meta
+    // Strapi: res.data = { data: [...], meta: {...} }
+    const data = res?.data?.data ?? []
     const total =
-      meta?.pagination?.total ??
-      root?.total ??
+      res?.data?.meta?.pagination?.total ??
       (Array.isArray(data) ? data.length : 0)
 
     return { data: Array.isArray(data) ? data : [], total }
@@ -51,8 +45,7 @@ export const getCustomerForEditById = createAsyncThunk(
   'customers/getCustomerForEditById',
   async (id: string) => {
     const res: any = await apiGetCustomerForEditById(id)
-    const root = res?.data ?? res
-    return root?.data?.data ?? root?.data ?? root ?? null
+    return res?.data?.data ?? null
   }
 )
 
@@ -67,17 +60,16 @@ export const deleteCustomer = createAsyncThunk(
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
   async ({ data, logoFile }: { data: any; logoFile?: File | null }) => {
-    const payload = { ...data }
+    const payload: any = { ...data }
 
     if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
-      const uploaded = uploadRes?.data?.[0] ?? uploadRes?.data?.data?.[0]
+      const uploaded = uploadRes?.data?.[0]
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
     const res: any = await apiCreateCustomer(payload)
-    const root = res?.data ?? res
-    return root?.data?.data ?? root?.data ?? root ?? null
+    return res?.data?.data ?? null
   }
 )
 
@@ -92,17 +84,16 @@ export const updateCustomer = createAsyncThunk(
     data: any
     logoFile?: File | null
   }) => {
-    const payload = { ...data }
+    const payload: any = { ...data }
 
     if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
-      const uploaded = uploadRes?.data?.[0] ?? uploadRes?.data?.data?.[0]
+      const uploaded = uploadRes?.data?.[0]
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
     const res: any = await apiUpdateCustomer(id, payload)
-    const root = res?.data ?? res
-    return root?.data?.data ?? root?.data ?? root ?? null
+    return res?.data?.data ?? null
   }
 )
 
@@ -131,7 +122,6 @@ const customersSlice = createSlice({
       .addCase(getCustomers.rejected, (state) => {
         state.loading = false
       })
-
       .addCase(getCustomerForEditById.pending, (state) => {
         state.loading = true
       })
@@ -142,10 +132,10 @@ const customersSlice = createSlice({
       .addCase(getCustomerForEditById.rejected, (state) => {
         state.loading = false
       })
-
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.customers = state.customers.filter(
-          (c: any) => c?.documentId !== action.payload && c?.id !== action.payload
+          (c: any) =>
+            c?.documentId !== action.payload && c?.id !== action.payload
         )
         state.total = Math.max(0, state.total - 1)
       })
