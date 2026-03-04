@@ -1,36 +1,51 @@
-import { User } from '@/@types/user';
-import { Container, DoubleSidedImage } from '@/components/shared';
-import { RootState } from '@/store';
-import { Suspense } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import Container from '@/components/shared/Container'
+
+const cardStyle = {
+  background: 'rgb(30,41,59)',
+  padding: 20,
+  borderRadius: 8
+}
 
 const DashboardAdmin = () => {
-  const { t } = useTranslation();
-  const { user }: { user: User } = useSelector(
-    (state: RootState) => state.auth.user
-  );
   return (
-    <Container className="h-full">
-      <div className="h-full flex flex-col items-center justify-center">
-        <Suspense fallback={<></>}>
-          <div className="text-center">
-            <DoubleSidedImage
-              className="mx-auto mb-8"
-              src="/img/others/welcome.png"
-              darkModeSrc="/img/others/welcome-dark.png"
-              alt="Welcome"
-            />
+    <Container>
+      <h2 style={{ marginBottom: 20 }}>Dashboard Super Admin</h2>
 
-            <h3 className="mb-2">
-              {t('hello')}, {user?.firstName} 👋
-            </h3>
-            <p className="text-base">{t('welcome_to_product_management')}</p>
-          </div>
-        </Suspense>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+
+        <div style={cardStyle}>
+          <h3>Clients</h3>
+          <p>Gestion des clients</p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3>Producteurs</h3>
+          <p>Gestion des producteurs</p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3>Commandes</h3>
+          <p>Suivi des commandes</p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3>Bannières</h3>
+          <p>Gestion des bannières</p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3>Facturation</h3>
+          <p>Suivi financier</p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3>Paramètres</h3>
+          <p>Configuration du SaaS</p>
+        </div>
+
       </div>
     </Container>
-  );
-};
+  )
+}
 
-export default DashboardAdmin;
+export default DashboardAdmin
