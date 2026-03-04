@@ -1,103 +1,67 @@
+// src/services/CustomerServices.ts
 import ApiService from './ApiService'
-import { ApiResponse } from '@/utils/serviceHelper'
-import { Customer } from '@/@types/customer'
 
-/**
- * Types attendus par le store (customersSlice.ts)
- */
 export type GetCustomersRequest = {
-  pagination: { page: number; pageSize: number }
+  pagination?: { page: number; pageSize: number }
   searchTerm?: string
 }
 
-export type GetCustomersResponse = ApiResponse<{
-  data: Customer[]
-  meta?: {
-    pagination?: {
-      page: number
-      pageSize: number
-      pageCount: number
-      total: number
-    }
-  }
-}>
+export type DeleteCustomerResponse = unknown
 
-export type GetCustomerForEditByIdResponse = ApiResponse<{
-  data: Customer
-}>
+// Strapi v4: /api/customers?pagination[page]=1&pagination[pageSize]=10&filters[name][$containsi]=abc
+export const apiGetCustomers = (params: GetCustomersRequest) => {
+  const page = params.pagination?.page ?? 1
+  const pageSize = params.pagination?.pageSize ?? 10
+  const searchTerm = (params.searchTerm ?? '').trim()
 
-export type DeleteCustomerResponse = ApiResponse<{
-  data: any
-}>
+  const query = new URLSearchParams()
+  query.set('pagination[page]', String(page))
+  query.set('pagination[pageSize]', String(pageSize))
 
-/**
- * ✅ LISTE CLIENTS (export manquant qui fait crasher le build)
- * NOTE: URL Strapi v4 classique: /customers
- * On ajoute une recherche simple si "searchTerm" est fourni.
- */
-export async function apiGetCustomers(data: GetCustomersRequest) {
-  const { pagination, searchTerm } = data
+  // tri optionnel (tu peux enlever si tu veux)
+  query.set('sort[0]', 'createdAt:desc')
 
-  // Strapi pagination
-  const params: any = {
-    'pagination[page]': pagination.page,
-    'pagination[pageSize]': pagination.pageSize,
-    // populate minimal (à ajuster si besoin)
-    populate: '*',
-    sort: 'createdAt:desc',
+  if (searchTerm) {
+    // recherche sur "name" (adapte si ton champ s'appelle autrement)
+    query.set('filters[name][$containsi]', searchTerm)
   }
 
-  // Recherche Strapi : filtre sur name (containsi)
-  if (searchTerm && searchTerm.trim().length > 0) {
-    params['filters[name][$containsi]'] = searchTerm.trim()
-  }
+  // populate customerCategory si tu en as besoin dans le tableau
+  query.set('populate[customerCategory]', 'true')
 
-  return ApiService.fetchData<GetCustomersResponse>({
-    url: '/customers',
+  return ApiService.fetchData({
+    url: `/api/customers?${query.toString()}`,
     method: 'get',
-    params,
   })
 }
 
-/**
- * ✅ GET 1 client pour édition
- */
-export async function apiGetCustomerForEditById(documentId: string) {
-  return ApiService.fetchData<GetCustomerForEditByIdResponse>({
-    url: `/customers/${documentId}`,
+export const apiGetCustomerForEditById = (id: string) => {
+  return ApiService.fetchData({
+    url: `/api/customers/${id}?populate=deep`,
     method: 'get',
-    params: {
-      populate: '*',
-    },
   })
 }
 
-/**
- * ✅ DELETE client
- */
-export async function apiDeleteCustomer(documentId: string) {
-  return ApiService.fetchData<DeleteCustomerResponse>({
-    url: `/customers/${documentId}`,
+export const apiDeleteCustomer = (id: string) => {
+  return ApiService.fetchData({
+    url: `/api/customers/${id}`,
     method: 'delete',
   })
 }
 
-/**
- * (Optionnel mais utile) CREATE / UPDATE
- * Si ton store les utilise plus tard, tu es tranquille.
- */
-export async function apiCreateCustomer(payload: any) {
-  return ApiService.fetchData<ApiResponse<{ data: Customer }>>({
-    url: '/customers',
+export const apiCreateCustomer = (data: any) => {
+  // Strapi attend souvent { data: {...} }
+  return ApiService.fetchData({
+    url: `/api/customers`,
     method: 'post',
-    data: { data: payload },
+    data: { data },
   })
 }
 
-export async function apiUpdateCustomer(documentId: string, payload: any) {
-  return ApiService.fetchData<ApiResponse<{ data: Customer }>>({
-    url: `/customers/${documentId}`,
+export const apiUpdateCustomer = (id: string, data: any) => {
+  return ApiService.fetchData({
+    url: `/api/customers/${id}`,
     method: 'put',
-    data: { data: payload },
+    data: { data },
   })
 }

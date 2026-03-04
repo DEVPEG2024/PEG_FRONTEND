@@ -1,102 +1,117 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { unwrapData } from '@/utils/serviceHelper';
-import { Customer } from '@/@types/customer';
+// src/views/app/admin/customers/store/customersSlice.ts
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import {
   apiDeleteCustomer,
   apiGetCustomerForEditById,
   apiGetCustomers,
   DeleteCustomerResponse,
   GetCustomersRequest,
-  GetCustomersResponse,
-} from '@/services/CustomerServices';
+} from '@/services/CustomerServices'
+import type { Customer } from '@/@types/customer'
 
-export const SLICE_NAME = 'customers';
-
-export type CustomersState = {
-  customers: Customer[];
-  total: number;
-  loading: boolean;
-  customer?: Customer;
-};
+type CustomersState = {
+  data: {
+    customers: Customer[]
+    total: number
+    loading: boolean
+  }
+  selectedCustomer?: Customer | null
+}
 
 const initialState: CustomersState = {
-  customers: [],
-  loading: false,
-  total: 0,
-  customer: undefined,
-};
+  data: {
+    customers: [],
+    total: 0,
+    loading: false,
+  },
+  selectedCustomer: null,
+}
+
+// Helpers pour parser Strapi proprement
+function extractList(res: any): { items: any[]; total: number } {
+  const root = res?.data ?? res
+  const items = root?.data ?? root ?? []
+  const total =
+    root?.meta?.pagination?.total ??
+    root?.meta?.total ??
+    (Array.isArray(items) ? items.length : 0)
+
+  return { items: Array.isArray(items) ? items : [], total: Number(total) }
+}
+
+function mapStrapiCustomer(item: any): Customer {
+  // Strapi item: { id, attributes: {...} }
+  if (item?.attributes) {
+    return {
+      documentId: String(item.id),
+      ...item.attributes,
+    } as any
+  }
+  // Si déjà plat
+  return item as Customer
+}
 
 export const getCustomers = createAsyncThunk(
-  SLICE_NAME + '/getCustomers',
-  async (data: GetCustomersRequest): Promise<GetCustomersResponse> => {
-    const {
-      customers_connection,
-    }: { customers_connection: GetCustomersResponse } = await unwrapData(
-      apiGetCustomers(data)
-    );
-    return customers_connection;
+  'customers/data/getCustomers',
+  async (params: GetCustomersRequest) => {
+    const res = await apiGetCustomers(params)
+    const { items, total } = extractList(res)
+    const customers = items.map(mapStrapiCustomer)
+    return { customers, total }
   }
-);
-
-export const getCustomerById = createAsyncThunk(
-  SLICE_NAME + '/getCustomerById',
-  async (documentId: string): Promise<{ customer: Customer }> => {
-    return await unwrapData(apiGetCustomerForEditById(documentId));
-  }
-);
+)
 
 export const deleteCustomer = createAsyncThunk(
-  SLICE_NAME + '/deleteCustomer',
-  async (documentId: string): Promise<DeleteCustomerResponse> => {
-    const { deleteCustomer }: { deleteCustomer: DeleteCustomerResponse } =
-      await unwrapData(apiDeleteCustomer(documentId));
-    return deleteCustomer;
+  'customers/data/deleteCustomer',
+  async (customerId: string) => {
+    const res = (await apiDeleteCustomer(customerId)) as DeleteCustomerResponse
+    return { customerId, res }
   }
-);
+)
+
+export const getCustomerForEditById = createAsyncThunk(
+  'customers/data/getCustomerForEditById',
+  async (customerId: string) => {
+    const res = await apiGetCustomerForEditById(customerId)
+    const root = res?.data ?? res
+    const item = root?.data ?? root
+    const customer = mapStrapiCustomer(item)
+    return customer
+  }
+)
 
 const customersSlice = createSlice({
-  name: `${SLICE_NAME}/state`,
+  name: 'customers',
   initialState,
   reducers: {
-    setCustomer: (state, action) => {
-      state.customer = action.payload;
+    clearSelectedCustomer: (state) => {
+      state.selectedCustomer = null
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getCustomers.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getCustomers.fulfilled, (state, action) => {
-      state.customers = action.payload.nodes;
-      state.total = action.payload.pageInfo.total;
-      state.loading = false;
-    });
-    // DELETE CUSTOMER
-    builder.addCase(deleteCustomer.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(deleteCustomer.fulfilled, (state, action) => {
-      state.loading = false;
-      state.customers = state.customers.filter(
-        (customer: Customer) =>
-          customer.documentId !== action.payload.documentId
-      );
-      state.total -= 1;
-    });
-
-    builder.addCase(getCustomerById.pending, (state) => {
-      state.loading = true;
-    });
-    builder.addCase(getCustomerById.fulfilled, (state, action) => {
-      state.loading = false;
-      state.customer = action.payload.customer;
-    });
-    builder.addCase(getCustomerById.rejected, (state) => {
-      state.loading = false;
-    });
+    builder
+      .addCase(getCustomers.pending, (state) => {
+        state.data.loading = true
+      })
+      .addCase(getCustomers.fulfilled, (state, action) => {
+        state.data.loading = false
+        state.data.customers = action.payload.customers
+        state.data.total = action.payload.total
+      })
+      .addCase(getCustomers.rejected, (state) => {
+        state.data.loading = false
+      })
+      .addCase(deleteCustomer.fulfilled, (state, action) => {
+        state.data.customers = state.data.customers.filter(
+          (c: any) => String(c.documentId) !== String(action.payload.customerId)
+        )
+        state.data.total = Math.max(0, state.data.total - 1)
+      })
+      .addCase(getCustomerForEditById.fulfilled, (state, action) => {
+        state.selectedCustomer = action.payload
+      })
   },
-});
+})
 
-export const { setCustomer } = customersSlice.actions;
-
-export default customersSlice.reducer;
+export const { clearSelectedCustomer } = customersSlice.actions
+export default customersSlice.reducer
