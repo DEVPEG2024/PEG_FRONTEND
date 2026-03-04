@@ -1,5 +1,6 @@
 import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 import { KPICard } from './components/KPICard'
 import { AlertsPanel } from './components/AlertsPanel'
@@ -13,7 +14,7 @@ function monthKey(d: Date) {
   return `${y}-${String(m).padStart(2, '0')}`
 }
 function monthLabel(key: string) {
-  const [y, mm] = key.split('-')
+  const [, mm] = key.split('-')
   const m = Number(mm) - 1
   const names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
   return `${names[m]}`
@@ -32,10 +33,11 @@ function eur(n: number) {
 }
 
 export default function DashboardAdmin() {
+  const navigate = useNavigate()
+
   const [month, setMonth] = useState('Mars 2026')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const [gql, setGql] = useState<any>(null)
 
   useEffect(() => {
@@ -64,8 +66,12 @@ export default function DashboardAdmin() {
   const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0
   const invoices = gql?.invoices_connection?.nodes ?? []
 
-  // CA / encaissé / en attente (robuste)
-  const invoiceTotal = useMemo(() => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0), [invoices])
+  // CA / encaissé / en attente
+  const invoiceTotal = useMemo(
+    () => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0),
+    [invoices]
+  )
+
   const invoicePaid = useMemo(() => {
     return invoices.reduce((a: number, x: any) => {
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
@@ -74,6 +80,7 @@ export default function DashboardAdmin() {
       return a + (paid ? (Number(x?.totalAmount) || 0) : 0)
     }, 0)
   }, [invoices])
+
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
 
   // Factures en retard (date passée + pas payée)
@@ -100,8 +107,7 @@ export default function DashboardAdmin() {
     }).length
   }, [projects])
 
-  // Devis en attente : si tu as une collection quotes plus tard on branchera.
-  // Pour l'instant on estime "devis" via projets avec state contenant 'quote' / 'devis'
+  // Devis en attente (estimé via state)
   const pendingQuotes = useMemo(() => {
     return projects.filter((p: any) => {
       const s = (p?.state ?? '').toString().toLowerCase()
@@ -109,7 +115,7 @@ export default function DashboardAdmin() {
     }).length
   }, [projects])
 
-  // Délai moyen (sur projets qui ont startDate & endDate)
+  // Délai moyen
   const avgDeliveryDays = useMemo(() => {
     const pairs = projects
       .map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) }))
@@ -119,11 +125,7 @@ export default function DashboardAdmin() {
     return Math.round(days / pairs.length)
   }, [projects])
 
-  // Marge: si tu n’as pas de coût dans GraphQL, on met "—" (on peut la calculer plus tard)
-  const marginHT = null
-  const marginPct = null
-
-  // Revenue 6 mois depuis invoices.date (si dates dispo)
+  // Revenue 6 mois depuis invoices.date
   const revenue6m = useMemo(() => {
     const now = new Date()
     const months: string[] = []
@@ -139,7 +141,7 @@ export default function DashboardAdmin() {
       if (!d) continue
       const k = monthKey(d)
       if (!by.has(k)) continue
-      by.set(k, { ca: (by.get(k)!.ca + (Number(inv?.totalAmount) || 0)), marge: by.get(k)!.marge })
+      by.set(k, { ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0), marge: by.get(k)!.marge })
     }
 
     return months.map((k) => ({ label: monthLabel(k), ca: by.get(k)!.ca, marge: by.get(k)!.marge }))
@@ -158,7 +160,7 @@ export default function DashboardAdmin() {
       .slice(0, 10)
   }, [projects])
 
-  // Ranking producteurs : nb projets + "revenue" = somme des price (si renseigné)
+  // Ranking producteurs
   const topProducers = useMemo(() => {
     const map = new Map<string, { projects: number; revenue: number }>()
     for (const p of projects) {
@@ -171,7 +173,7 @@ export default function DashboardAdmin() {
       .sort((a, b) => (b.projects - a.projects) || (b.revenue - a.revenue))
   }, [projects])
 
-  // Activité récente : on fabrique un feed depuis factures + projets (on n’a pas d’audit log dans ta query)
+  // Activité récente (factures + projets)
   const activity = useMemo(() => {
     const items: { ts: number; user: string; action: string; details: string }[] = []
 
@@ -200,7 +202,7 @@ export default function DashboardAdmin() {
     return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
   }, [invoices, projects])
 
-  // Alerts (vraies)
+  // Alerts
   const alerts = useMemo(() => {
     const a: { level: 'danger' | 'warning' | 'info'; title: string; detail?: string }[] = []
     if (overdueInvoices > 0) a.push({ level: 'danger', title: `${overdueInvoices} facture(s) en retard`, detail: 'Vérifie paymentState / date' })
@@ -223,6 +225,28 @@ export default function DashboardAdmin() {
     { title: 'Factures en retard', value: String(overdueInvoices), icon: '🧾', variant: overdueInvoices > 0 ? ('danger' as const) : ('default' as const) },
     { title: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: '🕒', subtitle: 'Livraison' },
   ] as const
+
+  // ✅ Routes EXACTES (selon ton routes.config.ts)
+  const routeForKpi = (title: string) => {
+    switch (title) {
+      case 'Projets':
+      case 'Projets à risque':
+        return '/common/projects'
+      case 'Clients':
+        return '/admin/customers/list'
+      case 'Producteurs':
+        return '/admin/producers/list'
+      case 'Tickets':
+        return '/support'
+      case 'Factures en retard':
+      case 'CA total (factures)':
+      case 'Encaissé':
+      case 'En attente':
+        return '/admin/invoices'
+      default:
+        return null
+    }
+  }
 
   return (
     <Container>
@@ -253,22 +277,35 @@ export default function DashboardAdmin() {
 
         {/* KPI Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {kpis.map((k) => (
-            <KPICard
-              key={k.title}
-              title={k.title}
-              value={k.value}
-              subtitle={(k as any).subtitle}
-              icon={(k as any).icon}
-              variant={(k as any).variant}
-            />
-          ))}
+          {kpis.map((k) => {
+            const to = routeForKpi(k.title)
+            return (
+              <KPICard
+                key={k.title}
+                title={k.title}
+                value={k.value}
+                subtitle={(k as any).subtitle}
+                icon={(k as any).icon}
+                variant={(k as any).variant}
+                onClick={to ? () => navigate(to) : undefined}
+              />
+            )
+          })}
         </div>
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <RevenueChart data={revenue6m} />
-          <PipelineFunnel items={pipeline} />
+          <PipelineFunnel
+            items={pipeline}
+            onItemClick={(label) => {
+              // option 1: aller projets (sans filtre)
+              // navigate('/common/projects')
+
+              // option 2: tenter filtre via query param (si ProjectsList gère ?state=)
+              navigate(`/common/projects?state=${encodeURIComponent(label)}`)
+            }}
+          />
         </div>
 
         {/* Bottom Row */}
@@ -292,9 +329,7 @@ export default function DashboardAdmin() {
                         <span className="text-white/60"> — {entry.action}</span>
                       </p>
                       <p className="text-white/60 truncate">{entry.details}</p>
-                      <p className="text-white/40 text-[10px]">
-                        {new Date(entry.ts).toLocaleString('fr-FR')}
-                      </p>
+                      <p className="text-white/40 text-[10px]">{new Date(entry.ts).toLocaleString('fr-FR')}</p>
                     </div>
                   </div>
                 ))

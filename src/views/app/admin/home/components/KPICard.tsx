@@ -1,57 +1,70 @@
 import React from 'react'
 
-type Variant = 'default' | 'warning' | 'danger' | 'success'
+type Variant = 'default' | 'success' | 'warning' | 'danger'
 
-export function KPICard({
-  title,
-  value,
-  subtitle,
-  trend,
-  icon,
-  variant = 'default',
-}: {
+type Props = {
   title: string
   value: string
   subtitle?: string
-  trend?: { value: number; positive: boolean }
   icon?: React.ReactNode
   variant?: Variant
-}) {
-  const border =
-    variant === 'danger'
-      ? 'border-red-500/30'
-      : variant === 'warning'
-      ? 'border-amber-500/30'
-      : variant === 'success'
-      ? 'border-green-500/30'
-      : 'border-white/10'
+  onClick?: () => void
+}
 
-  const badge =
-    trend == null ? null : (
-      <span
-        className={[
-          'text-[11px] px-2 py-0.5 rounded-full border',
-          trend.positive
-            ? 'text-green-300 border-green-500/30 bg-green-500/10'
-            : 'text-red-300 border-red-500/30 bg-red-500/10',
-        ].join(' ')}
-      >
-        {trend.positive ? '↑' : '↓'} {Math.abs(trend.value)}%
-      </span>
-    )
+const variantBorder = (variant?: Variant) => {
+  switch (variant) {
+    case 'success':
+      return 'border-green-500/30'
+    case 'warning':
+      return 'border-amber-500/30'
+    case 'danger':
+      return 'border-red-500/30'
+    default:
+      return 'border-white/10'
+  }
+}
 
+const variantRing = (variant?: Variant) => {
+  switch (variant) {
+    case 'success':
+      return 'ring-green-400/30'
+    case 'warning':
+      return 'ring-amber-400/30'
+    case 'danger':
+      return 'ring-red-400/30'
+    default:
+      return 'ring-white/10'
+  }
+}
+
+export const KPICard = ({ title, value, subtitle, icon, variant = 'default', onClick }: Props) => {
   return (
-    <div className={`relative rounded-2xl p-4 bg-white/[0.03] border ${border} overflow-hidden`}>
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!onClick) return
+        if (e.key === 'Enter' || e.key === ' ') onClick()
+      }}
+      className={[
+        'relative rounded-2xl p-4 bg-white/[0.03]',
+        'border',
+        variantBorder(variant),
+        onClick ? 'cursor-pointer hover:bg-white/[0.05] transition' : '',
+        onClick ? 'focus:outline-none focus:ring-2' : '',
+        onClick ? variantRing(variant) : '',
+      ].join(' ')}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-white/60">{title}</div>
-          <div className="mt-1 text-2xl font-black text-white">{value}</div>
-          {subtitle ? <div className="mt-1 text-xs text-white/60">{subtitle}</div> : null}
+          <div className="text-[11px] uppercase tracking-wide text-white/60">{title}</div>
+          <div className="mt-2 text-2xl font-extrabold text-white">{value}</div>
+          {subtitle ? <div className="mt-1 text-xs text-white/50">{subtitle}</div> : null}
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          {badge}
-          <div className={`h-9 w-9 rounded-xl border ${border} bg-white/5 flex items-center justify-center text-sm`}>
+        <div className="shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80">
             {icon ?? '•'}
           </div>
         </div>
