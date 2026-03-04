@@ -13,25 +13,35 @@ import { Customer } from '@/@types/customer'
 injectReducer('customers', reducer)
 
 const CustomersList = () => {
+
   const { t } = useTranslation()
   const navigate = useNavigate()
+
+  const dispatch = useAppDispatch()
+
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
-  const dispatch = useAppDispatch()
 
-  const { total, customers, loading } = useAppSelector(
-    (state) => state.customers.data
-  )
+  const customersState = useAppSelector((state:any) => state.customers)
+
+  const customers = customersState?.data?.customers || []
+  const total = customersState?.data?.total || 0
+  const loading = customersState?.data?.loading || false
 
   useEffect(() => {
+
     dispatch(
       getCustomers({
-        pagination: { page: currentPage, pageSize },
+        pagination: {
+          page: currentPage,
+          pageSize: pageSize,
+        },
         searchTerm,
       })
     )
-  }, [currentPage, pageSize, searchTerm])
+
+  }, [dispatch, currentPage, pageSize, searchTerm])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
@@ -46,7 +56,9 @@ const CustomersList = () => {
 
   const columns = useColumns(handleEditCustomer)
 
-  const onPaginationChange = (page: number) => setCurrentPage(page)
+  const onPaginationChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   const onSelectChange = (value = 10) => {
     setPageSize(Number(value))
@@ -55,6 +67,7 @@ const CustomersList = () => {
 
   return (
     <Container>
+
       <HeaderTitle
         title="cust.customers"
         buttonTitle="cust.add"
@@ -65,6 +78,7 @@ const CustomersList = () => {
       />
 
       <div className="mt-4">
+
         <div className="mb-4">
           <Input
             placeholder={t('cust.search')}
@@ -74,6 +88,7 @@ const CustomersList = () => {
         </div>
 
         <Loading loading={loading}>
+
           <DataTable
             columns={columns}
             data={customers}
@@ -85,8 +100,11 @@ const CustomersList = () => {
               pageSize,
             }}
           />
+
         </Loading>
+
       </div>
+
     </Container>
   )
 }
