@@ -1,14 +1,14 @@
-// src/views/app/admin/customers/store/customersSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
-
 import {
   apiGetCustomers,
   apiDeleteCustomer,
   apiGetCustomerForEditById,
+  apiCreateCustomer,
+  apiUpdateCustomer,
+  apiUploadFile,
   type GetCustomersRequest,
 } from '@/services/CustomerServices'
-
 import type { Customer } from '@/@types/customer'
 
 type CustomersState = {
@@ -30,28 +30,52 @@ export const getCustomers = createAsyncThunk(
   async (params: GetCustomersRequest) => {
     const res: any = await apiGetCustomers(params)
     const data = res?.data?.data ?? res?.data ?? []
-    const total = res?.data?.meta?.pagination?.total ?? data?.length ?? 0
-    return { data, total }
+    const total = res?.data?.meta?.pagination?.total ?? (Array.isArray(data) ? data.length : 0)
+    return { data: Array.isArray(data) ? data : [], total }
   }
 )
 
-export const getCustomerById = createAsyncThunk(
-  'customers/getCustomerById',
+export const getCustomerForEditById = createAsyncThunk(
+  'customers/getCustomerForEditById',
   async (id: string) => {
     const res: any = await apiGetCustomerForEditById(id)
-    const customer = res?.data?.data ?? res?.data ?? null
-    return customer
+    return res?.data?.data ?? res?.data ?? null
   }
 )
-
-// ✅ Alias pour compat avec ton code existant (EditCustomer.tsx)
-export const getCustomerForEditById = getCustomerById
 
 export const deleteCustomer = createAsyncThunk(
   'customers/deleteCustomer',
   async (id: string) => {
     await apiDeleteCustomer(id)
     return id
+  }
+)
+
+export const createCustomer = createAsyncThunk(
+  'customers/createCustomer',
+  async ({ data, logoFile }: { data: any; logoFile?: File | null }) => {
+    let payload = { ...data }
+    if (logoFile) {
+      const uploadRes: any = await apiUploadFile(logoFile)
+      const uploaded = uploadRes?.data?.[0]
+      if (uploaded?.id) payload.logo = uploaded.id
+    }
+    const res: any = await apiCreateCustomer(payload)
+    return res?.data?.data ?? null
+  }
+)
+
+export const updateCustomer = createAsyncThunk(
+  'customers/updateCustomer',
+  async ({ id, data, logoFile }: { id: string; data: any; logoFile?: File | null }) => {
+    let payload = { ...data }
+    if (logoFile) {
+      const uploadRes: any = await apiUploadFile(logoFile)
+      const uploaded = uploadRes?.data?.[0]
+      if (uploaded?.id) payload.logo = uploaded.id
+    }
+    const res: any = await apiUpdateCustomer(id, payload)
+    return res?.data?.data ?? null
   }
 )
 
@@ -69,33 +93,24 @@ const customersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getCustomers.pending, (state) => {
-        state.loading = true
-      })
+      .addCase(getCustomers.pending, (state) => { state.loading = true })
       .addCase(getCustomers.fulfilled, (state, action) => {
         state.loading = false
         state.customers = action.payload.data
         state.total = action.payload.total
       })
-      .addCase(getCustomers.rejected, (state) => {
-        state.loading = false
-      })
-
-      .addCase(getCustomerById.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(getCustomerById.fulfilled, (state, action) => {
+      .addCase(getCustomers.rejected, (state) => { state.loading = false })
+      .addCase(getCustomerForEditById.pending, (state) => { state.loading = true })
+      .addCase(getCustomerForEditById.fulfilled, (state, action) => {
         state.loading = false
         state.customer = action.payload
       })
-      .addCase(getCustomerById.rejected, (state) => {
-        state.loading = false
-      })
-
+      .addCase(getCustomerForEditById.rejected, (state) => { state.loading = false })
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.customers = state.customers.filter(
           (c: any) => c?.documentId !== action.payload && c?.id !== action.payload
         )
+        state.total = Math.max(0, state.total - 1)
       })
   },
 })
