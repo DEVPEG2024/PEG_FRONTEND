@@ -1,175 +1,214 @@
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import { FormContainer } from '@/components/ui/Form'
-import Button from '@/components/ui/Button'
-import StickyFooter from '@/components/shared/StickyFooter'
-import CustomerFields from './CustomerFields'
-import CompanyFields from './CompanyFields'
-import cloneDeep from 'lodash/cloneDeep'
-import { AiOutlineSave } from 'react-icons/ai'
-import * as Yup from 'yup'
+import AdaptableCard from '@/components/shared/AdaptableCard'
+import Input from '@/components/ui/Input'
+import { FormItem } from '@/components/ui/Form'
+import { Controller, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { t } from 'i18next'
-import { countries } from '@/constants/countries.constant'
-import { Options } from '../EditCustomer'
-import { Customer } from '@/@types/customer'
+import { Select, Switcher } from '@/components/ui'
+import { CustomerFormModel } from './CustomerForm'
+import { useMemo } from 'react'
 
-export type CustomerFormModel = Omit<
-  Customer,
-  'banner' | 'customerCategory' | 'orderItems' | 'companyInformations'
-> & {
-  banner: string | null
-  customerCategory: string | null
-
-  // champs existants
-  email: string
-  phoneNumber: string
-  vatNumber: string
-  siretNumber: string
-  address: string
-  zipCode: string
-  city: string
-  country: string
-  website: string
-
-  // ✅ NOUVEAU : upload logo
-  logoFile?: File | null
+type country = {
+  label: string
+  dialCode: string
+  value: string
 }
 
-type CustomerFormProps = {
-  initialData?: CustomerFormModel
-  customerCategories: Options[]
-  onDiscard?: () => void
-
-  // ✅ on submit = FormData (pour envoyer le fichier)
-  onFormSubmit: (formData: FormData) => void
+type CustomerFieldsProps = {
+  countries: country[]
+  errors: FieldErrors<CustomerFormModel>
+  control: any
+  watch: UseFormWatch<CustomerFormModel>
+  setValue: UseFormSetValue<CustomerFormModel>
 }
 
-const validationSchema = Yup.object().shape({
-  website: Yup.string(),
-  siretNumber: Yup.string().required(t('cust.error.siretNumber')),
-  vatNumber: Yup.string().required(t('cust.error.vatNumber')),
-  customerCategory: Yup.string().required(t('cust.error.customerCategory')),
-  name: Yup.string().required(t('cust.error.name')),
-  address: Yup.string().required(t('cust.error.address')),
-  zipCode: Yup.string().required(t('cust.error.zipCode')),
-  city: Yup.string().required(t('cust.error.city')),
-  country: Yup.string().required(t('cust.error.country')),
-  email: Yup.string()
-    .email(t('cust.error.invalidEmail'))
-    .required(t('cust.error.email')),
-  phoneNumber: Yup.string()
-    .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
-    .required(t('cust.error.phoneNumber')),
+const CustomerFields = (props: CustomerFieldsProps) => {
+  const { countries, errors, control, watch, setValue } = props
+  const values = watch()
 
-  // ✅ logo facultatif
-  logoFile: Yup.mixed<File>().nullable().notRequired(),
-})
+  const previewUrl = useMemo(() => {
+    if (!values.logoFile) return null
+    return URL.createObjectURL(values.logoFile)
+  }, [values.logoFile])
 
-const CustomerForm = (props: CustomerFormProps) => {
-  const { initialData, onFormSubmit, onDiscard, customerCategories } = props
-
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    watch,
-    setValue,
-  } = useForm<CustomerFormModel>({
-    resolver: yupResolver(validationSchema) as any,
-    defaultValues: {
-      ...(initialData || ({} as CustomerFormModel)),
-      logoFile: initialData?.logoFile ?? null,
-    },
-  })
-
-  const onSubmit = async (values: CustomerFormModel) => {
-    const v = cloneDeep(values)
-
-    // ✅ FormData pour multipart
-    const fd = new FormData()
-
-    // Champs texte (sécurisé)
-    const safeAppend = (key: string, value: any) => {
-      if (value === undefined || value === null) return
-      fd.append(key, String(value))
-    }
-
-    safeAppend('name', v.name)
-    safeAppend('deferredPayment', v.deferredPayment)
-    safeAppend('address', v.address)
-    safeAppend('zipCode', v.zipCode)
-    safeAppend('city', v.city)
-    safeAppend('country', v.country)
-    safeAppend('phoneNumber', v.phoneNumber)
-    safeAppend('email', v.email)
-    safeAppend('website', v.website)
-    safeAppend('siretNumber', v.siretNumber)
-    safeAppend('vatNumber', v.vatNumber)
-
-    // customerCategory peut être un id/string selon ton API
-    safeAppend('customerCategory', v.customerCategory)
-
-    // ✅ fichier logo
-    if (v.logoFile instanceof File) {
-      fd.append('logo', v.logoFile)
-    }
-
-    // Simule une latence (comme ton code)
-    await new Promise((resolve) => setTimeout(resolve, 400))
-
-    onFormSubmit(fd)
+  const formatPhoneNumber = (value: string): string => {
+    const digitsOnly = value.replace(/\D/g, '')
+    return digitsOnly
+      .slice(0, 10)
+      .replace(/(\d{2})(?=\d)/g, '$1 ')
+      .trim()
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <FormContainer>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-2">
-            <CustomerFields
-              errors={errors}
-              control={control}
-              countries={countries}
-              watch={watch}
-              setValue={setValue}
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <CompanyFields
-              control={control}
-              errors={errors as any}
-              customerCategories={customerCategories}
-              watch={watch}
-            />
-          </div>
-        </div>
+    <AdaptableCard bordered={false} className="mb-4">
+      <h5>{t('cust.customer')}</h5>
+      <p className="mb-6">{t('cust.customer_description')}</p>
 
-        <StickyFooter
-          className="-mx-8 px-8 flex items-center justify-end py-4"
-          stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+      {/* ✅ LOGO */}
+      <FormItem label="Logo du client">
+        <Controller
+          name="logoFile"
+          control={control}
+          render={() => (
+            <div className="flex items-center gap-4">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null
+                  setValue('logoFile', file as any, { shouldDirty: true })
+                }}
+              />
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="logo preview"
+                  className="h-12 w-12 rounded object-cover"
+                />
+              )}
+            </div>
+          )}
+        />
+      </FormItem>
+
+      <div className="flex gap-4">
+        <FormItem
+          label="Nom du client"
+          className="w-2/3"
+          invalid={!!errors.name}
+          errorMessage={errors.name?.message as any}
         >
-          <div className="md:flex items-end">
-            <Button
-              size="sm"
-              className="ltr:mr-3 rtl:ml-3"
-              type="button"
-              onClick={() => onDiscard?.()}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              size="sm"
-              variant="solid"
-              loading={isSubmitting}
-              icon={<AiOutlineSave />}
-              type="submit"
-            >
-              {t('save')}
-            </Button>
-          </div>
-        </StickyFooter>
-      </FormContainer>
-    </form>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} type="text" autoComplete="off" placeholder="Nom du client" />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Paiment différé"
+          invalid={!!errors.deferredPayment}
+          errorMessage={errors.deferredPayment?.message as any}
+        >
+          <Controller
+            name="deferredPayment"
+            control={control}
+            render={({ field }) => (
+              <Switcher checked={field.value} onChange={() => field.onChange(!field.value)} />
+            )}
+          />
+        </FormItem>
+      </div>
+
+      <FormItem
+        label={t('address')}
+        invalid={!!errors.address}
+        errorMessage={errors.address?.message as any}
+      >
+        <Controller
+          name="address"
+          control={control}
+          render={({ field }) => (
+            <Input {...field} type="text" autoComplete="off" placeholder={t('address')} />
+          )}
+        />
+      </FormItem>
+
+      <div className="flex gap-4">
+        <FormItem
+          label={t('zipCode')}
+          className="w-1/3"
+          invalid={!!errors.zipCode}
+          errorMessage={errors.zipCode?.message as any}
+        >
+          <Controller
+            name="zipCode"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} type="text" autoComplete="off" placeholder={t('zipCode')} />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label={t('city')}
+          className="w-1/3"
+          invalid={!!errors.city}
+          errorMessage={errors.city?.message as any}
+        >
+          <Controller
+            name="city"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} type="text" autoComplete="off" placeholder={t('city')} />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label={t('country')}
+          className="w-1/3"
+          invalid={!!errors.country}
+          errorMessage={errors.country?.message as any}
+        >
+          <Controller
+            name="country"
+            control={control}
+            render={({ field }) => (
+              <Select
+                field={field}
+                options={countries}
+                placeholder="Choisissez le pays"
+                value={countries.filter((c) => c.value === field.value)}
+                onChange={(option) => field.onChange(option?.value)}
+              />
+            )}
+          />
+        </FormItem>
+      </div>
+
+      <div className="flex gap-4">
+        <FormItem
+          label={t('phone')}
+          className="w-1/2"
+          invalid={!!errors.phoneNumber}
+          errorMessage={errors.phoneNumber?.message as any}
+        >
+          <Controller
+            name="phoneNumber"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('phone')}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  field.onChange(formatPhoneNumber(e.target.value))
+                }}
+              />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label={t('email')}
+          className="w-1/2"
+          invalid={!!errors.email}
+          errorMessage={errors.email?.message as any}
+        >
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} type="text" autoComplete="off" placeholder={t('email')} />
+            )}
+          />
+        </FormItem>
+      </div>
+    </AdaptableCard>
   )
 }
 
-export default CustomerForm
+export default CustomerFields

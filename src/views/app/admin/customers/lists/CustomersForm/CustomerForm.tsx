@@ -19,6 +19,10 @@ export type CustomerFormModel = Omit<
 > & {
   banner: string | null
   customerCategory: string | null
+
+  // ✅ logo upload
+  logoFile?: File | null
+
   email: string
   phoneNumber: string
   vatNumber: string
@@ -28,16 +32,15 @@ export type CustomerFormModel = Omit<
   city: string
   country: string
   website: string
-
-  // ✅ LOGO (simple) : on stocke une URL ou un base64
-  logo?: string | null
 }
 
 type CustomerFormProps = {
   initialData?: CustomerFormModel
   customerCategories: Options[]
   onDiscard?: () => void
-  onFormSubmit: (formData: CustomerFormModel) => void
+
+  // ✅ on renvoie data + logoFile séparément
+  onFormSubmit: (payload: { data: CustomerFormModel; logoFile?: File | null }) => void
 }
 
 const validationSchema = Yup.object().shape({
@@ -54,9 +57,6 @@ const validationSchema = Yup.object().shape({
   phoneNumber: Yup.string()
     .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
     .required(t('cust.error.phoneNumber')),
-
-  // logo optionnel
-  logo: Yup.string().nullable(),
 })
 
 const CustomerForm = (props: CustomerFormProps) => {
@@ -70,15 +70,17 @@ const CustomerForm = (props: CustomerFormProps) => {
     setValue,
   } = useForm<CustomerFormModel>({
     resolver: yupResolver(validationSchema) as any,
-    defaultValues: {
-      ...initialData,
-      logo: initialData?.logo ?? null,
-    },
+    defaultValues: initialData,
   })
 
   const onSubmit = async (values: CustomerFormModel) => {
     const formData = cloneDeep(values)
-    onFormSubmit(formData)
+
+    const logoFile = formData.logoFile ?? null
+    delete (formData as any).logoFile
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    onFormSubmit({ data: formData, logoFile })
   }
 
   return (
@@ -94,14 +96,12 @@ const CustomerForm = (props: CustomerFormProps) => {
               setValue={setValue}
             />
           </div>
-
           <div className="lg:col-span-2">
             <CompanyFields
               control={control}
               errors={errors as any}
               customerCategories={customerCategories}
               watch={watch}
-              setValue={setValue}
             />
           </div>
         </div>
@@ -111,10 +111,21 @@ const CustomerForm = (props: CustomerFormProps) => {
           stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
         >
           <div className="md:flex items-end">
-            <Button size="sm" className="ltr:mr-3 rtl:ml-3" type="button" onClick={() => onDiscard?.()}>
+            <Button
+              size="sm"
+              className="ltr:mr-3 rtl:ml-3"
+              type="button"
+              onClick={() => onDiscard?.()}
+            >
               {t('cancel')}
             </Button>
-            <Button size="sm" variant="solid" loading={isSubmitting} icon={<AiOutlineSave />} type="submit">
+            <Button
+              size="sm"
+              variant="solid"
+              loading={isSubmitting}
+              icon={<AiOutlineSave />}
+              type="submit"
+            >
               {t('save')}
             </Button>
           </div>

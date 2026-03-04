@@ -13,34 +13,27 @@ import { Customer } from '@/@types/customer'
 injectReducer('customers', reducer)
 
 const CustomersList = () => {
-
   const { t } = useTranslation()
   const navigate = useNavigate()
-
   const dispatch = useAppDispatch()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const customersState = useAppSelector((state:any) => state.customers)
+  const customersState = useAppSelector((state: any) => state.customers?.data)
 
-  const customers = customersState?.data?.customers || []
-  const total = customersState?.data?.total || 0
-  const loading = customersState?.data?.loading || false
+  const customers = customersState?.customers ?? []
+  const total = customersState?.total ?? 0
+  const loading = customersState?.loading ?? false
 
   useEffect(() => {
-
     dispatch(
       getCustomers({
-        pagination: {
-          page: currentPage,
-          pageSize: pageSize,
-        },
+        pagination: { page: currentPage, pageSize },
         searchTerm,
       })
     )
-
   }, [dispatch, currentPage, pageSize, searchTerm])
 
   const handleSearch = (value: string) => {
@@ -49,25 +42,15 @@ const CustomersList = () => {
   }
 
   const handleEditCustomer = (customer: Customer) => {
-    navigate(`/admin/customers/edit/${customer.documentId}`, {
+    navigate(`/admin/customers/edit/${(customer as any).documentId || (customer as any).id}`, {
       state: { customerData: customer },
     })
   }
 
   const columns = useColumns(handleEditCustomer)
 
-  const onPaginationChange = (page: number) => {
-    setCurrentPage(page)
-  }
-
-  const onSelectChange = (value = 10) => {
-    setPageSize(Number(value))
-    setCurrentPage(1)
-  }
-
   return (
     <Container>
-
       <HeaderTitle
         title="cust.customers"
         buttonTitle="cust.add"
@@ -78,7 +61,6 @@ const CustomersList = () => {
       />
 
       <div className="mt-4">
-
         <div className="mb-4">
           <Input
             placeholder={t('cust.search')}
@@ -88,23 +70,22 @@ const CustomersList = () => {
         </div>
 
         <Loading loading={loading}>
-
           <DataTable
             columns={columns}
             data={customers}
-            onPaginationChange={onPaginationChange}
-            onSelectChange={onSelectChange}
+            onPaginationChange={(page: number) => setCurrentPage(page)}
+            onSelectChange={(value = 10) => {
+              setPageSize(Number(value))
+              setCurrentPage(1)
+            }}
             pagingData={{
               total,
               pageIndex: currentPage,
               pageSize,
             }}
           />
-
         </Loading>
-
       </div>
-
     </Container>
   )
 }
