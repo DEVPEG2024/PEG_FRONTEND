@@ -1,67 +1,121 @@
-// src/services/CustomerServices.ts
-import ApiService from './ApiService'
+// src/views/app/admin/customers/store/customersSlice.ts
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import type { PayloadAction } from '@reduxjs/toolkit'
 
-export type GetCustomersRequest = {
-  pagination?: { page: number; pageSize: number }
-  searchTerm?: string
+import {
+  apiGetCustomers,
+  apiDeleteCustomer,
+  apiGetCustomerForEditById,
+  type GetCustomersRequest,
+} from '@/services/CustomerServices'
+
+import type { Customer } from '@/@types/customer'
+
+type CustomersState = {
+  loading: boolean
+  customers: Customer[]
+  total: number
+  customer: Customer | null
 }
 
-export type DeleteCustomerResponse = unknown
+const initialState: CustomersState = {
+  loading: false,
+  customers: [],
+  total: 0,
+  customer: null,
+}
 
-// Strapi v4: /api/customers?pagination[page]=1&pagination[pageSize]=10&filters[name][$containsi]=abc
-export const apiGetCustomers = (params: GetCustomersRequest) => {
-  const page = params.pagination?.page ?? 1
-  const pageSize = params.pagination?.pageSize ?? 10
-  const searchTerm = (params.searchTerm ?? '').trim()
-
-  const query = new URLSearchParams()
-  query.set('pagination[page]', String(page))
-  query.set('pagination[pageSize]', String(pageSize))
-
-  // tri optionnel (tu peux enlever si tu veux)
-  query.set('sort[0]', 'createdAt:desc')
-
-  if (searchTerm) {
-    // recherche sur "name" (adapte si ton champ s'appelle autrement)
-    query.set('filters[name][$containsi]', searchTerm)
+/**
+ * GET list customers (Strapi)
+ * - support pagination + searchTerm
+ */
+export const getCustomers = createAsyncThunk(
+  'customers/getCustomers',
+  async (params: GetCustomersRequest) => {
+    const res: any = await apiGetCustomers(params)
+    // Strapi v4 renvoie souvent: { data: [...], meta: { pagination: { total } } }
+    const data = res?.data?.data ?? res?.data ?? []
+    const total = res?.data?.meta?.pagination?.total ?? data?.length ?? 0
+    return { data, total }
   }
+)
 
-  // populate customerCategory si tu en as besoin dans le tableau
-  query.set('populate[customerCategory]', 'true')
+/**
+ * GET customer by id (edit)
+ */
+export const getCustomerById = createAsyncThunk(
+  'customers/getCustomerById',
+  async (id: string) => {
+    const res: any = await apiGetCustomerForEditById(id)
+    const customer = res?.data?.data ?? res?.data ?? null
+    return customer
+  }
+)
 
-  return ApiService.fetchData({
-    url: `/api/customers?${query.toString()}`,
-    method: 'get',
-  })
-}
+/**
+ * DELETE customer
+ */
+export const deleteCustomer = createAsyncThunk(
+  'customers/deleteCustomer',
+  async (id: string, { dispatch }) => {
+    await apiDeleteCustomer(id)
+    // Optionnel: tu peux re-fetch la liste ici si tu veux, mais souvent c’est géré par le composant
+    // dispatch(getCustomers({ pagination: { page: 1, pageSize: 10 }, searchTerm: '' }))
+    return id
+  }
+)
 
-export const apiGetCustomerForEditById = (id: string) => {
-  return ApiService.fetchData({
-    url: `/api/customers/${id}?populate=deep`,
-    method: 'get',
-  })
-}
+const customersSlice = createSlice({
+  name: 'customers',
+  initialState,
+  reducers: {
+    setCustomer: (state, action: PayloadAction<Customer | null>) => {
+      state.customer = action.payload
+    },
+    clearCustomers: (state) => {
+      state.customers = []
+      state.total = 0
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // getCustomers
+      .addCase(getCustomers.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(getCustomers.fulfilled, (state, action) => {
+        state.loading = false
+        state.customers = action.payload.data
+        state.total = action.payload.total
+      })
+      .addCase(getCustomers.rejected, (state) => {
+        state.loading = false
+      })
 
-export const apiDeleteCustomer = (id: string) => {
-  return ApiService.fetchData({
-    url: `/api/customers/${id}`,
-    method: 'delete',
-  })
-}
+      // getCustomerById
+      .addCase(getCustomerById.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(getCustomerById.fulfilled, (state, action) => {
+        state.loading = false
+        state.customer = action.payload
+      })
+      .addCase(getCustomerById.rejected, (state) => {
+        state.loading = false
+      })
 
-export const apiCreateCustomer = (data: any) => {
-  // Strapi attend souvent { data: {...} }
-  return ApiService.fetchData({
-    url: `/api/customers`,
-    method: 'post',
-    data: { data },
-  })
-}
+      // deleteCustomer
+      .addCase(deleteCustomer.fulfilled, (state, action) => {
+        // On enlève localement (si la liste est chargée)
+        state.customers = state.customers.filter(
+          (c: any) => c?.documentId !== action.payload && c?.id !== action.payload
+        )
+      })
+  },
+})
 
-export const apiUpdateCustomer = (id: string, data: any) => {
-  return ApiService.fetchData({
-    url: `/api/customers/${id}`,
-    method: 'put',
-    data: { data },
-  })
-}
+export const { setCustomer, clearCustomers } = customersSlice.actions
+
+export const useAppSelector = (state: any) => state
+
+export default customersSlice.reducer
