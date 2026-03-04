@@ -1,12 +1,11 @@
-// src/views/app/admin/customers/store/customersSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import {
   apiGetCustomers,
-  apiDeleteCustomer,
-  apiGetCustomerForEditById,
   apiCreateCustomer,
-  apiUpdateCustomer,
+  apiUpdateCustomerByDocumentId,
+  apiDeleteCustomerByDocumentId,
+  apiGetCustomerForEditByDocumentId,
   apiUploadFile,
   type GetCustomersRequest,
 } from '@/services/CustomerServices'
@@ -31,11 +30,9 @@ export const getCustomers = createAsyncThunk(
   async (params: GetCustomersRequest) => {
     const res: any = await apiGetCustomers(params)
 
-    // Strapi: res.data = { data: [...], meta: {...} }
+    // Strapi v4: res.data.data (array) + res.data.meta.pagination.total
     const data = res?.data?.data ?? []
-    const total =
-      res?.data?.meta?.pagination?.total ??
-      (Array.isArray(data) ? data.length : 0)
+    const total = res?.data?.meta?.pagination?.total ?? (Array.isArray(data) ? data.length : 0)
 
     return { data: Array.isArray(data) ? data : [], total }
   }
@@ -43,28 +40,31 @@ export const getCustomers = createAsyncThunk(
 
 export const getCustomerForEditById = createAsyncThunk(
   'customers/getCustomerForEditById',
-  async (id: string) => {
-    const res: any = await apiGetCustomerForEditById(id)
-    return res?.data?.data ?? null
+  async (documentId: string) => {
+    const res: any = await apiGetCustomerForEditByDocumentId(documentId)
+    const arr = res?.data?.data ?? []
+    const first = Array.isArray(arr) ? arr[0] : null
+    return first ?? null
   }
 )
 
 export const deleteCustomer = createAsyncThunk(
   'customers/deleteCustomer',
-  async (id: string) => {
-    await apiDeleteCustomer(id)
-    return id
+  async (documentId: string) => {
+    await apiDeleteCustomerByDocumentId(documentId)
+    return documentId
   }
 )
 
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
   async ({ data, logoFile }: { data: any; logoFile?: File | null }) => {
-    const payload: any = { ...data }
+    let payload = { ...data }
 
     if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
       const uploaded = uploadRes?.data?.[0]
+      // Strapi upload renvoie souvent [{ id, ... }]
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
@@ -75,16 +75,8 @@ export const createCustomer = createAsyncThunk(
 
 export const updateCustomer = createAsyncThunk(
   'customers/updateCustomer',
-  async ({
-    id,
-    data,
-    logoFile,
-  }: {
-    id: string
-    data: any
-    logoFile?: File | null
-  }) => {
-    const payload: any = { ...data }
+  async ({ id, data, logoFile }: { id: string; data: any; logoFile?: File | null }) => {
+    let payload = { ...data }
 
     if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
@@ -92,7 +84,8 @@ export const updateCustomer = createAsyncThunk(
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
-    const res: any = await apiUpdateCustomer(id, payload)
+    // id ici = documentId dans ton routing (/edit/:id)
+    const res: any = await apiUpdateCustomerByDocumentId(id, payload)
     return res?.data?.data ?? null
   }
 )
@@ -134,10 +127,23 @@ const customersSlice = createSlice({
       })
       .addCase(deleteCustomer.fulfilled, (state, action) => {
         state.customers = state.customers.filter(
-          (c: any) =>
-            c?.documentId !== action.payload && c?.id !== action.payload
+          (c: any) => c?.documentId !== action.payload
         )
         state.total = Math.max(0, state.total - 1)
+      })
+      .addCase(createCustomer.fulfilled, (state, action) => {
+        if (action.payload) {
+          state.customers = [action.payload as any, ...state.customers]
+          state.total += 1
+        }
+      })
+      .addCase(updateCustomer.fulfilled, (state, action) => {
+        const updated: any = action.payload
+        if (!updated?.documentId) return
+        state.customers = state.customers.map((c: any) =>
+          c?.documentId === updated.documentId ? updated : c
+        )
+        state.customer = updated
       })
   },
 })
