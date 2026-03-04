@@ -1,5 +1,16 @@
 import Container from '@/components/shared/Container'
-import { useMemo, useState } from 'react'
+import ApiService from '@/services/ApiService'
+import { useEffect, useMemo, useState } from 'react'
+
+/**
+ * ✅ À ADAPTER (1 seule ligne)
+ * Mets ici l'endpoint Strapi qui renvoie les stats dashboard super admin.
+ * Exemples possibles:
+ * - '/api/dashboard/super-admin'
+ * - '/api/dashboard-super-admin'
+ * - '/api/super-admin/dashboard'
+ */
+const DASHBOARD_ENDPOINT = '/api/dashboard/super-admin'
 
 type KpiTone = 'neutral' | 'good' | 'warn' | 'bad'
 
@@ -13,8 +24,11 @@ type Kpi = {
 }
 
 type SeriesPoint = { label: string; ca: number; marge: number }
-
-type PipelineItem = { label: string; value: number; color: 'blue' | 'cyan' | 'orange' | 'green' | 'purple' }
+type PipelineItem = {
+  label: string
+  value: number
+  color: 'blue' | 'cyan' | 'orange' | 'green' | 'purple'
+}
 
 const toneToBorder = (tone?: KpiTone) => {
   if (tone === 'good') return 'rgba(34,197,94,0.6)'
@@ -55,7 +69,6 @@ const KpiCard = ({ kpi }: { kpi: Kpi }) => (
       overflow: 'hidden',
     }}
   >
-    {/* accent left line */}
     <div
       style={{
         position: 'absolute',
@@ -68,10 +81,18 @@ const KpiCard = ({ kpi }: { kpi: Kpi }) => (
     />
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
       <div>
-        <div style={{ fontSize: 12, letterSpacing: 0.6, opacity: 0.75, textTransform: 'uppercase' }}>{kpi.label}</div>
+        <div style={{ fontSize: 12, letterSpacing: 0.6, opacity: 0.75, textTransform: 'uppercase' }}>
+          {kpi.label}
+        </div>
         <div style={{ fontSize: 26, fontWeight: 900, marginTop: 6 }}>{kpi.value}</div>
         {kpi.hint ? (
-          <div style={{ marginTop: 6, fontSize: 12, color: kpi.tone === 'good' ? 'rgba(34,197,94,0.95)' : 'rgba(255,255,255,0.65)' }}>
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: kpi.tone === 'good' ? 'rgba(34,197,94,0.95)' : 'rgba(255,255,255,0.65)',
+            }}
+          >
             {kpi.hint}
           </div>
         ) : null}
@@ -107,7 +128,6 @@ function SvgGroupedBars({
   subtitle?: string
   data: SeriesPoint[]
 }) {
-  // chart size (responsive via viewBox)
   const W = 780
   const H = 260
   const padL = 42
@@ -123,7 +143,7 @@ function SvgGroupedBars({
 
   const plotW = W - padL - padR
   const plotH = H - padT - padB
-  const groupW = plotW / data.length
+  const groupW = data.length ? plotW / data.length : plotW
   const barW = Math.min(28, Math.max(14, groupW * 0.22))
   const gap = Math.min(10, Math.max(6, groupW * 0.08))
 
@@ -151,7 +171,6 @@ function SvgGroupedBars({
 
       <div style={{ marginTop: 10 }}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="260" role="img" aria-label={title}>
-          {/* grid */}
           {Array.from({ length: 5 }).map((_, i) => {
             const yy = padT + (plotH * i) / 4
             return (
@@ -166,7 +185,6 @@ function SvgGroupedBars({
             )
           })}
 
-          {/* bars */}
           {data.map((p, i) => {
             const cx = padL + i * groupW + groupW / 2
             const x1 = cx - barW - gap / 2
@@ -176,30 +194,10 @@ function SvgGroupedBars({
             const mgY = y(p.marge)
 
             return (
-              <g key={p.label}>
-                <rect
-                  x={x1}
-                  y={caY}
-                  width={barW}
-                  height={padT + plotH - caY}
-                  rx={6}
-                  fill="rgba(59,130,246,0.9)"
-                />
-                <rect
-                  x={x2}
-                  y={mgY}
-                  width={barW}
-                  height={padT + plotH - mgY}
-                  rx={6}
-                  fill="rgba(34,197,94,0.9)"
-                />
-                <text
-                  x={cx}
-                  y={H - 12}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fill="rgba(255,255,255,0.6)"
-                >
+              <g key={`${p.label}-${i}`}>
+                <rect x={x1} y={caY} width={barW} height={padT + plotH - caY} rx={6} fill="rgba(59,130,246,0.9)" />
+                <rect x={x2} y={mgY} width={barW} height={padT + plotH - mgY} rx={6} fill="rgba(34,197,94,0.9)" />
+                <text x={cx} y={H - 12} textAnchor="middle" fontSize="12" fill="rgba(255,255,255,0.6)">
                   {p.label}
                 </text>
               </g>
@@ -257,37 +255,94 @@ function SvgPipeline({ title, items }: { title: string; items: PipelineItem[] })
 }
 
 const DashboardAdmin = () => {
-  const [month, setMonth] = useState('Février 2026')
+  const [month, setMonth] = useState('Mars 2026')
 
-  // ⚠️ Données fake (tu remplaceras par API plus tard)
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // 🔥 Charge les stats depuis Strapi à chaque changement de mois
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // ⚠️ Strapi peut attendre un query param (ex: ?month=Mars%202026)
+        const res = await ApiService.fetchData({
+          url: DASHBOARD_ENDPOINT,
+          method: 'get',
+          params: { month },
+        })
+
+        // selon ton ApiService, les données peuvent être:
+        // - res.data
+        // - res.data.data (Strapi)
+        // - res directement
+        const payload = (res as any)?.data?.data ?? (res as any)?.data ?? res
+        setStats(payload)
+      } catch (e: any) {
+        setError(e?.message ?? 'Erreur dashboard')
+        setStats(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    run()
+  }, [month])
+
+  // Conversions / fallback
+  const apiKpis = stats?.kpis ?? {}
+  const apiSeries = Array.isArray(stats?.series6mois) ? stats.series6mois : []
+  const apiPipeline = Array.isArray(stats?.pipeline) ? stats.pipeline : []
+
   const kpis: Kpi[] = [
-    { label: 'CA HT (mois)', value: '54k €', hint: '↑ 12% vs mois précédent', tone: 'good', icon: '€', accent: 'blue' },
-    { label: 'Marge HT', value: '19k €', hint: '↑ 8% vs mois précédent', tone: 'good', icon: '↗', accent: 'green' },
-    { label: 'Marge %', value: '34%', hint: 'Objectif : 35%', tone: 'neutral', icon: '%', accent: 'blue' },
-    { label: 'Projets en cours', value: '31', icon: '📦', accent: 'blue' },
-    { label: 'Projets à risque', value: '8', tone: 'bad', icon: '⚠️', accent: 'red' },
-    { label: 'Devis en attente', value: '15', icon: '📄', accent: 'blue' },
-    { label: 'Factures en retard', value: '7', tone: 'warn', icon: '⏳', accent: 'orange' },
-    { label: 'Délai moyen', value: '8j', hint: 'Livraison', icon: '🕒', accent: 'blue' },
-    { label: 'Taux qualité', value: '94%', hint: 'QC pass rate', tone: 'good', icon: '✅', accent: 'green' },
+    {
+      label: 'CA HT (mois)',
+      value: apiKpis.caHT != null ? `${Math.round(apiKpis.caHT / 1000)}k €` : '—',
+      hint: apiKpis.caVsPrevPct != null ? `↑ ${apiKpis.caVsPrevPct}% vs mois précédent` : undefined,
+      tone: apiKpis.caVsPrevPct > 0 ? 'good' : 'neutral',
+      icon: '€',
+      accent: 'blue',
+    },
+    {
+      label: 'Marge HT',
+      value: apiKpis.margeHT != null ? `${Math.round(apiKpis.margeHT / 1000)}k €` : '—',
+      hint: apiKpis.margeVsPrevPct != null ? `↑ ${apiKpis.margeVsPrevPct}% vs mois précédent` : undefined,
+      tone: apiKpis.margeVsPrevPct > 0 ? 'good' : 'neutral',
+      icon: '↗',
+      accent: 'green',
+    },
+    {
+      label: 'Marge %',
+      value: apiKpis.margePct != null ? `${apiKpis.margePct}%` : '—',
+      hint: 'Objectif : 35%',
+      tone: 'neutral',
+      icon: '%',
+      accent: 'blue',
+    },
+    { label: 'Projets en cours', value: apiKpis.projetsEnCours != null ? String(apiKpis.projetsEnCours) : '—', icon: '📦', accent: 'blue' },
+    { label: 'Projets à risque', value: apiKpis.projetsARisque != null ? String(apiKpis.projetsARisque) : '—', tone: 'bad', icon: '⚠️', accent: 'red' },
+    { label: 'Devis en attente', value: apiKpis.devisEnAttente != null ? String(apiKpis.devisEnAttente) : '—', icon: '📄', accent: 'blue' },
+    { label: 'Factures en retard', value: apiKpis.facturesEnRetard != null ? String(apiKpis.facturesEnRetard) : '—', tone: 'warn', icon: '⏳', accent: 'orange' },
+    { label: 'Délai moyen', value: apiKpis.delaiMoyenJours != null ? `${apiKpis.delaiMoyenJours}j` : '—', hint: 'Livraison', icon: '🕒', accent: 'blue' },
+    { label: 'Taux qualité', value: apiKpis.tauxQualitePct != null ? `${apiKpis.tauxQualitePct}%` : '—', hint: 'QC pass rate', tone: 'good', icon: '✅', accent: 'green' },
   ]
 
-  const series: SeriesPoint[] = [
-    { label: 'Sep', ca: 42, marge: 14 },
-    { label: 'Oct', ca: 51, marge: 17 },
-    { label: 'Nov', ca: 48, marge: 15 },
-    { label: 'Déc', ca: 38, marge: 12 },
-    { label: 'Jan', ca: 55, marge: 19 },
-    { label: 'Fév', ca: 62, marge: 21 },
-  ]
+  // Charts: on affiche en "k€" (comme tes bars fake)
+  const series: SeriesPoint[] = apiSeries.map((p: any, idx: number) => ({
+    label: p.label ?? `M${idx + 1}`,
+    ca: Math.round(((p.ca ?? 0) as number) / 1000),
+    marge: Math.round(((p.marge ?? 0) as number) / 1000),
+  }))
 
-  const pipeline: PipelineItem[] = [
-    { label: 'Nouveau', value: 3, color: 'blue' },
-    { label: 'Qualifié', value: 9, color: 'cyan' },
-    { label: 'Devis', value: 14, color: 'orange' },
-    { label: 'Approuvé', value: 15, color: 'green' },
-    { label: 'Production', value: 18, color: 'purple' },
-  ]
+  const palette = ['blue', 'cyan', 'orange', 'green', 'purple'] as const
+  const pipeline: PipelineItem[] = apiPipeline.map((p: any, idx: number) => ({
+    label: p.label ?? `Step ${idx + 1}`,
+    value: Number(p.value ?? 0),
+    color: palette[idx % palette.length],
+  }))
 
   return (
     <Container>
@@ -335,6 +390,10 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
+      {/* States */}
+      {loading ? <div style={{ opacity: 0.7, marginBottom: 10 }}>Chargement…</div> : null}
+      {error ? <div style={{ color: 'rgba(239,68,68,0.9)', marginBottom: 10 }}>{error}</div> : null}
+
       {/* KPI grid */}
       <div
         style={{
@@ -351,18 +410,21 @@ const DashboardAdmin = () => {
       {/* Charts */}
       <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
         <Panel>
-          <SvgGroupedBars
-            title="Chiffre d'affaires & marge (6 mois)"
-            data={series}
-          />
+          <SvgGroupedBars title="Chiffre d'affaires & marge (6 mois)" data={series.length ? series : []} />
+          {!series.length && !loading ? (
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée (series6mois)</div>
+          ) : null}
         </Panel>
 
         <Panel>
-          <SvgPipeline title="Pipeline commercial" items={pipeline} />
+          <SvgPipeline title="Pipeline commercial" items={pipeline.length ? pipeline : []} />
+          {!pipeline.length && !loading ? (
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée (pipeline)</div>
+          ) : null}
         </Panel>
       </div>
 
-      {/* Responsive */}
+      {/* Responsive hacks (comme ton code) */}
       <style>
         {`
           @media (max-width: 1400px) {
