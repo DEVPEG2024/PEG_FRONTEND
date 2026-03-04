@@ -1,19 +1,8 @@
 import Container from '@/components/shared/Container'
-import ApiService from '@/services/ApiService'
 import { useEffect, useMemo, useState } from 'react'
-
-/**
- * ✅ À ADAPTER (1 seule ligne)
- * Mets ici l'endpoint Strapi qui renvoie les stats dashboard super admin.
- * Exemples possibles:
- * - '/api/dashboard/super-admin'
- * - '/api/dashboard-super-admin'
- * - '/api/super-admin/dashboard'
- */
-const DASHBOARD_ENDPOINT = '/api/dashboard/super-admin'
+import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 
 type KpiTone = 'neutral' | 'good' | 'warn' | 'bad'
-
 type Kpi = {
   label: string
   value: string
@@ -23,7 +12,8 @@ type Kpi = {
   accent?: 'blue' | 'green' | 'orange' | 'red'
 }
 
-type SeriesPoint = { label: string; ca: number; marge: number }
+type SeriesPoint = { label: string; a: number; b: number }
+
 type PipelineItem = {
   label: string
   value: number
@@ -81,9 +71,7 @@ const KpiCard = ({ kpi }: { kpi: Kpi }) => (
     />
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
       <div>
-        <div style={{ fontSize: 12, letterSpacing: 0.6, opacity: 0.75, textTransform: 'uppercase' }}>
-          {kpi.label}
-        </div>
+        <div style={{ fontSize: 12, letterSpacing: 0.6, opacity: 0.75, textTransform: 'uppercase' }}>{kpi.label}</div>
         <div style={{ fontSize: 26, fontWeight: 900, marginTop: 6 }}>{kpi.value}</div>
         {kpi.hint ? (
           <div
@@ -121,11 +109,13 @@ const KpiCard = ({ kpi }: { kpi: Kpi }) => (
 
 function SvgGroupedBars({
   title,
-  subtitle,
+  aLabel,
+  bLabel,
   data,
 }: {
   title: string
-  subtitle?: string
+  aLabel: string
+  bLabel: string
   data: SeriesPoint[]
 }) {
   const W = 780
@@ -137,7 +127,7 @@ function SvgGroupedBars({
 
   const maxVal = useMemo(() => {
     let m = 0
-    for (const p of data) m = Math.max(m, p.ca, p.marge)
+    for (const p of data) m = Math.max(m, p.a, p.b)
     return Math.max(1, m)
   }, [data])
 
@@ -154,17 +144,17 @@ function SvgGroupedBars({
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <div style={{ fontWeight: 800 }}>{title}</div>
-          {subtitle ? <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>{subtitle}</div> : null}
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Basé sur tes données Strapi (GraphQL)</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 12, opacity: 0.8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(59,130,246,0.9)', display: 'inline-block' }} />
-            CA HT
+            {aLabel}
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(34,197,94,0.9)', display: 'inline-block' }} />
-            Marge HT
+            {bLabel}
           </span>
         </div>
       </div>
@@ -173,16 +163,7 @@ function SvgGroupedBars({
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="260" role="img" aria-label={title}>
           {Array.from({ length: 5 }).map((_, i) => {
             const yy = padT + (plotH * i) / 4
-            return (
-              <line
-                key={i}
-                x1={padL}
-                x2={W - padR}
-                y1={yy}
-                y2={yy}
-                stroke="rgba(255,255,255,0.08)"
-              />
-            )
+            return <line key={i} x1={padL} x2={W - padR} y1={yy} y2={yy} stroke="rgba(255,255,255,0.08)" />
           })}
 
           {data.map((p, i) => {
@@ -190,15 +171,15 @@ function SvgGroupedBars({
             const x1 = cx - barW - gap / 2
             const x2 = cx + gap / 2
 
-            const caY = y(p.ca)
-            const mgY = y(p.marge)
+            const aY = y(p.a)
+            const bY = y(p.b)
 
             return (
               <g key={`${p.label}-${i}`}>
-                <rect x={x1} y={caY} width={barW} height={padT + plotH - caY} rx={6} fill="rgba(59,130,246,0.9)" />
-                <rect x={x2} y={mgY} width={barW} height={padT + plotH - mgY} rx={6} fill="rgba(34,197,94,0.9)" />
+                <rect x={x1} y={aY} width={barW} height={padT + plotH - aY} rx={6} fill="rgba(59,130,246,0.9)" />
+                <rect x={x2} y={bY} width={barW} height={padT + plotH - bY} rx={6} fill="rgba(34,197,94,0.9)" />
                 <text x={cx} y={H - 12} textAnchor="middle" fontSize="12" fill="rgba(255,255,255,0.6)">
-                  {p.label}
+                  {p.label.length > 10 ? `${p.label.slice(0, 10)}…` : p.label}
                 </text>
               </g>
             )
@@ -227,7 +208,7 @@ function SvgPipeline({ title, items }: { title: string; items: PipelineItem[] })
         {items.map((it) => {
           const pct = (it.value / max) * 100
           return (
-            <div key={it.label} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 50px', gap: 12, alignItems: 'center' }}>
+            <div key={it.label} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 50px', gap: 12, alignItems: 'center' }}>
               <div style={{ fontSize: 12, opacity: 0.7 }}>{it.label}</div>
               <div
                 style={{
@@ -254,36 +235,88 @@ function SvgPipeline({ title, items }: { title: string; items: PipelineItem[] })
   )
 }
 
+function eur(n: number) {
+  try {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+  } catch {
+    return `${Math.round(n)} €`
+  }
+}
+
+function toCountByState(items: Array<{ state?: string | null }>): { label: string; count: number }[] {
+  const m = new Map<string, number>()
+  for (const it of items) {
+    const s = (it?.state ?? 'unknown').toString()
+    m.set(s, (m.get(s) ?? 0) + 1)
+  }
+  return Array.from(m.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
 const DashboardAdmin = () => {
   const [month, setMonth] = useState('Mars 2026')
-
-  const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔥 Charge les stats depuis Strapi à chaque changement de mois
+  const [projectsTotal, setProjectsTotal] = useState<number>(0)
+  const [customersTotal, setCustomersTotal] = useState<number>(0)
+  const [producersTotal, setProducersTotal] = useState<number>(0)
+  const [ticketsTotal, setTicketsTotal] = useState<number>(0)
+  const [invoicesCount, setInvoicesCount] = useState<number>(0)
+
+  const [invoicesStats, setInvoicesStats] = useState<{ totalAmount: number; paidAmount: number; pendingAmount: number }>({
+    totalAmount: 0,
+    paidAmount: 0,
+    pendingAmount: 0,
+  })
+
+  const [projectsByState, setProjectsByState] = useState<{ label: string; count: number }[]>([])
+  const [ticketsByState, setTicketsByState] = useState<{ label: string; count: number }[]>([])
+
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // ⚠️ Strapi peut attendre un query param (ex: ?month=Mars%202026)
-        const res = await ApiService.fetchData({
-          url: DASHBOARD_ENDPOINT,
-          method: 'get',
-          params: { month },
-        })
+        const res = await apiGetDashboardSuperAdminInformations()
 
-        // selon ton ApiService, les données peuvent être:
-        // - res.data
-        // - res.data.data (Strapi)
-        // - res directement
-        const payload = (res as any)?.data?.data ?? (res as any)?.data ?? res
-        setStats(payload)
+        // GraphQL Strapi -> souvent: res.data.data
+        const gql = (res as any)?.data?.data ?? (res as any)?.data ?? null
+        if (!gql) throw new Error('Réponse GraphQL vide')
+
+        const projectsNodes = gql?.projects_connection?.nodes ?? []
+        const projectsTotalCount = gql?.projects_connection?.pageInfo?.total ?? 0
+        const customersCount = gql?.customers_connection?.pageInfo?.total ?? 0
+        const producersCount = gql?.producers_connection?.pageInfo?.total ?? 0
+
+        const ticketsNodes = gql?.tickets_connection?.nodes ?? []
+        const ticketsTotalCount = gql?.tickets_connection?.pageInfo?.total ?? 0
+
+        const invoicesNodes = gql?.invoices_connection?.nodes ?? []
+
+        // invoicesStats réels (depuis invoices_connection)
+        const totalAmount = invoicesNodes.reduce((acc: number, inv: any) => acc + (Number(inv?.totalAmount) || 0), 0)
+        const paidAmount = invoicesNodes.reduce((acc: number, inv: any) => {
+          const pay = (inv?.paymentState ?? inv?.state ?? '').toString().toLowerCase()
+          const isPaid = pay.includes('paid') || pay.includes('pay') || pay.includes('settled')
+          return acc + (isPaid ? (Number(inv?.totalAmount) || 0) : 0)
+        }, 0)
+        const pendingAmount = Math.max(0, totalAmount - paidAmount)
+
+        setProjectsTotal(projectsTotalCount)
+        setCustomersTotal(customersCount)
+        setProducersTotal(producersCount)
+        setTicketsTotal(ticketsTotalCount)
+        setInvoicesCount(invoicesNodes.length)
+
+        setInvoicesStats({ totalAmount, paidAmount, pendingAmount })
+
+        setProjectsByState(toCountByState(projectsNodes).map((x) => ({ label: x.label, count: x.count })))
+        setTicketsByState(toCountByState(ticketsNodes).map((x) => ({ label: x.label, count: x.count })))
       } catch (e: any) {
         setError(e?.message ?? 'Erreur dashboard')
-        setStats(null)
       } finally {
         setLoading(false)
       }
@@ -292,57 +325,44 @@ const DashboardAdmin = () => {
     run()
   }, [month])
 
-  // Conversions / fallback
-  const apiKpis = stats?.kpis ?? {}
-  const apiSeries = Array.isArray(stats?.series6mois) ? stats.series6mois : []
-  const apiPipeline = Array.isArray(stats?.pipeline) ? stats.pipeline : []
-
+  // KPI cards (réels)
   const kpis: Kpi[] = [
-    {
-      label: 'CA HT (mois)',
-      value: apiKpis.caHT != null ? `${Math.round(apiKpis.caHT / 1000)}k €` : '—',
-      hint: apiKpis.caVsPrevPct != null ? `↑ ${apiKpis.caVsPrevPct}% vs mois précédent` : undefined,
-      tone: apiKpis.caVsPrevPct > 0 ? 'good' : 'neutral',
-      icon: '€',
-      accent: 'blue',
-    },
-    {
-      label: 'Marge HT',
-      value: apiKpis.margeHT != null ? `${Math.round(apiKpis.margeHT / 1000)}k €` : '—',
-      hint: apiKpis.margeVsPrevPct != null ? `↑ ${apiKpis.margeVsPrevPct}% vs mois précédent` : undefined,
-      tone: apiKpis.margeVsPrevPct > 0 ? 'good' : 'neutral',
-      icon: '↗',
-      accent: 'green',
-    },
-    {
-      label: 'Marge %',
-      value: apiKpis.margePct != null ? `${apiKpis.margePct}%` : '—',
-      hint: 'Objectif : 35%',
-      tone: 'neutral',
-      icon: '%',
-      accent: 'blue',
-    },
-    { label: 'Projets en cours', value: apiKpis.projetsEnCours != null ? String(apiKpis.projetsEnCours) : '—', icon: '📦', accent: 'blue' },
-    { label: 'Projets à risque', value: apiKpis.projetsARisque != null ? String(apiKpis.projetsARisque) : '—', tone: 'bad', icon: '⚠️', accent: 'red' },
-    { label: 'Devis en attente', value: apiKpis.devisEnAttente != null ? String(apiKpis.devisEnAttente) : '—', icon: '📄', accent: 'blue' },
-    { label: 'Factures en retard', value: apiKpis.facturesEnRetard != null ? String(apiKpis.facturesEnRetard) : '—', tone: 'warn', icon: '⏳', accent: 'orange' },
-    { label: 'Délai moyen', value: apiKpis.delaiMoyenJours != null ? `${apiKpis.delaiMoyenJours}j` : '—', hint: 'Livraison', icon: '🕒', accent: 'blue' },
-    { label: 'Taux qualité', value: apiKpis.tauxQualitePct != null ? `${apiKpis.tauxQualitePct}%` : '—', hint: 'QC pass rate', tone: 'good', icon: '✅', accent: 'green' },
+    { label: 'CA total (factures)', value: eur(invoicesStats.totalAmount), icon: '€', accent: 'blue' },
+    { label: 'Encaissé', value: eur(invoicesStats.paidAmount), icon: '✅', tone: 'good', accent: 'green' },
+    { label: 'En attente', value: eur(invoicesStats.pendingAmount), icon: '⏳', tone: invoicesStats.pendingAmount > 0 ? 'warn' : 'neutral', accent: 'orange' },
+    { label: 'Projets', value: String(projectsTotal), icon: '📦', accent: 'blue' },
+    { label: 'Clients', value: String(customersTotal), icon: '👥', accent: 'blue' },
+    { label: 'Producteurs', value: String(producersTotal), icon: '🏭', accent: 'blue' },
+    { label: 'Tickets', value: String(ticketsTotal), icon: '🎫', tone: ticketsTotal > 0 ? 'warn' : 'neutral', accent: 'orange' },
+    { label: 'Factures (liste)', value: String(invoicesCount), icon: '🧾', accent: 'blue' },
+    { label: 'Qualité', value: '—', hint: 'à brancher si tu as un champ QC', icon: '🧪', accent: 'blue' },
   ]
 
-  // Charts: on affiche en "k€" (comme tes bars fake)
-  const series: SeriesPoint[] = apiSeries.map((p: any, idx: number) => ({
-    label: p.label ?? `M${idx + 1}`,
-    ca: Math.round(((p.ca ?? 0) as number) / 1000),
-    marge: Math.round(((p.marge ?? 0) as number) / 1000),
-  }))
+  // Graphique gauche: comparaison "Projets vs Tickets" par état (top 8 états)
+  const chartData: SeriesPoint[] = useMemo(() => {
+    const map = new Map<string, { a: number; b: number }>()
+    for (const p of projectsByState) map.set(p.label, { a: p.count, b: 0 })
+    for (const t of ticketsByState) {
+      const cur = map.get(t.label) ?? { a: 0, b: 0 }
+      map.set(t.label, { a: cur.a, b: t.count })
+    }
+    return Array.from(map.entries())
+      .map(([label, v]) => ({ label, a: v.a, b: v.b }))
+      .sort((x, y) => (y.a + y.b) - (x.a + x.b))
+      .slice(0, 8)
+  }, [projectsByState, ticketsByState])
 
+  // Pipeline droite: tickets par statut (top 8)
   const palette = ['blue', 'cyan', 'orange', 'green', 'purple'] as const
-  const pipeline: PipelineItem[] = apiPipeline.map((p: any, idx: number) => ({
-    label: p.label ?? `Step ${idx + 1}`,
-    value: Number(p.value ?? 0),
-    color: palette[idx % palette.length],
-  }))
+  const pipeline: PipelineItem[] = useMemo(() => {
+    return ticketsByState
+      .slice(0, 8)
+      .map((t, idx) => ({
+        label: t.label,
+        value: t.count,
+        color: palette[idx % palette.length],
+      }))
+  }, [ticketsByState])
 
   return (
     <Container>
@@ -350,9 +370,7 @@ const DashboardAdmin = () => {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>Tableau de bord</div>
-          <div style={{ fontSize: 13, opacity: 0.7, marginTop: 6 }}>
-            Vue d’ensemble opérationnelle — {month}
-          </div>
+          <div style={{ fontSize: 13, opacity: 0.7, marginTop: 6 }}>Vue d’ensemble opérationnelle — {month}</div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -390,18 +408,11 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* States */}
-      {loading ? <div style={{ opacity: 0.7, marginBottom: 10 }}>Chargement…</div> : null}
+      {loading ? <div style={{ opacity: 0.7, marginBottom: 10 }}>Chargement des stats…</div> : null}
       {error ? <div style={{ color: 'rgba(239,68,68,0.9)', marginBottom: 10 }}>{error}</div> : null}
 
       {/* KPI grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-          gap: 14,
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14 }}>
         {kpis.map((k) => (
           <KpiCard key={k.label} kpi={k} />
         ))}
@@ -410,21 +421,17 @@ const DashboardAdmin = () => {
       {/* Charts */}
       <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
         <Panel>
-          <SvgGroupedBars title="Chiffre d'affaires & marge (6 mois)" data={series.length ? series : []} />
-          {!series.length && !loading ? (
-            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée (series6mois)</div>
-          ) : null}
+          <SvgGroupedBars title="Répartition par statut" aLabel="Projets" bLabel="Tickets" data={chartData} />
+          {!chartData.length && !loading ? <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée</div> : null}
         </Panel>
 
         <Panel>
-          <SvgPipeline title="Pipeline commercial" items={pipeline.length ? pipeline : []} />
-          {!pipeline.length && !loading ? (
-            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée (pipeline)</div>
-          ) : null}
+          <SvgPipeline title="Tickets par statut" items={pipeline} />
+          {!pipeline.length && !loading ? <div style={{ marginTop: 10, fontSize: 12, opacity: 0.65 }}>Aucune donnée</div> : null}
         </Panel>
       </div>
 
-      {/* Responsive hacks (comme ton code) */}
+      {/* Responsive */}
       <style>
         {`
           @media (max-width: 1400px) {
