@@ -2,11 +2,12 @@ import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
-import { KPICard } from './components/KPICard'
-import { AlertsPanel } from './components/AlertsPanel'
-import { RevenueChart } from './components/RevenueChart'
-import { PipelineFunnel } from './components/PipelineFunnel'
-import { SupplierRanking } from './components/SupplierRanking'
+
+import KPICard from './components/KPICard'
+import AlertsPanel from './components/AlertsPanel'
+import RevenueChart from './components/RevenueChart'
+import PipelineFunnel from './components/PipelineFunnel'
+import SupplierRanking from './components/SupplierRanking'
 
 function monthKey(d: Date) {
   const y = d.getFullYear()
@@ -26,7 +27,11 @@ function safeDate(s?: string) {
 }
 function eur(n: number) {
   try {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+    }).format(n)
   } catch {
     return `${Math.round(n)} €`
   }
@@ -102,16 +107,13 @@ export default function DashboardAdmin() {
       const end = safeDate(p?.endDate)
       if (!end) return false
       const state = (p?.state ?? '').toString().toLowerCase()
-      const done = state.includes('done') || state.includes('closed') || state.includes('term') || state.includes('livr')
+      const done =
+        state.includes('done') ||
+        state.includes('closed') ||
+        state.includes('term') ||
+        state.includes('livr') ||
+        state.includes('finish')
       return end.getTime() < now.getTime() && !done
-    }).length
-  }, [projects])
-
-  // Devis en attente (estimé via state)
-  const pendingQuotes = useMemo(() => {
-    return projects.filter((p: any) => {
-      const s = (p?.state ?? '').toString().toLowerCase()
-      return s.includes('quote') || s.includes('devis')
     }).length
   }, [projects])
 
@@ -144,7 +146,11 @@ export default function DashboardAdmin() {
       by.set(k, { ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0), marge: by.get(k)!.marge })
     }
 
-    return months.map((k) => ({ label: monthLabel(k), ca: by.get(k)!.ca, marge: by.get(k)!.marge }))
+    return months.map((k) => ({
+      label: monthLabel(k),
+      ca: by.get(k)!.ca,
+      marge: by.get(k)!.marge,
+    }))
   }, [invoices])
 
   // Pipeline (projets par statut)
@@ -171,11 +177,12 @@ export default function DashboardAdmin() {
     return Array.from(map.entries())
       .map(([name, v]) => ({ name, projects: v.projects, revenue: v.revenue }))
       .sort((a, b) => (b.projects - a.projects) || (b.revenue - a.revenue))
+      .slice(0, 6)
   }, [projects])
 
   // Activité récente (factures + projets)
   const activity = useMemo(() => {
-    const items: { ts: number; user: string; action: string; details: string }[] = []
+    const items: { ts: number; user: string; action: string; details: string; to?: string }[] = []
 
     for (const inv of invoices.slice(0, 30)) {
       const d = safeDate(inv?.date)
@@ -185,6 +192,7 @@ export default function DashboardAdmin() {
         user: inv?.customer?.name ?? 'Client',
         action: `Facture ${inv?.name ?? inv?.documentId ?? ''}`,
         details: `${eur(Number(inv?.totalAmount) || 0)} — ${inv?.paymentState ?? inv?.state ?? ''}`,
+        to: '/admin/invoices',
       })
     }
 
@@ -196,6 +204,7 @@ export default function DashboardAdmin() {
         user: p?.customer?.name ?? 'Client',
         action: `Projet ${p?.name ?? ''}`,
         details: `${p?.state ?? ''} — ${(p?.producer?.name ?? '—')}`,
+        to: '/common/projects',
       })
     }
 
@@ -204,27 +213,31 @@ export default function DashboardAdmin() {
 
   // Alerts
   const alerts = useMemo(() => {
-    const a: { level: 'danger' | 'warning' | 'info'; title: string; detail?: string }[] = []
-    if (overdueInvoices > 0) a.push({ level: 'danger', title: `${overdueInvoices} facture(s) en retard`, detail: 'Vérifie paymentState / date' })
-    if (atRiskProjects > 0) a.push({ level: 'warning', title: `${atRiskProjects} projet(s) à risque`, detail: 'endDate dépassée et pas terminé' })
+    const a: { level: 'danger' | 'warning' | 'info'; title: string; detail?: string; to?: string }[] = []
+    if (overdueInvoices > 0)
+      a.push({
+        level: 'danger',
+        title: `${overdueInvoices} facture(s) en retard`,
+        detail: 'Vérifie paymentState / date',
+        to: '/admin/invoices',
+      })
+    if (atRiskProjects > 0)
+      a.push({
+        level: 'warning',
+        title: `${atRiskProjects} projet(s) à risque`,
+        detail: 'endDate dépassée et pas terminé',
+        to: '/common/projects',
+      })
     const openTickets = tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
-    if (openTickets > 0) a.push({ level: 'info', title: `${openTickets} ticket(s) ouverts`, detail: 'Support à traiter' })
+    if (openTickets > 0)
+      a.push({
+        level: 'info',
+        title: `${openTickets} ticket(s) ouverts`,
+        detail: 'Support à traiter',
+        to: '/support',
+      })
     return a
   }, [overdueInvoices, atRiskProjects, tickets])
-
-  // KPI Cards
-  const kpis = [
-    { title: 'CA total (factures)', value: eur(invoiceTotal), icon: '€' },
-    { title: 'Encaissé', value: eur(invoicePaid), icon: '✅', variant: 'success' as const },
-    { title: 'En attente', value: eur(invoicePending), icon: '⏳', variant: invoicePending > 0 ? ('warning' as const) : ('default' as const) },
-    { title: 'Projets', value: String(projectsTotal), icon: '📦' },
-    { title: 'Projets à risque', value: String(atRiskProjects), icon: '⚠️', variant: atRiskProjects > 0 ? ('danger' as const) : ('default' as const) },
-    { title: 'Clients', value: String(customersTotal), icon: '👥' },
-    { title: 'Producteurs', value: String(producersTotal), icon: '🏭' },
-    { title: 'Tickets', value: String(ticketsTotal), icon: '🎫', variant: ticketsTotal > 0 ? ('warning' as const) : ('default' as const) },
-    { title: 'Factures en retard', value: String(overdueInvoices), icon: '🧾', variant: overdueInvoices > 0 ? ('danger' as const) : ('default' as const) },
-    { title: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: '🕒', subtitle: 'Livraison' },
-  ] as const
 
   // ✅ Routes EXACTES (selon ton routes.config.ts)
   const routeForKpi = (title: string) => {
@@ -248,31 +261,55 @@ export default function DashboardAdmin() {
     }
   }
 
+  const kpis = [
+    { title: 'CA total (factures)', value: eur(invoiceTotal), icon: '€', variant: 'default' as const },
+    { title: 'Encaissé', value: eur(invoicePaid), icon: '✅', variant: 'success' as const },
+    { title: 'En attente', value: eur(invoicePending), icon: '⏳', variant: invoicePending > 0 ? ('warning' as const) : ('default' as const) },
+    { title: 'Projets', value: String(projectsTotal), icon: '📦', variant: 'default' as const },
+    { title: 'Projets à risque', value: String(atRiskProjects), icon: '⚠️', variant: atRiskProjects > 0 ? ('danger' as const) : ('default' as const) },
+
+    { title: 'Clients', value: String(customersTotal), icon: '👥', variant: 'default' as const },
+    { title: 'Producteurs', value: String(producersTotal), icon: '🏭', variant: 'default' as const },
+    { title: 'Tickets', value: String(ticketsTotal), icon: '🎫', variant: ticketsTotal > 0 ? ('warning' as const) : ('default' as const) },
+    { title: 'Factures en retard', value: String(overdueInvoices), icon: '🧾', variant: overdueInvoices > 0 ? ('danger' as const) : ('default' as const) },
+    { title: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: '🕒', subtitle: 'Livraison', variant: 'default' as const },
+  ] as const
+
   return (
     <Container>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-white">Tableau de bord</h1>
-          <p className="text-sm text-white/60">Vue d&apos;ensemble opérationnelle — {month}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Tableau de bord</h1>
+            <p className="text-sm text-white/60 mt-1">Vue d&apos;ensemble opérationnelle — {month}</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-white/5 border border-white/10 text-white/80 px-3 py-2 rounded-xl outline-none"
+            >
+              <option>Mars 2026</option>
+              <option>Février 2026</option>
+              <option>Janvier 2026</option>
+            </select>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 px-3 py-2 rounded-xl"
+              title="Rafraîchir"
+            >
+              ⟳
+            </button>
+          </div>
         </div>
 
-        {/* Month selector + status */}
-        <div className="flex items-center justify-between gap-3">
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="bg-white/5 border border-white/10 text-white/80 px-3 py-2 rounded-xl outline-none"
-          >
-            <option>Mars 2026</option>
-            <option>Février 2026</option>
-            <option>Janvier 2026</option>
-          </select>
-
-          <div className="text-xs">
-            {loading ? <span className="text-white/60">Chargement…</span> : null}
-            {error ? <span className="text-red-300">{error}</span> : null}
-          </div>
+        {/* Status */}
+        <div className="text-xs">
+          {loading ? <span className="text-white/60">Chargement…</span> : null}
+          {error ? <span className="text-red-300">{error}</span> : null}
         </div>
 
         {/* KPI Grid */}
@@ -294,34 +331,52 @@ export default function DashboardAdmin() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <RevenueChart data={revenue6m} />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <RevenueChart
+            title="Chiffre d'affaires & marge"
+            subtitle="6 derniers mois (d’après factures)"
+            data={revenue6m}
+          />
           <PipelineFunnel
+            title="Pipeline"
+            subtitle="Répartition des projets par statut"
             items={pipeline}
-            onItemClick={(label) => {
-              // option 1: aller projets (sans filtre)
-              // navigate('/common/projects')
-
-              // option 2: tenter filtre via query param (si ProjectsList gère ?state=)
-              navigate(`/common/projects?state=${encodeURIComponent(label)}`)
-            }}
+            onItemClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)}
           />
         </div>
 
         {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <AlertsPanel alerts={alerts} />
-          <SupplierRanking rows={topProducers} />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <AlertsPanel
+            title="Alertes"
+            items={alerts}
+            onItemClick={(to) => {
+              if (to) navigate(to)
+            }}
+          />
+          <SupplierRanking
+            title="Top producteurs"
+            subtitle="Basé sur les projets (top 6)"
+            rows={topProducers}
+          />
 
           {/* Recent Activity */}
           <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-            <h3 className="text-sm font-semibold text-white mb-3">Activité récente</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-white">Activité récente</h3>
+              <span className="text-[11px] text-white/50">auto</span>
+            </div>
+
             <div className="space-y-3">
               {activity.length === 0 ? (
                 <div className="text-xs text-white/60">Aucune activité.</div>
               ) : (
                 activity.map((entry, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs">
+                  <button
+                    key={idx}
+                    onClick={() => entry.to && navigate(entry.to)}
+                    className="w-full text-left flex items-start gap-2 text-xs rounded-xl p-2 hover:bg-white/5 transition"
+                  >
                     <div className="h-1.5 w-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-white">
@@ -331,7 +386,7 @@ export default function DashboardAdmin() {
                       <p className="text-white/60 truncate">{entry.details}</p>
                       <p className="text-white/40 text-[10px]">{new Date(entry.ts).toLocaleString('fr-FR')}</p>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
