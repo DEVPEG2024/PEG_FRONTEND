@@ -288,11 +288,14 @@ export default function DashboardAdmin() {
   const projects = gql?.projects_connection?.nodes ?? []
   const invoices = gql?.invoices_connection?.nodes ?? []
   const tickets = gql?.tickets_connection?.nodes ?? []
+  const orderItems = gql?.orderItems_connection?.nodes ?? []
+  const transactions = gql?.transactions_connection?.nodes ?? []
 
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0
   const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0
   const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0
   const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0
+  const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
   const invoiceTotal = useMemo(
     () => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0),
@@ -348,19 +351,30 @@ export default function DashboardAdmin() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       months.push(monthKey(d))
     }
-    const by = new Map<string, { ca: number; marge: number }>()
-    months.forEach((k) => by.set(k, { ca: 0, marge: 0 }))
+    const by = new Map<string, { ca: number; costs: number }>()
+    months.forEach((k) => by.set(k, { ca: 0, costs: 0 }))
 
     for (const inv of invoices) {
       const d = safeDate(inv?.date)
       if (!d) continue
       const k = monthKey(d)
       if (!by.has(k)) continue
-      by.set(k, { ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0), marge: by.get(k)!.marge })
+      by.set(k, { ...by.get(k)!, ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0) })
     }
 
-    return months.map((k) => ({ label: monthLabel(k), ca: by.get(k)!.ca, marge: by.get(k)!.marge }))
-  }, [invoices])
+    for (const tx of transactions) {
+      const d = safeDate(tx?.date)
+      if (!d) continue
+      const k = monthKey(d)
+      if (!by.has(k)) continue
+      by.set(k, { ...by.get(k)!, costs: by.get(k)!.costs + (Number(tx?.amount) || 0) })
+    }
+
+    return months.map((k) => {
+      const b = by.get(k)!
+      return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs) }
+    })
+  }, [invoices, transactions])
 
   const pipeline = useMemo(() => {
     const m = new Map<string, number>()
@@ -418,6 +432,65 @@ export default function DashboardAdmin() {
   const openTickets = useMemo(() => {
     return tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
   }, [tickets])
+
+  // Marge brute = CA - coûts (transactions sortantes/producteurs)
+  const totalCosts = useMemo(
+    () => transactions.reduce((a: number, x: any) => a + (Number(x?.amount) || 0), 0),
+    [transactions]
+  )
+  const margeBrute = Math.max(0, invoiceTotal - totalCosts)
+  const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
+
+  // Top clients par CA facturé
+  const topClients = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const inv of invoices) {
+      const name = inv?.customer?.name ?? '—'
+      map.set(name, (map.get(name) ?? 0) + (Number(inv?.totalAmount) || 0))
+    }
+    return Array.from(map.entries())
+      .map(([name, revenue]) => ({ name, revenue }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 6)
+  }, [invoices])
+
+  // Échéances à venir (14 jours)
+  const upcomingDeadlines = useMemo(() => {
+    const now = new Date()
+    const in14 = new Date(now.getTime() + 14 * 86400000)
+    return projects
+      .filter((p: any) => {
+        const end = safeDate(p?.endDate)
+        if (!end) return false
+        const state = (p?.state ?? '').toString().toLowerCase()
+        const done = state.includes('done') || state.includes('closed') || state.includes('term') || state.includes('livr')
+        return !done && end.getTime() >= now.getTime() && end.getTime() <= in14.getTime()
+      })
+      .sort((a: any, b: any) => (safeDate(a?.endDate)?.getTime() ?? 0) - (safeDate(b?.endDate)?.getTime() ?? 0))
+      .slice(0, 6)
+      .map((p: any) => {
+        const end = safeDate(p?.endDate)!
+        const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86400000)
+        return {
+          left: p?.name ?? p?.documentId ?? '—',
+          sub: `${p?.customer?.name ?? '—'} • ${p?.producer?.name ?? '—'}`,
+          right: `J-${daysLeft}`,
+          urgent: daysLeft <= 3,
+        }
+      })
+  }, [projects])
+
+  // Commandes par état
+  const ordersByState = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const o of orderItems) {
+      const s = (o?.state ?? 'inconnu').toString()
+      m.set(s, (m.get(s) ?? 0) + 1)
+    }
+    return Array.from(m.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+  }, [orderItems])
 
   const onPickBanner = () => fileRef.current?.click()
 
@@ -524,24 +597,51 @@ export default function DashboardAdmin() {
           </button>
         </div>
 
-        {/* KPI GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <KPI title="CA total" value={eur(invoiceTotal)} icon="€" onClick={() => navigate(routeForKpi('CA total')!)} />
-          <KPI title="Encaissé" value={eur(invoicePaid)} icon="✅" variant="success" onClick={() => navigate(routeForKpi('Encaissé')!)} />
-          <KPI title="En attente" value={eur(invoicePending)} icon="⏳" variant={invoicePending > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('En attente')!)} />
-          <KPI title="Projets" value={String(projectsTotal)} icon="📦" onClick={() => navigate(routeForKpi('Projets')!)} />
-          <KPI title="Projets à risque" value={String(atRiskProjects)} icon="⚠️" variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Projets à risque')!)} />
-          <KPI title="Clients" value={String(customersTotal)} icon="👥" onClick={() => navigate(routeForKpi('Clients')!)} />
-          <KPI title="Producteurs" value={String(producersTotal)} icon="🏭" onClick={() => navigate(routeForKpi('Producteurs')!)} />
-          <KPI title="Tickets" value={String(ticketsTotal)} icon="🎫" variant={openTickets > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('Tickets')!)} />
-          <KPI title="Factures en retard" value={String(overdueInvoices)} icon="🧾" variant={overdueInvoices > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Factures en retard')!)} />
-          <KPI title="Délai moyen" value={`${avgDeliveryDays}j`} subtitle="Livraison" icon="🕒" />
+        {/* KPI ROW 1 — Finances */}
+        <div>
+          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Finances</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <KPI title="CA total" value={eur(invoiceTotal)} icon="€" onClick={() => navigate(routeForKpi('CA total')!)} />
+            <KPI title="Encaissé" value={eur(invoicePaid)} icon="✅" variant="success" onClick={() => navigate(routeForKpi('Encaissé')!)} />
+            <KPI title="En attente" value={eur(invoicePending)} icon="⏳" variant={invoicePending > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('En attente')!)} />
+            <KPI
+              title="Marge brute"
+              value={eur(margeBrute)}
+              subtitle={`${margePct}% du CA`}
+              icon="📈"
+              variant={margePct >= 30 ? 'success' : margePct >= 15 ? 'warning' : 'danger'}
+            />
+            <KPI title="Factures en retard" value={String(overdueInvoices)} icon="🧾" variant={overdueInvoices > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Factures en retard')!)} />
+          </div>
+        </div>
+
+        {/* KPI ROW 2 — Opérations */}
+        <div>
+          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Opérations</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <KPI title="Projets" value={String(projectsTotal)} icon="📦" onClick={() => navigate(routeForKpi('Projets')!)} />
+            <KPI title="Projets à risque" value={String(atRiskProjects)} icon="⚠️" variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Projets à risque')!)} />
+            <KPI title="Commandes" value={String(orderItemsTotal)} icon="🛒" onClick={() => navigate('/admin/order-items')} />
+            <KPI title="Délai moyen" value={`${avgDeliveryDays}j`} subtitle="Livraison" icon="🕒" />
+            <KPI title="Tickets ouverts" value={String(openTickets)} icon="🎫" variant={openTickets > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('Tickets')!)} />
+          </div>
+        </div>
+
+        {/* KPI ROW 3 — Entités */}
+        <div>
+          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Entités</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <KPI title="Clients" value={String(customersTotal)} icon="👥" onClick={() => navigate(routeForKpi('Clients')!)} />
+            <KPI title="Producteurs" value={String(producersTotal)} icon="🏭" onClick={() => navigate(routeForKpi('Producteurs')!)} />
+            <KPI title="Transactions" value={String(transactions.length)} subtitle={eur(totalCosts)} icon="💸" />
+            <KPI title="Tickets total" value={String(ticketsTotal)} icon="🎫" />
+          </div>
         </div>
 
         {/* CHARTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Panel title="Chiffre d'affaires (6 mois)" subtitle="Basé sur les factures">
-            <BarsChart data={revenue6m} leftLabel="CA" rightLabel="Marge (à brancher)" />
+          <Panel title="Chiffre d'affaires (6 mois)" subtitle="CA vs marge brute (CA − transactions)">
+            <BarsChart data={revenue6m} leftLabel="CA" rightLabel="Marge brute" />
           </Panel>
 
           <Panel
@@ -563,7 +663,7 @@ export default function DashboardAdmin() {
           </Panel>
         </div>
 
-        {/* BOTTOM */}
+        {/* BOTTOM ROW 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           <Panel title="Alertes" subtitle="Ce qui nécessite ton attention">
@@ -592,7 +692,24 @@ export default function DashboardAdmin() {
                   <div className="text-xs text-sky-200/70">Support à traiter</div>
                 </div>
               ) : null}
+
+              {upcomingDeadlines.length > 0 ? (
+                <div className="rounded-xl border border-amber-400/15 bg-amber-500/10 px-3 py-2 text-amber-200">
+                  {upcomingDeadlines.length} échéance(s) dans 14 jours
+                  <div className="text-xs text-amber-200/70">Voir panneau ci-dessous</div>
+                </div>
+              ) : null}
             </div>
+          </Panel>
+
+          <Panel title="Top clients" subtitle="Par chiffre d'affaires facturé (top 6)">
+            <TableMini
+              rows={topClients.map((c) => ({
+                left: c.name,
+                right: eur(c.revenue),
+              }))}
+              onRowClick={() => navigate('/admin/customers/list')}
+            />
           </Panel>
 
           <Panel title="Top producteurs" subtitle="Basé sur les projets (top 6)">
@@ -604,6 +721,43 @@ export default function DashboardAdmin() {
               }))}
               onRowClick={() => navigate('/admin/producers/list')}
             />
+          </Panel>
+
+        </div>
+
+        {/* BOTTOM ROW 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          <Panel
+            title="Échéances (14 jours)"
+            subtitle="Projets non terminés à venir"
+            right={
+              <button onClick={() => navigate('/common/projects')} className="text-xs text-sky-300/80 hover:text-sky-200 transition">
+                Tous →
+              </button>
+            }
+          >
+            {upcomingDeadlines.length === 0 ? (
+              <div className="text-xs text-white/45">Aucune échéance dans les 14 prochains jours.</div>
+            ) : (
+              <div className="divide-y divide-white/10">
+                {upcomingDeadlines.map((d: any, i: number) => (
+                  <div key={i} className="py-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm text-white/85 truncate">{d.left}</div>
+                      <div className="text-xs text-white/50 truncate">{d.sub}</div>
+                    </div>
+                    <span className={['text-xs font-bold px-2 py-0.5 rounded-full shrink-0', d.urgent ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'].join(' ')}>
+                      {d.right}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Commandes par état" subtitle="Répartition des order items">
+            <PipelineBars items={ordersByState} />
           </Panel>
 
           <Panel title="Activité récente" subtitle="Projets & factures">

@@ -88,7 +88,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           total
         }
       }
-      invoices_connection(pagination: { limit: 100 }) {
+      invoices_connection(pagination: { limit: 200 }) {
         nodes {
           documentId
           name
@@ -102,6 +102,39 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           }
         }
       }
+      orderItems_connection(pagination: { limit: 200 }, sort: "createdAt:desc") {
+        nodes {
+          documentId
+          price
+          state
+          product {
+            name
+          }
+          customer {
+            name
+          }
+        }
+        pageInfo {
+          total
+        }
+      }
+      transactions_connection(pagination: { limit: 200 }) {
+        nodes {
+          documentId
+          amount
+          type
+          date
+          producer {
+            name
+          }
+          project {
+            name
+          }
+        }
+        pageInfo {
+          total
+        }
+      }
     }
   `
 
@@ -113,6 +146,8 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
       usersPermissionsUsers: { meta: { pagination: { total: number } } }
       tickets_connection: { nodes: any[]; pageInfo: { total: number } }
       invoices_connection: { nodes: any[] }
+      orderItems_connection: { nodes: any[]; pageInfo: { total: number } }
+      transactions_connection: { nodes: any[]; pageInfo: { total: number } }
     }>
   >({
     url: API_GRAPHQL_URL,
