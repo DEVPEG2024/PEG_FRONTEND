@@ -27,6 +27,16 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "admin.calendar",
+    path: "/admin/calendar",
+    title: "Calendrier",
+    translateKey: "nav.calendar",
+    icon: "calendar",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN],
+    subMenu: [],
+  },
+  {
     key: "admin.banners",
     path: "/admin/banners",
     title: "Bannières",

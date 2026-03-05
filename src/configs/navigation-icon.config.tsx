@@ -19,6 +19,7 @@ import { RiTeamLine } from "react-icons/ri";
 import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
 import { FaPenNib } from 'react-icons/fa';
+import { BsCalendar3 } from 'react-icons/bs';
 
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -49,6 +50,7 @@ const navigationIcon: NavigationIcons = {
     mail: <MdOutlineMail />,
     banners: <PiFlagBannerBold />,
     pool: <PiSwimmingPoolBold />,
+    calendar: <BsCalendar3 />,
 }
 
 export default navigationIcon
