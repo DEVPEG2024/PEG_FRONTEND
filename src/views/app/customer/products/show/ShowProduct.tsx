@@ -200,6 +200,9 @@ const ShowProduct = () => {
               <div className="lg:w-1/2 w-full lg:pl-12 mt-6 lg:mt-0">
                 <div className="flex flex-col justify-between">
                   <h1 className="text-3xl font-bold">{product.name}</h1>
+                  {product.refVisibleToCustomer && product.productRef && (
+                    <p className="text-xs text-gray-400 mt-1">Réf. {product.productRef}</p>
+                  )}
                   <p className="text-2xl font-semibold">
                     {getProductBasePrice(product).toFixed(2)} €
                   </p>

@@ -28,6 +28,8 @@ export type Product = {
   customerCategories: CustomerCategory[];
   customers: Customer[];
   inCatalogue: boolean;
+  productRef?: string;
+  refVisibleToCustomer?: boolean;
 };
 
 export type Size = {

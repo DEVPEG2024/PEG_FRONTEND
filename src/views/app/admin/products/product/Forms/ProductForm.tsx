@@ -35,6 +35,8 @@ export type ProductFormModel = Omit<
   productCategory: string | null;
   form: string | null;
   priceTiers: PriceTier[];
+  productRef?: string;
+  refVisibleToCustomer?: boolean;
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;

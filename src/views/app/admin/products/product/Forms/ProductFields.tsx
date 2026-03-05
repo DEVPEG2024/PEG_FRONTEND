@@ -12,7 +12,10 @@ import { Select, Switcher } from '@/components/ui';
 import type { ProductFormModel } from './ProductForm';
 import { PriceTier } from '@/@types/product';
 import Button from '@/components/ui/Button';
-import { HiOutlineTrash, HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlinePlus, HiOutlineLockClosed } from 'react-icons/hi';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { SUPER_ADMIN, ADMIN, PRODUCER } from '@/constants/roles.constant';
 
 type Options = {
   label: string;
@@ -51,6 +54,15 @@ const ProductFields = (props: ProductFieldsProps) => {
     filterColorsListByProductCategory,
     control,
   } = props;
+
+  const userAuthority: string[] = useSelector(
+    (state: RootState) => (state.auth as any)?.user?.user?.authority ?? []
+  );
+  const canSeeProductRef =
+    userAuthority.includes(SUPER_ADMIN) ||
+    userAuthority.includes(ADMIN) ||
+    userAuthority.includes(PRODUCER);
+
   return (
     <AdaptableCard bordered={false} divider className="mb-4">
       <h5>{type === 'edit' ? 'Modification du produit' : 'Nouveau produit'}</h5>
@@ -356,6 +368,57 @@ const ProductFields = (props: ProductFieldsProps) => {
           )}
         />
       </FormItem>
+
+      {canSeeProductRef && (
+        <div className="mt-6 rounded-xl border border-dashed border-amber-400/40 bg-amber-50/5 p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <HiOutlineLockClosed className="text-amber-500" />
+            <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              Référence produit — Admin &amp; Producteur uniquement
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormItem
+              label="Référence interne"
+              invalid={!!errors.productRef}
+              errorMessage={errors.productRef?.message}
+            >
+              <Controller
+                name="productRef"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Ex: REF-2024-001"
+                  />
+                )}
+              />
+            </FormItem>
+
+            <FormItem label="Visible par le client">
+              <div className="flex items-center gap-3 mt-1">
+                <Controller
+                  name="refVisibleToCustomer"
+                  control={control}
+                  render={({ field }) => (
+                    <Switcher
+                      checked={!!field.value}
+                      onChange={(val) => field.onChange(!val)}
+                    />
+                  )}
+                />
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Afficher la référence sur la fiche produit client
+                </span>
+              </div>
+            </FormItem>
+          </div>
+        </div>
+      )}
     </AdaptableCard>
   );
 };

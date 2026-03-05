@@ -14,6 +14,8 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             name
             price
             priceTiers
+            productRef
+            refVisibleToCustomer
             images {
                 url
             }
@@ -62,6 +64,8 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             }
             active
             inCatalogue
+            productRef
+            refVisibleToCustomer
             sizes {
                 documentId
                 name

@@ -83,6 +83,8 @@ const EditProduct = () => {
     form: product?.form?.documentId || null,
     active: product?.active || false,
     inCatalogue: product?.inCatalogue || false,
+    productRef: product?.productRef ?? '',
+    refVisibleToCustomer: product?.refVisibleToCustomer ?? false,
   };
   const dispatch = useAppDispatch();
 
