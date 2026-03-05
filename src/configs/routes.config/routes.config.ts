@@ -6,6 +6,13 @@ import { SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER } from "@/const
 export const publicRoutes: Routes = [...authRoute];
 
 const protectedAdminRoutes = [
+  // leads
+  {
+    key: "admin.leads",
+    path: "/admin/leads",
+    component: lazy(() => import("@/views/app/admin/leads/LeadsPage")),
+    authority: [SUPER_ADMIN],
+  },
   // calendar
   {
     key: "admin.calendar",

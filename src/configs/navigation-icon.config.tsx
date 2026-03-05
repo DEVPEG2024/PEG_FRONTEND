@@ -3,6 +3,7 @@ import {
     HiOutlineClipboardList,
     HiOutlineCog,
     HiUsers,
+    HiOutlineLightningBolt,
 } from 'react-icons/hi'
 import { MdOutlineMail, MdOutlineStorefront } from "react-icons/md";
 import { FiUsers } from "react-icons/fi";
@@ -51,6 +52,7 @@ const navigationIcon: NavigationIcons = {
     banners: <PiFlagBannerBold />,
     pool: <PiSwimmingPoolBold />,
     calendar: <BsCalendar3 />,
+    leads: <HiOutlineLightningBolt />,
 }
 
 export default navigationIcon
