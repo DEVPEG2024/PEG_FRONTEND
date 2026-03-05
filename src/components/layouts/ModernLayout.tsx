@@ -11,6 +11,7 @@ import { RootState, useAppSelector } from "@/store";
 import { AuthorityCheck } from "../shared";
 import { Link } from "react-router-dom";
 import useUserCart from "@/utils/hooks/useUserCart";
+import ModeSwitcher from "../template/ThemeConfigurator/ModeSwitcher";
 
 const HeaderActionsStart = () => {
   return (
@@ -42,6 +43,7 @@ const HeaderActionsEnd = () => {
           </Alert>
         </Link>
       </AuthorityCheck>
+      <ModeSwitcher />
       <LanguageSelector />
       <UserDropdown hoverable={false} />
     </>
