@@ -1,10 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
 import reducer, { getCustomerForEditById, updateCustomer, createCustomer } from '../store'
 import CustomerForm, { CustomerFormModel } from './CustomersForm/CustomerForm'
+import { apiGetCustomerCategories } from '@/services/CustomerCategoryServices'
 
 injectReducer('customers', reducer)
+
+export type Options = { label: string; value: string }
 
 const EditCustomer = () => {
   const dispatch = useAppDispatch()
@@ -14,10 +17,18 @@ const EditCustomer = () => {
 
   const selectedCustomer = useAppSelector((state: any) => state.customers?.customer)
   const loading = useAppSelector((state: any) => state.customers?.loading)
+  const [customerCategories, setCustomerCategories] = useState<Options[]>([])
 
   useEffect(() => {
     if (documentId) dispatch(getCustomerForEditById(documentId))
   }, [documentId])
+
+  useEffect(() => {
+    apiGetCustomerCategories().then((res: any) => {
+      const nodes = res?.data?.data?.customerCategories_connection?.nodes ?? []
+      setCustomerCategories(nodes.map((c: any) => ({ label: c.name, value: c.documentId })))
+    }).catch(() => {})
+  }, [])
 
   const handleSubmit = async (formData: CustomerFormModel) => {
     const { logoFile, ...data } = formData
@@ -38,7 +49,7 @@ const EditCustomer = () => {
   return (
     <CustomerForm
       initialData={isEdit ? (selectedCustomer as any) : undefined}
-      customerCategories={[]}
+      customerCategories={customerCategories}
       onFormSubmit={handleSubmit}
       onDiscard={handleDiscard}
     />
