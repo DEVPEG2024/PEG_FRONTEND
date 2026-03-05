@@ -5,6 +5,8 @@ import { Controller, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-ho
 import { t } from 'i18next'
 import { Select, Switcher } from '@/components/ui'
 import { CustomerFormModel } from './CustomerForm'
+import { useRef, useState } from 'react'
+import { HiOutlinePhotograph, HiOutlineX } from 'react-icons/hi'
 
 type country = {
   label: string
@@ -20,9 +22,84 @@ type CustomerFieldsProps = {
   setValue: UseFormSetValue<CustomerFormModel>
 }
 
+const LogoUpload = ({ value, onChange }: { value: File | null | undefined; onChange: (f: File | null) => void }) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const preview = value instanceof File ? URL.createObjectURL(value) : null
+
+  const handleFile = (file: File | undefined) => {
+    if (file && file.type.startsWith('image/')) onChange(file)
+  }
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+      {preview ? (
+        <div className="relative inline-flex items-center gap-3">
+          <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 shadow-sm">
+            <img src={preview} alt="logo" className="w-full h-full object-contain bg-white dark:bg-gray-700" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[180px] truncate">{value?.name}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{value ? (value.size / 1024).toFixed(0) + ' Ko' : ''}</p>
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Changer
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(null)}
+                className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+              >
+                <HiOutlineX className="w-3 h-3" /> Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            handleFile(e.dataTransfer.files[0])
+          }}
+          className={`
+            flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border-2 border-dashed cursor-pointer transition-all
+            ${dragging
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              : 'border-gray-200 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/30'}
+          `}
+        >
+          <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <HiOutlinePhotograph className="w-5 h-5 text-gray-400" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+              Déposer un logo <span className="text-blue-600">ou parcourir</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">PNG, JPG, SVG · max 5 Mo</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const CustomerFields = (props: CustomerFieldsProps) => {
   const { countries, errors, control, watch, setValue } = props
-  const values = watch()
 
   const formatPhoneNumber = (value: string): string => {
     const digitsOnly = value.replace(/\D/g, '')
@@ -68,25 +145,12 @@ const CustomerFields = (props: CustomerFieldsProps) => {
         </FormItem>
       </div>
 
-      {/* ✅ LOGO */}
       <FormItem label="Logo (optionnel)">
         <Controller
           name="logoFile"
           control={control}
           render={({ field }) => (
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null
-                  field.onChange(file)
-                }}
-              />
-              <span className="text-sm opacity-80">
-                {values?.logoFile instanceof File ? values.logoFile.name : ''}
-              </span>
-            </div>
+            <LogoUpload value={field.value} onChange={(file) => field.onChange(file)} />
           )}
         />
       </FormItem>
