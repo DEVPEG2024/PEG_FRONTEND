@@ -1,7 +1,12 @@
 import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
+import dayjs from 'dayjs'
+import 'dayjs/locale/fr'
+import isoWeek from 'dayjs/plugin/isoWeek'
+dayjs.extend(isoWeek)
+dayjs.locale('fr')
 
 function safeDate(s?: string) {
   if (!s) return null
@@ -248,6 +253,118 @@ function TableMini({
           <div className="text-sm text-white/60 shrink-0">{r.right}</div>
         </div>
       ))}
+    </div>
+  )
+}
+
+/** ========= Calendar Widget ========= */
+
+const CAL_STORAGE_KEY = 'peg:calendarEvents'
+const CAT_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
+  production: { dot: 'bg-orange-500', bg: 'bg-orange-500/10 border border-orange-500/20', text: 'text-orange-300' },
+  réunion:    { dot: 'bg-sky-500',    bg: 'bg-sky-500/10 border border-sky-500/20',        text: 'text-sky-300'    },
+  livraison:  { dot: 'bg-emerald-500',bg: 'bg-emerald-500/10 border border-emerald-500/20',text: 'text-emerald-300'},
+  autre:      { dot: 'bg-violet-500', bg: 'bg-violet-500/10 border border-violet-500/20',  text: 'text-violet-300' },
+}
+
+interface RawCalEvent { id: number; title: string; start: string; end: string; category: string }
+
+function useCalendarEvents() {
+  const [events, setEvents] = useState<RawCalEvent[]>([])
+  useEffect(() => {
+    const raw = localStorage.getItem(CAL_STORAGE_KEY)
+    if (raw) {
+      try { setEvents(JSON.parse(raw)) } catch { /* noop */ }
+    }
+  }, [])
+  return events
+}
+
+function CalEventRow({ ev }: { ev: RawCalEvent }) {
+  const start = dayjs(ev.start)
+  const end = dayjs(ev.end)
+  const cat = CAT_COLORS[ev.category] ?? CAT_COLORS.autre
+  return (
+    <div className={`flex items-center gap-3 rounded-xl px-3 py-2 ${cat.bg}`}>
+      <span className={`w-2 h-2 rounded-full shrink-0 ${cat.dot}`} />
+      <div className="flex-1 min-w-0">
+        <div className={`text-sm font-semibold truncate ${cat.text}`}>{ev.title}</div>
+        <div className="text-xs text-white/40">{start.format('HH:mm')} – {end.format('HH:mm')}</div>
+      </div>
+    </div>
+  )
+}
+
+function CalendarWidget() {
+  const events = useCalendarEvents()
+  const today = dayjs()
+  const weekStart = today.startOf('isoWeek')
+  const weekEnd = today.endOf('isoWeek')
+
+  const todayEvents = events
+    .filter((e) => dayjs(e.start).isSame(today, 'day'))
+    .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
+
+  const weekEvents = events
+    .filter((e) => {
+      const s = dayjs(e.start)
+      return s.isAfter(weekStart.subtract(1, 'ms')) && s.isBefore(weekEnd.add(1, 'ms')) && !s.isSame(today, 'day')
+    })
+    .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
+    .slice(0, 6)
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Aujourd'hui */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-white capitalize">
+              📅 Aujourd'hui — {today.format('dddd D MMMM')}
+            </div>
+            <div className="mt-1 text-xs text-white/50">{todayEvents.length} événement{todayEvents.length !== 1 ? 's' : ''}</div>
+          </div>
+          <Link to="/admin/calendar" className="text-xs text-sky-300/80 hover:text-sky-200 transition shrink-0">
+            Ouvrir →
+          </Link>
+        </div>
+        {todayEvents.length === 0 ? (
+          <div className="text-xs text-white/35 py-3 text-center">Aucun événement aujourd'hui</div>
+        ) : (
+          <div className="space-y-2">
+            {todayEvents.map((ev) => <CalEventRow key={ev.id} ev={ev} />)}
+          </div>
+        )}
+      </div>
+
+      {/* Cette semaine */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-white">
+              🗓️ Cette semaine
+            </div>
+            <div className="mt-1 text-xs text-white/50">
+              {weekStart.format('D MMM')} – {weekEnd.format('D MMM')} · {weekEvents.length} autre{weekEvents.length !== 1 ? 's' : ''} événement{weekEvents.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <Link to="/admin/calendar" className="text-xs text-sky-300/80 hover:text-sky-200 transition shrink-0">
+            Calendrier →
+          </Link>
+        </div>
+        {weekEvents.length === 0 ? (
+          <div className="text-xs text-white/35 py-3 text-center">Aucun autre événement cette semaine</div>
+        ) : (
+          <div className="space-y-2">
+            {weekEvents.map((ev) => (
+              <div key={ev.id} className="flex items-center gap-3">
+                <div className="text-xs text-white/35 w-12 shrink-0 text-right">{dayjs(ev.start).format('ddd D')}</div>
+                <CalEventRow ev={ev} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -684,6 +801,12 @@ export default function DashboardAdmin() {
               onClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)}
             />
           </Panel>
+        </div>
+
+        {/* AGENDA WIDGET */}
+        <div>
+          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Agenda</div>
+          <CalendarWidget />
         </div>
 
         {/* BOTTOM ROW 1 */}

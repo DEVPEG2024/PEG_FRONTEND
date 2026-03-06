@@ -456,11 +456,38 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }: {
     )
 }
 
+// ─── localStorage persistence ────────────────────────────────────────────────
+const STORAGE_KEY = 'peg:calendarEvents'
+
+function serializeEvents(evs: CalEvent[]): string {
+    return JSON.stringify(evs.map((e) => ({ ...e, start: e.start.toISOString(), end: e.end.toISOString() })))
+}
+
+function deserializeEvents(json: string): CalEvent[] {
+    try {
+        const arr = JSON.parse(json)
+        return arr.map((e: any) => ({ ...e, start: dayjs(e.start), end: dayjs(e.end) }))
+    } catch {
+        return SAMPLE
+    }
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 const CalendarPage = () => {
-    const [events, setEvents] = useState<CalEvent[]>(SAMPLE)
+    const [events, setEvents] = useState<CalEvent[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY)
+        return saved ? deserializeEvents(saved) : SAMPLE
+    })
     const [view, setView] = useState<ViewType>('month')
     const [date, setDate] = useState(dayjs())
+
+    const setAndPersistEvents = useCallback((updater: (prev: CalEvent[]) => CalEvent[]) => {
+        setEvents((prev) => {
+            const next = updater(prev)
+            localStorage.setItem(STORAGE_KEY, serializeEvents(next))
+            return next
+        })
+    }, [])
     const [modal, setModal] = useState<{ open: boolean; event: CalEvent | null; defaultStart: Dayjs }>({
         open: false, event: null, defaultStart: dayjs(),
     })
@@ -482,15 +509,15 @@ const CalendarPage = () => {
 
     const handleSave = (data: Omit<CalEvent, 'id'>) => {
         if (modal.event) {
-            setEvents((prev) => prev.map((e) => e.id === modal.event!.id ? { ...e, ...data } : e))
+            setAndPersistEvents((prev) => prev.map((e) => e.id === modal.event!.id ? { ...e, ...data } : e))
         } else {
-            setEvents((prev) => [...prev, { id: Date.now(), ...data }])
+            setAndPersistEvents((prev) => [...prev, { id: Date.now(), ...data }])
         }
         setModal({ open: false, event: null, defaultStart: dayjs() })
     }
 
     const handleDelete = () => {
-        if (modal.event) setEvents((prev) => prev.filter((e) => e.id !== modal.event!.id))
+        if (modal.event) setAndPersistEvents((prev) => prev.filter((e) => e.id !== modal.event!.id))
         setModal({ open: false, event: null, defaultStart: dayjs() })
     }
 
