@@ -40,6 +40,7 @@ const ProjectsList = () => {
   const [pageSize, setPageSize] = useState(pageSelections[4].value);
   const [searchTerm, setSearchTerm] = useState('');
   const [customersSelected, setCustomersSelected] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const dispatch = useAppDispatch();
 
   const { total, projects, loading, newProjectDialog } = useAppSelector(
@@ -75,9 +76,9 @@ const ProjectsList = () => {
     dispatch(deleteProject(project.documentId));
   };
 
-  const filteredProjects = customersSelected.length > 0
-    ? projects.filter((p) => customersSelected.includes(p.customer?.documentId || ''))
-    : projects;
+  const filteredProjects = projects
+    .filter((p) => customersSelected.length === 0 || customersSelected.includes(p.customer?.documentId || ''))
+    .filter((p) => statusFilter === 'all' || p.state === statusFilter);
 
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -157,6 +158,56 @@ const ProjectsList = () => {
           />
         </div>
       </div>
+
+      {/* Filtres statut */}
+      {(() => {
+        const tabs = [
+          { key: 'all',       label: 'Tous',        color: 'rgba(255,255,255,0.6)',  bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' },
+          { key: 'pending',   label: 'En cours',    color: '#6b9eff',               bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)'  },
+          { key: 'fulfilled', label: 'Terminé',     color: '#4ade80',               bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'   },
+          { key: 'waiting',   label: 'En attente',  color: '#fbbf24',               bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'   },
+          { key: 'canceled',  label: 'Annulé',      color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
+        ];
+        const counts: Record<string, number> = { all: projects.length };
+        projects.forEach((p) => { counts[p.state] = (counts[p.state] || 0) + 1; });
+        return (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            {tabs.map((tab) => {
+              const active = statusFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => { setStatusFilter(tab.key); setCurrentPage(1); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: active ? tab.bg : 'transparent',
+                    border: `1.5px solid ${active ? tab.border : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: '100px',
+                    padding: '6px 14px',
+                    color: active ? tab.color : 'rgba(255,255,255,0.35)',
+                    fontSize: '12px', fontWeight: active ? 700 : 500,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {tab.label}
+                  {counts[tab.key] !== undefined && (
+                    <span style={{
+                      background: active ? tab.border : 'rgba(255,255,255,0.08)',
+                      color: active ? tab.color : 'rgba(255,255,255,0.3)',
+                      borderRadius: '100px', padding: '1px 7px',
+                      fontSize: '10px', fontWeight: 700,
+                    }}>
+                      {counts[tab.key] ?? 0}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Liste */}
       <Loading loading={loading}>
