@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
-import Card from '@/components/ui/Card';
 import { debounce } from 'lodash';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
@@ -17,13 +16,26 @@ import { createComment, setLoading, useAppSelector } from '../store';
 import { User } from '@/@types/user';
 import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
-import { Select, Upload } from '@/components/ui';
+import { Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
-import { visibilityData } from '../../lists/constants';
 import { hasRole } from '@/utils/permissions';
 import { Loading, RichTextEditor } from '@/components/shared';
 import TimelineComment from './TimelineComment';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
+
+type VisibilityOption = { value: string; label: string; color: string; bg: string; border: string };
+
+const VISIBILITY_OPTIONS: VisibilityOption[] = [
+  { value: 'all',      label: 'Visible par tous',      color: '#6b9eff', bg: 'rgba(47,111,237,0.12)',  border: 'rgba(47,111,237,0.3)'  },
+  { value: 'customer', label: 'Client uniquement',     color: '#fbbf24', bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.3)'   },
+  { value: 'producer', label: 'Producteur uniquement', color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)'  },
+];
+
+const getVisibilityOptions = (roleName: string): VisibilityOption[] => {
+  if (roleName === 'customer') return VISIBILITY_OPTIONS.filter(o => o.value !== 'producer');
+  if (roleName === 'producer') return VISIBILITY_OPTIONS.filter(o => o.value !== 'customer');
+  return VISIBILITY_OPTIONS;
+};
 
 const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
@@ -38,6 +50,8 @@ const Comments = () => {
   );
   const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(user?.avatar);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+
+  const visibilityOptions = getVisibilityOptions(user?.role?.name ?? '');
 
   useEffect(() => {
     setAvatarLoading(true);
@@ -75,12 +89,7 @@ const Comments = () => {
         content: commentText,
         user: user,
         images: newPegFiles.map(({ id }) => id),
-        visibility:
-          user.role.name === 'customer'
-            ? 'customer'
-            : user.role.name === 'producer'
-              ? 'producer'
-              : visibility,
+        visibility,
       };
 
       dispatch(createComment({ comment, project }));
@@ -89,7 +98,6 @@ const Comments = () => {
     }
   };
 
-  // TODO: Voir pour mettre en commun dans un composant Upload dédié --> EditProduct utilise également + Files.tsx
   const onFileAdd = async (file: File) => {
     setPegFiles([...pegFiles, { file, name: file.name }]);
   };
@@ -112,14 +120,6 @@ const Comments = () => {
       'image/png',
       'image/jpg',
       'image/webp',
-      'application/pdf',
-      'application/x-pdf',
-      'application/pdf',
-      'application/x-pdf',
-      'application/pdf',
-      'application/x-pdf',
-      'application/pdf',
-      'application/x-pdf',
       'application/pdf',
       'application/x-pdf',
       'application/zip',
@@ -152,6 +152,8 @@ const Comments = () => {
       );
     }
   };
+
+  const activeVis = VISIBILITY_OPTIONS.find(o => o.value === visibility) ?? VISIBILITY_OPTIONS[0];
 
   return (
     <Container className="h-full">
@@ -186,7 +188,7 @@ const Comments = () => {
             borderRadius: '14px',
             padding: '16px',
           }}>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
               <Loading loading={avatarLoading}>
                 <Avatar
                   size={32}
@@ -199,6 +201,41 @@ const Comments = () => {
                 <RichTextEditor onChange={onEdit} value={commentText} />
               </div>
             </div>
+
+            {/* Visibility picker */}
+            <div style={{ marginBottom: '14px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Qui peut voir ce message ?
+              </p>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {visibilityOptions.map((opt) => {
+                  const isActive = visibility === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setVisibility(opt.value)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '100px',
+                        border: `1px solid ${isActive ? opt.border : 'rgba(255,255,255,0.1)'}`,
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        fontFamily: 'Inter, sans-serif',
+                        background: isActive ? opt.bg : 'rgba(255,255,255,0.04)',
+                        color: isActive ? opt.color : 'rgba(255,255,255,0.4)',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isActive ? `0 0 10px ${opt.bg}` : 'none',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Actions row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
               <Upload
                 multiple
@@ -211,25 +248,23 @@ const Comments = () => {
                 field={{ name: 'images' }}
                 fileList={pegFiles.map(({ file }) => file)}
               />
-              {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', whiteSpace: 'nowrap' }}>Visibilité :</span>
-                  <Select
-                    size="sm"
-                    placeholder="Visibilité"
-                    options={visibilityData}
-                    value={visibilityData.find(({ value }) => value === visibility)}
-                    onChange={(e: any) => setVisibility(e.value)}
-                  />
-                </div>
-              )}
-              <Button
-                variant="solid"
-                onClick={submitComment}
-                loading={loading}
-              >
-                Ajouter
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  background: activeVis.bg, border: `1px solid ${activeVis.border}`,
+                  borderRadius: '100px', padding: '4px 10px',
+                  color: activeVis.color, fontSize: '11px', fontWeight: 600,
+                }}>
+                  {activeVis.label}
+                </span>
+                <Button
+                  variant="solid"
+                  onClick={submitComment}
+                  loading={loading}
+                >
+                  Envoyer
+                </Button>
+              </div>
             </div>
           </div>
         </div>

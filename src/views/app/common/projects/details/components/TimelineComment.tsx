@@ -2,8 +2,6 @@ import { PegFile } from '@/@types/pegFile';
 import { User } from '@/@types/user';
 import {
   Avatar,
-  Button,
-  Card,
   TimeLineItemProps,
   Tooltip,
 } from '@/components/ui';
@@ -16,19 +14,22 @@ import { useEffect, useState } from 'react';
 import { deleteComment } from '../store';
 import Timeline from '@/components/ui/Timeline';
 import { Loading } from '@/components/shared';
-import { HiUserCircle } from 'react-icons/hi';
+import { HiUserCircle, HiTrash } from 'react-icons/hi';
 import dayjs from 'dayjs';
-import { hasRole } from '@/utils/permissions';
-import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import ReactHtmlParser from 'html-react-parser';
 import { Comment } from '@/@types/project';
-import { visibilityData } from '../../lists/constants';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
-import { HiTrash } from 'react-icons/hi2';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
   user: User;
+};
+
+const visibilityStyle: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  all:      { label: 'Visible par tous',      color: '#6b9eff', bg: 'rgba(47,111,237,0.12)',  border: 'rgba(47,111,237,0.25)'  },
+  customer: { label: 'Client uniquement',     color: '#fbbf24', bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.25)'   },
+  producer: { label: 'Producteur uniquement', color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.25)'  },
+  admin:    { label: 'Admin uniquement',      color: '#94a3b8', bg: 'rgba(148,163,184,0.1)',  border: 'rgba(148,163,184,0.2)'  },
 };
 
 const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
@@ -43,40 +44,30 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
     setAvatarLoading(false);
   }, [avatarUrl]);
 
-  const determineAuthorRoleLabel = (user: User): string => {
-    switch (user.role.name) {
-      case 'customer':
-        return 'Client ' + (user.customer?.name ?? 'Inconnu');
-      case 'producer':
-        return 'Producteur ' + (user.producer?.name ?? 'Inconnu');
-      case 'super_admin':
-        return 'Administrateur';
-      default:
-        return '';
+  const determineAuthorRoleLabel = (u: User): string => {
+    switch (u.role.name) {
+      case 'customer':  return 'Client ' + (u.customer?.name ?? 'Inconnu');
+      case 'producer':  return 'Producteur ' + (u.producer?.name ?? 'Inconnu');
+      case 'super_admin': return 'Administrateur';
+      default: return '';
     }
   };
+
   const authorLabel = comment.user
     ? `${comment.user.firstName} ${comment.user.lastName} (${determineAuthorRoleLabel(comment.user)})`
     : 'Utilisateur supprimé';
+
   const dispatch = useAppDispatch();
 
   const handleDeleteComment = async () => {
     dispatch(deleteComment(comment.documentId));
-    const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(
-      comment?.images
-    );
-
+    const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(comment?.images);
     for (const pegFileToDelete of pegFilesToDelete) {
       apiDeleteFile(pegFileToDelete.id);
     }
   };
 
-  const determineCommentVisibility = (visibility: string): string => {
-    return (
-      visibilityData.find(({ value }) => value === visibility)?.label ||
-      visibilityData.find(({ value }) => value === 'all')!.label
-    );
-  };
+  const vis = visibilityStyle[comment.visibility] ?? visibilityStyle.all;
 
   return (
     <Timeline.Item
@@ -93,59 +84,80 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
       }
       {...rest}
     >
-      <div className="my-1 flex items-center justify-between">
-        <span>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">
-            {authorLabel}
-          </span>
-          <span className="mx-2">a ajouté un commentaire </span>
-          <span className="text-gray-500 text-end">
-            le {dayjs(comment.createdAt).format('DD/MM/YYYY à HH:mm')}
-          </span>
-        </span>
-        {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-          <span>{`Visibilité : ${determineCommentVisibility(comment.visibility)}`}</span>
-        )}
-      </div>
-      <div className="grid grid-cols-12 gap-4 mt-4">
-        <Card
-          bordered
-          className={`${comment.images.length > 0 ? 'col-span-11' : 'col-span-12'}`}
-        >
-          <p className="prose dark:prose-invert max-w-none text-sm">
-            {ReactHtmlParser(comment.content)}
-          </p>
-          <div className="justify-self-end">
-            <Tooltip title="Supprimer">
-              <Button
-                variant="default"
-                onClick={handleDeleteComment}
-                size="sm"
-                icon={<HiTrash />}
-              />
-            </Tooltip>
+      <div style={{ fontFamily: 'Inter, sans-serif' }}>
+        {/* Header: author + date + visibility */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: '13px' }}>
+              {authorLabel}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+              · {dayjs(comment.createdAt).format('DD/MM/YYYY à HH:mm')}
+            </span>
           </div>
-        </Card>
-        {comment.images.length > 0 && (
-          <div className="col-span-1 flex flex-col items-center justify-center">
-            {comment.images.map((image: PegFile) => (
-              <div className=" bg-gray-900 rounded-md">
-                <a href={image.url} target="_blank" rel="noreferrer">
+          <span style={{
+            display: 'inline-flex', alignItems: 'center',
+            background: vis.bg, border: `1px solid ${vis.border}`,
+            borderRadius: '100px', padding: '3px 10px',
+            color: vis.color, fontSize: '11px', fontWeight: 600,
+            flexShrink: 0,
+          }}>
+            {vis.label}
+          </span>
+        </div>
+
+        {/* Comment body */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          display: 'grid',
+          gridTemplateColumns: comment.images.length > 0 ? '1fr auto' : '1fr',
+          gap: '12px',
+          alignItems: 'start',
+        }}>
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', lineHeight: 1.7 }}>
+              {ReactHtmlParser(comment.content)}
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <Tooltip title="Supprimer">
+                <button
+                  onClick={handleDeleteComment}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)',
+                    borderRadius: '7px', padding: '4px 10px',
+                    color: '#f87171', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  <HiTrash size={12} /> Supprimer
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+
+          {comment.images.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {comment.images.map((image: PegFile) => (
+                <a key={image.url} href={image.url} target="_blank" rel="noreferrer">
                   <img
                     src={image.url}
                     alt={image.name}
-                    className="rounded-lg bg-slate-50"
                     style={{
-                      height: '250px',
-                      width: '100%',
+                      height: '120px',
+                      width: '120px',
                       objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   />
                 </a>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Timeline.Item>
   );
