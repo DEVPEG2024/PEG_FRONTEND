@@ -17,12 +17,16 @@ export type OrderState = {
   orderItems: OrderItem[];
   loading: boolean;
   total: number;
+  pageCount: number;
+  counts: { pending: number; fulfilled: number };
 };
 
 const initialState: OrderState = {
   orderItems: [],
   loading: false,
   total: 0,
+  pageCount: 1,
+  counts: { pending: 0, fulfilled: 0 },
 };
 
 export const getOrderItems = createAsyncThunk(
@@ -34,6 +38,16 @@ export const getOrderItems = createAsyncThunk(
       apiGetOrderItems(data)
     );
     return orderItems_connection;
+  }
+);
+
+export const getOrderItemsCount = createAsyncThunk(
+  SLICE_NAME + '/getOrderItemsCount',
+  async (state: string): Promise<{ state: string; count: number }> => {
+    const { orderItems_connection }: { orderItems_connection: GetOrderItemsResponse } = await unwrapData(
+      apiGetOrderItems({ pagination: { page: 1, pageSize: 1 }, searchTerm: '', state })
+    );
+    return { state, count: orderItems_connection.pageInfo.total };
   }
 );
 
@@ -70,6 +84,7 @@ const orderSlice = createSlice({
       state.loading = false;
       state.orderItems = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
+      state.pageCount = action.payload.pageInfo.pageCount;
     });
     builder.addCase(getOrderItems.rejected, (state) => {
       state.loading = false;
@@ -103,6 +118,11 @@ const orderSlice = createSlice({
     });
     builder.addCase(deleteOrderItem.rejected, (state) => {
       state.loading = false;
+    });
+
+    // COUNTS
+    builder.addCase(getOrderItemsCount.fulfilled, (state, action) => {
+      state.counts[action.payload.state as 'pending' | 'fulfilled'] = action.payload.count;
     });
   },
 });

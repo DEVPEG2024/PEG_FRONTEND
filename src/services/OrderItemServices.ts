@@ -50,6 +50,7 @@ export async function apiCreateOrderItem(data: CreateOrderItemRequest): Promise<
 export type GetOrderItemsRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
+    state?: string;
   };
 
 export type GetOrderItemsResponse = {
@@ -57,10 +58,12 @@ export type GetOrderItemsResponse = {
     pageInfo: PageInfo
 };
 
-export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{orderItems_connection: GetOrderItemsResponse}>>> {
+export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination: {page: 1, pageSize: 25}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{orderItems_connection: GetOrderItemsResponse}>>> {
+    const { state, ...rest } = data;
+    const stateFilter = state ? `, {state: {eq: $state}}` : '';
     const query = `
-    query getOrderItems($searchTerm: String, $pagination: PaginationArg) {
-        orderItems_connection(filters: {product: {name: {containsi: $searchTerm}}}, pagination: $pagination, sort: "createdAt:desc") {
+    query getOrderItems($searchTerm: String, $pagination: PaginationArg${state ? ', $state: String' : ''}) {
+        orderItems_connection(filters: {and: [{product: {name: {containsi: $searchTerm}}}${stateFilter}]}, pagination: $pagination, sort: "createdAt:desc") {
             nodes {
                 documentId
                 price
@@ -71,29 +74,11 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                     images {
                         url
                     }
-                    price
-                    priceTiers
-                    sizes {
-                        name
-                        value
-                    }
-                    colors {
-                        name
-                        value
-                    }
-                    description
-                    form {
-                        documentId
-                        fields
-                    }
                 }
                 customer {
                     name
                 }
                 sizeAndColorSelections
-                formAnswer {
-                    answer
-                }
                 project {
                     documentId
                 }
@@ -108,7 +93,8 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
     }
   `,
   variables = {
-    ...data
+    ...rest,
+    ...(state ? { state } : {}),
   }
     return ApiService.fetchData<ApiResponse<{orderItems_connection: GetOrderItemsResponse}>>({
         url: API_GRAPHQL_URL,
