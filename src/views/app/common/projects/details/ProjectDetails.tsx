@@ -44,7 +44,6 @@ const ProjectDetails = () => {
           {selectedTab === 'Accueil' && <Summary project={project} />}
           {selectedTab === 'Commentaires' && <Comments />}
           {selectedTab === 'Fichiers' && <Files />}
-          {selectedTab === 'Tâches' && <Tasks />}
           {selectedTab === 'Checklist' && <ProjectChecklist />}
           {selectedTab === 'Factures' && <Invoices />}
         </Container>
