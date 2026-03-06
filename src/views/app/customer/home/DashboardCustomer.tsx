@@ -1,13 +1,12 @@
-import { Container, DoubleSidedImage } from '@/components/shared';
-import { Button } from '@/components/ui';
+import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { Suspense, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import HomeProductsList from './HomeProductsList';
 import { BsArrowRight } from 'react-icons/bs';
 import { Link } from 'react-router-dom';
 import { User } from '@/@types/user';
+import { HiOutlineClipboardList, HiOutlineCheckCircle, HiOutlineCollection } from 'react-icons/hi';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -15,10 +14,53 @@ import reducer, {
 
 injectReducer('dashboardCustomer', reducer);
 
+const StatWidget = ({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  color: string;
+}) => (
+  <div style={{
+    background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+    borderRadius: '16px',
+    padding: '20px 24px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    fontFamily: 'Inter, sans-serif',
+  }}>
+    <div style={{
+      width: '48px',
+      height: '48px',
+      borderRadius: '12px',
+      background: color,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      {icon}
+    </div>
+    <div>
+      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+        {label}
+      </p>
+      <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+        {value}
+      </p>
+    </div>
+  </div>
+);
+
 const DashboardCustomer = () => {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { customer, products } = useAppSelector(
+  const { customer, products, projects } = useAppSelector(
     (state) => state.dashboardCustomer.data
   );
   const { user }: { user: User } = useSelector(
@@ -26,69 +68,139 @@ const DashboardCustomer = () => {
   );
 
   useEffect(() => {
-    fetchHomeCustomer();
+    dispatch(getDashboardCustomerInformations(user.customer!.documentId));
   }, []);
 
-  const fetchHomeCustomer = async () => {
-    dispatch(getDashboardCustomerInformations(user.customer!.documentId));
-  };
+  const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;
+  const projectsInProgress = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
 
   return (
     customer && (
-      <div>
-        <Suspense fallback={<></>}>
-          {customer.banner && (
+      <Suspense fallback={<></>}>
+        {/* Banner */}
+        {customer.banner && (
+          <div style={{ position: 'relative' }}>
             <img
               src={customer.banner.image.url}
               alt="Banner"
-              className="w-full object-cover"
+              style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />
-          )}
-          <div className="flex bg-gray-900 justify-between p-4">
-            <div className="flex gap-4 items-center">
-              <DoubleSidedImage
-                className="mx-auto h-36"
-                src="/img/others/welcome.png"
-                darkModeSrc="/img/others/welcome-dark.png"
-                alt="Welcome"
-              />
-              <div className="flex flex-col">
-                <h3 className="mb-1">
-                  {t('hello')}, {user?.firstName} 👋
-                </h3>
-                <p className="text-base">
-                  {t('welcome_to_product_management')}
-                </p>
-              </div>
-            </div>
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: '80px',
+              background: 'linear-gradient(to top, #0a1628, transparent)',
+            }} />
           </div>
-          <Container className="mt-4 lg:p-0 p-4">
-            <div className="flex flex-col gap-4">
-              <h3>Mes offres personnalisées</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <HomeProductsList products={products} />
-                <div className="col-span-1 flex flex-col gap-4">
+        )}
+
+        {/* Welcome header */}
+        <div style={{
+          background: 'linear-gradient(180deg, #0d1b2e 0%, #0a1628 100%)',
+          padding: '28px 32px 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          fontFamily: 'Inter, sans-serif',
+        }}>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            Tableau de bord
+          </p>
+          <h2 style={{ color: '#fff', fontSize: '26px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            Bonjour, {user?.firstName} 👋
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginTop: '6px' }}>
+            Bienvenue sur votre espace client
+          </p>
+        </div>
+
+        <Container style={{ fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ paddingTop: '28px', paddingBottom: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+            {/* Stat widgets */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <StatWidget
+                icon={<HiOutlineClipboardList size={22} color="#6b9eff" />}
+                label="Projets en cours"
+                value={projectsInProgress}
+                color="rgba(47,111,237,0.18)"
+              />
+              <StatWidget
+                icon={<HiOutlineCheckCircle size={22} color="#4ade80" />}
+                label="Projets réalisés"
+                value={projectsDone}
+                color="rgba(34,197,94,0.18)"
+              />
+              <StatWidget
+                icon={<HiOutlineCollection size={22} color="#a78bfa" />}
+                label="Offres personnalisées"
+                value={products.length}
+                color="rgba(139,92,246,0.18)"
+              />
+            </div>
+
+            {/* Personalized offers */}
+            <div>
+              {/* Section header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    Catalogue personnalisé
+                  </p>
+                  <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
+                    Mes offres personnalisées
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <Link to="/customer/products">
-                    <Button className="flex items-center justify-center gap-2">
-                      <span>Voir toutes mes offres</span>
-                      <BsArrowRight className="w-4 h-4" />
-                    </Button>
+                    <button style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                      border: 'none', borderRadius: '10px',
+                      padding: '9px 16px',
+                      color: '#fff', fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+                      fontFamily: 'Inter, sans-serif',
+                    }}>
+                      Toutes mes offres <BsArrowRight size={14} />
+                    </button>
                   </Link>
                   <Link to="/customer/catalogue">
-                    <Button
-                      variant="twoTone"
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <span>Voir le catalogue</span>
-                      <BsArrowRight className="w-4 h-4" />
-                    </Button>
+                    <button style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      padding: '9px 16px',
+                      color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}>
+                      Catalogue <BsArrowRight size={14} />
+                    </button>
                   </Link>
                 </div>
               </div>
+
+              {/* Products grid */}
+              {products.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                  <HomeProductsList products={products} />
+                </div>
+              ) : (
+                <div style={{
+                  background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                  borderRadius: '16px',
+                  padding: '48px 24px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+                }}>
+                  <HiOutlineCollection size={48} style={{ color: 'rgba(255,255,255,0.12)', margin: '0 auto 12px' }} />
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune offre personnalisée disponible</p>
+                </div>
+              )}
             </div>
-          </Container>
-        </Suspense>
-      </div>
+          </div>
+        </Container>
+      </Suspense>
     )
   );
 };
