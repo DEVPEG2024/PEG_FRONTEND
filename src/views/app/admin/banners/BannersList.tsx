@@ -55,20 +55,20 @@ const BannerCard = ({
     }}
   >
     {/* Preview image */}
-    <div style={{ position: 'relative', width: '100%', paddingTop: '28%', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
+    <div style={{ position: 'relative', width: '100%', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
       {banner.image?.url ? (
         <img
           src={banner.image.url}
           alt={banner.name}
           style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover',
+            width: '100%',
+            height: 'auto',
+            display: 'block',
           }}
         />
       ) : (
         <div style={{
-          position: 'absolute', inset: 0,
+          height: '80px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           gap: '8px',
         }}>
