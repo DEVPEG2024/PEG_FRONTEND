@@ -1,13 +1,31 @@
-import { useTranslation } from 'react-i18next';
 import SignInForm from './SignInForm';
 
 const SignIn = () => {
-  const { t } = useTranslation();
   return (
     <>
-      <div className="mb-8">
-        <h3 className="mb-1">{t('welcome_to_product_management')}</h3>
-        <p>{t('please_enter_your_credentials_to_login')}</p>
+      <div style={{ marginBottom: '32px' }}>
+        <p style={{
+          color: 'rgba(255,255,255,0.3)',
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          marginBottom: '8px',
+        }}>
+          Connexion
+        </p>
+        <h2 style={{
+          color: '#fff',
+          fontSize: '24px',
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          marginBottom: '6px',
+        }}>
+          Bon retour 👋
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>
+          Entrez vos identifiants pour accéder à votre espace
+        </p>
       </div>
       <SignInForm disableSubmit={false} />
     </>
