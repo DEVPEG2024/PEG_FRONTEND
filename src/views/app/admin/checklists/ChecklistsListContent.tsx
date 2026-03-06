@@ -71,20 +71,29 @@ function ChecklistsListContent() {
     dispatch(setChecklist(null));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const items = formItems.filter((i) => i.trim() !== '');
     if (!formName.trim() || items.length === 0) {
       toast.error('Nom et au moins une tâche requis');
       return;
     }
     if (checklist?.documentId) {
-      dispatch(updateChecklist({ documentId: checklist.documentId, name: formName, items }));
-      toast.success('Modèle mis à jour');
+      const result = await dispatch(updateChecklist({ documentId: checklist.documentId, name: formName, items }));
+      if (result.meta.requestStatus === 'fulfilled') {
+        toast.success('Modèle mis à jour');
+        handleClose();
+      } else {
+        toast.error('Erreur lors de la mise à jour');
+      }
     } else {
-      dispatch(createChecklist({ name: formName, items }));
-      toast.success('Modèle créé');
+      const result = await dispatch(createChecklist({ name: formName, items }));
+      if (result.meta.requestStatus === 'fulfilled') {
+        toast.success('Modèle créé');
+        handleClose();
+      } else {
+        toast.error('Erreur lors de la création — vérifiez la configuration Strapi');
+      }
     }
-    handleClose();
   };
 
   const handleDelete = (documentId: string) => {
