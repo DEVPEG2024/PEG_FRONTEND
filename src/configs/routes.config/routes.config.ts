@@ -136,6 +136,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/forms/FormsList")),
     authority: [SUPER_ADMIN],
   },
+  //checklists
+  {
+    key: "admin.checklists",
+    path: "/admin/checklists",
+    component: lazy(() => import("@/views/app/admin/checklists/ChecklistsList")),
+    authority: [SUPER_ADMIN],
+  },
   //users
   {
     key: "admin.users",

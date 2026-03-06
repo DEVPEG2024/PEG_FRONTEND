@@ -14,6 +14,12 @@ import reducer, {
 import { OrderItem } from '@/@types/orderItem';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
+import { unwrapData } from '@/utils/serviceHelper';
+import { apiGetProductForShowById } from '@/services/ProductServices';
+import { apiCreateProject } from '@/services/ProjectServices';
+import { apiUpdateOrderItem } from '@/services/OrderItemServices';
+import { ChecklistItem } from '@/@types/checklist';
+import { Project } from '@/@types/project';
 
 injectReducer('orders', reducer);
 
@@ -73,6 +79,48 @@ const OrderItemsList = () => {
     navigate(`/common/projects/details/${orderItem.project.documentId}`);
   };
 
+  const handleCreateProject = async (orderItem: OrderItem) => {
+    const { product } = await unwrapData(
+      apiGetProductForShowById(orderItem.product.documentId)
+    );
+    const checklistItems: ChecklistItem[] =
+      product?.checklist?.items?.map((label: string) => ({ label, done: false })) ?? [];
+    const { createProject }: { createProject: Project } = await unwrapData(
+      apiCreateProject({
+        name: `Projet - ${orderItem.product.name}`,
+        description: '',
+        startDate: new Date(),
+        endDate: new Date(),
+        state: 'pending',
+        customer: orderItem.customer,
+        producer: null,
+        priority: 'low',
+        price: orderItem.price,
+        producerPrice: 0,
+        paidPrice: 0,
+        producerPaidPrice: 0,
+        comments: [],
+        images: [],
+        tasks: [],
+        invoices: [],
+        poolable: false,
+        orderItem: orderItem,
+        checklistItems,
+      })
+    );
+    await apiUpdateOrderItem({
+      documentId: orderItem.documentId,
+      project: { documentId: createProject.documentId } as any,
+    });
+    dispatch(
+      getOrderItems({
+        pagination: { page: currentPage, pageSize },
+        searchTerm,
+      })
+    );
+    navigate(`/common/projects/details/${createProject.documentId}`);
+  };
+
   const handleDeleteOrderItem = (orderItem: OrderItem) => {
     dispatch(deleteOrderItem(orderItem.documentId));
   };
@@ -82,6 +130,7 @@ const OrderItemsList = () => {
     handleFinishOrder,
     handlePendOrder,
     handleShowProject,
+    handleCreateProject,
     handleDeleteOrderItem,
     user
   );

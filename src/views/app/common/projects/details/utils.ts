@@ -3,5 +3,6 @@ export const labelList = [
   'Commentaires',
   'Fichiers',
   'Tâches',
+  'Checklist',
   'Factures',
 ];

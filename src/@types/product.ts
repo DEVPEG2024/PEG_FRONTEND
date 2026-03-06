@@ -1,6 +1,7 @@
 import { Customer, CustomerCategory } from './customer';
 import { Form } from './form';
 import { PegFile } from './pegFile';
+import { Checklist } from './checklist';
 
 export type PriceTier = {
   minQuantity: number;
@@ -24,6 +25,7 @@ export type Product = {
   sizes: Size[];
   colors: Color[];
   form: Form;
+  checklist?: Checklist;
   productCategory: ProductCategory;
   customerCategories: CustomerCategory[];
   customers: Customer[];

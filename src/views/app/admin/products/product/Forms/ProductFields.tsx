@@ -31,6 +31,7 @@ type ProductFieldsProps = {
   categories: Options[];
   customers: Options[];
   forms: Options[];
+  checklists: Options[];
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (
     productCategoryDocumentId: string
@@ -50,6 +51,7 @@ const ProductFields = (props: ProductFieldsProps) => {
     categories,
     customers,
     forms,
+    checklists,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
     control,
@@ -344,6 +346,27 @@ const ProductFields = (props: ProductFieldsProps) => {
                 onChange={(selectedOption) => {
                   const value = selectedOption?.value;
                   field.onChange(value);
+                }}
+              />
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="col-span-1">
+          <p className="font-bold mb-2">Modèle de checklist</p>
+          <Controller
+            name="checklist"
+            control={control}
+            render={({ field }) => (
+              <Select
+                isClearable
+                value={checklists.find((option) => field.value === option.value) ?? null}
+                placeholder="Choisir un modèle de checklist"
+                options={checklists}
+                onChange={(selectedOption) => {
+                  field.onChange(selectedOption?.value ?? null);
                 }}
               />
             )}

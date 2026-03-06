@@ -4,6 +4,7 @@ import { User } from './user';
 import { Producer } from './producer';
 import { Invoice } from './invoice';
 import { PegFile } from './pegFile';
+import { ChecklistItem } from './checklist';
 
 export type Project = {
   documentId: string;
@@ -26,6 +27,7 @@ export type Project = {
   //deleted: boolean;
   invoices: Invoice[];
   poolable: boolean;
+  checklistItems: ChecklistItem[];
 }
 
 export type Task = {

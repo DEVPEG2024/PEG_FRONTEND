@@ -85,6 +85,16 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
+            key: "admin.checklists",
+            path: "/admin/checklists",
+            title: "Checklists",
+            translateKey: "nav.checklists",
+            icon: "checklist",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
             key: "admin.products",
             path: "/admin/products",
             title: "Liste des produits",

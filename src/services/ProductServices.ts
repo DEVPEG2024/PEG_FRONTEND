@@ -31,6 +31,11 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
+            checklist {
+                documentId
+                name
+                items
+            }
         }
     }
   `,
@@ -79,6 +84,11 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             form {
                 documentId
                 fields
+            }
+            checklist {
+                documentId
+                name
+                items
             }
             customerCategories (pagination: {limit: 100}){
                 documentId

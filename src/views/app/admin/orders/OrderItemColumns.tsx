@@ -1,5 +1,5 @@
 import { Button, Tag, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin est correct
-import { HiBan, HiCheck, HiInformationCircle, HiTrash } from 'react-icons/hi';
+import { HiBan, HiCheck, HiInformationCircle, HiPlus, HiTrash } from 'react-icons/hi';
 import { OrderItem } from '@/@types/orderItem';
 import { SizeAndColorSelection } from '@/@types/product';
 import { User } from '@/@types/user';
@@ -11,6 +11,7 @@ export const useColumns = (
   handleFinishOrder: (order: OrderItem) => void,
   handlePendOrder: (order: OrderItem) => void,
   handleShowProject: (order: OrderItem) => void,
+  handleCreateProject: (order: OrderItem) => void,
   handleDeleteOrderItem: (order: OrderItem) => void,
   user: User
 ) => {
@@ -121,12 +122,13 @@ export const useColumns = (
                 />
               </Tooltip>
             ) : (
-              <Tooltip title="Projet inexistant">
+              <Tooltip title="Créer un projet">
                 <Button
-                  disabled
+                  onClick={() => handleCreateProject(row.original)}
                   size="sm"
                   variant="twoTone"
-                  icon={<HiBan size={20} />}
+                  icon={<HiPlus size={20} />}
+                  disabled={!hasRole(user, [SUPER_ADMIN])}
                 />
               </Tooltip>
             )}

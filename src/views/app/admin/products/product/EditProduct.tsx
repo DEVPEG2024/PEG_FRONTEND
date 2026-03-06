@@ -11,6 +11,8 @@ import {
 import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
+import { apiGetChecklists, GetChecklistsResponse } from '@/services/ChecklistServices';
+import { Checklist } from '@/@types/checklist';
 import {
   apiLoadPegFilesAndFiles,
   apiUploadFile,
@@ -60,6 +62,7 @@ const EditProduct = () => {
   const [colors, setColors] = useState<Options[]>([]);
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
+  const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [imagesLoading, setImagesLoading] = useState<boolean>(false);
   const initialData: ProductFormModel = {
@@ -81,6 +84,7 @@ const EditProduct = () => {
     productCategory: product?.productCategory?.documentId || null,
     customers: product?.customers?.map((customer) => customer.documentId) || [],
     form: product?.form?.documentId || null,
+    checklist: product?.checklist?.documentId || null,
     active: product?.active || false,
     inCatalogue: product?.inCatalogue || false,
     productRef: product?.productRef ?? '',
@@ -102,6 +106,7 @@ const EditProduct = () => {
     fetchCustomerCategories();
     fetchProductCategories();
     fetchForms();
+    fetchChecklists();
     fetchSizes();
     fetchColors();
   }, [product]);
@@ -131,6 +136,17 @@ const EditProduct = () => {
       label: form.name,
     }));
     setForms(forms);
+  };
+
+  const fetchChecklists = async () => {
+    const { checklists_connection }: { checklists_connection: GetChecklistsResponse } =
+      await unwrapData(apiGetChecklists());
+    const checklistsList = checklists_connection.nodes || [];
+    const checklists = checklistsList.map((checklist: Checklist) => ({
+      value: checklist.documentId || '',
+      label: checklist.name,
+    }));
+    setChecklists(checklists);
   };
 
   const fetchCustomers = async () => {
@@ -250,6 +266,9 @@ const EditProduct = () => {
     if (values.form === '' || !values.form) {
       data.form = null;
     }
+    if (values.checklist === '' || !values.checklist) {
+      data.checklist = null;
+    }
     if (!onEdition) {
       delete data.documentId;
     }
@@ -274,6 +293,7 @@ const EditProduct = () => {
         customerCategories={customerCategories}
         categories={productCategories}
         forms={forms}
+        checklists={checklists}
         images={images}
         setImages={setImages}
         imagesLoading={imagesLoading}

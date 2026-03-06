@@ -25,6 +25,7 @@ export type ProductFormModel = Omit<
   | 'customers'
   | 'productCategory'
   | 'form'
+  | 'checklist'
   | 'images'
 > & {
   documentId?: string;
@@ -34,6 +35,7 @@ export type ProductFormModel = Omit<
   customers: string[];
   productCategory: string | null;
   form: string | null;
+  checklist: string | null;
   priceTiers: PriceTier[];
   productRef?: string;
   refVisibleToCustomer?: boolean;
@@ -55,6 +57,7 @@ type ProductFormProps = {
   categories: Options[];
   customers: Options[];
   forms: Options[];
+  checklists: Options[];
   images: PegFile[];
   setImages: (images: PegFile[]) => void;
   imagesLoading: boolean;
@@ -88,6 +91,7 @@ const ProductForm = (props: ProductFormProps) => {
     sizes,
     colors,
     forms,
+    checklists,
     initialData,
     onFormSubmit,
     onDiscard,
@@ -174,6 +178,7 @@ const ProductForm = (props: ProductFormProps) => {
                 errors={errors}
                 type={type}
                 forms={forms}
+                checklists={checklists}
                 sizes={sizes}
                 colors={colors}
                 customerCategories={customerCategories}

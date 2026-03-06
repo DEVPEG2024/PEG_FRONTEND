@@ -6,6 +6,7 @@ import Comments from './components/Comments';
 import Files from './components/Files';
 import Tasks from './components/Tasks';
 import Invoices from './components/Invoices';
+import ProjectChecklist from './components/ProjectChecklist';
 import { injectReducer, useAppDispatch } from '@/store';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
@@ -44,6 +45,7 @@ const ProjectDetails = () => {
           {selectedTab === 'Commentaires' && <Comments />}
           {selectedTab === 'Fichiers' && <Files />}
           {selectedTab === 'Tâches' && <Tasks />}
+          {selectedTab === 'Checklist' && <ProjectChecklist />}
           {selectedTab === 'Factures' && <Invoices />}
         </Container>
       </>
