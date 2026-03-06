@@ -1,7 +1,7 @@
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
-import { HiOutlineSearch, HiOutlineClipboardList, HiOutlineClock, HiOutlineUserAdd } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineClipboardList, HiOutlineClock, HiOutlineCheckCircle } from 'react-icons/hi';
 import { MdOutlinePool } from 'react-icons/md';
 import dayjs from 'dayjs';
 
@@ -99,22 +99,22 @@ const PoolProjectsList = () => {
     const days = dayjs(p.endDate).diff(dayjs(), 'day');
     return days >= 0 && days <= 7;
   });
-  const noProducerProjects = projects.filter((p) => !p.producer);
+  const withTasksProjects = projects.filter((p) => p.tasks && p.tasks.length > 0);
 
-  // Filtre urgence (client-side sur la page courante)
+  // Filtre (client-side sur la page courante)
   const filteredProjects = projects.filter((p) => {
     if (urgencyFilter === 'urgent') {
       const days = dayjs(p.endDate).diff(dayjs(), 'day');
       return days >= 0 && days <= 7;
     }
-    if (urgencyFilter === 'no_producer') return !p.producer;
+    if (urgencyFilter === 'with_tasks') return p.tasks && p.tasks.length > 0;
     return true;
   });
 
   const urgencyTabs = [
-    { key: 'all',         label: 'Tous',              color: 'rgba(255,255,255,0.6)',  bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' },
-    { key: 'urgent',      label: '⚡ Urgents (≤7j)',  color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
-    { key: 'no_producer', label: 'Sans producteur',   color: '#fbbf24',               bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'   },
+    { key: 'all',        label: 'Tous',             color: 'rgba(255,255,255,0.6)',  bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' },
+    { key: 'urgent',     label: '⚡ Urgents (≤7j)', color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
+    { key: 'with_tasks', label: 'Tâches définies',  color: '#4ade80',               bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'   },
   ];
 
   return (
@@ -159,11 +159,11 @@ const PoolProjectsList = () => {
           sub="deadline ≤ 7 jours"
         />
         <StatWidget
-          icon={<HiOutlineUserAdd size={22} color="#fbbf24" />}
-          label="Sans producteur"
-          value={noProducerProjects.length}
-          color="rgba(234,179,8,0.18)"
-          sub="en attente d'assignation"
+          icon={<HiOutlineCheckCircle size={22} color="#4ade80" />}
+          label="Tâches définies"
+          value={withTasksProjects.length}
+          color="rgba(34,197,94,0.18)"
+          sub="projets avec tâches planifiées"
         />
       </div>
 
@@ -201,7 +201,7 @@ const PoolProjectsList = () => {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {urgencyTabs.map((tab) => {
           const active = urgencyFilter === tab.key;
-          const count = tab.key === 'all' ? projects.length : tab.key === 'urgent' ? urgentProjects.length : noProducerProjects.length;
+          const count = tab.key === 'all' ? projects.length : tab.key === 'urgent' ? urgentProjects.length : withTasksProjects.length;
           return (
             <button
               key={tab.key}
