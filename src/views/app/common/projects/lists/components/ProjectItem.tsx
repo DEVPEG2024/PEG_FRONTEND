@@ -46,12 +46,12 @@ const ProjectItem = ({
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = 'translateY(-3px)';
-        el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(47,111,237,0.18)';
+        el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.45)';
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = 'translateY(0)';
-        el.style.boxShadow = '0 2px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05)';
+        el.style.boxShadow = '0 2px 16px rgba(0,0,0,0.25)';
       }}
       style={{
         background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
@@ -59,7 +59,8 @@ const ProjectItem = ({
         padding: '20px',
         fontFamily: 'Inter, sans-serif',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.25)',
         display: 'flex',
         flexDirection: 'column',
         gap: '14px',
