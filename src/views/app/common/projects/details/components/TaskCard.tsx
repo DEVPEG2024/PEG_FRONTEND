@@ -1,5 +1,4 @@
-import Button from '@/components/ui/Button';
-import { HiLightningBolt, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiLightningBolt, HiPencil, HiTrash, HiCheck } from 'react-icons/hi';
 import { Task } from '@/@types/project';
 import { User } from '@/@types/user';
 import {
@@ -8,10 +7,7 @@ import {
   useAppSelector as useRootAppSelector,
 } from '@/store';
 import ReactHtmlParser from 'html-react-parser';
-import { Card, Checkbox } from '@/components/ui';
 import { useState } from 'react';
-import { IconText } from '@/components/shared';
-import { priorityColorText } from '../../lists/constants';
 import dayjs from 'dayjs';
 import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
 import { hasRole } from '@/utils/permissions';
@@ -22,6 +18,13 @@ import {
   setSelectedTask,
   deleteTask,
 } from '../store';
+
+const priorityStyles: Record<string, { bg: string; border: string; color: string }> = {
+  low:    { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.3)',  color: '#4ade80' },
+  medium: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)', color: '#fbbf24' },
+  high:   { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', color: '#f87171' },
+};
+const priorityLabel: Record<string, string> = { low: 'Faible', medium: 'Moyenne', high: 'Haute' };
 
 const TaskCard = ({
   task,
@@ -58,91 +61,122 @@ const TaskCard = ({
     }));
   };
 
-  const priorityColor =
-    priorityColorText[task.priority as keyof typeof priorityColorText];
-  const priority =
-    task.priority === 'low'
-      ? 'faible'
-      : task.priority === 'medium'
-        ? 'moyenne'
-        : 'haute';
+  const pStyle = priorityStyles[task.priority] ?? priorityStyles.medium;
   const checked = task.state === 'fulfilled';
+  const isOpen = openTasks[task.documentId];
+  const canToggle = hasRole(user, [SUPER_ADMIN, PRODUCER]);
+
   return (
-    <Card key={task.documentId} bordered className=" bg-gray-900">
-      <div className="grid grid-cols-12 justify-between">
+    <div style={{
+      background: checked ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.04)',
+      border: `1px solid ${checked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
+      borderRadius: '12px',
+      padding: '14px 16px',
+      fontFamily: 'Inter, sans-serif',
+      transition: 'all 0.15s ease',
+    }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        {/* Left: toggle + name + date */}
         <div
-          className="cursor-pointer col-span-6 "
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flex: 1, minWidth: 0 }}
           onClick={() => toggleTask(task.documentId)}
         >
-          <div className="flex justify-between w-full">
-            <div className="flex items-center gap-2 ">
-              {openTasks[task.documentId] ? (
-                <FaAngleUp size={20} className="text-gray-500" />
-              ) : (
-                <FaAngleDown size={20} className="text-gray-500" />
-              )}
-              <span className="text-sm text-gray-500">#{index + 1} - </span>
-              <span className="font-semibold">{task.name}</span>
-            </div>
-            <div className="cursor-pointer  items-center justify-end gap-2 hidden md:block">
-              <span className="text-sm text-gray-500">
-                A faire avant le {dayjs(task.endDate).format('DD/MM/YYYY')}
-              </span>
-            </div>
+          <div style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
+            {isOpen ? <FaAngleUp size={14} /> : <FaAngleDown size={14} />}
           </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 col-span-6">
-          <IconText
-            className={`${priorityColor} col-span-6`}
-            icon={<HiLightningBolt className="text-lg opacity-70" />}
-          >
-            <span className="font-semibold hidden md:block">
-              Priorité {priority}
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
+          <span style={{
+            color: checked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.9)',
+            fontSize: '13px',
+            fontWeight: 600,
+            textDecoration: checked ? 'line-through' : 'none',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {task.name}
+          </span>
+          {task.endDate && (
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0, marginLeft: '4px' }}>
+              · avant le {dayjs(task.endDate).format('DD/MM/YYYY')}
             </span>
-          </IconText>
-          <Checkbox
-            className="col-span-6"
-            checked={checked}
-            disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
-            color="green-500"
-            onChange={() =>
-              handleChangeTaskState(
-                task.documentId,
-                task.state === 'fulfilled' ? 'pending' : 'fulfilled'
-              )
-            }
-          />
+          )}
+        </div>
+
+        {/* Right: priority badge + toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            background: pStyle.bg, border: `1px solid ${pStyle.border}`,
+            borderRadius: '100px', padding: '3px 8px',
+            color: pStyle.color, fontSize: '11px', fontWeight: 600,
+          }}>
+            <HiLightningBolt size={10} />
+            {priorityLabel[task.priority] ?? task.priority}
+          </span>
+
+          {/* Custom checkbox */}
+          <div
+            onClick={() => {
+              if (!loading && canToggle) {
+                handleChangeTaskState(task.documentId, checked ? 'pending' : 'fulfilled');
+              }
+            }}
+            style={{
+              width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+              background: checked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${checked ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: canToggle && !loading ? 'pointer' : 'not-allowed',
+              opacity: loading ? 0.5 : 1,
+              transition: 'all 0.15s',
+            }}
+          >
+            {checked && <HiCheck size={12} style={{ color: '#4ade80' }} />}
+          </div>
         </div>
       </div>
-      {openTasks[task.documentId] && (
-        <div className="flex flex-col gap-2 mt-8 px-4">
-          <hr className="my-6" />
-          <div className="flex flex-col justify-between gap-2">
-            <div className="">{ReactHtmlParser(task.description || '')}</div>
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-              <div className="flex flex-row gap-2">
-                <Button
-                  variant="twoTone"
-                  size="sm"
-                  disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
-                  onClick={() => handleEditTask(task)}
-                >
-                  <HiPencil size={20} />
-                </Button>
-                <Button
-                  variant="twoTone"
-                  size="sm"
-                  disabled={loading || !hasRole(user, [SUPER_ADMIN, PRODUCER])}
-                  onClick={() => handleRemoveTask(task)}
-                >
-                  <HiTrash size={20} />
-                </Button>
-              </div>
-            )}
+
+      {/* Expanded details */}
+      {isOpen && (
+        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', lineHeight: 1.7, marginBottom: '14px' }}>
+            {ReactHtmlParser(task.description || '')}
           </div>
+          {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                disabled={loading || !canToggle}
+                onClick={() => handleEditTask(task)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '6px 12px',
+                  color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  opacity: (loading || !canToggle) ? 0.4 : 1,
+                }}
+              >
+                <HiPencil size={13} /> Modifier
+              </button>
+              <button
+                disabled={loading || !canToggle}
+                onClick={() => handleRemoveTask(task)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)',
+                  borderRadius: '8px', padding: '6px 12px',
+                  color: '#f87171', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  opacity: (loading || !canToggle) ? 0.4 : 1,
+                }}
+              >
+                <HiTrash size={13} /> Supprimer
+              </button>
+            </div>
+          )}
         </div>
       )}
-    </Card>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { ChecklistItem } from '@/@types/checklist';
 import { RootState } from '@/store';
@@ -7,8 +6,8 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { updateCurrentProject, useAppDispatch, useAppSelector } from '../store';
-import Empty from '@/components/shared/Empty';
 import { MdChecklist } from 'react-icons/md';
+import { HiCheck } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 
 const ProjectChecklist = () => {
@@ -35,94 +34,105 @@ const ProjectChecklist = () => {
     );
   };
 
+  const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+
   return (
-    <Container className="h-full mt-4">
-      <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <AdaptableCard bordered={false} bodyClass="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h5 className="mb-0">Checklist du projet</h5>
-              {items.length > 0 && (
-                <span className="text-sm text-gray-400">
-                  {doneCount} / {items.length} tâche{items.length > 1 ? 's' : ''} effectuée{doneCount > 1 ? 's' : ''}
-                </span>
+    <Container className="h-full">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              Checklist du projet
+            </p>
+            {items.length > 0 && (
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                {doneCount} / {items.length} effectuée{doneCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          {items.length > 0 && (
+            <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '100px', marginBottom: '20px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${percent}%`,
+                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                borderRadius: '100px',
+                transition: 'width 0.4s ease',
+                boxShadow: '0 0 8px rgba(47,111,237,0.5)',
+              }} />
+            </div>
+          )}
+
+          {items.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
+              <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
+              {canToggle && (
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
+                  Associez un modèle de checklist au produit lors de la création du projet
+                </p>
               )}
             </div>
-
-            {items.length > 0 && (
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {items.map((item, index) => (
                 <div
-                  className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.round((doneCount / items.length) * 100)}%` }}
-                />
-              </div>
-            )}
-
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <Empty icon={<MdChecklist size={150} />}>
-                  <p>Aucune checklist associée à ce projet</p>
-                  {canToggle && (
-                    <p className="text-sm text-gray-400 mt-1">
-                      Associez un modèle de checklist au produit lors de la création du projet
-                    </p>
-                  )}
-                </Empty>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {items.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                      item.done
-                        ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                        : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
-                    } ${canToggle ? 'cursor-pointer hover:opacity-80' : ''}`}
-                    onClick={() => toggleItem(index)}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        item.done
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-400 bg-white dark:bg-gray-700'
-                      }`}
-                    >
-                      {item.done && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={3}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm ${
-                        item.done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    {!canToggle && (
-                      <span className="ml-auto text-xs text-gray-400">
-                        {item.done ? 'Effectuée' : 'En attente'}
-                      </span>
-                    )}
+                  key={index}
+                  onClick={() => toggleItem(index)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 14px', borderRadius: '10px',
+                    background: item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                    cursor: canToggle ? 'pointer' : 'default',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                    background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${item.done ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s',
+                  }}>
+                    {item.done && <HiCheck size={12} style={{ color: '#4ade80' }} />}
                   </div>
-                ))}
-              </div>
-            )}
+                  <span style={{
+                    flex: 1,
+                    color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    textDecoration: item.done ? 'line-through' : 'none',
+                    transition: 'color 0.15s',
+                  }}>
+                    {item.label}
+                  </span>
+                  {!canToggle && (
+                    <span style={{
+                      fontSize: '11px', fontWeight: 600,
+                      color: item.done ? '#4ade80' : 'rgba(255,255,255,0.25)',
+                    }}>
+                      {item.done ? 'Effectuée' : 'En attente'}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-            {!canToggle && items.length > 0 && (
-              <p className="text-xs text-gray-400 mt-4 text-center">
-                Seuls les administrateurs et producteurs peuvent modifier la checklist
-              </p>
-            )}
-          </AdaptableCard>
+          {!canToggle && items.length > 0 && (
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>
+              Seuls les administrateurs et producteurs peuvent modifier la checklist
+            </p>
+          )}
         </div>
         <DetailsRight />
       </div>

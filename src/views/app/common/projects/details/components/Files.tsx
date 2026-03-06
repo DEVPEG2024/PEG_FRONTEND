@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
 import { PegFile } from '@/@types/pegFile';
@@ -121,38 +120,38 @@ const Files = () => {
 
   return (
     <Container className="h-full">
-      <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
           <Loading loading={loading}>
-            <AdaptableCard bordered={false} bodyClass="p-5">
-              <Loading loading={filesLoading}>
-                <Upload
-                  multiple
-                  showList
-                  draggable
-                  beforeUpload={beforeUpload}
-                  onFileAdd={(file) => onFileAdd(file)}
-                  onFileRemove={(file) => onFileRemove(file)}
-                  field={{ name: 'images' }}
-                  fileList={pegFiles.map((pegFile) => {
-                    const file = pegFile.file;
-
-                    file.previewUrl = pegFile.url;
-                    return file;
-                  })}
-                  clickable
-                />
-              </Loading>
-              {pegFilesChanged && (
-                <Button
-                  variant="solid"
-                  onClick={handleSubmit}
-                  loading={loading}
-                >
+            <Loading loading={filesLoading}>
+              <Upload
+                multiple
+                showList
+                draggable
+                beforeUpload={beforeUpload}
+                onFileAdd={(file) => onFileAdd(file)}
+                onFileRemove={(file) => onFileRemove(file)}
+                field={{ name: 'images' }}
+                fileList={pegFiles.map((pegFile) => {
+                  const file = pegFile.file;
+                  file.previewUrl = pegFile.url;
+                  return file;
+                })}
+                clickable
+              />
+            </Loading>
+            {pegFilesChanged && (
+              <div style={{ marginTop: '16px' }}>
+                <Button variant="solid" onClick={handleSubmit} loading={loading}>
                   Enregistrer
                 </Button>
-              )}
-            </AdaptableCard>
+              </div>
+            )}
           </Loading>
         </div>
         <DetailsRight />

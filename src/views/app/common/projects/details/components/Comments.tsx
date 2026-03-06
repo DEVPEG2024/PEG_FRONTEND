@@ -4,7 +4,6 @@ import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
 import Card from '@/components/ui/Card';
 import { debounce } from 'lodash';
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
 import { HiUserCircle } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
@@ -156,79 +155,83 @@ const Comments = () => {
 
   return (
     <Container className="h-full">
-      <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <AdaptableCard bordered={false} bodyClass="p-5">
-            <div>
-              <Timeline>
-                {determineVisibleComments(comments, user).map(
-                  (comment: Comment) => (
-                    <TimelineComment
-                      key={comment.documentId}
-                      comment={comment}
-                      user={user}
-                      isLast={
-                        comment.documentId ===
-                        comments[comments.length - 1].documentId
-                      }
-                    />
-                  )
-                )}
-              </Timeline>
-              <Card className="mt-6">
-                <div className="mt-1 mb-3 flex flex-auto gap-4">
-                  <Loading loading={avatarLoading}>
-                    <Avatar
-                      size={30}
-                      shape="circle"
-                      src={avatarUrl}
-                      icon={<HiUserCircle />}
-                    />
-                  </Loading>
-                  <div className="w-full">
-                    <RichTextEditor onChange={onEdit} value={commentText} />
-                  </div>
-                </div>
-                <div className="flex flex-row items-center justify-between gap-2 mb-4">
-                  <Upload
-                    multiple
-                    showList
-                    draggable
-                    uploadLimit={4}
-                    beforeUpload={beforeUpload}
-                    onFileAdd={(file) => onFileAdd(file)}
-                    onFileRemove={(file) => onFileRemove(file)}
-                    field={{ name: 'images' }}
-                    fileList={pegFiles.map(({ file }) => file)}
-                  />
-                  {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                    <div className="flex flex-row self-start w-1/2 items-center gap-4">
-                      <span className="w-max">Visibilité :</span>
-                      <Select
-                        size="sm"
-                        className="w-3/4 justify-self-start"
-                        placeholder={'Visibilité'}
-                        options={visibilityData}
-                        value={visibilityData.find(
-                          ({ value }) => value === visibility
-                        )}
-                        onChange={(e: any) => {
-                          setVisibility(e.value);
-                        }}
-                      />
-                    </div>
-                  )}
-                  <Button
-                    variant="solid"
-                    onClick={submitComment}
-                    loading={loading}
-                  >
-                    Ajouter
-                  </Button>
-                </div>
-              </Card>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <Timeline>
+            {determineVisibleComments(comments, user).map(
+              (comment: Comment) => (
+                <TimelineComment
+                  key={comment.documentId}
+                  comment={comment}
+                  user={user}
+                  isLast={
+                    comment.documentId ===
+                    comments[comments.length - 1].documentId
+                  }
+                />
+              )
+            )}
+          </Timeline>
+
+          {/* New comment input */}
+          <div style={{
+            marginTop: '20px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '14px',
+            padding: '16px',
+          }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+              <Loading loading={avatarLoading}>
+                <Avatar
+                  size={32}
+                  shape="circle"
+                  src={avatarUrl}
+                  icon={<HiUserCircle />}
+                />
+              </Loading>
+              <div style={{ flex: 1 }}>
+                <RichTextEditor onChange={onEdit} value={commentText} />
+              </div>
             </div>
-          </AdaptableCard>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <Upload
+                multiple
+                showList
+                draggable
+                uploadLimit={4}
+                beforeUpload={beforeUpload}
+                onFileAdd={(file) => onFileAdd(file)}
+                onFileRemove={(file) => onFileRemove(file)}
+                field={{ name: 'images' }}
+                fileList={pegFiles.map(({ file }) => file)}
+              />
+              {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', whiteSpace: 'nowrap' }}>Visibilité :</span>
+                  <Select
+                    size="sm"
+                    placeholder="Visibilité"
+                    options={visibilityData}
+                    value={visibilityData.find(({ value }) => value === visibility)}
+                    onChange={(e: any) => setVisibility(e.value)}
+                  />
+                </div>
+              )}
+              <Button
+                variant="solid"
+                onClick={submitComment}
+                loading={loading}
+              >
+                Ajouter
+              </Button>
+            </div>
+          </div>
         </div>
         <DetailsRight />
       </div>

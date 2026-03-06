@@ -1,7 +1,6 @@
 import Button from '@/components/ui/Button';
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Container from '@/components/shared/Container';
-import { HiBan, HiPencil, HiPrinter } from 'react-icons/hi';
+import { HiBan, HiCheck, HiPencil, HiPrinter } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
@@ -13,7 +12,6 @@ import {
   updateProjectInvoice,
   useAppSelector,
 } from '../store';
-import { Card, Checkbox } from '@/components/ui';
 import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
 import dayjs from 'dayjs';
@@ -97,105 +95,105 @@ const Invoices = () => {
     return errors;
   };
 
+  const iconBtn = (danger = false): React.CSSProperties => ({
+    width: '30px', height: '30px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    background: danger ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
+    color: danger ? '#f87171' : 'rgba(255,255,255,0.55)',
+    transition: 'background 0.15s',
+  });
+
   return (
-    <Container className="h-full mt-4">
-      <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <AdaptableCard bordered={false} bodyClass="p-5">
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-              <Button
-                loading={loading}
-                onClick={generateInvoice}
-                className="mb-4"
-              >
+    <Container className="h-full">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+            <div style={{ marginBottom: '20px' }}>
+              <Button loading={loading} onClick={generateInvoice}>
                 Générer la facture du projet
               </Button>
-            )}
-            <div className="flex flex-col gap-2">
-              {invoices.length > 0 ? (
-                invoices.map((invoice: Invoice, index: number) => {
-                  return (
-                    <Card
-                      key={invoice.documentId}
-                      bordered
-                      className=" bg-gray-900"
-                    >
-                      <div className="grid grid-cols-12 justify-between">
-                        <div className="col-span-6 ">
-                          <div className="flex justify-between w-full">
-                            <div className="flex items-center gap-2 ">
-                              <span className="text-sm text-gray-500">
-                                #{index + 1} -{' '}
-                              </span>
-                              <span className="font-semibold">
-                                {invoice.name}
-                              </span>
-                            </div>
-                            <div className="gap-2 hidden md:block">
-                              <span className="text-sm text-gray-500">
-                                {stateData.find(
-                                  ({ value }) => value === invoice.state
-                                )?.label ?? 'Statut indéterminé'}
-                              </span>
-                            </div>
-                            <div className="gap-2 hidden md:block">
-                              <span className="text-sm text-gray-500">
-                                {dayjs(invoice.date).format('DD/MM/YYYY')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-2 col-span-6">
-                          <span className="font-semibold hidden md:block">
-                            {invoice.totalAmount.toFixed(2)} €
-                          </span>
-                          <Checkbox
-                            className="col-span-6"
-                            disabled={invoice.paymentState === 'fulfilled'}
-                            checked={invoice.paymentState === 'fulfilled'}
-                            color="green-500"
-                          />
-                          <Button
-                            variant="twoTone"
-                            size="xs"
-                            color="blue"
-                            onClick={() => handlePrintInvoice(invoice)}
-                          >
-                            <HiPrinter size={15} />
-                          </Button>
-                          {hasRole(user, [SUPER_ADMIN]) && (
-                            <Button
-                              variant="twoTone"
-                              size="xs"
-                              onClick={() => handleUpdateInvoice(invoice)}
-                            >
-                              <HiPencil size={15} />
-                            </Button>
-                          )}
-                          {hasRole(user, [SUPER_ADMIN]) && (
-                            <Button
-                              variant="twoTone"
-                              size="xs"
-                              onClick={() => handleCancelInvoice(invoice)}
-                              disabled={invoice?.state === 'canceled'}
-                            >
-                              <HiBan size={15} />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })
-              ) : (
-                <div className="flex flex-col gap-2 justify-center items-center">
-                  <Empty icon={<GoTasklist size={150} />}>
-                    <p>Aucune facture trouvée</p>
-                  </Empty>
-                </div>
-              )}
             </div>
-          </AdaptableCard>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {invoices.length > 0 ? (
+              invoices.map((invoice: Invoice, index: number) => {
+                const isPaid = invoice.paymentState === 'fulfilled';
+                const isCanceled = invoice.state === 'canceled';
+                const stateLabel = stateData.find(({ value }) => value === invoice.state)?.label ?? 'Indéterminé';
+                return (
+                  <div
+                    key={invoice.documentId}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                      padding: '12px 16px', borderRadius: '12px',
+                      background: isCanceled ? 'rgba(239,68,68,0.04)' : isPaid ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${isCanceled ? 'rgba(239,68,68,0.15)' : isPaid ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                    }}
+                  >
+                    {/* Left info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {invoice.name}
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', flexShrink: 0 }}>{stateLabel}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0 }}>{dayjs(invoice.date).format('DD/MM/YYYY')}</span>
+                    </div>
+
+                    {/* Right: amount + actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <span style={{
+                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                        borderRadius: '100px', padding: '3px 10px',
+                        color: '#6b9eff', fontSize: '12px', fontWeight: 700,
+                      }}>
+                        {invoice.totalAmount.toFixed(2)} €
+                      </span>
+
+                      {/* Paid indicator */}
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                        background: isPaid ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${isPaid ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {isPaid && <HiCheck size={12} style={{ color: '#4ade80' }} />}
+                      </div>
+
+                      <button style={iconBtn()} onClick={() => handlePrintInvoice(invoice)}>
+                        <HiPrinter size={14} />
+                      </button>
+                      {hasRole(user, [SUPER_ADMIN]) && (
+                        <button style={iconBtn()} onClick={() => handleUpdateInvoice(invoice)}>
+                          <HiPencil size={14} />
+                        </button>
+                      )}
+                      {hasRole(user, [SUPER_ADMIN]) && (
+                        <button
+                          style={{ ...iconBtn(true), opacity: isCanceled ? 0.4 : 1, cursor: isCanceled ? 'not-allowed' : 'pointer' }}
+                          onClick={() => !isCanceled && handleCancelInvoice(invoice)}
+                          disabled={isCanceled}
+                        >
+                          <HiBan size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
+                <Empty icon={<GoTasklist size={80} style={{ color: 'rgba(255,255,255,0.12)' }} />}>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', marginTop: '12px' }}>Aucune facture trouvée</p>
+                </Empty>
+              </div>
+            )}
+          </div>
         </div>
         <DetailsRight />
       </div>
