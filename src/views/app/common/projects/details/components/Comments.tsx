@@ -23,19 +23,11 @@ import { Loading, RichTextEditor } from '@/components/shared';
 import TimelineComment from './TimelineComment';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 
-type VisibilityOption = { value: string; label: string; color: string; bg: string; border: string };
-
-const VISIBILITY_OPTIONS: VisibilityOption[] = [
+const VISIBILITY_OPTIONS = [
   { value: 'all',      label: 'Visible par tous',      color: '#6b9eff', bg: 'rgba(47,111,237,0.12)',  border: 'rgba(47,111,237,0.3)'  },
   { value: 'customer', label: 'Client uniquement',     color: '#fbbf24', bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.3)'   },
   { value: 'producer', label: 'Producteur uniquement', color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)'  },
 ];
-
-const getVisibilityOptions = (roleName: string): VisibilityOption[] => {
-  if (roleName === 'customer') return VISIBILITY_OPTIONS.filter(o => o.value !== 'producer');
-  if (roleName === 'producer') return VISIBILITY_OPTIONS.filter(o => o.value !== 'customer');
-  return VISIBILITY_OPTIONS;
-};
 
 const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
@@ -51,7 +43,7 @@ const Comments = () => {
   const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(user?.avatar);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
 
-  const visibilityOptions = getVisibilityOptions(user?.role?.name ?? '');
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
 
   useEffect(() => {
     setAvatarLoading(true);
@@ -85,11 +77,20 @@ const Comments = () => {
         }
       }
 
+      // Client et producteur envoient automatiquement à leur rôle (visible par admins uniquement)
+      // Seuls les admins peuvent choisir le destinataire
+      const commentVisibility =
+        user.role.name === 'customer'
+          ? 'customer'
+          : user.role.name === 'producer'
+            ? 'producer'
+            : visibility;
+
       const comment: Omit<Comment, 'documentId'> = {
         content: commentText,
         user: user,
         images: newPegFiles.map(({ id }) => id),
-        visibility,
+        visibility: commentVisibility,
       };
 
       dispatch(createComment({ comment, project }));
@@ -106,7 +107,6 @@ const Comments = () => {
     const pegFileToDelete: PegFile | undefined = pegFiles.find(
       ({ name }) => name === fileName
     );
-
     if (pegFileToDelete) {
       setPegFiles(pegFiles.filter(({ name }) => name !== fileName));
     }
@@ -114,19 +114,11 @@ const Comments = () => {
 
   const beforeUpload = (files: FileList | null) => {
     let valid: string | boolean = true;
-
     const allowedFileType = [
-      'image/jpeg',
-      'image/png',
-      'image/jpg',
-      'image/webp',
-      'application/pdf',
-      'application/x-pdf',
-      'application/zip',
-      'application/x-zip-compressed',
-      'image/vnd.adobe.photoshop',
-      'application/postscript',
-      'application/illustrator',
+      'image/jpeg', 'image/png', 'image/jpg', 'image/webp',
+      'application/pdf', 'application/x-pdf',
+      'application/zip', 'application/x-zip-compressed',
+      'image/vnd.adobe.photoshop', 'application/postscript', 'application/illustrator',
     ];
     if (files) {
       for (const file of files) {
@@ -135,22 +127,16 @@ const Comments = () => {
         }
       }
     }
-
     return valid;
   };
 
-  const determineVisibleComments = (
-    comments: Comment[],
-    user: User
-  ): Comment[] => {
+  const determineVisibleComments = (comments: Comment[], user: User): Comment[] => {
     if (hasRole(user, [SUPER_ADMIN, ADMIN])) {
       return comments;
-    } else {
-      return comments.filter(
-        ({ visibility }) =>
-          visibility === 'all' || visibility === user.role.name
-      );
     }
+    return comments.filter(
+      ({ visibility }) => visibility === 'all' || visibility === user.role.name
+    );
   };
 
   const activeVis = VISIBILITY_OPTIONS.find(o => o.value === visibility) ?? VISIBILITY_OPTIONS[0];
@@ -171,10 +157,7 @@ const Comments = () => {
                   key={comment.documentId}
                   comment={comment}
                   user={user}
-                  isLast={
-                    comment.documentId ===
-                    comments[comments.length - 1].documentId
-                  }
+                  isLast={comment.documentId === comments[comments.length - 1].documentId}
                 />
               )
             )}
@@ -190,50 +173,46 @@ const Comments = () => {
           }}>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
               <Loading loading={avatarLoading}>
-                <Avatar
-                  size={32}
-                  shape="circle"
-                  src={avatarUrl}
-                  icon={<HiUserCircle />}
-                />
+                <Avatar size={32} shape="circle" src={avatarUrl} icon={<HiUserCircle />} />
               </Loading>
               <div style={{ flex: 1 }}>
                 <RichTextEditor onChange={onEdit} value={commentText} />
               </div>
             </div>
 
-            {/* Visibility picker */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Qui peut voir ce message ?
-              </p>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {visibilityOptions.map((opt) => {
-                  const isActive = visibility === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => setVisibility(opt.value)}
-                      style={{
-                        padding: '5px 12px',
-                        borderRadius: '100px',
-                        border: `1px solid ${isActive ? opt.border : 'rgba(255,255,255,0.1)'}`,
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        fontFamily: 'Inter, sans-serif',
-                        background: isActive ? opt.bg : 'rgba(255,255,255,0.04)',
-                        color: isActive ? opt.color : 'rgba(255,255,255,0.4)',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isActive ? `0 0 10px ${opt.bg}` : 'none',
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
+            {/* Visibility picker — admins only */}
+            {isAdmin && (
+              <div style={{ marginBottom: '14px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Destinataire
+                </p>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {VISIBILITY_OPTIONS.map((opt) => {
+                    const isActive = visibility === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => setVisibility(opt.value)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '100px',
+                          border: `1px solid ${isActive ? opt.border : 'rgba(255,255,255,0.1)'}`,
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          fontFamily: 'Inter, sans-serif',
+                          background: isActive ? opt.bg : 'rgba(255,255,255,0.04)',
+                          color: isActive ? opt.color : 'rgba(255,255,255,0.4)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Actions row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -249,19 +228,17 @@ const Comments = () => {
                 fileList={pegFiles.map(({ file }) => file)}
               />
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  background: activeVis.bg, border: `1px solid ${activeVis.border}`,
-                  borderRadius: '100px', padding: '4px 10px',
-                  color: activeVis.color, fontSize: '11px', fontWeight: 600,
-                }}>
-                  {activeVis.label}
-                </span>
-                <Button
-                  variant="solid"
-                  onClick={submitComment}
-                  loading={loading}
-                >
+                {isAdmin && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: activeVis.bg, border: `1px solid ${activeVis.border}`,
+                    borderRadius: '100px', padding: '4px 10px',
+                    color: activeVis.color, fontSize: '11px', fontWeight: 600,
+                  }}>
+                    {activeVis.label}
+                  </span>
+                )}
+                <Button variant="solid" onClick={submitComment} loading={loading}>
                   Envoyer
                 </Button>
               </div>
