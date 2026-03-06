@@ -1,35 +1,19 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import Tabs from '@/components/ui/Tabs';
-import AdaptableCard from '@/components/shared/AdaptableCard';
-import Container from '@/components/shared/Container';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Profile = lazy(() => import('./components/Profile'));
 const Password = lazy(() => import('./components/Password'));
 
-const { TabNav, TabList } = Tabs;
-
-const settingsMenu: Record<
-  string,
-  {
-    label: string;
-    path: string;
-  }
-> = {
-  profile: { label: 'Mon compte', path: 'profile' },
-  password: { label: 'Mot de passe', path: 'password' },
-};
+const TABS = [
+  { key: 'profile', label: 'Mon compte' },
+  { key: 'password', label: 'Mot de passe' },
+];
 
 const Settings = () => {
   const [currentTab, setCurrentTab] = useState('profile');
-
   const navigate = useNavigate();
-
   const location = useLocation();
-
-  const path = location.pathname.substring(
-    location.pathname.lastIndexOf('/') + 1
-  );
+  const path = location.pathname.substring(location.pathname.lastIndexOf('/') + 1);
 
   const onTabChange = (val: string) => {
     setCurrentTab(val);
@@ -41,27 +25,40 @@ const Settings = () => {
   }, []);
 
   return (
-    <Container>
-      <AdaptableCard bordered={false} className="mt-6">
-        <Tabs value={currentTab} onChange={(val) => onTabChange(val)}>
-          <TabList>
-            {Object.keys(settingsMenu).map((key) => (
-              <TabNav key={key} value={key}>
-                {settingsMenu[key].label}
-              </TabNav>
-            ))}
-          </TabList>
-        </Tabs>
-        <div className="px-4 py-6">
-          <Suspense fallback={<></>}>
+    <div style={{ fontFamily: 'Inter, sans-serif', display: 'flex', justifyContent: 'center', paddingTop: '36px', paddingBottom: '60px', paddingLeft: '16px', paddingRight: '16px' }}>
+      <div style={{ width: '100%', maxWidth: '520px' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Compte</p>
+          <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Paramètres</h2>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '20px' }}>
+          {TABS.map((tab) => (
+            <button key={tab.key} onClick={() => onTabChange(tab.key)}
+              style={{ flex: 1, padding: '8px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, background: currentTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: currentTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}
+            >{tab.label}</button>
+          ))}
+        </div>
+
+        {/* Card */}
+        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '32px 28px' }}>
+          <Suspense fallback={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} style={{ height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              ))}
+            </div>
+          }>
             {currentTab === 'profile' && <Profile />}
-            {currentTab === 'password' && (
-              <Password onTabChange={onTabChange} />
-            )}
+            {currentTab === 'password' && <Password onTabChange={onTabChange} />}
           </Suspense>
         </div>
-      </AdaptableCard>
-    </Container>
+
+      </div>
+    </div>
   );
 };
 
