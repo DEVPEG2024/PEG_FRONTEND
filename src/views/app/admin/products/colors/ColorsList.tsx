@@ -20,6 +20,31 @@ injectReducer('colors', reducer);
 
 type Option = { value: string; label: string };
 
+const PALETTE = [
+  // Neutres
+  '#ffffff', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#292524', '#1c1917', '#000000',
+  // Rouges / roses
+  '#fecdd3', '#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239',
+  '#fce7f3', '#fbcfe8', '#f9a8d4', '#ec4899', '#db2777', '#be185d',
+  // Oranges / jaunes
+  '#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c',
+  '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207',
+  // Verts
+  '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534',
+  '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857',
+  // Bleus
+  '#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#075985',
+  '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af',
+  '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca',
+  // Violets / mauves
+  '#e9d5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce',
+  '#f5d0fe', '#f0abfc', '#e879f9', '#d946ef', '#c026d3', '#a21caf',
+  // Marrons / beiges
+  '#fef3c7', '#fde68a', '#d97706', '#92400e', '#78350f',
+  '#f5f0eb', '#e8dcc8', '#c8a97e', '#a0785a', '#7c5a3c', '#5c3d1e',
+];
+
+
 const Swatch = ({ hex, size = 20 }: { hex: string; size?: number }) => (
   <div style={{
     width: size, height: size, borderRadius: '50%',
@@ -245,7 +270,15 @@ const ColorsList = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {/* Nom */}
             <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nom *</label>
+              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Nom *
+                {formValue && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '1px 8px 1px 5px', fontSize: '11px', fontWeight: 600, color: '#fff', textTransform: 'none', letterSpacing: 0 }}>
+                    <Swatch hex={formValue} size={14} />
+                    {formName || '…'}
+                  </span>
+                )}
+              </label>
               <input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
@@ -258,9 +291,32 @@ const ColorsList = () => {
 
             {/* Couleur */}
             <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur *</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ position: 'relative', width: '52px', height: '42px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
+              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur *</label>
+
+              {/* Nuancier */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+                {PALETTE.map((hex) => (
+                  <button
+                    key={hex}
+                    title={hex}
+                    onClick={() => setFormValue(hex)}
+                    style={{
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      background: hex, border: formValue === hex ? '2.5px solid #fff' : '2px solid rgba(255,255,255,0.15)',
+                      cursor: 'pointer', padding: 0, flexShrink: 0,
+                      boxShadow: formValue === hex ? '0 0 0 2px rgba(47,111,237,0.7)' : 'none',
+                      transition: 'transform 0.1s, box-shadow 0.1s',
+                      transform: formValue === hex ? 'scale(1.2)' : 'scale(1)',
+                    }}
+                    onMouseEnter={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1.15)'; }}
+                    onMouseLeave={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1)'; }}
+                  />
+                ))}
+              </div>
+
+              {/* Color picker + hex */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ position: 'relative', width: '44px', height: '38px', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'pointer' }} title="Ouvrir le sélecteur de couleur">
                   <div style={{ position: 'absolute', inset: 0, background: formValue }} />
                   <input
                     type="color"
