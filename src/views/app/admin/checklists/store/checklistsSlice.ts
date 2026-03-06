@@ -10,8 +10,7 @@ import {
   GetChecklistsRequest,
   GetChecklistsResponse,
 } from '@/services/ChecklistServices';
-import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
-import { AxiosResponse } from 'axios';
+import { unwrapData } from '@/utils/serviceHelper';
 
 export const SLICE_NAME = 'checklists';
 
@@ -42,19 +41,19 @@ export const getChecklists = createAsyncThunk(
 
 export const createChecklist = createAsyncThunk(
   SLICE_NAME + '/createChecklist',
-  async (data: CreateChecklistRequest): Promise<ApiResponse<{ createChecklist: Checklist }>> => {
-    const response: AxiosResponse<ApiResponse<{ createChecklist: Checklist }>> =
-      await apiCreateChecklist(data);
-    return response.data;
+  async (data: CreateChecklistRequest): Promise<Checklist> => {
+    const { createChecklist }: { createChecklist: Checklist } =
+      await unwrapData(apiCreateChecklist(data));
+    return createChecklist;
   }
 );
 
 export const updateChecklist = createAsyncThunk(
   SLICE_NAME + '/updateChecklist',
-  async (data: Partial<Checklist>): Promise<ApiResponse<{ updateChecklist: Checklist }>> => {
-    const response: AxiosResponse<ApiResponse<{ updateChecklist: Checklist }>> =
-      await apiUpdateChecklist(data);
-    return response.data;
+  async (data: Partial<Checklist>): Promise<Checklist> => {
+    const { updateChecklist }: { updateChecklist: Checklist } =
+      await unwrapData(apiUpdateChecklist(data));
+    return updateChecklist;
   }
 );
 
@@ -101,7 +100,7 @@ const checklistsSlice = createSlice({
     builder.addCase(createChecklist.pending, (state) => { state.loading = true; });
     builder.addCase(createChecklist.fulfilled, (state, action) => {
       state.loading = false;
-      state.checklists.push(action.payload.data.createChecklist);
+      state.checklists.push(action.payload);
       state.total += 1;
     });
     builder.addCase(createChecklist.rejected, (state) => { state.loading = false; });
@@ -110,9 +109,7 @@ const checklistsSlice = createSlice({
     builder.addCase(updateChecklist.fulfilled, (state, action) => {
       state.loading = false;
       state.checklists = state.checklists.map((c) =>
-        c.documentId === action.payload.data.updateChecklist.documentId
-          ? action.payload.data.updateChecklist
-          : c
+        c.documentId === action.payload.documentId ? action.payload : c
       );
     });
     builder.addCase(updateChecklist.rejected, (state) => { state.loading = false; });

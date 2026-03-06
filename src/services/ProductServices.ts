@@ -31,11 +31,7 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            checklist {
-                documentId
-                name
-                items
-            }
+            # checklist { documentId name items }  — activer après config Strapi
         }
     }
   `,
@@ -85,11 +81,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            checklist {
-                documentId
-                name
-                items
-            }
+            # checklist { documentId name items }  — activer après config Strapi
             customerCategories (pagination: {limit: 100}){
                 documentId
             }
