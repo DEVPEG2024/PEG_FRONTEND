@@ -82,6 +82,7 @@ function ChecklistsListContent() {
       if (result.meta.requestStatus === 'fulfilled') {
         toast.success('Modèle mis à jour');
         handleClose();
+        dispatch(getChecklists({ pagination: { page: currentPage, pageSize }, searchTerm }));
       } else {
         toast.error('Erreur lors de la mise à jour');
       }
@@ -90,6 +91,7 @@ function ChecklistsListContent() {
       if (result.meta.requestStatus === 'fulfilled') {
         toast.success('Modèle créé');
         handleClose();
+        dispatch(getChecklists({ pagination: { page: currentPage, pageSize }, searchTerm }));
       } else {
         toast.error('Erreur lors de la création — vérifiez la configuration Strapi');
       }
