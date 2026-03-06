@@ -1,6 +1,5 @@
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useState } from 'react';
-import { Pagination, Select } from '@/components/ui';
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiPhotograph } from 'react-icons/hi';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
@@ -16,13 +15,6 @@ import { Banner } from '@/@types/banner';
 import ModalEditBanner from './modals/ModalEditBanner';
 
 injectReducer('banners', reducer);
-
-type PageSelection = { value: number; label: string };
-const pageSelections: PageSelection[] = [
-  { value: 6,  label: '6 / page' },
-  { value: 12, label: '12 / page' },
-  { value: 24, label: '24 / page' },
-];
 
 const BannerCard = ({
   banner,
@@ -170,19 +162,16 @@ const BannerCard = ({
 
 const BannersList = () => {
   const dispatch = useAppDispatch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(pageSelections[0].value);
   const [searchTerm, setSearchTerm] = useState('');
   const { banners, total, selectedBanner, newBannerDialog, editBannerDialog } =
     useAppSelector((state) => state.banners.data);
 
   useEffect(() => {
-    dispatch(getBanners({ pagination: { page: currentPage, pageSize }, searchTerm }));
-  }, [currentPage, pageSize, searchTerm]);
+    dispatch(getBanners({ pagination: { page: 1, pageSize: 1000 }, searchTerm }));
+  }, [searchTerm]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
   const handleDeleteBanner = (banner: Banner) => {
@@ -287,27 +276,7 @@ const BannersList = () => {
         )}
       </Loading>
 
-      {/* Pagination */}
-      <div style={{
-        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-        gap: '12px', marginTop: '32px', paddingBottom: '32px', flexWrap: 'wrap',
-      }}>
-        <Pagination
-          total={total}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          onChange={(page) => setCurrentPage(page)}
-        />
-        <div style={{ minWidth: '120px' }}>
-          <Select
-            size="sm"
-            isSearchable={false}
-            defaultValue={pageSelections[0]}
-            options={pageSelections}
-            onChange={(selected) => selected && setPageSize((selected as PageSelection).value)}
-          />
-        </div>
-      </div>
+      <div style={{ paddingBottom: '32px' }} />
 
       {newBannerDialog && <ModalNewBanner />}
       {editBannerDialog && selectedBanner && <ModalEditBanner />}
