@@ -266,24 +266,37 @@ export default function DashboardAdmin() {
   const [gql, setGql] = useState<any>(null)
 
   const [month, setMonth] = useState('Mars 2026')
+  const [refreshTick, setRefreshTick] = useState(0)
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await apiGetDashboardSuperAdminInformations()
+      const data = (res as any)?.data?.data ?? (res as any)?.data ?? null
+      if (!data) throw new Error('Réponse GraphQL vide')
+      setGql(data)
+    } catch (e: any) {
+      setError(e?.message ?? 'Erreur dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const res = await apiGetDashboardSuperAdminInformations()
-        const data = (res as any)?.data?.data ?? (res as any)?.data ?? null
-        if (!data) throw new Error('Réponse GraphQL vide')
-        setGql(data)
-      } catch (e: any) {
-        setError(e?.message ?? 'Erreur dashboard')
-      } finally {
-        setLoading(false)
+    fetchDashboard()
+  }, [month, refreshTick])
+
+  // Rafraîchissement automatique quand l'onglet redevient visible
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshTick((t) => t + 1)
       }
     }
-    run()
-  }, [month])
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const projects = gql?.projects_connection?.nodes ?? []
   const invoices = gql?.invoices_connection?.nodes ?? []
@@ -306,7 +319,12 @@ export default function DashboardAdmin() {
     return invoices.reduce((a: number, x: any) => {
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
       const st = (x?.state ?? '').toString().toLowerCase()
-      const paid = ps.includes('paid') || ps === 'paid' || ps === 'paye' || st.includes('paid')
+      const paid =
+        ps === 'fulfilled' ||
+        st === 'fulfilled' ||
+        ps.includes('paid') ||
+        ps === 'paye' ||
+        st.includes('paid')
       return a + (paid ? (Number(x?.totalAmount) || 0) : 0)
     }, 0)
   }, [invoices])
@@ -316,10 +334,15 @@ export default function DashboardAdmin() {
   const overdueInvoices = useMemo(() => {
     const now = new Date()
     return invoices.filter((x: any) => {
-      const d = safeDate(x?.date)
+      const d = safeDate(x?.dueDate) ?? safeDate(x?.date)
       if (!d) return false
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
-      const paid = ps.includes('paid') || ps === 'paid' || ps === 'paye'
+      const st = (x?.state ?? '').toString().toLowerCase()
+      const paid =
+        ps === 'fulfilled' ||
+        st === 'fulfilled' ||
+        ps.includes('paid') ||
+        ps === 'paye'
       return d.getTime() < now.getTime() && !paid
     }).length
   }, [invoices])
@@ -590,7 +613,7 @@ export default function DashboardAdmin() {
           </div>
 
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => setRefreshTick((t) => t + 1)}
             className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs text-white/75 hover:bg-white/[0.06] transition"
           >
             Rafraîchir
