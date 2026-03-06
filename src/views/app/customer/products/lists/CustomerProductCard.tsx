@@ -96,15 +96,21 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
         </p>
       )}
 
-      {/* Prix — aligné à gauche, discret */}
-      <p style={{
-        color: 'rgba(255,255,255,0.7)',
+      {/* Prix */}
+      <span style={{
+        background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+        borderRadius: '100px',
+        padding: '3px 10px',
+        color: '#fff',
+        fontWeight: 700,
         fontSize: '13px',
-        fontWeight: 600,
         letterSpacing: '-0.01em',
+        boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
+        display: 'inline-block',
+        alignSelf: 'flex-start',
       }}>
-        {price} <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400, fontSize: '11px' }}>€ HT</span>
-      </p>
+        {price} €
+      </span>
     </div>
   );
 };
