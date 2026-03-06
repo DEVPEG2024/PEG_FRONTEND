@@ -65,8 +65,6 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             }
             active
             inCatalogue
-            productRef
-            refVisibleToCustomer
             sizes {
                 documentId
                 name
@@ -82,14 +80,14 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 fields
             }
             # checklist { documentId name items }  — activer après config Strapi
-            customerCategories (pagination: {limit: 100}){
+            customerCategories {
                 documentId
             }
             productCategory {
                 documentId
                 name
             }
-            customers (pagination: {limit: 100}){
+            customers {
                 documentId
             }
         }

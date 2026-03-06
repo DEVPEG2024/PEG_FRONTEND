@@ -56,6 +56,7 @@ const EditProduct = () => {
   const { productToEdit: product } = useAppSelector(
     (state) => state.products.data
   );
+  const [initialLoading, setInitialLoading] = useState<boolean>(onEdition);
   const [customers, setCustomers] = useState<Options[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
@@ -94,7 +95,9 @@ const EditProduct = () => {
 
   useEffect(() => {
     if (!product && onEdition) {
-      dispatch(getProductById(documentId));
+      dispatch(getProductById(documentId)).finally(() => setInitialLoading(false));
+    } else {
+      setInitialLoading(false);
     }
     return () => {
       dispatch(setProductToEdit(null));
@@ -280,6 +283,14 @@ const EditProduct = () => {
   const handleDiscard = () => {
     navigate('/admin/products');
   };
+
+  if (onEdition && initialLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', color: 'rgba(255,255,255,0.4)' }}>Chargement...</div>;
+  }
+
+  if (onEdition && !product && !initialLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', color: '#f87171' }}>Produit introuvable</div>;
+  }
 
   return (
     (!onEdition || product) && (
