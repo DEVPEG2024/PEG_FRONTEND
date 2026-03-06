@@ -4,9 +4,10 @@ import { Product } from '@/@types/product';
 import { HiPhotograph } from 'react-icons/hi';
 
 const getShortSentence = (desc: string): string => {
-  const text = desc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  const match = text.match(/^[^.!?]*[.!?]/);
-  const sentence = match ? match[0] : text;
+  const text = desc.replace(/<[^>]*>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const match = text.match(/^.{10,}?[.!?]/);
+  const sentence = match ? match[0].trim() : text;
   if (sentence.length <= 90) return sentence;
   return sentence.slice(0, 90).replace(/\s+\S*$/, '') + '…';
 };
@@ -82,19 +83,18 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       </div>
 
       {/* Description courte */}
-      {shortDesc && (
-        <p style={{
-          color: 'rgba(255,255,255,0.38)',
-          fontSize: '11px',
-          lineHeight: 1.55,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {shortDesc}
-        </p>
-      )}
+      <p style={{
+        color: 'rgba(255,255,255,0.38)',
+        fontSize: '11px',
+        lineHeight: 1.55,
+        overflow: 'hidden',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        minHeight: '17px',
+      }}>
+        {shortDesc ?? ''}
+      </p>
 
       {/* Prix */}
       <span style={{
