@@ -1,4 +1,3 @@
-import HeaderTitle from '@/components/template/HeaderTitle';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteForm,
@@ -8,73 +7,43 @@ import reducer, {
   setNewFormDialog,
   useAppSelector,
 } from './store';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Card,
-  Input,
-  Pagination,
-  Select,
-  Tooltip,
-} from '@/components/ui';
+import { useEffect, useState } from 'react';
 import { Form } from '@/@types/form';
-import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
-import { Loading } from '@/components/shared';
 import { toast } from 'react-toastify';
 
 injectReducer('forms', reducer);
 
+const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
+  <button title={title} onClick={onClick}
+    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
+    onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
+    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+  >{icon}</button>
+);
+
+const parseFieldCount = (fields: any): number => {
+  try {
+    if (Array.isArray(fields)) return fields.length;
+    if (typeof fields === 'string') return JSON.parse(fields).length;
+  } catch { /* empty */ }
+  return 0;
+};
+
 function FormsListContent() {
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
   const { forms, total, loading } = useAppSelector((state) => state.forms.data);
 
   useEffect(() => {
-    dispatch(
-      getForms({ pagination: { page: currentPage, pageSize }, searchTerm })
-    );
-  }, [currentPage, pageSize, searchTerm]);
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
-
-  const handlePaginationChange = (page: number) => {
-    if (!loading) {
-      setCurrentPage(page);
-    }
-  };
-
-  const pageSizeOption = useMemo(
-    () =>
-      [10, 25, 50, 100].map((number) => ({
-        value: number,
-        label: `${number} / page`,
-      })),
-    [10, 25, 50, 100]
-  );
-
-  const handleSelectChange = (value?: number) => {
-    if (!loading) {
-      setPageSize(Number(value));
-      setCurrentPage(1);
-    }
-  };
+    dispatch(getForms({ pagination: { page: currentPage, pageSize }, searchTerm }));
+  }, [currentPage, searchTerm]);
 
   const handleEdit = (form: Form) => {
     dispatch(setForm(form));
-    setIsOpenNewForm();
-  };
-
-  const handleDelete = (documentId: string) => {
-    dispatch(deleteForm(documentId));
-  };
-
-  const setIsOpenNewForm = () => {
     dispatch(setNewFormDialog(true));
   };
 
@@ -82,88 +51,79 @@ function FormsListContent() {
     dispatch(duplicateForm(form));
     toast.success('Formulaire dupliqué');
   };
+
   return (
-    <div className="h-full">
-      <HeaderTitle
-        title="Formulaires"
-        buttonTitle="Créer un formulaire"
-        description="Tous les formulaires"
-        link={''}
-        addAction={true}
-        action={setIsOpenNewForm}
-        total={total}
-      />
-      <div className="mb-4">
-        <Input
-          placeholder={'Rechercher un formulaire'}
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Administration</p>
+          <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            Formulaires <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
+          </h2>
+        </div>
+        <button onClick={() => dispatch(setNewFormDialog(true))}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
+          <HiPlus size={16} /> Créer un formulaire
+        </button>
+      </div>
+
+      {/* Search */}
+      <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
+        <HiOutlineSearch size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+        <input type="text" placeholder="Rechercher un formulaire…" value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '10px 14px 10px 36px', color: '#fff', fontSize: '13px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
+          onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
+          onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)' }}
         />
       </div>
-      <Loading loading={loading}>
-        <div className="flex flex-col gap-2 h-full mt-4">
-          {forms.map((form) => (
-            <Card key={form.documentId} className="bg-gray-900">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <TbForms className="text-red-400 text-4xl" />
-                  <div className="flex flex-col">
-                    <span className="text-lg text-white font-bold">
-                      {form.name}
-                    </span>
-                  </div>
+
+      {/* List */}
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', height: '68px', border: '1px solid rgba(255,255,255,0.06)' }} />
+          ))}
+        </div>
+      ) : forms.length === 0 ? (
+        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <TbForms size={48} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucun formulaire</p>
+          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '13px', marginTop: '6px' }}>Créez votre premier formulaire pour commencer</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '40px' }}>
+          {forms.map((form: Form) => {
+            const fieldCount = parseFieldCount(form.fields);
+            return (
+              <div key={form.documentId}
+                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <TbForms size={22} style={{ color: '#6b9eff' }} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip title="Modifier le formulaire">
-                    <Button
-                      variant="plain"
-                      size="sm"
-                      onClick={() => handleEdit(form)}
-                      icon={<HiPencil />}
-                    />
-                  </Tooltip>
-                  <Tooltip title="Dupliquer le formulaire">
-                    <Button
-                      variant="twoTone"
-                      size="sm"
-                      onClick={() => handleDuplicate(form)}
-                      icon={<HiDuplicate />}
-                    />
-                  </Tooltip>
-                  <Tooltip title="Supprimer le formulaire">
-                    <Button
-                      variant="twoTone"
-                      size="sm"
-                      onClick={() => handleDelete(form.documentId)}
-                      icon={<HiTrash />}
-                    />
-                  </Tooltip>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', display: 'block' }}>{form.name}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+                    {fieldCount} champ{fieldCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <span style={{ background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)', borderRadius: '100px', padding: '2px 10px', color: '#6b9eff', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>
+                  {fieldCount} champ{fieldCount !== 1 ? 's' : ''}
+                </span>
+                <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
+                  <Btn onClick={() => handleEdit(form)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
+                  <Btn onClick={() => handleDuplicate(form)} icon={<HiDuplicate size={13} />} hoverBg="rgba(168,85,247,0.12)" hoverColor="#c084fc" hoverBorder="rgba(168,85,247,0.35)" title="Dupliquer" />
+                  <Btn onClick={() => dispatch(deleteForm(form.documentId))} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" />
                 </div>
               </div>
-            </Card>
-          ))}
-          <div className="flex items-center justify-between mt-4">
-            <Pagination
-              pageSize={pageSize}
-              currentPage={currentPage}
-              total={total}
-              onChange={handlePaginationChange}
-            />
-            <div style={{ minWidth: 130 }}>
-              <Select
-                size="sm"
-                menuPlacement="top"
-                isSearchable={false}
-                value={pageSizeOption.filter(
-                  (option) => option.value === pageSize
-                )}
-                options={pageSizeOption}
-                onChange={(option) => handleSelectChange(option?.value)}
-              />
-            </div>
-          </div>
+            );
+          })}
         </div>
-      </Loading>
+      )}
     </div>
   );
 }
