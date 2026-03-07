@@ -6,6 +6,7 @@ interface LogoProps extends CommonProps {
     type?: 'full' | 'streamline'
     mode?: 'light' | 'dark'
     imgClass?: string
+    imgStyle?: React.CSSProperties
     logoWidth?: number | string
 }
 
@@ -17,6 +18,7 @@ const Logo = (props: LogoProps) => {
         mode = 'light',
         className,
         imgClass,
+        imgStyle,
         style,
         logoWidth = 'auto',
     } = props
@@ -31,6 +33,7 @@ const Logo = (props: LogoProps) => {
         >
             <img
                 className={imgClass}
+                style={imgStyle}
                 src={`${LOGO_SRC_PATH}logo-${mode}-${type}.png`}
                 alt={`${APP_NAME} logo`}
             />

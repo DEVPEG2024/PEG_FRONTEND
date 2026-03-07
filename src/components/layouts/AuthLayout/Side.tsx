@@ -102,7 +102,7 @@ const Side = ({ children, content, ...rest }: SideProps) => {
 
                 {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-                    <Logo mode="light" logoWidth="100%" imgClass="inline-block" />
+                    <Logo mode="light" logoWidth="100%" imgClass="inline-block" imgStyle={{ maxWidth: '150px', display: 'block', margin: '0 auto' }} />
                 </div>
 
                 {/* Page content */}
