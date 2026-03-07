@@ -98,14 +98,11 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
           </div>
         )}
 
-        {/* Bottom gradient fade */}
+        {/* Bottom inset shadow */}
         <div style={{
           position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '36px',
-          background: 'linear-gradient(to top, rgba(11,21,38,0.55) 0%, transparent 100%)',
+          inset: 0,
+          boxShadow: 'inset 0 -10px 18px rgba(0,0,0,0.12)',
           pointerEvents: 'none',
         }} />
 
