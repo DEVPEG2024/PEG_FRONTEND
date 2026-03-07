@@ -45,7 +45,7 @@ const HeaderActionsEnd = () => {
       </AuthorityCheck>
       <AuthorityCheck
         userAuthority={userAuthority as string[]}
-        authority={["admin", "producer"]}
+        authority={["admin"]}
       >
         <OnlineUsersCount />
       </AuthorityCheck>
