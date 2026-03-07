@@ -222,12 +222,13 @@ const ShowProduct = () => {
         }}>
           {/* Image panel */}
           <div style={{
-            background: '#ffffff',
+            background: '#f8faff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '340px',
-            padding: '24px',
+            minHeight: '240px',
+            maxHeight: '300px',
+            padding: '20px',
           }}>
             {product.images?.[0]?.url ? (
               <img
@@ -235,14 +236,15 @@ const ShowProduct = () => {
                 alt={product.name}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: '380px',
+                  maxHeight: '220px',
                   objectFit: 'contain',
                   display: 'block',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
+                  margin: '0 auto',
                 }}
               />
             ) : (
-              <div style={{ fontSize: '64px', opacity: 0.2 }}>📦</div>
+              <div style={{ fontSize: '48px', opacity: 0.2 }}>📦</div>
             )}
           </div>
 
