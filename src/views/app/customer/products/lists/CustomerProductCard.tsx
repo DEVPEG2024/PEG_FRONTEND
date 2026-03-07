@@ -104,8 +104,8 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
-          background: 'linear-gradient(to top, rgba(11,21,38,0.92) 0%, transparent 100%)',
+          height: '36px',
+          background: 'linear-gradient(to top, rgba(11,21,38,0.55) 0%, transparent 100%)',
           pointerEvents: 'none',
         }} />
 
