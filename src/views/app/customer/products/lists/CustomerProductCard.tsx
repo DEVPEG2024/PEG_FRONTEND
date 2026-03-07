@@ -29,7 +29,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(47,111,237,0.25)';
     }
     if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1.07)';
+      imgRef.current.style.transform = 'scale(1.0)';
     }
   };
 
@@ -39,7 +39,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       cardRef.current.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)';
     }
     if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1)';
+      imgRef.current.style.transform = 'scale(0.94)';
     }
   };
 
@@ -72,6 +72,8 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
+              display: 'block',
+              transform: 'scale(0.94)',
               transition: 'transform 0.35s ease',
             }}
           />
