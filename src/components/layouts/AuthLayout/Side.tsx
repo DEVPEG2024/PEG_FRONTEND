@@ -108,7 +108,7 @@ const Side = ({ children, content, ...rest }: SideProps) => {
                         marginBottom: '36px',
                     }}
                 >
-                    <Logo mode="dark" />
+                    <Logo mode="light" style={{ display: 'block', margin: '0 auto' }} />
                 </div>
 
                 {/* Page content */}
