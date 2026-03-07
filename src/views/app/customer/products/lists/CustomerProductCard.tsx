@@ -62,7 +62,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       }}
     >
       {/* Image full-bleed */}
-      <div style={{ position: 'relative', height: '200px', flexShrink: 0, overflow: 'hidden', background: '#0a1525' }}>
+      <div style={{ position: 'relative', height: '200px', flexShrink: 0, overflow: 'hidden', background: '#ffffff' }}>
         {imageUrl ? (
           <img
             ref={imgRef}
