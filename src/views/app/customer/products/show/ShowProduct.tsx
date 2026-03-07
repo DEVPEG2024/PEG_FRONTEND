@@ -183,7 +183,7 @@ const ShowProduct = () => {
     }
   };
 
-  if (loading) return (
+  const Skeleton = (
     <Container>
       <div style={{
         display: 'grid',
@@ -205,7 +205,7 @@ const ShowProduct = () => {
     </Container>
   );
 
-  if (!product) return null;
+  if (loading || !product) return Skeleton;
 
   return (
     <Container>
