@@ -3,6 +3,7 @@ import { Form } from '@/@types/form';
 import {
   apiCreateForm,
   apiDeleteForm,
+  apiGetForm,
   apiGetForms,
   apiUpdateForm,
   CreateFormRequest,
@@ -38,6 +39,14 @@ export const getForms = createAsyncThunk(
     const { forms_connection }: { forms_connection: GetFormsResponse } =
       await unwrapData(apiGetForms(data));
     return forms_connection;
+  }
+);
+
+export const getForm = createAsyncThunk(
+  SLICE_NAME + '/getForm',
+  async (documentId: string): Promise<Form> => {
+    const { form }: { form: Form } = await unwrapData(apiGetForm(documentId));
+    return form;
   }
 );
 
@@ -109,6 +118,9 @@ const formsSlice = createSlice({
     });
     builder.addCase(getForms.rejected, (state) => {
       state.loading = false;
+    });
+    builder.addCase(getForm.fulfilled, (state, action) => {
+      state.form = action.payload;
     });
     builder.addCase(deleteForm.pending, (state) => {
       state.loading = true;

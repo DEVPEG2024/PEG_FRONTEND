@@ -74,7 +74,6 @@ export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1,
             nodes {
                 documentId
                 name
-                fields
             }
             pageInfo {
                 page
@@ -89,6 +88,28 @@ export async function apiGetForms(data: GetFormsRequest = {pagination: {page: 1,
     ...data
   }
     return ApiService.fetchData<ApiResponse<{forms_connection: GetFormsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// get single form (with fields, used when editing)
+export async function apiGetForm(documentId: string): Promise<AxiosResponse<ApiResponse<{form: Form}>>> {
+    const query = `
+    query getForm($documentId: ID!) {
+        form(documentId: $documentId) {
+            documentId
+            name
+            fields
+        }
+    }
+  `,
+  variables = { documentId }
+    return ApiService.fetchData<ApiResponse<{form: Form}>>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {

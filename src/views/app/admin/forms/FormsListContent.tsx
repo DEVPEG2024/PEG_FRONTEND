@@ -2,12 +2,12 @@ import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteForm,
   duplicateForm,
+  getForm,
   getForms,
-  setForm,
   setNewFormDialog,
   useAppSelector,
 } from './store';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Form } from '@/@types/form';
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
@@ -23,27 +23,29 @@ const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) =>
   >{icon}</button>
 );
 
-const parseFieldCount = (fields: any): number => {
-  try {
-    if (Array.isArray(fields)) return fields.length;
-    if (typeof fields === 'string') return JSON.parse(fields).length;
-  } catch { /* empty */ }
-  return 0;
-};
 
 function FormsListContent() {
   const dispatch = useAppDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { forms, total, loading } = useAppSelector((state) => state.forms.data);
 
   useEffect(() => {
-    dispatch(getForms({ pagination: { page: currentPage, pageSize }, searchTerm }));
-  }, [currentPage, searchTerm]);
+    dispatch(getForms({ pagination: { page: currentPage, pageSize }, searchTerm: debouncedSearch }));
+  }, [currentPage, debouncedSearch]);
 
-  const handleEdit = (form: Form) => {
-    dispatch(setForm(form));
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 400);
+  };
+
+  const handleEdit = async (form: Form) => {
+    await dispatch(getForm(form.documentId));
     dispatch(setNewFormDialog(true));
   };
 
@@ -72,7 +74,7 @@ function FormsListContent() {
       <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
         <HiOutlineSearch size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
         <input type="text" placeholder="Rechercher un formulaire…" value={searchTerm}
-          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          onChange={(e) => handleSearchChange(e.target.value)}
           style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '10px 14px 10px 36px', color: '#fff', fontSize: '13px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
           onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
           onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)' }}
@@ -95,7 +97,6 @@ function FormsListContent() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '40px' }}>
           {forms.map((form: Form) => {
-            const fieldCount = parseFieldCount(form.fields);
             return (
               <div key={form.documentId}
                 style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
@@ -107,13 +108,7 @@ function FormsListContent() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', display: 'block' }}>{form.name}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
-                    {fieldCount} champ{fieldCount !== 1 ? 's' : ''}
-                  </span>
                 </div>
-                <span style={{ background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)', borderRadius: '100px', padding: '2px 10px', color: '#6b9eff', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>
-                  {fieldCount} champ{fieldCount !== 1 ? 's' : ''}
-                </span>
                 <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
                   <Btn onClick={() => handleEdit(form)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
                   <Btn onClick={() => handleDuplicate(form)} icon={<HiDuplicate size={13} />} hoverBg="rgba(168,85,247,0.12)" hoverColor="#c084fc" hoverBorder="rgba(168,85,247,0.35)" title="Dupliquer" />

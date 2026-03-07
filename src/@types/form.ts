@@ -1,7 +1,7 @@
 export type Form = {
   documentId: string;
   name: string;
-  fields: JSONValue;
+  fields?: JSONValue;
 };
 
 export type JSONValue =
