@@ -43,6 +43,7 @@ const ShowProduct = () => {
   const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
   const {
     product,
+    loading,
     formCompleted,
     formAnswer,
     sizeAndColorsSelected,
@@ -181,6 +182,28 @@ const ShowProduct = () => {
       ];
     }
   };
+
+  if (loading) return (
+    <Container>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '32px',
+        background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+        borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.07)',
+        overflow: 'hidden',
+        minHeight: '500px',
+      }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {[70, 40, 55, 90, 60].map((w, i) => (
+            <div key={i} style={{ height: i === 0 ? '32px' : '16px', borderRadius: '8px', width: `${w}%`, background: 'rgba(255,255,255,0.07)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          ))}
+        </div>
+      </div>
+    </Container>
+  );
 
   if (!product) return null;
 
