@@ -6,7 +6,7 @@ import reducer, {
   getCatalogueProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { isEmpty } from 'lodash';
 import { useParams } from 'react-router-dom';
 import { Product } from '@/@types/product';
@@ -37,9 +37,12 @@ const CustomerProductsOfCategory = () => {
   const { documentId } =
     useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
   const dispatch = useAppDispatch();
-  const { products, productCategory, loading } = useAppSelector(
+  const { products, productCategory, loading, total } = useAppSelector(
     (state) => state.catalogue.data
   );
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const pageCount = Math.ceil(total / PAGE_SIZE);
 
   useEffect(() => {
     if (!productCategory) {
@@ -47,19 +50,20 @@ const CustomerProductsOfCategory = () => {
     } else {
       dispatch(
         getCatalogueProductsByCategory({
-          pagination: { page: 1, pageSize: 10 },
+          pagination: { page, pageSize: PAGE_SIZE },
           searchTerm: '',
           productCategoryDocumentId: productCategory?.documentId,
         })
       );
     }
-  }, [dispatch, productCategory]);
+  }, [dispatch, productCategory, page]);
 
   useEffect(() => {
+    setPage(1);
     return () => {
       dispatch(clearStateSpecificCategory());
     };
-  }, []);
+  }, [documentId]);
 
   return (
     <div style={{ padding: '0' }}>
@@ -121,6 +125,68 @@ const CustomerProductsOfCategory = () => {
           {products.map((product: Product) => (
             <CustomerProductCard key={product.documentId} product={product} />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && pageCount > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: page === 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)',
+              color: page === 1 ? 'rgba(160,185,220,0.3)' : '#a0b9dc',
+              cursor: page === 1 ? 'default' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 600,
+              transition: 'all 0.15s',
+            }}
+          >
+            ← Précédent
+          </button>
+
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: p === page ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                background: p === page ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.04)',
+                color: p === page ? '#fff' : '#a0b9dc',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: p === page ? 700 : 400,
+                transition: 'all 0.15s',
+              }}
+            >
+              {p}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+            disabled={page === pageCount}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: page === pageCount ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)',
+              color: page === pageCount ? 'rgba(160,185,220,0.3)' : '#a0b9dc',
+              cursor: page === pageCount ? 'default' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 600,
+              transition: 'all 0.15s',
+            }}
+          >
+            Suivant →
+          </button>
         </div>
       )}
     </div>
