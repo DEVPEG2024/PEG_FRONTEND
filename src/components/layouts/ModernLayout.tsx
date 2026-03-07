@@ -43,7 +43,12 @@ const HeaderActionsEnd = () => {
           </Alert>
         </Link>
       </AuthorityCheck>
-      <OnlineUsersCount />
+      <AuthorityCheck
+        userAuthority={userAuthority as string[]}
+        authority={["admin", "producer"]}
+      >
+        <OnlineUsersCount />
+      </AuthorityCheck>
       <LanguageSelector />
       <UserDropdown hoverable={false} />
     </>
