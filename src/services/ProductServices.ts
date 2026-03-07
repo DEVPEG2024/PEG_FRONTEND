@@ -13,9 +13,6 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             description
             name
             price
-            priceTiers
-            productRef
-            refVisibleToCustomer
             images {
                 url
             }

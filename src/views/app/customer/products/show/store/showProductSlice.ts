@@ -69,7 +69,7 @@ const productSlice = createSlice({
     });
     builder.addCase(getProductToShow.fulfilled, (state, action) => {
       state.loading = false;
-      state.product = action.payload.product;
+      state.product = action.payload?.product ?? null;
     });
     builder.addCase(getProductToShow.rejected, (state) => {
       state.loading = false;
