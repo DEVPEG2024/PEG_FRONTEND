@@ -284,7 +284,7 @@ const ShowProduct = () => {
             )}
 
             {/* Price tiers */}
-            {product.priceTiers.length > 1 && (
+            {product.priceTiers?.length > 1 && (
               <div style={{
                 background: 'rgba(255,255,255,0.04)',
                 borderRadius: '10px',
