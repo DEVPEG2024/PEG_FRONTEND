@@ -330,6 +330,9 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 price
                 product {
                     name
+                    images {
+                        url
+                    }
                 }
                 sizeAndColorSelections
                 state

@@ -52,14 +52,27 @@ const OrderItemDetails = ({
 
       {/* Product */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-        <div style={{
-          width: '30px', height: '30px', borderRadius: '8px',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          color: 'rgba(255,255,255,0.35)',
-        }}>
-          <HiBookOpen size={14} />
-        </div>
+        {orderItem.product.images?.[0]?.url ? (
+          <img
+            src={orderItem.product.images[0].url}
+            alt={productTitle}
+            style={{
+              width: '48px', height: '48px', borderRadius: '10px',
+              objectFit: 'cover', flexShrink: 0,
+              border: '1px solid rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.04)',
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '48px', height: '48px', borderRadius: '10px',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            color: 'rgba(255,255,255,0.35)',
+          }}>
+            <HiBookOpen size={18} />
+          </div>
+        )}
         <div>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
           <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
