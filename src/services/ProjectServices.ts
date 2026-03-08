@@ -617,6 +617,13 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 }
                 endDate
                 name
+                orderItem {
+                    product {
+                        images {
+                            url
+                        }
+                    }
+                }
                 poolable
                 price
                 producer {
