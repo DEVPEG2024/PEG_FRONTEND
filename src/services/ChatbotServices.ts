@@ -1,10 +1,9 @@
 import axios from 'axios';
-
-const BACKEND_URL = 'https://peg-backend.vercel.app';
+import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 
 const backend = () =>
   axios.create({
-    baseURL: BACKEND_URL,
+    baseURL: EXPRESS_BACKEND_URL,
     headers: { 'Content-Type': 'application/json' },
     timeout: 30000,
   });
