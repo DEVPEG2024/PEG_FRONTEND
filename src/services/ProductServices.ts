@@ -77,7 +77,19 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            # checklist { documentId name items }  — activer après config Strapi
+            checklist {
+                documentId
+                name
+                items
+            }
+            requiresBat
+            batFile {
+                documentId
+                url
+                name
+            }
+            productRef
+            refVisibleToCustomer
             customerCategories {
                 documentId
             }

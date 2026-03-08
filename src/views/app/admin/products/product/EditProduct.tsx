@@ -90,6 +90,7 @@ const EditProduct = () => {
     inCatalogue: product?.inCatalogue || false,
     productRef: product?.productRef ?? '',
     refVisibleToCustomer: product?.refVisibleToCustomer ?? false,
+    requiresBat: product?.requiresBat ?? false,
   };
   const dispatch = useAppDispatch();
 
@@ -250,7 +251,7 @@ const EditProduct = () => {
     return createProduct;
   };
 
-  const handleFormSubmit = async (values: ProductFormModel) => {
+  const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
     const newImages: PegFile[] = [];
     for (const image of images) {
       if (image.id) {
@@ -260,16 +261,29 @@ const EditProduct = () => {
         newImages.push(imageUploaded);
       }
     }
-    const data: Product = {
+
+    // Upload BAT PDF if a new file was selected
+    let batFileId: string | undefined = product?.batFile?.id as string | undefined;
+    if (batFile && batFile.file) {
+      const uploaded: PegFile = await apiUploadFile(batFile.file);
+      batFileId = uploaded.id as string;
+    }
+    // If BAT was cleared (batFile is null and requiresBat is still on), keep existing; if requiresBat is off, clear it
+    if (!values.requiresBat) {
+      batFileId = undefined;
+    }
+
+    const data: any = {
       ...values,
       images: newImages.map(({ id }) => id),
       active: true,
       priceTiers: values.priceTiers,
+      batFile: batFileId ?? null,
     };
-    if (values.form === '' || !values.form) {
+    if (!values.form) {
       data.form = null;
     }
-    if (values.checklist === '' || !values.checklist) {
+    if (!values.checklist) {
       data.checklist = null;
     }
     if (!onEdition) {
@@ -308,6 +322,7 @@ const EditProduct = () => {
         images={images}
         setImages={setImages}
         imagesLoading={imagesLoading}
+        currentBatUrl={product?.batFile?.url ?? null}
         initialData={initialData}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
         filterColorsListByProductCategory={filterColorsListByProductCategory}

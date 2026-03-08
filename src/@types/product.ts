@@ -32,6 +32,8 @@ export type Product = {
   inCatalogue: boolean;
   productRef?: string;
   refVisibleToCustomer?: boolean;
+  requiresBat?: boolean;
+  batFile?: PegFile | null;
 };
 
 export type Size = {
