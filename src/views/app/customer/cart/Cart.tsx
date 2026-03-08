@@ -3,7 +3,7 @@ import { Product } from '@/@types/product';
 import { Container } from '@/components/shared';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
-import { apiGetCustomerProducts } from '@/services/ProductServices';
+import { apiGetProducts } from '@/services/ProductServices';
 import { getTotalPriceForCartItem, getProductPriceForSizeAndColors } from '@/utils/productHelpers';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,21 +26,17 @@ function Cart() {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!user.customer?.documentId) return;
       try {
-        const res = await apiGetCustomerProducts(
-          user.customer.documentId,
-          user.customer.customerCategory?.documentId ?? '',
-          { page: 1, pageSize: 30 },
-          ''
+        const res = await apiGetProducts({ pagination: { page: 1, pageSize: 100 }, searchTerm: '' });
+        const all: Product[] = res.data.data.products_connection.nodes.filter(
+          (p: Product) => p.active && p.inCatalogue
         );
-        const all: Product[] = res.data.data.products_connection.nodes;
         const cartIds = new Set(cart.map((c) => c.product.documentId));
         setSuggestions(all.filter((p) => !cartIds.has(p.documentId)));
       } catch {}
     };
     fetchSuggestions();
-  }, [cart.length, user.customer?.documentId]);
+  }, [cart.length]);
 
   // Auto-rotate every 3 seconds
   useEffect(() => {
