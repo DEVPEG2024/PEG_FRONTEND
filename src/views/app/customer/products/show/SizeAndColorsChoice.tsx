@@ -27,18 +27,21 @@ const SizeAndColorsChoice = ({
           handleSizeAndColorsChanged={handleSizeAndColorsChanged}
         />
         {sizeAndColorsSelected.length === 0 && (
-          <p className="mt-4 text-green-600">
+          <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#4ade80' }}>
             Veuillez renseigner au moins une taille
           </p>
         )}
       </div>
     );
-  } else if (product.sizes.length > 0) {
-    <SizeChoice
-      product={product}
-      sizeAndColorsSelected={sizeAndColorsSelected}
-      handleSizeAndColorsChanged={handleSizeAndColorsChanged}
-    />;
+  }
+  if (product.sizes?.length > 0) {
+    return (
+      <SizeChoice
+        product={product}
+        sizeAndColorsSelected={sizeAndColorsSelected}
+        handleSizeAndColorsChanged={handleSizeAndColorsChanged}
+      />
+    );
   }
   return (
     <QuantityChoice
