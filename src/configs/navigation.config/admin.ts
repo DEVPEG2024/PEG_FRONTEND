@@ -229,30 +229,6 @@ const navigationAdmin: NavigationTree[] = [
             authority: [SUPER_ADMIN],
             subMenu: [],
           },
-        ],
-      },
-    ],
-  },
-
-  // --- Formulaires & Checklists ---
-  {
-    key: "admin.content",
-    path: "/admin/forms",
-    title: "",
-    translateKey: "",
-    icon: "forms",
-    type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
-    subMenu: [
-      {
-        key: "admin.content",
-        path: "/admin/forms",
-        title: "Contenus",
-        translateKey: "nav.content",
-        icon: "forms",
-        type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
-        subMenu: [
           {
             key: "admin.forms",
             path: "/admin/forms",
