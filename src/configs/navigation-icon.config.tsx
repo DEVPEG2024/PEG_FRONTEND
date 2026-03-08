@@ -53,6 +53,7 @@ const navigationIcon: NavigationIcons = {
     pool: <PiSwimmingPoolBold />,
     calendar: <BsCalendar3 />,
     leads: <HiOutlineLightningBolt />,
+    checklist: <GoTasklist />,
 }
 
 export default navigationIcon

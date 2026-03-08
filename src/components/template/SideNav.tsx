@@ -11,7 +11,7 @@ import {
 } from '@/constants/theme.constant'
 import Logo from '@/components/template/Logo'
 import navigationConfig from '@/configs/navigation.config'
-import VerticalMenuContent from '@/components/template/VerticalMenuContent'
+import CustomVerticalMenu from '@/components/template/CustomVerticalMenu'
 import useResponsive from '@/utils/hooks/useResponsive'
 import { useAppSelector } from '@/store'
 
@@ -33,9 +33,6 @@ const SideNav = () => {
     const navMode = useAppSelector((state) => state.theme.navMode)
     const mode = useAppSelector((state) => state.theme.mode)
     const direction = useAppSelector((state) => state.theme.direction)
-    const currentRouteKey = useAppSelector(
-        (state) => state.base.common.currentRouteKey
-    )
     const sideNavCollapse = useAppSelector(
         (state) => state.theme.layout.sideNavCollapse
     )
@@ -63,13 +60,10 @@ const SideNav = () => {
     }
 
     const menuContent = (
-        <VerticalMenuContent
-            navMode={navMode}
-            collapsed={sideNavCollapse}
+        <CustomVerticalMenu
             navigationTree={navigationConfig}
-            routeKey={currentRouteKey}
             userAuthority={userAuthority as string[]}
-            direction={direction}
+            collapsed={sideNavCollapse}
         />
     )
 

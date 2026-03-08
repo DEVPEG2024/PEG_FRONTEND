@@ -3,15 +3,26 @@ import {
   NAV_ITEM_TYPE_TITLE,
 } from "@/constants/navigation.constant";
 import type { NavigationTree } from "@/@types/navigation";
-import { ADMIN,  SUPER_ADMIN } from "@/constants/roles.constant";
+import { ADMIN, SUPER_ADMIN } from "@/constants/roles.constant";
 
 const navigationAdmin: NavigationTree[] = [
+  // --- Vue d'ensemble ---
   {
     key: "admin.home",
     path: "/home",
     title: "ACCUEIL",
     translateKey: "nav.home",
     icon: "home",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN],
+    subMenu: [],
+  },
+  {
+    key: "admin.calendar",
+    path: "/admin/calendar",
+    title: "Calendrier",
+    translateKey: "nav.calendar",
+    icon: "calendar",
     type: NAV_ITEM_TYPE_ITEM,
     authority: [SUPER_ADMIN],
     subMenu: [],
@@ -36,26 +47,96 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
+
+  // --- Clients ---
   {
-    key: "admin.calendar",
-    path: "/admin/calendar",
-    title: "Calendrier",
-    translateKey: "nav.calendar",
-    icon: "calendar",
-    type: NAV_ITEM_TYPE_ITEM,
+    key: "admin.customers",
+    path: "/admin/customers",
+    title: "",
+    translateKey: "",
+    icon: "customers",
+    type: NAV_ITEM_TYPE_TITLE,
     authority: [SUPER_ADMIN],
-    subMenu: [],
+    subMenu: [
+      {
+        key: "admin.customers",
+        path: "/admin/customers",
+        title: "Clients",
+        translateKey: "nav.customers",
+        icon: "customers",
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [SUPER_ADMIN],
+        subMenu: [
+          {
+            key: "admin.customers.list",
+            path: "/admin/customers/list",
+            title: "Liste des clients",
+            translateKey: "nav.customersList",
+            icon: "customers",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
+            key: "admin.customers.categories",
+            path: "/admin/customers/categories",
+            title: "Catégories",
+            translateKey: "nav.customersCategories",
+            icon: "customers",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+        ],
+      },
+    ],
   },
+
+  // --- Producteurs ---
   {
-    key: "admin.banners",
-    path: "/admin/banners",
-    title: "Bannières",
-    translateKey: "nav.banners",
-    icon: "banners",
-    type: NAV_ITEM_TYPE_ITEM,
+    key: "admin.producers",
+    path: "/admin/producers",
+    title: "",
+    translateKey: "",
+    icon: "producers",
+    type: NAV_ITEM_TYPE_TITLE,
     authority: [SUPER_ADMIN],
-    subMenu: [],
+    subMenu: [
+      {
+        key: "admin.producers",
+        path: "/admin/producers",
+        title: "Producteurs",
+        translateKey: "nav.producers",
+        icon: "producers",
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [SUPER_ADMIN],
+        subMenu: [
+          {
+            key: "admin.producers.list",
+            path: "/admin/producers/list",
+            title: "Liste des producteurs",
+            translateKey: "nav.producersList",
+            icon: "producers",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
+            key: "admin.producers.categories",
+            path: "/admin/producers/categories",
+            title: "Catégories",
+            translateKey: "nav.producersCategories",
+            icon: "producers",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+        ],
+      },
+    ],
   },
+
+  // --- Boutique ---
   {
     key: "admin.store",
     path: "/admin/store",
@@ -74,26 +155,6 @@ const navigationAdmin: NavigationTree[] = [
         type: NAV_ITEM_TYPE_ITEM,
         authority: [SUPER_ADMIN],
         subMenu: [
-          {
-            key: "admin.forms",
-            path: "/admin/forms",
-            title: "Formulaire des offres",
-            translateKey: "nav.forms",
-            icon: "forms",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
-            subMenu: [],
-          },
-          {
-            key: "admin.checklists",
-            path: "/admin/checklists",
-            title: "Checklists",
-            translateKey: "nav.checklists",
-            icon: "checklist",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
-            subMenu: [],
-          },
           {
             key: "admin.products",
             path: "/admin/products",
@@ -144,46 +205,22 @@ const navigationAdmin: NavigationTree[] = [
             authority: [SUPER_ADMIN],
             subMenu: [],
           },
-        ],
-      },
-    ],
-  },
-
- 
-  {
-    key: "admin.customers",
-    path: "/admin/customers",
-    title: "",
-    translateKey: "",
-    icon: "customers",
-    type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
-    subMenu: [
-      {
-        key: "admin.customers",
-        path: "/admin/customers",
-        title: "Clients",
-        translateKey: "nav.customers",
-        icon: "customers",
-        type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
-        subMenu: [
           {
-            key: "admin.customers.list",
-            path: "/admin/customers/list",
-            title: "Liste des clients",
-            translateKey: "nav.customersList",
-            icon: "customers",
+            key: "admin.forms",
+            path: "/admin/forms",
+            title: "Formulaire des offres",
+            translateKey: "nav.forms",
+            icon: "forms",
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
             subMenu: [],
           },
           {
-            key: "admin.customers.categories",
-            path: "/admin/customers/categories",
-            title: "Catégories",
-            translateKey: "nav.customersCategories",
-            icon: "customers",
+            key: "admin.checklists",
+            path: "/admin/checklists",
+            title: "Checklists",
+            translateKey: "nav.checklists",
+            icon: "checklist",
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN],
             subMenu: [],
@@ -193,48 +230,7 @@ const navigationAdmin: NavigationTree[] = [
     ],
   },
 
-  {
-    key: "admin.producers",
-    path: "/admin/producers",
-    title: "",
-    translateKey: "",
-    icon: "producers",
-    type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
-    subMenu: [
-      {
-        key: "admin.producers",
-        path: "/admin/producers",
-        title: "Producteurs",
-        translateKey: "nav.producers",
-        icon: "producers",
-        type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
-        subMenu: [
-          {
-            key: "admin.producers.list",
-            path: "/admin/producers/list",
-            title: "Liste des producteurs",
-            translateKey: "nav.producersList",
-            icon: "producers",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
-            subMenu: [],
-          },
-          {
-            key: "admin.producers.categories",
-            path: "/admin/producers/categories",
-            title: "Catégories",
-            translateKey: "nav.producersCategories",
-            icon: "producers",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
-            subMenu: [],
-          },
-        ],
-      },
-    ],
-  },
+  // --- Finance ---
   {
     key: "admin.invoices",
     path: "/admin/invoices",
@@ -245,6 +241,20 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN],
     subMenu: [],
   },
+
+  // --- Communication ---
+  {
+    key: "admin.banners",
+    path: "/admin/banners",
+    title: "Bannières",
+    translateKey: "nav.banners",
+    icon: "banners",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN],
+    subMenu: [],
+  },
+
+  // --- Administration ---
   {
     key: "admin.users",
     path: "/admin/users",
