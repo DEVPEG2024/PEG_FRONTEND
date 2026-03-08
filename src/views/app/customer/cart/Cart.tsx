@@ -214,12 +214,17 @@ function Cart() {
 
       {/* Suggestions carousel */}
       {visibleSuggestions.length > 0 && (
-        <div style={{ marginTop: '48px', paddingBottom: '48px' }}>
+        <div style={{ marginTop: '40px', paddingBottom: '48px' }}>
+          {/* Separator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01))' }} />
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              Vous aimerez aussi
+            </span>
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.08))' }} />
+          </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                Vous aimerez aussi
-              </p>
               <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
                 Produits complémentaires
               </h3>
