@@ -29,7 +29,7 @@ export const getOwnTransactions = createAsyncThunk(
     const {
       transactions_connection,
     }: { transactions_connection: GetTransactionsResponse } = await unwrapData(
-      apiGetTransactions(data.request, data.user.documentId)
+      apiGetTransactions(data.request, data.user.producer?.documentId ?? '')
     );
     return transactions_connection;
   }
