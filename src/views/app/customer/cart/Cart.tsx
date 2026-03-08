@@ -5,7 +5,7 @@ import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { apiGetCustomerProducts } from '@/services/ProductServices';
 import { getTotalPriceForCartItem, getProductPriceForSizeAndColors } from '@/utils/productHelpers';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdShoppingCart, MdOutlineShoppingBag } from 'react-icons/md';
 import { HiOutlinePencil, HiOutlineTrash, HiPlus } from 'react-icons/hi';
@@ -20,6 +20,9 @@ function Cart() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [fading, setFading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -28,16 +31,33 @@ function Cart() {
         const res = await apiGetCustomerProducts(
           user.customer.documentId,
           user.customer.customerCategory?.documentId ?? '',
-          { page: 1, pageSize: 20 },
+          { page: 1, pageSize: 30 },
           ''
         );
         const all: Product[] = res.data.data.products_connection.nodes;
         const cartIds = new Set(cart.map((c) => c.product.documentId));
-        setSuggestions(all.filter((p) => !cartIds.has(p.documentId)).slice(0, 4));
+        setSuggestions(all.filter((p) => !cartIds.has(p.documentId)));
       } catch {}
     };
     fetchSuggestions();
   }, [cart.length, user.customer?.documentId]);
+
+  // Auto-rotate every 3 seconds
+  useEffect(() => {
+    if (suggestions.length <= 3) return;
+    timerRef.current = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setSlideIndex((prev) => (prev + 3) % suggestions.length);
+        setFading(false);
+      }, 400);
+    }, 3000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [suggestions.length]);
+
+  const visibleSuggestions = suggestions.length > 0
+    ? [0, 1, 2].map((i) => suggestions[(slideIndex + i) % suggestions.length]).filter(Boolean)
+    : [];
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item));
@@ -196,20 +216,38 @@ function Cart() {
         </div>
       </div>
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
+      {/* Suggestions carousel */}
+      {visibleSuggestions.length > 0 && (
         <div style={{ marginTop: '48px', paddingBottom: '48px' }}>
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
-              Vous aimerez aussi
-            </p>
-            <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
-              Produits complémentaires
-            </h3>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                Vous aimerez aussi
+              </p>
+              <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
+                Produits complémentaires
+              </h3>
+            </div>
+            {/* Dots */}
+            <div style={{ display: 'flex', gap: '6px', paddingBottom: '4px' }}>
+              {Array.from({ length: Math.ceil(suggestions.length / 3) }).map((_, i) => (
+                <div key={i} style={{
+                  width: i === Math.floor(slideIndex / 3) % Math.ceil(suggestions.length / 3) ? '18px' : '6px',
+                  height: '6px', borderRadius: '100px',
+                  background: i === Math.floor(slideIndex / 3) % Math.ceil(suggestions.length / 3)
+                    ? '#6b9eff' : 'rgba(255,255,255,0.15)',
+                  transition: 'all 0.3s ease',
+                }} />
+              ))}
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-            {suggestions.map((product) => (
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px',
+            opacity: fading ? 0 : 1,
+            transition: 'opacity 0.4s ease',
+          }}>
+            {visibleSuggestions.map((product) => (
               <div
                 key={product.documentId}
                 onClick={() => navigate('/customer/product/' + product.documentId)}
@@ -229,20 +267,20 @@ function Cart() {
                 }}
               >
                 <div style={{
-                  height: '130px', background: 'rgba(255,255,255,0.03)',
+                  height: '140px', background: 'rgba(255,255,255,0.03)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
                 }}>
                   {product.images?.[0]?.url ? (
                     <img src={product.images[0].url} alt={product.name}
-                      style={{ maxWidth: '100%', maxHeight: '115px', objectFit: 'contain' }} />
+                      style={{ maxWidth: '100%', maxHeight: '125px', objectFit: 'contain' }} />
                   ) : (
-                    <MdOutlineShoppingBag size={36} style={{ color: 'rgba(255,255,255,0.1)' }} />
+                    <MdOutlineShoppingBag size={40} style={{ color: 'rgba(255,255,255,0.1)' }} />
                   )}
                 </div>
-                <div style={{ padding: '12px' }}>
+                <div style={{ padding: '14px' }}>
                   <p style={{
-                    color: '#fff', fontWeight: 600, fontSize: '13px', margin: '0 0 8px 0',
+                    color: '#fff', fontWeight: 600, fontSize: '13px', margin: '0 0 10px 0',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {product.name}
@@ -250,13 +288,13 @@ function Cart() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{
                       background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                      borderRadius: '100px', padding: '2px 8px',
-                      color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                      borderRadius: '100px', padding: '3px 10px',
+                      color: '#6b9eff', fontSize: '12px', fontWeight: 600,
                     }}>
                       {(product.price ?? 0).toFixed(2)} €
                     </span>
-                    <span style={{ color: 'rgba(107,158,255,0.75)', fontSize: '11px', fontWeight: 600 }}>
-                      Voir →
+                    <span style={{ color: 'rgba(107,158,255,0.75)', fontSize: '12px', fontWeight: 600 }}>
+                      Commander →
                     </span>
                   </div>
                 </div>
