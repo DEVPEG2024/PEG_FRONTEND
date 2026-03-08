@@ -8,6 +8,7 @@ export const SLICE_NAME = 'showProduct';
 
 export type StateData = {
   loading: boolean;
+  error: string | null;
   product: Product | null;
   formCompleted: boolean;
   formDialog: boolean;
@@ -18,6 +19,7 @@ export type StateData = {
 
 const initialState: StateData = {
   loading: false,
+  error: null,
   product: null,
   formCompleted: false,
   formDialog: false,
@@ -59,6 +61,7 @@ const productSlice = createSlice({
       state.formCompleted = false;
       state.formDialog = false;
       state.product = null;
+      state.error = null;
       state.sizeAndColorsSelected = [];
       state.formAnswer = null;
     },
@@ -71,8 +74,9 @@ const productSlice = createSlice({
       state.loading = false;
       state.product = action.payload?.product ?? null;
     });
-    builder.addCase(getProductToShow.rejected, (state) => {
+    builder.addCase(getProductToShow.rejected, (state, action) => {
       state.loading = false;
+      state.error = action.error?.message ?? 'Erreur lors du chargement du produit';
     });
   },
 });

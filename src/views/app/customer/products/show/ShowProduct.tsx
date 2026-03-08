@@ -44,6 +44,7 @@ const ShowProduct = () => {
   const {
     product,
     loading,
+    error,
     formCompleted,
     formAnswer,
     sizeAndColorsSelected,
@@ -205,7 +206,23 @@ const ShowProduct = () => {
     </Container>
   );
 
-  if (loading || !product) return Skeleton;
+  if (loading) return Skeleton;
+
+  if (error || !product) return (
+    <Container>
+      <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(160,185,220,0.7)' }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚠️</div>
+        <p style={{ margin: 0, fontSize: '15px' }}>
+          {error ?? 'Produit introuvable'}
+        </p>
+        {error && (
+          <p style={{ margin: '8px 0 0', fontSize: '11px', fontFamily: 'monospace', color: 'rgba(160,185,220,0.4)' }}>
+            {error}
+          </p>
+        )}
+      </div>
+    </Container>
+  );
 
   return (
     <Container>
