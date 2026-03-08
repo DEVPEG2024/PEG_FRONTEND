@@ -68,24 +68,27 @@ const ProjectItem = ({
       {/* Barre de couleur statut */}
       <div style={{ height: '4px', background: status.color, opacity: 0.8 }} />
 
-      {/* Photo du produit */}
+      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'row', gap: '14px' }}>
+
+      {/* Photo du produit à gauche */}
       {project.orderItem?.product?.images?.[0]?.url && (
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(255,255,255,0.03)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          padding: '12px',
-          minHeight: '140px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          width: '72px',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: '10px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          padding: '6px',
         }}>
           <img
             src={project.orderItem.product.images[0].url}
             alt={project.name}
-            style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain', display: 'block' }}
+            style={{ maxWidth: '100%', maxHeight: '72px', objectFit: 'contain', display: 'block' }}
           />
         </div>
       )}
 
-      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: 0 }}>
 
         {/* Ligne 1 : statut + délai + dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
@@ -192,6 +195,8 @@ const ProjectItem = ({
             )}
           </div>
         </div>
+
+      </div>
 
       </div>
 
