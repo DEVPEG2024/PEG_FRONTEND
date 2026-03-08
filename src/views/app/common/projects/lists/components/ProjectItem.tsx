@@ -3,7 +3,7 @@ import AvatarName from './AvatarName';
 import ProgressionBar from './ProgressionBar';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '@/@types/project';
-import { MdAccessTime } from 'react-icons/md';
+import { MdAccessTime, MdOutlineImage } from 'react-icons/md';
 import dayjs from 'dayjs';
 import { RootState, useAppSelector } from '@/store';
 import { useState } from 'react';
@@ -71,22 +71,24 @@ const ProjectItem = ({
       <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'row', gap: '14px' }}>
 
       {/* Photo du produit à gauche */}
-      {project.orderItem?.product?.images?.[0]?.url && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          width: '200px',
-          background: 'rgba(255,255,255,0.04)',
-          borderRadius: '10px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          padding: '8px',
-        }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        width: '200px',
+        background: 'rgba(255,255,255,0.04)',
+        borderRadius: '10px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '8px',
+      }}>
+        {project.orderItem?.product?.images?.[0]?.url ? (
           <img
             src={project.orderItem.product.images[0].url}
             alt={project.name}
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
           />
-        </div>
-      )}
+        ) : (
+          <MdOutlineImage size={48} style={{ color: 'rgba(255,255,255,0.1)' }} />
+        )}
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: 0 }}>
 
