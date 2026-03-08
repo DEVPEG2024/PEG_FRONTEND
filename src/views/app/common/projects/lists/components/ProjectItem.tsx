@@ -70,16 +70,18 @@ const ProjectItem = ({
 
       {/* Photo du produit */}
       {project.orderItem?.product?.images?.[0]?.url && (
-        <div style={{ position: 'relative', height: '120px', overflow: 'hidden' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(255,255,255,0.03)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: '12px',
+          minHeight: '140px',
+        }}>
           <img
             src={project.orderItem.product.images[0].url}
             alt={project.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain', display: 'block' }}
           />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(15,28,46,0.1) 0%, rgba(15,28,46,0.7) 100%)',
-          }} />
         </div>
       )}
 
