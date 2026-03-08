@@ -1,20 +1,11 @@
 import axios from 'axios';
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
-import { PERSIST_STORE_NAME } from '@/constants/app.constant';
-import { TOKEN_TYPE, REQUEST_HEADER_AUTH_KEY } from '@/constants/api.constant';
-import deepParseJson from '@/utils/deepParseJson';
 
-function getAuthHeader() {
-  const raw = localStorage.getItem(PERSIST_STORE_NAME);
-  const data = deepParseJson(raw);
-  const token = (data as any)?.auth?.session?.token;
-  return token ? { [REQUEST_HEADER_AUTH_KEY]: `${TOKEN_TYPE}${token}` } : {};
-}
+const BACKEND_URL = 'https://peg-backend.vercel.app';
 
 const backend = () =>
   axios.create({
-    baseURL: EXPRESS_BACKEND_URL,
-    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    baseURL: BACKEND_URL,
+    headers: { 'Content-Type': 'application/json' },
     timeout: 30000,
   });
 

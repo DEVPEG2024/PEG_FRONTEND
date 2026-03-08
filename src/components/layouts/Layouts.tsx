@@ -12,6 +12,8 @@ import {
 import useAuth from '@/utils/hooks/useAuth'
 import useDirection from '@/utils/hooks/useDirection'
 import useLocale from '@/utils/hooks/useLocale'
+import ChatWidget from '@/components/template/ChatWidget'
+import { CUSTOMER } from '@/constants/roles.constant'
 
 const layouts = {
     [LAYOUT_TYPE_CLASSIC]: lazy(() => import('./ClassicLayout')),
@@ -24,11 +26,11 @@ const layouts = {
 
 const Layout = () => {
     const layoutType = useAppSelector((state) => state.theme.layout.type)
+    const authority = useAppSelector((state) => state.auth.user.user.authority) as string[]
 
     const { authenticated } = useAuth()
 
     useDirection()
-
     useLocale()
 
     const AppLayout = useMemo(() => {
@@ -37,6 +39,8 @@ const Layout = () => {
         }
         return lazy(() => import('./AuthLayout'))
     }, [layoutType, authenticated])
+
+    const isCustomer = authenticated && authority?.includes(CUSTOMER)
 
     return (
         <Suspense
@@ -47,6 +51,7 @@ const Layout = () => {
             }
         >
             <AppLayout />
+            {isCustomer && <ChatWidget />}
         </Suspense>
     )
 }

@@ -5,9 +5,6 @@ import MobileNav from '@/components/template/MobileNav'
 import UserDropdown from '@/components/template/UserDropdown'
 import SideNav from '@/components/template/SideNav'
 import View from '@/views'
-import ChatWidget from '@/components/template/ChatWidget'
-import { useAppSelector } from '@/store'
-import { CUSTOMER } from '@/constants/roles.constant'
 
 const HeaderActionsStart = () => {
     return (
@@ -28,9 +25,6 @@ const HeaderActionsEnd = () => {
 }
 
 const ClassicLayout = () => {
-    const authority = useAppSelector((state) => state.auth.user.user.authority) as string[]
-    const isCustomer = authority?.includes(CUSTOMER)
-
     return (
         <div className="app-layout-classic flex flex-auto flex-col">
             <div className="flex flex-auto min-w-0">
@@ -46,7 +40,6 @@ const ClassicLayout = () => {
                     </div>
                 </div>
             </div>
-            {isCustomer && <ChatWidget />}
         </div>
     )
 }

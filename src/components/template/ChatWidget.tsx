@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
+
+const BACKEND_URL = 'https://peg-backend.vercel.app';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -34,7 +35,7 @@ const ChatWidget = () => {
     setInput('');
     setLoading(true);
     try {
-      const res = await axios.post(`${EXPRESS_BACKEND_URL}/chatbot/chat`, {
+      const res = await axios.post(`${BACKEND_URL}/chatbot/chat`, {
         messages: next,
         userName,
         userId,
