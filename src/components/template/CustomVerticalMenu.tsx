@@ -150,15 +150,15 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
         )}
 
         {/* Icon */}
-        <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.45)', flexShrink: 0 }}>
+        <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.65)', flexShrink: 0 }}>
           {renderIcon(nav.icon)}
         </span>
 
         {/* Label */}
         {!collapsed && (
           <span style={{
-            color: active ? '#fff' : 'rgba(255,255,255,0.55)',
-            fontSize: '13px',
+            color: active ? '#fff' : 'rgba(255,255,255,0.82)',
+            fontSize: '14.5px',
             fontWeight: active ? 700 : 500,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -236,7 +236,7 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
           )}
 
           {/* Icon */}
-          <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.45)', flexShrink: 0 }}>
+          <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.65)', flexShrink: 0 }}>
             {renderIcon(groupIcon)}
           </span>
 
@@ -244,8 +244,8 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
           {!collapsed && (
             <>
               <span style={{
-                color: active ? '#fff' : 'rgba(255,255,255,0.55)',
-                fontSize: '13px',
+                color: active ? '#fff' : 'rgba(255,255,255,0.82)',
+                fontSize: '14.5px',
                 fontWeight: active ? 700 : 500,
                 flex: 1,
                 whiteSpace: 'nowrap',
