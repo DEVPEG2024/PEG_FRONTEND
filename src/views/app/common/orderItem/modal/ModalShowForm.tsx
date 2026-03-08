@@ -21,15 +21,28 @@ function ModalShowForm({
       <Dialog
         isOpen={formDialog}
         onClose={handleClose}
-        width={1200}
+        closable={false}
+        width={800}
         contentClassName="dialog-formbuilder"
       >
-        <ShowForm
-          onSubmit={() => {}}
-          fields={formAnswer.form.fields}
-          formAnswer={formAnswer}
-          readOnly={true}
-        />
+        <div className="dialog-formbuilder-header">
+          <p className="dialog-formbuilder-title">Détails du produit</p>
+          <button
+            type="button"
+            className="dialog-formbuilder-close"
+            onClick={handleClose}
+          >
+            ×
+          </button>
+        </div>
+        <div className="dialog-formbuilder-body">
+          <ShowForm
+            onSubmit={() => {}}
+            fields={formAnswer.form.fields}
+            formAnswer={formAnswer}
+            readOnly={true}
+          />
+        </div>
       </Dialog>
     </div>
   );
