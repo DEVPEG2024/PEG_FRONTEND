@@ -4,8 +4,6 @@ import {
   getTotalPriceForCartItem,
 } from '@/utils/productHelpers';
 import { Checkout } from '@/@types/checkout';
-import { AdaptableCard } from '@/components/shared';
-import { Button } from '@/components/ui';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { env } from '@/configs/env.config';
@@ -171,36 +169,59 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
     },
     0
   );
+  const tva = totalPriceWithVAT - totalPrice;
+
   return (
-    <div>
-      <AdaptableCard bordered={false} bodyClass="p-5">
-        <h4 className="mb-6">Détails</h4>
-        <div className="flex flex-col gap-2">
-          <span className="font-semibold">
-            Total HT : {totalPrice.toFixed(2)} €
-          </span>
-          <span className="font-semibold">
-            Tva : {(totalPriceWithVAT - totalPrice).toFixed(2)} €
-          </span>
-          <span className="font-semibold">
-            Total TTC : {totalPriceWithVAT.toFixed(2)} €
-          </span>
+    <div style={{
+      background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+      border: '1.5px solid rgba(255,255,255,0.07)',
+      borderRadius: '16px', padding: '20px',
+      fontFamily: 'Inter, sans-serif',
+    }}>
+      <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: '0 0 20px 0' }}>
+        Récapitulatif
+      </h4>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Sous-total HT</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{totalPrice.toFixed(2)} €</span>
         </div>
-        <hr className="my-6" />
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-4">
-            <Button
-              disabled={!user.customer}
-              variant="solid"
-              className="w-full"
-              onClick={validateCart}
-              loading={isSubmitting}
-            >
-              Valider le panier
-            </Button>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>TVA (20%)</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{tva.toFixed(2)} €</span>
         </div>
-      </AdaptableCard>
+      </div>
+
+      <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '16px 0' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Total TTC</span>
+        <span style={{ color: '#6b9eff', fontWeight: 800, fontSize: '18px' }}>
+          {totalPriceWithVAT.toFixed(2)} €
+        </span>
+      </div>
+
+      <button
+        disabled={!user.customer || isSubmitting}
+        onClick={validateCart}
+        style={{
+          width: '100%', padding: '12px',
+          background: !user.customer || isSubmitting ? 'rgba(47,111,237,0.3)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+          border: 'none', borderRadius: '10px',
+          color: '#fff', fontSize: '14px', fontWeight: 700,
+          cursor: !user.customer || isSubmitting ? 'not-allowed' : 'pointer',
+          boxShadow: isSubmitting ? 'none' : '0 4px 16px rgba(47,111,237,0.4)',
+          fontFamily: 'Inter, sans-serif',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        }}
+      >
+        🔒 {isSubmitting ? 'Traitement…' : 'Valider la commande'}
+      </button>
+
+      <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '10px' }}>
+        Paiement sécurisé
+      </p>
     </div>
   );
 }
