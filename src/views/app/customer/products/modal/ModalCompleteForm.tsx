@@ -60,15 +60,28 @@ function ModalCompleteForm({
       <Dialog
         isOpen={formDialog}
         onClose={handleClose}
-        width={1200}
+        closable={false}
+        width={800}
         contentClassName="dialog-formbuilder"
       >
-        <ShowForm
-          onSubmit={onSubmit}
-          fields={form.fields}
-          formAnswer={formAnswer}
-          readOnly={false}
-        />
+        <div className="dialog-formbuilder-header">
+          <p className="dialog-formbuilder-title">Détails du produit</p>
+          <button
+            type="button"
+            className="dialog-formbuilder-close"
+            onClick={handleClose}
+          >
+            ×
+          </button>
+        </div>
+        <div className="dialog-formbuilder-body">
+          <ShowForm
+            onSubmit={onSubmit}
+            fields={form.fields}
+            formAnswer={formAnswer}
+            readOnly={false}
+          />
+        </div>
       </Dialog>
     </div>
   );
