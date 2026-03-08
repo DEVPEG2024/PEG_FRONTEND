@@ -45,6 +45,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4) !important;
+  pointer-events: auto !important;
 }
 
 .dialog-formbuilder-header {
@@ -91,6 +92,7 @@ body {
   overflow-y: auto;
   padding: 20px 24px 28px;
   background: #ffffff;
+  pointer-events: auto !important;
 }
 
 .dialog-formbuilder-body::-webkit-scrollbar {
@@ -104,6 +106,27 @@ body {
 .dialog-formbuilder-body::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 3px;
+}
+
+/* ── Fix Bootstrap 4 disabled/readOnly blocking pointer events ── */
+/* Bootstrap sets fieldset[disabled]{pointer-events:none} which freezes readOnly formio forms */
+.formio-scope,
+.formio-scope .formio-form,
+.formio-scope fieldset,
+.formio-scope fieldset[disabled] {
+  pointer-events: auto !important;
+}
+.formio-scope .formio-disabled,
+.formio-scope .formio-read-only {
+  pointer-events: auto !important;
+}
+/* Individual disabled inputs stay non-editable but scrollable */
+.formio-scope input[disabled],
+.formio-scope select[disabled],
+.formio-scope textarea[disabled] {
+  pointer-events: none !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* ── Form fields — white/light theme ────────────────────────── */
