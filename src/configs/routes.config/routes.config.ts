@@ -176,6 +176,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/banners/BannersList")),
     authority: [SUPER_ADMIN],
   },
+  // chatbot
+  {
+    key: "admin.chatbot",
+    path: "/admin/chatbot",
+    component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
+    authority: [SUPER_ADMIN],
+  },
 ];
 const protectedCustomersRoutes = [
   {

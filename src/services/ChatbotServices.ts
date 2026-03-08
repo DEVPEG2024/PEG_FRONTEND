@@ -1,0 +1,74 @@
+import axios from 'axios';
+import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+import { PERSIST_STORE_NAME } from '@/constants/app.constant';
+import { TOKEN_TYPE, REQUEST_HEADER_AUTH_KEY } from '@/constants/api.constant';
+import deepParseJson from '@/utils/deepParseJson';
+
+function getAuthHeader() {
+  const raw = localStorage.getItem(PERSIST_STORE_NAME);
+  const data = deepParseJson(raw);
+  const token = (data as any)?.auth?.session?.token;
+  return token ? { [REQUEST_HEADER_AUTH_KEY]: `${TOKEN_TYPE}${token}` } : {};
+}
+
+const backend = () =>
+  axios.create({
+    baseURL: EXPRESS_BACKEND_URL,
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    timeout: 30000,
+  });
+
+export type FAQ = {
+  _id: string;
+  question: string;
+  reponse: string;
+};
+
+export type ChatbotConfig = {
+  _id: string;
+  systemPrompt: string;
+  faqs: FAQ[];
+  updatedAt: string;
+};
+
+export type ConversationSummary = {
+  _id: string;
+  userId?: string;
+  userName: string;
+  messageCount: number;
+  createdAt: string;
+  lastMessage?: { role: string; content: string; timestamp: string };
+};
+
+export type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+// Config
+export const apiGetChatbotConfig = () =>
+  backend().get<{ result: boolean; config: ChatbotConfig }>('/chatbot/config');
+
+export const apiUpdateChatbotConfig = (systemPrompt: string) =>
+  backend().put<{ result: boolean; config: ChatbotConfig }>('/chatbot/config', { systemPrompt });
+
+// FAQs
+export const apiAddFaq = (question: string, reponse: string) =>
+  backend().post<{ result: boolean; config: ChatbotConfig }>('/chatbot/config/faq', { question, reponse });
+
+export const apiUpdateFaq = (faqId: string, question: string, reponse: string) =>
+  backend().put<{ result: boolean; config: ChatbotConfig }>(`/chatbot/config/faq/${faqId}`, { question, reponse });
+
+export const apiDeleteFaq = (faqId: string) =>
+  backend().delete<{ result: boolean; config: ChatbotConfig }>(`/chatbot/config/faq/${faqId}`);
+
+// History
+export const apiGetChatHistory = (params?: { page?: number; pageSize?: number; userId?: string; dateFrom?: string; dateTo?: string }) =>
+  backend().get<{ result: boolean; conversations: ConversationSummary[]; total: number }>('/chatbot/history', { params });
+
+export const apiGetConversation = (conversationId: string) =>
+  backend().get<{ result: boolean; conversation: any }>(`/chatbot/history/${conversationId}`);
+
+// Live test
+export const apiTestChat = (messages: Message[]) =>
+  backend().post<{ result: boolean; reply: string }>('/chatbot/test', { messages });

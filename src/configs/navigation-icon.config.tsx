@@ -5,7 +5,7 @@ import {
     HiUsers,
     HiOutlineLightningBolt,
 } from 'react-icons/hi'
-import { MdOutlineMail, MdOutlineStorefront } from "react-icons/md";
+import { MdOutlineMail, MdOutlineStorefront, MdSmartToy } from "react-icons/md";
 import { FiUsers } from "react-icons/fi";
 import { LuUsers } from "react-icons/lu";
 import { RiHomeSmile2Line } from "react-icons/ri";
@@ -54,6 +54,7 @@ const navigationIcon: NavigationIcons = {
     calendar: <BsCalendar3 />,
     leads: <HiOutlineLightningBolt />,
     checklist: <GoTasklist />,
+    chatbot: <MdSmartToy />,
 }
 
 export default navigationIcon

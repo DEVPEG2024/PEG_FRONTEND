@@ -278,6 +278,18 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
 
+  // --- IA ---
+  {
+    key: "admin.chatbot",
+    path: "/admin/chatbot",
+    title: "Chatbot IA",
+    translateKey: "nav.chatbot",
+    icon: "chatbot",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN],
+    subMenu: [],
+  },
+
   // --- Administration ---
   {
     key: "admin.users",
