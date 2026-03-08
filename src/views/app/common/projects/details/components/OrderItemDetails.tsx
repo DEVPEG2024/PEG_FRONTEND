@@ -52,20 +52,22 @@ const OrderItemDetails = ({
 
       {/* Product */}
       {orderItem.product.images?.[0]?.url ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <img
-            src={orderItem.product.images[0].url}
-            alt={productTitle}
-            style={{
-              width: '56px', height: '56px', borderRadius: '10px',
-              objectFit: 'contain', flexShrink: 0,
-              border: '1px solid rgba(255,255,255,0.10)',
-              background: 'rgba(255,255,255,0.04)',
-            }}
-          />
-          <div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+            <img
+              src={orderItem.product.images[0].url}
+              alt={productTitle}
+              style={{
+                width: '240px', height: '240px', borderRadius: '8px',
+                objectFit: 'contain',
+                border: '1px solid rgba(255,255,255,0.10)',
+                background: 'rgba(255,255,255,0.04)',
+              }}
+            />
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
+            </div>
           </div>
         </div>
       ) : (
