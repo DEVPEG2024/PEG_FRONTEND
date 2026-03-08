@@ -257,7 +257,8 @@ const ShowProduct = () => {
 
           {/* Description */}
           {product.description && (
-            <div style={{ color: 'rgba(160,185,220,0.75)', fontSize: '13.5px', lineHeight: 1.65, marginBottom: '20px' }}>
+            <div className="product-desc" style={{ color: 'rgba(160,185,220,0.75)', fontSize: '13px', lineHeight: 1.5, marginBottom: '20px' }}>
+              <style>{`.product-desc p { margin: 0 0 6px 0; } .product-desc p:last-child { margin-bottom: 0; } .product-desc .ql-editor { padding: 0; } .product-desc ul, .product-desc ol { margin: 4px 0; padding-left: 18px; }`}</style>
               <RichTextEditor value={product.description} readOnly={true} />
             </div>
           )}
