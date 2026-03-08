@@ -68,6 +68,21 @@ const ProjectItem = ({
       {/* Barre de couleur statut */}
       <div style={{ height: '4px', background: status.color, opacity: 0.8 }} />
 
+      {/* Photo du produit */}
+      {project.orderItem?.product?.images?.[0]?.url && (
+        <div style={{ position: 'relative', height: '120px', overflow: 'hidden' }}>
+          <img
+            src={project.orderItem.product.images[0].url}
+            alt={project.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(15,28,46,0.1) 0%, rgba(15,28,46,0.7) 100%)',
+          }} />
+        </div>
+      )}
+
       <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
         {/* Ligne 1 : statut + délai + dropdown */}

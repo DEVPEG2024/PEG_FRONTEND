@@ -397,6 +397,13 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 }
                 endDate
                 name
+                orderItem {
+                    product {
+                        images {
+                            url
+                        }
+                    }
+                }
                 poolable
                 price
                 producer {
@@ -463,6 +470,13 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
                 endDate
                 name
+                orderItem {
+                    product {
+                        images {
+                            url
+                        }
+                    }
+                }
                 price
                 producer {
                     documentId
@@ -531,6 +545,13 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 }
                 endDate
                 name
+                orderItem {
+                    product {
+                        images {
+                            url
+                        }
+                    }
+                }
                 producerPrice
                 startDate
                 state
