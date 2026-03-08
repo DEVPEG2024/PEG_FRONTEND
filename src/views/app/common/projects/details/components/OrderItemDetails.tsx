@@ -18,9 +18,11 @@ const sep: React.CSSProperties = {
 const OrderItemDetails = ({
   orderItem,
   customer,
+  hideImage,
 }: {
   orderItem: OrderItem;
   customer: Customer;
+  hideImage?: boolean;
 }) => {
   const navigate = useNavigate();
 
@@ -51,39 +53,34 @@ const OrderItemDetails = ({
       </div>
 
       {/* Product */}
-      {orderItem.product.images?.[0]?.url ? (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+      {!hideImage ? (
+        orderItem.product.images?.[0]?.url ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
             <img
               src={orderItem.product.images[0].url}
               alt={productTitle}
-              style={{
-                width: '240px', height: '240px', borderRadius: '8px',
-                objectFit: 'contain',
-                border: '1px solid rgba(255,255,255,0.10)',
-                background: 'rgba(255,255,255,0.04)',
-              }}
+              style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'contain', flexShrink: 0, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)' }}
             />
             <div>
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
             </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.35)' }}>
+              <HiBookOpen size={18} />
+            </div>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
+            </div>
+          </div>
+        )
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '10px',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            color: 'rgba(255,255,255,0.35)',
-          }}>
-            <HiBookOpen size={18} />
-          </div>
-          <div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
-          </div>
+        <div style={{ marginBottom: '12px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>Produit</p>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '14px', fontWeight: 600 }}>{productTitle}</span>
         </div>
       )}
 

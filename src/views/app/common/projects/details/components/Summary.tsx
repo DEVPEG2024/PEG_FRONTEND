@@ -122,75 +122,91 @@ const Summary = ({ project }: { project: Project }) => {
           paddingBottom: '28px',
           fontFamily: 'Inter, sans-serif',
         }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '20px' }}>
             {/* Main card */}
             <div style={{
               background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
               borderRadius: '18px',
-              padding: '28px',
+              overflow: 'hidden',
               boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+              display: 'flex',
             }}>
-              {/* Progress + project name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' }}>
-                <CircularProgress percent={percentageComplete} />
-                <div>
-                  <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '8px', lineHeight: 1.25 }}>
-                    {project.name}
-                  </h3>
-                  {project.description && !project.orderItem && (
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.5 }}>
-                      {project.description?.replace(/<[^>]*>/g, '').slice(0, 120)}
-                      {(project.description?.replace(/<[^>]*>/g, '').length ?? 0) > 120 ? '…' : ''}
-                    </p>
-                  )}
+              {/* Image sidebar — only when orderItem has an image */}
+              {project.orderItem?.product?.images?.[0]?.url && (
+                <div style={{
+                  width: '200px',
+                  flexShrink: 0,
+                  borderRight: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '20px',
+                }}>
+                  <img
+                    src={project.orderItem.product.images[0].url}
+                    alt={project.orderItem.product.name}
+                    style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '8px' }}
+                  />
                 </div>
-              </div>
+              )}
 
-              <div style={sep} />
+              {/* Content */}
+              <div style={{ flex: 1, padding: '28px', minWidth: 0 }}>
+                {/* Progress + project name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '8px' }}>
+                  <CircularProgress percent={percentageComplete} />
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '8px', lineHeight: 1.25 }}>
+                      {project.name}
+                    </h3>
+                    {project.description && !project.orderItem && (
+                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.5 }}>
+                        {project.description?.replace(/<[^>]*>/g, '').slice(0, 120)}
+                        {(project.description?.replace(/<[^>]*>/g, '').length ?? 0) > 120 ? '…' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-              {project.orderItem ? (
-                <OrderItemDetails
-                  orderItem={project.orderItem}
-                  customer={project.customer!}
-                />
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      Description détaillée
-                    </p>
-                    {hasRole(user, [SUPER_ADMIN]) && (
-                      <div>
-                        {editDescription ? (
-                          <Button
-                            size="sm"
-                            variant="solid"
-                            onClick={onEditComplete}
-                            loading={loading}
-                          >
-                            Terminer
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            icon={<HiPencil />}
-                            onClick={onEditModeActive}
-                          >
-                            Modifier
-                          </Button>
-                        )}
+                <div style={sep} />
+
+                {project.orderItem ? (
+                  <OrderItemDetails
+                    orderItem={project.orderItem}
+                    customer={project.customer!}
+                    hideImage
+                  />
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        Description détaillée
+                      </p>
+                      {hasRole(user, [SUPER_ADMIN]) && (
+                        <div>
+                          {editDescription ? (
+                            <Button size="sm" variant="solid" onClick={onEditComplete} loading={loading}>
+                              Terminer
+                            </Button>
+                          ) : (
+                            <Button size="sm" icon={<HiPencil />} onClick={onEditModeActive}>
+                              Modifier
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {hasRole(user, [SUPER_ADMIN]) && editDescription ? (
+                      <RichTextEditor value={description} onChange={onEdit} />
+                    ) : (
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.7 }}>
+                        {ReactHtmlParser(description || '')}
                       </div>
                     )}
                   </div>
-                  {hasRole(user, [SUPER_ADMIN]) && editDescription ? (
-                    <RichTextEditor value={description} onChange={onEdit} />
-                  ) : (
-                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.7 }}>
-                      {ReactHtmlParser(description || '')}
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Right details */}
