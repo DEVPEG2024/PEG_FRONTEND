@@ -33,7 +33,7 @@ function ModalPayProducer({
     const transaction: Omit<Transaction, 'documentId'> = {
       amount: formData.amount,
       project,
-      producer: project.producer!.documentId,
+      producer: project.producer!,
       type: formData.type,
       date: new Date(),
       description: '',
