@@ -57,21 +57,15 @@ function Success() {
           {/* Card principale */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
 
-            {/* Bannière image */}
-            <div className="relative w-full bg-green-50 dark:bg-gray-700">
-              <img
-                src="/img/checkout/Checkout_OK.png"
-                alt="Paiement réussi"
-                className="w-full h-64 object-cover"
-              />
-              {/* Icône overlay */}
-              <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-full p-2 shadow-md">
-                <HiOutlineCheckCircle className="text-green-500 w-6 h-6" />
+            {/* Icône */}
+            <div className="flex justify-center pt-10 pb-2">
+              <div className="bg-green-50 dark:bg-gray-700 rounded-full p-5">
+                <HiOutlineCheckCircle className="text-green-500 w-12 h-12" />
               </div>
             </div>
 
             {/* Contenu */}
-            <div className="px-8 py-8 text-center">
+            <div className="px-8 py-6 text-center">
 
               {/* Badge statut */}
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-600 mb-4">
@@ -80,13 +74,13 @@ function Success() {
               </span>
 
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Le paiement a franchi l'atmosphère !
+                Paiement confirmé
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-2">
-                Merci, votre paiement a bien été validé.
+                Merci, votre paiement a bien été reçu.
               </p>
               <p className="text-gray-400 dark:text-gray-500 text-xs mb-8">
-                L'équipe créative est en route vers votre projet !
+                Votre commande est en cours de traitement.
               </p>
 
               {/* Séparateur */}
