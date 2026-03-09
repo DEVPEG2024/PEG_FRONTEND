@@ -9,6 +9,26 @@ import { apiGetOrderItems } from '@/services/OrderItemServices';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
+const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
+const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
+
+const renderContent = (content: string): (string | JSX.Element)[] => {
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|https?:\/\/[^\s\]>]+/g;
+  const result: (string | JSX.Element)[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(content)) !== null) {
+    if (match.index > lastIndex) result.push(content.slice(lastIndex, match.index));
+    const isMarkdown = match[0].startsWith('[');
+    const href = isMarkdown ? match[2] : match[0];
+    const label = isMarkdown ? match[1] : match[0];
+    result.push(<a key={match.index} href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#6b9eff', textDecoration: 'underline' }}>{label}</a>);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) result.push(content.slice(lastIndex));
+  return result.length > 0 ? result : [content];
+};
+
 const ChatWidget = () => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -16,6 +36,7 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [userContext, setUserContext] = useState('');
+  const [awaitingClose, setAwaitingClose] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const user = useAppSelector((state) => state.auth.user.user);
@@ -27,22 +48,30 @@ const ChatWidget = () => {
     if (!user?.customer?.documentId) return;
     const customerDocumentId = user.customer.documentId;
     const customerCategoryDocumentId = user.customer?.customerCategory?.documentId ?? '';
+    const base = window.location.origin;
     Promise.allSettled([
       apiGetCustomerProjects({ customerDocumentId, pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
       apiGetCustomerProducts(customerDocumentId, customerCategoryDocumentId, { page: 1, pageSize: 10 }),
       apiGetOrderItems({ pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
     ]).then(([projectsRes, productsRes, ordersRes]) => {
-      const lines: string[] = [];
+      const lines: string[] = [
+        `URL plateforme : ${base}`,
+        `Liens utiles : Catalogue → ${base}/customer/catalogue | Mes projets → ${base}/common/projects | Mon panier → ${base}/customer/cart`,
+      ];
       if (projectsRes.status === 'fulfilled') {
         const projects = projectsRes.value.data.data.projects_connection?.nodes ?? [];
         if (projects.length > 0) {
-          lines.push('Projets en cours du client : ' + projects.map((p: any) => `${p.name} (état: ${p.state})`).join(', '));
+          lines.push('Projets du client :\n' + projects.map((p: any) =>
+            `- ${p.name} (état: ${p.state}) → ${base}/common/projects/details/${p.documentId}`
+          ).join('\n'));
         }
       }
       if (productsRes.status === 'fulfilled') {
         const products = productsRes.value.data.data.products_connection?.nodes ?? [];
         if (products.length > 0) {
-          lines.push('Produits disponibles pour ce client : ' + products.map((p: any) => p.name).join(', '));
+          lines.push('Produits disponibles :\n' + products.map((p: any) =>
+            `- ${p.name} → ${base}/customer/product/${p.documentId}`
+          ).join('\n'));
         }
       }
       if (ordersRes.status === 'fulfilled') {
@@ -51,7 +80,7 @@ const ChatWidget = () => {
           lines.push('Dernières commandes : ' + orders.map((o: any) => `${o.product?.name ?? 'produit'} (qté: ${o.quantity})`).join(', '));
         }
       }
-      if (lines.length > 0) setUserContext(lines.join('\n'));
+      setUserContext(lines.join('\n'));
     });
   }, [user]);
 
@@ -63,9 +92,17 @@ const ChatWidget = () => {
     if (open) setUnread(0);
   }, [open]);
 
+  const resetConversation = () => {
+    setMessages([]);
+    setAwaitingClose(false);
+  };
+
   const send = async () => {
     if (!input.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: input.trim() };
+    const text = input.trim();
+    // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
+    const isClosing = awaitingClose && USER_NO_RE.test(text);
+    const userMsg: Message = { role: 'user', content: text };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput('');
@@ -78,8 +115,13 @@ const ChatWidget = () => {
         userContext: userContext || undefined,
       });
       const reply = res.data.reply as string;
-      setMessages([...next, { role: 'assistant', content: reply }]);
+      const updated = [...next, { role: 'assistant' as const, content: reply }];
+      setMessages(updated);
       if (!open) setUnread((n) => n + 1);
+      if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
+      if (isClosing) {
+        setTimeout(() => { setOpen(false); resetConversation(); }, 2500);
+      }
     } catch {
       setMessages([...next, { role: 'assistant', content: 'Désolé, le service est momentanément indisponible. Veuillez réessayer plus tard.' }]);
     } finally {
@@ -92,7 +134,7 @@ const ChatWidget = () => {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '44px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ position: 'fixed', bottom: '90px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         @keyframes peg-chat-pulse {
           0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
@@ -209,7 +251,7 @@ const ChatWidget = () => {
                   lineHeight: 1.55,
                   whiteSpace: 'pre-wrap',
                 }}>
-                  {msg.content}
+                  {renderContent(msg.content)}
                 </div>
               </div>
             ))}
