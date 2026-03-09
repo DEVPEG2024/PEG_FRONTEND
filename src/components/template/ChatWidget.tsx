@@ -3,6 +3,9 @@ import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+import { apiGetCustomerProjects } from '@/services/ProjectServices';
+import { apiGetCustomerProducts } from '@/services/ProductServices';
+import { apiGetOrderItems } from '@/services/OrderItemServices';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -12,11 +15,45 @@ const ChatWidget = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [userContext, setUserContext] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const user = useAppSelector((state) => state.auth.user.user);
   const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Client';
   const userId   = user?.documentId ?? undefined;
+
+  // Charger le contexte client une seule fois
+  useEffect(() => {
+    if (!user?.customer?.documentId) return;
+    const customerDocumentId = user.customer.documentId;
+    const customerCategoryDocumentId = user.customer?.customerCategory?.documentId ?? '';
+    Promise.allSettled([
+      apiGetCustomerProjects({ customerDocumentId, pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
+      apiGetCustomerProducts(customerDocumentId, customerCategoryDocumentId, { page: 1, pageSize: 10 }),
+      apiGetOrderItems({ pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
+    ]).then(([projectsRes, productsRes, ordersRes]) => {
+      const lines: string[] = [];
+      if (projectsRes.status === 'fulfilled') {
+        const projects = projectsRes.value.data.data.projects_connection?.nodes ?? [];
+        if (projects.length > 0) {
+          lines.push('Projets en cours du client : ' + projects.map((p: any) => `${p.name} (état: ${p.state})`).join(', '));
+        }
+      }
+      if (productsRes.status === 'fulfilled') {
+        const products = productsRes.value.data.data.products_connection?.nodes ?? [];
+        if (products.length > 0) {
+          lines.push('Produits disponibles pour ce client : ' + products.map((p: any) => p.name).join(', '));
+        }
+      }
+      if (ordersRes.status === 'fulfilled') {
+        const orders = ordersRes.value.data.data.orderItems_connection?.nodes ?? [];
+        if (orders.length > 0) {
+          lines.push('Dernières commandes : ' + orders.map((o: any) => `${o.product?.name ?? 'produit'} (qté: ${o.quantity})`).join(', '));
+        }
+      }
+      if (lines.length > 0) setUserContext(lines.join('\n'));
+    });
+  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -38,6 +75,7 @@ const ChatWidget = () => {
         messages: next,
         userName,
         userId,
+        userContext: userContext || undefined,
       });
       const reply = res.data.reply as string;
       setMessages([...next, { role: 'assistant', content: reply }]);
@@ -54,7 +92,13 @@ const ChatWidget = () => {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ position: 'fixed', bottom: '44px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+      <style>{`
+        @keyframes peg-chat-pulse {
+          0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
+          50% { box-shadow: 0 8px 32px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.12); }
+        }
+      `}</style>
       {/* Fenêtre de chat */}
       {open && (
         <div style={{
@@ -249,15 +293,16 @@ const ChatWidget = () => {
           width: '56px',
           height: '56px',
           borderRadius: '16px',
-          background: open ? 'rgba(47,111,237,0.3)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-          border: open ? '1px solid rgba(47,111,237,0.5)' : 'none',
-          boxShadow: '0 8px 24px rgba(47,111,237,0.4)',
+          background: open ? 'rgba(220,38,38,0.25)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
+          border: open ? '1px solid rgba(239,68,68,0.5)' : 'none',
+          boxShadow: open ? '0 8px 24px rgba(239,68,68,0.3)' : undefined,
+          animation: open ? 'none' : 'peg-chat-pulse 2.2s ease-in-out infinite',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          transition: 'all 0.2s',
+          transition: 'background 0.2s',
         }}
       >
         {open ? <MdClose size={24} color="#fff" /> : <MdChatBubble size={24} color="#fff" />}

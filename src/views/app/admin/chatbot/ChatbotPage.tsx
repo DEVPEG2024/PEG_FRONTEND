@@ -7,6 +7,7 @@ import {
   apiDeleteFaq,
   apiGetChatHistory,
   apiGetConversation,
+  apiDeleteConversation,
   apiTestChat,
 } from '@/services/ChatbotServices';
 import type { ChatbotConfig, FAQ, ConversationSummary, Message } from '@/services/ChatbotServices';
@@ -326,6 +327,14 @@ const HistorySection = () => {
     } finally { setLoadingConv(false); }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await apiDeleteConversation(id);
+    if (selected?._id === id) setSelected(null);
+    setConversations((prev) => prev.filter((c) => c._id !== id));
+    setTotal((t) => t - 1);
+  };
+
   return (
     <div style={{ display: 'flex', gap: '16px', height: '600px' }}>
       {/* Liste */}
@@ -348,7 +357,7 @@ const HistorySection = () => {
         ) : (
           <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {conversations.map((c) => (
-              <button
+              <div
                 key={c._id}
                 onClick={() => openConversation(c._id)}
                 style={{
@@ -357,20 +366,27 @@ const HistorySection = () => {
                   borderRadius: '10px',
                   padding: '10px 12px',
                   cursor: 'pointer',
-                  textAlign: 'left',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
-                <div>
+                <div style={{ textAlign: 'left' }}>
                   <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{c.userName}</div>
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '2px' }}>
                     {c.messageCount} messages · {new Date(c.createdAt).toLocaleDateString('fr-FR')}
                   </div>
                 </div>
-                <HiChevronRight size={14} color="rgba(255,255,255,0.3)" />
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <HiChevronRight size={14} color="rgba(255,255,255,0.3)" />
+                  <button
+                    onClick={(e) => handleDelete(e, c._id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(239,68,68,0.6)', padding: '2px', display: 'flex', alignItems: 'center' }}
+                  >
+                    <MdDelete size={15} />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}

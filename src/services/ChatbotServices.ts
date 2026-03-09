@@ -59,6 +59,9 @@ export const apiGetChatHistory = (params?: { page?: number; pageSize?: number; u
 export const apiGetConversation = (conversationId: string) =>
   backend().get<{ result: boolean; conversation: any }>(`/chatbot/history/${conversationId}`);
 
+export const apiDeleteConversation = (conversationId: string) =>
+  backend().delete<{ result: boolean }>(`/chatbot/history/${conversationId}`);
+
 // Live test
 export const apiTestChat = (messages: Message[]) =>
   backend().post<{ result: boolean; reply: string }>('/chatbot/test', { messages });
