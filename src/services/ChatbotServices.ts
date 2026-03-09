@@ -16,6 +16,9 @@ export type FAQ = {
 
 export type ChatbotConfig = {
   _id: string;
+  name: string;
+  description: string;
+  avatarUrl: string | null;
   systemPrompt: string;
   faqs: FAQ[];
   updatedAt: string;
@@ -39,8 +42,8 @@ export type Message = {
 export const apiGetChatbotConfig = () =>
   backend().get<{ result: boolean; config: ChatbotConfig }>('/chatbot/config');
 
-export const apiUpdateChatbotConfig = (systemPrompt: string) =>
-  backend().put<{ result: boolean; config: ChatbotConfig }>('/chatbot/config', { systemPrompt });
+export const apiUpdateChatbotConfig = (systemPrompt: string, name?: string, description?: string, avatarUrl?: string | null) =>
+  backend().put<{ result: boolean; config: ChatbotConfig }>('/chatbot/config', { systemPrompt, name, description, avatarUrl });
 
 // FAQs
 export const apiAddFaq = (question: string, reponse: string) =>
