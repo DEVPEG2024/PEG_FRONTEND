@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import {
-  apiGetCustomers,
+  apiGetCustomersRest,
   apiCreateCustomer,
   apiUpdateCustomerByDocumentId,
   apiDeleteCustomerByDocumentId,
@@ -28,7 +28,7 @@ const initialState: CustomersState = {
 export const getCustomers = createAsyncThunk(
   'customers/getCustomers',
   async (params: GetCustomersRequest) => {
-    const res: any = await apiGetCustomers(params)
+    const res: any = await apiGetCustomersRest(params)
 
     // Strapi v4: res.data.data (array) + res.data.meta.pagination.total
     const data = res?.data?.data ?? []

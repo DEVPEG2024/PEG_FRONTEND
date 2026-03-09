@@ -1,9 +1,18 @@
 // src/services/CustomerServices.ts
 import ApiService from './ApiService'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { ApiResponse, PageInfo } from '@/utils/serviceHelper'
+import { Customer } from '@/@types/customer'
+import { AxiosResponse } from 'axios'
 
 export type GetCustomersRequest = {
   pagination?: { page: number; pageSize: number }
   searchTerm?: string
+}
+
+export type GetCustomersResponse = {
+  nodes: Customer[]
+  pageInfo: PageInfo
 }
 
 /**
@@ -44,8 +53,33 @@ const buildByDocumentIdQuery = (documentId: string) => {
   return query.toString()
 }
 
-// GET list
-export const apiGetCustomers = (params: GetCustomersRequest) => {
+// GET list (GraphQL) — pour les selects/dropdowns
+export async function apiGetCustomers(data: { pagination?: { page: number; pageSize: number }; searchTerm?: string } = { pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }): Promise<AxiosResponse<ApiResponse<{ customers_connection: GetCustomersResponse }>>> {
+  const query = `
+    query GetCustomers($searchTerm: String, $pagination: PaginationArg) {
+      customers_connection(filters: { name: { containsi: $searchTerm } }, pagination: $pagination) {
+        nodes {
+          documentId
+          name
+        }
+        pageInfo {
+          page
+          pageCount
+          pageSize
+          total
+        }
+      }
+    }
+  `
+  return ApiService.fetchData<ApiResponse<{ customers_connection: GetCustomersResponse }>>({
+    url: API_GRAPHQL_URL,
+    method: 'post',
+    data: { query, variables: { searchTerm: data.searchTerm ?? '', pagination: data.pagination ?? { page: 1, pageSize: 1000 } } },
+  })
+}
+
+// GET list (REST) — pour la liste paginée admin
+export const apiGetCustomersRest = (params: GetCustomersRequest) => {
   const qs = buildCustomersListQuery(params)
   return ApiService.fetchData({
     url: `/customers?${qs}`,
