@@ -21,14 +21,53 @@ import {
   removeFromCartItemOfOrderItem,
 } from '@/store/slices/base/cartSlice';
 import { useNavigate } from 'react-router-dom';
+import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
+import { MdLocationOn } from 'react-icons/md';
 
-function PaymentContent({ cart, shippingAddress }: { cart: CartItem[]; shippingAddress?: ShippingAddress }) {
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '8px',
+  padding: '9px 12px',
+  color: '#fff',
+  fontSize: '13px',
+  fontFamily: 'Inter, sans-serif',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  color: 'rgba(255,255,255,0.4)',
+  fontSize: '11px',
+  fontWeight: 600,
+  marginBottom: '5px',
+};
+
+function PaymentContent({ cart }: { cart: CartItem[] }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const { token } = useAppSelector((state) => state.auth.session);
   const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+
+  const [shippingOpen, setShippingOpen] = useState(false);
+  const [shipping, setShipping] = useState<ShippingAddress>({
+    firstName: user?.firstName ?? '',
+    lastName: user?.lastName ?? '',
+    company: '',
+    address: '',
+    addressLine2: '',
+    zipCode: '',
+    city: '',
+    country: 'France',
+    phone: '',
+  });
+
+  const set = (key: keyof ShippingAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setShipping((p) => ({ ...p, [key]: e.target.value }));
 
   const createFormAnswer = async (
     item: CartItem
@@ -111,7 +150,7 @@ function PaymentContent({ cart, shippingAddress }: { cart: CartItem[]; shippingA
       userFirstName: user.firstName,
       userLastName: user.lastName,
       userEmail: user.email,
-      shippingAddress,
+      shippingAddress: shipping,
     };
   };
 
@@ -170,6 +209,8 @@ function PaymentContent({ cart, shippingAddress }: { cart: CartItem[]; shippingA
   const totalPriceWithVAT: number = totalPrice * 1.2;
   const tva = totalPriceWithVAT - totalPrice;
 
+  const hasAddress = shipping.address && shipping.city && shipping.zipCode;
+
   return (
     <div style={{
       background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
@@ -198,12 +239,81 @@ function PaymentContent({ cart, shippingAddress }: { cart: CartItem[]; shippingA
 
       <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '16px 0' }} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Total TTC</span>
         <span style={{ color: '#6b9eff', fontWeight: 800, fontSize: '18px' }}>
           {totalPriceWithVAT.toFixed(2)} €
         </span>
       </div>
+
+      {/* Shipping address toggle */}
+      <button
+        type="button"
+        onClick={() => setShippingOpen((o) => !o)}
+        style={{
+          width: '100%', marginBottom: '10px',
+          background: hasAddress ? 'rgba(47,111,237,0.1)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${hasAddress ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.1)'}`,
+          borderRadius: '10px', padding: '10px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600 }}>
+          <MdLocationOn size={15} />
+          {hasAddress ? `${shipping.address}, ${shipping.zipCode} ${shipping.city}` : 'Adresse de livraison'}
+        </span>
+        {shippingOpen ? <HiChevronUp size={14} color="rgba(255,255,255,0.4)" /> : <HiChevronDown size={14} color="rgba(255,255,255,0.4)" />}
+      </button>
+
+      {shippingOpen && (
+        <div style={{
+          background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '10px', padding: '14px', marginBottom: '10px',
+          display: 'flex', flexDirection: 'column', gap: '10px',
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={labelStyle}>Prénom</label>
+              <input style={inputStyle} placeholder="Jean" value={shipping.firstName} onChange={set('firstName')} />
+            </div>
+            <div>
+              <label style={labelStyle}>Nom</label>
+              <input style={inputStyle} placeholder="Dupont" value={shipping.lastName} onChange={set('lastName')} />
+            </div>
+            <div>
+              <label style={labelStyle}>Entreprise</label>
+              <input style={inputStyle} placeholder="Société (optionnel)" value={shipping.company ?? ''} onChange={set('company')} />
+            </div>
+            <div>
+              <label style={labelStyle}>Téléphone</label>
+              <input style={inputStyle} placeholder="+33 6 00 00 00 00" value={shipping.phone ?? ''} onChange={set('phone')} />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Adresse</label>
+            <input style={inputStyle} placeholder="12 rue de la Paix" value={shipping.address} onChange={set('address')} />
+          </div>
+          <div>
+            <label style={labelStyle}>Complément</label>
+            <input style={inputStyle} placeholder="Bâtiment, étage… (optionnel)" value={shipping.addressLine2 ?? ''} onChange={set('addressLine2')} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <label style={labelStyle}>Code postal</label>
+              <input style={inputStyle} placeholder="75001" value={shipping.zipCode} onChange={set('zipCode')} />
+            </div>
+            <div>
+              <label style={labelStyle}>Ville</label>
+              <input style={inputStyle} placeholder="Paris" value={shipping.city} onChange={set('city')} />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Pays</label>
+            <input style={inputStyle} placeholder="France" value={shipping.country} onChange={set('country')} />
+          </div>
+        </div>
+      )}
 
       <button
         disabled={!user.customer || isSubmitting}
