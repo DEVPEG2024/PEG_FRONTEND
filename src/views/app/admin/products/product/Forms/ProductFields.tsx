@@ -108,9 +108,26 @@ const ProductFields = (props: ProductFieldsProps) => {
     setAiError('');
     setAiLoading(true);
     try {
-      const res = await apiAiFillProduct(name.trim());
+      const sizeLabels  = sizes.map((s) => s.label);
+      const colorLabels = colors.map((c) => c.label);
+      const res = await apiAiFillProduct(name.trim(), sizeLabels, colorLabels);
+
       if (res.data.description) setValue('description', res.data.description);
       if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
+
+      if (res.data.suggestedSizes?.length) {
+        const ids = res.data.suggestedSizes
+          .map((label) => sizes.find((s) => s.label.toLowerCase() === label.toLowerCase())?.value)
+          .filter((v): v is string => !!v);
+        if (ids.length) setValue('sizes', ids);
+      }
+
+      if (res.data.suggestedColors?.length) {
+        const ids = res.data.suggestedColors
+          .map((label) => colors.find((c) => c.label.toLowerCase() === label.toLowerCase())?.value)
+          .filter((v): v is string => !!v);
+        if (ids.length) setValue('colors', ids);
+      }
     } catch {
       setAiError('Erreur lors de la génération IA. Réessayez.');
     } finally {

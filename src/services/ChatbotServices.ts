@@ -88,11 +88,14 @@ export const apiDeleteDocument = (docId: number) =>
   backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
 
 // AI product fill
-export const apiAiFillProduct = (name: string) =>
-  backend().post<{ result: boolean; description: string; priceTiers: { minQuantity: number; price: number }[] }>(
-    '/chatbot/ai-fill-product',
-    { name }
-  );
+export const apiAiFillProduct = (name: string, availableSizes: string[] = [], availableColors: string[] = []) =>
+  backend().post<{
+    result: boolean;
+    description: string;
+    priceTiers: { minQuantity: number; price: number }[];
+    suggestedSizes: string[];
+    suggestedColors: string[];
+  }>('/chatbot/ai-fill-product', { name, availableSizes, availableColors });
 
 // Live test
 export const apiTestChat = (messages: Message[]) =>
