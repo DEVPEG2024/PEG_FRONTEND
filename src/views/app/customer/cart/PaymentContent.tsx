@@ -3,7 +3,7 @@ import {
   getProductPriceForSizeAndColors,
   getTotalPriceForCartItem,
 } from '@/utils/productHelpers';
-import { Checkout } from '@/@types/checkout';
+import { Checkout, ShippingAddress } from '@/@types/checkout';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { env } from '@/configs/env.config';
@@ -22,7 +22,7 @@ import {
 } from '@/store/slices/base/cartSlice';
 import { useNavigate } from 'react-router-dom';
 
-function PaymentContent({ cart }: { cart: CartItem[] }) {
+function PaymentContent({ cart, shippingAddress }: { cart: CartItem[]; shippingAddress?: ShippingAddress }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const { token } = useAppSelector((state) => state.auth.session);
   const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
@@ -111,6 +111,7 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
       userFirstName: user.firstName,
       userLastName: user.lastName,
       userEmail: user.email,
+      shippingAddress,
     };
   };
 

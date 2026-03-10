@@ -6,6 +6,18 @@ export type OrderItemCheckout = {
   totalPrice: number;
 }
 
+export type ShippingAddress = {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  address: string;
+  addressLine2?: string;
+  zipCode: string;
+  city: string;
+  country: string;
+  phone?: string;
+}
+
 export type Checkout = {
   orderItemsCheckout: OrderItemCheckout[],
   totalPrice: number;
@@ -14,4 +26,5 @@ export type Checkout = {
   userFirstName: string;
   userLastName: string;
   userEmail: string;
+  shippingAddress?: ShippingAddress;
 }

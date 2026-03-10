@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { MdShoppingCart, MdOutlineShoppingBag } from 'react-icons/md';
 import { HiOutlinePencil, HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { User } from '@/@types/user';
+import { ShippingAddress } from '@/@types/checkout';
 import PaymentContent from './PaymentContent';
 import useUserCart from '@/utils/hooks/useUserCart';
 
@@ -23,6 +24,17 @@ function Cart() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [fading, setFading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [shipping, setShipping] = useState<ShippingAddress>({
+    firstName: user?.firstName ?? '',
+    lastName: user?.lastName ?? '',
+    company: '',
+    address: '',
+    addressLine2: '',
+    zipCode: '',
+    city: '',
+    country: 'France',
+    phone: '',
+  });
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -108,6 +120,9 @@ function Cart() {
 
       {/* Main layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+
+        {/* Left column: items + shipping form */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Cart items */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -206,9 +221,115 @@ function Cart() {
           </button>
         </div>
 
+        {/* Shipping address form */}
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          border: '1.5px solid rgba(255,255,255,0.07)',
+          borderRadius: '16px', padding: '20px 22px',
+        }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 16px 0' }}>
+            Adresse de livraison
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {[
+              { label: 'Prénom', key: 'firstName', placeholder: 'Jean' },
+              { label: 'Nom', key: 'lastName', placeholder: 'Dupont' },
+              { label: 'Entreprise', key: 'company', placeholder: 'Société (optionnel)', full: false },
+              { label: 'Téléphone', key: 'phone', placeholder: '+33 6 00 00 00 00', full: false },
+            ].map(({ label, key, placeholder }) => (
+              <div key={key}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>{label}</label>
+                <input
+                  type="text"
+                  placeholder={placeholder}
+                  value={(shipping as any)[key] ?? ''}
+                  onChange={(e) => setShipping((p) => ({ ...p, [key]: e.target.value }))}
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                    fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            ))}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Adresse</label>
+              <input
+                type="text"
+                placeholder="12 rue de la Paix"
+                value={shipping.address}
+                onChange={(e) => setShipping((p) => ({ ...p, address: e.target.value }))}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Complément d'adresse</label>
+              <input
+                type="text"
+                placeholder="Bâtiment, étage… (optionnel)"
+                value={shipping.addressLine2 ?? ''}
+                onChange={(e) => setShipping((p) => ({ ...p, addressLine2: e.target.value }))}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Code postal</label>
+              <input
+                type="text"
+                placeholder="75001"
+                value={shipping.zipCode}
+                onChange={(e) => setShipping((p) => ({ ...p, zipCode: e.target.value }))}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Ville</label>
+              <input
+                type="text"
+                placeholder="Paris"
+                value={shipping.city}
+                onChange={(e) => setShipping((p) => ({ ...p, city: e.target.value }))}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Pays</label>
+              <input
+                type="text"
+                placeholder="France"
+                value={shipping.country}
+                onChange={(e) => setShipping((p) => ({ ...p, country: e.target.value }))}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        </div>{/* end left column */}
+
         {/* Payment sidebar */}
         <div style={{ position: 'sticky', top: '20px' }}>
-          <PaymentContent cart={cart} />
+          <PaymentContent cart={cart} shippingAddress={shipping} />
         </div>
       </div>
 
