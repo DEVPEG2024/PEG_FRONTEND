@@ -159,16 +159,14 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
     }
   };
 
-  const totalPrice: number = cart.reduce((total: number, item: CartItem) => {
+  const SHIPPING_HT = 9.90;
+
+  const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
     return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
   }, 0);
 
-  const totalPriceWithVAT: number = cart.reduce(
-    (total: number, item: CartItem) => {
-      return total + getTotalPriceForCartItem(item.product, item.sizeAndColors) * 1.2;
-    },
-    0
-  );
+  const totalPrice: number = subtotalHT + SHIPPING_HT;
+  const totalPriceWithVAT: number = totalPrice * 1.2;
   const tva = totalPriceWithVAT - totalPrice;
 
   return (
@@ -185,7 +183,11 @@ function PaymentContent({ cart }: { cart: CartItem[] }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Sous-total HT</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{totalPrice.toFixed(2)} €</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{subtotalHT.toFixed(2)} €</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Livraison HT</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{SHIPPING_HT.toFixed(2)} €</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>TVA (20%)</span>
