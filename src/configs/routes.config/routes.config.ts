@@ -219,7 +219,6 @@ const protectedCustomersRoutes = [
     key: "customer.cart",
     path: "/customer/cart",
     component: lazy(() => import("@/views/app/customer/cart/Cart")),
-    authority: [CUSTOMER],
   },
   {
     key: "customer.invoices",
