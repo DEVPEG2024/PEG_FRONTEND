@@ -38,6 +38,15 @@ export type Message = {
   content: string;
 };
 
+export type ChatbotDocument = {
+  id: number;
+  name: string;
+  file_url: string | null;
+  file_type: 'image' | 'pdf' | 'text' | 'document';
+  content: string | null;
+  created_at: string;
+};
+
 // Config
 export const apiGetChatbotConfig = () =>
   backend().get<{ result: boolean; config: ChatbotConfig }>('/chatbot/config');
@@ -64,6 +73,19 @@ export const apiGetConversation = (conversationId: string) =>
 
 export const apiDeleteConversation = (conversationId: string) =>
   backend().delete<{ result: boolean }>(`/chatbot/history/${conversationId}`);
+
+// Documents
+export const apiGetDocuments = () =>
+  backend().get<{ result: boolean; documents: ChatbotDocument[] }>('/chatbot/config/documents');
+
+export const apiUploadDocument = (form: FormData) =>
+  axios.post<{ result: boolean; document: ChatbotDocument }>(`${EXPRESS_BACKEND_URL}/chatbot/config/documents`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000,
+  });
+
+export const apiDeleteDocument = (docId: number) =>
+  backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
 
 // Live test
 export const apiTestChat = (messages: Message[]) =>

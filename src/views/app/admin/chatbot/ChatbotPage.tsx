@@ -5,17 +5,20 @@ import {
   apiAddFaq,
   apiUpdateFaq,
   apiDeleteFaq,
+  apiGetDocuments,
+  apiUploadDocument,
+  apiDeleteDocument,
   apiGetChatHistory,
   apiGetConversation,
   apiDeleteConversation,
   apiTestChat,
 } from '@/services/ChatbotServices';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
-import type { ChatbotConfig, FAQ, ConversationSummary, Message } from '@/services/ChatbotServices';
+import type { ChatbotConfig, FAQ, ChatbotDocument, ConversationSummary, Message } from '@/services/ChatbotServices';
 import {
   MdSmartToy, MdSend, MdDelete, MdEdit, MdAdd, MdSave,
   MdHistory, MdChat, MdQuestionAnswer, MdSettings, MdArrowBack,
-  MdImage, MdPerson,
+  MdImage, MdPerson, MdUploadFile, MdPictureAsPdf, MdTextSnippet, MdInsertDriveFile,
 } from 'react-icons/md';
 import { HiChevronRight } from 'react-icons/hi';
 
@@ -183,6 +186,133 @@ const AvatarUpload = ({
 };
 
 // ─────────────────────────────────────────────────────────────────
+// Documents Section
+// ─────────────────────────────────────────────────────────────────
+const DocIcon = ({ type }: { type: string }) => {
+  if (type === 'image') return <MdImage size={15} color="#a78bfa" />;
+  if (type === 'pdf')   return <MdPictureAsPdf size={15} color="#f87171" />;
+  if (type === 'text')  return <MdTextSnippet size={15} color="#34d399" />;
+  return <MdInsertDriveFile size={15} color="#94a3b8" />;
+};
+
+const DocumentsSection = () => {
+  const [documents, setDocuments] = useState<ChatbotDocument[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    apiGetDocuments().then((res) => setDocuments(res.data.documents)).catch(() => {});
+  }, []);
+
+  const handleFiles = async (files: FileList) => {
+    setError('');
+    for (const file of Array.from(files)) {
+      setUploading(true);
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await apiUploadDocument(form);
+        setDocuments((prev) => [res.data.document, ...prev]);
+      } catch {
+        setError(`Échec de l'envoi : ${file.name}`);
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    await apiDeleteDocument(id);
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  return (
+    <div>
+      {/* Drop zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
+        onClick={() => !uploading && inputRef.current?.click()}
+        style={{
+          border: `2px dashed ${dragOver ? '#2f6fed' : 'rgba(255,255,255,0.1)'}`,
+          borderRadius: '12px',
+          padding: '20px 16px',
+          textAlign: 'center',
+          cursor: uploading ? 'wait' : 'pointer',
+          background: dragOver ? 'rgba(47,111,237,0.08)' : 'rgba(0,0,0,0.15)',
+          transition: 'border-color 0.2s, background 0.2s',
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.txt,.md"
+          style={{ display: 'none' }}
+          onChange={(e) => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; }}
+        />
+        <MdUploadFile size={24} color={dragOver ? '#6b9eff' : 'rgba(255,255,255,0.25)'} style={{ marginBottom: '8px' }} />
+        <div style={{ color: uploading ? '#6b9eff' : dragOver ? '#6b9eff' : 'rgba(255,255,255,0.35)', fontSize: '12.5px', fontWeight: 500 }}>
+          {uploading ? 'Envoi en cours...' : 'Glissez vos fichiers ici ou cliquez pour choisir'}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginTop: '4px' }}>
+          Images · PDF · Fichiers texte — 10 Mo max
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ color: '#f87171', fontSize: '11px', marginTop: '6px' }}>{error}</div>
+      )}
+
+      {/* Document list */}
+      {documents.length > 0 && (
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {documents.map((doc) => (
+            <div
+              key={doc.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '8px', padding: '8px 12px',
+              }}
+            >
+              <DocIcon type={doc.file_type} />
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {doc.name}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginTop: '1px' }}>
+                  {doc.content
+                    ? `${doc.content.length.toLocaleString('fr-FR')} caractères extraits`
+                    : doc.file_url ? 'Image stockée' : 'Aucun contenu extrait'
+                  }
+                </div>
+              </div>
+              {doc.file_url && doc.file_type === 'image' && (
+                <img src={doc.file_url} alt="" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+              )}
+              <button onClick={() => handleDelete(doc.id)} style={{ ...iconBtn, color: 'rgba(239,68,68,0.7)', flexShrink: 0 }}>
+                <MdDelete size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {documents.length === 0 && !uploading && (
+        <div style={{ color: 'rgba(255,255,255,0.18)', fontSize: '12px', textAlign: 'center', paddingTop: '10px' }}>
+          Aucun document ajouté
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────
 // Config Panel (left)
 // ─────────────────────────────────────────────────────────────────
 const ConfigPanel = ({
@@ -311,6 +441,15 @@ const ConfigPanel = ({
             placeholder="Ex: Tu es l'assistant de PEG. Tu réponds toujours en français..."
             style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
           />
+        </div>
+
+        {/* ── Documents ── */}
+        <div>
+          <div style={SECTION_LABEL}><MdUploadFile size={13} /> Fichiers de référence</div>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginBottom: '10px', lineHeight: 1.5 }}>
+            Glissez des photos ou documents (PDF, texte) pour enrichir les connaissances du bot.
+          </p>
+          <DocumentsSection />
         </div>
 
         {/* ── FAQ / Connaissances ── */}
