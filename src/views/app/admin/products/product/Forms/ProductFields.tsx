@@ -15,6 +15,8 @@ import { MdOutlineVerifiedUser } from 'react-icons/md';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { SUPER_ADMIN, ADMIN, PRODUCER } from '@/constants/roles.constant';
+import { useState } from 'react';
+import { apiAiFillProduct } from '@/services/ChatbotServices';
 
 type Options = {
   label: string;
@@ -97,6 +99,24 @@ const ProductFields = (props: ProductFieldsProps) => {
   } = props;
 
   const requiresBat = watch('requiresBat');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const handleAiFill = async () => {
+    const name = watch('name');
+    if (!name?.trim()) { setAiError('Saisissez d\'abord un nom de produit.'); return; }
+    setAiError('');
+    setAiLoading(true);
+    try {
+      const res = await apiAiFillProduct(name.trim());
+      if (res.data.description) setValue('description', res.data.description);
+      if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
+    } catch {
+      setAiError('Erreur lors de la génération IA. Réessayez.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const userAuthority: string[] = useSelector(
     (state: RootState) => (state.auth as any)?.user?.user?.authority ?? []
@@ -142,6 +162,28 @@ const ProductFields = (props: ProductFieldsProps) => {
               )}
             />
             {errors.name && <p style={fieldError}>{errors.name.message}</p>}
+
+            {/* AI fill button */}
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleAiFill}
+                disabled={aiLoading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  background: aiLoading ? 'rgba(168,85,247,0.1)' : 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(99,102,241,0.15))',
+                  border: `1px solid ${aiLoading ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.4)'}`,
+                  borderRadius: '9px', padding: '8px 16px',
+                  color: aiLoading ? 'rgba(192,132,252,0.5)' : '#c084fc',
+                  fontSize: '12.5px', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer',
+                  fontFamily: 'Inter, sans-serif', transition: 'all 0.2s',
+                }}
+              >
+                <span style={{ fontSize: '14px' }}>{aiLoading ? '⏳' : '✨'}</span>
+                {aiLoading ? 'Génération en cours...' : 'Remplir le produit avec l\'IA'}
+              </button>
+              {aiError && <span style={{ color: '#f87171', fontSize: '11px' }}>{aiError}</span>}
+            </div>
           </div>
           <div style={{ paddingTop: '2px' }}>
             <label style={fieldLabel}>Dans le catalogue</label>

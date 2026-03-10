@@ -87,6 +87,13 @@ export const apiUploadDocument = (form: FormData) =>
 export const apiDeleteDocument = (docId: number) =>
   backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
 
+// AI product fill
+export const apiAiFillProduct = (name: string) =>
+  backend().post<{ result: boolean; description: string; priceTiers: { minQuantity: number; price: number }[] }>(
+    '/chatbot/ai-fill-product',
+    { name }
+  );
+
 // Live test
 export const apiTestChat = (messages: Message[]) =>
   backend().post<{ result: boolean; reply: string }>('/chatbot/test', { messages });
