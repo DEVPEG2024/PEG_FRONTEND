@@ -34,22 +34,28 @@ export const getDashboardCustomerInformations = createAsyncThunk(
     const { customer }: { customer: Customer } = await unwrapData(
       apiGetDashboardCustomerInformations(documentId)
     );
-    const {
-      products_connection,
-    }: { products_connection: CustomerProductsResponse } = await unwrapData(
-      apiGetCustomerProducts(
-        customer?.documentId,
-        customer.customerCategory.documentId
-      )
-    );
-    const { projects_connection } = await unwrapData(
-      apiGetCustomerProjects({
-        customerDocumentId: customer.documentId,
-        pagination: { page: 1, pageSize: 1000 },
-        searchTerm: '',
-      })
-    );
-    return { products: products_connection.nodes, customer, projects: projects_connection.nodes };
+
+    let products: Product[] = [];
+    if (customer?.customerCategory?.documentId) {
+      const { products_connection }: { products_connection: CustomerProductsResponse } = await unwrapData(
+        apiGetCustomerProducts(customer.documentId, customer.customerCategory.documentId)
+      );
+      products = products_connection.nodes;
+    }
+
+    let projects: Project[] = [];
+    if (customer?.documentId) {
+      const { projects_connection } = await unwrapData(
+        apiGetCustomerProjects({
+          customerDocumentId: customer.documentId,
+          pagination: { page: 1, pageSize: 1000 },
+          searchTerm: '',
+        })
+      );
+      projects = projects_connection.nodes;
+    }
+
+    return { products, customer, projects };
   }
 );
 
