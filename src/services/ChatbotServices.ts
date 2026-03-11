@@ -88,14 +88,24 @@ export const apiDeleteDocument = (docId: number) =>
   backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
 
 // AI product fill
-export const apiAiFillProduct = (name: string, availableSizes: string[] = [], availableColors: string[] = []) =>
+export const apiAiFillProduct = (
+  name: string,
+  availableSizes: string[] = [],
+  availableColors: string[] = [],
+  availableCategories: string[] = [],
+  availableForms: string[] = [],
+  availableChecklists: string[] = [],
+) =>
   backend().post<{
     result: boolean;
     description: string;
     priceTiers: { minQuantity: number; price: number }[];
     suggestedSizes: string[];
     suggestedColors: string[];
-  }>('/chatbot/ai-fill-product', { name, availableSizes, availableColors });
+    suggestedCategory: string;
+    suggestedForm: string;
+    suggestedChecklist: string;
+  }>('/chatbot/ai-fill-product', { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists });
 
 // Live test
 export const apiTestChat = (messages: Message[]) =>

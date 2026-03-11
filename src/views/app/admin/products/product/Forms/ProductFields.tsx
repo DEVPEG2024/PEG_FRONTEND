@@ -108,13 +108,28 @@ const ProductFields = (props: ProductFieldsProps) => {
     setAiError('');
     setAiLoading(true);
     try {
-      const sizeLabels  = sizes.map((s) => s.label);
-      const colorLabels = colors.map((c) => c.label);
-      const res = await apiAiFillProduct(name.trim(), sizeLabels, colorLabels);
+      const sizeLabels      = sizes.map((s) => s.label);
+      const colorLabels     = colors.map((c) => c.label);
+      const categoryLabels  = categories.map((c) => c.label);
+      const formLabels      = forms.map((f) => f.label);
+      const checklistLabels = checklists.map((c) => c.label);
+
+      const res = await apiAiFillProduct(name.trim(), sizeLabels, colorLabels, categoryLabels, formLabels, checklistLabels);
 
       if (res.data.description) setValue('description', res.data.description);
       if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
 
+      // Catégorie produit
+      if (res.data.suggestedCategory) {
+        const catOption = categories.find((c) => c.label.toLowerCase() === res.data.suggestedCategory.toLowerCase());
+        if (catOption) {
+          setValue('productCategory', catOption.value);
+          filterSizesListByProductCategory(catOption.value);
+          filterColorsListByProductCategory(catOption.value);
+        }
+      }
+
+      // Tailles
       if (res.data.suggestedSizes?.length) {
         const ids = res.data.suggestedSizes
           .map((label) => sizes.find((s) => s.label.toLowerCase() === label.toLowerCase())?.value)
@@ -122,11 +137,25 @@ const ProductFields = (props: ProductFieldsProps) => {
         if (ids.length) setValue('sizes', ids);
       }
 
-      if (res.data.suggestedColors?.length) {
-        const ids = res.data.suggestedColors
-          .map((label) => colors.find((c) => c.label.toLowerCase() === label.toLowerCase())?.value)
-          .filter((v): v is string => !!v);
-        if (ids.length) setValue('colors', ids);
+      // Couleurs — toujours inclure Blanc et Noir si disponibles, + suggestions IA
+      const defaultColorNames = ['blanc', 'noir'];
+      const aiColorNames = (res.data.suggestedColors || []).map((l: string) => l.toLowerCase());
+      const allColorNames = [...new Set([...defaultColorNames, ...aiColorNames])];
+      const colorIds = allColorNames
+        .map((name) => colors.find((c) => c.label.toLowerCase() === name)?.value)
+        .filter((v): v is string => !!v);
+      if (colorIds.length) setValue('colors', colorIds);
+
+      // Formulaire
+      if (res.data.suggestedForm) {
+        const formOption = forms.find((f) => f.label.toLowerCase() === res.data.suggestedForm.toLowerCase());
+        if (formOption) setValue('form', formOption.value);
+      }
+
+      // Checklist
+      if (res.data.suggestedChecklist) {
+        const checklistOption = checklists.find((c) => c.label.toLowerCase() === res.data.suggestedChecklist.toLowerCase());
+        if (checklistOption) setValue('checklist', checklistOption.value);
       }
     } catch {
       setAiError('Erreur lors de la génération IA. Réessayez.');
