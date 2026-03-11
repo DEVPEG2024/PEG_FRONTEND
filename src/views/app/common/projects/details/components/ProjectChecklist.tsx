@@ -7,7 +7,7 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useAppSelector } from '../store';
 import { MdChecklist } from 'react-icons/md';
-import { HiCheck, HiChevronDown } from 'react-icons/hi';
+import { HiCheck, HiChevronDown, HiTrash } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
@@ -104,6 +104,10 @@ const ProjectChecklist = () => {
     }
   };
 
+  const removeChecklist = () => {
+    saveItems([]);
+  };
+
   const applyTemplate = (checklist: Checklist) => {
     const newItems: ChecklistItem[] = (checklist.items ?? []).map((label: string) => ({
       label,
@@ -147,54 +151,81 @@ const ProjectChecklist = () => {
               )}
             </div>
 
-            {/* Apply template dropdown (admin/producer only) */}
-            {canToggle && !unavailable && checklists.length > 0 && (
-              <div style={{ position: 'relative' }} ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen((v) => !v)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '6px 12px', borderRadius: '8px',
-                    background: 'rgba(47,111,237,0.15)',
-                    border: '1px solid rgba(47,111,237,0.3)',
-                    color: '#6fa3f5', fontSize: '12px', fontWeight: 600,
-                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  <MdChecklist size={14} />
-                  Appliquer un modèle
-                  <HiChevronDown size={12} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-                </button>
+            {/* Actions admin/producer */}
+            {canToggle && !unavailable && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
-                {dropdownOpen && (
-                  <div style={{
-                    position: 'absolute', right: 0, top: 'calc(100% + 6px)',
-                    background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '10px', overflow: 'hidden',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                    zIndex: 100, minWidth: '200px',
-                  }}>
-                    {checklists.map((cl) => (
-                      <button
-                        key={cl.documentId}
-                        onClick={() => applyTemplate(cl)}
-                        style={{
-                          display: 'block', width: '100%', textAlign: 'left',
-                          padding: '10px 14px',
-                          background: 'transparent',
-                          border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                          color: 'rgba(255,255,255,0.75)', fontSize: '13px',
-                          cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        {cl.name}
-                        <span style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px' }}>
-                          {(cl.items ?? []).length} étape{(cl.items ?? []).length > 1 ? 's' : ''}
-                        </span>
-                      </button>
-                    ))}
+                {/* Remove checklist button */}
+                {items.length > 0 && (
+                  <button
+                    onClick={removeChecklist}
+                    disabled={saving}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '6px 12px', borderRadius: '8px',
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#f87171', fontSize: '12px', fontWeight: 600,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                      opacity: saving ? 0.5 : 1,
+                    }}
+                  >
+                    <HiTrash size={13} />
+                    Retirer la checklist
+                  </button>
+                )}
+
+                {/* Apply template dropdown */}
+                {checklists.length > 0 && (
+                  <div style={{ position: 'relative' }} ref={dropdownRef}>
+                    <button
+                      onClick={() => setDropdownOpen((v) => !v)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '6px 12px', borderRadius: '8px',
+                        background: 'rgba(47,111,237,0.15)',
+                        border: '1px solid rgba(47,111,237,0.3)',
+                        color: '#6fa3f5', fontSize: '12px', fontWeight: 600,
+                        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      <MdChecklist size={14} />
+                      Appliquer un modèle
+                      <HiChevronDown size={12} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+                    </button>
+
+                    {dropdownOpen && (
+                      <div style={{
+                        position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                        background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '10px', overflow: 'hidden',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                        zIndex: 100, minWidth: '200px',
+                      }}>
+                        {checklists.map((cl) => (
+                          <button
+                            key={cl.documentId}
+                            onClick={() => applyTemplate(cl)}
+                            style={{
+                              display: 'block', width: '100%', textAlign: 'left',
+                              padding: '10px 14px',
+                              background: 'transparent',
+                              border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              color: 'rgba(255,255,255,0.75)', fontSize: '13px',
+                              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {cl.name}
+                            <span style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px' }}>
+                              {(cl.items ?? []).length} étape{(cl.items ?? []).length > 1 ? 's' : ''}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
