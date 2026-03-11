@@ -97,6 +97,22 @@ export async function apiGetProducerForEditById(documentId: string): Promise<Axi
                 address
             }
             name
+            productCategories
+            strengths
+            weaknesses
+            certifications
+            minOrderQuantity
+            maxMonthlyQuantity
+            averageDeliveryDays
+            expressDeliveryDays
+            deliveryZone
+            reliabilityScore
+            customerSatisfactionRate
+            completedOrdersCount
+            internalComments
+            priceRange
+            volumeDiscountAvailable
+            volumeDiscountRate
         }
     }
   `,

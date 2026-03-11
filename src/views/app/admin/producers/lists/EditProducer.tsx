@@ -54,6 +54,26 @@ const EditProducer = () => {
     city: producer?.companyInformations.city || '',
     country: producer?.companyInformations.country || '',
     website: producer?.companyInformations.website || '',
+    // Compétences & Spécialités
+    productCategories: producer?.productCategories || [],
+    strengths: producer?.strengths || '',
+    weaknesses: producer?.weaknesses || '',
+    certifications: producer?.certifications || [],
+    // Capacité de production
+    minOrderQuantity: producer?.minOrderQuantity ?? null,
+    maxMonthlyQuantity: producer?.maxMonthlyQuantity ?? null,
+    averageDeliveryDays: producer?.averageDeliveryDays ?? null,
+    expressDeliveryDays: producer?.expressDeliveryDays ?? null,
+    deliveryZone: producer?.deliveryZone || null,
+    // Qualité & Fiabilité
+    reliabilityScore: producer?.reliabilityScore ?? null,
+    customerSatisfactionRate: producer?.customerSatisfactionRate ?? null,
+    completedOrdersCount: producer?.completedOrdersCount ?? null,
+    internalComments: producer?.internalComments || '',
+    // Tarification
+    priceRange: producer?.priceRange || null,
+    volumeDiscountAvailable: producer?.volumeDiscountAvailable ?? false,
+    volumeDiscountRate: producer?.volumeDiscountRate ?? null,
   };
 
   useEffect(() => {
@@ -102,6 +122,27 @@ const EditProducer = () => {
       },
       producerCategory: data.producerCategory,
       name: data.name,
+      projects: [],
+      // Compétences & Spécialités
+      productCategories: data.productCategories,
+      strengths: data.strengths,
+      weaknesses: data.weaknesses,
+      certifications: data.certifications,
+      // Capacité de production
+      minOrderQuantity: data.minOrderQuantity,
+      maxMonthlyQuantity: data.maxMonthlyQuantity,
+      averageDeliveryDays: data.averageDeliveryDays,
+      expressDeliveryDays: data.expressDeliveryDays,
+      deliveryZone: data.deliveryZone,
+      // Qualité & Fiabilité
+      reliabilityScore: data.reliabilityScore,
+      customerSatisfactionRate: data.customerSatisfactionRate,
+      completedOrdersCount: data.completedOrdersCount,
+      internalComments: data.internalComments,
+      // Tarification
+      priceRange: data.priceRange,
+      volumeDiscountAvailable: data.volumeDiscountAvailable,
+      volumeDiscountRate: data.volumeDiscountRate,
     };
     if (onEdition) {
       const { updateProducer }: { updateProducer: Producer } = await unwrapData(
