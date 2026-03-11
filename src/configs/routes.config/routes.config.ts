@@ -176,11 +176,30 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/banners/BannersList")),
     authority: [SUPER_ADMIN],
   },
-  // chatbot
+  // chatbot (legacy route kept for backward compat)
   {
     key: "admin.chatbot",
     path: "/admin/chatbot",
     component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
+    authority: [SUPER_ADMIN],
+  },
+  // IA section
+  {
+    key: "admin.ia.images",
+    path: "/admin/ia/images",
+    component: lazy(() => import("@/views/app/admin/ia/IAImagesPage")),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.ia.chatbot",
+    path: "/admin/ia/chatbot",
+    component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
+    authority: [SUPER_ADMIN],
+  },
+  {
+    key: "admin.ia.content",
+    path: "/admin/ia/content",
+    component: lazy(() => import("@/views/app/admin/ia/IAContentPage")),
     authority: [SUPER_ADMIN],
   },
 ];

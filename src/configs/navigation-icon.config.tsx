@@ -5,10 +5,10 @@ import {
     HiUsers,
     HiOutlineLightningBolt,
 } from 'react-icons/hi'
-import { MdOutlineMail, MdOutlineStorefront, MdSmartToy } from "react-icons/md";
+import { MdOutlineMail, MdOutlineStorefront, MdSmartToy, MdOutlineImage, MdOutlineArticle } from "react-icons/md";
 import { FiUsers } from "react-icons/fi";
 import { LuUsers } from "react-icons/lu";
-import { RiHomeSmile2Line } from "react-icons/ri";
+import { RiHomeSmile2Line, RiRobot2Line } from "react-icons/ri";
 import { PiStorefront } from "react-icons/pi";
 import { GoTasklist } from "react-icons/go";
 import { SlSupport } from "react-icons/sl";
@@ -55,6 +55,9 @@ const navigationIcon: NavigationIcons = {
     leads: <HiOutlineLightningBolt />,
     checklist: <GoTasklist />,
     chatbot: <MdSmartToy />,
+    ia: <RiRobot2Line />,
+    iaImages: <MdOutlineImage />,
+    iaContent: <MdOutlineArticle />,
 }
 
 export default navigationIcon

@@ -280,14 +280,56 @@ const navigationAdmin: NavigationTree[] = [
 
   // --- IA ---
   {
-    key: "admin.chatbot",
-    path: "/admin/chatbot",
-    title: "Chatbot IA",
-    translateKey: "nav.chatbot",
-    icon: "chatbot",
-    type: NAV_ITEM_TYPE_ITEM,
+    key: "admin.ia",
+    path: "/admin/ia/images",
+    title: "",
+    translateKey: "",
+    icon: "ia",
+    type: NAV_ITEM_TYPE_TITLE,
     authority: [SUPER_ADMIN],
-    subMenu: [],
+    subMenu: [
+      {
+        key: "admin.ia",
+        path: "/admin/ia/images",
+        title: "IA",
+        translateKey: "nav.ia",
+        icon: "ia",
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [SUPER_ADMIN],
+        subMenu: [
+          {
+            key: "admin.ia.images",
+            path: "/admin/ia/images",
+            title: "Génération d'images",
+            translateKey: "nav.iaImages",
+            icon: "iaImages",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
+            key: "admin.ia.chatbot",
+            path: "/admin/ia/chatbot",
+            title: "Chatbot",
+            translateKey: "nav.iaChatbot",
+            icon: "chatbot",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
+            key: "admin.ia.content",
+            path: "/admin/ia/content",
+            title: "Génération de contenu",
+            translateKey: "nav.iaContent",
+            icon: "iaContent",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+        ],
+      },
+    ],
   },
 
   // --- Administration ---

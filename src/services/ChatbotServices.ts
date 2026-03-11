@@ -107,9 +107,22 @@ export const apiAiFillProduct = (
     suggestedChecklist: string;
   }>('/chatbot/ai-fill-product', { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists });
 
-// AI image generation
+// AI image generation (simple)
 export const apiGenerateProductImage = (name: string) =>
   backend().post<{ result: boolean; imageUrl: string }>('/chatbot/generate-image', { name });
+
+// AI image generation (advanced — with style & reference images)
+export const apiGenerateImageAdvanced = (prompt: string, style: string, referenceUrls?: string[]) =>
+  backend().post<{ result: boolean; imageUrl: string }>('/chatbot/generate-image', { name: prompt, style, referenceUrls });
+
+// AI content generation (description, highlights, selling points)
+export const apiGenerateProductContent = (productName: string) =>
+  backend().post<{
+    result: boolean;
+    description: string;
+    highlights: string[];
+    sellingPoints: string[];
+  }>('/chatbot/generate-content', { productName });
 
 // Live test
 export const apiTestChat = (messages: Message[]) =>
