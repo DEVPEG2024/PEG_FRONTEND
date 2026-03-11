@@ -7,7 +7,7 @@ const dev = {
 
   // API HEROKU
   const prod = {
-    API_ENDPOINT_URL: process.env.API_ENDPOINT_URL || 'https://api.mypeg.fr',
+    API_ENDPOINT_URL: import.meta.env.VITE_API_ENDPOINT_URL || 'https://api.mypeg.fr',
     //API_ENDPOINT_URL: 'https://super-space-journey-x5vr6j947qvqhjrv-1337.app.github.dev',
     EXPRESS_BACKEND_URL: 'https://peg-int-c464785c91ba.herokuapp.com',
     STRIPE_PUBLIC_KEY: 'pk_live_51R9MMyKa36UjT6qO6418qHBIJuOqvtIXK9VIUD1H7DV9wUVG9SYyHKPDPkiC4PfgINSqzUy5bWWIE9viuwuBKMjk00RO7QspVZ'
