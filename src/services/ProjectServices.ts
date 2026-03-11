@@ -331,6 +331,11 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                     images {
                         url
                     }
+                    checklist {
+                        documentId
+                        name
+                        items
+                    }
                 }
                 sizeAndColorSelections
                 state

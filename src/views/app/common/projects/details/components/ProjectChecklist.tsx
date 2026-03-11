@@ -53,16 +53,19 @@ const ProjectChecklist = () => {
         setChecklists(loadedTemplates);
         setUnavailable(false);
 
-        if (loadedItems.length === 0 && canToggle && loadedTemplates.length > 0) {
-          // Auto-apply first template if project has no checklist yet
-          const first = loadedTemplates[0];
-          const newItems: ChecklistItem[] = (first.items ?? []).map((label: string) => ({
-            label,
-            done: false,
-          }));
-          apiUpdateProjectChecklistItems(project.documentId, newItems)
-            .then(() => setItems(newItems))
-            .catch(() => setItems([]));
+        if (loadedItems.length === 0 && canToggle) {
+          // Auto-apply: prefer the product's linked checklist, else first available template
+          const productChecklist = project.orderItem?.product?.checklist;
+          const templateToApply = productChecklist ?? loadedTemplates[0];
+          if (templateToApply) {
+            const newItems: ChecklistItem[] = (templateToApply.items ?? []).map((label: string) => ({
+              label,
+              done: false,
+            }));
+            apiUpdateProjectChecklistItems(project.documentId, newItems)
+              .then(() => setItems(newItems))
+              .catch(() => setItems([]));
+          }
         } else {
           setItems(loadedItems);
         }
