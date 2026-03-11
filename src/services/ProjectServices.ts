@@ -113,7 +113,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 startDate
                 state
             }
-            # checklistItems  — activer après config Strapi
+            checklistItems
         }
     }
   `,
@@ -221,7 +221,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 startDate
                 state
             }
-            # checklistItems  — activer après config Strapi
+            checklistItems
         }
     }
   `,
@@ -357,7 +357,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 startDate
                 state
             }
-            # checklistItems  — activer après config Strapi
+            checklistItems
         }
     }
   `,
