@@ -14,13 +14,8 @@ const Home = () => {
     (user as any)?.user?.authority ||
     (user as any)?.user?.user?.authority ||
     []
-console.log("USER AUTHORITY =", userAuthority)
   return (
   <Suspense fallback={null}>
-
-    <div style={{ padding: 10, color: "white" }}>
-      AUTH: {JSON.stringify(userAuthority)}
-    </div>
 
     <AuthorityCheck authority={['super_admin']} userAuthority={userAuthority}>
       <DashboardAdmin />
