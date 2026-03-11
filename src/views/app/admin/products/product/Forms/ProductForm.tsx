@@ -178,6 +178,8 @@ const ProductForm = (props: ProductFormProps) => {
               control={control}
               watch={watch}
               setValue={setValue}
+              images={images}
+              setImages={setImages}
               batFile={batFile}
               setBatFile={setBatFile}
               currentBatUrl={currentBatUrl}

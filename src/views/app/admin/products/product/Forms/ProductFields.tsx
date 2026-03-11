@@ -16,7 +16,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { SUPER_ADMIN, ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useState } from 'react';
-import { apiAiFillProduct } from '@/services/ChatbotServices';
+import { apiAiFillProduct, apiGenerateProductImage } from '@/services/ChatbotServices';
 
 type Options = {
   label: string;
@@ -38,6 +38,8 @@ type ProductFieldsProps = {
   control: any;
   watch: UseFormWatch<ProductFormModel>;
   setValue: UseFormSetValue<ProductFormModel>;
+  images: PegFile[];
+  setImages: (images: PegFile[]) => void;
   batFile: PegFile | null;
   setBatFile: (f: PegFile | null) => void;
   currentBatUrl?: string | null;
@@ -93,6 +95,8 @@ const ProductFields = (props: ProductFieldsProps) => {
     control,
     watch,
     setValue,
+    images,
+    setImages,
     batFile,
     setBatFile,
     currentBatUrl,
@@ -114,48 +118,71 @@ const ProductFields = (props: ProductFieldsProps) => {
       const formLabels      = forms.map((f) => f.label);
       const checklistLabels = checklists.map((c) => c.label);
 
-      const res = await apiAiFillProduct(name.trim(), sizeLabels, colorLabels, categoryLabels, formLabels, checklistLabels);
+      // Run text fill and image generation in parallel
+      const [fillResult, imgResult] = await Promise.allSettled([
+        apiAiFillProduct(name.trim(), sizeLabels, colorLabels, categoryLabels, formLabels, checklistLabels),
+        apiGenerateProductImage(name.trim()),
+      ]);
 
-      if (res.data.description) setValue('description', res.data.description);
-      if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
+      if (fillResult.status === 'rejected') {
+        setAiError('Erreur lors de la génération IA. Réessayez.');
+      } else {
+        const res = fillResult.value;
 
-      // Catégorie produit
-      if (res.data.suggestedCategory) {
-        const catOption = categories.find((c) => c.label.toLowerCase() === res.data.suggestedCategory.toLowerCase());
-        if (catOption) {
-          setValue('productCategory', catOption.value);
-          filterSizesListByProductCategory(catOption.value);
-          filterColorsListByProductCategory(catOption.value);
+        if (res.data.description) setValue('description', res.data.description);
+        if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
+
+        // Catégorie produit
+        if (res.data.suggestedCategory) {
+          const catOption = categories.find((c) => c.label.toLowerCase() === res.data.suggestedCategory.toLowerCase());
+          if (catOption) {
+            setValue('productCategory', catOption.value);
+            filterSizesListByProductCategory(catOption.value);
+            filterColorsListByProductCategory(catOption.value);
+          }
+        }
+
+        // Tailles
+        if (res.data.suggestedSizes?.length) {
+          const ids = res.data.suggestedSizes
+            .map((label) => sizes.find((s) => s.label.toLowerCase() === label.toLowerCase())?.value)
+            .filter((v): v is string => !!v);
+          if (ids.length) setValue('sizes', ids);
+        }
+
+        // Couleurs — toujours inclure Blanc et Noir si disponibles, + suggestions IA
+        const defaultColorNames = ['blanc', 'noir'];
+        const aiColorNames = (res.data.suggestedColors || []).map((l: string) => l.toLowerCase());
+        const allColorNames = [...new Set([...defaultColorNames, ...aiColorNames])];
+        const colorIds = allColorNames
+          .map((n) => colors.find((c) => c.label.toLowerCase() === n)?.value)
+          .filter((v): v is string => !!v);
+        if (colorIds.length) setValue('colors', colorIds);
+
+        // Formulaire
+        if (res.data.suggestedForm) {
+          const formOption = forms.find((f) => f.label.toLowerCase() === res.data.suggestedForm.toLowerCase());
+          if (formOption) setValue('form', formOption.value);
+        }
+
+        // Checklist
+        if (res.data.suggestedChecklist) {
+          const checklistOption = checklists.find((c) => c.label.toLowerCase() === res.data.suggestedChecklist.toLowerCase());
+          if (checklistOption) setValue('checklist', checklistOption.value);
         }
       }
 
-      // Tailles
-      if (res.data.suggestedSizes?.length) {
-        const ids = res.data.suggestedSizes
-          .map((label) => sizes.find((s) => s.label.toLowerCase() === label.toLowerCase())?.value)
-          .filter((v): v is string => !!v);
-        if (ids.length) setValue('sizes', ids);
-      }
-
-      // Couleurs — toujours inclure Blanc et Noir si disponibles, + suggestions IA
-      const defaultColorNames = ['blanc', 'noir'];
-      const aiColorNames = (res.data.suggestedColors || []).map((l: string) => l.toLowerCase());
-      const allColorNames = [...new Set([...defaultColorNames, ...aiColorNames])];
-      const colorIds = allColorNames
-        .map((name) => colors.find((c) => c.label.toLowerCase() === name)?.value)
-        .filter((v): v is string => !!v);
-      if (colorIds.length) setValue('colors', colorIds);
-
-      // Formulaire
-      if (res.data.suggestedForm) {
-        const formOption = forms.find((f) => f.label.toLowerCase() === res.data.suggestedForm.toLowerCase());
-        if (formOption) setValue('form', formOption.value);
-      }
-
-      // Checklist
-      if (res.data.suggestedChecklist) {
-        const checklistOption = checklists.find((c) => c.label.toLowerCase() === res.data.suggestedChecklist.toLowerCase());
-        if (checklistOption) setValue('checklist', checklistOption.value);
+      // Image générée par IA
+      if (imgResult.status === 'fulfilled' && imgResult.value.data.imageUrl) {
+        try {
+          const imgResp = await fetch(imgResult.value.data.imageUrl);
+          const blob = await imgResp.blob();
+          const safeName = name.trim().replace(/\s+/g, '-').toLowerCase();
+          const file = new File([blob], `${safeName}-ai.jpg`, { type: blob.type || 'image/jpeg' });
+          setImages([...images, { file, name: file.name } as unknown as PegFile]);
+        } catch {
+          // CORS ou réseau — image ignorée silencieusement
+        }
       }
     } catch {
       setAiError('Erreur lors de la génération IA. Réessayez.');
