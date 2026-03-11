@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { apiUpdateCustomerByDocumentId, apiGetCustomerForEditByDocumentId } from '@/services/CustomerServices';
+import { apiUploadFile } from '@/services/FileServices';
 import { API_BASE_URL } from '@/configs/api.config';
 import { AiOutlineSave } from 'react-icons/ai';
+import { HiCamera, HiOutlineOfficeBuilding } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 
 type CustomerCategory = { documentId: string; name: string };
@@ -62,6 +64,10 @@ const CompanyProfile = () => {
     const [categories, setCategories] = useState<CustomerCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [deferredPayment, setDeferredPayment] = useState(false);
+    const [logoUrl, setLogoUrl] = useState<string | undefined>();
+    const [newLogoFile, setNewLogoFile] = useState<File | undefined>();
+    const [existingLogoId, setExistingLogoId] = useState<string | undefined>();
+    const logoInputRef = useRef<HTMLInputElement>(null);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -94,6 +100,10 @@ const CompanyProfile = () => {
                     const customer = Array.isArray(arr) ? arr[0] : arr;
                     if (customer) {
                         setDeferredPayment(!!customer.deferredPayment);
+                        if (customer.logo?.url) {
+                            setLogoUrl(customer.logo.url);
+                            setExistingLogoId(customer.logo.id ?? customer.logo.documentId);
+                        }
                         reset({
                             name: customer.name || '',
                             customerCategoryId: customer.customerCategory?.documentId || '',
@@ -116,13 +126,29 @@ const CompanyProfile = () => {
         }
     }, []);
 
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        if (!allowed.includes(file.type)) return;
+        setNewLogoFile(file);
+        setLogoUrl(URL.createObjectURL(file));
+    };
+
     const onSubmit = async (values: CompanyFormModel) => {
         setErrorMessage('');
         setSuccessMessage('');
         if (!user.customer?.documentId) return;
         try {
+            let logoId: string | number | undefined = existingLogoId ? existingLogoId : undefined;
+            if (newLogoFile) {
+                const uploaded = await apiUploadFile(newLogoFile);
+                logoId = (uploaded as any).id;
+                setNewLogoFile(undefined);
+            }
             await apiUpdateCustomerByDocumentId(user.customer.documentId, {
                 name: values.name,
+                ...(logoId !== undefined ? { logo: logoId } : {}),
                 ...(values.customerCategoryId ? { customerCategory: values.customerCategoryId } : {}),
                 companyInformations: {
                     address: values.address,
@@ -191,6 +217,53 @@ const CompanyProfile = () => {
 
                 {/* Informations entreprise */}
                 <p style={sectionStyle}>Informations entreprise</p>
+
+                {/* Logo */}
+                <div>
+                    <label style={labelStyle}>Logo de l'entreprise</label>
+                    <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg,image/webp"
+                        style={{ display: 'none' }}
+                        onChange={handleLogoChange}
+                    />
+                    <div
+                        onClick={() => logoInputRef.current?.click()}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '16px',
+                            padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px dashed rgba(255,255,255,0.12)',
+                            transition: 'border-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                    >
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="logo" style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'contain', background: 'rgba(255,255,255,0.05)', padding: '4px' }} />
+                        ) : (
+                            <div style={{ width: '64px', height: '64px', borderRadius: '8px', background: 'rgba(47,111,237,0.08)', border: '1px solid rgba(47,111,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <HiOutlineOfficeBuilding size={28} style={{ color: '#6b9eff' }} />
+                            </div>
+                        )}
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6b9eff', fontSize: '13px', fontWeight: 600 }}>
+                                <HiCamera size={14} />
+                                {logoUrl ? 'Changer le logo' : 'Ajouter un logo'}
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: '4px 0 0' }}>
+                                JPG, PNG ou WEBP · Recommandé : 200×200px
+                            </p>
+                        </div>
+                    </div>
+                    {logoUrl && (
+                        <button type="button" onClick={() => { setLogoUrl(undefined); setNewLogoFile(undefined); }}
+                            style={{ marginTop: '6px', background: 'none', border: 'none', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', padding: 0 }}>
+                            Supprimer le logo
+                        </button>
+                    )}
+                </div>
 
                 {renderField('name', 'Nom de la société', 'Mon Entreprise SAS')}
 

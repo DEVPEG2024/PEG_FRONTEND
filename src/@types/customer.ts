@@ -1,5 +1,6 @@
 import { Banner } from "./banner";
 import { Product } from "./product";
+import { PegFile } from "./pegFile";
 
 export type CustomerCategory = {
   documentId: string;
@@ -27,5 +28,6 @@ export type Customer = {
   companyInformations: CompanyInformations;
   customerCategory: CustomerCategory;
   banner: Banner;
+  logo?: PegFile;
   deferredPayment: boolean;
 }
