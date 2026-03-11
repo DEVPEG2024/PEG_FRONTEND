@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 import { motion, AnimatePresence } from 'framer-motion'
 import dayjs from 'dayjs'
@@ -9,6 +9,7 @@ import {
     HiOutlineCurrencyEuro, HiOutlineCalendar, HiOutlineLightningBolt,
     HiOutlineFilter, HiOutlineViewBoards, HiOutlineViewList,
     HiOutlineUser, HiOutlineOfficeBuilding, HiOutlineExternalLink,
+    HiOutlineDownload, HiOutlineUpload,
 } from 'react-icons/hi'
 
 dayjs.locale('fr')
@@ -509,6 +510,147 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
     )
 }
 
+// ─── Import Preview Modal ──────────────────────────────────────────────────────
+function ImportPreviewModal({ rows, onConfirm, onClose }: {
+    rows: Omit<Lead, 'id' | 'createdAt'>[]
+    onConfirm: () => void
+    onClose: () => void
+}) {
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
+                >
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">Aperçu de l'import</h2>
+                            <p className="text-sm text-gray-400 mt-0.5">
+                                {rows.length} lead{rows.length > 1 ? 's' : ''} détecté{rows.length > 1 ? 's' : ''} — vérifiez avant de confirmer
+                            </p>
+                        </div>
+                        <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <HiOutlineX className="w-5 h-5 text-gray-400" />
+                        </button>
+                    </div>
+
+                    {/* Table */}
+                    <div className="overflow-auto flex-1">
+                        {rows.length === 0 ? (
+                            <div className="flex items-center justify-center h-32 text-sm text-gray-400">
+                                Aucun lead valide trouvé dans le fichier CSV.
+                            </div>
+                        ) : (
+                            <table className="w-full text-sm">
+                                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700/80 z-10">
+                                    <tr>
+                                        {['Entreprise', 'Contact', 'Email', 'Téléphone', 'Source', 'Étape', 'Valeur', 'Priorité'].map(h => (
+                                            <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map((row, i) => (
+                                        <tr key={i} className="border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="px-4 py-2 font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{row.company}</td>
+                                            <td className="px-4 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{row.contact}</td>
+                                            <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{row.email}</td>
+                                            <td className="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{row.phone}</td>
+                                            <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{getSource(row.source).label}</td>
+                                            <td className="px-4 py-2">
+                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getStage(row.stage).bg} ${getStage(row.stage).color} ${getStage(row.stage).border}`}>
+                                                    {getStage(row.stage).label}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-2 font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">{eur(row.value)}</td>
+                                            <td className="px-4 py-2">
+                                                <span className={`text-xs font-semibold ${getPriority(row.priority).color}`}>{getPriority(row.priority).label}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
+                        <p className="text-sm text-gray-400">Les leads seront ajoutés à votre liste existante.</p>
+                        <div className="flex gap-2">
+                            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all">
+                                Annuler
+                            </button>
+                            <button
+                                onClick={onConfirm}
+                                disabled={rows.length === 0}
+                                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+                            >
+                                Importer {rows.length} lead{rows.length > 1 ? 's' : ''}
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    )
+}
+
+// ─── CSV helpers ───────────────────────────────────────────────────────────────
+function parseCsvLine(line: string): string[] {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+        if (line[i] === '"') {
+            if (inQuotes && line[i + 1] === '"') { current += '"'; i++ }
+            else inQuotes = !inQuotes
+        } else if (line[i] === ',' && !inQuotes) {
+            result.push(current.trim())
+            current = ''
+        } else {
+            current += line[i]
+        }
+    }
+    result.push(current.trim())
+    return result
+}
+
+function parseLeadsCsv(text: string): Omit<Lead, 'id' | 'createdAt'>[] {
+    const lines = text.trim().split('\n').map(l => l.replace(/\r/g, ''))
+    if (lines.length < 2) return []
+    const validStages: Stage[]    = ['nouveau', 'contacté', 'qualification', 'proposition', 'négociation', 'gagné', 'perdu']
+    const validSources: Source[]  = ['linkedin', 'referral', 'inbound', 'cold_call', 'event', 'site_web', 'autre']
+    const validPrios: Priority[]  = ['basse', 'normale', 'haute', 'urgente']
+    return lines.slice(1)
+        .map(parseCsvLine)
+        .filter(cols => cols[0]?.trim())
+        .map(cols => ({
+            company:        cols[0] || '',
+            contact:        cols[1] || '',
+            email:          cols[2] || '',
+            phone:          cols[3] || '',
+            source:         (validSources.includes(cols[4] as Source) ? cols[4] : 'autre') as Source,
+            stage:          (validStages.includes(cols[5] as Stage)   ? cols[5] : 'nouveau') as Stage,
+            value:          parseFloat(cols[6])  || 0,
+            probability:    Math.min(100, Math.max(0, parseInt(cols[7]) || 20)),
+            priority:       (validPrios.includes(cols[8] as Priority) ? cols[8] : 'normale') as Priority,
+            notes:          cols[9]  || '',
+            nextAction:     cols[10] || '',
+            nextActionDate: cols[11] || '',
+        }))
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 const LeadsPage = () => {
     const [leads, setLeads] = useState<Lead[]>(SAMPLE_LEADS)
@@ -517,6 +659,8 @@ const LeadsPage = () => {
     const [filterStage, setFilterStage] = useState<Stage | 'all'>('all')
     const [filterSource, setFilterSource] = useState<Source | 'all'>('all')
     const [modal, setModal] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null })
+    const [importModal, setImportModal] = useState<{ open: boolean; rows: Omit<Lead, 'id' | 'createdAt'>[] }>({ open: false, rows: [] })
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // KPIs
     const kpis = useMemo(() => {
@@ -567,6 +711,48 @@ const LeadsPage = () => {
         setModal({ open: false, lead: null })
     }
 
+    const handleExport = () => {
+        const headers = ['entreprise', 'contact', 'email', 'telephone', 'source', 'etape', 'valeur', 'probabilite', 'priorite', 'notes', 'prochaine_action', 'date_prochaine_action']
+        const rows = filtered.map(l => [
+            l.company, l.contact, l.email, l.phone,
+            l.source, l.stage, l.value, l.probability,
+            l.priority, l.notes, l.nextAction, l.nextActionDate,
+        ])
+        const csv = [headers, ...rows]
+            .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+            .join('\n')
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `leads_${dayjs().format('YYYY-MM-DD')}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+            const text = ev.target?.result as string
+            const rows = parseLeadsCsv(text)
+            setImportModal({ open: true, rows })
+        }
+        reader.readAsText(file, 'UTF-8')
+        e.target.value = ''
+    }
+
+    const confirmImport = () => {
+        const newLeads: Lead[] = importModal.rows.map(row => ({
+            id: `lead_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            createdAt: new Date().toISOString(),
+            ...row,
+        }))
+        setLeads(prev => [...prev, ...newLeads])
+        setImportModal({ open: false, rows: [] })
+    }
+
     return (
         <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
             {/* ── Header ── */}
@@ -576,13 +762,41 @@ const LeadsPage = () => {
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Leads & Prospection</h1>
                         <p className="text-sm text-gray-400 mt-0.5">{leads.length} leads · {eur(leads.reduce((s, l) => s + l.value, 0))} en valeur totale</p>
                     </div>
-                    <button
-                        onClick={openNew}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all"
-                    >
-                        <HiOutlinePlus className="w-4 h-4" />
-                        Nouveau lead
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* Import */}
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm shadow-sm hover:shadow-md transition-all"
+                        >
+                            <HiOutlineDownload className="w-4 h-4" />
+                            Importer
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={handleImportFile}
+                            className="hidden"
+                        />
+
+                        {/* Export */}
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm shadow-sm hover:shadow-md transition-all"
+                        >
+                            <HiOutlineUpload className="w-4 h-4" />
+                            Exporter
+                        </button>
+
+                        {/* Nouveau lead */}
+                        <button
+                            onClick={openNew}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all"
+                        >
+                            <HiOutlinePlus className="w-4 h-4" />
+                            Nouveau lead
+                        </button>
+                    </div>
                 </div>
 
                 {/* KPIs */}
@@ -699,13 +913,22 @@ const LeadsPage = () => {
                 </AnimatePresence>
             </div>
 
-            {/* Modal */}
+            {/* Lead modal */}
             {modal.open && (
                 <LeadModal
                     lead={modal.lead}
                     onSave={handleSave}
                     onDelete={handleDelete}
                     onClose={() => setModal({ open: false, lead: null })}
+                />
+            )}
+
+            {/* Import preview modal */}
+            {importModal.open && (
+                <ImportPreviewModal
+                    rows={importModal.rows}
+                    onConfirm={confirmImport}
+                    onClose={() => setImportModal({ open: false, rows: [] })}
                 />
             )}
         </div>
