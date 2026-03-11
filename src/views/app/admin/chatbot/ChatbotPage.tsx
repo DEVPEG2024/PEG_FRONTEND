@@ -833,7 +833,7 @@ const ChatbotPage = () => {
       .catch(() => {
         setBackendError(
           `Le service chatbot (${EXPRESS_BACKEND_URL}) est inaccessible. ` +
-          'Vérifiez que le backend Express est démarré et déployé.'
+          'Vérifiez que Strapi est démarré et que GROQ_API_KEY est configurée.'
         );
         setConfig(DEFAULT_CONFIG);
       })
