@@ -14,7 +14,7 @@ import { HiOutlineSearch, HiTrash, HiPencil, HiX, HiCheck, HiPlus, HiLightningBo
 import { MdStraighten } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import { unwrapData } from '@/utils/serviceHelper';
-import { apiGetProductCategories, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
+import { apiGetProductCategories, apiDeleteProductCategory, GetProductCategoriesResponse } from '@/services/ProductCategoryServices';
 
 injectReducer('sizes', reducer);
 
@@ -196,6 +196,18 @@ const SizesList = () => {
     toast.success('Taille supprimée');
   };
 
+  const handleDeleteCategory = async (category: ProductCategory) => {
+    if (!window.confirm(`Supprimer la catégorie "${category.name}" ? Cette action est irréversible.`)) return;
+    try {
+      await apiDeleteProductCategory(category.documentId);
+      toast.success(`Catégorie "${category.name}" supprimée`);
+      fetchCategories();
+      dispatch(getSizes({ pagination: { page: 1, pageSize: 1000 }, searchTerm }));
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
 
@@ -320,14 +332,28 @@ const SizesList = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
           {Object.values(grouped).map(({ category, sizes: catSizes }) => (
             <div key={category?.documentId || '__none__'} style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '18px', padding: '20px 24px', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <MdStraighten size={16} style={{ color: '#6b9eff' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MdStraighten size={16} style={{ color: '#6b9eff' }} />
+                  </div>
+                  <div>
+                    <p style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: 0 }}>{category?.name || 'Sans catégorie'}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>{catSizes.length} taille{catSizes.length > 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: 0 }}>{category?.name || 'Sans catégorie'}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>{catSizes.length} taille{catSizes.length > 1 ? 's' : ''}</p>
-                </div>
+                {category && (
+                  <button
+                    onClick={() => handleDeleteCategory(category)}
+                    title="Supprimer la catégorie"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', padding: '6px 12px', color: 'rgba(248,113,113,0.7)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.15)'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.4)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; e.currentTarget.style.color = 'rgba(248,113,113,0.7)'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.2)'; }}
+                  >
+                    <HiTrash size={13} />
+                    Supprimer la catégorie
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {catSizes.map((size) => (
