@@ -5,39 +5,55 @@ import { useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
-import { updateCurrentProject, useAppDispatch, useAppSelector } from '../store';
+import { useAppSelector } from '../store';
 import { MdChecklist } from 'react-icons/md';
 import { HiCheck, HiChevronDown } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
+import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const ProjectChecklist = () => {
-  const dispatch = useAppDispatch();
   const { project } = useAppSelector((state) => state.projectDetails.data);
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
 
   const canToggle = hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]);
-  const items: ChecklistItem[] = project?.checklistItems ?? [];
-  const doneCount = items.filter((i) => i.done).length;
 
+  const [items, setItems] = useState<ChecklistItem[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Load checklistItems for this project
+  useEffect(() => {
+    if (!project?.documentId) return;
+    setLoading(true);
+    apiGetProjectChecklistItems(project.documentId)
+      .then((res: any) => {
+        const data = res?.data?.data?.project;
+        setItems(data?.checklistItems ?? []);
+        setUnavailable(false);
+      })
+      .catch(() => {
+        setUnavailable(true);
+      })
+      .finally(() => setLoading(false));
+  }, [project?.documentId]);
+
+  // Load checklist templates (admin/producer only)
   useEffect(() => {
     if (!canToggle) return;
-    setLoadingTemplates(true);
     unwrapData(apiGetChecklists())
       .then((data: { checklists_connection: { nodes: Checklist[] } }) => {
         setChecklists(data.checklists_connection?.nodes ?? []);
       })
-      .catch(() => setChecklists([]))
-      .finally(() => setLoadingTemplates(false));
+      .catch(() => setChecklists([]));
   }, [canToggle]);
 
   useEffect(() => {
@@ -50,24 +66,35 @@ const ProjectChecklist = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const saveItems = async (newItems: ChecklistItem[]) => {
+    if (!project?.documentId) return;
+    setSaving(true);
+    try {
+      await apiUpdateProjectChecklistItems(project.documentId, newItems);
+      setItems(newItems);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const applyTemplate = (checklist: Checklist) => {
-    if (!project) return;
     const newItems: ChecklistItem[] = (checklist.items ?? []).map((label: string) => ({
       label,
       done: false,
     }));
-    dispatch(updateCurrentProject({ documentId: project.documentId, checklistItems: newItems }));
+    saveItems(newItems);
     setDropdownOpen(false);
   };
 
   const toggleItem = (index: number) => {
-    if (!canToggle || !project) return;
+    if (!canToggle) return;
     const updated = items.map((item, i) =>
       i === index ? { ...item, done: !item.done } : item
     );
-    dispatch(updateCurrentProject({ documentId: project.documentId, checklistItems: updated }));
+    saveItems(updated);
   };
 
+  const doneCount = items.filter((i) => i.done).length;
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
   return (
@@ -79,6 +106,7 @@ const ProjectChecklist = () => {
           padding: '24px',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
+
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -87,17 +115,16 @@ const ProjectChecklist = () => {
               </p>
               {items.length > 0 && (
                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                  {doneCount} / {items.length} effectuée{doneCount > 1 ? 's' : ''}
+                  {saving ? 'Sauvegarde...' : `${doneCount} / ${items.length} effectuée${doneCount > 1 ? 's' : ''}`}
                 </span>
               )}
             </div>
 
             {/* Apply template dropdown (admin/producer only) */}
-            {canToggle && checklists.length > 0 && (
+            {canToggle && !unavailable && checklists.length > 0 && (
               <div style={{ position: 'relative' }} ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((v) => !v)}
-                  disabled={loadingTemplates}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '6px 12px', borderRadius: '8px',
@@ -147,83 +174,98 @@ const ProjectChecklist = () => {
             )}
           </div>
 
-          {/* Progress bar */}
-          {items.length > 0 && (
-            <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '100px', marginBottom: '20px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: `${percent}%`,
-                background: percent === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                borderRadius: '100px',
-                transition: 'width 0.4s ease',
-                boxShadow: percent === 100 ? '0 0 8px rgba(34,197,94,0.5)' : '0 0 8px rgba(47,111,237,0.5)',
-              }} />
+          {/* Loading state */}
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>Chargement...</p>
             </div>
-          )}
-
-          {items.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
+          ) : unavailable ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '12px' }}>
               <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
-              {canToggle && (
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
-                  {checklists.length > 0
-                    ? 'Utilisez le bouton "Appliquer un modèle" ci-dessus pour associer une checklist'
-                    : 'Créez d\'abord un modèle de checklist dans la section Administration'}
-                </p>
-              )}
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Fonctionnalité non disponible sur cet environnement</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {items.map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => toggleItem(index)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '10px',
-                    background: item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
-                    cursor: canToggle ? 'pointer' : 'default',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
+            <>
+              {/* Progress bar */}
+              {items.length > 0 && (
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '100px', marginBottom: '20px', overflow: 'hidden' }}>
                   <div style={{
-                    width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
-                    background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
-                    border: `1px solid ${item.done ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s',
-                  }}>
-                    {item.done && <HiCheck size={12} style={{ color: '#4ade80' }} />}
-                  </div>
-                  <span style={{
-                    flex: 1,
-                    color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    textDecoration: item.done ? 'line-through' : 'none',
-                    transition: 'color 0.15s',
-                  }}>
-                    {item.label}
-                  </span>
-                  {!canToggle && (
-                    <span style={{
-                      fontSize: '11px', fontWeight: 600,
-                      color: item.done ? '#4ade80' : 'rgba(255,255,255,0.25)',
-                    }}>
-                      {item.done ? 'Effectuée' : 'En attente'}
-                    </span>
+                    height: '100%',
+                    width: `${percent}%`,
+                    background: percent === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                    borderRadius: '100px',
+                    transition: 'width 0.4s ease',
+                    boxShadow: percent === 100 ? '0 0 8px rgba(34,197,94,0.5)' : '0 0 8px rgba(47,111,237,0.5)',
+                  }} />
+                </div>
+              )}
+
+              {items.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
+                  <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
+                  {canToggle && (
+                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
+                      {checklists.length > 0
+                        ? 'Utilisez le bouton "Appliquer un modèle" ci-dessus pour associer une checklist'
+                        : 'Créez d\'abord un modèle de checklist dans la section Administration'}
+                    </p>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {items.map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={() => toggleItem(index)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '12px 14px', borderRadius: '10px',
+                        background: item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                        cursor: canToggle ? 'pointer' : 'default',
+                        transition: 'all 0.15s ease',
+                        opacity: saving ? 0.6 : 1,
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                        background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${item.done ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}>
+                        {item.done && <HiCheck size={12} style={{ color: '#4ade80' }} />}
+                      </div>
+                      <span style={{
+                        flex: 1,
+                        color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        textDecoration: item.done ? 'line-through' : 'none',
+                        transition: 'color 0.15s',
+                      }}>
+                        {item.label}
+                      </span>
+                      {!canToggle && (
+                        <span style={{
+                          fontSize: '11px', fontWeight: 600,
+                          color: item.done ? '#4ade80' : 'rgba(255,255,255,0.25)',
+                        }}>
+                          {item.done ? 'Effectuée' : 'En attente'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-          {!canToggle && items.length > 0 && (
-            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>
-              Seuls les administrateurs et producteurs peuvent modifier la checklist
-            </p>
+              {!canToggle && items.length > 0 && (
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>
+                  Seuls les administrateurs et producteurs peuvent modifier la checklist
+                </p>
+              )}
+            </>
           )}
         </div>
         <DetailsRight />

@@ -113,7 +113,6 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 startDate
                 state
             }
-            checklistItems
         }
     }
   `,
@@ -221,7 +220,6 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 startDate
                 state
             }
-            checklistItems
         }
     }
   `,
@@ -357,7 +355,6 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 startDate
                 state
             }
-            checklistItems
         }
     }
   `,
@@ -705,5 +702,41 @@ export async function apiGetProjectsLinkedToOrderItem(orderItemDocumentId: strin
             query,
             variables
         }
+    })
+}
+
+// get project checklistItems only (separate query to avoid breaking main project load)
+export async function apiGetProjectChecklistItems(documentId: string): Promise<AxiosResponse<ApiResponse<{project: { documentId: string; checklistItems: import('@/@types/checklist').ChecklistItem[] }}>>> {
+    const query = `
+    query GetProjectChecklistItems($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId
+            checklistItems
+        }
+    }
+  `,
+  variables = { documentId }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// update project checklistItems only (separate mutation)
+export async function apiUpdateProjectChecklistItems(documentId: string, checklistItems: import('@/@types/checklist').ChecklistItem[]): Promise<AxiosResponse<ApiResponse<{updateProject: { documentId: string; checklistItems: import('@/@types/checklist').ChecklistItem[] }}>>> {
+    const query = `
+    mutation UpdateProjectChecklistItems($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId
+            checklistItems
+        }
+    }
+  `,
+  variables = { documentId, data: { checklistItems } }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
     })
 }
