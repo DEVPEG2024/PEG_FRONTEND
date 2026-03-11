@@ -30,31 +30,45 @@ const ProjectChecklist = () => {
   const [unavailable, setUnavailable] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load checklistItems for this project
+  // Load checklistItems + templates, then auto-apply if empty
   useEffect(() => {
     if (!project?.documentId) return;
     setLoading(true);
-    apiGetProjectChecklistItems(project.documentId)
-      .then((res: any) => {
-        const data = res?.data?.data?.project;
-        setItems(data?.checklistItems ?? []);
+
+    const fetchItems = apiGetProjectChecklistItems(project.documentId)
+      .then((res: any) => res?.data?.data?.project?.checklistItems ?? [])
+      .catch(() => { setUnavailable(true); return null; });
+
+    const fetchTemplates = canToggle
+      ? unwrapData(apiGetChecklists())
+          .then((data: { checklists_connection: { nodes: Checklist[] } }) =>
+            data.checklists_connection?.nodes ?? []
+          )
+          .catch(() => [] as Checklist[])
+      : Promise.resolve([] as Checklist[]);
+
+    Promise.all([fetchItems, fetchTemplates])
+      .then(([loadedItems, loadedTemplates]) => {
+        if (loadedItems === null) return; // unavailable
+        setChecklists(loadedTemplates);
         setUnavailable(false);
-      })
-      .catch(() => {
-        setUnavailable(true);
+
+        if (loadedItems.length === 0 && canToggle && loadedTemplates.length > 0) {
+          // Auto-apply first template if project has no checklist yet
+          const first = loadedTemplates[0];
+          const newItems: ChecklistItem[] = (first.items ?? []).map((label: string) => ({
+            label,
+            done: false,
+          }));
+          apiUpdateProjectChecklistItems(project.documentId, newItems)
+            .then(() => setItems(newItems))
+            .catch(() => setItems([]));
+        } else {
+          setItems(loadedItems);
+        }
       })
       .finally(() => setLoading(false));
   }, [project?.documentId]);
-
-  // Load checklist templates (admin/producer only)
-  useEffect(() => {
-    if (!canToggle) return;
-    unwrapData(apiGetChecklists())
-      .then((data: { checklists_connection: { nodes: Checklist[] } }) => {
-        setChecklists(data.checklists_connection?.nodes ?? []);
-      })
-      .catch(() => setChecklists([]));
-  }, [canToggle]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
