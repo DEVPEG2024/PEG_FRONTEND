@@ -7,7 +7,7 @@ import { HiOutlinePencil } from 'react-icons/hi';
 import ModalEditProject from '../modals/ModalEditProject';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { setEditCurrentProjectDialog } from '../store';
 
 const ProjectHeader = ({ project }: { project: Project }) => {
