@@ -53,18 +53,22 @@ const ProjectChecklist = () => {
         setChecklists(loadedTemplates);
         setUnavailable(false);
 
-        if (loadedItems.length === 0 && canToggle) {
-          // Auto-apply: only use the product's linked checklist
+        if (loadedItems.length === 0) {
           const productChecklist = project.orderItem?.product?.checklist;
-          const templateToApply = productChecklist ?? null;
-          if (templateToApply) {
-            const newItems: ChecklistItem[] = (templateToApply.items ?? []).map((label: string) => ({
+          if (productChecklist) {
+            const newItems: ChecklistItem[] = (productChecklist.items ?? []).map((label: string) => ({
               label,
               done: false,
             }));
-            apiUpdateProjectChecklistItems(project.documentId, newItems)
-              .then(() => setItems(newItems))
-              .catch(() => setItems([]));
+            if (canToggle) {
+              // Admin/producer: save to DB
+              apiUpdateProjectChecklistItems(project.documentId, newItems)
+                .then(() => setItems(newItems))
+                .catch(() => setItems(newItems));
+            } else {
+              // Customer: display read-only without saving
+              setItems(newItems);
+            }
           }
         } else {
           setItems(loadedItems);
