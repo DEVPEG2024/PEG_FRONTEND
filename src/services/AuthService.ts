@@ -52,10 +52,17 @@ export async function apiSignUp(data: SignUpCredential) {
         data: {
             username: data.email,
             email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
             password: data.password,
         },
+    })
+}
+
+export async function apiUpdateProfile(userId: number, firstName: string, lastName: string, jwt: string) {
+    return ApiService.fetchData({
+        url: `${API_BASE_URL}/users/${userId}`,
+        method: 'put',
+        data: { firstName, lastName },
+        headers: { Authorization: `Bearer ${jwt}` },
     })
 }
 
