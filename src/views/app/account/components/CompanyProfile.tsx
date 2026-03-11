@@ -15,8 +15,12 @@ type CompanyFormModel = {
     address: string;
     zipCode: string;
     city: string;
+    country: string;
     phoneNumber: string;
     companyEmail: string;
+    vatNumber: string;
+    siretNumber: string;
+    website: string;
 };
 
 const inputStyle: React.CSSProperties = {
@@ -57,6 +61,7 @@ const CompanyProfile = () => {
     const { user }: { user: User } = useAppSelector((state) => state.auth.user);
     const [categories, setCategories] = useState<CustomerCategory[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deferredPayment, setDeferredPayment] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -67,8 +72,12 @@ const CompanyProfile = () => {
             address: '',
             zipCode: '',
             city: '',
+            country: '',
             phoneNumber: '',
             companyEmail: '',
+            vatNumber: '',
+            siretNumber: '',
+            website: '',
         },
     });
 
@@ -84,14 +93,19 @@ const CompanyProfile = () => {
                     const arr = res?.data?.data ?? res?.data ?? [];
                     const customer = Array.isArray(arr) ? arr[0] : arr;
                     if (customer) {
+                        setDeferredPayment(!!customer.deferredPayment);
                         reset({
                             name: customer.name || '',
                             customerCategoryId: customer.customerCategory?.documentId || '',
                             address: customer.companyInformations?.address || '',
                             zipCode: customer.companyInformations?.zipCode || '',
                             city: customer.companyInformations?.city || '',
+                            country: customer.companyInformations?.country || '',
                             phoneNumber: customer.companyInformations?.phoneNumber || '',
                             companyEmail: customer.companyInformations?.email || '',
+                            vatNumber: customer.companyInformations?.vatNumber || '',
+                            siretNumber: customer.companyInformations?.siretNumber || '',
+                            website: customer.companyInformations?.website || '',
                         });
                     }
                 })
@@ -114,8 +128,12 @@ const CompanyProfile = () => {
                     address: values.address,
                     zipCode: values.zipCode,
                     city: values.city,
+                    country: values.country,
                     phoneNumber: values.phoneNumber,
                     email: values.companyEmail,
+                    vatNumber: values.vatNumber,
+                    siretNumber: values.siretNumber,
+                    website: values.website,
                 },
             });
             setSuccessMessage('Informations enregistrées avec succès.');
@@ -124,10 +142,31 @@ const CompanyProfile = () => {
         }
     };
 
+    const renderField = (
+        name: keyof CompanyFormModel,
+        label: string,
+        placeholder: string,
+        type: string = 'text'
+    ) => (
+        <div>
+            <label style={labelStyle}>{label}</label>
+            <Controller name={name} control={control} render={({ field }) => (
+                <input
+                    {...field}
+                    type={type}
+                    placeholder={placeholder}
+                    style={inputStyle}
+                    onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
+                />
+            )} />
+        </div>
+    );
+
     if (loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {Array.from({ length: 5 }).map((_, i) => (
+                {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} style={{ height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />
                 ))}
             </div>
@@ -150,18 +189,10 @@ const CompanyProfile = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
+                {/* Informations entreprise */}
                 <p style={sectionStyle}>Informations entreprise</p>
 
-                <div>
-                    <label style={labelStyle}>Nom de la société</label>
-                    <Controller name="name" control={control} render={({ field }) => (
-                        <input {...field} type="text" placeholder="Mon Entreprise SAS"
-                            style={inputStyle}
-                            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                        />
-                    )} />
-                </div>
+                {renderField('name', 'Nom de la société', 'Mon Entreprise SAS')}
 
                 <div>
                     <label style={labelStyle}>Secteur d'activité</label>
@@ -180,65 +211,61 @@ const CompanyProfile = () => {
                     )} />
                 </div>
 
+                {/* Paiement différé — lecture seule */}
+                <div>
+                    <label style={labelStyle}>Paiement différé</label>
+                    <div style={{
+                        ...inputStyle,
+                        background: 'rgba(255,255,255,0.02)',
+                        color: 'rgba(255,255,255,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'not-allowed',
+                    }}>
+                        <div style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            background: deferredPayment ? '#4ade80' : 'rgba(255,255,255,0.2)',
+                            boxShadow: deferredPayment ? '0 0 6px rgba(74,222,128,0.6)' : 'none',
+                            flexShrink: 0,
+                        }} />
+                        <span style={{ fontSize: '13px', color: deferredPayment ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
+                            {deferredPayment ? 'Activé' : 'Non activé'}
+                        </span>
+                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
+                            Géré par l'administrateur
+                        </span>
+                    </div>
+                </div>
+
+                {/* Identifiants légaux */}
+                <p style={{ ...sectionStyle, marginTop: '4px' }}>Identifiants légaux</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {renderField('vatNumber', 'N° TVA intracommunautaire', 'FR12345678901')}
+                    {renderField('siretNumber', 'N° SIRET', '12345678900012')}
+                </div>
+
+                {/* Adresse */}
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Adresse postale</p>
 
-                <div>
-                    <label style={labelStyle}>Adresse</label>
-                    <Controller name="address" control={control} render={({ field }) => (
-                        <input {...field} type="text" placeholder="12 rue de la Paix"
-                            style={inputStyle}
-                            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                        />
-                    )} />
-                </div>
+                {renderField('address', 'Adresse', '12 rue de la Paix')}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
-                    <div>
-                        <label style={labelStyle}>Code postal</label>
-                        <Controller name="zipCode" control={control} render={({ field }) => (
-                            <input {...field} type="text" placeholder="75001"
-                                style={inputStyle}
-                                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                            />
-                        )} />
-                    </div>
-                    <div>
-                        <label style={labelStyle}>Ville</label>
-                        <Controller name="city" control={control} render={({ field }) => (
-                            <input {...field} type="text" placeholder="Paris"
-                                style={inputStyle}
-                                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                            />
-                        )} />
-                    </div>
+                    {renderField('zipCode', 'Code postal', '75001')}
+                    {renderField('city', 'Ville', 'Paris')}
                 </div>
 
+                {renderField('country', 'Pays', 'France')}
+
+                {/* Contact */}
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Contact professionnel</p>
 
-                <div>
-                    <label style={labelStyle}>Téléphone</label>
-                    <Controller name="phoneNumber" control={control} render={({ field }) => (
-                        <input {...field} type="tel" placeholder="+33 1 23 45 67 89"
-                            style={inputStyle}
-                            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                        />
-                    )} />
-                </div>
-
-                <div>
-                    <label style={labelStyle}>Email professionnel</label>
-                    <Controller name="companyEmail" control={control} render={({ field }) => (
-                        <input {...field} type="email" placeholder="contact@monentreprise.fr"
-                            style={inputStyle}
-                            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur(); }}
-                        />
-                    )} />
-                </div>
+                {renderField('phoneNumber', 'Téléphone', '+33 1 23 45 67 89', 'tel')}
+                {renderField('companyEmail', 'Email professionnel', 'contact@monentreprise.fr', 'email')}
+                {renderField('website', 'Site internet', 'https://monentreprise.fr', 'url')}
 
             </div>
 
