@@ -3,6 +3,7 @@ import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Controller } from 'react-hook-form';
 import Select from '@/components/ui/Select';
+import CreatableSelect from 'react-select/creatable';
 import { HiOutlineStar, HiOutlineTag, HiOutlineThumbUp, HiOutlineThumbDown } from 'react-icons/hi';
 import { ProducerFormModel } from './ProducerForm';
 
@@ -47,7 +48,7 @@ const SkillsFields = ({ control, errors }: SkillsFieldsProps) => {
           render={({ field }) => (
             <Select
               isMulti
-              isCreatable
+              componentAs={CreatableSelect}
               field={field}
               value={(field.value || []).map((v: string) => ({ value: v, label: v }))}
               onChange={(options: any) =>
@@ -108,7 +109,7 @@ const SkillsFields = ({ control, errors }: SkillsFieldsProps) => {
             render={({ field }) => (
               <Select
                 isMulti
-                isCreatable
+                componentAs={CreatableSelect}
                 field={field}
                 options={CERTIFICATION_OPTIONS}
                 value={(field.value || []).map((v: string) => ({

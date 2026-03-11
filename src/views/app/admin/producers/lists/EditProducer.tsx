@@ -108,7 +108,7 @@ const EditProducer = () => {
   const updateOrCreateProducer = async (
     data: ProducerFormModel
   ): Promise<Producer> => {
-    const producer: Omit<Producer, 'documentId'> = {
+    const producer: Omit<Producer, 'documentId' | 'projects'> = {
       companyInformations: {
         address: data.address,
         city: data.city,
@@ -122,7 +122,6 @@ const EditProducer = () => {
       },
       producerCategory: data.producerCategory,
       name: data.name,
-      projects: [],
       // Compétences & Spécialités
       productCategories: data.productCategories,
       strengths: data.strengths,
