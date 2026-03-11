@@ -42,9 +42,9 @@ function Cart() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [slideIndex, setSlideIndex] = useState(0);
-  const [fading, setFading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
+  const animFrameRef = useRef<number | null>(null);
 
   const [shippingOpen, setShippingOpen] = useState(false);
   const [shipping, setShipping] = useState<ShippingAddress>({
@@ -76,22 +76,24 @@ function Cart() {
     fetchSuggestions();
   }, [cart.length]);
 
-  // Auto-rotate every 3 seconds
+  // Continuous auto-scroll carousel
   useEffect(() => {
-    if (suggestions.length <= 3) return;
-    timerRef.current = setInterval(() => {
-      setFading(true);
-      setTimeout(() => {
-        setSlideIndex((prev) => (prev + 3) % suggestions.length);
-        setFading(false);
-      }, 400);
-    }, 3000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [suggestions.length]);
+    const el = scrollRef.current;
+    if (!el || suggestions.length === 0) return;
 
-  const visibleSuggestions = suggestions.length > 0
-    ? [0, 1, 2].map((i) => suggestions[(slideIndex + i) % suggestions.length]).filter(Boolean)
-    : [];
+    const step = () => {
+      if (!isPausedRef.current && el) {
+        el.scrollLeft += 0.6;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      animFrameRef.current = requestAnimationFrame(step);
+    };
+
+    animFrameRef.current = requestAnimationFrame(step);
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [suggestions.length]);
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item));
@@ -334,7 +336,7 @@ function Cart() {
       </div>
 
       {/* Suggestions carousel */}
-      {visibleSuggestions.length > 0 && (
+      {suggestions.length > 0 && (
         <div style={{ marginTop: '40px', paddingBottom: '48px' }}>
           {/* Separator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
@@ -344,84 +346,81 @@ function Cart() {
             </span>
             <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.08))' }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <div>
-              <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
-                Produits complémentaires
-              </h3>
-            </div>
-            {/* Dots */}
-            <div style={{ display: 'flex', gap: '6px', paddingBottom: '4px' }}>
-              {Array.from({ length: Math.ceil(suggestions.length / 3) }).map((_, i) => (
-                <div key={i} style={{
-                  width: i === Math.floor(slideIndex / 3) % Math.ceil(suggestions.length / 3) ? '18px' : '6px',
-                  height: '6px', borderRadius: '100px',
-                  background: i === Math.floor(slideIndex / 3) % Math.ceil(suggestions.length / 3)
-                    ? '#6b9eff' : 'rgba(255,255,255,0.15)',
-                  transition: 'all 0.3s ease',
-                }} />
-              ))}
-            </div>
-          </div>
+          <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', margin: '0 0 20px 0' }}>
+            Produits complémentaires
+          </h3>
 
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px',
-            opacity: fading ? 0 : 1,
-            transition: 'opacity 0.4s ease',
-          }}>
-            {visibleSuggestions.map((product) => (
-              <div
-                key={product.documentId}
-                onClick={() => navigate('/customer/product/' + product.documentId)}
-                style={{
-                  background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-                  border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px',
-                  overflow: 'hidden', cursor: 'pointer',
-                  transition: 'transform 0.15s ease, border-color 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.borderColor = 'rgba(47,111,237,0.35)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
-                }}
-              >
-                <div style={{
-                  height: '140px', background: 'rgba(255,255,255,0.03)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                  {product.images?.[0]?.url ? (
-                    <img src={product.images[0].url} alt={product.name}
-                      style={{ maxWidth: '100%', maxHeight: '125px', objectFit: 'contain' }} />
-                  ) : (
-                    <MdOutlineShoppingBag size={40} style={{ color: 'rgba(255,255,255,0.1)' }} />
-                  )}
-                </div>
-                <div style={{ padding: '14px' }}>
-                  <p style={{
-                    color: '#fff', fontWeight: 600, fontSize: '13px', margin: '0 0 10px 0',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          {/* Infinite scroll track */}
+          <div style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Fade edges */}
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(90deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(270deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+
+            <div
+              ref={scrollRef}
+              onMouseEnter={() => { isPausedRef.current = true; }}
+              onMouseLeave={() => { isPausedRef.current = false; }}
+              style={{
+                display: 'flex', gap: '14px',
+                overflowX: 'hidden', scrollbarWidth: 'none',
+              }}
+            >
+              {/* Duplicate items for seamless loop */}
+              {[...suggestions, ...suggestions].map((product, idx) => (
+                <div
+                  key={`${product.documentId}-${idx}`}
+                  onClick={() => navigate('/customer/product/' + product.documentId)}
+                  style={{
+                    flexShrink: 0, width: '220px',
+                    background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                    border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px',
+                    overflow: 'hidden', cursor: 'pointer',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.borderColor = 'rgba(47,111,237,0.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                  }}
+                >
+                  <div style={{
+                    height: '140px', background: 'rgba(255,255,255,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
                   }}>
-                    {product.name}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                      borderRadius: '100px', padding: '3px 10px',
-                      color: '#6b9eff', fontSize: '12px', fontWeight: 600,
+                    {product.images?.[0]?.url ? (
+                      <img src={product.images[0].url} alt={product.name}
+                        style={{ maxWidth: '100%', maxHeight: '125px', objectFit: 'contain' }} />
+                    ) : (
+                      <MdOutlineShoppingBag size={40} style={{ color: 'rgba(255,255,255,0.1)' }} />
+                    )}
+                  </div>
+                  <div style={{ padding: '14px' }}>
+                    <p style={{
+                      color: '#fff', fontWeight: 600, fontSize: '13px', margin: '0 0 10px 0',
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
-                      {(product.price ?? 0).toFixed(2)} €
-                    </span>
-                    <span style={{ color: 'rgba(107,158,255,0.75)', fontSize: '12px', fontWeight: 600 }}>
-                      Commander →
-                    </span>
+                      {product.name}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{
+                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                        borderRadius: '100px', padding: '3px 10px',
+                        color: '#6b9eff', fontSize: '12px', fontWeight: 600,
+                      }}>
+                        {(product.price ?? 0).toFixed(2)} €
+                      </span>
+                      <span style={{ color: 'rgba(107,158,255,0.75)', fontSize: '12px', fontWeight: 600 }}>
+                        Commander →
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
