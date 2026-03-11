@@ -19,7 +19,7 @@ export type SignUpCredential = {
   password: string;
   jobTitle?: string;
   companyName?: string;
-  sector?: string;
+  customerCategoryId?: string;
   address?: string;
   zipCode?: string;
   city?: string;

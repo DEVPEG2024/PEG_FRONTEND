@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
 import { apiSignUp } from '@/services/AuthService';
+import { API_BASE_URL } from '@/configs/api.config';
 
 interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
+
+type CustomerCategory = { documentId: string; name: string };
 
 type SignUpFormSchema = {
     firstName: string;
@@ -18,7 +21,7 @@ type SignUpFormSchema = {
     confirmPassword: string;
     jobTitle?: string;
     companyName?: string;
-    sector?: string;
+    customerCategoryId?: string;
     address?: string;
     zipCode?: string;
     city?: string;
@@ -34,7 +37,7 @@ const validationSchema = Yup.object().shape({
         .required('Veuillez confirmer votre mot de passe'),
     jobTitle: Yup.string(),
     companyName: Yup.string(),
-    sector: Yup.string(),
+    customerCategoryId: Yup.string(),
     address: Yup.string(),
     zipCode: Yup.string(),
     city: Yup.string(),
@@ -89,6 +92,14 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [categories, setCategories] = useState<CustomerCategory[]>([]);
+
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/auth/customer-categories`)
+            .then((r) => r.json())
+            .then((data) => { if (Array.isArray(data)) setCategories(data); })
+            .catch(() => {});
+    }, []);
 
     const {
         control,
@@ -99,7 +110,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
         resolver: yupResolver(validationSchema) as Resolver<SignUpFormSchema>,
         defaultValues: {
             firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
-            jobTitle: '', companyName: '', sector: '', address: '', zipCode: '', city: '',
+            jobTitle: '', companyName: '', customerCategoryId: '', address: '', zipCode: '', city: '',
         },
     });
 
@@ -120,7 +131,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                 password: values.password,
                 jobTitle: values.jobTitle,
                 companyName: values.companyName,
-                sector: values.sector,
+                customerCategoryId: values.customerCategoryId,
                 address: values.address,
                 zipCode: values.zipCode,
                 city: values.city,
@@ -317,7 +328,31 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                             <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Informations entreprise</p>
 
                             {renderField('companyName', 'Nom de la société', 'Mon Entreprise SAS', 'text')}
-                            {renderField('sector', "Secteur d'activité", 'Agroalimentaire, Distribution, Industrie...', 'text')}
+
+                            <div>
+                                <label style={labelStyle}>Secteur d'activité</label>
+                                <Controller
+                                    name="customerCategoryId"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <select
+                                            {...field}
+                                            style={{
+                                                ...inputStyle,
+                                                cursor: 'pointer',
+                                                appearance: 'none',
+                                            }}
+                                        >
+                                            <option value="" style={{ background: '#111827' }}>— Choisir un secteur —</option>
+                                            {categories.map((cat) => (
+                                                <option key={cat.documentId} value={cat.documentId} style={{ background: '#111827' }}>
+                                                    {cat.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                />
+                            </div>
 
                             {/* Section : Adresse */}
                             <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Adresse postale</p>
