@@ -11,7 +11,7 @@ import { HiCheck, HiChevronDown } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
-import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems } from '@/services/ProjectServices';
+import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const ProjectChecklist = () => {
@@ -47,14 +47,20 @@ const ProjectChecklist = () => {
           .catch(() => [] as Checklist[])
       : Promise.resolve([] as Checklist[]);
 
-    Promise.all([fetchItems, fetchTemplates])
-      .then(([loadedItems, loadedTemplates]) => {
+    const productDocumentId = project.orderItem?.product?.documentId;
+    const fetchProductChecklist = productDocumentId
+      ? apiGetProductChecklist(productDocumentId)
+          .then((res: any) => res?.data?.data?.product?.checklist ?? null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    Promise.all([fetchItems, fetchTemplates, fetchProductChecklist])
+      .then(([loadedItems, loadedTemplates, productChecklist]) => {
         if (loadedItems === null) return; // unavailable
         setChecklists(loadedTemplates);
         setUnavailable(false);
 
         if (loadedItems.length === 0) {
-          const productChecklist = project.orderItem?.product?.checklist;
           if (productChecklist) {
             const newItems: ChecklistItem[] = (productChecklist.items ?? []).map((label: string) => ({
               label,

@@ -252,6 +252,9 @@ const projectListSlice = createSlice({
       state.comments = action.payload.project.comments;
       state.loading = false;
     });
+    builder.addCase(getProjectById.rejected, (state) => {
+      state.loading = false;
+    });
     // UPDATE PROJECT
     builder.addCase(updateCurrentProject.pending, (state) => {
       state.loading = true;

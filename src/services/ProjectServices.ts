@@ -327,14 +327,10 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 documentId
                 price
                 product {
+                    documentId
                     name
                     images {
                         url
-                    }
-                    checklist {
-                        documentId
-                        name
-                        items
                     }
                 }
                 sizeAndColorSelections
@@ -721,6 +717,28 @@ export async function apiGetProjectChecklistItems(documentId: string): Promise<A
     }
   `,
   variables = { documentId }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// get product checklist template (separate query to avoid breaking project load for customers)
+export async function apiGetProductChecklist(productDocumentId: string): Promise<AxiosResponse<ApiResponse<{product: { documentId: string; checklist: import('@/@types/checklist').Checklist | null }}>>> {
+    const query = `
+    query GetProductChecklist($documentId: ID!) {
+        product(documentId: $documentId) {
+            documentId
+            checklist {
+                documentId
+                name
+                items
+            }
+        }
+    }
+  `,
+  variables = { documentId: productDocumentId }
     return ApiService.fetchData({
         url: API_GRAPHQL_URL,
         method: 'post',
