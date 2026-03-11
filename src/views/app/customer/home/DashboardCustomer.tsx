@@ -68,11 +68,29 @@ const DashboardCustomer = () => {
   );
 
   useEffect(() => {
-    dispatch(getDashboardCustomerInformations(user.customer!.documentId));
+    if (user.customer?.documentId) {
+      dispatch(getDashboardCustomerInformations(user.customer.documentId));
+    }
   }, []);
 
   const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;
   const projectsInProgress = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
+
+  if (!customer) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '60vh', fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: '12px',
+      }}>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px' }}>
+          Bienvenue, {user?.firstName || user?.email} 👋
+        </p>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>
+          Votre espace est en cours de configuration. Revenez dans quelques instants.
+        </p>
+      </div>
+    );
+  }
 
   return (
     customer && (
