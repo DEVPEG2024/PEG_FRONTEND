@@ -4,12 +4,10 @@ import AvatarName from '../../lists/components/AvatarName';
 import { Project } from '@/@types/project';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { HiOutlinePencil } from 'react-icons/hi';
-import BoardAddNewTask from './BoardAddNewTask';
 import ModalEditProject from '../modals/ModalEditProject';
-import ModalNewTask from '../modals/ModalNewTask';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { setEditCurrentProjectDialog } from '../store';
 
 const ProjectHeader = ({ project }: { project: Project }) => {
@@ -84,7 +82,6 @@ const ProjectHeader = ({ project }: { project: Project }) => {
                 <HiOutlinePencil size={15} />
               </button>
             )}
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && <BoardAddNewTask />}
           </div>
         </div>
 
@@ -92,7 +89,6 @@ const ProjectHeader = ({ project }: { project: Project }) => {
         <QuickFilterTab />
       </Container>
       {hasRole(user, [SUPER_ADMIN]) && <ModalEditProject />}
-      {hasRole(user, [SUPER_ADMIN, ADMIN]) && <ModalNewTask />}
     </div>
   );
 };
