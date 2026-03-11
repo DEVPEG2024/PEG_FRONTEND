@@ -17,6 +17,12 @@ export type SignUpCredential = {
   lastName: string;
   email: string;
   password: string;
+  jobTitle?: string;
+  companyName?: string;
+  sector?: string;
+  address?: string;
+  zipCode?: string;
+  city?: string;
 };
 
 export type ForgotPassword = {

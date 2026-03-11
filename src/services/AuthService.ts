@@ -54,6 +54,12 @@ export async function apiSignUp(data: SignUpCredential) {
             password: data.password,
             firstName: data.firstName,
             lastName: data.lastName,
+            jobTitle: data.jobTitle,
+            companyName: data.companyName,
+            sector: data.sector,
+            address: data.address,
+            zipCode: data.zipCode,
+            city: data.city,
         },
     })
 }
