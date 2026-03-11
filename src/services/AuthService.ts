@@ -47,22 +47,14 @@ export async function apiResetPassword(data: ResetPassword) {
 
 export async function apiSignUp(data: SignUpCredential) {
     return ApiService.fetchData<SignUpResponse>({
-        url: `${API_BASE_URL}/auth/local/register`,
+        url: `${API_BASE_URL}/auth/client-register`,
         method: 'post',
         data: {
-            username: data.email,
             email: data.email,
             password: data.password,
+            firstName: data.firstName,
+            lastName: data.lastName,
         },
-    })
-}
-
-export async function apiUpdateProfile(userId: number, firstName: string, lastName: string, jwt: string) {
-    return ApiService.fetchData({
-        url: `${API_BASE_URL}/users/${userId}`,
-        method: 'put',
-        data: { firstName, lastName },
-        headers: { Authorization: `Bearer ${jwt}` },
     })
 }
 

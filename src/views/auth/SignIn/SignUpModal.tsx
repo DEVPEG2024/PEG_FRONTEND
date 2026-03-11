@@ -3,7 +3,7 @@ import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
-import { apiSignUp, apiUpdateProfile } from '@/services/AuthService';
+import { apiSignUp } from '@/services/AuthService';
 
 interface SignUpModalProps {
     isOpen: boolean;
@@ -89,16 +89,12 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
     const onSubmit = async (values: SignUpFormSchema) => {
         setErrorMessage('');
         try {
-            const resp = await apiSignUp({
+            await apiSignUp({
                 firstName: values.firstName,
                 lastName: values.lastName,
                 email: values.email,
                 password: values.password,
             });
-            const { jwt, user } = resp.data;
-            if (jwt && user?.id) {
-                await apiUpdateProfile(user.id, values.firstName, values.lastName, jwt);
-            }
             setSuccessMessage('Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.');
             reset();
         } catch (err: any) {
