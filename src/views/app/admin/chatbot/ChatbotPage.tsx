@@ -811,16 +811,32 @@ const HistoryPanel = () => {
 // ─────────────────────────────────────────────────────────────────
 // Page principale
 // ─────────────────────────────────────────────────────────────────
+const DEFAULT_CONFIG: ChatbotConfig = {
+  _id: '',
+  name: 'Assistant PEG',
+  description: '',
+  avatarUrl: null,
+  systemPrompt: '',
+  faqs: [],
+  updatedAt: '',
+};
+
 const ChatbotPage = () => {
   const [config, setConfig] = useState<ChatbotConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [backendError, setBackendError] = useState('');
   const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     apiGetChatbotConfig()
       .then((res) => setConfig(res.data.config))
-      .catch(() => setError('Impossible de charger la configuration du chatbot.'))
+      .catch(() => {
+        setBackendError(
+          `Le service chatbot (${EXPRESS_BACKEND_URL}) est inaccessible. ` +
+          'Vérifiez que le backend Express est démarré et déployé.'
+        );
+        setConfig(DEFAULT_CONFIG);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -865,12 +881,14 @@ const ChatbotPage = () => {
         </button>
       </div>
 
+      {backendError && !loading && (
+        <div style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '12px', padding: '12px 16px', fontSize: '12.5px', marginBottom: '16px', lineHeight: 1.5 }}>
+          ⚠️ {backendError}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>Chargement...</div>
-      ) : error ? (
-        <div style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', padding: '16px', fontSize: '13px' }}>
-          {error}
-        </div>
       ) : showHistory ? (
         <div style={{ flex: 1, minHeight: 0, height: 'calc(100vh - 130px)' }}>
           <HistoryPanel />
