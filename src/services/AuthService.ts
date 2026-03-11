@@ -5,6 +5,8 @@ import type {
     ForgotPassword,
     ResetPassword,
     SignInResponse,
+    SignUpCredential,
+    SignUpResponse,
 } from '@/@types/auth'
 import { LOGIN_API_URL } from '@/constants/api.constant'
 
@@ -43,7 +45,21 @@ export async function apiResetPassword(data: ResetPassword) {
     })
 }
 
-export async function apiRefreshToken(data: RefreshToken) {
+export async function apiSignUp(data: SignUpCredential) {
+    return ApiService.fetchData<SignUpResponse>({
+        url: `${API_BASE_URL}/auth/local/register`,
+        method: 'post',
+        data: {
+            username: data.email,
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            password: data.password,
+        },
+    })
+}
+
+export async function apiRefreshToken(_data: RefreshToken) {
     return ApiService.fetchData({
         url: '/refresh-token',
         method: 'post',

@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import SignInForm from './SignInForm';
+import SignUpModal from './SignUpModal';
 
 const SignIn = () => {
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+
   return (
     <>
       {/* Page heading */}
@@ -65,6 +69,30 @@ const SignIn = () => {
       </div>
 
       <SignInForm disableSubmit={false} />
+
+      {/* Lien créer un compte */}
+      <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontFamily: 'Inter, sans-serif' }}>
+          Pas encore de compte ?{' '}
+        </span>
+        <button
+          onClick={() => setIsSignUpOpen(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6b9eff',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            padding: 0,
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Créer un compte
+        </button>
+      </div>
+
+      <SignUpModal isOpen={isSignUpOpen} onClose={() => setIsSignUpOpen(false)} />
     </>
   );
 };
