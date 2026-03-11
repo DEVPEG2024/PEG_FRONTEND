@@ -81,6 +81,7 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                 sizeAndColorSelections
                 project {
                     documentId
+                    checklistItems
                 }
             }
             pageInfo {
@@ -178,6 +179,10 @@ export async function apiGetOrderItemById(documentId: string): Promise<AxiosResp
                 name
             }
             sizeAndColorSelections
+            project {
+                documentId
+                checklistItems
+            }
         }
     }
   `,

@@ -32,6 +32,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
 } from 'react-icons/hi';
+import { MdChecklist } from 'react-icons/md';
 
 injectReducer('orders', reducer);
 
@@ -326,7 +327,7 @@ const OrderItemsList = () => {
                   </span>
 
                   {/* Project badge */}
-                  <div style={{ flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                     {order.project ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '100px', padding: '3px 9px', color: '#4ade80', fontSize: '11px', fontWeight: 600 }}>
                         <HiExternalLink size={10} /> Projet lié
@@ -336,6 +337,37 @@ const OrderItemsList = () => {
                         Sans projet
                       </span>
                     )}
+                    {/* Checklist progress badge */}
+                    {(() => {
+                      const items: ChecklistItem[] = order.project?.checklistItems ?? [];
+                      if (items.length === 0) return null;
+                      const done = items.filter((i) => i.done).length;
+                      const pct = Math.round((done / items.length) * 100);
+                      const isComplete = done === items.length;
+                      return (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          background: isComplete ? 'rgba(34,197,94,0.1)' : 'rgba(99,102,241,0.1)',
+                          border: `1px solid ${isComplete ? 'rgba(34,197,94,0.25)' : 'rgba(99,102,241,0.25)'}`,
+                          borderRadius: '100px', padding: '3px 9px',
+                          color: isComplete ? '#4ade80' : '#818cf8',
+                          fontSize: '11px', fontWeight: 600,
+                        }}>
+                          <MdChecklist size={11} />
+                          {done}/{items.length}
+                          <span style={{
+                            width: '30px', height: '3px', borderRadius: '100px',
+                            background: 'rgba(255,255,255,0.1)', overflow: 'hidden', display: 'inline-block',
+                          }}>
+                            <span style={{
+                              display: 'block', height: '100%', width: `${pct}%`,
+                              background: isComplete ? '#4ade80' : '#818cf8',
+                              borderRadius: '100px',
+                            }} />
+                          </span>
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Actions */}
