@@ -244,24 +244,34 @@ function Cart() {
           </button>
 
           {/* Shipping address */}
-          <div style={{ marginTop: '8px' }}>
+          <div style={{ marginTop: '16px' }}>
+            <p style={{
+              color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 700,
+              letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '8px',
+            }}>
+              Adresse de livraison
+            </p>
             <button
               type="button"
               onClick={() => setShippingOpen((o) => !o)}
               style={{
                 width: '100%',
-                background: hasAddress ? 'rgba(47,111,237,0.1)' : 'rgba(255,255,255,0.04)',
-                border: `1.5px solid ${hasAddress ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.09)'}`,
-                borderRadius: '16px', padding: '14px 18px',
+                background: hasAddress
+                  ? 'linear-gradient(135deg, rgba(47,111,237,0.18) 0%, rgba(31,75,182,0.12) 100%)'
+                  : 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+                border: `2px solid ${hasAddress ? 'rgba(47,111,237,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                borderRadius: '16px', padding: '16px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                boxShadow: hasAddress ? '0 0 0 4px rgba(47,111,237,0.08)' : 'none',
+                transition: 'all 0.2s ease',
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 600 }}>
-                <MdLocationOn size={16} />
-                {hasAddress ? `${shipping.address}, ${shipping.zipCode} ${shipping.city}` : 'Adresse de livraison'}
+              <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 600 }}>
+                <MdLocationOn size={24} style={{ flexShrink: 0, color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.35)' }} />
+                {hasAddress ? `${shipping.address}, ${shipping.zipCode} ${shipping.city}` : 'Cliquez pour renseigner votre adresse'}
               </span>
-              {shippingOpen ? <HiChevronUp size={14} color="rgba(255,255,255,0.4)" /> : <HiChevronDown size={14} color="rgba(255,255,255,0.4)" />}
+              {shippingOpen ? <HiChevronUp size={16} color="rgba(255,255,255,0.5)" /> : <HiChevronDown size={16} color="rgba(255,255,255,0.5)" />}
             </button>
 
             {shippingOpen && (
