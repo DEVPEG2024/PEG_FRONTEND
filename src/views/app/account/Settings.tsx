@@ -1,18 +1,24 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAppSelector } from '@/store';
+import { User } from '@/@types/user';
 
 const Profile = lazy(() => import('./components/Profile'));
 const Password = lazy(() => import('./components/Password'));
-
-const TABS = [
-  { key: 'profile', label: 'Mon compte' },
-  { key: 'password', label: 'Mot de passe' },
-];
+const CompanyProfile = lazy(() => import('./components/CompanyProfile'));
 
 const Settings = () => {
   const [currentTab, setCurrentTab] = useState('profile');
   const navigate = useNavigate();
   const location = useLocation();
+  const { user }: { user: User } = useAppSelector((state) => state.auth.user);
+  const isCustomer = !!user?.customer;
+
+  const TABS = [
+    { key: 'profile', label: 'Mon compte' },
+    ...(isCustomer ? [{ key: 'company', label: 'Mon entreprise' }] : []),
+    { key: 'password', label: 'Mot de passe' },
+  ];
   const path = location.pathname.substring(location.pathname.lastIndexOf('/') + 1);
 
   const onTabChange = (val: string) => {
@@ -53,6 +59,7 @@ const Settings = () => {
             </div>
           }>
             {currentTab === 'profile' && <Profile />}
+            {currentTab === 'company' && <CompanyProfile />}
             {currentTab === 'password' && <Password onTabChange={onTabChange} />}
           </Suspense>
         </div>

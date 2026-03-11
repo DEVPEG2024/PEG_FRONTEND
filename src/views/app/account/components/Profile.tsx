@@ -27,6 +27,7 @@ const validationSchema = Yup.object().shape({
   firstName: Yup.string().required('Nom requis'),
   lastName: Yup.string().required('Prénom requis'),
   email: Yup.string().email('Email invalide').required('Email requis'),
+  jobTitle: Yup.string(),
 });
 
 const inputStyle: React.CSSProperties = {
@@ -58,6 +59,7 @@ const Profile = () => {
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     email: user.email || '',
+    jobTitle: user.jobTitle || '',
   };
 
   useEffect(() => {
@@ -207,6 +209,18 @@ const Profile = () => {
           )} />
           {errors.email && <p style={{ color: '#f87171', fontSize: '11px', marginTop: '4px' }}>{errors.email.message}</p>}
         </div>
+
+        <div>
+          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Rôle dans l'entreprise</label>
+          <Controller name="jobTitle" control={control} render={({ field }) => (
+            <input {...field} type="text" placeholder="Directeur commercial, CEO..."
+              style={{ ...inputStyle, borderColor: 'rgba(255,255,255,0.09)' }}
+              onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur() }}
+            />
+          )} />
+        </div>
+
       </div>
 
       {/* Actions */}

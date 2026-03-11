@@ -14,6 +14,7 @@ export type User = {
   email: string;
   firstName: string;
   lastName: string;
+  jobTitle?: string;
   customer?: Customer;
   producer?: Producer;
   role: Role;
