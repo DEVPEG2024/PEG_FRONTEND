@@ -29,7 +29,7 @@ const sep: React.CSSProperties = {
   margin: '22px 0',
 };
 
-const CircularProgress = ({ percent }: { percent: number }) => {
+const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; label?: string }) => {
   const r = 42;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
@@ -59,7 +59,7 @@ const CircularProgress = ({ percent }: { percent: number }) => {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.03em', lineHeight: 1 }}>{percent}%</span>
-        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.03em', marginTop: '3px' }}>tâches</span>
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.03em', marginTop: '3px' }}>{label}</span>
       </div>
     </div>
   );
@@ -104,12 +104,16 @@ const Summary = ({ project }: { project: Project }) => {
     debounceFn(val);
   };
 
+  const { checklistPercent } = useAppSelector((state) => state.projectDetails.data);
+
   const completedTasksCount = project.tasks.filter(
     (task) => task.state === 'fulfilled'
   ).length;
-  const totalProgress =
-    project.tasks.length > 0 ? completedTasksCount / project.tasks.length : 0;
-  const percentageComplete = Number((totalProgress * 100).toFixed(0));
+  const taskPercent =
+    project.tasks.length > 0
+      ? Number(((completedTasksCount / project.tasks.length) * 100).toFixed(0))
+      : 0;
+  const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
 
   return (
     <Container className="h-full">
@@ -155,7 +159,7 @@ const Summary = ({ project }: { project: Project }) => {
               <div style={{ flex: 1, padding: '28px', minWidth: 0 }}>
                 {/* Progress + project name */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '8px' }}>
-                  <CircularProgress percent={percentageComplete} />
+                  <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} />
                   <div style={{ minWidth: 0 }}>
                     <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '8px', lineHeight: 1.25 }}>
                       {project.name}

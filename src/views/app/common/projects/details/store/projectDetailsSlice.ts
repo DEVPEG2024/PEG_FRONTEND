@@ -44,6 +44,7 @@ export type ProjectDetailsState = {
   selectedTab: string;
   editDescription: boolean;
   loading: boolean;
+  checklistPercent: number | null;
 };
 
 // TODO: Voir pour crypter les données envoyées depuis backend et decrypter côté front
@@ -190,6 +191,7 @@ const initialState: ProjectDetailsState = {
   loading: false,
   selectedTab: 'Accueil',
   editDescription: false,
+  checklistPercent: null,
 };
 
 const projectListSlice = createSlice({
@@ -204,6 +206,9 @@ const projectListSlice = createSlice({
     },
     setEditDescription: (state, action) => {
       state.editDescription = action.payload;
+    },
+    setChecklistPercent: (state, action) => {
+      state.checklistPercent = action.payload;
     },
     setEditCurrentProjectDialog: (state, action) => {
       state.editCurrentProjectDialog = action.payload;
@@ -374,6 +379,7 @@ export const {
   setPrintProjectInvoiceDialog,
   setSelectedProjectInvoice,
   setEditDescription,
+  setChecklistPercent,
 } = projectListSlice.actions;
 
 export default projectListSlice.reducer;

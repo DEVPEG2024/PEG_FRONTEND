@@ -5,7 +5,8 @@ import { useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
-import { useAppSelector } from '../store';
+import { useAppSelector, setChecklistPercent } from '../store';
+import { useAppDispatch } from '@/store';
 import { MdChecklist } from 'react-icons/md';
 import { HiCheck, HiChevronDown, HiTrash } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
@@ -19,6 +20,7 @@ const ProjectChecklist = () => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
+  const dispatch = useAppDispatch();
 
   const canToggle = hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]);
 
@@ -127,6 +129,10 @@ const ProjectChecklist = () => {
 
   const doneCount = items.filter((i) => i.done).length;
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+
+  useEffect(() => {
+    dispatch(setChecklistPercent(items.length > 0 ? percent : null));
+  }, [percent, items.length]);
 
   return (
     <Container className="h-full">
