@@ -54,9 +54,9 @@ const ProjectChecklist = () => {
         setUnavailable(false);
 
         if (loadedItems.length === 0 && canToggle) {
-          // Auto-apply: prefer the product's linked checklist, else first available template
+          // Auto-apply: only use the product's linked checklist
           const productChecklist = project.orderItem?.product?.checklist;
-          const templateToApply = productChecklist ?? loadedTemplates[0];
+          const templateToApply = productChecklist ?? null;
           if (templateToApply) {
             const newItems: ChecklistItem[] = (templateToApply.items ?? []).map((label: string) => ({
               label,
