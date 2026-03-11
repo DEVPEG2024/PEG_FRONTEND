@@ -1,5 +1,5 @@
 import Container from '@/components/shared/Container';
-import { ChecklistItem } from '@/@types/checklist';
+import { ChecklistItem, Checklist } from '@/@types/checklist';
 import { RootState } from '@/store';
 import { useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
@@ -7,8 +7,11 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { updateCurrentProject, useAppDispatch, useAppSelector } from '../store';
 import { MdChecklist } from 'react-icons/md';
-import { HiCheck } from 'react-icons/hi';
+import { HiCheck, HiChevronDown } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
+import { useEffect, useRef, useState } from 'react';
+import { apiGetChecklists } from '@/services/ChecklistServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
 const ProjectChecklist = () => {
   const dispatch = useAppDispatch();
@@ -21,17 +24,48 @@ const ProjectChecklist = () => {
   const items: ChecklistItem[] = project?.checklistItems ?? [];
   const doneCount = items.filter((i) => i.done).length;
 
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!canToggle) return;
+    setLoadingTemplates(true);
+    unwrapData(apiGetChecklists())
+      .then((data: { checklists_connection: { nodes: Checklist[] } }) => {
+        setChecklists(data.checklists_connection?.nodes ?? []);
+      })
+      .catch(() => setChecklists([]))
+      .finally(() => setLoadingTemplates(false));
+  }, [canToggle]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const applyTemplate = (checklist: Checklist) => {
+    if (!project) return;
+    const newItems: ChecklistItem[] = (checklist.items ?? []).map((label: string) => ({
+      label,
+      done: false,
+    }));
+    dispatch(updateCurrentProject({ documentId: project.documentId, checklistItems: newItems }));
+    setDropdownOpen(false);
+  };
+
   const toggleItem = (index: number) => {
     if (!canToggle || !project) return;
     const updated = items.map((item, i) =>
       i === index ? { ...item, done: !item.done } : item
     );
-    dispatch(
-      updateCurrentProject({
-        documentId: project.documentId,
-        checklistItems: updated,
-      })
-    );
+    dispatch(updateCurrentProject({ documentId: project.documentId, checklistItems: updated }));
   };
 
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
@@ -47,13 +81,69 @@ const ProjectChecklist = () => {
         }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              Checklist du projet
-            </p>
-            {items.length > 0 && (
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                {doneCount} / {items.length} effectuée{doneCount > 1 ? 's' : ''}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Checklist du projet
+              </p>
+              {items.length > 0 && (
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                  {doneCount} / {items.length} effectuée{doneCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            {/* Apply template dropdown (admin/producer only) */}
+            {canToggle && checklists.length > 0 && (
+              <div style={{ position: 'relative' }} ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  disabled={loadingTemplates}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', borderRadius: '8px',
+                    background: 'rgba(47,111,237,0.15)',
+                    border: '1px solid rgba(47,111,237,0.3)',
+                    color: '#6fa3f5', fontSize: '12px', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <MdChecklist size={14} />
+                  Appliquer un modèle
+                  <HiChevronDown size={12} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+                </button>
+
+                {dropdownOpen && (
+                  <div style={{
+                    position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                    background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '10px', overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    zIndex: 100, minWidth: '200px',
+                  }}>
+                    {checklists.map((cl) => (
+                      <button
+                        key={cl.documentId}
+                        onClick={() => applyTemplate(cl)}
+                        style={{
+                          display: 'block', width: '100%', textAlign: 'left',
+                          padding: '10px 14px',
+                          background: 'transparent',
+                          border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          color: 'rgba(255,255,255,0.75)', fontSize: '13px',
+                          cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {cl.name}
+                        <span style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px' }}>
+                          {(cl.items ?? []).length} étape{(cl.items ?? []).length > 1 ? 's' : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -63,10 +153,10 @@ const ProjectChecklist = () => {
               <div style={{
                 height: '100%',
                 width: `${percent}%`,
-                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                background: percent === 100 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
                 borderRadius: '100px',
                 transition: 'width 0.4s ease',
-                boxShadow: '0 0 8px rgba(47,111,237,0.5)',
+                boxShadow: percent === 100 ? '0 0 8px rgba(34,197,94,0.5)' : '0 0 8px rgba(47,111,237,0.5)',
               }} />
             </div>
           )}
@@ -77,7 +167,9 @@ const ProjectChecklist = () => {
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
               {canToggle && (
                 <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
-                  Associez un modèle de checklist au produit lors de la création du projet
+                  {checklists.length > 0
+                    ? 'Utilisez le bouton "Appliquer un modèle" ci-dessus pour associer une checklist'
+                    : 'Créez d\'abord un modèle de checklist dans la section Administration'}
                 </p>
               )}
             </div>
