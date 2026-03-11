@@ -96,7 +96,7 @@ const DashboardCustomer = () => {
     customer && (
       <Suspense fallback={<></>}>
         {/* Banner */}
-        {customer.banner && (
+        {customer.banner ? (
           <div style={{ position: 'relative' }}>
             <img
               src={customer.banner.image.url}
@@ -107,6 +107,71 @@ const DashboardCustomer = () => {
               position: 'absolute', bottom: 0, left: 0, right: 0,
               height: '80px',
               background: 'linear-gradient(to top, #0a1628, transparent)',
+            }} />
+          </div>
+        ) : (
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            height: '180px',
+            background: 'linear-gradient(135deg, #0d1f3c 0%, #1a3a6e 35%, #0f2d5a 60%, #081524 100%)',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 40px',
+          }}>
+            {/* Cercles décoratifs */}
+            <div style={{
+              position: 'absolute', top: '-40px', right: '10%',
+              width: '200px', height: '200px', borderRadius: '50%',
+              background: 'rgba(47,111,237,0.12)',
+              border: '1px solid rgba(47,111,237,0.15)',
+            }} />
+            <div style={{
+              position: 'absolute', bottom: '-60px', right: '25%',
+              width: '160px', height: '160px', borderRadius: '50%',
+              background: 'rgba(47,111,237,0.07)',
+              border: '1px solid rgba(47,111,237,0.1)',
+            }} />
+            <div style={{
+              position: 'absolute', top: '20px', right: '5%',
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'rgba(107,158,255,0.08)',
+            }} />
+            {/* Grille de points */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+            }} />
+            {/* Contenu */}
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                background: 'rgba(47,111,237,0.15)',
+                border: '1px solid rgba(47,111,237,0.25)',
+                borderRadius: '100px', padding: '4px 12px', marginBottom: '12px',
+              }}>
+                <div style={{
+                  width: '5px', height: '5px', borderRadius: '50%',
+                  background: '#6b9eff', boxShadow: '0 0 6px rgba(107,158,255,0.8)',
+                }} />
+                <span style={{ color: '#6b9eff', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Bienvenue sur PEG
+                </span>
+              </div>
+              <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+                Votre espace client
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '6px' }}>
+                Découvrez vos offres et suivez vos projets
+              </p>
+            </div>
+            {/* Dégradé bas */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: '60px',
+              background: 'linear-gradient(to top, #0d1b2e, transparent)',
             }} />
           </div>
         )}
