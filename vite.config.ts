@@ -7,6 +7,16 @@ import commonjs from '@rollup/plugin-commonjs';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    // Permet de lire API_ENDPOINT_URL et STRIPE_PUBLIC_KEY depuis Vercel
+    // (sans le préfixe VITE_ requis normalement par Vite)
+    'import.meta.env.VITE_API_ENDPOINT_URL': JSON.stringify(
+      process.env.VITE_API_ENDPOINT_URL || process.env.API_ENDPOINT_URL || ''
+    ),
+    'import.meta.env.VITE_STRIPE_PUBLIC_KEY': JSON.stringify(
+      process.env.VITE_STRIPE_PUBLIC_KEY || process.env.STRIPE_PUBLIC_KEY || ''
+    ),
+  },
   plugins: [
     react({
       babel: {
