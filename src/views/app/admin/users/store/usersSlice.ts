@@ -87,23 +87,16 @@ export type UserRequest = {
 export const updateUser = createAsyncThunk(
   SLICE_NAME + '/updateUser',
   async (data: UserRequest): Promise<User> => {
-    const {
-      updateUsersPermissionsUser,
-    }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
-      apiUpdateUser(data.user, data.id)
-    );
-    return updateUsersPermissionsUser.data;
+    const response: any = await apiUpdateUser(data.user, data.id);
+    return response.data;
   }
 );
 
 export const deleteUser = createAsyncThunk(
   SLICE_NAME + '/deleteUser',
   async (id: string): Promise<DeleteUserResponse> => {
-    const {
-      deleteUsersPermissionsUser,
-    }: { deleteUsersPermissionsUser: { data: DeleteUserResponse } } =
-      await unwrapData(apiDeleteUser(id));
-    return deleteUsersPermissionsUser.data;
+    const response: any = await apiDeleteUser(id);
+    return response.data;
   }
 );
 

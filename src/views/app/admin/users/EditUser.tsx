@@ -134,22 +134,14 @@ const EditUser = () => {
     setRoles(roles);
   };
 
-  const updateOrCreateUser = async (data: User): Promise<{ data: User }> => {
+  const updateOrCreateUser = async (data: User): Promise<User> => {
     if (onEdition) {
-      const {
-        updateUsersPermissionsUser,
-      }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
-        apiUpdateUser(data, data.documentId!)
-      );
-      return updateUsersPermissionsUser;
+      const response: any = await apiUpdateUser(data, data.documentId!);
+      return response.data;
     }
     const created = await apiCreateUser(data);
-    const {
-      updateUsersPermissionsUser,
-    }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
-      apiUpdateUser(data, created.data.user.documentId)
-    );
-    return updateUsersPermissionsUser;
+    const response: any = await apiUpdateUser(data, created.data.user.documentId);
+    return response.data;
   };
 
   const handleFormSubmit = async (values: UserFormModel) => {

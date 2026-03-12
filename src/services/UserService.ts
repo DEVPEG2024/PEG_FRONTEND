@@ -130,76 +130,22 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
     })
 }
 
-// update user
-export async function apiUpdateUser(user: Partial<User>, id: string): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
-    const query = `
-    mutation UpdateUser($updateUsersPermissionsUserId: ID!, $data: UsersPermissionsUserInput!) {
-        updateUsersPermissionsUser(id: $updateUsersPermissionsUserId, data: $data) {
-            data {
-                documentId
-                username
-                email
-                blocked
-                firstName
-                lastName
-                avatar {
-                    documentId
-                }
-                customer {
-                    documentId
-                    name
-                }
-                producer {
-                    documentId
-                    name
-                }
-                role {
-                    documentId
-                    name
-                    type
-                    description
-                }
-            }
-        }
-    }
-  `,
-  {documentId, ...data} = user,
-  variables = {
-    updateUsersPermissionsUserId: id,
-    data
-  }
-    return ApiService.fetchData<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
+// update user (Strapi v5 REST)
+export async function apiUpdateUser(user: Partial<User>, documentId: string): Promise<AxiosResponse<User>> {
+    const { documentId: _, ...data } = user as any
+    return ApiService.fetchData<User>({
+        url: `/users/${documentId}`,
+        method: 'put',
+        data,
     })
 }
 
-// update user password
-export async function apiUpdateUserPassword(password: string, id: string): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
-    const query = `
-    mutation UpdateUser($updateUsersPermissionsUserId: ID!, $data: UsersPermissionsUserInput!) {
-        updateUsersPermissionsUser(id: $updateUsersPermissionsUserId, data: $data) {
-            data {
-                documentId
-            }
-        }
-    }
-  `,
-  variables = {
-    updateUsersPermissionsUserId: id,
-    data: {password}
-  }
-    return ApiService.fetchData<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
+// update user password (Strapi v5 REST)
+export async function apiUpdateUserPassword(password: string, documentId: string): Promise<AxiosResponse<User>> {
+    return ApiService.fetchData<User>({
+        url: `/users/${documentId}`,
+        method: 'put',
+        data: { password },
     })
 }
 
@@ -208,26 +154,10 @@ export type DeleteUserResponse = {
     documentId: string
 }
 
-export async function apiDeleteUser(id: string): Promise<AxiosResponse<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>> {
-    const query = `
-    mutation DeleteUser($deleteUsersPermissionsUserId: ID!) {
-        deleteUsersPermissionsUser(id: $deleteUsersPermissionsUserId) {
-            data {
-                documentId
-            }
-        }
-    }
-  `,
-  variables = {
-    deleteUsersPermissionsUserId: id
-  }
-    return ApiService.fetchData<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
+export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<DeleteUserResponse>> {
+    return ApiService.fetchData<DeleteUserResponse>({
+        url: `/users/${documentId}`,
+        method: 'delete',
     })
 }
 
