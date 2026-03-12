@@ -30,12 +30,41 @@ const EditCustomer = () => {
     }).catch(() => {})
   }, [])
 
+  const flattenCustomer = (customer: any): CustomerFormModel | undefined => {
+    if (!customer) return undefined
+    const ci = customer.companyInformations ?? {}
+    return {
+      ...customer,
+      customerCategory: customer.customerCategory?.documentId ?? customer.customerCategory ?? null,
+      email: ci.email ?? '',
+      phoneNumber: ci.phoneNumber ?? '',
+      vatNumber: ci.vatNumber ?? '',
+      siretNumber: ci.siretNumber ?? '',
+      address: ci.address ?? '',
+      zipCode: ci.zipCode ?? '',
+      city: ci.city ?? '',
+      country: ci.country ?? '',
+      website: ci.website ?? '',
+    }
+  }
+
+  const nestCustomer = (formData: CustomerFormModel) => {
+    const { logoFile, email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website, ...rest } = formData
+    return {
+      data: {
+        ...rest,
+        companyInformations: { email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website },
+      },
+      logoFile: logoFile ?? null,
+    }
+  }
+
   const handleSubmit = async (formData: CustomerFormModel) => {
-    const { logoFile, ...data } = formData
+    const { data, logoFile } = nestCustomer(formData)
     if (isEdit) {
-      await dispatch(updateCustomer({ id: documentId!, data, logoFile: logoFile ?? null }))
+      await dispatch(updateCustomer({ id: documentId!, data, logoFile }))
     } else {
-      await dispatch(createCustomer({ data, logoFile: logoFile ?? null }))
+      await dispatch(createCustomer({ data, logoFile }))
     }
     navigate('/admin/customers/list')
   }
@@ -48,7 +77,7 @@ const EditCustomer = () => {
 
   return (
     <CustomerForm
-      initialData={isEdit ? (selectedCustomer as any) : undefined}
+      initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
       customerCategories={customerCategories}
       onFormSubmit={handleSubmit}
       onDiscard={handleDiscard}
