@@ -108,11 +108,10 @@ export const apiResolveCustomerIdFromDocumentId = async (documentId: string): Pr
   return id
 }
 
-// DELETE by documentId
+// DELETE by documentId (Strapi v5 uses documentId directly)
 export const apiDeleteCustomerByDocumentId = async (documentId: string) => {
-  const numericId = await apiResolveCustomerIdFromDocumentId(documentId)
   return ApiService.fetchData({
-    url: `/customers/${numericId}`,
+    url: `/customers/${documentId}`,
     method: 'delete',
   })
 }
@@ -126,11 +125,10 @@ export const apiCreateCustomer = (data: any) => {
   })
 }
 
-// UPDATE by documentId
+// UPDATE by documentId (Strapi v5 uses documentId directly)
 export const apiUpdateCustomerByDocumentId = async (documentId: string, data: any) => {
-  const numericId = await apiResolveCustomerIdFromDocumentId(documentId)
   return ApiService.fetchData({
-    url: `/customers/${numericId}`,
+    url: `/customers/${documentId}`,
     method: 'put',
     data: { data },
   })
