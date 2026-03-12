@@ -15,6 +15,10 @@ import {
   apiGetProducerCategories,
   GetProducerCategoriesResponse,
 } from '@/services/ProducerCategoryServices';
+import {
+  apiGetProductCategories,
+  GetProductCategoriesResponse,
+} from '@/services/ProductCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Producer, ProducerCategory } from '@/@types/producer';
 import {
@@ -41,6 +45,7 @@ const EditProducer = () => {
   const { documentId } = useParams<EditProducerParams>() as EditProducerParams;
   const { producer } = useAppSelector((state) => state.producers.data);
   const [producerCategories, setProducerCategories] = useState<Options[]>([]);
+  const [productCategoryOptions, setProductCategoryOptions] = useState<Options[]>([]);
   const initialData: ProducerFormModel = {
     documentId: documentId ?? '',
     name: producer?.name || '',
@@ -87,6 +92,7 @@ const EditProducer = () => {
 
   useEffect(() => {
     fetchProducerCategories();
+    fetchProductCategories();
   }, []);
 
   const fetchProducerCategories = async () => {
@@ -103,6 +109,18 @@ const EditProducer = () => {
       })
     );
     setProducerCategories(producerCategories);
+  };
+
+  const fetchProductCategories = async () => {
+    const {
+      productCategories_connection,
+    }: { productCategories_connection: GetProductCategoriesResponse } =
+      await unwrapData(apiGetProductCategories());
+    const options = (productCategories_connection.nodes || []).map((cat) => ({
+      value: cat.documentId || '',
+      label: cat.name || '',
+    }));
+    setProductCategoryOptions(options);
   };
 
   const updateOrCreateProducer = async (
@@ -169,6 +187,7 @@ const EditProducer = () => {
         <ProducerForm
           initialData={initialData}
           producerCategories={producerCategories}
+          productCategoryOptions={productCategoryOptions}
           onFormSubmit={handleFormSubmit}
           onDiscard={handleDiscard}
         />

@@ -5,11 +5,12 @@ import { Controller } from 'react-hook-form';
 import Select from '@/components/ui/Select';
 import CreatableSelect from 'react-select/creatable';
 import { HiOutlineStar, HiOutlineTag, HiOutlineThumbUp, HiOutlineThumbDown } from 'react-icons/hi';
-import { ProducerFormModel } from './ProducerForm';
+import { Options } from '../EditProducer';
 
 type SkillsFieldsProps = {
   control: any;
   errors: any;
+  productCategoryOptions: Options[];
 };
 
 const CERTIFICATION_OPTIONS = [
@@ -27,7 +28,7 @@ const CERTIFICATION_OPTIONS = [
   { value: 'FSC', label: 'FSC' },
 ];
 
-const SkillsFields = ({ control, errors }: SkillsFieldsProps) => {
+const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsProps) => {
   return (
     <AdaptableCard bordered={false} className="mb-4">
       <div className="flex items-center gap-2 mb-2">
@@ -48,15 +49,16 @@ const SkillsFields = ({ control, errors }: SkillsFieldsProps) => {
           render={({ field }) => (
             <Select
               isMulti
-              componentAs={CreatableSelect}
               field={field}
-              value={(field.value || []).map((v: string) => ({ value: v, label: v }))}
+              value={(field.value || []).map((v: string) =>
+                productCategoryOptions.find((opt) => opt.value === v) || { value: v, label: v }
+              )}
               onChange={(options: any) =>
                 field.onChange(options ? options.map((o: any) => o.value) : [])
               }
-              options={[]}
-              placeholder="Tapez et appuyez sur Entrée pour ajouter..."
-              noOptionsMessage={() => 'Tapez pour créer une catégorie'}
+              options={productCategoryOptions}
+              placeholder="Sélectionner des catégories..."
+              noOptionsMessage={() => 'Aucune catégorie disponible'}
             />
           )}
         />

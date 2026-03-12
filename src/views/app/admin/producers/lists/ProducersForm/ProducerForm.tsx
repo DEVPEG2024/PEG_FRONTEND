@@ -54,6 +54,7 @@ export type ProducerFormModel = Omit<
 type ProducerFormProps = {
   initialData?: ProducerFormModel;
   producerCategories: Options[];
+  productCategoryOptions: Options[];
   onDiscard?: () => void;
   onFormSubmit: (formData: ProducerFormModel) => void;
 };
@@ -80,7 +81,7 @@ const validationSchema = Yup.object().shape({
 });
 
 const ProducerForm = (props: ProducerFormProps) => {
-  const { initialData, onFormSubmit, onDiscard, producerCategories } = props;
+  const { initialData, onFormSubmit, onDiscard, producerCategories, productCategoryOptions } = props;
 
   const {
     control,
@@ -122,7 +123,7 @@ const ProducerForm = (props: ProducerFormProps) => {
 
           {/* Section 2 : Compétences & Capacité de production */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
-            <SkillsFields control={control} errors={errors} />
+            <SkillsFields control={control} errors={errors} productCategoryOptions={productCategoryOptions} />
             <ProductionCapacityFields control={control} errors={errors} />
           </div>
 
