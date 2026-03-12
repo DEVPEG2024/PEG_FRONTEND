@@ -1,13 +1,9 @@
+import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Controller } from 'react-hook-form';
 import Select from '@/components/ui/Select';
-import {
-  HiOutlineTruck,
-  HiOutlineClock,
-  HiOutlineGlobe,
-  HiOutlineChartBar,
-} from 'react-icons/hi';
+import { HiOutlineTruck, HiOutlineClock, HiOutlineGlobe } from 'react-icons/hi';
 
 type ProductionCapacityFieldsProps = {
   control: any;
@@ -22,48 +18,83 @@ const DELIVERY_ZONE_OPTIONS = [
 
 const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden mb-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
-            <HiOutlineTruck className="text-white text-xl" />
-          </div>
-          <div>
-            <h5 className="text-white font-semibold m-0">Capacité de Production</h5>
-            <p className="text-blue-100 text-sm m-0">
-              Volumes, délais et zones de livraison.
-            </p>
-          </div>
-        </div>
+    <AdaptableCard bordered={false} className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <HiOutlineTruck className="text-blue-500 text-xl" />
+        <h5>Capacité de Production</h5>
+      </div>
+      <p className="mb-6 text-gray-500 text-sm">
+        Renseignez les capacités de production et les délais de livraison.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <FormItem
+          label="Quantité minimale de commande"
+          invalid={!!errors.minOrderQuantity}
+          errorMessage={errors.minOrderQuantity?.message}
+        >
+          <Controller
+            name="minOrderQuantity"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="number"
+                min={0}
+                placeholder="Ex: 100"
+                suffix="unités"
+                value={field.value ?? ''}
+                onChange={(e) =>
+                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                }
+              />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Quantité maximale par mois"
+          invalid={!!errors.maxMonthlyQuantity}
+          errorMessage={errors.maxMonthlyQuantity?.message}
+        >
+          <Controller
+            name="maxMonthlyQuantity"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="number"
+                min={0}
+                placeholder="Ex: 10 000"
+                suffix="unités"
+                value={field.value ?? ''}
+                onChange={(e) =>
+                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                }
+              />
+            )}
+          />
+        </FormItem>
       </div>
 
-      {/* Body */}
-      <div className="p-6 space-y-4">
-        {/* Quantités */}
-        <div className="flex items-center gap-2 pb-1">
-          <HiOutlineChartBar className="text-blue-500" />
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-            Volumes de commande
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormItem
-            label="Quantité minimale"
-            invalid={!!errors.minOrderQuantity}
-            errorMessage={errors.minOrderQuantity?.message}
-          >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <FormItem
+          label="Délai de livraison moyen"
+          invalid={!!errors.averageDeliveryDays}
+          errorMessage={errors.averageDeliveryDays?.message}
+        >
+          <div className="flex items-center gap-2">
+            <HiOutlineClock className="text-gray-400 flex-shrink-0" />
             <Controller
-              name="minOrderQuantity"
+              name="averageDeliveryDays"
               control={control}
               render={({ field }) => (
                 <Input
                   {...field}
                   type="number"
                   min={0}
-                  placeholder="Ex: 100"
-                  suffix="unités"
+                  placeholder="Ex: 14"
+                  suffix="jours"
                   value={field.value ?? ''}
                   onChange={(e) =>
                     field.onChange(e.target.value === '' ? null : Number(e.target.value))
@@ -71,23 +102,26 @@ const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsP
                 />
               )}
             />
-          </FormItem>
+          </div>
+        </FormItem>
 
-          <FormItem
-            label="Quantité maximale / mois"
-            invalid={!!errors.maxMonthlyQuantity}
-            errorMessage={errors.maxMonthlyQuantity?.message}
-          >
+        <FormItem
+          label="Délai de livraison express"
+          invalid={!!errors.expressDeliveryDays}
+          errorMessage={errors.expressDeliveryDays?.message}
+        >
+          <div className="flex items-center gap-2">
+            <HiOutlineClock className="text-orange-400 flex-shrink-0" />
             <Controller
-              name="maxMonthlyQuantity"
+              name="expressDeliveryDays"
               control={control}
               render={({ field }) => (
                 <Input
                   {...field}
                   type="number"
                   min={0}
-                  placeholder="Ex: 10 000"
-                  suffix="unités"
+                  placeholder="Ex: 5"
+                  suffix="jours"
                   value={field.value ?? ''}
                   onChange={(e) =>
                     field.onChange(e.target.value === '' ? null : Number(e.target.value))
@@ -95,82 +129,13 @@ const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsP
                 />
               )}
             />
-          </FormItem>
-        </div>
+          </div>
+        </FormItem>
+      </div>
 
-        {/* Délais */}
-        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
-          <HiOutlineClock className="text-blue-500" />
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-            Délais de livraison
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormItem
-            label="Délai standard"
-            invalid={!!errors.averageDeliveryDays}
-            errorMessage={errors.averageDeliveryDays?.message}
-          >
-            <div className="flex items-center gap-2">
-              <HiOutlineClock className="text-gray-400 flex-shrink-0" />
-              <Controller
-                name="averageDeliveryDays"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="number"
-                    min={0}
-                    placeholder="Ex: 14"
-                    suffix="jours"
-                    value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                    }
-                  />
-                )}
-              />
-            </div>
-          </FormItem>
-
-          <FormItem
-            label="Délai express"
-            invalid={!!errors.expressDeliveryDays}
-            errorMessage={errors.expressDeliveryDays?.message}
-          >
-            <div className="flex items-center gap-2">
-              <HiOutlineClock className="text-orange-400 flex-shrink-0" />
-              <Controller
-                name="expressDeliveryDays"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="number"
-                    min={0}
-                    placeholder="Ex: 5"
-                    suffix="jours"
-                    value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                    }
-                  />
-                )}
-              />
-            </div>
-          </FormItem>
-        </div>
-
-        {/* Zone */}
-        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
-          <HiOutlineGlobe className="text-blue-500" />
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-            Zone de livraison
-          </span>
-        </div>
-
-        <FormItem className="mb-0">
+      <FormItem label="Zone de livraison">
+        <div className="flex items-center gap-2">
+          <HiOutlineGlobe className="text-green-500 flex-shrink-0" />
           <Controller
             name="deliveryZone"
             control={control}
@@ -185,9 +150,9 @@ const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsP
               />
             )}
           />
-        </FormItem>
-      </div>
-    </div>
+        </div>
+      </FormItem>
+    </AdaptableCard>
   );
 };
 

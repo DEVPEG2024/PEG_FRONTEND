@@ -1,13 +1,10 @@
+import AdaptableCard from '@/components/shared/AdaptableCard';
 import { FormItem } from '@/components/ui/Form';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Controller, FieldErrors } from 'react-hook-form';
 import { t } from 'i18next';
-import {
-  HiOutlineBriefcase,
-  HiOutlineIdentification,
-  HiOutlineGlobe,
-} from 'react-icons/hi';
+import { HiOutlineBriefcase } from 'react-icons/hi';
 import { Options } from '../EditProducer';
 
 type FormFieldsName = {
@@ -29,51 +26,39 @@ const CompanyFields = (props: CompanyFieldsProps) => {
   const values = watch();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-violet-100 overflow-hidden mb-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-500 to-violet-600 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
-            <HiOutlineBriefcase className="text-white text-xl" />
-          </div>
-          <div>
-            <h5 className="text-white font-semibold m-0">{t('p.organization')}</h5>
-            <p className="text-violet-100 text-sm m-0">{t('p.organization_description')}</p>
-          </div>
+    <AdaptableCard bordered={false} className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <HiOutlineBriefcase className="text-violet-500 text-xl" />
+        <h5>{t('p.organization')}</h5>
+      </div>
+      <p className="mb-6">{t('p.organization_description')}</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="col-span-1">
+          <FormItem
+            label={t('category')}
+            invalid={!!errors.producerCategory}
+            errorMessage={errors.producerCategory?.message}
+          >
+            <Controller
+              name="producerCategory"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  field={field}
+                  options={producerCategories}
+                  placeholder="Choisissez la catégorie"
+                  value={producerCategories.find((o) => field.value === o.value)}
+                  onChange={(option) => field.onChange(option?.value)}
+                />
+              )}
+            />
+          </FormItem>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-6 space-y-4">
-        <FormItem
-          label={t('category')}
-          invalid={!!errors.producerCategory}
-          errorMessage={errors.producerCategory?.message}
-        >
-          <Controller
-            name="producerCategory"
-            control={control}
-            render={({ field }) => (
-              <Select
-                field={field}
-                options={producerCategories}
-                placeholder="Choisissez la catégorie"
-                value={producerCategories.find((o) => field.value === o.value)}
-                onChange={(option) => field.onChange(option?.value)}
-              />
-            )}
-          />
-        </FormItem>
-
-        {/* Légal */}
-        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
-          <HiOutlineIdentification className="text-violet-400" />
-          <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">
-            Informations légales
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="col-span-1">
           <FormItem
             label="N° TVA"
             invalid={!!errors.vatNumber}
@@ -92,6 +77,8 @@ const CompanyFields = (props: CompanyFieldsProps) => {
               )}
             />
           </FormItem>
+        </div>
+        <div className="col-span-1">
           <FormItem
             label="N° SIRET"
             invalid={!!errors.siretNumber}
@@ -111,35 +98,28 @@ const CompanyFields = (props: CompanyFieldsProps) => {
             />
           </FormItem>
         </div>
-
-        {/* Web */}
-        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
-          <HiOutlineGlobe className="text-violet-400" />
-          <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">
-            Présence en ligne
-          </span>
+        <div className="col-span-2">
+          <FormItem
+            label="Site internet"
+            invalid={!!errors.website}
+            errorMessage={errors.website?.message}
+          >
+            <Controller
+              name="website"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="https://www.exemple.fr"
+                />
+              )}
+            />
+          </FormItem>
         </div>
-
-        <FormItem
-          label="Site internet"
-          invalid={!!errors.website}
-          errorMessage={errors.website?.message}
-        >
-          <Controller
-            name="website"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder="https://www.exemple.fr"
-              />
-            )}
-          />
-        </FormItem>
       </div>
-    </div>
+    </AdaptableCard>
   );
 };
 
