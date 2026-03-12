@@ -20,7 +20,7 @@ const dev = {
           case 'production':
               return prod
           default:
-              break;
+              return prod
       }
   }
   

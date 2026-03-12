@@ -25,6 +25,7 @@ import {
   apiCreateProducer,
   apiUpdateProducer,
 } from '@/services/ProducerServices';
+import { toast } from 'react-toastify';
 
 injectReducer('producers', reducer);
 
@@ -174,8 +175,12 @@ const EditProducer = () => {
   };
 
   const handleFormSubmit = async (values: ProducerFormModel) => {
-    await updateOrCreateProducer(values);
-    navigate(PRODUCERS_LIST);
+    try {
+      await updateOrCreateProducer(values);
+      navigate(PRODUCERS_LIST);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erreur lors de la sauvegarde du producteur');
+    }
   };
 
   const handleDiscard = () => {

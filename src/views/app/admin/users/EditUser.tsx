@@ -32,6 +32,7 @@ import {
   apiUpdateUser,
 } from '@/services/UserService';
 import { injectReducer } from '@/store';
+import { toast } from 'react-toastify';
 
 injectReducer('users', reducer);
 
@@ -177,8 +178,12 @@ const EditUser = () => {
       delete data.documentId;
     }
 
-    await updateOrCreateUser(data);
-    navigate('/admin/users');
+    try {
+      await updateOrCreateUser(data);
+      navigate('/admin/users');
+    } catch (error: any) {
+      toast.error(error?.message || "Erreur lors de la sauvegarde de l'utilisateur");
+    }
   };
 
   const handleDiscard = () => {

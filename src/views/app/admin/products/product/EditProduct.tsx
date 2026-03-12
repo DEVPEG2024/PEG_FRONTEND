@@ -9,6 +9,7 @@ import {
   GetCustomersResponse,
 } from '@/services/CustomerServices';
 import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
+import { toast } from 'react-toastify';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
 import { apiGetChecklists, GetChecklistsResponse } from '@/services/ChecklistServices';
@@ -290,8 +291,12 @@ const EditProduct = () => {
       delete data.documentId;
     }
 
-    await updateOrCreateProduct(data);
-    navigate('/admin/products');
+    try {
+      await updateOrCreateProduct(data);
+      navigate('/admin/products');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erreur lors de la sauvegarde du produit');
+    }
   };
 
   const handleDiscard = () => {
