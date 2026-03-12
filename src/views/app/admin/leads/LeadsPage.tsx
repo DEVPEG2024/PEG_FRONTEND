@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 import { motion, AnimatePresence } from 'framer-motion'
 import dayjs from 'dayjs'
@@ -11,33 +11,16 @@ import {
     HiOutlineUser, HiOutlineOfficeBuilding, HiOutlineExternalLink,
     HiOutlineDownload, HiOutlineUpload,
 } from 'react-icons/hi'
+import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
+import reducer, { getLeads, createLead, updateLead, deleteLead } from './store'
+import type { Lead, LeadStage, LeadPriority, LeadSource } from '@/@types/lead'
+
+injectReducer('leads', reducer)
 
 dayjs.locale('fr')
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Stage = 'nouveau' | 'contacté' | 'qualification' | 'proposition' | 'négociation' | 'gagné' | 'perdu'
-type Priority = 'basse' | 'normale' | 'haute' | 'urgente'
-type Source = 'linkedin' | 'referral' | 'inbound' | 'cold_call' | 'event' | 'site_web' | 'autre'
-
-interface Lead {
-    id: string
-    company: string
-    contact: string
-    email: string
-    phone: string
-    source: Source
-    stage: Stage
-    value: number
-    probability: number
-    priority: Priority
-    notes: string
-    nextAction: string
-    nextActionDate: string
-    createdAt: string
-}
-
 // ─── Config ────────────────────────────────────────────────────────────────────
-const STAGES: { key: Stage; label: string; color: string; bg: string; border: string; dot: string }[] = [
+const STAGES: { key: LeadStage; label: string; color: string; bg: string; border: string; dot: string }[] = [
     { key: 'nouveau',       label: 'Nouveau',       color: 'text-sky-700 dark:text-sky-300',     bg: 'bg-sky-50 dark:bg-sky-900/30',     border: 'border-sky-200 dark:border-sky-700',    dot: 'bg-sky-500' },
     { key: 'contacté',      label: 'Contacté',      color: 'text-indigo-700 dark:text-indigo-300', bg: 'bg-indigo-50 dark:bg-indigo-900/30', border: 'border-indigo-200 dark:border-indigo-700', dot: 'bg-indigo-500' },
     { key: 'qualification', label: 'Qualification', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-900/30',   border: 'border-amber-200 dark:border-amber-700',  dot: 'bg-amber-500' },
@@ -47,14 +30,14 @@ const STAGES: { key: Stage; label: string; color: string; bg: string; border: st
     { key: 'perdu',         label: 'Perdu',         color: 'text-gray-500 dark:text-gray-400',   bg: 'bg-gray-50 dark:bg-gray-800/60',   border: 'border-gray-200 dark:border-gray-700',  dot: 'bg-gray-400' },
 ]
 
-const PRIORITIES: { key: Priority; label: string; color: string; bar: string }[] = [
+const PRIORITIES: { key: LeadPriority; label: string; color: string; bar: string }[] = [
     { key: 'basse',    label: 'Basse',    color: 'text-gray-400',   bar: 'bg-gray-300' },
     { key: 'normale',  label: 'Normale',  color: 'text-blue-500',   bar: 'bg-blue-400' },
     { key: 'haute',    label: 'Haute',    color: 'text-amber-500',  bar: 'bg-amber-400' },
     { key: 'urgente',  label: 'Urgente',  color: 'text-red-500',    bar: 'bg-red-500' },
 ]
 
-const SOURCES: { key: Source; label: string }[] = [
+const SOURCES: { key: LeadSource; label: string }[] = [
     { key: 'linkedin',   label: 'LinkedIn' },
     { key: 'referral',   label: 'Référence' },
     { key: 'inbound',    label: 'Inbound' },
@@ -64,26 +47,14 @@ const SOURCES: { key: Source; label: string }[] = [
     { key: 'autre',      label: 'Autre' },
 ]
 
-const getStage  = (k: Stage)    => STAGES.find(s => s.key === k)!
-const getPriority = (k: Priority) => PRIORITIES.find(p => p.key === k)!
-const getSource = (k: Source)   => SOURCES.find(s => s.key === k)!
+const getStage    = (k: LeadStage)    => STAGES.find(s => s.key === k)!
+const getPriority = (k: LeadPriority) => PRIORITIES.find(p => p.key === k)!
+const getSource   = (k: LeadSource)   => SOURCES.find(s => s.key === k)!
 
 const eur = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
-// ─── Sample data ───────────────────────────────────────────────────────────────
-const SAMPLE_LEADS: Lead[] = [
-    { id: '1', company: 'Agence Créative SARL', contact: 'Marc Dupont', email: 'marc@creative.fr', phone: '06 12 34 56 78', source: 'linkedin', stage: 'nouveau', value: 8500, probability: 20, priority: 'normale', notes: 'Intéressé par nos services premium.', nextAction: 'Envoyer présentation', nextActionDate: dayjs().add(2, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(3, 'day').toISOString() },
-    { id: '2', company: 'BTP Horizon', contact: 'Sophie Martin', email: 'sophie@btp-horizon.fr', phone: '06 98 76 54 32', source: 'referral', stage: 'contacté', value: 24000, probability: 40, priority: 'haute', notes: 'Référencé par client Duval. Besoin urgent.', nextAction: 'Appel découverte', nextActionDate: dayjs().add(1, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(7, 'day').toISOString() },
-    { id: '3', company: 'Tech Solutions SAS', contact: 'Pierre Leblanc', email: 'p.leblanc@techsol.com', phone: '07 11 22 33 44', source: 'inbound', stage: 'qualification', value: 15000, probability: 60, priority: 'haute', notes: 'A rempli formulaire contact, besoin identifié.', nextAction: 'Réunion Visio', nextActionDate: dayjs().add(3, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(10, 'day').toISOString() },
-    { id: '4', company: 'Boutique Mode & Co', contact: 'Laura Petit', email: 'laura@modeco.fr', phone: '06 55 66 77 88', source: 'site_web', stage: 'proposition', value: 5200, probability: 70, priority: 'normale', notes: 'Proposition envoyée le 28/02.', nextAction: 'Relance devis', nextActionDate: dayjs().add(1, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(14, 'day').toISOString() },
-    { id: '5', company: 'Immobilier du Sud', contact: 'Jean-Claude Roux', email: 'jc.roux@immo-sud.fr', phone: '06 44 55 66 77', source: 'event', stage: 'négociation', value: 42000, probability: 80, priority: 'urgente', notes: 'Salon expo, très chaud. Négocie -10%.', nextAction: 'Finaliser contrat', nextActionDate: dayjs().add(2, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(20, 'day').toISOString() },
-    { id: '6', company: 'Resto Le Terroir', contact: 'Isabelle Faure', email: 'ifaure@leterroir.fr', phone: '06 33 44 55 66', source: 'cold_call', stage: 'gagné', value: 3800, probability: 100, priority: 'normale', notes: 'Contrat signé ! 🎉', nextAction: '', nextActionDate: '', createdAt: dayjs().subtract(25, 'day').toISOString() },
-    { id: '7', company: 'Logistique Express', contact: 'Thomas Bernard', email: 't.bernard@logexp.fr', phone: '07 77 88 99 00', source: 'cold_call', stage: 'perdu', value: 18000, probability: 0, priority: 'basse', notes: 'Budget insuffisant cette année.', nextAction: 'Recontacter en Q3', nextActionDate: dayjs().add(3, 'month').format('YYYY-MM-DD'), createdAt: dayjs().subtract(30, 'day').toISOString() },
-    { id: '8', company: 'Cabinet Consult+', contact: 'Nathalie Morel', email: 'n.morel@consultplus.fr', phone: '06 22 33 44 55', source: 'linkedin', stage: 'nouveau', value: 12000, probability: 15, priority: 'normale', notes: 'Contacté via LinkedIn. Pas encore répondu.', nextAction: 'Relance message', nextActionDate: dayjs().add(5, 'day').format('YYYY-MM-DD'), createdAt: dayjs().subtract(1, 'day').toISOString() },
-]
-
 // ─── Empty lead ────────────────────────────────────────────────────────────────
-const emptyLead = (): Omit<Lead, 'id' | 'createdAt'> => ({
+const emptyLead = (): Omit<Lead, 'documentId' | 'createdAt'> => ({
     company: '', contact: '', email: '', phone: '',
     source: 'inbound', stage: 'nouveau', value: 0,
     probability: 20, priority: 'normale', notes: '',
@@ -122,7 +93,7 @@ function LeadCard({ lead, index, onClick }: { lead: Lead; index: number; onClick
     const overdue = lead.nextActionDate && dayjs(lead.nextActionDate).isBefore(dayjs(), 'day')
 
     return (
-        <Draggable draggableId={lead.id} index={index}>
+        <Draggable draggableId={lead.documentId} index={index}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -213,7 +184,7 @@ function KanbanColumn({ stage, leads, onLeadClick }: {
                         className={`flex-1 min-h-16 rounded-xl transition-colors p-1 ${snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300 dark:border-blue-700' : ''}`}
                     >
                         {leads.map((lead, i) => (
-                            <LeadCard key={lead.id} lead={lead} index={i} onClick={onLeadClick} />
+                            <LeadCard key={lead.documentId} lead={lead} index={i} onClick={onLeadClick} />
                         ))}
                         {provided.placeholder}
                         {leads.length === 0 && !snapshot.isDraggingOver && (
@@ -293,12 +264,12 @@ function ListRow({ lead, onClick }: { lead: Lead; onClick: (l: Lead) => void }) 
 // ─── Lead Modal ────────────────────────────────────────────────────────────────
 function LeadModal({ lead, onSave, onDelete, onClose }: {
     lead: Lead | null
-    onSave: (data: Omit<Lead, 'id' | 'createdAt'>) => void
+    onSave: (data: Omit<Lead, 'documentId' | 'createdAt'>) => void
     onDelete: () => void
     onClose: () => void
 }) {
     const isNew = !lead
-    const [form, setForm] = useState<Omit<Lead, 'id' | 'createdAt'>>(
+    const [form, setForm] = useState<Omit<Lead, 'documentId' | 'createdAt'>>(
         lead ? { company: lead.company, contact: lead.contact, email: lead.email, phone: lead.phone, source: lead.source, stage: lead.stage, value: lead.value, probability: lead.probability, priority: lead.priority, notes: lead.notes, nextAction: lead.nextAction, nextActionDate: lead.nextActionDate }
              : emptyLead()
     )
@@ -422,7 +393,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Source</label>
-                                <select value={form.source} onChange={e => set('source', e.target.value as Source)}
+                                <select value={form.source} onChange={e => set('source', e.target.value as LeadSource)}
                                     className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 >
                                     {SOURCES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -512,7 +483,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
 
 // ─── Import Preview Modal ──────────────────────────────────────────────────────
 function ImportPreviewModal({ rows, onConfirm, onClose }: {
-    rows: Omit<Lead, 'id' | 'createdAt'>[]
+    rows: Omit<Lead, 'documentId' | 'createdAt'>[]
     onConfirm: () => void
     onClose: () => void
 }) {
@@ -626,12 +597,12 @@ function parseCsvLine(line: string): string[] {
     return result
 }
 
-function parseLeadsCsv(text: string): Omit<Lead, 'id' | 'createdAt'>[] {
+function parseLeadsCsv(text: string): Omit<Lead, 'documentId' | 'createdAt'>[] {
     const lines = text.trim().split('\n').map(l => l.replace(/\r/g, ''))
     if (lines.length < 2) return []
-    const validStages: Stage[]    = ['nouveau', 'contacté', 'qualification', 'proposition', 'négociation', 'gagné', 'perdu']
-    const validSources: Source[]  = ['linkedin', 'referral', 'inbound', 'cold_call', 'event', 'site_web', 'autre']
-    const validPrios: Priority[]  = ['basse', 'normale', 'haute', 'urgente']
+    const validStages: LeadStage[]    = ['nouveau', 'contacté', 'qualification', 'proposition', 'négociation', 'gagné', 'perdu']
+    const validSources: LeadSource[]  = ['linkedin', 'referral', 'inbound', 'cold_call', 'event', 'site_web', 'autre']
+    const validPrios: LeadPriority[]  = ['basse', 'normale', 'haute', 'urgente']
     return lines.slice(1)
         .map(parseCsvLine)
         .filter(cols => cols[0]?.trim())
@@ -640,11 +611,11 @@ function parseLeadsCsv(text: string): Omit<Lead, 'id' | 'createdAt'>[] {
             contact:        cols[1] || '',
             email:          cols[2] || '',
             phone:          cols[3] || '',
-            source:         (validSources.includes(cols[4] as Source) ? cols[4] : 'autre') as Source,
-            stage:          (validStages.includes(cols[5] as Stage)   ? cols[5] : 'nouveau') as Stage,
+            source:         (validSources.includes(cols[4] as LeadSource) ? cols[4] : 'autre') as LeadSource,
+            stage:          (validStages.includes(cols[5] as LeadStage)   ? cols[5] : 'nouveau') as LeadStage,
             value:          parseFloat(cols[6])  || 0,
             probability:    Math.min(100, Math.max(0, parseInt(cols[7]) || 20)),
-            priority:       (validPrios.includes(cols[8] as Priority) ? cols[8] : 'normale') as Priority,
+            priority:       (validPrios.includes(cols[8] as LeadPriority) ? cols[8] : 'normale') as LeadPriority,
             notes:          cols[9]  || '',
             nextAction:     cols[10] || '',
             nextActionDate: cols[11] || '',
@@ -653,14 +624,21 @@ function parseLeadsCsv(text: string): Omit<Lead, 'id' | 'createdAt'>[] {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 const LeadsPage = () => {
-    const [leads, setLeads] = useState<Lead[]>(SAMPLE_LEADS)
+    const dispatch = useAppDispatch()
+    const leads: Lead[] = useAppSelector((state: any) => state.leads?.leads ?? [])
+    const loading: boolean = useAppSelector((state: any) => state.leads?.loading ?? false)
+
     const [view, setView] = useState<'kanban' | 'list'>('kanban')
     const [search, setSearch] = useState('')
-    const [filterStage, setFilterStage] = useState<Stage | 'all'>('all')
-    const [filterSource, setFilterSource] = useState<Source | 'all'>('all')
+    const [filterStage, setFilterStage] = useState<LeadStage | 'all'>('all')
+    const [filterSource, setFilterSource] = useState<LeadSource | 'all'>('all')
     const [modal, setModal] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null })
-    const [importModal, setImportModal] = useState<{ open: boolean; rows: Omit<Lead, 'id' | 'createdAt'>[] }>({ open: false, rows: [] })
+    const [importModal, setImportModal] = useState<{ open: boolean; rows: Omit<Lead, 'documentId' | 'createdAt'>[] }>({ open: false, rows: [] })
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        dispatch(getLeads())
+    }, [dispatch])
 
     // KPIs
     const kpis = useMemo(() => {
@@ -683,31 +661,33 @@ const LeadsPage = () => {
 
     // Kanban by stage
     const byStage = useMemo(() =>
-        Object.fromEntries(STAGES.map(s => [s.key, filtered.filter(l => l.stage === s.key)])) as Record<Stage, Lead[]>,
+        Object.fromEntries(STAGES.map(s => [s.key, filtered.filter(l => l.stage === s.key)])) as Record<LeadStage, Lead[]>,
         [filtered]
     )
 
     const onDragEnd = useCallback((result: DropResult) => {
         if (!result.destination) return
         const { draggableId, destination } = result
-        const newStage = destination.droppableId as Stage
-        setLeads(prev => prev.map(l => l.id === draggableId ? { ...l, stage: newStage } : l))
-    }, [])
+        const newStage = destination.droppableId as LeadStage
+        dispatch(updateLead({ documentId: draggableId, data: { stage: newStage } }))
+    }, [dispatch])
 
     const openNew = () => setModal({ open: true, lead: null })
     const openEdit = (lead: Lead) => setModal({ open: true, lead })
 
-    const handleSave = (data: Omit<Lead, 'id' | 'createdAt'>) => {
+    const handleSave = (data: Omit<Lead, 'documentId' | 'createdAt'>) => {
         if (modal.lead) {
-            setLeads(prev => prev.map(l => l.id === modal.lead!.id ? { ...l, ...data } : l))
+            dispatch(updateLead({ documentId: modal.lead.documentId, data }))
         } else {
-            setLeads(prev => [...prev, { id: `lead_${Date.now()}`, createdAt: new Date().toISOString(), ...data }])
+            dispatch(createLead(data))
         }
         setModal({ open: false, lead: null })
     }
 
     const handleDelete = () => {
-        if (modal.lead) setLeads(prev => prev.filter(l => l.id !== modal.lead!.id))
+        if (modal.lead) {
+            dispatch(deleteLead(modal.lead.documentId))
+        }
         setModal({ open: false, lead: null })
     }
 
@@ -743,13 +723,10 @@ const LeadsPage = () => {
         e.target.value = ''
     }
 
-    const confirmImport = () => {
-        const newLeads: Lead[] = importModal.rows.map(row => ({
-            id: `lead_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            createdAt: new Date().toISOString(),
-            ...row,
-        }))
-        setLeads(prev => [...prev, ...newLeads])
+    const confirmImport = async () => {
+        for (const row of importModal.rows) {
+            await dispatch(createLead(row))
+        }
         setImportModal({ open: false, rows: [] })
     }
 
@@ -825,7 +802,7 @@ const LeadsPage = () => {
                         <HiOutlineFilter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <select
                             value={filterStage}
-                            onChange={e => setFilterStage(e.target.value as Stage | 'all')}
+                            onChange={e => setFilterStage(e.target.value as LeadStage | 'all')}
                             className="pl-9 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all"
                         >
                             <option value="all">Toutes les étapes</option>
@@ -838,7 +815,7 @@ const LeadsPage = () => {
                     <div className="relative">
                         <select
                             value={filterSource}
-                            onChange={e => setFilterSource(e.target.value as Source | 'all')}
+                            onChange={e => setFilterSource(e.target.value as LeadSource | 'all')}
                             className="pl-3 pr-8 py-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all"
                         >
                             <option value="all">Toutes les sources</option>
@@ -866,51 +843,55 @@ const LeadsPage = () => {
 
             {/* ── Content ── */}
             <div className="flex-1 overflow-auto">
-                <AnimatePresence mode="wait">
-                    {view === 'kanban' ? (
-                        <motion.div
-                            key="kanban"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            className="flex gap-4 p-6 min-h-full w-max"
-                        >
-                            <DragDropContext onDragEnd={onDragEnd}>
-                                {STAGES.map(stage => (
-                                    <KanbanColumn key={stage.key} stage={stage} leads={byStage[stage.key]} onLeadClick={openEdit} />
-                                ))}
-                            </DragDropContext>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="list"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            className="p-6"
-                        >
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-                                            {['Entreprise', 'Étape', 'Valeur', 'Probabilité', 'Priorité', 'Source', 'Prochaine action', ''].map(h => (
-                                                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                {loading ? (
+                    <div className="flex items-center justify-center h-full text-sm text-gray-400">Chargement…</div>
+                ) : (
+                    <AnimatePresence mode="wait">
+                        {view === 'kanban' ? (
+                            <motion.div
+                                key="kanban"
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="flex gap-4 p-6 min-h-full w-max"
+                            >
+                                <DragDropContext onDragEnd={onDragEnd}>
+                                    {STAGES.map(stage => (
+                                        <KanbanColumn key={stage.key} stage={stage} leads={byStage[stage.key]} onLeadClick={openEdit} />
+                                    ))}
+                                </DragDropContext>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="list"
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="p-6"
+                            >
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                                                {['Entreprise', 'Étape', 'Valeur', 'Probabilité', 'Priorité', 'Source', 'Prochaine action', ''].map(h => (
+                                                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filtered.map(lead => (
+                                                <ListRow key={lead.documentId} lead={lead} onClick={openEdit} />
                                             ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filtered.map(lead => (
-                                            <ListRow key={lead.id} lead={lead} onClick={openEdit} />
-                                        ))}
-                                        {filtered.length === 0 && (
-                                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">Aucun lead trouvé</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                            {filtered.length === 0 && (
+                                                <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">Aucun lead trouvé</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                )}
             </div>
 
             {/* Lead modal */}
