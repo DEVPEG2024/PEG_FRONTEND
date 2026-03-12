@@ -1,4 +1,3 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import {
@@ -9,7 +8,14 @@ import {
 } from 'react-hook-form';
 import { t } from 'i18next';
 import { Select } from '@/components/ui';
+import {
+  HiOutlineOfficeBuilding,
+  HiOutlineLocationMarker,
+  HiOutlinePhone,
+  HiOutlineMail,
+} from 'react-icons/hi';
 import { ProducerFormModel } from './ProducerForm';
+
 type country = {
   label: string;
   dialCode: string;
@@ -29,24 +35,33 @@ const ProducerFields = (props: ProducerFieldsProps) => {
   const values = watch();
 
   const formatPhoneNumber = (value: string): string => {
-    // Retirer tous les espaces
     const digitsOnly = value.replace(/\D/g, '');
-    // Ajouter les espaces après chaque 2 chiffres
     return digitsOnly
-      .slice(0, 10) // Limiter à 10 chiffres
+      .slice(0, 10)
       .replace(/(\d{2})(?=\d)/g, '$1 ')
       .trim();
   };
 
   return (
-    <AdaptableCard bordered={false} className="mb-4">
-      <h5>{t('p.producer')}</h5>
-      <p className="mb-6">{t('p.producer_description')}</p>
-      <div className="flex gap-4">
+    <div className="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden mb-4">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <HiOutlineOfficeBuilding className="text-white text-xl" />
+          </div>
+          <div>
+            <h5 className="text-white font-semibold m-0">{t('p.producer')}</h5>
+            <p className="text-indigo-100 text-sm m-0">{t('p.producer_description')}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-6 space-y-4">
         <FormItem
           label="Nom du producteur"
-          className="w-full"
-          invalid={errors.name ? true : false}
+          invalid={!!errors.name}
           errorMessage={errors.name?.message}
         >
           <Controller
@@ -62,132 +77,148 @@ const ProducerFields = (props: ProducerFieldsProps) => {
             )}
           />
         </FormItem>
-      </div>
-      <FormItem
-        label={t('address')}
-        invalid={errors.address ? true : false}
-        errorMessage={errors.address?.message}
-      >
-        <Controller
-          name="address"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              type="text"
-              autoComplete="off"
-              placeholder={t('address')}
+
+        {/* Adresse */}
+        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
+          <HiOutlineLocationMarker className="text-indigo-400" />
+          <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">
+            Adresse
+          </span>
+        </div>
+
+        <FormItem
+          label={t('address')}
+          invalid={!!errors.address}
+          errorMessage={errors.address?.message}
+        >
+          <Controller
+            name="address"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                autoComplete="off"
+                placeholder={t('address')}
+              />
+            )}
+          />
+        </FormItem>
+
+        <div className="flex gap-4">
+          <FormItem
+            label={t('zipCode')}
+            className="w-1/3"
+            invalid={!!errors.zipCode}
+            errorMessage={errors.zipCode?.message}
+          >
+            <Controller
+              name="zipCode"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder={t('zipCode')}
+                />
+              )}
             />
-          )}
-        />
-      </FormItem>
-      <div className="flex gap-4">
-        <FormItem
-          label={t('zipCode')}
-          className="w-1/3"
-          invalid={errors.zipCode ? true : false}
-          errorMessage={errors.zipCode?.message}
-        >
-          <Controller
-            name="zipCode"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('zipCode')}
-              />
-            )}
-          />
-        </FormItem>
-        <FormItem
-          label={t('city')}
-          className="w-1/3"
-          invalid={errors.city ? true : false}
-          errorMessage={errors.city?.message}
-        >
-          <Controller
-            name="city"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('city')}
-              />
-            )}
-          />
-        </FormItem>
-        <FormItem
-          label={t('country')}
-          className="w-1/3"
-          invalid={errors.country ? true : false}
-          errorMessage={errors.country?.message}
-        >
-          <Controller
-            name="country"
-            control={control}
-            render={({ field }) => (
-              <Select
-                field={field}
-                options={countries}
-                placeholder="Choisissez le pays"
-                value={countries.filter(
-                  (country) => country.value === field.value
-                )}
-                onChange={(option) => field.onChange(option?.value)}
-              />
-            )}
-          />
-        </FormItem>
+          </FormItem>
+          <FormItem
+            label={t('city')}
+            className="w-1/3"
+            invalid={!!errors.city}
+            errorMessage={errors.city?.message}
+          >
+            <Controller
+              name="city"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder={t('city')}
+                />
+              )}
+            />
+          </FormItem>
+          <FormItem
+            label={t('country')}
+            className="w-1/3"
+            invalid={!!errors.country}
+            errorMessage={errors.country?.message}
+          >
+            <Controller
+              name="country"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  field={field}
+                  options={countries}
+                  placeholder="Pays"
+                  value={countries.filter((c) => c.value === field.value)}
+                  onChange={(option) => field.onChange(option?.value)}
+                />
+              )}
+            />
+          </FormItem>
+        </div>
+
+        {/* Contact */}
+        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
+          <HiOutlinePhone className="text-indigo-400" />
+          <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">
+            Contact
+          </span>
+        </div>
+
+        <div className="flex gap-4">
+          <FormItem
+            label={t('phone')}
+            className="w-1/2"
+            invalid={!!errors.phoneNumber}
+            errorMessage={errors.phoneNumber?.message}
+          >
+            <Controller
+              name="phoneNumber"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder={t('phone')}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    field.onChange(formatPhoneNumber(e.target.value));
+                  }}
+                />
+              )}
+            />
+          </FormItem>
+          <FormItem
+            label={t('email')}
+            className="w-1/2"
+            invalid={!!errors.email}
+            errorMessage={errors.email?.message}
+          >
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="text"
+                  autoComplete="off"
+                  placeholder={t('email')}
+                />
+              )}
+            />
+          </FormItem>
+        </div>
       </div>
-      <div className="flex gap-4">
-        <FormItem
-          label={t('phone')}
-          className="w-1/2"
-          invalid={errors.phoneNumber ? true : false}
-          errorMessage={errors.phoneNumber?.message}
-        >
-          <Controller
-            name="phoneNumber"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('phone')}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const formattedNumber = formatPhoneNumber(e.target.value);
-                  field.onChange(formattedNumber);
-                }}
-              />
-            )}
-          />
-        </FormItem>
-        <FormItem
-          label={t('email')}
-          className="w-1/2"
-          invalid={errors.email ? true : false}
-          errorMessage={errors.email?.message}
-        >
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('email')}
-              />
-            )}
-          />
-        </FormItem>
-      </div>
-    </AdaptableCard>
+    </div>
   );
 };
 

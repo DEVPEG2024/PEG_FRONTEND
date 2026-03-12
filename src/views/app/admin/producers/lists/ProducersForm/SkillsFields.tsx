@@ -1,10 +1,15 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Controller } from 'react-hook-form';
 import Select from '@/components/ui/Select';
 import CreatableSelect from 'react-select/creatable';
-import { HiOutlineStar, HiOutlineTag, HiOutlineThumbUp, HiOutlineThumbDown } from 'react-icons/hi';
+import {
+  HiOutlineStar,
+  HiOutlineTag,
+  HiOutlineThumbUp,
+  HiOutlineThumbDown,
+  HiOutlineCollection,
+} from 'react-icons/hi';
 import { Options } from '../EditProducer';
 
 type SkillsFieldsProps = {
@@ -30,81 +35,115 @@ const CERTIFICATION_OPTIONS = [
 
 const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsProps) => {
   return (
-    <AdaptableCard bordered={false} className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <HiOutlineStar className="text-amber-500 text-xl" />
-        <h5>Compétences & Spécialités</h5>
-      </div>
-      <p className="mb-6 text-gray-500 text-sm">
-        Définissez les domaines d'expertise et les labels du producteur.
-      </p>
-
-      <FormItem
-        label="Catégories de produits maîtrisées"
-        className="mb-4"
-      >
-        <Controller
-          name="productCategories"
-          control={control}
-          render={({ field }) => (
-            <Select
-              isMulti
-              field={field}
-              value={(field.value || []).map((v: string) =>
-                productCategoryOptions.find((opt) => opt.value === v) || { value: v, label: v }
-              )}
-              onChange={(options: any) =>
-                field.onChange(options ? options.map((o: any) => o.value) : [])
-              }
-              options={productCategoryOptions}
-              placeholder="Sélectionner des catégories..."
-              noOptionsMessage={() => 'Aucune catégorie disponible'}
-            />
-          )}
-        />
-      </FormItem>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <FormItem label="Points forts">
-          <div className="flex items-start gap-2">
-            <HiOutlineThumbUp className="text-green-500 mt-2 flex-shrink-0" />
-            <Controller
-              name="strengths"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  textArea
-                  rows={3}
-                  placeholder="Ex: Réactivité, qualité premium, délais courts..."
-                />
-              )}
-            />
+    <div className="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden mb-4">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-amber-400 to-orange-500 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <HiOutlineStar className="text-white text-xl" />
           </div>
-        </FormItem>
-
-        <FormItem label="Points faibles">
-          <div className="flex items-start gap-2">
-            <HiOutlineThumbDown className="text-red-400 mt-2 flex-shrink-0" />
-            <Controller
-              name="weaknesses"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  textArea
-                  rows={3}
-                  placeholder="Ex: Délais longs, MOQ élevé..."
-                />
-              )}
-            />
+          <div>
+            <h5 className="text-white font-semibold m-0">Compétences & Spécialités</h5>
+            <p className="text-amber-100 text-sm m-0">
+              Domaines d'expertise et labels du producteur.
+            </p>
           </div>
-        </FormItem>
+        </div>
       </div>
 
-      <FormItem label="Certifications & Labels">
-        <div className="flex items-center gap-2">
-          <HiOutlineTag className="text-indigo-500 flex-shrink-0" />
+      {/* Body */}
+      <div className="p-6 space-y-4">
+        {/* Catégories produits */}
+        <div className="flex items-center gap-2 pb-1">
+          <HiOutlineCollection className="text-amber-500" />
+          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">
+            Catégories de produits maîtrisées
+          </span>
+        </div>
+
+        <FormItem className="mb-0">
+          <Controller
+            name="productCategories"
+            control={control}
+            render={({ field }) => (
+              <Select
+                isMulti
+                field={field}
+                value={(field.value || []).map((v: string) =>
+                  productCategoryOptions.find((opt) => opt.value === v) || { value: v, label: v }
+                )}
+                onChange={(options: any) =>
+                  field.onChange(options ? options.map((o: any) => o.value) : [])
+                }
+                options={productCategoryOptions}
+                placeholder="Sélectionner des catégories..."
+                noOptionsMessage={() => 'Aucune catégorie disponible'}
+              />
+            )}
+          />
+        </FormItem>
+
+        {/* Points forts / faibles */}
+        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
+          <HiOutlineThumbUp className="text-amber-500" />
+          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">
+            Forces & Faiblesses
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormItem label="Points forts">
+            <div className="relative">
+              <div className="absolute top-2 left-3 z-10">
+                <HiOutlineThumbUp className="text-green-500" />
+              </div>
+              <Controller
+                name="strengths"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    textArea
+                    rows={3}
+                    className="pl-8"
+                    placeholder="Ex: Réactivité, qualité premium, délais courts..."
+                  />
+                )}
+              />
+            </div>
+          </FormItem>
+
+          <FormItem label="Points faibles">
+            <div className="relative">
+              <div className="absolute top-2 left-3 z-10">
+                <HiOutlineThumbDown className="text-red-400" />
+              </div>
+              <Controller
+                name="weaknesses"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    textArea
+                    rows={3}
+                    className="pl-8"
+                    placeholder="Ex: Délais longs, MOQ élevé..."
+                  />
+                )}
+              />
+            </div>
+          </FormItem>
+        </div>
+
+        {/* Certifications */}
+        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
+          <HiOutlineTag className="text-amber-500" />
+          <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">
+            Certifications & Labels
+          </span>
+        </div>
+
+        <FormItem className="mb-0">
           <Controller
             name="certifications"
             control={control}
@@ -125,9 +164,9 @@ const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsP
               />
             )}
           />
-        </div>
-      </FormItem>
-    </AdaptableCard>
+        </FormItem>
+      </div>
+    </div>
   );
 };
 

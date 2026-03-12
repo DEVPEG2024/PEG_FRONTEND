@@ -1,10 +1,9 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
 import { FormItem } from '@/components/ui/Form';
 import { Controller, useWatch } from 'react-hook-form';
 import Select from '@/components/ui/Select';
 import Switcher from '@/components/ui/Switcher';
-import { HiOutlineCurrencyEuro, HiOutlineTag } from 'react-icons/hi';
+import { HiOutlineCurrencyEuro, HiOutlineTag, HiOutlineChartBar } from 'react-icons/hi';
 
 type PricingFieldsProps = {
   control: any;
@@ -17,84 +16,138 @@ const PRICE_RANGE_OPTIONS = [
   { value: 'premium', label: '💰💰💰 Premium' },
 ];
 
+const PRICE_RANGE_COLORS: Record<string, string> = {
+  low: 'bg-green-100 text-green-700 border-green-200',
+  medium: 'bg-blue-100 text-blue-700 border-blue-200',
+  premium: 'bg-purple-100 text-purple-700 border-purple-200',
+};
+
 const PricingFields = ({ control, errors }: PricingFieldsProps) => {
   const volumeDiscountAvailable = useWatch({ control, name: 'volumeDiscountAvailable' });
+  const priceRange = useWatch({ control, name: 'priceRange' });
 
   return (
-    <AdaptableCard bordered={false} className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <HiOutlineCurrencyEuro className="text-emerald-500 text-xl" />
-        <h5>Tarification</h5>
-      </div>
-      <p className="mb-6 text-gray-500 text-sm">
-        Positionnement tarifaire et conditions de remise.
-      </p>
-
-      <FormItem label="Fourchette de prix">
-        <Controller
-          name="priceRange"
-          control={control}
-          render={({ field }) => (
-            <Select
-              field={field}
-              options={PRICE_RANGE_OPTIONS}
-              placeholder="Choisissez le positionnement"
-              value={PRICE_RANGE_OPTIONS.find((o) => o.value === field.value) || null}
-              onChange={(option: any) => field.onChange(option?.value || null)}
-              isClearable
-            />
-          )}
-        />
-      </FormItem>
-
-      <div className="mb-4">
-        <FormItem label="Remise sur volume possible">
-          <div className="flex items-center gap-3">
-            <HiOutlineTag className="text-indigo-400 flex-shrink-0" />
-            <Controller
-              name="volumeDiscountAvailable"
-              control={control}
-              render={({ field }) => (
-                <Switcher
-                  checked={!!field.value}
-                  onChange={(checked) => field.onChange(checked)}
-                />
-              )}
-            />
-            <span className="text-sm text-gray-500">
-              {volumeDiscountAvailable ? 'Oui, remise disponible' : 'Non'}
-            </span>
+    <div className="bg-white rounded-xl shadow-sm border border-emerald-100 overflow-hidden mb-4">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <HiOutlineCurrencyEuro className="text-white text-xl" />
           </div>
-        </FormItem>
+          <div>
+            <h5 className="text-white font-semibold m-0">Tarification</h5>
+            <p className="text-emerald-100 text-sm m-0">
+              Positionnement tarifaire et conditions de remise.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {volumeDiscountAvailable && (
-        <FormItem
-          label="Taux de remise sur volume"
-          invalid={!!errors.volumeDiscountRate}
-          errorMessage={errors.volumeDiscountRate?.message}
-        >
+      {/* Body */}
+      <div className="p-6 space-y-4">
+        {/* Fourchette de prix */}
+        <div className="flex items-center gap-2 pb-1">
+          <HiOutlineChartBar className="text-emerald-500" />
+          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">
+            Positionnement tarifaire
+          </span>
+        </div>
+
+        <FormItem label="Fourchette de prix">
           <Controller
-            name="volumeDiscountRate"
+            name="priceRange"
             control={control}
             render={({ field }) => (
-              <Input
-                {...field}
-                type="number"
-                min={0}
-                max={100}
-                placeholder="Ex: 10"
-                suffix="%"
-                value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : Number(e.target.value))
-                }
+              <Select
+                field={field}
+                options={PRICE_RANGE_OPTIONS}
+                placeholder="Choisissez le positionnement"
+                value={PRICE_RANGE_OPTIONS.find((o) => o.value === field.value) || null}
+                onChange={(option: any) => field.onChange(option?.value || null)}
+                isClearable
               />
             )}
           />
         </FormItem>
-      )}
-    </AdaptableCard>
+
+        {priceRange && (
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${PRICE_RANGE_COLORS[priceRange] || ''}`}
+          >
+            <HiOutlineCurrencyEuro />
+            {PRICE_RANGE_OPTIONS.find((o) => o.value === priceRange)?.label}
+          </div>
+        )}
+
+        {/* Remises */}
+        <div className="flex items-center gap-2 pt-2 pb-1 border-t border-gray-100">
+          <HiOutlineTag className="text-emerald-500" />
+          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">
+            Remise sur volume
+          </span>
+        </div>
+
+        <div
+          className={`rounded-lg border p-4 transition-colors ${
+            volumeDiscountAvailable
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-gray-50 border-gray-200'
+          }`}
+        >
+          <FormItem label="Remise sur volume possible" className="mb-0">
+            <div className="flex items-center gap-3">
+              <Controller
+                name="volumeDiscountAvailable"
+                control={control}
+                render={({ field }) => (
+                  <Switcher
+                    checked={!!field.value}
+                    onChange={(checked) => field.onChange(checked)}
+                  />
+                )}
+              />
+              <span
+                className={`text-sm font-medium ${
+                  volumeDiscountAvailable ? 'text-emerald-600' : 'text-gray-400'
+                }`}
+              >
+                {volumeDiscountAvailable ? '✓ Remise disponible' : 'Non disponible'}
+              </span>
+            </div>
+          </FormItem>
+
+          {volumeDiscountAvailable && (
+            <div className="mt-4">
+              <FormItem
+                label="Taux de remise"
+                invalid={!!errors.volumeDiscountRate}
+                errorMessage={errors.volumeDiscountRate?.message}
+                className="mb-0"
+              >
+                <Controller
+                  name="volumeDiscountRate"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="Ex: 10"
+                      suffix="%"
+                      value={field.value ?? ''}
+                      onChange={(e) =>
+                        field.onChange(e.target.value === '' ? null : Number(e.target.value))
+                      }
+                    />
+                  )}
+                />
+              </FormItem>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
