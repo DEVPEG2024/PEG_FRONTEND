@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { deleteUser, getUsers, updateUser, useAppSelector } from './store';
+import reducer, { deleteUser, getUsers, getUsersIdTable, updateUser, useAppSelector } from './store';
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiUserGroup } from 'react-icons/hi';
 import { IoWarningOutline } from 'react-icons/io5';
 
@@ -40,10 +40,11 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
-  const { users, total, loading } = useAppSelector((state) => state.users.data);
+  const { users, total, loading, usersId } = useAppSelector((state) => state.users.data);
 
   useEffect(() => {
     dispatch(getUsers({ pagination: { page: currentPage, pageSize }, searchTerm }));
+    dispatch(getUsersIdTable());
   }, [currentPage, searchTerm]);
 
   const isUserMissingInfos = (user: User) =>
@@ -89,6 +90,7 @@ const UsersList = () => {
             const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.username || '?'
             const roleCfg = ROLE_CFG[user.role?.name] ?? ROLE_CFG.customer
             const isSuperAdmin = user.role?.name === 'super_admin'
+            const numericId = usersId.find(({ documentId: dId }) => dId === user.documentId)?.id
             const missing = isUserMissingInfos(user)
             return (
               <div key={user.documentId}
@@ -123,14 +125,14 @@ const UsersList = () => {
                 {/* Block toggle */}
                 <Toggle
                   checked={!user.blocked}
-                  disabled={isSuperAdmin}
-                  onChange={() => dispatch(updateUser({ user: { blocked: !user.blocked }, id: user.documentId }))}
+                  disabled={isSuperAdmin || numericId === undefined}
+                  onChange={() => numericId !== undefined && dispatch(updateUser({ user: { blocked: !user.blocked }, id: String(numericId) }))}
                 />
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
                   <Btn onClick={() => navigate(`/admin/users/edit/${user.documentId}`)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" disabled={isSuperAdmin} />
-                  <Btn onClick={() => dispatch(deleteUser(user.documentId))} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" disabled={isSuperAdmin} />
+                  <Btn onClick={() => numericId !== undefined && dispatch(deleteUser(String(numericId)))} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" disabled={isSuperAdmin || numericId === undefined} />
                 </div>
               </div>
             )

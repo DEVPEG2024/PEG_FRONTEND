@@ -7,7 +7,7 @@ const Password = ({ onTabChange }: { onTabChange: (val: string) => void }) => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
 
   const onFormSubmit = async (values: UserPasswordFormModel): Promise<void> => {
-    await dispatch(updateUserPassword({ newPassword: values.newPassword, id: user.documentId }));
+    await dispatch(updateUserPassword({ newPassword: values.newPassword, id: String(user.id) }));
     onTabChange('profile');
   };
 

@@ -5,7 +5,11 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
 import reducer, {
+  getCustomersIdTable,
+  getProducersIdTable,
+  getRolesIdTable,
   getUserById,
+  getUsersIdTable,
   setUser,
   useAppDispatch,
   useAppSelector,
@@ -62,7 +66,7 @@ const EditUser = () => {
   const onEdition: boolean =
     useLocation().pathname.split('/').slice(-2).shift() === 'edit';
   const { documentId } = useParams<EditUserParams>() as EditUserParams;
-  const { user } = useAppSelector(
+  const { user, usersId, rolesId, customersId, producersId } = useAppSelector(
     (state) => state.users.data
   );
   const [customers, setCustomers] = useState<Options[]>([]);
@@ -85,6 +89,10 @@ const EditUser = () => {
     if (!user && onEdition) {
       dispatch(getUserById(documentId));
     }
+    dispatch(getUsersIdTable());
+    dispatch(getRolesIdTable());
+    dispatch(getCustomersIdTable());
+    dispatch(getProducersIdTable());
     return () => {
       dispatch(setUser(null));
     };
@@ -136,20 +144,21 @@ const EditUser = () => {
 
   const updateOrCreateUser = async (data: User): Promise<User> => {
     if (onEdition) {
-      const response: any = await apiUpdateUser(data, data.documentId!);
+      const numericId = usersId.find(({ documentId: dId }) => dId === data.documentId)?.id;
+      const response: any = await apiUpdateUser(data, String(numericId));
       return response.data;
     }
     const created = await apiCreateUser(data);
-    const response: any = await apiUpdateUser(data, created.data.user.documentId);
+    const response: any = await apiUpdateUser(data, String(created.data.user.id));
     return response.data;
   };
 
   const handleFormSubmit = async (values: UserFormModel) => {
     const data: User = {
       ...values,
-      role: values.role,
-      customer: values.customer,
-      producer: values.producer,
+      role: rolesId.find(({ documentId: dId }) => dId === values.role)?.id ?? values.role,
+      customer: customersId.find(({ documentId: dId }) => dId === values.customer)?.id ?? values.customer,
+      producer: producersId.find(({ documentId: dId }) => dId === values.producer)?.id ?? values.producer,
     };
     if (!onEdition) {
       delete data.documentId;
