@@ -5,11 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
 import reducer, {
-  getCustomersIdTable,
-  getProducersIdTable,
-  getRolesIdTable,
   getUserById,
-  getUsersIdTable,
   setUser,
   useAppDispatch,
   useAppSelector,
@@ -66,7 +62,7 @@ const EditUser = () => {
   const onEdition: boolean =
     useLocation().pathname.split('/').slice(-2).shift() === 'edit';
   const { documentId } = useParams<EditUserParams>() as EditUserParams;
-  const { user, usersId, rolesId, customersId, producersId } = useAppSelector(
+  const { user } = useAppSelector(
     (state) => state.users.data
   );
   const [customers, setCustomers] = useState<Options[]>([]);
@@ -89,10 +85,6 @@ const EditUser = () => {
     if (!user && onEdition) {
       dispatch(getUserById(documentId));
     }
-    dispatch(getUsersIdTable());
-    dispatch(getRolesIdTable());
-    dispatch(getCustomersIdTable());
-    dispatch(getProducersIdTable());
     return () => {
       dispatch(setUser(null));
     };
@@ -147,18 +139,15 @@ const EditUser = () => {
       const {
         updateUsersPermissionsUser,
       }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
-        apiUpdateUser(
-          data,
-          usersId.find(({ documentId }) => documentId === data.documentId)!.id
-        )
+        apiUpdateUser(data, data.documentId!)
       );
       return updateUsersPermissionsUser;
     }
-    const user = await apiCreateUser(data);
+    const created = await apiCreateUser(data);
     const {
       updateUsersPermissionsUser,
     }: { updateUsersPermissionsUser: { data: User } } = await unwrapData(
-      apiUpdateUser(data, user.data.user.id)
+      apiUpdateUser(data, created.data.user.documentId)
     );
     return updateUsersPermissionsUser;
   };
@@ -166,13 +155,9 @@ const EditUser = () => {
   const handleFormSubmit = async (values: UserFormModel) => {
     const data: User = {
       ...values,
-      role: rolesId.find(({ documentId }) => documentId === values.role)!.id,
-      customer: customersId.find(
-        ({ documentId }) => documentId === values.customer
-      )?.id,
-      producer: producersId.find(
-        ({ documentId }) => documentId === values.producer
-      )?.id,
+      role: values.role,
+      customer: values.customer,
+      producer: values.producer,
     };
     if (!onEdition) {
       delete data.documentId;

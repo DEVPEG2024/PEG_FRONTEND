@@ -29,7 +29,7 @@ const initialState: UserState = {
 
 export type UpdateUser = {
   user: Partial<User>;
-  id: number;
+  id: string;
 }
 
 export const updateOwnUser = createAsyncThunk(
@@ -42,7 +42,7 @@ export const updateOwnUser = createAsyncThunk(
 
 export type UpdateUserPassword = {
   newPassword: string;
-  id: number;
+  id: string;
 }
 
 export const updateUserPassword = createAsyncThunk(

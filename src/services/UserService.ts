@@ -131,7 +131,7 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
 }
 
 // update user
-export async function apiUpdateUser(user: Partial<User>, id: number): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
+export async function apiUpdateUser(user: Partial<User>, id: string): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
     const query = `
     mutation UpdateUser($updateUsersPermissionsUserId: ID!, $data: UsersPermissionsUserInput!) {
         updateUsersPermissionsUser(id: $updateUsersPermissionsUserId, data: $data) {
@@ -179,7 +179,7 @@ export async function apiUpdateUser(user: Partial<User>, id: number): Promise<Ax
 }
 
 // update user password
-export async function apiUpdateUserPassword(password: string, id: number): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
+export async function apiUpdateUserPassword(password: string, id: string): Promise<AxiosResponse<ApiResponse<{updateUsersPermissionsUser: {data: User}}>>> {
     const query = `
     mutation UpdateUser($updateUsersPermissionsUserId: ID!, $data: UsersPermissionsUserInput!) {
         updateUsersPermissionsUser(id: $updateUsersPermissionsUserId, data: $data) {
@@ -208,7 +208,7 @@ export type DeleteUserResponse = {
     documentId: string
 }
 
-export async function apiDeleteUser(id: number): Promise<AxiosResponse<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>> {
+export async function apiDeleteUser(id: string): Promise<AxiosResponse<ApiResponse<{deleteUsersPermissionsUser: {data: DeleteUserResponse}}>>> {
     const query = `
     mutation DeleteUser($deleteUsersPermissionsUserId: ID!) {
         deleteUsersPermissionsUser(id: $deleteUsersPermissionsUserId) {

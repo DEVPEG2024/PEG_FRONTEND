@@ -81,7 +81,7 @@ export const getUserById = createAsyncThunk(
 
 export type UserRequest = {
   user: Partial<User>;
-  id: number;
+  id: string;
 };
 
 export const updateUser = createAsyncThunk(
@@ -98,7 +98,7 @@ export const updateUser = createAsyncThunk(
 
 export const deleteUser = createAsyncThunk(
   SLICE_NAME + '/deleteUser',
-  async (id: number): Promise<DeleteUserResponse> => {
+  async (id: string): Promise<DeleteUserResponse> => {
     const {
       deleteUsersPermissionsUser,
     }: { deleteUsersPermissionsUser: { data: DeleteUserResponse } } =
