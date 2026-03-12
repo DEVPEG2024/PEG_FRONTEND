@@ -60,7 +60,7 @@ const StatWidget = ({
 
 const DashboardCustomer = () => {
   const dispatch = useAppDispatch();
-  const { customer, products, projects } = useAppSelector(
+  const { customer, products, projects, loading } = useAppSelector(
     (state) => state.dashboardCustomer.data
   );
   const { user }: { user: User } = useSelector(
@@ -75,6 +75,16 @@ const DashboardCustomer = () => {
 
   const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;
   const projectsInProgress = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} style={{ height: '80px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        ))}
+      </div>
+    );
+  }
 
   if (!customer) {
     return (
