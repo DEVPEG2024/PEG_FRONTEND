@@ -1,15 +1,7 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
-import { FormItem } from '@/components/ui/Form';
 import { Controller } from 'react-hook-form';
 import Select from '@/components/ui/Select';
 import CreatableSelect from 'react-select/creatable';
-import {
-  HiOutlineStar,
-  HiOutlineTag,
-  HiOutlineThumbUp,
-  HiOutlineThumbDown,
-} from 'react-icons/hi';
 import { Options } from '../EditProducer';
 
 type SkillsFieldsProps = {
@@ -33,100 +25,127 @@ const CERTIFICATION_OPTIONS = [
   { value: 'FSC', label: 'FSC' },
 ];
 
+const card: React.CSSProperties = {
+  background: 'linear-gradient(160deg, #1f1a0e 0%, #130f08 100%)',
+  border: '1.5px solid rgba(245,158,11,0.2)',
+  borderRadius: '16px',
+  padding: '20px 22px',
+  marginBottom: '16px',
+  fontFamily: 'Inter, sans-serif',
+};
+
+const fieldLabel: React.CSSProperties = {
+  display: 'block',
+  color: 'rgba(255,255,255,0.4)',
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  marginBottom: '7px',
+};
+
+const divider: React.CSSProperties = {
+  borderTop: '1px solid rgba(255,255,255,0.06)',
+  margin: '16px 0 14px',
+};
+
+const subLabel: React.CSSProperties = {
+  color: 'rgba(251,191,36,0.5)',
+  fontSize: '9px',
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  marginBottom: '12px',
+};
+
 const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsProps) => {
   return (
-    <AdaptableCard bordered={false} className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <HiOutlineStar className="text-amber-500 text-xl" />
-        <h5>Compétences & Spécialités</h5>
-      </div>
-      <p className="mb-6 text-gray-500 text-sm">
+    <div style={card}>
+      <p style={{ color: 'rgba(251,191,36,0.8)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>
+        ⭐ Compétences & Spécialités
+      </p>
+      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginBottom: '16px', marginTop: '-8px' }}>
         Définissez les domaines d'expertise et les labels du producteur.
       </p>
 
-      <FormItem label="Catégories de produits maîtrisées" className="mb-4">
-        <Controller
-          name="productCategories"
-          control={control}
-          render={({ field }) => (
-            <Select
-              isMulti
-              field={field}
-              value={(field.value || []).map((v: string) =>
-                productCategoryOptions.find((opt) => opt.value === v) || { value: v, label: v }
-              )}
-              onChange={(options: any) =>
-                field.onChange(options ? options.map((o: any) => o.value) : [])
-              }
-              options={productCategoryOptions}
-              placeholder="Sélectionner des catégories..."
-              noOptionsMessage={() => 'Aucune catégorie disponible'}
-            />
-          )}
-        />
-      </FormItem>
+      <label style={fieldLabel}>Catégories de produits maîtrisées</label>
+      <Controller
+        name="productCategories"
+        control={control}
+        render={({ field }) => (
+          <Select
+            isMulti
+            field={field}
+            value={(field.value || []).map((v: string) =>
+              productCategoryOptions.find((opt) => opt.value === v) || { value: v, label: v }
+            )}
+            onChange={(options: any) =>
+              field.onChange(options ? options.map((o: any) => o.value) : [])
+            }
+            options={productCategoryOptions}
+            placeholder="Sélectionner des catégories..."
+            noOptionsMessage={() => 'Aucune catégorie disponible'}
+          />
+        )}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <FormItem label="Points forts">
-          <div className="flex items-start gap-2">
-            <HiOutlineThumbUp className="text-green-500 mt-2 flex-shrink-0" />
-            <Controller
-              name="strengths"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  textArea
-                  rows={3}
-                  placeholder="Ex: Réactivité, qualité premium, délais courts..."
-                />
-              )}
-            />
-          </div>
-        </FormItem>
+      <div style={divider} />
+      <p style={subLabel}>💪 Forces & Faiblesses</p>
 
-        <FormItem label="Points faibles">
-          <div className="flex items-start gap-2">
-            <HiOutlineThumbDown className="text-red-400 mt-2 flex-shrink-0" />
-            <Controller
-              name="weaknesses"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  textArea
-                  rows={3}
-                  placeholder="Ex: Délais longs, MOQ élevé..."
-                />
-              )}
-            />
-          </div>
-        </FormItem>
-      </div>
-
-      <FormItem label="Certifications & Labels">
-        <div className="flex items-center gap-2">
-          <HiOutlineTag className="text-indigo-500 flex-shrink-0" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div>
+          <label style={{ ...fieldLabel, color: 'rgba(74,222,128,0.5)' }}>✅ Points forts</label>
           <Controller
-            name="certifications"
+            name="strengths"
             control={control}
             render={({ field }) => (
-              <Select
-                isMulti
-                componentAs={CreatableSelect}
-                field={field}
-                options={CERTIFICATION_OPTIONS}
-                value={(field.value || []).map((v: string) => ({ value: v, label: v }))}
-                onChange={(options: any) =>
-                  field.onChange(options ? options.map((o: any) => o.value) : [])
-                }
-                placeholder="ISO, Bio, Made in France..."
+              <Input
+                {...field}
+                textArea
+                rows={3}
+                placeholder="Réactivité, qualité premium, délais courts..."
               />
             )}
           />
         </div>
-      </FormItem>
-    </AdaptableCard>
+        <div>
+          <label style={{ ...fieldLabel, color: 'rgba(248,113,113,0.5)' }}>⚠️ Points faibles</label>
+          <Controller
+            name="weaknesses"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                textArea
+                rows={3}
+                placeholder="Délais longs, MOQ élevé..."
+              />
+            )}
+          />
+        </div>
+      </div>
+
+      <div style={divider} />
+      <p style={subLabel}>🏷️ Certifications & Labels</p>
+
+      <Controller
+        name="certifications"
+        control={control}
+        render={({ field }) => (
+          <Select
+            isMulti
+            componentAs={CreatableSelect}
+            field={field}
+            options={CERTIFICATION_OPTIONS}
+            value={(field.value || []).map((v: string) => ({ value: v, label: v }))}
+            onChange={(options: any) =>
+              field.onChange(options ? options.map((o: any) => o.value) : [])
+            }
+            placeholder="ISO, Bio, Made in France..."
+          />
+        )}
+      />
+    </div>
   );
 };
 

@@ -1,8 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { FormContainer } from '@/components/ui/Form';
-import Button from '@/components/ui/Button';
-import StickyFooter from '@/components/shared/StickyFooter';
 import ProducerFields from './ProducerFields';
 import CompanyFields from './CompanyFields';
 import SkillsFields from './SkillsFields';
@@ -82,6 +80,7 @@ const validationSchema = Yup.object().shape({
 
 const ProducerForm = (props: ProducerFormProps) => {
   const { initialData, onFormSubmit, onDiscard, producerCategories, productCategoryOptions } = props;
+  const isEditing = !!initialData?.documentId;
 
   const {
     control,
@@ -101,65 +100,67 @@ const ProducerForm = (props: ProducerFormProps) => {
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <FormContainer>
-          {/* Section 1 : Informations générales + Organisation */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
-            <ProducerFields
-              errors={errors}
-              control={control}
-              countries={countries}
-              watch={watch}
-              setValue={setValue}
-            />
-            <CompanyFields
-              control={control}
-              errors={errors as any}
-              producerCategories={producerCategories}
-              watch={watch}
-            />
-          </div>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <FormContainer>
+        {/* Page header */}
+        <div style={{ paddingTop: '8px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            Producteurs
+          </p>
+          <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            {isEditing ? 'Modifier le producteur' : 'Nouveau producteur'}
+          </h2>
+        </div>
 
-          {/* Section 2 : Compétences & Capacité de production */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
-            <SkillsFields control={control} errors={errors} productCategoryOptions={productCategoryOptions} />
-            <ProductionCapacityFields control={control} errors={errors} />
-          </div>
+        {/* Section 1 : Informations générales + Organisation */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-0">
+          <ProducerFields
+            errors={errors}
+            control={control}
+            countries={countries}
+            watch={watch}
+            setValue={setValue}
+          />
+          <CompanyFields
+            control={control}
+            errors={errors as any}
+            producerCategories={producerCategories}
+            watch={watch}
+          />
+        </div>
 
-          {/* Section 3 : Qualité & Tarification */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-4">
-            <QualityFields control={control} errors={errors} />
-            <PricingFields control={control} errors={errors} />
-          </div>
+        {/* Section 2 : Compétences & Capacité de production */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-0">
+          <SkillsFields control={control} errors={errors} productCategoryOptions={productCategoryOptions} />
+          <ProductionCapacityFields control={control} errors={errors} />
+        </div>
 
-          <StickyFooter
-            className="-mx-8 px-8 flex items-center justify-end py-4"
-            stickyClass="border-t bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        {/* Section 3 : Qualité & Tarification */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-0">
+          <QualityFields control={control} errors={errors} />
+          <PricingFields control={control} errors={errors} />
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={() => onDiscard?.()}
+            style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
           >
-            <div className="md:flex items-end">
-              <Button
-                size="sm"
-                className="ltr:mr-3 rtl:ml-3"
-                type="button"
-                onClick={() => onDiscard?.()}
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                size="sm"
-                variant="solid"
-                loading={isSubmitting}
-                icon={<AiOutlineSave />}
-                type="submit"
-              >
-                {t('save')}
-              </Button>
-            </div>
-          </StickyFooter>
-        </FormContainer>
-      </form>
-    </>
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 22px', background: isSubmitting ? 'rgba(47,111,237,0.4)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(47,111,237,0.35)', fontFamily: 'Inter, sans-serif' }}
+          >
+            <AiOutlineSave size={15} />
+            {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      </FormContainer>
+    </form>
   );
 };
 

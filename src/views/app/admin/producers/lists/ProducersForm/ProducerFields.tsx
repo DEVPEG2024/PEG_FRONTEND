@@ -1,22 +1,10 @@
-import AdaptableCard from '@/components/shared/AdaptableCard';
 import Input from '@/components/ui/Input';
-import { FormItem } from '@/components/ui/Form';
-import {
-  Controller,
-  FieldErrors,
-  UseFormSetValue,
-  UseFormWatch,
-} from 'react-hook-form';
+import { Controller, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { t } from 'i18next';
 import { Select } from '@/components/ui';
-import { HiOutlineOfficeBuilding } from 'react-icons/hi';
 import { ProducerFormModel } from './ProducerForm';
 
-type country = {
-  label: string;
-  dialCode: string;
-  value: string;
-};
+type country = { label: string; dialCode: string; value: string };
 
 type ProducerFieldsProps = {
   countries: country[];
@@ -26,112 +14,122 @@ type ProducerFieldsProps = {
   setValue: UseFormSetValue<ProducerFormModel>;
 };
 
+const card: React.CSSProperties = {
+  background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+  border: '1.5px solid rgba(99,102,241,0.2)',
+  borderRadius: '16px',
+  padding: '20px 22px',
+  marginBottom: '16px',
+  fontFamily: 'Inter, sans-serif',
+};
+
+const sectionTitle: React.CSSProperties = {
+  color: 'rgba(129,140,248,0.8)',
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  marginBottom: '16px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+};
+
+const fieldLabel: React.CSSProperties = {
+  display: 'block',
+  color: 'rgba(255,255,255,0.4)',
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  marginBottom: '7px',
+};
+
+const fieldError: React.CSSProperties = {
+  color: '#f87171',
+  fontSize: '11px',
+  marginTop: '4px',
+};
+
+const divider: React.CSSProperties = {
+  borderTop: '1px solid rgba(255,255,255,0.06)',
+  margin: '16px 0 14px',
+};
+
+const subLabel: React.CSSProperties = {
+  color: 'rgba(129,140,248,0.5)',
+  fontSize: '9px',
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  marginBottom: '12px',
+};
+
 const ProducerFields = (props: ProducerFieldsProps) => {
   const { countries, errors, control, watch, setValue } = props;
-  const values = watch();
 
   const formatPhoneNumber = (value: string): string => {
     const digitsOnly = value.replace(/\D/g, '');
-    return digitsOnly
-      .slice(0, 10)
-      .replace(/(\d{2})(?=\d)/g, '$1 ')
-      .trim();
+    return digitsOnly.slice(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ').trim();
   };
 
   return (
-    <AdaptableCard bordered={false} className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <HiOutlineOfficeBuilding className="text-indigo-500 text-xl" />
-        <h5>{t('p.producer')}</h5>
-      </div>
-      <p className="mb-6">{t('p.producer_description')}</p>
+    <div style={card}>
+      <p style={sectionTitle}>🏭 {t('p.producer')}</p>
+      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginBottom: '16px', marginTop: '-8px' }}>
+        {t('p.producer_description')}
+      </p>
 
-      <div className="flex gap-4">
-        <FormItem
-          label="Nom du producteur"
-          className="w-full"
-          invalid={!!errors.name}
-          errorMessage={errors.name?.message}
-        >
-          <Controller
-            name="name"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder="Nom du producteur"
-              />
-            )}
-          />
-        </FormItem>
-      </div>
+      <label style={fieldLabel}>Nom du producteur *</label>
+      <Controller
+        name="name"
+        control={control}
+        render={({ field }) => (
+          <Input {...field} type="text" autoComplete="off" placeholder="Nom du producteur" />
+        )}
+      />
+      {errors.name && <p style={fieldError}>{errors.name.message}</p>}
 
-      <FormItem
-        label={t('address')}
-        invalid={!!errors.address}
-        errorMessage={errors.address?.message}
-      >
+      <div style={divider} />
+      <p style={subLabel}>📍 Adresse</p>
+
+      <div style={{ marginBottom: '12px' }}>
+        <label style={fieldLabel}>{t('address')} *</label>
         <Controller
           name="address"
           control={control}
           render={({ field }) => (
-            <Input
-              {...field}
-              type="text"
-              autoComplete="off"
-              placeholder={t('address')}
-            />
+            <Input {...field} type="text" autoComplete="off" placeholder={t('address')} />
           )}
         />
-      </FormItem>
+        {errors.address && <p style={fieldError}>{errors.address.message}</p>}
+      </div>
 
-      <div className="flex gap-4">
-        <FormItem
-          label={t('zipCode')}
-          className="w-1/3"
-          invalid={!!errors.zipCode}
-          errorMessage={errors.zipCode?.message}
-        >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div>
+          <label style={fieldLabel}>{t('zipCode')} *</label>
           <Controller
             name="zipCode"
             control={control}
             render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('zipCode')}
-              />
+              <Input {...field} type="text" autoComplete="off" placeholder={t('zipCode')} />
             )}
           />
-        </FormItem>
-        <FormItem
-          label={t('city')}
-          className="w-1/3"
-          invalid={!!errors.city}
-          errorMessage={errors.city?.message}
-        >
+          {errors.zipCode && <p style={fieldError}>{errors.zipCode.message}</p>}
+        </div>
+        <div>
+          <label style={fieldLabel}>{t('city')} *</label>
           <Controller
             name="city"
             control={control}
             render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('city')}
-              />
+              <Input {...field} type="text" autoComplete="off" placeholder={t('city')} />
             )}
           />
-        </FormItem>
-        <FormItem
-          label={t('country')}
-          className="w-1/3"
-          invalid={!!errors.country}
-          errorMessage={errors.country?.message}
-        >
+          {errors.city && <p style={fieldError}>{errors.city.message}</p>}
+        </div>
+        <div>
+          <label style={fieldLabel}>{t('country')} *</label>
           <Controller
             name="country"
             control={control}
@@ -139,22 +137,22 @@ const ProducerFields = (props: ProducerFieldsProps) => {
               <Select
                 field={field}
                 options={countries}
-                placeholder="Choisissez le pays"
+                placeholder="Pays"
                 value={countries.filter((c) => c.value === field.value)}
                 onChange={(option) => field.onChange(option?.value)}
               />
             )}
           />
-        </FormItem>
+          {errors.country && <p style={fieldError}>{errors.country.message}</p>}
+        </div>
       </div>
 
-      <div className="flex gap-4">
-        <FormItem
-          label={t('phone')}
-          className="w-1/2"
-          invalid={!!errors.phoneNumber}
-          errorMessage={errors.phoneNumber?.message}
-        >
+      <div style={divider} />
+      <p style={subLabel}>📞 Contact</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div>
+          <label style={fieldLabel}>{t('phone')} *</label>
           <Controller
             name="phoneNumber"
             control={control}
@@ -163,35 +161,28 @@ const ProducerFields = (props: ProducerFieldsProps) => {
                 {...field}
                 type="text"
                 autoComplete="off"
-                placeholder={t('phone')}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  field.onChange(formatPhoneNumber(e.target.value));
-                }}
+                placeholder="06 00 00 00 00"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  field.onChange(formatPhoneNumber(e.target.value))
+                }
               />
             )}
           />
-        </FormItem>
-        <FormItem
-          label={t('email')}
-          className="w-1/2"
-          invalid={!!errors.email}
-          errorMessage={errors.email?.message}
-        >
+          {errors.phoneNumber && <p style={fieldError}>{errors.phoneNumber.message}</p>}
+        </div>
+        <div>
+          <label style={fieldLabel}>{t('email')} *</label>
           <Controller
             name="email"
             control={control}
             render={({ field }) => (
-              <Input
-                {...field}
-                type="text"
-                autoComplete="off"
-                placeholder={t('email')}
-              />
+              <Input {...field} type="text" autoComplete="off" placeholder={t('email')} />
             )}
           />
-        </FormItem>
+          {errors.email && <p style={fieldError}>{errors.email.message}</p>}
+        </div>
       </div>
-    </AdaptableCard>
+    </div>
   );
 };
 
