@@ -21,10 +21,8 @@ import {
   useAppSelector,
   updateCurrentProject,
   setEditDescription,
-  getProjectById,
 } from '../store';
 import { apiUploadFile } from '@/services/FileServices';
-import { apiUpdateProjectImages } from '@/services/ProjectServices';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -115,11 +113,14 @@ const Summary = ({ project }: { project: Project }) => {
     setUploadingPhoto(true);
     try {
       const pegFile = await apiUploadFile(file);
-      // Use documentIds directly — already available from GraphQL response and REST upload
+      // In Strapi v5 GraphQL, media fields accept documentId strings
       const existingDocumentIds = project.images?.map((img) => img.documentId).filter(Boolean) || [];
-      await apiUpdateProjectImages(project.documentId, [...existingDocumentIds, pegFile.documentId]);
-      // Refresh project state from server
-      await dispatch(getProjectById(project.documentId));
+      await dispatch(
+        updateCurrentProject({
+          documentId: project.documentId,
+          images: [...existingDocumentIds, pegFile.documentId] as any,
+        })
+      );
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
