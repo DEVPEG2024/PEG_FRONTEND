@@ -2,14 +2,14 @@ import { Container } from '@/components/shared';
 import { useEffect, useState } from 'react';
 import { Invoice } from '@/@types/invoice';
 import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
-import reducer, { getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
+import reducer, { deleteInvoice, getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
 import ModalEditInvoice from './modals/ModalEditInvoice';
 import ModalPrintInvoice from './modals/ModalPrintInvoice';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import dayjs from 'dayjs';
-import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText } from 'react-icons/hi';
+import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash } from 'react-icons/hi';
 import { stateData } from './constants';
 
 injectReducer('invoices', reducer);
@@ -144,6 +144,7 @@ const InvoicesList = () => {
                   <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setPrintInvoiceDialog(true)) }} icon={<HiPrinter size={13} />} hoverBg="rgba(107,158,255,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(107,158,255,0.4)" title="Imprimer" />
                   {isAdmin && <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setEditInvoiceDialog(true)) }} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />}
                   {isAdmin && <Btn onClick={() => dispatch(updateInvoice({ documentId: inv.documentId, state: 'canceled' }))} icon={<HiBan size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Annuler" disabled={inv.state === 'canceled'} />}
+                  {isAdmin && <Btn onClick={() => { if (window.confirm(`Supprimer définitivement la facture ${inv.name} ?`)) dispatch(deleteInvoice(inv.documentId)) }} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.15)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.4)" title="Supprimer" />}
                 </div>
               </div>
             )

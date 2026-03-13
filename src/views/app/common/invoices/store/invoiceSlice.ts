@@ -1,9 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Invoice } from '@/@types/invoice';
 import {
+  apiDeleteInvoice,
   apiGetCustomerInvoices,
   apiGetInvoices,
   apiUpdateInvoice,
+  DeleteInvoiceResponse,
   GetInvoicesRequest,
   GetInvoicesResponse,
 } from '@/services/InvoicesServices';
@@ -68,6 +70,16 @@ export const getInvoices = createAsyncThunk(
   }
 );
 
+export const deleteInvoice = createAsyncThunk(
+  SLICE_NAME + '/deleteInvoice',
+  async (documentId: string): Promise<DeleteInvoiceResponse> => {
+    const { deleteInvoice }: { deleteInvoice: DeleteInvoiceResponse } = await unwrapData(
+      apiDeleteInvoice(documentId)
+    );
+    return deleteInvoice;
+  }
+);
+
 export const updateInvoice = createAsyncThunk(
   SLICE_NAME + '/updateInvoice',
   async (data: Partial<Invoice>): Promise<Invoice> => {
@@ -109,6 +121,20 @@ const invoiceListSlice = createSlice({
     builder.addCase(getInvoices.fulfilled, (state, action) => {
       state.invoices = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
+      state.loading = false;
+    });
+    // DELETE INVOICE
+    builder.addCase(deleteInvoice.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteInvoice.fulfilled, (state, action) => {
+      state.loading = false;
+      state.invoices = state.invoices.filter(
+        (invoice) => invoice.documentId !== action.payload.documentId
+      );
+      state.total = state.total - 1;
+    });
+    builder.addCase(deleteInvoice.rejected, (state) => {
       state.loading = false;
     });
     // UPDATE INVOICE

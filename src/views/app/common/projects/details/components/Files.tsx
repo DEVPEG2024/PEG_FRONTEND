@@ -5,10 +5,10 @@ import DetailsRight from './DetailsRight';
 import { PegFile } from '@/@types/pegFile';
 import { Upload } from '@/components/ui';
 import { useAppDispatch } from '@/store';
-import { setLoading, updateCurrentProject, useAppSelector } from '../store';
+import { updateCurrentProject, useAppSelector } from '../store';
 import {
   apiDeleteFile,
-  apiLoadPegFilesAndFiles,
+  apiGetPegFiles,
   apiUploadFile,
 } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
@@ -19,7 +19,7 @@ const Files = () => {
   const [pegFilesChanged, setPegFilesChanged] = useState<boolean>(false);
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-  const { project, loading } = useAppSelector(
+  const { project } = useAppSelector(
     (state) => state.projectDetails.data
   );
 
@@ -30,17 +30,18 @@ const Files = () => {
   const fetchFiles = async (): Promise<void> => {
     setFilesLoading(true);
     if (project?.images?.length > 0) {
-      const pegFilesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
-        project?.images
-      );
-
-      setPegFiles(pegFilesLoaded);
+      const pegFilesLoaded: PegFile[] = await apiGetPegFiles(project.images);
+      const pegFilesWithFile = pegFilesLoaded.map((pegFile) => ({
+        ...pegFile,
+        file: new File([], pegFile.name),
+      }));
+      setPegFiles(pegFilesWithFile);
     }
     setFilesLoading(false);
   };
 
   const onFileAdd = async (file: File) => {
-    setPegFiles([...pegFiles, { file, name: file.name }]);
+    setPegFiles([...pegFiles, { file, name: file.name } as PegFile]);
     setPegFilesChanged(true);
   };
 
@@ -94,28 +95,31 @@ const Files = () => {
   const handleSubmit = async () => {
     const newPegFiles: PegFile[] = [];
 
-    dispatch(setLoading(true));
-    for (const pegFile of pegFiles) {
-      if (pegFile.id) {
-        newPegFiles.push(pegFile);
-      } else {
-        const pegFileUploaded: PegFile = await apiUploadFile(pegFile.file);
-        newPegFiles.push(pegFileUploaded);
+    setFilesLoading(true);
+    try {
+      for (const pegFile of pegFiles) {
+        if (pegFile.id) {
+          newPegFiles.push(pegFile);
+        } else {
+          const pegFileUploaded: PegFile = await apiUploadFile(pegFile.file);
+          newPegFiles.push(pegFileUploaded);
+        }
       }
-    }
 
-    for (const pegFileIdToDelete of pegFilesIdToDelete) {
-      apiDeleteFile(pegFileIdToDelete);
-    }
+      for (const pegFileIdToDelete of pegFilesIdToDelete) {
+        apiDeleteFile(pegFileIdToDelete);
+      }
 
-    dispatch(
-      updateCurrentProject({
-        documentId: project.documentId,
-        images: newPegFiles.map(({ id }) => id),
-      })
-    );
-    setPegFiles([]);
-    setPegFilesChanged(false);
+      await dispatch(
+        updateCurrentProject({
+          documentId: project.documentId,
+          images: newPegFiles.map(({ id }) => id) as unknown as PegFile[],
+        })
+      );
+      setPegFilesChanged(false);
+    } finally {
+      setFilesLoading(false);
+    }
   };
 
   return (
@@ -127,27 +131,25 @@ const Files = () => {
           padding: '24px',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
-          <Loading loading={loading}>
-            <Loading loading={filesLoading}>
-              <Upload
-                multiple
-                showList
-                draggable
-                beforeUpload={beforeUpload}
-                onFileAdd={(file) => onFileAdd(file)}
-                onFileRemove={(file) => onFileRemove(file)}
-                field={{ name: 'images' }}
-                fileList={pegFiles.map((pegFile) => {
-                  const file = pegFile.file;
-                  file.previewUrl = pegFile.url;
-                  return file;
-                })}
-                clickable
-              />
-            </Loading>
+          <Loading loading={filesLoading}>
+            <Upload
+              multiple
+              showList
+              draggable
+              beforeUpload={beforeUpload}
+              onFileAdd={(file) => onFileAdd(file)}
+              onFileRemove={(file) => onFileRemove(file)}
+              field={{ name: 'images' }}
+              fileList={pegFiles.map((pegFile) => {
+                const file = pegFile.file as File & { previewUrl?: string };
+                file.previewUrl = pegFile.url;
+                return file;
+              })}
+              clickable
+            />
             {pegFilesChanged && (
               <div style={{ marginTop: '16px' }}>
-                <Button variant="solid" onClick={handleSubmit} loading={loading}>
+                <Button variant="solid" onClick={handleSubmit} loading={filesLoading}>
                   Enregistrer
                 </Button>
               </div>
