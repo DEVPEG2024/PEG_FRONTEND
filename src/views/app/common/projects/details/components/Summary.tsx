@@ -22,7 +22,7 @@ import {
   updateCurrentProject,
   setEditDescription,
 } from '../store';
-import { apiUploadFile } from '@/services/FileServices';
+import { apiGetPegFiles, apiUploadFile } from '@/services/FileServices';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -113,12 +113,14 @@ const Summary = ({ project }: { project: Project }) => {
     setUploadingPhoto(true);
     try {
       const pegFile = await apiUploadFile(file);
-      // In Strapi v5 GraphQL, media fields accept documentId strings
-      const existingDocumentIds = project.images?.map((img) => img.documentId).filter(Boolean) || [];
+      // Fetch existing images to get their numeric ids (same pattern as Files.tsx)
+      const existingPegFiles = project.images?.length > 0
+        ? await apiGetPegFiles(project.images)
+        : [];
       await dispatch(
         updateCurrentProject({
           documentId: project.documentId,
-          images: [...existingDocumentIds, pegFile.documentId] as any,
+          images: [...existingPegFiles.map(({ id }) => id), pegFile.id] as any,
         })
       );
     } finally {
