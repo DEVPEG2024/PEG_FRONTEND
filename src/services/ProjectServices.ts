@@ -2,7 +2,16 @@ import ApiService from './ApiService'
 import { Project } from '@/@types/project'
 import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
-import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
+
+// Update project images via REST (more reliable than GraphQL for media fields)
+export async function apiUpdateProjectImages(documentId: string, imageDocumentIds: string[]): Promise<void> {
+    await ApiService.fetchData({
+        url: `${API_BASE_URL}/projects/${documentId}`,
+        method: 'put',
+        data: { data: { images: imageDocumentIds } }
+    })
+}
 
 // update project
 export async function apiUpdateProject(project: Partial<Project>): Promise<AxiosResponse<ApiResponse<{updateProject: Project}>>> {

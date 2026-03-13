@@ -21,8 +21,10 @@ import {
   useAppSelector,
   updateCurrentProject,
   setEditDescription,
+  getProjectById,
 } from '../store';
-import { apiUploadFile, apiGetPegFiles } from '@/services/FileServices';
+import { apiUploadFile } from '@/services/FileServices';
+import { apiUpdateProjectImages } from '@/services/ProjectServices';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -113,18 +115,11 @@ const Summary = ({ project }: { project: Project }) => {
     setUploadingPhoto(true);
     try {
       const pegFile = await apiUploadFile(file);
-      // Load existing images via REST to get their numeric IDs (GraphQL only returns documentId)
-      let existingIds: string[] = [];
-      if (project.images?.length > 0) {
-        const loaded = await apiGetPegFiles(project.images);
-        existingIds = loaded.map((f) => f.id).filter(Boolean);
-      }
-      await dispatch(
-        updateCurrentProject({
-          documentId: project.documentId,
-          images: [...existingIds, pegFile.id] as any,
-        })
-      );
+      // Use documentIds directly — already available from GraphQL response and REST upload
+      const existingDocumentIds = project.images?.map((img) => img.documentId).filter(Boolean) || [];
+      await apiUpdateProjectImages(project.documentId, [...existingDocumentIds, pegFile.documentId]);
+      // Refresh project state from server
+      await dispatch(getProjectById(project.documentId));
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
