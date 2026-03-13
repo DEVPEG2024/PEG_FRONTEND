@@ -22,7 +22,7 @@ import {
   updateCurrentProject,
   setEditDescription,
 } from '../store';
-import { apiUploadFile, apiLoadPegFilesAndFiles } from '@/services/FileServices';
+import { apiUploadFile, apiGetPegFiles } from '@/services/FileServices';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -116,7 +116,7 @@ const Summary = ({ project }: { project: Project }) => {
       // Load existing images via REST to get their numeric IDs (GraphQL only returns documentId)
       let existingIds: string[] = [];
       if (project.images?.length > 0) {
-        const loaded = await apiLoadPegFilesAndFiles(project.images);
+        const loaded = await apiGetPegFiles(project.images);
         existingIds = loaded.map((f) => f.id).filter(Boolean);
       }
       await dispatch(
