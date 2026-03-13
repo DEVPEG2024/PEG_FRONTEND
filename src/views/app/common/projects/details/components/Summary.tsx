@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import ReactHtmlParser from 'html-react-parser';
@@ -7,7 +7,7 @@ import DetailsRight from './DetailsRight';
 import { Button } from '@/components/ui';
 import OrderItemDetails from './OrderItemDetails';
 import { debounce } from 'lodash';
-import { HiPencil } from 'react-icons/hi';
+import { HiPencil, HiPhotograph } from 'react-icons/hi';
 import { RichTextEditor } from '@/components/shared';
 import { User } from '@/@types/user';
 import {
@@ -21,7 +21,9 @@ import {
   useAppSelector,
   updateCurrentProject,
   setEditDescription,
+  setLoading,
 } from '../store';
+import { apiUploadFile } from '@/services/FileServices';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -74,6 +76,8 @@ const Summary = ({ project }: { project: Project }) => {
   );
   const dispatch = useAppDispatch();
   const [description, setDescription] = useState(project.description);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const debounceFn = debounce(handleDebounceFn, 1000);
 
@@ -102,6 +106,23 @@ const Summary = ({ project }: { project: Project }) => {
 
   const onEdit = (val: string) => {
     debounceFn(val);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    dispatch(setLoading(true));
+    const pegFile = await apiUploadFile(file);
+    const existingIds = project.images?.map((img) => img.id) || [];
+    await dispatch(
+      updateCurrentProject({
+        documentId: project.documentId,
+        images: [...existingIds, pegFile.id] as any,
+      })
+    );
+    setUploadingPhoto(false);
+    if (photoInputRef.current) photoInputRef.current.value = '';
   };
 
   const { checklistPercent } = useAppSelector((state) => state.projectDetails.data);
@@ -135,8 +156,8 @@ const Summary = ({ project }: { project: Project }) => {
               boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
               display: 'flex',
             }}>
-              {/* Image sidebar — only when orderItem has an image */}
-              {project.orderItem?.product?.images?.[0]?.url && (
+              {/* Image sidebar */}
+              {project.orderItem?.product?.images?.[0]?.url ? (
                 <div style={{
                   width: '200px',
                   flexShrink: 0,
@@ -153,7 +174,56 @@ const Summary = ({ project }: { project: Project }) => {
                     style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '8px' }}
                   />
                 </div>
-              )}
+              ) : !project.orderItem && (project.images?.[0]?.url || hasRole(user, [SUPER_ADMIN])) ? (
+                <div style={{
+                  width: '200px',
+                  flexShrink: 0,
+                  borderRight: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '20px',
+                  gap: '10px',
+                }}>
+                  {project.images?.[0]?.url && (
+                    <img
+                      src={project.images[0].url}
+                      alt={project.name}
+                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px' }}
+                    />
+                  )}
+                  {hasRole(user, [SUPER_ADMIN]) && (
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: uploadingPhoto ? 'wait' : 'pointer',
+                      color: 'rgba(255,255,255,0.5)',
+                      fontSize: '12px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px dashed rgba(255,255,255,0.2)',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+                    >
+                      <HiPhotograph />
+                      {uploadingPhoto ? 'Upload...' : project.images?.[0]?.url ? 'Changer' : 'Ajouter une photo'}
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg,image/webp"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : null}
 
               {/* Content */}
               <div style={{ flex: 1, padding: '28px', minWidth: 0 }}>
