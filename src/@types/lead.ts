@@ -5,16 +5,16 @@ export type LeadSource = 'linkedin' | 'referral' | 'inbound' | 'cold_call' | 'ev
 export type Lead = {
   documentId: string
   company: string
-  contact: string
-  email: string
-  phone: string
+  contact: string | null
+  email: string | null
+  phone: string | null
   source: LeadSource
   stage: LeadStage
   value: number
   probability: number
   priority: LeadPriority
-  notes: string
-  nextAction: string
+  notes: string | null
+  nextAction: string | null
   nextActionDate: string | null
   createdAt: string
 }

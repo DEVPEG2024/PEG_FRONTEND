@@ -676,7 +676,15 @@ const LeadsPage = () => {
     const openEdit = (lead: Lead) => setModal({ open: true, lead })
 
     const handleSave = (data: Omit<Lead, 'documentId' | 'createdAt'>) => {
-        const sanitized = { ...data, nextActionDate: data.nextActionDate || null }
+        const sanitized = {
+            ...data,
+            contact:        data.contact || null,
+            email:          data.email || null,
+            phone:          data.phone || null,
+            notes:          data.notes || null,
+            nextAction:     data.nextAction || null,
+            nextActionDate: data.nextActionDate || null,
+        }
         if (modal.lead) {
             dispatch(updateLead({ documentId: modal.lead.documentId, data: sanitized }))
         } else {
