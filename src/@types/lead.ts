@@ -15,6 +15,6 @@ export type Lead = {
   priority: LeadPriority
   notes: string
   nextAction: string
-  nextActionDate: string
+  nextActionDate: string | null
   createdAt: string
 }

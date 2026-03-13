@@ -58,7 +58,7 @@ const emptyLead = (): Omit<Lead, 'documentId' | 'createdAt'> => ({
     company: '', contact: '', email: '', phone: '',
     source: 'inbound', stage: 'nouveau', value: 0,
     probability: 20, priority: 'normale', notes: '',
-    nextAction: '', nextActionDate: '',
+    nextAction: '', nextActionDate: null,
 })
 
 // ─── Initials avatar ───────────────────────────────────────────────────────────
@@ -434,7 +434,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineCalendar className="inline w-3 h-3 mr-1" />Date
                                 </label>
-                                <input type="date" value={form.nextActionDate} onChange={e => set('nextActionDate', e.target.value)}
+                                <input type="date" value={form.nextActionDate ?? ''} onChange={e => set('nextActionDate', e.target.value || null)}
                                     className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
                             </div>
@@ -676,10 +676,11 @@ const LeadsPage = () => {
     const openEdit = (lead: Lead) => setModal({ open: true, lead })
 
     const handleSave = (data: Omit<Lead, 'documentId' | 'createdAt'>) => {
+        const sanitized = { ...data, nextActionDate: data.nextActionDate || null }
         if (modal.lead) {
-            dispatch(updateLead({ documentId: modal.lead.documentId, data }))
+            dispatch(updateLead({ documentId: modal.lead.documentId, data: sanitized }))
         } else {
-            dispatch(createLead(data))
+            dispatch(createLead(sanitized))
         }
         setModal({ open: false, lead: null })
     }
