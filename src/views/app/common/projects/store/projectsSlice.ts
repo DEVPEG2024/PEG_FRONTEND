@@ -50,22 +50,30 @@ export const getProjects = createAsyncThunk(
       );
       return projects_connection;
     } else if (hasRole(data.user, [CUSTOMER])) {
+      const customerDocumentId = data.user.customer?.documentId;
+      if (!customerDocumentId) {
+        return { nodes: [], pageInfo: { page: 1, pageCount: 1, pageSize: 0, total: 0 } };
+      }
       const {
         projects_connection,
       }: { projects_connection: GetProjectsResponse } = await unwrapData(
         apiGetCustomerProjects({
           ...data,
-          customerDocumentId: data.user.customer!.documentId,
+          customerDocumentId,
         })
       );
       return projects_connection;
     } else if (hasRole(data.user, [PRODUCER])) {
+      const producerDocumentId = data.user.producer?.documentId;
+      if (!producerDocumentId) {
+        return { nodes: [], pageInfo: { page: 1, pageCount: 1, pageSize: 0, total: 0 } };
+      }
       const {
         projects_connection,
       }: { projects_connection: GetProjectsResponse } = await unwrapData(
         apiGetProducerProjects({
           ...data,
-          producerDocumentId: data.user.producer!.documentId,
+          producerDocumentId,
         })
       );
       return projects_connection;
@@ -148,9 +156,12 @@ const projectListSlice = createSlice({
     builder.addCase(getProjects.pending, (state) => {
       state.loading = true;
     });
-    builder.addCase(getProjects.fulfilled, (state, action) => {
+    builder.addCase(getProjects.fulfilled, (state, action: { payload: GetProjectsResponse }) => {
       state.projects = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
+      state.loading = false;
+    });
+    builder.addCase(getProjects.rejected, (state) => {
       state.loading = false;
     });
     // DELETE PROJECT
