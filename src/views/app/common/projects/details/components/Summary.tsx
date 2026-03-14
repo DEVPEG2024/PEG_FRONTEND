@@ -178,7 +178,7 @@ const Summary = ({ project }: { project: Project }) => {
                     style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '8px' }}
                   />
                 </div>
-              ) : !project.orderItem && (project.images?.[0]?.url || hasRole(user, [SUPER_ADMIN])) ? (
+              ) : !project.orderItem ? (
                 <div style={{
                   width: '200px',
                   flexShrink: 0,
@@ -191,12 +191,25 @@ const Summary = ({ project }: { project: Project }) => {
                   padding: '20px',
                   gap: '10px',
                 }}>
-                  {project.images?.[0]?.url && (
+                  {project.images?.[0]?.url ? (
                     <img
                       src={project.images[0].url}
                       alt={project.name}
                       style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px' }}
                     />
+                  ) : (
+                    <div style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '12px',
+                      background: 'rgba(47,111,237,0.08)',
+                      border: '1px solid rgba(47,111,237,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <HiPhotograph style={{ fontSize: '48px', color: 'rgba(47,111,237,0.4)' }} />
+                    </div>
                   )}
                   {hasRole(user, [SUPER_ADMIN]) && (
                     <label style={{
