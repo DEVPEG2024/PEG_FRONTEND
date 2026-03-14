@@ -18,6 +18,7 @@ import {
   CartItemSizeAndColorEdition,
   editSizeAndColorsCartItem,
 } from '@/store/slices/base/cartSlice';
+import { apiUpdateBatStatus } from '@/services/ProductServices';
 import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
@@ -53,6 +54,12 @@ const ShowProduct = () => {
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
+
+  // BAT state
+  const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);
+  const [batComment, setBatComment] = useState('');
+  const [batSubmitting, setBatSubmitting] = useState(false);
+  const [batStatusOverride, setBatStatusOverride] = useState<'approved' | 'rejected' | null>(null);
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
@@ -112,6 +119,30 @@ const ShowProduct = () => {
   };
 
   const handleCompleteForm = () => dispatch(setFormDialog(true));
+
+  const handleBatSubmit = async () => {
+    if (!product || !batAction) return;
+    if (batAction === 'reject' && !batComment.trim()) {
+      toast.error('Veuillez indiquer le motif du refus');
+      return;
+    }
+    setBatSubmitting(true);
+    try {
+      await apiUpdateBatStatus(
+        product.documentId,
+        batAction === 'approve' ? 'approved' : 'rejected',
+        batAction === 'reject' ? batComment.trim() : null
+      );
+      setBatStatusOverride(batAction === 'approve' ? 'approved' : 'rejected');
+      setBatAction(null);
+      setBatComment('');
+      toast.success(batAction === 'approve' ? 'BAT approuvé' : 'BAT refusé');
+    } catch {
+      toast.error('Erreur lors de la mise à jour du BAT');
+    } finally {
+      setBatSubmitting(false);
+    }
+  };
 
   const handleSizeAndColorsChanged = (value: number, size: Size, color: Color): void => {
     setSizeAndColorsChanged(true);
@@ -363,6 +394,127 @@ const ShowProduct = () => {
       {product.form && (
         <ModalCompleteForm form={product.form} onEdition={onEdition} />
       )}
+
+      {/* ── Section BAT ──────────────────────────────────────────────────── */}
+      {product.requiresBat && product.batFile?.url && (() => {
+        const currentStatus = batStatusOverride ?? product.batStatus ?? null;
+        return (
+          <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '18px' }}>📄</span>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: '#c084fc' }}>Bon à Tirer — Validation requise</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Veuillez valider le BAT avant de passer commande</p>
+                </div>
+              </div>
+              <a
+                href={product.batFile.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '8px 14px', color: '#c084fc', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
+              >
+                Voir le BAT →
+              </a>
+            </div>
+
+            {/* Status badge ou boutons */}
+            {currentStatus === 'approved' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '10px', padding: '12px 16px' }}>
+                <span style={{ fontSize: '18px' }}>✅</span>
+                <span style={{ fontWeight: 700, color: '#4ade80', fontSize: '14px' }}>BAT approuvé</span>
+              </div>
+            )}
+
+            {currentStatus === 'rejected' && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: product.batComment ? '8px' : '0' }}>
+                  <span style={{ fontSize: '18px' }}>❌</span>
+                  <span style={{ fontWeight: 700, color: '#f87171', fontSize: '14px' }}>BAT refusé</span>
+                </div>
+                {product.batComment && (
+                  <p style={{ margin: 0, fontSize: '12px', color: 'rgba(248,113,113,0.8)', paddingLeft: '26px' }}>{product.batComment}</p>
+                )}
+              </div>
+            )}
+
+            {(currentStatus === null || currentStatus === 'pending') && (
+              <div>
+                {batAction === null && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setBatAction('approve')}
+                      style={{ flex: 1, minWidth: '140px', background: 'rgba(34,197,94,0.1)', border: '1.5px solid rgba(34,197,94,0.35)', borderRadius: '10px', padding: '12px', color: '#4ade80', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      ✅ Approuver
+                    </button>
+                    <button
+                      onClick={() => setBatAction('reject')}
+                      style={{ flex: 1, minWidth: '140px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.35)', borderRadius: '10px', padding: '12px', color: '#f87171', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      ❌ Refuser
+                    </button>
+                  </div>
+                )}
+
+                {batAction === 'approve' && (
+                  <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '10px', padding: '16px' }}>
+                    <p style={{ margin: '0 0 14px', fontSize: '13px', color: 'rgba(74,222,128,0.8)', fontWeight: 600 }}>Confirmer l'approbation du BAT ?</p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={handleBatSubmit}
+                        disabled={batSubmitting}
+                        style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1.5px solid rgba(34,197,94,0.4)', borderRadius: '8px', padding: '10px', color: '#4ade80', fontWeight: 700, fontSize: '13px', cursor: batSubmitting ? 'not-allowed' : 'pointer' }}
+                      >
+                        {batSubmitting ? 'Envoi…' : '✅ Confirmer l\'approbation'}
+                      </button>
+                      <button
+                        onClick={() => setBatAction(null)}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {batAction === 'reject' && (
+                  <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'rgba(248,113,113,0.7)', fontWeight: 600, marginBottom: '8px' }}>
+                      Motif du refus <span style={{ color: '#f87171' }}>*</span>
+                    </label>
+                    <textarea
+                      value={batComment}
+                      onChange={(e) => setBatComment(e.target.value)}
+                      placeholder="Décrivez la raison du refus…"
+                      rows={3}
+                      style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', padding: '10px 12px', color: '#f8faff', fontSize: '13px', resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <button
+                        onClick={handleBatSubmit}
+                        disabled={batSubmitting || !batComment.trim()}
+                        style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '8px', padding: '10px', color: '#f87171', fontWeight: 700, fontSize: '13px', cursor: (batSubmitting || !batComment.trim()) ? 'not-allowed' : 'pointer', opacity: !batComment.trim() ? 0.5 : 1 }}
+                      >
+                        {batSubmitting ? 'Envoi…' : '❌ Confirmer le refus'}
+                      </button>
+                      <button
+                        onClick={() => { setBatAction(null); setBatComment(''); }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </Container>
   );
 };

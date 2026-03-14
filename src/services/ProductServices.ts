@@ -78,8 +78,8 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 fields
             }
             # checklist { documentId name items }  — activer après déploiement Strapi
-            # requiresBat                          — activer après déploiement Strapi
-            # batFile { documentId url name }      — activer après déploiement Strapi
+            requiresBat
+            batFile { documentId url name }
             # productRef                           — activer après déploiement Strapi
             # refVisibleToCustomer                 — activer après déploiement Strapi
             customerCategories {
@@ -362,5 +362,23 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
             query,
             variables
         }
+    })
+}
+
+// update BAT status (client approval)
+export async function apiUpdateBatStatus(
+    documentId: string,
+    batStatus: 'approved' | 'rejected',
+    batComment?: string | null
+) {
+    return ApiService.fetchData({
+        url: `/products/${documentId}`,
+        method: 'put',
+        data: {
+            data: {
+                batStatus,
+                batComment: batComment ?? null,
+            },
+        },
     })
 }

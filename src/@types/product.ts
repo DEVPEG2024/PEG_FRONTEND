@@ -34,6 +34,8 @@ export type Product = {
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
   batFile?: PegFile | null;
+  batStatus?: 'pending' | 'approved' | 'rejected' | null;
+  batComment?: string | null;
 };
 
 export type Size = {
