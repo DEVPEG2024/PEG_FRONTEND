@@ -58,7 +58,12 @@ export const deleteLead = createAsyncThunk(
 const leadsSlice = createSlice({
   name: 'leads',
   initialState,
-  reducers: {},
+  reducers: {
+    optimisticUpdateStage(state, action: { payload: { documentId: string; stage: string } }) {
+      const lead = state.leads.find(l => l.documentId === action.payload.documentId)
+      if (lead) lead.stage = action.payload.stage as Lead['stage']
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getLeads.pending, (state) => {
@@ -101,4 +106,5 @@ const leadsSlice = createSlice({
   },
 })
 
+export const { optimisticUpdateStage } = leadsSlice.actions
 export default leadsSlice.reducer

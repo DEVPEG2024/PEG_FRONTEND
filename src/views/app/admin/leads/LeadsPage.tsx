@@ -12,7 +12,7 @@ import {
     HiOutlineDownload, HiOutlineUpload,
 } from 'react-icons/hi'
 import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
-import reducer, { getLeads, createLead, updateLead, deleteLead } from './store'
+import reducer, { getLeads, createLead, updateLead, deleteLead, optimisticUpdateStage } from './store'
 import type { Lead, LeadStage, LeadPriority, LeadSource } from '@/@types/lead'
 
 injectReducer('leads', reducer)
@@ -682,6 +682,7 @@ const LeadsPage = () => {
         if (!result.destination) return
         const { draggableId, destination } = result
         const newStage = destination.droppableId as LeadStage
+        dispatch(optimisticUpdateStage({ documentId: draggableId, stage: newStage }))
         dispatch(updateLead({ documentId: draggableId, data: { stage: newStage } }))
     }, [dispatch])
 
