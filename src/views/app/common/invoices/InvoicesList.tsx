@@ -20,9 +20,10 @@ const STATE_CFG: Record<string, { label: string; bg: string; border: string; col
   fulfilled: { label: 'Payée',      bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.3)',  color: '#4ade80' },
   canceled:  { label: 'Annulée',    bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  color: '#f87171' },
 }
-const PAY_CFG: Record<string, { label: string; bg: string; color: string }> = {
-  fulfilled: { label: 'Payé',    bg: 'rgba(34,197,94,0.1)',  color: '#4ade80' },
-  pending:   { label: 'Non payé', bg: 'rgba(239,68,68,0.1)', color: '#f87171' },
+const PAY_CFG: Record<string, { label: string; bg: string; color: string; border?: string }> = {
+  fulfilled:        { label: 'Payé',                  bg: 'rgba(34,197,94,0.1)',   color: '#4ade80' },
+  pending:          { label: 'Non payé',              bg: 'rgba(239,68,68,0.1)',   color: '#f87171' },
+  pending_transfer: { label: '⏳ Virement en attente', bg: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: 'rgba(251,191,36,0.4)' },
 }
 const initials = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 
@@ -124,7 +125,7 @@ const InvoicesList = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', fontFamily: 'monospace' }}>{inv.name}</span>
                     <span style={{ background: stateCfg.bg, border: `1px solid ${stateCfg.border}`, borderRadius: '100px', padding: '1px 8px', color: stateCfg.color, fontSize: '11px', fontWeight: 700 }}>{stateCfg.label}</span>
-                    <span style={{ background: payCfg.bg, borderRadius: '100px', padding: '1px 8px', color: payCfg.color, fontSize: '11px', fontWeight: 600 }}>{payCfg.label}</span>
+                    <span style={{ background: payCfg.bg, border: payCfg.border ? `1px solid ${payCfg.border}` : 'none', borderRadius: '100px', padding: '1px 8px', color: payCfg.color, fontSize: '11px', fontWeight: 600 }}>{payCfg.label}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
