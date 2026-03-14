@@ -112,7 +112,7 @@ const CompanyProfile = () => {
                             city: customer.companyInformations?.city || '',
                             country: customer.companyInformations?.country || '',
                             phoneNumber: customer.companyInformations?.phoneNumber || '',
-                            companyEmail: customer.companyInformations?.email || '',
+                            companyEmail: customer.companyInformations?.email || user.email || '',
                             vatNumber: customer.companyInformations?.vatNumber || '',
                             siretNumber: customer.companyInformations?.siretNumber || '',
                             website: customer.companyInformations?.website || '',
@@ -144,6 +144,7 @@ const CompanyProfile = () => {
             if (newLogoFile) {
                 const uploaded = await apiUploadFile(newLogoFile);
                 logoId = (uploaded as any).id;
+                setExistingLogoId(String(logoId));
                 setNewLogoFile(undefined);
             }
             await apiUpdateCustomerByDocumentId(user.customer.documentId, {
