@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Container } from '@/components/shared'
 import ApiService from '@/services/ApiService'
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config'
+import { API_GRAPHQL_URL, EXPRESS_BACKEND_URL } from '@/configs/api.config'
 import { HiArrowLeft, HiCheckCircle, HiClipboardCopy, HiClipboardCheck } from 'react-icons/hi'
 import { Invoice } from '@/@types/invoice'
 
@@ -37,11 +37,29 @@ const BankTransferPage = () => {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    ApiService.fetchData<{ data: Invoice }>({
-      url: `${EXPRESS_BACKEND_URL}/invoices/${id}`,
-      method: 'get',
+    ApiService.fetchData<{ data: { invoice: Invoice } }>({
+      url: API_GRAPHQL_URL,
+      method: 'post',
+      data: {
+        query: `
+          query GetInvoice($documentId: ID!) {
+            invoice(documentId: $documentId) {
+              documentId
+              name
+              amount
+              vatAmount
+              totalAmount
+              paymentState
+              state
+              date
+              dueDate
+            }
+          }
+        `,
+        variables: { documentId: id },
+      },
     })
-      .then((res) => setInvoice(res.data.data))
+      .then((res) => setInvoice(res.data.data.invoice))
       .catch(() => setError('Impossible de charger la facture.'))
       .finally(() => setLoading(false))
   }, [id])
