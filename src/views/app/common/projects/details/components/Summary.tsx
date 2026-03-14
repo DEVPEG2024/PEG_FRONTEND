@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import ReactHtmlParser from 'html-react-parser';
@@ -31,7 +31,17 @@ const sep: React.CSSProperties = {
   margin: '22px 0',
 };
 
+// Fix #6 : strip HTML via DOM plutôt que regex fragile
+const stripHtml = (html: string): string => {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent ?? div.innerText ?? '';
+};
+
+// Fix #8 : ID de gradient unique par instance via useId
 const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; label?: string }) => {
+  const rawId = useId();
+  const gradId = `pgGrad-${rawId.replace(/:/g, '')}`;
   const r = 42;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
@@ -39,7 +49,7 @@ const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; lab
     <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
       <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
         <defs>
-          <linearGradient id="pgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#2f6fed" />
             <stop offset="100%" stopColor="#1f4bb6" />
           </linearGradient>
@@ -48,7 +58,7 @@ const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; lab
         <circle
           cx="50" cy="50" r={r}
           fill="none"
-          stroke="url(#pgGrad)"
+          stroke={`url(#${gradId})`}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circ}
@@ -71,25 +81,31 @@ const Summary = ({ project }: { project: Project }) => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
-  const { loading, editDescription } = useAppSelector(
+
+  // Fix #2 : un seul useAppSelector pour le même slice
+  const { loading, editDescription, checklistPercent } = useAppSelector(
     (state) => state.projectDetails.data
   );
+
   const dispatch = useAppDispatch();
   const [description, setDescription] = useState(project.description);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  // Fix #4 : état React pour le hover plutôt que manipulation DOM directe
+  const [photoLabelHovered, setPhotoLabelHovered] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const debounceFn = debounce(handleDebounceFn, 1000);
+  // Fix #1 : debounce stabilisé via useMemo — plus recréé à chaque render
+  const debounceFn = useMemo(
+    () => debounce((val: string) => setDescription(val), 1000),
+    []
+  );
 
   useEffect(() => {
     return () => {
       dispatch(setEditDescription(false));
+      debounceFn.cancel(); // Fix #1 : annuler les appels pendants au démontage
     };
-  }, [dispatch]);
-
-  function handleDebounceFn(val: string) {
-    setDescription(val);
-  }
+  }, [dispatch, debounceFn]);
 
   const onEditModeActive = () => {
     dispatch(setEditDescription(true));
@@ -120,7 +136,8 @@ const Summary = ({ project }: { project: Project }) => {
       await dispatch(
         updateCurrentProject({
           documentId: project.documentId,
-          images: [...existingPegFiles.map(({ id }) => id), pegFile.id] as any,
+          // Fix #5 : cast number[] au lieu de any
+          images: [...existingPegFiles.map(({ id }) => id), pegFile.id] as number[],
         })
       );
       await dispatch(getProjectById(project.documentId));
@@ -132,16 +149,16 @@ const Summary = ({ project }: { project: Project }) => {
     }
   };
 
-  const { checklistPercent } = useAppSelector((state) => state.projectDetails.data);
-
-  const completedTasksCount = (project.tasks ?? []).filter(
-    (task) => task.state === 'fulfilled'
-  ).length;
-  const taskPercent =
-    (project.tasks ?? []).length > 0
-      ? Number(((completedTasksCount / project.tasks.length) * 100).toFixed(0))
-      : 0;
+  // Fix #3 : null guard cohérent sur tasks
+  const tasks = project.tasks ?? [];
+  const completedTasksCount = tasks.filter((task) => task.state === 'fulfilled').length;
+  const taskPercent = tasks.length > 0
+    ? Number(((completedTasksCount / tasks.length) * 100).toFixed(0))
+    : 0;
   const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
+
+  // Fix #6 : strip HTML calculé en amont, réutilisé dans le JSX
+  const strippedDescription = project.description ? stripHtml(project.description) : '';
 
   return (
     <Container className="h-full">
@@ -215,20 +232,22 @@ const Summary = ({ project }: { project: Project }) => {
                     </div>
                   )}
                   {hasRole(user, [SUPER_ADMIN]) && (
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      cursor: uploadingPhoto ? 'wait' : 'pointer',
-                      color: 'rgba(255,255,255,0.5)',
-                      fontSize: '12px',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      border: '1px dashed rgba(255,255,255,0.2)',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+                    // Fix #4 : couleur via état React, plus de mutation DOM directe
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: uploadingPhoto ? 'wait' : 'pointer',
+                        color: photoLabelHovered ? '#fff' : 'rgba(255,255,255,0.5)',
+                        fontSize: '12px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px dashed rgba(255,255,255,0.2)',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={() => setPhotoLabelHovered(true)}
+                      onMouseLeave={() => setPhotoLabelHovered(false)}
                     >
                       <HiPhotograph />
                       {uploadingPhoto ? 'Upload...' : project.images?.[0]?.url ? 'Changer' : 'Ajouter une photo'}
@@ -256,8 +275,8 @@ const Summary = ({ project }: { project: Project }) => {
                     </h3>
                     {project.description && !project.orderItem && (
                       <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.5 }}>
-                        {project.description?.replace(/<[^>]*>/g, '').slice(0, 120)}
-                        {(project.description?.replace(/<[^>]*>/g, '').length ?? 0) > 120 ? '…' : ''}
+                        {strippedDescription.slice(0, 120)}
+                        {strippedDescription.length > 120 ? '…' : ''}
                       </p>
                     )}
                   </div>
