@@ -131,11 +131,11 @@ const Summary = ({ project }: { project: Project }) => {
 
   const { checklistPercent } = useAppSelector((state) => state.projectDetails.data);
 
-  const completedTasksCount = project.tasks.filter(
+  const completedTasksCount = (project.tasks ?? []).filter(
     (task) => task.state === 'fulfilled'
   ).length;
   const taskPercent =
-    project.tasks.length > 0
+    (project.tasks ?? []).length > 0
       ? Number(((completedTasksCount / project.tasks.length) * 100).toFixed(0))
       : 0;
   const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
