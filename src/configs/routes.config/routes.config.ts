@@ -246,6 +246,12 @@ const protectedCustomersRoutes = [
     authority: [CUSTOMER],
   },
   {
+    key: "customer.invoice.virement",
+    path: "/customer/invoice/:id/virement",
+    component: lazy(() => import("@/views/app/customer/bankTransfer/BankTransferPage")),
+    authority: [CUSTOMER],
+  },
+  {
     key: "customer.checkout.success",
     path: "/customer/checkout/success",
     component: lazy(() => import("@/views/app/customer/cart/Success")),

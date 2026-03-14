@@ -83,13 +83,13 @@ const EditProducer = () => {
   };
 
   useEffect(() => {
-    if (!producer && onEdition) {
+    if (onEdition) {
       dispatch(getProducerById(documentId));
     }
     return () => {
       dispatch(setProducer(null));
     };
-  }, [dispatch]);
+  }, [dispatch, documentId, onEdition]);
 
   useEffect(() => {
     fetchProducerCategories();

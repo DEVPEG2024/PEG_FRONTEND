@@ -1,5 +1,6 @@
 import { Container } from '@/components/shared';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Invoice } from '@/@types/invoice';
 import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
 import reducer, { deleteInvoice, getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
@@ -9,7 +10,7 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import dayjs from 'dayjs';
-import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash } from 'react-icons/hi';
+import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard } from 'react-icons/hi';
 import { stateData } from './constants';
 
 injectReducer('invoices', reducer);
@@ -42,6 +43,7 @@ const TAB_STATES = [
 
 const InvoicesList = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,8 +142,19 @@ const InvoicesList = () => {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '5px', flexShrink: 0, alignItems: 'center' }}>
                   <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setPrintInvoiceDialog(true)) }} icon={<HiPrinter size={13} />} hoverBg="rgba(107,158,255,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(107,158,255,0.4)" title="Imprimer" />
+                  {!isAdmin && inv.state !== 'canceled' && inv.paymentState !== 'fulfilled' && (
+                    <button
+                      onClick={() => navigate(`/customer/invoice/${inv.documentId}/virement`)}
+                      title="Payer par virement"
+                      style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '30px', padding: '0 10px', borderRadius: '8px', background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.3)', cursor: 'pointer', color: '#6b9eff', fontSize: '11px', fontWeight: 700, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.22)'; e.currentTarget.style.borderColor = 'rgba(47,111,237,0.5)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.12)'; e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)' }}
+                    >
+                      <HiCreditCard size={13} /> Payer par virement
+                    </button>
+                  )}
                   {isAdmin && <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setEditInvoiceDialog(true)) }} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />}
                   {isAdmin && <Btn onClick={() => dispatch(updateInvoice({ documentId: inv.documentId, state: 'canceled' }))} icon={<HiBan size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Annuler" disabled={inv.state === 'canceled'} />}
                   {isAdmin && <Btn onClick={() => { if (window.confirm(`Supprimer définitivement la facture ${inv.name} ?`)) dispatch(deleteInvoice(inv.documentId)) }} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.15)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.4)" title="Supprimer" />}
