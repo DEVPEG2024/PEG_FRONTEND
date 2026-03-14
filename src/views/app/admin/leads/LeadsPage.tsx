@@ -597,6 +597,19 @@ function parseCsvLine(line: string): string[] {
     return result
 }
 
+function normalizeDate(raw: string): string {
+    if (!raw?.trim()) return ''
+    // Déjà au format yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) return raw.trim()
+    // Format DD/MM/YYYY ou D/M/YYYY
+    const match = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`
+    // Format DD-MM-YYYY
+    const match2 = raw.trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/)
+    if (match2) return `${match2[3]}-${match2[2].padStart(2, '0')}-${match2[1].padStart(2, '0')}`
+    return ''
+}
+
 function parseLeadsCsv(text: string): Omit<Lead, 'documentId' | 'createdAt'>[] {
     const lines = text.trim().split('\n').map(l => l.replace(/\r/g, ''))
     if (lines.length < 2) return []
@@ -618,7 +631,7 @@ function parseLeadsCsv(text: string): Omit<Lead, 'documentId' | 'createdAt'>[] {
             priority:       (validPrios.includes(cols[8] as LeadPriority) ? cols[8] : 'normale') as LeadPriority,
             notes:          cols[9]  || '',
             nextAction:     cols[10] || '',
-            nextActionDate: cols[11] || '',
+            nextActionDate: normalizeDate(cols[11]) || null,
         }))
 }
 
