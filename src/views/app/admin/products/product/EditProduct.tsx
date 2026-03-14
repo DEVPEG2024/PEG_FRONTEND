@@ -279,8 +279,11 @@ const EditProduct = () => {
       images: newImages.map(({ id }) => id),
       active: true,
       priceTiers: values.priceTiers,
-      batFile: batFileId ?? null,
     };
+    // N'inclure batFile que si on a un ID — null ferait échouer ProductInput (type ID non-nullable)
+    if (batFileId !== undefined) {
+      data.batFile = batFileId;
+    }
     if (!values.form) {
       data.form = null;
     }
