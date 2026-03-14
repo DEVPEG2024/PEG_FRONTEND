@@ -253,48 +253,48 @@ const EditProduct = () => {
   };
 
   const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
-    const newImages: PegFile[] = [];
-    for (const image of images) {
-      if (image.id) {
-        newImages.push(image);
-      } else {
-        const imageUploaded: PegFile = await apiUploadFile(image.file);
-        newImages.push(imageUploaded);
-      }
-    }
-
-    // Upload BAT PDF if a new file was selected
-    let batFileId: string | undefined = product?.batFile?.id as string | undefined;
-    if (batFile && batFile.file) {
-      const uploaded: PegFile = await apiUploadFile(batFile.file);
-      batFileId = uploaded.id as string;
-    }
-    // If BAT was cleared (batFile is null and requiresBat is still on), keep existing; if requiresBat is off, clear it
-    if (!values.requiresBat) {
-      batFileId = undefined;
-    }
-
-    const data: any = {
-      ...values,
-      images: newImages.map(({ id }) => id),
-      active: true,
-      priceTiers: values.priceTiers,
-    };
-    // N'inclure batFile que si on a un ID — null ferait échouer ProductInput (type ID non-nullable)
-    if (batFileId !== undefined) {
-      data.batFile = batFileId;
-    }
-    if (!values.form) {
-      data.form = null;
-    }
-    if (!values.checklist) {
-      data.checklist = null;
-    }
-    if (!onEdition) {
-      delete data.documentId;
-    }
-
     try {
+      const newImages: PegFile[] = [];
+      for (const image of images) {
+        if (image.id) {
+          newImages.push(image);
+        } else {
+          const imageUploaded: PegFile = await apiUploadFile(image.file);
+          newImages.push(imageUploaded);
+        }
+      }
+
+      // Upload BAT PDF if a new file was selected
+      let batFileId: string | undefined = product?.batFile?.id as string | undefined;
+      if (batFile && batFile.file) {
+        const uploaded: PegFile = await apiUploadFile(batFile.file);
+        batFileId = uploaded.id as string;
+      }
+      // If BAT was cleared (batFile is null and requiresBat is still on), keep existing; if requiresBat is off, clear it
+      if (!values.requiresBat) {
+        batFileId = undefined;
+      }
+
+      const data: any = {
+        ...values,
+        images: newImages.map(({ id }) => id),
+        active: true,
+        priceTiers: values.priceTiers,
+      };
+      // N'inclure batFile que si on a un ID — null ferait échouer ProductInput (type ID non-nullable)
+      if (batFileId !== undefined) {
+        data.batFile = batFileId;
+      }
+      if (!values.form) {
+        data.form = null;
+      }
+      if (!values.checklist) {
+        data.checklist = null;
+      }
+      if (!onEdition) {
+        delete data.documentId;
+      }
+
       await updateOrCreateProduct(data);
       navigate('/admin/products');
     } catch (error: any) {

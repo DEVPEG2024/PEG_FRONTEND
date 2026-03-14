@@ -121,8 +121,7 @@ const ProductForm = (props: ProductFormProps) => {
 
   const onSubmit = async (values: ProductFormModel) => {
     const formData = cloneDeep(values);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    onFormSubmit(formData, batFile);
+    await onFormSubmit(formData, batFile);
   };
 
   const onFileAdd = async (file: File) => {

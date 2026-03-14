@@ -30,9 +30,6 @@ export async function apiUploadFile(file: File): Promise<PegFile> {
     const response = await ApiService.fetchData<PegFile[]>({
         url: API_BASE_URL + "/upload",
         method: 'post',
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
         data: formData
     })
     
