@@ -7,6 +7,7 @@ import {
   type GetLeadsRequest,
 } from '@/services/LeadServices'
 import type { Lead } from '@/@types/lead'
+import { toast } from 'react-toastify'
 
 type LeadsState = {
   loading: boolean
@@ -77,6 +78,9 @@ const leadsSlice = createSlice({
           state.total += 1
         }
       })
+      .addCase(createLead.rejected, (_state, action) => {
+        toast.error(`Erreur lors de la création du lead : ${action.error?.message ?? 'Vérifiez que le backend est bien déployé'}`)
+      })
       .addCase(updateLead.fulfilled, (state, action) => {
         const updated = action.payload
         if (!updated?.documentId) return
@@ -84,9 +88,15 @@ const leadsSlice = createSlice({
           l.documentId === updated.documentId ? updated : l
         )
       })
+      .addCase(updateLead.rejected, (_state, action) => {
+        toast.error(`Erreur lors de la mise à jour du lead : ${action.error?.message ?? 'Erreur inconnue'}`)
+      })
       .addCase(deleteLead.fulfilled, (state, action) => {
         state.leads = state.leads.filter((l) => l.documentId !== action.payload)
         state.total = Math.max(0, state.total - 1)
+      })
+      .addCase(deleteLead.rejected, (_state, action) => {
+        toast.error(`Erreur lors de la suppression : ${action.error?.message ?? 'Erreur inconnue'}`)
       })
   },
 })

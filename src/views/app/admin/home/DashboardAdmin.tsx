@@ -634,11 +634,15 @@ export default function DashboardAdmin() {
 
   const onPickBanner = () => fileRef.current?.click()
 
-  const onBannerFile = async (file?: File | null) => {
+  const onBannerFile = (file?: File | null) => {
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setBannerUrl(url)
-    localStorage.setItem('peg:dashboardBanner', url)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string
+      setBannerUrl(base64)
+      localStorage.setItem('peg:dashboardBanner', base64)
+    }
+    reader.readAsDataURL(file)
   }
 
   const routeForKpi = (title: string) => {
