@@ -21,6 +21,7 @@ import {
   useAppSelector,
   updateCurrentProject,
   setEditDescription,
+  getProjectById,
 } from '../store';
 import { apiGetPegFiles, apiUploadFile } from '@/services/FileServices';
 
@@ -113,7 +114,6 @@ const Summary = ({ project }: { project: Project }) => {
     setUploadingPhoto(true);
     try {
       const pegFile = await apiUploadFile(file);
-      // Fetch existing images to get their numeric ids (same pattern as Files.tsx)
       const existingPegFiles = project.images?.length > 0
         ? await apiGetPegFiles(project.images)
         : [];
@@ -123,6 +123,9 @@ const Summary = ({ project }: { project: Project }) => {
           images: [...existingPegFiles.map(({ id }) => id), pegFile.id] as any,
         })
       );
+      await dispatch(getProjectById(project.documentId));
+    } catch (err) {
+      console.error('Photo upload failed:', err);
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
