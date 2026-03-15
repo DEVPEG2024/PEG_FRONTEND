@@ -1,4 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { env } from '@/configs/env.config';
+
+const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import ReactHtmlParser from 'html-react-parser';
@@ -193,7 +196,7 @@ const Summary = ({ project }: { project: Project }) => {
                   padding: '20px',
                 }}>
                   <img
-                    src={project.orderItem.product.images[0].url}
+                    src={resolveUrl(project.orderItem.product.images[0].url)}
                     alt={project.orderItem.product.name}
                     style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '8px' }}
                   />
@@ -213,7 +216,7 @@ const Summary = ({ project }: { project: Project }) => {
                 }}>
                   {project.images?.[0]?.url ? (
                     <img
-                      src={project.images[0].url}
+                      src={resolveUrl(project.images[0].url)}
                       alt={project.name}
                       style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px' }}
                     />

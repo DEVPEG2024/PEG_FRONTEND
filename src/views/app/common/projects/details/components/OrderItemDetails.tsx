@@ -1,3 +1,4 @@
+import { env } from '@/configs/env.config';
 import {
   HiAdjustments,
   HiOfficeBuilding,
@@ -57,7 +58,7 @@ const OrderItemDetails = ({
         orderItem.product.images?.[0]?.url ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
             <img
-              src={orderItem.product.images[0].url}
+              src={orderItem.product.images[0].url.startsWith('http') ? orderItem.product.images[0].url : env.API_ENDPOINT_URL + orderItem.product.images[0].url}
               alt={productTitle}
               style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'contain', flexShrink: 0, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)' }}
             />

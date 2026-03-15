@@ -4,6 +4,9 @@ import ProgressionBar from './ProgressionBar';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '@/@types/project';
 import { MdAccessTime, MdOutlineImage } from 'react-icons/md';
+import { env } from '@/configs/env.config';
+
+const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
 import dayjs from 'dayjs';
 import { RootState, useAppSelector } from '@/store';
 import { useState } from 'react';
@@ -81,7 +84,7 @@ const ProjectItem = ({
       }}>
         {project.orderItem?.product?.images?.[0]?.url ? (
           <img
-            src={project.orderItem.product.images[0].url}
+            src={resolveUrl(project.orderItem.product.images[0].url)}
             alt={project.name}
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
           />
