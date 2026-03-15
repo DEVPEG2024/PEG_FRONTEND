@@ -427,10 +427,14 @@ export default function DashboardAdmin() {
   const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0
   const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
-  const invoiceTotal = useMemo(
-    () => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0),
-    [invoices]
-  )
+  const invoiceTotal = useMemo(() => {
+    const fromInvoices = invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0)
+    const fromProjectsWithoutInvoice = projects.reduce((a: number, p: any) => {
+      const hasInvoice = Array.isArray(p?.invoices) && p.invoices.length > 0
+      return a + (hasInvoice ? 0 : (Number(p?.price) || 0))
+    }, 0)
+    return fromInvoices + fromProjectsWithoutInvoice
+  }, [invoices, projects])
 
   const invoicePaid = useMemo(() => {
     return invoices.reduce((a: number, x: any) => {
