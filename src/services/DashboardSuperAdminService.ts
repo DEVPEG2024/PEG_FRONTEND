@@ -67,6 +67,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           invoices(pagination: { limit: 1 }) {
             documentId
           }
+        }
         pageInfo {
           total
         }
