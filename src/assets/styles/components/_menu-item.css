@@ -50,6 +50,22 @@
   }
 }
 
+/* Glassmorphism overrides — menu items dark */
+.dark .menu-item.menu-item-dark {
+  color: rgba(255, 255, 255, 0.6);
+
+  &.menu-item-hoverable:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  &.menu-item-active {
+    color: #ffffff !important;
+    background: rgba(139, 92, 246, 0.2) !important;
+    border-left: 3px solid #8b5cf6;
+  }
+}
+
 .menu-collapse-item {
   @apply cursor-pointer select-none font-semibold px-3 h-10 rounded-md flex items-center justify-between;
 
@@ -70,8 +86,21 @@
   }
 }
 
+.dark .menu-collapse-item.menu-collapse-item-dark {
+  color: rgba(255, 255, 255, 0.6);
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
 .menu-item-divider {
   @apply border-b border-gray-200 dark:border-gray-600 my-2;
+}
+
+.dark .menu-item-divider {
+  border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 .menu-item-disabled {

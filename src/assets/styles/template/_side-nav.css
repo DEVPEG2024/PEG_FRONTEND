@@ -16,7 +16,10 @@
 }
 
 .side-nav-dark {
-  @apply bg-gray-800 border-r border-gray-600;
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .side-nav-transparent {

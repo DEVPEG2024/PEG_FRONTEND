@@ -19,7 +19,7 @@
 }
 
 .menu-dark {
-  @apply bg-gray-800;
+  background: transparent !important;
 }
 
 .menu-transparent {
