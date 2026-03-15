@@ -28,28 +28,8 @@
   }
 }
 
-.dark .input {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff;
-}
-
-.dark .input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.dark .input:focus {
-  border-color: rgba(139, 92, 246, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
-}
-
 .input-addon {
   @apply flex items-center px-4 rounded-md border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700;
-}
-
-.dark .input-addon {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .input-textarea {

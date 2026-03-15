@@ -2,39 +2,6 @@
 
 @config '../../../../tailwind.config.cjs';
 
-/* ============================================================
-   GLASSMORPHISM DARK — Design System PEG
-   ============================================================ */
-
-:root {
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --color-primary: #6366f1;
-  --color-primary-light: #8b5cf6;
-  --color-success: #10b981;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
-  --bg-base: #0a0a2e;
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-muted: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-}
-
-/* Halos lumineux fixes */
-.halo {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.3;
-  pointer-events: none;
-  z-index: 0;
-}
-.halo-1 { width: 600px; height: 600px; background: #3b82f6; top: -100px; left: -100px; }
-.halo-2 { width: 500px; height: 500px; background: #8b5cf6; bottom: -100px; right: -100px; }
-.halo-3 { width: 400px; height: 400px; background: #6366f1; top: 40%; left: 40%; }
-
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -58,7 +25,6 @@
     @apply text-gray-500 dark:text-gray-400 text-sm bg-gray-100 dark:bg-gray-900 leading-normal;
     -webkit-font-smoothing: antialiased;
   }
-
 
   h1,
   .h1 {
@@ -98,21 +64,6 @@
     @apply text-gray-900 dark:text-gray-100;
   }
  
-}
-
-/* Fond global dark glassmorphism — hors @layer pour surcharger les utilitaires Tailwind */
-.dark body {
-  background: linear-gradient(135deg, #0a0a2e 0%, #1a0a4e 100%);
-  background-attachment: fixed;
-  color: rgba(255, 255, 255, 0.85);
-  min-height: 100vh;
-}
-
-/* #root doit être transparent pour laisser passer le gradient */
-.dark #root {
-  background: transparent;
-  position: relative;
-  z-index: 1;
 }
 
 .side-nav {

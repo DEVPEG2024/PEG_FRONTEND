@@ -2,13 +2,6 @@
   @apply bg-white flex z-30 sticky top-0 w-full dark:bg-gray-800 print:hidden;
 }
 
-.dark .header {
-  background: rgba(10, 10, 46, 0.8) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 .header-wrapper {
   @apply flex relative items-center justify-between p-0 px-4 w-full;
 }
