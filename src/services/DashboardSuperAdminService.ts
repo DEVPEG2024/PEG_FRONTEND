@@ -64,7 +64,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           producer {
             name
           }
-          invoices {
+          invoices(pagination: { limit: 1 }) {
             documentId
           }
         pageInfo {
