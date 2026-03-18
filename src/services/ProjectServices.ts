@@ -333,6 +333,13 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         url
                     }
                     requiresBat
+                    batFile {
+                        documentId
+                        url
+                        name
+                    }
+                    batStatus
+                    batComment
                 }
                 sizeAndColorSelections
                 state
