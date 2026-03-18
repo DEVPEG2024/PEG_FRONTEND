@@ -24,15 +24,20 @@ import { PegFile } from '@/@types/pegFile';
 
 export async function apiUploadFile(file: File): Promise<PegFile> {
     const formData = new FormData();
-    
+
     formData.append("files", file);
-    
+
     const response = await ApiService.fetchData<PegFile[]>({
         url: API_BASE_URL + "/upload",
         method: 'post',
-        data: formData
+        data: formData,
+        headers: {
+            // Supprimer le Content-Type par défaut (application/json) pour que
+            // le navigateur définisse automatiquement multipart/form-data avec le boundary
+            'Content-Type': undefined,
+        },
     })
-    
+
     return response.data[0]
 }
 
