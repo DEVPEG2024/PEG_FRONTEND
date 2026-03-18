@@ -37,10 +37,13 @@ const ProjectItem = ({
   const duration = dayjs(project.endDate).diff(dayjs(), 'day');
   const status = statusStyles[project.state] ?? statusStyles.pending;
 
+  const checklistItems = project.checklistItems ?? [];
   const completedTasksCount = project.tasks.filter((t) => t.state === 'fulfilled').length;
-  const percentageComplete = project.tasks.length > 0
-    ? Math.round((completedTasksCount / project.tasks.length) * 100)
-    : 0;
+  const percentageComplete = checklistItems.length > 0
+    ? Math.round((checklistItems.filter((i) => i.done).length / checklistItems.length) * 100)
+    : project.tasks.length > 0
+      ? Math.round((completedTasksCount / project.tasks.length) * 100)
+      : 0;
 
   const handleNavigate = () => navigate(`/common/projects/details/${project.documentId}`);
 

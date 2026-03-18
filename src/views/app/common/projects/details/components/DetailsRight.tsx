@@ -17,6 +17,7 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { updateCurrentProject, useAppSelector } from '../store';
+import ProgressionBar from '../../lists/components/ProgressionBar';
 import { MdPersonAdd } from 'react-icons/md';
 
 const sep: React.CSSProperties = {
@@ -61,7 +62,7 @@ const MetaRow = ({ icon, label, value }: { icon: React.ReactNode; label?: string
 
 const DetailsRight = () => {
   const dispatch = useAppDispatch();
-  const { project } = useAppSelector((state) => state.projectDetails.data);
+  const { project, checklistPercent } = useAppSelector((state) => state.projectDetails.data);
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
@@ -71,6 +72,18 @@ const DetailsRight = () => {
   const priorityStyle = priorityStyles[project.priority] ?? priorityStyles.medium;
   const duration = dayjs(project.endDate).diff(project.startDate, 'day');
   const durationText = duration > 0 ? `${duration} jours restants` : 'Délai dépassé';
+
+  const tasks = project.tasks ?? [];
+  const checklistItems = project.checklistItems ?? [];
+  const taskPercent = tasks.length > 0
+    ? Math.round((tasks.filter((t) => t.state === 'fulfilled').length / tasks.length) * 100)
+    : 0;
+  const progressPercent = checklistPercent !== null
+    ? checklistPercent
+    : checklistItems.length > 0
+      ? Math.round((checklistItems.filter((i) => i.done).length / checklistItems.length) * 100)
+      : taskPercent;
+  const progressLabel = checklistPercent !== null || checklistItems.length > 0 ? 'Checklist' : 'Tâches';
 
   const assignMeAsProducer = () => {
     dispatch(
@@ -89,9 +102,19 @@ const DetailsRight = () => {
       fontFamily: 'Inter, sans-serif',
       boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
     }}>
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '18px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
         Détails
       </p>
+
+      {/* Progress */}
+      <div style={{ marginBottom: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {progressLabel}
+          </span>
+        </div>
+        <ProgressionBar progression={progressPercent} />
+      </div>
 
       {/* Status badge */}
       <div style={{ marginBottom: '16px' }}>

@@ -333,13 +333,6 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         url
                     }
                     requiresBat
-                    batFile {
-                        documentId
-                        url
-                        name
-                    }
-                    batStatus
-                    batComment
                 }
                 sizeAndColorSelections
                 state
@@ -427,6 +420,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                     documentId
                     state
                 }
+                checklistItems
             }
             pageInfo {
                 page
@@ -500,6 +494,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                     documentId
                     state
                 }
+                checklistItems
             }
             pageInfo {
                 page
@@ -574,6 +569,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                     documentId
                     state
                 }
+                checklistItems
             }
             pageInfo {
                 page
@@ -655,6 +651,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                     documentId
                     state
                 }
+                checklistItems
             }
             pageInfo {
                 page
