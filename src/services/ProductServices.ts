@@ -29,6 +29,14 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
+            requiresBat
+            batFile {
+                documentId
+                url
+                name
+            }
+            batStatus
+            batComment
             # checklist { documentId name items }  — activer après config Strapi
         }
     }
@@ -362,6 +370,21 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
             query,
             variables
         }
+    })
+}
+
+// update BAT file (admin uploads new BAT and resets status to pending)
+export async function apiUpdateBatFile(documentId: string, batFileId: number) {
+    return ApiService.fetchData({
+        url: `/products/${documentId}`,
+        method: 'put',
+        data: {
+            data: {
+                batFile: batFileId,
+                batStatus: 'pending',
+                batComment: null,
+            },
+        },
     })
 }
 

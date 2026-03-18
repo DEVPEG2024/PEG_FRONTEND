@@ -8,8 +8,8 @@ import { ADMIN, CUSTOMER, SUPER_ADMIN } from '@/constants/roles.constant';
 const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
 
-  const selectedTab = useAppSelector(
-    (state) => state.projectDetails.data.selectedTab
+  const { selectedTab, project } = useAppSelector(
+    (state) => state.projectDetails.data
   );
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
@@ -19,9 +19,11 @@ const QuickFilterTab = () => {
     dispatch(setSelectedTab(val));
   };
 
-  const tabs = labelList.filter(
-    (tab) => tab !== 'Factures' || hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER])
-  );
+  const tabs = labelList.filter((tab) => {
+    if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
+    if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
+    return true;
+  });
 
   return (
     <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
