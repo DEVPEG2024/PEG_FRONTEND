@@ -395,6 +395,9 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 }
                 endDate
                 name
+                images {
+                    url
+                }
                 orderItem {
                     product {
                         images {
@@ -468,6 +471,9 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
                 endDate
                 name
+                images {
+                    url
+                }
                 orderItem {
                     product {
                         images {
@@ -543,6 +549,9 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 }
                 endDate
                 name
+                images {
+                    url
+                }
                 orderItem {
                     product {
                         images {
@@ -615,6 +624,9 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 }
                 endDate
                 name
+                images {
+                    url
+                }
                 orderItem {
                     product {
                         images {

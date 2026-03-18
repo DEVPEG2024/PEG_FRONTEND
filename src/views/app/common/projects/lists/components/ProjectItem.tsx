@@ -88,6 +88,12 @@ const ProjectItem = ({
             alt={project.name}
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
           />
+        ) : project.images?.[0]?.url ? (
+          <img
+            src={resolveUrl(project.images[0].url)}
+            alt={project.name}
+            style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
+          />
         ) : (
           <MdOutlineImage size={48} style={{ color: 'rgba(255,255,255,0.1)' }} />
         )}
