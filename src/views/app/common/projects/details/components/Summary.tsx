@@ -26,7 +26,8 @@ import {
   setEditDescription,
   getProjectById,
 } from '../store';
-import { apiGetPegFiles, apiUploadFile } from '@/services/FileServices';
+import { apiUploadFile } from '@/services/FileServices';
+import { toast } from 'react-toastify';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -133,19 +134,17 @@ const Summary = ({ project }: { project: Project }) => {
     setUploadingPhoto(true);
     try {
       const pegFile = await apiUploadFile(file);
-      const existingPegFiles = project.images?.length > 0
-        ? await apiGetPegFiles(project.images)
-        : [];
+      const existingDocumentIds = project.images?.map((img) => img.documentId).filter(Boolean) ?? [];
       await dispatch(
         updateCurrentProject({
           documentId: project.documentId,
-          // Fix #5 : cast number[] au lieu de any
-          images: [...existingPegFiles.map(({ id }) => id), pegFile.id] as number[],
+          images: [...existingDocumentIds, pegFile.documentId] as unknown as [],
         })
       );
       await dispatch(getProjectById(project.documentId));
     } catch (err) {
       console.error('Photo upload failed:', err);
+      toast.error("Échec de l'envoi de la photo");
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';

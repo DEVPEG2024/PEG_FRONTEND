@@ -113,7 +113,7 @@ const Files = () => {
       await dispatch(
         updateCurrentProject({
           documentId: project.documentId,
-          images: newPegFiles.map(({ id }) => id) as unknown as PegFile[],
+          images: newPegFiles.map(({ documentId }) => documentId) as unknown as PegFile[],
         })
       );
       setPegFilesChanged(false);

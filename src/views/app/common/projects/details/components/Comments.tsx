@@ -64,7 +64,7 @@ const Comments = () => {
   }
 
   const submitComment = async () => {
-    if (commentText.trim()) {
+    if (commentText.trim() || pegFiles.length > 0) {
       const newPegFiles: PegFile[] = [];
 
       dispatch(setLoading(true));

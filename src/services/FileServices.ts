@@ -36,13 +36,17 @@ export async function apiUploadFile(file: File): Promise<PegFile> {
     return response.data[0]
 }
 
-export async function apiGetFile(documentId: string) {    
-    const response = await ApiService.fetchData<PegFile[]>({
+export async function apiGetFile(documentId: string): Promise<PegFile[]> {
+    const response = await ApiService.fetchData<PegFile[] | { data: PegFile[] }>({
         url: API_BASE_URL + "/upload/files?filters[documentId][$eq]=" + documentId,
         method: 'get'
     })
-    
-    return response.data
+
+    // Strapi v5 returns { data: [...], meta: {...} }, v4 returns a flat array
+    if (Array.isArray(response.data)) {
+        return response.data
+    }
+    return (response.data as { data: PegFile[] }).data ?? []
 }
 
 export async function apiGetAllFiles() : Promise<PegFile[]> {    
