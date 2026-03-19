@@ -89,12 +89,12 @@ const ShowProduct = () => {
   useEffect(() => {
     if (orderItemId) {
       apiGetOrderItem(orderItemId).then((res: any) => {
-        const data = res.data?.data;
+        const data = res.data?.data?.orderItem;
         if (data) setOrderItem(data);
       }).catch(() => {});
     } else if (product?.requiresBat) {
       apiGetOrderItemByProduct(documentId).then((res: any) => {
-        const items = res.data?.data;
+        const items = res.data?.data?.orderItems;
         if (items?.length > 0) setOrderItem(items[0]);
       }).catch(() => {});
     }

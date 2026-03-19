@@ -365,20 +365,36 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
     })
 }
 
-// get orderItem by documentId (used to fetch BAT data in ShowProduct)
+// get orderItem by documentId (BAT data)
 export async function apiGetOrderItem(documentId: string) {
-    return ApiService.fetchData<{ data: { documentId: string; batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null } }>({
-        url: `/order-items/${documentId}?populate[batFile]=true`,
-        method: 'get',
-    })
+    const query = `
+    query GetOrderItem($documentId: ID!) {
+        orderItem(documentId: $documentId) {
+            documentId
+            batFile { documentId url name }
+            batStatus
+            batComment
+        }
+    }`
+    return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { documentId } } })
 }
 
 // get customer's latest orderItem for a product (auto-fetch BAT in ShowProduct)
 export async function apiGetOrderItemByProduct(productDocumentId: string) {
-    return ApiService.fetchData<{ data: Array<{ documentId: string; batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null }> }>({
-        url: `/order-items?filters[product][documentId][$eq]=${productDocumentId}&sort[0]=createdAt:desc&pagination[pageSize]=1&populate[batFile]=true`,
-        method: 'get',
-    })
+    const query = `
+    query GetOrderItemByProduct($productDocumentId: ID!) {
+        orderItems(
+            filters: { product: { documentId: { eq: $productDocumentId } } }
+            pagination: { pageSize: 1 }
+            sort: ["createdAt:desc"]
+        ) {
+            documentId
+            batFile { documentId url name }
+            batStatus
+            batComment
+        }
+    }`
+    return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { productDocumentId } } })
 }
 
 // update BAT file on orderItem (admin uploads new BAT and resets status to pending)
