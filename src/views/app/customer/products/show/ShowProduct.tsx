@@ -18,7 +18,7 @@ import {
   CartItemSizeAndColorEdition,
   editSizeAndColorsCartItem,
 } from '@/store/slices/base/cartSlice';
-import { apiGetOrderItem, apiUpdateBatStatus } from '@/services/ProductServices';
+import { apiGetOrderItem, apiGetOrderItemByProduct, apiUpdateBatStatus } from '@/services/ProductServices';
 import { OrderItem } from '@/@types/orderItem';
 import Container from '@/components/shared/Container';
 
@@ -92,8 +92,13 @@ const ShowProduct = () => {
         const data = res.data?.data;
         if (data) setOrderItem(data);
       }).catch(() => {});
+    } else if (product?.requiresBat) {
+      apiGetOrderItemByProduct(documentId).then((res: any) => {
+        const items = res.data?.data;
+        if (items?.length > 0) setOrderItem(items[0]);
+      }).catch(() => {});
     }
-  }, [orderItemId]);
+  }, [orderItemId, product?.requiresBat]);
 
   useEffect(() => {
     if (isFirstRender) {
@@ -134,7 +139,8 @@ const ShowProduct = () => {
   const handleCompleteForm = () => dispatch(setFormDialog(true));
 
   const handleBatSubmit = async () => {
-    if (!orderItemId || !batAction) return;
+    const targetOrderItemId = orderItemId ?? orderItem?.documentId;
+    if (!targetOrderItemId || !batAction) return;
     if (batAction === 'reject' && !batComment.trim()) {
       toast.error('Veuillez indiquer le motif du refus');
       return;
@@ -142,7 +148,7 @@ const ShowProduct = () => {
     setBatSubmitting(true);
     try {
       await apiUpdateBatStatus(
-        orderItemId,
+        targetOrderItemId,
         batAction === 'approve' ? 'approved' : 'rejected',
         batAction === 'reject' ? batComment.trim() : null
       );
@@ -409,7 +415,7 @@ const ShowProduct = () => {
       )}
 
       {/* ── Section BAT ──────────────────────────────────────────────────── */}
-      {product.requiresBat && orderItemId && orderItem?.batFile?.url && (() => {
+      {product.requiresBat && orderItem?.batFile?.url && (() => {
         const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | null) ?? null;
         return (
           <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>

@@ -367,8 +367,16 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
 
 // get orderItem by documentId (used to fetch BAT data in ShowProduct)
 export async function apiGetOrderItem(documentId: string) {
-    return ApiService.fetchData<{ data: { batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null } }>({
+    return ApiService.fetchData<{ data: { documentId: string; batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null } }>({
         url: `/order-items/${documentId}?populate[batFile]=true`,
+        method: 'get',
+    })
+}
+
+// get customer's latest orderItem for a product (auto-fetch BAT in ShowProduct)
+export async function apiGetOrderItemByProduct(productDocumentId: string) {
+    return ApiService.fetchData<{ data: Array<{ documentId: string; batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null }> }>({
+        url: `/order-items?filters[product][documentId][$eq]=${productDocumentId}&sort[0]=createdAt:desc&pagination[pageSize]=1&populate[batFile]=true`,
         method: 'get',
     })
 }
