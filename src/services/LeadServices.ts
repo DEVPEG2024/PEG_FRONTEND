@@ -10,7 +10,7 @@ export type GetLeadsRequest = {
 
 const buildLeadsQuery = (params: GetLeadsRequest) => {
   const page = params.pagination?.page ?? 1
-  const pageSize = params.pagination?.pageSize ?? 100
+  const pageSize = params.pagination?.pageSize ?? 10000
   const query = new URLSearchParams()
   query.set('pagination[page]', String(page))
   query.set('pagination[pageSize]', String(pageSize))
