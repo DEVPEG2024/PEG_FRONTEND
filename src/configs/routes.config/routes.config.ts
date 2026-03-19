@@ -183,13 +183,6 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
     authority: [SUPER_ADMIN],
   },
-  // Devis IA (PrintAI)
-  {
-    key: "admin.devis",
-    path: "/admin/devis",
-    component: lazy(() => import("@/views/app/admin/devis/DevisPage")),
-    authority: [SUPER_ADMIN],
-  },
   // IA section
   {
     key: "admin.ia.images",
