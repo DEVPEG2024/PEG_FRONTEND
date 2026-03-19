@@ -147,19 +147,16 @@ const ShowProduct = () => {
     }
     setBatSubmitting(true);
     try {
-      console.log('[BAT] orderItemId:', targetOrderItemId, 'action:', batAction);
-      const res = await apiUpdateBatStatus(
+      await apiUpdateBatStatus(
         targetOrderItemId,
         batAction === 'approve' ? 'approved' : 'rejected',
         batAction === 'reject' ? batComment.trim() : null
       );
-      console.log('[BAT] response:', JSON.stringify(res.data, null, 2));
       setBatStatusOverride(batAction === 'approve' ? 'approved' : 'rejected');
       setBatAction(null);
       setBatComment('');
       toast.success(batAction === 'approve' ? 'BAT approuvé' : 'BAT refusé');
-    } catch (err: any) {
-      console.error('[BAT] error:', err?.response?.data ?? err?.message ?? err);
+    } catch {
       toast.error('Erreur lors de la mise à jour du BAT');
     } finally {
       setBatSubmitting(false);
