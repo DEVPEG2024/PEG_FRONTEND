@@ -406,7 +406,7 @@ export async function apiUpdateBatFile(productDocumentId: string, orderItemDocum
             batFile { documentId url name }
         }
     }`
-    await ApiService.fetchData({
+    const res1 = await ApiService.fetchData<any>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -414,6 +414,9 @@ export async function apiUpdateBatFile(productDocumentId: string, orderItemDocum
             variables: { documentId: productDocumentId, data: { batFile: batFileDocumentId } },
         },
     })
+    if (res1.data?.errors?.length) {
+        throw new Error(res1.data.errors[0].message)
+    }
     const updateOrderItemQuery = `
     mutation ResetOrderItemBatStatus($documentId: ID!, $data: OrderItemInput!) {
         updateOrderItem(documentId: $documentId, data: $data) {
@@ -421,7 +424,7 @@ export async function apiUpdateBatFile(productDocumentId: string, orderItemDocum
             batStatus
         }
     }`
-    return ApiService.fetchData({
+    const res2 = await ApiService.fetchData<any>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -429,6 +432,10 @@ export async function apiUpdateBatFile(productDocumentId: string, orderItemDocum
             variables: { documentId: orderItemDocumentId, data: { batStatus: 'pending', batComment: null } },
         },
     })
+    if (res2.data?.errors?.length) {
+        throw new Error(res2.data.errors[0].message)
+    }
+    return res2
 }
 
 // update BAT status on orderItem (client approval)
@@ -445,7 +452,7 @@ export async function apiUpdateBatStatus(
             batComment
         }
     }`
-    return ApiService.fetchData({
+    const res = await ApiService.fetchData<any>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: {
@@ -459,4 +466,8 @@ export async function apiUpdateBatStatus(
             },
         },
     })
+    if (res.data?.errors?.length) {
+        throw new Error(res.data.errors[0].message)
+    }
+    return res
 }
