@@ -252,14 +252,8 @@ const EditProduct = () => {
     return createProduct;
   };
 
-  const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
+  const handleFormSubmit = async (values: ProductFormModel) => {
     try {
-      let batFileId: string | undefined;
-      if (batFile?.file) {
-        const uploaded = await apiUploadFile(batFile.file);
-        batFileId = uploaded.documentId;
-      }
-
       const newImages: PegFile[] = [];
       for (const image of images) {
         if (image.id) {
@@ -275,7 +269,6 @@ const EditProduct = () => {
         images: newImages.map(({ id }) => id),
         active: true,
         priceTiers: values.priceTiers,
-        ...(batFileId !== undefined && { batFile: batFileId }),
       };
       if (!values.form) {
         data.form = null;
@@ -322,7 +315,6 @@ const EditProduct = () => {
         images={images}
         setImages={setImages}
         imagesLoading={imagesLoading}
-        currentBatUrl={null}
         initialData={initialData}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
         filterColorsListByProductCategory={filterColorsListByProductCategory}
