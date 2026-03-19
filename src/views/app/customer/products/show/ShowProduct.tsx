@@ -415,7 +415,7 @@ const ShowProduct = () => {
       )}
 
       {/* ── Section BAT ──────────────────────────────────────────────────── */}
-      {product.requiresBat && product.batFile?.url && (() => {
+      {product.requiresBat && orderItem?.batFile?.url && (() => {
         const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | null) ?? null;
         return (
           <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>
@@ -431,7 +431,7 @@ const ShowProduct = () => {
                 </div>
               </div>
               <a
-                href={product.batFile!.url}
+                href={orderItem.batFile!.url}
                 target="_blank"
                 rel="noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '8px 14px', color: '#c084fc', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
