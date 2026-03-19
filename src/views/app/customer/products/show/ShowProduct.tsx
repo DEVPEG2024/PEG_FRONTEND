@@ -92,13 +92,13 @@ const ShowProduct = () => {
         const data = res.data?.data?.orderItem;
         if (data) setOrderItem(data);
       }).catch(() => {});
-    } else if (product?.requiresBat) {
-      apiGetOrderItemByProduct(documentId).then((res: any) => {
+    } else if (product?.requiresBat && user?.customer?.documentId) {
+      apiGetOrderItemByProduct(documentId, user.customer.documentId).then((res: any) => {
         const items = res.data?.data?.orderItems;
         if (items?.length > 0) setOrderItem(items[0]);
       }).catch(() => {});
     }
-  }, [orderItemId, product?.requiresBat]);
+  }, [orderItemId, product?.requiresBat, user?.customer?.documentId]);
 
   useEffect(() => {
     if (isFirstRender) {

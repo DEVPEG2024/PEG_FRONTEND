@@ -77,7 +77,7 @@ const DashboardCustomer = () => {
   const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;
   const projectsInProgress = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
   const pendingBats = projects.filter(
-    (p) => p.orderItem?.product?.requiresBat && p.orderItem?.product?.batFile?.url && p.orderItem?.batStatus === 'pending'
+    (p) => p.orderItem?.product?.requiresBat && p.orderItem?.product?.batFile?.url && (!p.orderItem?.batStatus || p.orderItem?.batStatus === 'pending')
   );
 
   if (loading) {

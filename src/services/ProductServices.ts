@@ -381,11 +381,16 @@ export async function apiGetOrderItem(documentId: string) {
 }
 
 // get customer's latest orderItem for a product (auto-fetch BAT in ShowProduct)
-export async function apiGetOrderItemByProduct(productDocumentId: string) {
+export async function apiGetOrderItemByProduct(productDocumentId: string, customerDocumentId: string) {
     const query = `
-    query GetOrderItemByProduct($productDocumentId: ID!) {
+    query GetOrderItemByProduct($productDocumentId: ID!, $customerDocumentId: ID!) {
         orderItems(
-            filters: { product: { documentId: { eq: $productDocumentId } } }
+            filters: {
+                and: [
+                    { product: { documentId: { eq: $productDocumentId } } }
+                    { customer: { documentId: { eq: $customerDocumentId } } }
+                ]
+            }
             pagination: { pageSize: 1 }
             sort: ["createdAt:desc"]
         ) {
@@ -394,7 +399,7 @@ export async function apiGetOrderItemByProduct(productDocumentId: string) {
             batComment
         }
     }`
-    return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { productDocumentId } } })
+    return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { productDocumentId, customerDocumentId } } })
 }
 
 // update BAT file on product (admin uploads new BAT) + reset orderItem status to pending
