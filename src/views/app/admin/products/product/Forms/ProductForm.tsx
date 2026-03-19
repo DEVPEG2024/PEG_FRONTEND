@@ -8,6 +8,7 @@ import { Upload } from '@/components/ui';
 import { Product, PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
+import { useState } from 'react';
 import { HiOutlinePhotograph } from 'react-icons/hi';
 import { AiOutlineSave } from 'react-icons/ai';
 
@@ -26,6 +27,7 @@ export type ProductFormModel = Omit<
   | 'form'
   | 'checklist'
   | 'images'
+  | 'batFile'
 > & {
   documentId?: string;
   sizes: string[];
@@ -49,7 +51,7 @@ type ProductFormProps = {
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
-  onFormSubmit: (formData: ProductFormModel) => void;
+  onFormSubmit: (formData: ProductFormModel, batFile: PegFile | null) => void;
   sizes: Options[];
   colors: Options[];
   customerCategories: Options[];
@@ -60,6 +62,7 @@ type ProductFormProps = {
   images: PegFile[];
   setImages: (images: PegFile[]) => void;
   imagesLoading: boolean;
+  currentBatUrl?: string | null;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
@@ -98,9 +101,12 @@ const ProductForm = (props: ProductFormProps) => {
     images,
     setImages,
     imagesLoading,
+    currentBatUrl,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
   } = props;
+
+  const [batFile, setBatFile] = useState<PegFile | null>(null);
 
   const {
     control,
@@ -115,7 +121,7 @@ const ProductForm = (props: ProductFormProps) => {
 
   const onSubmit = async (values: ProductFormModel) => {
     const formData = cloneDeep(values);
-    await onFormSubmit(formData);
+    await onFormSubmit(formData, batFile);
   };
 
   const onFileAdd = async (file: File) => {
@@ -173,6 +179,9 @@ const ProductForm = (props: ProductFormProps) => {
               setValue={setValue}
               images={images}
               setImages={setImages}
+              batFile={batFile}
+              setBatFile={setBatFile}
+              currentBatUrl={currentBatUrl}
             />
           </div>
 

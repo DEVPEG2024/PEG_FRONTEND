@@ -33,6 +33,7 @@ export type Product = {
   productRef?: string;
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
+  batFile?: PegFile | null;
 };
 
 export type Size = {

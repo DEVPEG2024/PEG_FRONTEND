@@ -10,7 +10,7 @@ import { Select, Switcher } from '@/components/ui';
 import type { ProductFormModel } from './ProductForm';
 import { PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
-import { HiOutlineTrash, HiOutlinePlus, HiOutlineLockClosed } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlinePlus, HiOutlineLockClosed, HiOutlineDocumentText, HiOutlineUpload, HiX } from 'react-icons/hi';
 import { MdOutlineVerifiedUser } from 'react-icons/md';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -40,6 +40,9 @@ type ProductFieldsProps = {
   setValue: UseFormSetValue<ProductFormModel>;
   images: PegFile[];
   setImages: (images: PegFile[]) => void;
+  batFile: PegFile | null;
+  setBatFile: (f: PegFile | null) => void;
+  currentBatUrl?: string | null;
 };
 
 const card: React.CSSProperties = {
@@ -94,6 +97,9 @@ const ProductFields = (props: ProductFieldsProps) => {
     setValue,
     images,
     setImages,
+    batFile,
+    setBatFile,
+    currentBatUrl,
   } = props;
 
   const requiresBat = watch('requiresBat');
@@ -192,6 +198,16 @@ const ProductFields = (props: ProductFieldsProps) => {
     userAuthority.includes(SUPER_ADMIN) ||
     userAuthority.includes(ADMIN) ||
     userAuthority.includes(PRODUCER);
+
+  const handleBatFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert('Veuillez sélectionner un fichier PDF.');
+      return;
+    }
+    setBatFile({ file, name: file.name } as unknown as PegFile);
+  };
 
   return (
     <>
@@ -511,6 +527,44 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
         </div>
 
+        {requiresBat && (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+            <label style={{ ...fieldLabel, color: 'rgba(168,85,247,0.7)' }}>Fichier BAT (PDF)</label>
+
+            {/* Current BAT */}
+            {(batFile || currentBatUrl) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px' }}>
+                <HiOutlineDocumentText size={18} style={{ color: '#c084fc', flexShrink: 0 }} />
+                <span style={{ color: '#c084fc', fontSize: '13px', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {batFile ? batFile.name : 'BAT actuel'}
+                </span>
+                {currentBatUrl && !batFile && (
+                  <a href={currentBatUrl} target="_blank" rel="noreferrer" style={{ color: 'rgba(192,132,252,0.7)', fontSize: '11px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                    Voir PDF →
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setBatFile(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', display: 'flex', padding: '2px' }}
+                  title="Retirer le fichier"
+                >
+                  <HiX size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Upload zone */}
+            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(168,85,247,0.04)', border: '1.5px dashed rgba(168,85,247,0.25)', borderRadius: '12px', padding: '20px', cursor: 'pointer' }}>
+              <HiOutlineUpload size={22} style={{ color: 'rgba(192,132,252,0.5)' }} />
+              <span style={{ color: 'rgba(192,132,252,0.7)', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>
+                {batFile ? 'Remplacer le PDF' : 'Déposer ou cliquer pour choisir un PDF'}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px' }}>PDF uniquement</span>
+              <input type="file" accept="application/pdf" onChange={handleBatFileChange} style={{ display: 'none' }} />
+            </label>
+          </div>
+        )}
       </div>
 
       {/* ── Section 6 : Référence interne (admin/producteur) ── */}
