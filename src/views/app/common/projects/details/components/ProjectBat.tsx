@@ -53,10 +53,13 @@ const ProjectBat = () => {
   const statusCfg = batStatusConfig[batStatus] ?? batStatusConfig.pending;
   const { Icon } = statusCfg;
 
-  const handleUploadNewBat = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    toast.info(`Debug: file=${!!file} orderItem=${!!orderItem} id=${orderItem?.documentId}`);
-    if (!file || !orderItem) return;
+    if (!file) return;
+    if (!orderItem?.documentId) {
+      toast.error('orderItem introuvable — impossible d\'envoyer le BAT');
+      return;
+    }
     setUploading(true);
     try {
       const uploaded = await apiUploadFile(file);
@@ -70,6 +73,10 @@ const ProjectBat = () => {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleUploadClick = () => {
+    if (!uploading) fileInputRef.current?.click();
   };
 
   return (
@@ -186,24 +193,39 @@ const ProjectBat = () => {
             </div>
           )}
 
-          {/* Admin: upload new BAT (shown when rejected or no file yet) */}
-          {isSuperAdmin && (batStatus === 'rejected' || !batFile) && (
+          {/* Admin: upload BAT (always shown when superAdmin and orderItem exists, except when already approved) */}
+          {isSuperAdmin && orderItem && batStatus !== 'approved' && (
             <div>
               <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0.08) 60%, transparent)', marginBottom: '20px' }} />
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px' }}>
-                {batStatus === 'rejected' ? 'Envoyer un nouveau BAT' : 'Envoyer le BAT'}
+                {batStatus === 'rejected' ? 'Envoyer un nouveau BAT' : batFile ? 'Remplacer le BAT' : 'Envoyer le BAT'}
               </p>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                background: uploading ? 'rgba(47,111,237,0.08)' : 'rgba(47,111,237,0.12)',
-                border: '1px dashed rgba(47,111,237,0.4)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                cursor: uploading ? 'wait' : 'pointer',
-                transition: 'all 0.2s',
-              }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.zip,.ai,.psd"
+                onChange={handleFileSelected}
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={handleUploadClick}
+                disabled={uploading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  width: '100%',
+                  background: uploading ? 'rgba(47,111,237,0.08)' : 'rgba(47,111,237,0.12)',
+                  border: '1px dashed rgba(47,111,237,0.4)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  cursor: uploading ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  textAlign: 'left',
+                }}
+              >
                 <MdUploadFile size={22} style={{ color: '#6b9eff', flexShrink: 0 }} />
                 <div>
                   <p style={{ color: '#6b9eff', fontSize: '14px', fontWeight: 600, margin: 0 }}>
@@ -213,15 +235,7 @@ const ProjectBat = () => {
                     PDF, image, ZIP, AI, PSD
                   </p>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.webp,.zip,.ai,.psd"
-                  onChange={handleUploadNewBat}
-                  disabled={uploading}
-                  style={{ display: 'none' }}
-                />
-              </label>
+              </button>
             </div>
           )}
         </div>
