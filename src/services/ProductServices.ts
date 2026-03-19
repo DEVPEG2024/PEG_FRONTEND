@@ -399,15 +399,35 @@ export async function apiGetOrderItemByProduct(productDocumentId: string) {
 
 // update BAT file on product (admin uploads new BAT) + reset orderItem status to pending
 export async function apiUpdateBatFile(productDocumentId: string, orderItemDocumentId: string, batFileDocumentId: string) {
+    const updateProductQuery = `
+    mutation UpdateProductBatFile($documentId: ID!, $data: ProductInput!) {
+        updateProduct(documentId: $documentId, data: $data) {
+            documentId
+            batFile { documentId url name }
+        }
+    }`
     await ApiService.fetchData({
-        url: `/products/${productDocumentId}`,
-        method: 'put',
-        data: { data: { batFile: batFileDocumentId } },
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query: updateProductQuery,
+            variables: { documentId: productDocumentId, data: { batFile: batFileDocumentId } },
+        },
     })
+    const updateOrderItemQuery = `
+    mutation ResetOrderItemBatStatus($documentId: ID!, $data: OrderItemInput!) {
+        updateOrderItem(documentId: $documentId, data: $data) {
+            documentId
+            batStatus
+        }
+    }`
     return ApiService.fetchData({
-        url: `/order-items/${orderItemDocumentId}`,
-        method: 'put',
-        data: { data: { batStatus: 'pending', batComment: null } },
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query: updateOrderItemQuery,
+            variables: { documentId: orderItemDocumentId, data: { batStatus: 'pending', batComment: null } },
+        },
     })
 }
 
@@ -417,13 +437,25 @@ export async function apiUpdateBatStatus(
     batStatus: 'approved' | 'rejected',
     batComment?: string | null
 ) {
+    const query = `
+    mutation UpdateOrderItemBatStatus($documentId: ID!, $data: OrderItemInput!) {
+        updateOrderItem(documentId: $documentId, data: $data) {
+            documentId
+            batStatus
+            batComment
+        }
+    }`
     return ApiService.fetchData({
-        url: `/order-items/${orderItemDocumentId}`,
-        method: 'put',
+        url: API_GRAPHQL_URL,
+        method: 'post',
         data: {
-            data: {
-                batStatus,
-                batComment: batComment ?? null,
+            query,
+            variables: {
+                documentId: orderItemDocumentId,
+                data: {
+                    batStatus,
+                    batComment: batComment ?? null,
+                },
             },
         },
     })
