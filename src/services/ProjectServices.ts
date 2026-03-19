@@ -326,11 +326,6 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             orderItem {
                 documentId
                 price
-                batFile {
-                    documentId
-                    url
-                    name
-                }
                 batStatus
                 batComment
                 product {
@@ -340,6 +335,11 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         url
                     }
                     requiresBat
+                    batFile {
+                        documentId
+                        url
+                        name
+                    }
                 }
                 sizeAndColorSelections
                 state
@@ -486,12 +486,12 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 orderItem {
                     documentId
                     batStatus
-                    batFile {
-                        url
-                    }
                     product {
                         documentId
                         requiresBat
+                        batFile {
+                            url
+                        }
                         images {
                             url
                         }

@@ -30,6 +30,7 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 fields
             }
             requiresBat
+            batFile { documentId url name }
             # checklist { documentId name items }  — activer après config Strapi
         }
     }
@@ -80,6 +81,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             }
             # checklist { documentId name items }  — activer après déploiement Strapi
             requiresBat
+            batFile { documentId url name }
             # productRef                           — activer après déploiement Strapi
             # refVisibleToCustomer                 — activer après déploiement Strapi
             customerCategories {
@@ -397,18 +399,17 @@ export async function apiGetOrderItemByProduct(productDocumentId: string) {
     return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { productDocumentId } } })
 }
 
-// update BAT file on orderItem (admin uploads new BAT and resets status to pending)
-export async function apiUpdateBatFile(orderItemDocumentId: string, batFileDocumentId: string) {
+// update BAT file on product (admin uploads new BAT) + reset orderItem status to pending
+export async function apiUpdateBatFile(productDocumentId: string, orderItemDocumentId: string, batFileDocumentId: string) {
+    await ApiService.fetchData({
+        url: `/products/${productDocumentId}`,
+        method: 'put',
+        data: { data: { batFile: batFileDocumentId } },
+    })
     return ApiService.fetchData({
         url: `/order-items/${orderItemDocumentId}`,
         method: 'put',
-        data: {
-            data: {
-                batFile: batFileDocumentId,
-                batStatus: 'pending',
-                batComment: null,
-            },
-        },
+        data: { data: { batStatus: 'pending', batComment: null } },
     })
 }
 

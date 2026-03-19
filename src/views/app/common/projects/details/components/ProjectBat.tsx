@@ -47,7 +47,7 @@ const ProjectBat = () => {
 
   const orderItem = project?.orderItem;
   const product = orderItem?.product;
-  const batFile = orderItem?.batFile;
+  const batFile = product?.batFile;
   const batStatus = orderItem?.batStatus ?? 'pending';
   const batComment = orderItem?.batComment;
   const statusCfg = batStatusConfig[batStatus] ?? batStatusConfig.pending;
@@ -63,7 +63,7 @@ const ProjectBat = () => {
     setUploading(true);
     try {
       const uploaded = await apiUploadFile(file);
-      await apiUpdateBatFile(orderItem.documentId, uploaded.documentId);
+      await apiUpdateBatFile(product!.documentId, orderItem.documentId, uploaded.documentId);
       await dispatch(getProjectById(project!.documentId));
       toast.success('Nouveau BAT soumis au client');
     } catch (err) {
