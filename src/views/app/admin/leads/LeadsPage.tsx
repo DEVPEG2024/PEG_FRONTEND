@@ -482,8 +482,9 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
 }
 
 // ─── Import Preview Modal ──────────────────────────────────────────────────────
-function ImportPreviewModal({ rows, onConfirm, onClose }: {
+function ImportPreviewModal({ rows, duplicates, onConfirm, onClose }: {
     rows: Omit<Lead, 'documentId' | 'createdAt'>[]
+    duplicates: Omit<Lead, 'documentId' | 'createdAt'>[]
     onConfirm: () => void
     onClose: () => void
 }) {
@@ -508,7 +509,10 @@ function ImportPreviewModal({ rows, onConfirm, onClose }: {
                         <div>
                             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">Aperçu de l'import</h2>
                             <p className="text-sm text-gray-400 mt-0.5">
-                                {rows.length} lead{rows.length > 1 ? 's' : ''} détecté{rows.length > 1 ? 's' : ''} — vérifiez avant de confirmer
+                                {rows.length} lead{rows.length > 1 ? 's' : ''} à importer
+                                {duplicates.length > 0 && (
+                                    <span className="text-amber-500 font-semibold"> · {duplicates.length} doublon{duplicates.length > 1 ? 's' : ''} ignoré{duplicates.length > 1 ? 's' : ''}</span>
+                                )}
                             </p>
                         </div>
                         <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -555,9 +559,23 @@ function ImportPreviewModal({ rows, onConfirm, onClose }: {
                         )}
                     </div>
 
+                    {/* Duplicates warning */}
+                    {duplicates.length > 0 && (
+                        <div className="px-6 py-3 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-100 dark:border-amber-800 shrink-0">
+                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                                {duplicates.length} doublon{duplicates.length > 1 ? 's' : ''} détecté{duplicates.length > 1 ? 's' : ''} (même entreprise + email) :
+                            </p>
+                            <div className="max-h-24 overflow-auto text-xs text-amber-600 dark:text-amber-300 space-y-0.5">
+                                {duplicates.map((d, i) => (
+                                    <p key={i}>{d.company}{d.email ? ` — ${d.email}` : ''}</p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Footer */}
                     <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
-                        <p className="text-sm text-gray-400">Les leads seront ajoutés à votre liste existante.</p>
+                        <p className="text-sm text-gray-400">{rows.length > 0 ? 'Les leads seront ajoutés à votre liste existante.' : 'Tous les leads du fichier existent déjà.'}</p>
                         <div className="flex gap-2">
                             <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all">
                                 Annuler
@@ -646,7 +664,7 @@ const LeadsPage = () => {
     const [filterStage, setFilterStage] = useState<LeadStage | 'all'>('all')
     const [filterSource, setFilterSource] = useState<LeadSource | 'all'>('all')
     const [modal, setModal] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null })
-    const [importModal, setImportModal] = useState<{ open: boolean; rows: Omit<Lead, 'documentId' | 'createdAt'>[] }>({ open: false, rows: [] })
+    const [importModal, setImportModal] = useState<{ open: boolean; rows: Omit<Lead, 'documentId' | 'createdAt'>[]; duplicates: Omit<Lead, 'documentId' | 'createdAt'>[] }>({ open: false, rows: [], duplicates: [] })
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -739,8 +757,15 @@ const LeadsPage = () => {
         const reader = new FileReader()
         reader.onload = (ev) => {
             const text = ev.target?.result as string
-            const rows = parseLeadsCsv(text)
-            setImportModal({ open: true, rows })
+            const allRows = parseLeadsCsv(text)
+            const isDuplicate = (row: Omit<Lead, 'documentId' | 'createdAt'>) =>
+                leads.some(existing =>
+                    existing.company.trim().toLowerCase() === row.company.trim().toLowerCase() &&
+                    (existing.email ?? '').trim().toLowerCase() === (row.email ?? '').trim().toLowerCase()
+                )
+            const newRows = allRows.filter(r => !isDuplicate(r))
+            const duplicates = allRows.filter(r => isDuplicate(r))
+            setImportModal({ open: true, rows: newRows, duplicates })
         }
         reader.readAsText(file, 'UTF-8')
         e.target.value = ''
@@ -750,7 +775,7 @@ const LeadsPage = () => {
         for (const row of importModal.rows) {
             await dispatch(createLead(row))
         }
-        setImportModal({ open: false, rows: [] })
+        setImportModal({ open: false, rows: [], duplicates: [] })
     }
 
     return (
@@ -931,8 +956,9 @@ const LeadsPage = () => {
             {importModal.open && (
                 <ImportPreviewModal
                     rows={importModal.rows}
+                    duplicates={importModal.duplicates}
                     onConfirm={confirmImport}
-                    onClose={() => setImportModal({ open: false, rows: [] })}
+                    onClose={() => setImportModal({ open: false, rows: [], duplicates: [] })}
                 />
             )}
         </div>
