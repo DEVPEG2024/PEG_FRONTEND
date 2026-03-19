@@ -4,7 +4,7 @@ import {
   useAppSelector as useRootAppSelector,
 } from '@/store';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import reducer, {
   clearState,
   setFormDialog,
@@ -18,7 +18,8 @@ import {
   CartItemSizeAndColorEdition,
   editSizeAndColorsCartItem,
 } from '@/store/slices/base/cartSlice';
-import { apiUpdateBatStatus } from '@/services/ProductServices';
+import { apiGetOrderItem, apiUpdateBatStatus } from '@/services/ProductServices';
+import { OrderItem } from '@/@types/orderItem';
 import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
@@ -41,6 +42,8 @@ const ShowProduct = () => {
   const { documentId } = useParams<ShowProductParams>() as ShowProductParams;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderItemId = searchParams.get('orderItemId');
   const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
   const {
     product,
@@ -56,6 +59,7 @@ const ShowProduct = () => {
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
 
   // BAT state
+  const [orderItem, setOrderItem] = useState<Partial<OrderItem> | null>(null);
   const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);
   const [batComment, setBatComment] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
@@ -81,6 +85,15 @@ const ShowProduct = () => {
       }
     }
   }, [dispatch]);
+
+  useEffect(() => {
+    if (orderItemId) {
+      apiGetOrderItem(orderItemId).then((res: any) => {
+        const data = res.data?.data;
+        if (data) setOrderItem(data);
+      }).catch(() => {});
+    }
+  }, [orderItemId]);
 
   useEffect(() => {
     if (isFirstRender) {
@@ -121,7 +134,7 @@ const ShowProduct = () => {
   const handleCompleteForm = () => dispatch(setFormDialog(true));
 
   const handleBatSubmit = async () => {
-    if (!product || !batAction) return;
+    if (!orderItemId || !batAction) return;
     if (batAction === 'reject' && !batComment.trim()) {
       toast.error('Veuillez indiquer le motif du refus');
       return;
@@ -129,7 +142,7 @@ const ShowProduct = () => {
     setBatSubmitting(true);
     try {
       await apiUpdateBatStatus(
-        product.documentId,
+        orderItemId,
         batAction === 'approve' ? 'approved' : 'rejected',
         batAction === 'reject' ? batComment.trim() : null
       );
@@ -396,8 +409,8 @@ const ShowProduct = () => {
       )}
 
       {/* ── Section BAT ──────────────────────────────────────────────────── */}
-      {product.requiresBat && product.batFile?.url && (() => {
-        const currentStatus = batStatusOverride ?? product.batStatus ?? null;
+      {product.requiresBat && orderItemId && orderItem?.batFile?.url && (() => {
+        const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | null) ?? null;
         return (
           <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>
             {/* Header */}
@@ -412,7 +425,7 @@ const ShowProduct = () => {
                 </div>
               </div>
               <a
-                href={product.batFile.url}
+                href={orderItem.batFile!.url}
                 target="_blank"
                 rel="noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '8px 14px', color: '#c084fc', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
@@ -431,12 +444,12 @@ const ShowProduct = () => {
 
             {currentStatus === 'rejected' && (
               <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '12px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: product.batComment ? '8px' : '0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: orderItem?.batComment ? '8px' : '0' }}>
                   <span style={{ fontSize: '18px' }}>❌</span>
                   <span style={{ fontWeight: 700, color: '#f87171', fontSize: '14px' }}>BAT refusé</span>
                 </div>
-                {product.batComment && (
-                  <p style={{ margin: 0, fontSize: '12px', color: 'rgba(248,113,113,0.8)', paddingLeft: '26px' }}>{product.batComment}</p>
+                {orderItem?.batComment && (
+                  <p style={{ margin: 0, fontSize: '12px', color: 'rgba(248,113,113,0.8)', paddingLeft: '26px' }}>{orderItem.batComment}</p>
                 )}
               </div>
             )}

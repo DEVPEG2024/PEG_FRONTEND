@@ -30,13 +30,6 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 fields
             }
             requiresBat
-            batFile {
-                documentId
-                url
-                name
-            }
-            batStatus
-            batComment
             # checklist { documentId name items }  — activer après config Strapi
         }
     }
@@ -87,7 +80,6 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             }
             # checklist { documentId name items }  — activer après déploiement Strapi
             requiresBat
-            batFile { documentId url name }
             # productRef                           — activer après déploiement Strapi
             # refVisibleToCustomer                 — activer après déploiement Strapi
             customerCategories {
@@ -373,10 +365,18 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
     })
 }
 
-// update BAT file (admin uploads new BAT and resets status to pending)
-export async function apiUpdateBatFile(documentId: string, batFileId: number) {
+// get orderItem by documentId (used to fetch BAT data in ShowProduct)
+export async function apiGetOrderItem(documentId: string) {
+    return ApiService.fetchData<{ data: { batFile?: { documentId: string; url: string; name: string } | null; batStatus?: string | null; batComment?: string | null } }>({
+        url: `/order-items/${documentId}?populate[batFile]=true`,
+        method: 'get',
+    })
+}
+
+// update BAT file on orderItem (admin uploads new BAT and resets status to pending)
+export async function apiUpdateBatFile(orderItemDocumentId: string, batFileId: number) {
     return ApiService.fetchData({
-        url: `/products/${documentId}`,
+        url: `/order-items/${orderItemDocumentId}`,
         method: 'put',
         data: {
             data: {
@@ -388,14 +388,14 @@ export async function apiUpdateBatFile(documentId: string, batFileId: number) {
     })
 }
 
-// update BAT status (client approval)
+// update BAT status on orderItem (client approval)
 export async function apiUpdateBatStatus(
-    documentId: string,
+    orderItemDocumentId: string,
     batStatus: 'approved' | 'rejected',
     batComment?: string | null
 ) {
     return ApiService.fetchData({
-        url: `/products/${documentId}`,
+        url: `/order-items/${orderItemDocumentId}`,
         method: 'put',
         data: {
             data: {

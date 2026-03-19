@@ -4,7 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import HomeProductsList from './HomeProductsList';
 import { BsArrowRight } from 'react-icons/bs';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import { HiOutlineClipboardList, HiOutlineCheckCircle, HiOutlineCollection } from 'react-icons/hi';
 import reducer, {
@@ -73,8 +73,12 @@ const DashboardCustomer = () => {
     }
   }, [user.customer?.documentId]);
 
+  const navigate = useNavigate();
   const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;
   const projectsInProgress = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
+  const pendingBats = projects.filter(
+    (p) => p.orderItem?.product?.requiresBat && p.orderItem?.batFile?.url && p.orderItem?.batStatus === 'pending'
+  );
 
   if (loading) {
     return (
@@ -228,6 +232,46 @@ const DashboardCustomer = () => {
                 color="rgba(139,92,246,0.18)"
               />
             </div>
+
+            {/* BAT en attente */}
+            {pendingBats.length > 0 && (
+              <div>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                  Bon à Tirer — Validation requise
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendingBats.map((p) => (
+                    <div
+                      key={p.documentId}
+                      onClick={() => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`)}
+                      style={{
+                        background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)',
+                        border: '1.5px solid rgba(168,85,247,0.3)',
+                        borderRadius: '12px',
+                        padding: '14px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '20px' }}>📄</span>
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: '13px', color: '#c084fc' }}>{p.name}</p>
+                          <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{p.orderItem!.product.name}</p>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '4px 10px', whiteSpace: 'nowrap' }}>
+                        Valider →
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Personalized offers */}
             <div>

@@ -1,5 +1,6 @@
 import { Customer } from './customer';
 import { FormAnswer } from './formAnswer';
+import { PegFile } from './pegFile';
 import { Product, SizeAndColorSelection } from './product';
 import { Project } from './project';
 
@@ -12,4 +13,7 @@ export type OrderItem = {
   state: string;
   customer: Customer;
   project: Project;
+  batFile?: PegFile | null;
+  batStatus?: 'pending' | 'approved' | 'rejected' | null;
+  batComment?: string | null;
 }

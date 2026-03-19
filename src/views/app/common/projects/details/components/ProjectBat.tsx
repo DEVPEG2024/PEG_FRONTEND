@@ -45,20 +45,21 @@ const ProjectBat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const product = project?.orderItem?.product;
-  const batFile = product?.batFile;
-  const batStatus = product?.batStatus ?? 'pending';
-  const batComment = product?.batComment;
+  const orderItem = project?.orderItem;
+  const product = orderItem?.product;
+  const batFile = orderItem?.batFile;
+  const batStatus = orderItem?.batStatus ?? 'pending';
+  const batComment = orderItem?.batComment;
   const statusCfg = batStatusConfig[batStatus] ?? batStatusConfig.pending;
   const { Icon } = statusCfg;
 
   const handleUploadNewBat = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !product) return;
+    if (!file || !orderItem) return;
     setUploading(true);
     try {
       const uploaded = await apiUploadFile(file);
-      await apiUpdateBatFile(product.documentId, uploaded.id as number);
+      await apiUpdateBatFile(orderItem.documentId, uploaded.id as number);
       await dispatch(getProjectById(project!.documentId));
       toast.success('Nouveau BAT soumis au client');
     } catch (err) {
