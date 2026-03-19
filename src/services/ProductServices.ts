@@ -398,13 +398,13 @@ export async function apiGetOrderItemByProduct(productDocumentId: string) {
 }
 
 // update BAT file on orderItem (admin uploads new BAT and resets status to pending)
-export async function apiUpdateBatFile(orderItemDocumentId: string, batFileId: number) {
+export async function apiUpdateBatFile(orderItemDocumentId: string, batFileDocumentId: string) {
     return ApiService.fetchData({
         url: `/order-items/${orderItemDocumentId}`,
         method: 'put',
         data: {
             data: {
-                batFile: batFileId,
+                batFile: batFileDocumentId,
                 batStatus: 'pending',
                 batComment: null,
             },

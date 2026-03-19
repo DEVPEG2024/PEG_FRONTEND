@@ -63,7 +63,7 @@ const ProjectBat = () => {
     setUploading(true);
     try {
       const uploaded = await apiUploadFile(file);
-      await apiUpdateBatFile(orderItem.documentId, uploaded.id as number);
+      await apiUpdateBatFile(orderItem.documentId, uploaded.documentId);
       await dispatch(getProjectById(project!.documentId));
       toast.success('Nouveau BAT soumis au client');
     } catch (err) {
