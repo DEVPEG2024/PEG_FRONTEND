@@ -264,27 +264,12 @@ const EditProduct = () => {
         }
       }
 
-      // Upload BAT PDF if a new file was selected
-      let batFileId: string | undefined = product?.batFile?.id as string | undefined;
-      if (batFile && batFile.file) {
-        const uploaded: PegFile = await apiUploadFile(batFile.file);
-        batFileId = uploaded.id as string;
-      }
-      // If BAT was cleared (batFile is null and requiresBat is still on), keep existing; if requiresBat is off, clear it
-      if (!values.requiresBat) {
-        batFileId = undefined;
-      }
-
       const data: any = {
         ...values,
         images: newImages.map(({ id }) => id),
         active: true,
         priceTiers: values.priceTiers,
       };
-      // N'inclure batFile que si on a un ID — null ferait échouer ProductInput (type ID non-nullable)
-      if (batFileId !== undefined) {
-        data.batFile = batFileId;
-      }
       if (!values.form) {
         data.form = null;
       }
@@ -330,7 +315,7 @@ const EditProduct = () => {
         images={images}
         setImages={setImages}
         imagesLoading={imagesLoading}
-        currentBatUrl={product?.batFile?.url ?? null}
+        currentBatUrl={null}
         initialData={initialData}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
         filterColorsListByProductCategory={filterColorsListByProductCategory}
