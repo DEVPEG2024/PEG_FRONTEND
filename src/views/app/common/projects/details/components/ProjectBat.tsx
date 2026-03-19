@@ -55,6 +55,7 @@ const ProjectBat = () => {
 
   const handleUploadNewBat = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    toast.info(`Debug: file=${!!file} orderItem=${!!orderItem} id=${orderItem?.documentId}`);
     if (!file || !orderItem) return;
     setUploading(true);
     try {
