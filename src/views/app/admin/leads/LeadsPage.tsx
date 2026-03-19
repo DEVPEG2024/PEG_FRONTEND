@@ -771,6 +771,32 @@ const LeadsPage = () => {
         e.target.value = ''
     }
 
+    const findDuplicates = useMemo(() => {
+        const seen = new Map<string, Lead>()
+        const dupes: Lead[] = []
+        for (const lead of leads) {
+            const key = `${lead.company.trim().toLowerCase()}||${(lead.email ?? '').trim().toLowerCase()}`
+            if (seen.has(key)) {
+                dupes.push(lead)
+            } else {
+                seen.set(key, lead)
+            }
+        }
+        return dupes
+    }, [leads])
+
+    const [deletingDupes, setDeletingDupes] = useState(false)
+
+    const handleDeleteDuplicates = async () => {
+        if (findDuplicates.length === 0) return
+        if (!window.confirm(`Supprimer ${findDuplicates.length} doublon${findDuplicates.length > 1 ? 's' : ''} ? Cette action est irréversible.`)) return
+        setDeletingDupes(true)
+        for (const dupe of findDuplicates) {
+            await dispatch(deleteLead(dupe.documentId))
+        }
+        setDeletingDupes(false)
+    }
+
     const confirmImport = async () => {
         for (const row of importModal.rows) {
             await dispatch(createLead(row))
@@ -803,6 +829,18 @@ const LeadsPage = () => {
                             onChange={handleImportFile}
                             className="hidden"
                         />
+
+                        {/* Supprimer doublons */}
+                        {findDuplicates.length > 0 && (
+                            <button
+                                onClick={handleDeleteDuplicates}
+                                disabled={deletingDupes}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300 font-semibold text-sm shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+                            >
+                                <HiOutlineTrash className="w-4 h-4" />
+                                {deletingDupes ? 'Suppression...' : `${findDuplicates.length} doublon${findDuplicates.length > 1 ? 's' : ''}`}
+                            </button>
+                        )}
 
                         {/* Export */}
                         <button
