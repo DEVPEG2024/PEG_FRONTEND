@@ -373,7 +373,6 @@ export async function apiGetOrderItem(documentId: string) {
     query GetOrderItem($documentId: ID!) {
         orderItem(documentId: $documentId) {
             documentId
-            batFile { documentId url name }
             batStatus
             batComment
         }
@@ -391,7 +390,6 @@ export async function apiGetOrderItemByProduct(productDocumentId: string) {
             sort: ["createdAt:desc"]
         ) {
             documentId
-            batFile { documentId url name }
             batStatus
             batComment
         }
