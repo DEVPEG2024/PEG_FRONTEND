@@ -50,6 +50,7 @@ const ProjectBat = () => {
   const batFile = product?.batFile;
   const batStatus = orderItem?.batStatus ?? 'pending';
   const batComment = orderItem?.batComment;
+  console.log('[ProjectBat] orderItem:', JSON.stringify({ documentId: orderItem?.documentId, batStatus: orderItem?.batStatus, batComment: orderItem?.batComment }));
   const statusCfg = batStatusConfig[batStatus] ?? batStatusConfig.pending;
   const { Icon } = statusCfg;
 
