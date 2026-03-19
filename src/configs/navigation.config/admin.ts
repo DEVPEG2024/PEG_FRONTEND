@@ -298,6 +298,16 @@ const navigationAdmin: NavigationTree[] = [
         authority: [SUPER_ADMIN],
         subMenu: [
           {
+            key: "admin.devis",
+            path: "/admin/devis",
+            title: "Devis IA",
+            translateKey: "nav.iaDevis",
+            icon: "devis",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN],
+            subMenu: [],
+          },
+          {
             key: "admin.ia.images",
             path: "/admin/ia/images",
             title: "Génération d'images",
