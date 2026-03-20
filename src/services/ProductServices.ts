@@ -268,6 +268,47 @@ export async function apiDeleteProduct(documentId: string): Promise<AxiosRespons
     })
 }
 
+// Export all products for CSV
+export async function apiGetAllProductsForExport(): Promise<AxiosResponse<ApiResponse<{products: Product[]}>>> {
+    const query = `
+    query GetAllProductsForExport {
+        products(pagination: {limit: -1}, sort: "name") {
+            documentId
+            name
+            description
+            price
+            priceTiers
+            active
+            inCatalogue
+            productRef
+            requiresBat
+            sizes {
+                name
+                value
+            }
+            colors {
+                name
+                value
+            }
+            productCategory {
+                name
+            }
+            customerCategories {
+                name
+            }
+            images {
+                url
+            }
+        }
+    }
+  `
+    return ApiService.fetchData<ApiResponse<{products: Product[]}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query }
+    })
+}
+
 // GET PRODUCTS CUSTOMER
 export type CustomerProductsResponse = {
     nodes: Product[],

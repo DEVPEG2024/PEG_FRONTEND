@@ -18,12 +18,13 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { OrderItem } from '@/@types/orderItem';
 import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServices';
+import { apiGetAllProductsForExport } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
-import { HiOutlineSearch, HiPlus, HiExclamation } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 
 injectReducer('products', reducer);
@@ -109,6 +110,65 @@ const ProductsList = () => {
   const handleOnActivate = useCallback((product: Product, checked: boolean) => { onActivate(product, checked); }, []);
   const handleOnDuplicate = useCallback((product: Product) => { onDuplicate(product); }, []);
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const { products: allProducts }: { products: Product[] } = await unwrapData(
+        apiGetAllProductsForExport()
+      );
+
+      const escapeCsv = (val: string) => {
+        if (val.includes('"') || val.includes(',') || val.includes('\n')) {
+          return `"${val.replace(/"/g, '""')}"`;
+        }
+        return val;
+      };
+
+      const headers = [
+        'Nom', 'Description', 'Prix', 'Paliers de prix',
+        'Actif', 'En catalogue', 'Référence', 'Requiert BAT',
+        'Catégorie', 'Tailles', 'Couleurs', 'Catégories clients', 'Images',
+      ];
+
+      const rows = allProducts.map((p) => [
+        escapeCsv(p.name || ''),
+        escapeCsv((p.description || '').replace(/<[^>]*>/g, '')),
+        p.price != null ? String(p.price) : '',
+        escapeCsv(
+          (p.priceTiers || [])
+            .map((t) => `${t.minQuantity}+: ${t.price}€`)
+            .join(' | ')
+        ),
+        p.active ? 'Oui' : 'Non',
+        p.inCatalogue ? 'Oui' : 'Non',
+        escapeCsv(p.productRef || ''),
+        p.requiresBat ? 'Oui' : 'Non',
+        escapeCsv(p.productCategory?.name || ''),
+        escapeCsv((p.sizes || []).map((s) => s.name).join(', ')),
+        escapeCsv((p.colors || []).map((c) => c.name).join(', ')),
+        escapeCsv((p.customerCategories || []).map((cc) => cc.name).join(', ')),
+        escapeCsv((p.images || []).map((img) => img.url).join(', ')),
+      ]);
+
+      const bom = '\uFEFF';
+      const csv = bom + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `produits-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${allProducts.length} produits exportés`);
+    } catch {
+      toast.error("Erreur lors de l'export");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const activeCount = products.filter((p) => p.active).length;
   const inactiveCount = products.filter((p) => !p.active).length;
 
@@ -133,21 +193,39 @@ const ProductsList = () => {
             <span style={{ color: '#f87171', fontSize: '12px', fontWeight: 600 }}>● {inactiveCount} inactifs</span>
           </div>
         </div>
-        <Link to="/admin/products/new" style={{ textDecoration: 'none' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
+            onClick={handleExportCSV}
+            disabled={exporting}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-              border: 'none', borderRadius: '10px', padding: '10px 18px',
-              color: '#fff', fontSize: '13px', fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '10px', padding: '10px 18px',
+              color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+              cursor: exporting ? 'wait' : 'pointer',
+              opacity: exporting ? 0.5 : 1,
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            <HiPlus size={16} /> Nouveau produit
+            <HiDownload size={16} /> {exporting ? 'Export…' : 'Export CSV'}
           </button>
-        </Link>
+          <Link to="/admin/products/new" style={{ textDecoration: 'none' }}>
+            <button
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                border: 'none', borderRadius: '10px', padding: '10px 18px',
+                color: '#fff', fontSize: '13px', fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <HiPlus size={16} /> Nouveau produit
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Recherche */}
