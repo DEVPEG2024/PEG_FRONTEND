@@ -9,7 +9,7 @@ import reducer, {
   duplicateProduct,
   updateProduct,
 } from './store';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { Product } from '@/@types/product';
 import { Container, Loading } from '@/components/shared';
@@ -18,13 +18,13 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { OrderItem } from '@/@types/orderItem';
 import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServices';
-import { apiGetAllProductsForExport } from '@/services/ProductServices';
+import { apiGetAllProductsForExport, apiCreateProduct } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
-import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 
 injectReducer('products', reducer);
@@ -111,6 +111,114 @@ const ProductsList = () => {
   const handleOnDuplicate = useCallback((product: Product) => { onDuplicate(product); }, []);
 
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"' && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current);
+    return result;
+  };
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+
+    try {
+      const text = await file.text();
+      const lines = text.replace(/^\uFEFF/, '').split('\n').filter(l => l.trim());
+      if (lines.length < 2) {
+        toast.error('Fichier CSV vide ou invalide');
+        return;
+      }
+
+      const headers = parseCsvLine(lines[0]);
+      const nomIdx = headers.findIndex(h => h.trim().toLowerCase() === 'nom');
+      const descIdx = headers.findIndex(h => h.trim().toLowerCase() === 'description');
+      const prixIdx = headers.findIndex(h => h.trim().toLowerCase() === 'prix');
+      const paliersIdx = headers.findIndex(h => h.trim().toLowerCase() === 'paliers de prix');
+      const actifIdx = headers.findIndex(h => h.trim().toLowerCase() === 'actif');
+      const catalogueIdx = headers.findIndex(h => h.trim().toLowerCase() === 'en catalogue');
+      const refIdx = headers.findIndex(h => h.trim().toLowerCase() === 'référence');
+      const batIdx = headers.findIndex(h => h.trim().toLowerCase() === 'requiert bat');
+
+      if (nomIdx === -1) {
+        toast.error('Colonne "Nom" introuvable dans le CSV');
+        return;
+      }
+
+      let created = 0;
+      let errors = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        const name = cols[nomIdx]?.trim();
+        if (!name) continue;
+
+        const priceTiers: { minQuantity: number; price: number }[] = [];
+        if (paliersIdx !== -1 && cols[paliersIdx]) {
+          const parts = cols[paliersIdx].split('|').map(s => s.trim());
+          for (const part of parts) {
+            const match = part.match(/^(\d+)\+:\s*([\d.]+)/);
+            if (match) {
+              priceTiers.push({ minQuantity: parseInt(match[1]), price: parseFloat(match[2]) });
+            }
+          }
+        }
+
+        const productData: Record<string, unknown> = {
+          name,
+          description: descIdx !== -1 ? (cols[descIdx] || '') : '',
+          price: prixIdx !== -1 && cols[prixIdx] ? parseFloat(cols[prixIdx]) : undefined,
+          priceTiers,
+          active: actifIdx !== -1 ? cols[actifIdx]?.trim().toLowerCase() === 'oui' : true,
+          inCatalogue: catalogueIdx !== -1 ? cols[catalogueIdx]?.trim().toLowerCase() === 'oui' : false,
+          productRef: refIdx !== -1 ? (cols[refIdx] || '') : '',
+          requiresBat: batIdx !== -1 ? cols[batIdx]?.trim().toLowerCase() === 'oui' : false,
+        };
+
+        try {
+          await unwrapData(apiCreateProduct(productData as any));
+          created++;
+        } catch {
+          errors++;
+        }
+      }
+
+      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''}${errors > 0 ? ` (${errors} erreur${errors > 1 ? 's' : ''})` : ''}`);
+      dispatch(getProducts({ pagination: { page: currentPage, pageSize }, searchTerm }));
+    } catch {
+      toast.error("Erreur lors de l'import");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleExportCSV = async () => {
     setExporting(true);
@@ -169,8 +277,10 @@ const ProductsList = () => {
     }
   };
 
-  const activeCount = products.filter((p) => p.active).length;
-  const inactiveCount = products.filter((p) => !p.active).length;
+  const activeProducts = useMemo(() => products.filter((p) => p.active), [products]);
+  const inactiveProducts = useMemo(() => products.filter((p) => !p.active), [products]);
+  const activeCount = activeProducts.length;
+  const inactiveCount = inactiveProducts.length;
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -193,7 +303,7 @@ const ProductsList = () => {
             <span style={{ color: '#f87171', fontSize: '12px', fontWeight: 600 }}>● {inactiveCount} inactifs</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={handleExportCSV}
             disabled={exporting}
@@ -210,6 +320,29 @@ const ProductsList = () => {
           >
             <HiDownload size={16} /> {exporting ? 'Export…' : 'Export CSV'}
           </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '10px', padding: '10px 18px',
+              color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+              cursor: importing ? 'wait' : 'pointer',
+              opacity: importing ? 0.5 : 1,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <HiUpload size={16} /> {importing ? 'Import…' : 'Import CSV'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            style={{ display: 'none' }}
+            onChange={handleImportCSV}
+          />
           <Link to="/admin/products/new" style={{ textDecoration: 'none' }}>
             <button
               style={{
@@ -256,21 +389,86 @@ const ProductsList = () => {
 
       <Loading loading={loading} type="cover">
         {products.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '16px',
-          }}>
-            {products.map((product) => (
-              <ProductCard
-                key={product.documentId}
-                product={product}
-                onDeleteModalOpen={handleOnDeleteModalOpen}
-                onActivate={handleOnActivate}
-                onDuplicate={handleOnDuplicate}
-              />
-            ))}
-          </div>
+          <>
+            {/* Section Actifs */}
+            {activeProducts.length > 0 && (
+              <div style={{ marginBottom: '40px' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  marginBottom: '16px',
+                }}>
+                  <div style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.4)',
+                  }} />
+                  <h3 style={{
+                    color: '#fff', fontSize: '16px', fontWeight: 700,
+                    letterSpacing: '-0.01em', margin: 0,
+                  }}>
+                    En ligne
+                    <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontWeight: 500, marginLeft: '8px' }}>
+                      ({activeProducts.length})
+                    </span>
+                  </h3>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: '16px',
+                }}>
+                  {activeProducts.map((product) => (
+                    <ProductCard
+                      key={product.documentId}
+                      product={product}
+                      onDeleteModalOpen={handleOnDeleteModalOpen}
+                      onActivate={handleOnActivate}
+                      onDuplicate={handleOnDuplicate}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section Inactifs */}
+            {inactiveProducts.length > 0 && (
+              <div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  marginBottom: '16px',
+                }}>
+                  <div style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: '#f87171', boxShadow: '0 0 8px rgba(248,113,113,0.3)',
+                  }} />
+                  <h3 style={{
+                    color: '#fff', fontSize: '16px', fontWeight: 700,
+                    letterSpacing: '-0.01em', margin: 0,
+                  }}>
+                    Inactifs
+                    <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', fontWeight: 500, marginLeft: '8px' }}>
+                      ({inactiveProducts.length})
+                    </span>
+                  </h3>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: '16px',
+                  opacity: 0.7,
+                }}>
+                  {inactiveProducts.map((product) => (
+                    <ProductCard
+                      key={product.documentId}
+                      product={product}
+                      onDeleteModalOpen={handleOnDeleteModalOpen}
+                      onActivate={handleOnActivate}
+                      onDuplicate={handleOnDuplicate}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           !loading && (
             <div style={{
