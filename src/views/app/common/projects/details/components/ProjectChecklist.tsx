@@ -10,7 +10,7 @@ import { useAppDispatch } from '@/store';
 import { MdChecklist, MdDragIndicator } from 'react-icons/md';
 import { HiCheck, HiChevronDown, HiTrash, HiPlus } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
 import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist, apiUpdateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -33,15 +33,14 @@ const ProjectChecklist = () => {
   const [unavailable, setUnavailable] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
-  // Drag state
-  const dragIdx = useRef<number | null>(null);
-  const dragOverIdx = useRef<number | null>(null);
-  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
-  const itemsRef = useRef<ChecklistItem[]>(items);
-  itemsRef.current = items;
+  // D&D: dedicated ref that always holds the latest order during a drag
+  const dragFromIdx = useRef<number | null>(null);
+  const dragCurrentItems = useRef<ChecklistItem[]>([]);
+  const isDragging = useRef(false);
 
   // Load checklistItems + templates, then auto-apply if empty
   useEffect(() => {
@@ -69,7 +68,7 @@ const ProjectChecklist = () => {
 
     Promise.all([fetchItems, fetchTemplates, fetchProductChecklist])
       .then(([loadedItems, loadedTemplates, productChecklist]) => {
-        if (loadedItems === null) return; // unavailable
+        if (loadedItems === null) return;
         setChecklists(loadedTemplates);
         setUnavailable(false);
 
@@ -108,12 +107,12 @@ const ProjectChecklist = () => {
     if (showAddInput && addInputRef.current) addInputRef.current.focus();
   }, [showAddInput]);
 
-  const saveItems = async (newItems: ChecklistItem[]) => {
+  // Persist to API — the single source of truth for saving
+  const persistItems = useCallback(async (newItems: ChecklistItem[]) => {
     if (!project?.documentId) return;
     setSaving(true);
     try {
       await apiUpdateProjectChecklistItems(project.documentId, newItems);
-      setItems(newItems);
 
       // Auto-toggle project state based on checklist completion
       const allDone = newItems.length > 0 && newItems.every((i) => i.done);
@@ -124,14 +123,20 @@ const ProjectChecklist = () => {
         await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'pending' }));
         toast.info('Checklist incomplète — projet repassé en "En cours"');
       }
+    } catch {
+      toast.error('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
-  };
+  }, [project?.documentId, project?.state, dispatch]);
 
-  const removeChecklist = () => {
-    saveItems([]);
-  };
+  // Update items + persist in one go
+  const saveItems = useCallback((newItems: ChecklistItem[]) => {
+    setItems(newItems);
+    persistItems(newItems);
+  }, [persistItems]);
+
+  const removeChecklist = () => saveItems([]);
 
   const applyTemplate = (checklist: Checklist) => {
     const newItems: ChecklistItem[] = (checklist.items ?? []).map((label: string) => ({
@@ -153,50 +158,59 @@ const ProjectChecklist = () => {
   const addTask = () => {
     const label = newTaskLabel.trim();
     if (!label) return;
-    const updated = [...items, { label, done: false }];
-    saveItems(updated);
+    saveItems([...items, { label, done: false }]);
     setNewTaskLabel('');
     setShowAddInput(false);
     toast.success('Tâche ajoutée');
   };
 
   const removeItem = (index: number) => {
-    const updated = items.filter((_, i) => i !== index);
-    saveItems(updated);
+    saveItems(items.filter((_, i) => i !== index));
   };
 
-  // Drag & drop handlers
+  // ─── Drag & Drop (HTML5, reliable save) ────────────────────────
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    dragIdx.current = index;
+    isDragging.current = true;
+    dragFromIdx.current = index;
+    dragCurrentItems.current = [...items]; // snapshot
     setDraggingIdx(index);
     e.dataTransfer.effectAllowed = 'move';
+    // Required for Firefox
+    e.dataTransfer.setData('text/plain', String(index));
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent, overIndex: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragIdx.current === null || dragIdx.current === index) return;
-    if (dragOverIdx.current === index) return;
-    dragOverIdx.current = index;
+    if (dragFromIdx.current === null || dragFromIdx.current === overIndex) return;
 
-    setItems((prev) => {
-      const next = [...prev];
-      const [removed] = next.splice(dragIdx.current!, 1);
-      next.splice(index, 0, removed);
-      dragIdx.current = index;
-      return next;
-    });
+    // Reorder in the dedicated ref
+    const next = [...dragCurrentItems.current];
+    const [moved] = next.splice(dragFromIdx.current, 1);
+    next.splice(overIndex, 0, moved);
+    dragCurrentItems.current = next;
+    dragFromIdx.current = overIndex;
+
+    // Update visual immediately
+    setItems(next);
+    setDraggingIdx(overIndex);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const handleDragEnd = () => {
-    setDraggingIdx(null);
-    const hadDrag = dragIdx.current !== null;
-    dragIdx.current = null;
-    dragOverIdx.current = null;
-    if (hadDrag) {
-      // Use ref to get latest items and save immediately
-      saveItems([...itemsRef.current]);
+    if (isDragging.current) {
+      // Save the final order from our dedicated ref — always correct
+      const finalItems = [...dragCurrentItems.current];
+      setItems(finalItems);
+      persistItems(finalItems);
     }
+    isDragging.current = false;
+    dragFromIdx.current = null;
+    dragCurrentItems.current = [];
+    setDraggingIdx(null);
   };
 
   const doneCount = items.filter((i) => i.done).length;
@@ -223,8 +237,8 @@ const ProjectChecklist = () => {
                 Checklist du projet
               </p>
               {items.length > 0 && (
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                  {saving ? 'Sauvegarde...' : `${doneCount} / ${items.length} effectuée${doneCount > 1 ? 's' : ''}`}
+                <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.4)', fontSize: '12px', transition: 'color 0.2s' }}>
+                  {saving ? '● Sauvegarde...' : `${doneCount} / ${items.length} effectuée${doneCount > 1 ? 's' : ''}`}
                 </span>
               )}
             </div>
@@ -232,8 +246,6 @@ const ProjectChecklist = () => {
             {/* Actions admin/producer */}
             {canToggle && !unavailable && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-
-                {/* Add task button */}
                 <button
                   onClick={() => setShowAddInput(true)}
                   disabled={saving}
@@ -252,7 +264,6 @@ const ProjectChecklist = () => {
                   Ajouter une tâche
                 </button>
 
-                {/* Remove checklist button */}
                 {items.length > 0 && (
                   <button
                     onClick={removeChecklist}
@@ -273,7 +284,6 @@ const ProjectChecklist = () => {
                   </button>
                 )}
 
-                {/* Apply template dropdown */}
                 {checklists.length > 0 && (
                   <div style={{ position: 'relative' }} ref={dropdownRef}>
                     <button
@@ -366,41 +376,61 @@ const ProjectChecklist = () => {
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                >
                   {items.map((item, index) => (
                     <div
-                      key={`${index}-${item.label}`}
-                      draggable={canToggle}
+                      key={`item-${index}`}
+                      draggable={canToggle && !saving}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      onClick={() => toggleItem(index)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '11px 14px', borderRadius: '10px',
-                        background: item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                        background: draggingIdx === index
+                          ? 'rgba(47,111,237,0.12)'
+                          : item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${
+                          draggingIdx === index
+                            ? 'rgba(47,111,237,0.4)'
+                            : item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'
+                        }`,
                         cursor: canToggle ? 'grab' : 'default',
-                        transition: 'all 0.15s ease',
-                        opacity: draggingIdx === index ? 0.4 : saving ? 0.6 : 1,
+                        transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
+                        opacity: saving && draggingIdx === null ? 0.6 : 1,
+                        transform: draggingIdx === index ? 'scale(1.02)' : 'scale(1)',
+                        boxShadow: draggingIdx === index ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
+                        userSelect: 'none',
                       }}
                     >
                       {/* Drag handle */}
                       {canToggle && (
                         <MdDragIndicator
                           size={16}
-                          style={{ color: 'rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'grab' }}
+                          style={{
+                            color: draggingIdx === index ? 'rgba(47,111,237,0.6)' : 'rgba(255,255,255,0.15)',
+                            flexShrink: 0,
+                            cursor: 'grab',
+                          }}
                         />
                       )}
 
                       {/* Checkbox */}
-                      <div style={{
-                        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
-                        background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
-                        border: `1px solid ${item.done ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s',
-                      }}>
+                      <div
+                        onClick={(e) => { e.stopPropagation(); toggleItem(index); }}
+                        style={{
+                          width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+                          background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
+                          border: `1px solid ${item.done ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s',
+                          cursor: canToggle ? 'pointer' : 'default',
+                        }}
+                      >
                         {item.done && <HiCheck size={12} style={{ color: '#4ade80' }} />}
                       </div>
 
