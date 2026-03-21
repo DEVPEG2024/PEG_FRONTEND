@@ -103,11 +103,14 @@ const ProjectChecklist = () => {
       await apiUpdateProjectChecklistItems(project.documentId, newItems);
       setItems(newItems);
 
-      // Auto-pass project to "fulfilled" when all checklist items are done
+      // Auto-toggle project state based on checklist completion
       const allDone = newItems.length > 0 && newItems.every((i) => i.done);
       if (allDone && project.state !== 'fulfilled') {
         await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'fulfilled' }));
         toast.success('Checklist terminée — projet passé en "Terminé"');
+      } else if (!allDone && project.state === 'fulfilled') {
+        await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'pending' }));
+        toast.info('Checklist incomplète — projet repassé en "En cours"');
       }
     } finally {
       setSaving(false);
