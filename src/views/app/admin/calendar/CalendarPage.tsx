@@ -3,6 +3,7 @@ import dayjs, { Dayjs } from 'dayjs'
 import 'dayjs/locale/fr'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import isBetween from 'dayjs/plugin/isBetween'
+import utc from 'dayjs/plugin/utc'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight,
@@ -24,6 +25,7 @@ import { toast } from 'react-toastify'
 
 dayjs.extend(isoWeek)
 dayjs.extend(isBetween)
+dayjs.extend(utc)
 dayjs.locale('fr')
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -277,6 +279,12 @@ function getSlotFromPoint(x: number, y: number): { date?: string; hour?: number 
     return null
 }
 
+/** Get original event id, stripping recurrence suffix like "abc_2026-03-21" → "abc" */
+const getOriginalId = (id: string | number) => {
+    const s = String(id)
+    return s.includes('_') ? s.split('_')[0] : s
+}
+
 const eventsOfDay = (events: CalEvent[], day: Dayjs) =>
     events.filter((e) => sameDay(e.start, day)).sort((a, b) => a.start.valueOf() - b.start.valueOf())
 
@@ -362,11 +370,11 @@ function EventPill({ event, onClick, compact = false, onDragStart }: {
 }
 
 // ─── Draggable Event Block (Week/Day views) ─────────────────────────────────
-function DraggableEvent({ event, onClick, onDragStart, onResizeStart, style }: {
+function DraggableEvent({ event, onClick, onDragBegin, onResizeBegin, style }: {
     event: CalEvent
-    onClick: (e: CalEvent) => void
-    onDragStart: (e: React.PointerEvent, ev: CalEvent, mode: 'move') => void
-    onResizeStart: (e: React.PointerEvent, ev: CalEvent) => void
+    onClick: (ev: CalEvent) => void
+    onDragBegin: (ev: CalEvent) => void
+    onResizeBegin: (ev: CalEvent) => void
     style: React.CSSProperties
 }) {
     const cat = getCat(event.category)
@@ -384,7 +392,11 @@ function DraggableEvent({ event, onClick, onDragStart, onResizeStart, style }: {
             const dy = me.clientY - pointerStart.current.y
             if (!pointerStart.current.didDrag && Math.abs(dx) + Math.abs(dy) > 5) {
                 pointerStart.current.didDrag = true
-                onDragStart(e, event, 'move')
+                // Clean up OWN listeners BEFORE handing off to parent
+                document.removeEventListener('pointermove', onMove)
+                document.removeEventListener('pointerup', onUp)
+                pointerStart.current = null
+                onDragBegin(event)
             }
         }
 
@@ -399,6 +411,12 @@ function DraggableEvent({ event, onClick, onDragStart, onResizeStart, style }: {
 
         document.addEventListener('pointermove', onMove)
         document.addEventListener('pointerup', onUp)
+    }
+
+    const handleResizeDown = (e: React.PointerEvent) => {
+        e.stopPropagation()
+        e.preventDefault()
+        onResizeBegin(event)
     }
 
     return (
@@ -417,10 +435,7 @@ function DraggableEvent({ event, onClick, onDragStart, onResizeStart, style }: {
             <div
                 data-resize="true"
                 className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize hover:bg-black/10 dark:hover:bg-white/10 rounded-b-lg transition-colors opacity-0 group-hover:opacity-100"
-                onPointerDown={(e) => {
-                    e.stopPropagation()
-                    onResizeStart(e, event)
-                }}
+                onPointerDown={handleResizeDown}
             />
         </div>
     )
@@ -502,8 +517,8 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
 function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview }: {
     date: Dayjs; events: CalEvent[]
     onSlotClick: (d: Dayjs) => void; onEventClick: (e: CalEvent) => void
-    onPointerDragStart: (e: React.PointerEvent, ev: CalEvent, mode: 'move') => void
-    onResizeStart: (e: React.PointerEvent, ev: CalEvent) => void
+    onPointerDragStart: (ev: CalEvent) => void
+    onResizeStart: (ev: CalEvent) => void
     dragPreview: { date: string; hour: number; minute: number; durationMinutes: number; eventId: string } | null
 }) {
     const weekStart = date.startOf('isoWeek')
@@ -558,8 +573,8 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
                                             key={ev.id}
                                             event={ev}
                                             onClick={onEventClick}
-                                            onDragStart={onPointerDragStart}
-                                            onResizeStart={onResizeStart}
+                                            onDragBegin={onPointerDragStart}
+                                            onResizeBegin={onResizeStart}
                                             style={{ top, height, opacity: isDragging ? 0.3 : 1 }}
                                         />
                                     )
@@ -590,8 +605,8 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
 function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview }: {
     date: Dayjs; events: CalEvent[]
     onSlotClick: (d: Dayjs) => void; onEventClick: (e: CalEvent) => void
-    onPointerDragStart: (e: React.PointerEvent, ev: CalEvent, mode: 'move') => void
-    onResizeStart: (e: React.PointerEvent, ev: CalEvent) => void
+    onPointerDragStart: (ev: CalEvent) => void
+    onResizeStart: (ev: CalEvent) => void
     dragPreview: { date: string; hour: number; minute: number; durationMinutes: number; eventId: string } | null
 }) {
     const dayEvs = eventsOfDay(events, date)
@@ -633,8 +648,8 @@ function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, 
                                     key={ev.id}
                                     event={ev}
                                     onClick={onEventClick}
-                                    onDragStart={onPointerDragStart}
-                                    onResizeStart={onResizeStart}
+                                    onDragBegin={onPointerDragStart}
+                                    onResizeBegin={onResizeStart}
                                     style={{ top, height, left: '0.5rem', right: '0.5rem', opacity: isDragging ? 0.3 : 1 }}
                                 />
                             )
@@ -1025,6 +1040,7 @@ const CalendarPage = () => {
                     const arr = JSON.parse(saved)
                     setEvents(arr.map((e: any) => ({
                         ...e,
+                        id: String(e.id),
                         start: dayjs(e.start),
                         end: dayjs(e.end),
                         category: normalizeCat(e.category || 'autre'),
@@ -1089,7 +1105,7 @@ const CalendarPage = () => {
         try {
             if (modal.event) {
                 // Find the original event (not a recurrence instance)
-                const originalId = modal.event.id.includes('_') ? modal.event.id.split('_')[0] : modal.event.id
+                const originalId = getOriginalId(String(modal.event.id))
                 if (modal.event.isSynced) {
                     await unwrapData(apiUpdateCalendarEvent({
                         documentId: originalId,
@@ -1144,7 +1160,7 @@ const CalendarPage = () => {
 
     const handleDelete = async () => {
         if (!modal.event) return
-        const originalId = modal.event.id.includes('_') ? modal.event.id.split('_')[0] : modal.event.id
+        const originalId = getOriginalId(String(modal.event.id))
         try {
             if (modal.event.isSynced) {
                 await unwrapData(apiDeleteCalendarEvent(originalId))
@@ -1205,7 +1221,7 @@ const CalendarPage = () => {
 
     // ─── ICS Export ─────────────────────────────────────────────────────────
     const handleExportICS = useCallback(() => {
-        const baseEvents = events.filter((e) => !e.id.includes('_')) // only base events, not recurrence instances
+        const baseEvents = events.filter((e) => !String(e.id).includes('_')) // only base events, not recurrence instances
         const icsContent = generateICS(baseEvents)
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
         const url = URL.createObjectURL(blob)
@@ -1265,15 +1281,102 @@ const CalendarPage = () => {
         input.click()
     }, [])
 
-    // ─── Pointer drag for Week/Day views ────────────────────────────────────
-    const handlePointerDragStart = useCallback((e: React.PointerEvent, ev: CalEvent, _mode: 'move') => {
-        e.preventDefault()
-        const el = e.currentTarget as HTMLElement
-        el.setPointerCapture(e.pointerId)
+    // ─── Shared drag-move logic (used by both move and resize) ──────────
+    const handleSlotMove = useCallback((me: PointerEvent) => {
+        const drag = dragRef.current
+        if (!drag) return
+        const slot = getSlotFromPoint(me.clientX, me.clientY)
+        if (!slot || slot.date === undefined || slot.hour === undefined) return
 
+        const slotEl = document.elementFromPoint(me.clientX, me.clientY) as HTMLElement | null
+        const slotRect = slotEl?.closest('[data-slot-hour]')?.getBoundingClientRect()
+        let minute = 0
+        if (slotRect) {
+            const fraction = (me.clientY - slotRect.top) / slotRect.height
+            minute = snap15(Math.floor(fraction * 60))
+            if (minute >= 60) minute = 45
+        }
+
+        if (drag.mode === 'move') {
+            setDragPreview({
+                date: slot.date!,
+                hour: slot.hour,
+                minute,
+                durationMinutes: drag.durationMinutes,
+                eventId: drag.eventId,
+            })
+        } else {
+            // resize: change duration only
+            const endTotalMinutes = slot.hour * 60 + minute
+            const startTotalMinutes = drag.originHour * 60 + drag.originMinute
+            const newDuration = Math.max(15, endTotalMinutes - startTotalMinutes)
+            setDragPreview({
+                date: drag.originDay,
+                hour: drag.originHour,
+                minute: drag.originMinute,
+                durationMinutes: newDuration,
+                eventId: drag.eventId,
+            })
+        }
+    }, [])
+
+    const handleDragEnd = useCallback(() => {
+        const drag = dragRef.current
+        dragRef.current = null
+
+        setDragPreview((prev) => {
+            if (prev && drag) {
+                const originalId = getOriginalId(drag.eventId)
+                if (drag.mode === 'move') {
+                    const newStart = dayjs(prev.date).hour(prev.hour).minute(prev.minute).second(0)
+                    const newEnd = newStart.add(drag.durationMinutes, 'minute')
+                    setEvents((evts) =>
+                        evts.map((evt) =>
+                            evt.id === originalId ? { ...evt, start: newStart, end: newEnd } : evt
+                        )
+                    )
+                    // Persist to Strapi
+                    setEvents((evts) => {
+                        const evt = evts.find((e) => e.id === originalId)
+                        if (evt?.isSynced) {
+                            apiUpdateCalendarEvent({
+                                documentId: originalId,
+                                startDate: newStart.toISOString(),
+                                endDate: newEnd.toISOString(),
+                            } as any).catch(() => {})
+                        }
+                        return evts
+                    })
+                } else {
+                    const newEnd = dayjs(drag.originDay)
+                        .hour(drag.originHour).minute(drag.originMinute).second(0)
+                        .add(prev.durationMinutes, 'minute')
+                    setEvents((evts) =>
+                        evts.map((evt) =>
+                            evt.id === originalId ? { ...evt, end: newEnd } : evt
+                        )
+                    )
+                    setEvents((evts) => {
+                        const evt = evts.find((e) => e.id === originalId)
+                        if (evt?.isSynced) {
+                            apiUpdateCalendarEvent({
+                                documentId: originalId,
+                                endDate: newEnd.toISOString(),
+                            } as any).catch(() => {})
+                        }
+                        return evts
+                    })
+                }
+            }
+            return null
+        })
+    }, [])
+
+    // ─── Start drag (called from DraggableEvent after 5px threshold) ────
+    const handlePointerDragStart = useCallback((ev: CalEvent) => {
         const durationMinutes = ev.end.diff(ev.start, 'minute')
         dragRef.current = {
-            eventId: ev.id,
+            eventId: String(ev.id),
             originDay: ev.start.format('YYYY-MM-DD'),
             originHour: ev.start.hour(),
             originMinute: ev.start.minute(),
@@ -1285,78 +1388,23 @@ const CalendarPage = () => {
             hour: ev.start.hour(),
             minute: ev.start.minute(),
             durationMinutes,
-            eventId: ev.id,
+            eventId: String(ev.id),
         })
 
-        const onMove = (me: PointerEvent) => {
-            const slot = getSlotFromPoint(me.clientX, me.clientY)
-            if (!slot || slot.date === undefined) return
-            const drag = dragRef.current
-            if (!drag) return
-
-            if (slot.hour !== undefined) {
-                const slotEl = document.elementFromPoint(me.clientX, me.clientY) as HTMLElement | null
-                const slotRect = slotEl?.closest('[data-slot-hour]')?.getBoundingClientRect()
-                let minute = 0
-                if (slotRect) {
-                    const fraction = (me.clientY - slotRect.top) / slotRect.height
-                    minute = snap15(Math.floor(fraction * 60))
-                    if (minute >= 60) minute = 45
-                }
-                setDragPreview({
-                    date: slot.date!,
-                    hour: slot.hour,
-                    minute,
-                    durationMinutes: drag.durationMinutes,
-                    eventId: drag.eventId,
-                })
-            }
-        }
-
+        const onMove = (me: PointerEvent) => handleSlotMove(me)
         const onUp = () => {
             document.removeEventListener('pointermove', onMove)
             document.removeEventListener('pointerup', onUp)
-            const drag = dragRef.current
-            dragRef.current = null
-
-            setDragPreview((prev) => {
-                if (prev && drag) {
-                    const newStart = dayjs(prev.date).hour(prev.hour).minute(prev.minute).second(0)
-                    const newEnd = newStart.add(drag.durationMinutes, 'minute')
-                    const originalId = drag.eventId.includes('_') ? drag.eventId.split('_')[0] : drag.eventId
-
-                    setEvents((evts) =>
-                        evts.map((evt) =>
-                            evt.id === originalId ? { ...evt, start: newStart, end: newEnd } : evt
-                        )
-                    )
-
-                    // Persist to Strapi
-                    const evt = events.find((e) => e.id === originalId)
-                    if (evt?.isSynced) {
-                        apiUpdateCalendarEvent({
-                            documentId: originalId,
-                            startDate: newStart.toISOString(),
-                            endDate: newEnd.toISOString(),
-                        } as any).catch(() => {})
-                    }
-                }
-                return null
-            })
+            handleDragEnd()
         }
-
         document.addEventListener('pointermove', onMove)
         document.addEventListener('pointerup', onUp)
-    }, [events])
+    }, [handleSlotMove, handleDragEnd])
 
-    const handleResizeStart = useCallback((e: React.PointerEvent, ev: CalEvent) => {
-        e.preventDefault()
-        const el = e.currentTarget as HTMLElement
-        el.setPointerCapture(e.pointerId)
-
+    const handleResizeStart = useCallback((ev: CalEvent) => {
         const durationMinutes = ev.end.diff(ev.start, 'minute')
         dragRef.current = {
-            eventId: ev.id,
+            eventId: String(ev.id),
             originDay: ev.start.format('YYYY-MM-DD'),
             originHour: ev.start.hour(),
             originMinute: ev.start.minute(),
@@ -1368,71 +1416,18 @@ const CalendarPage = () => {
             hour: ev.start.hour(),
             minute: ev.start.minute(),
             durationMinutes,
-            eventId: ev.id,
+            eventId: String(ev.id),
         })
 
-        const onMove = (me: PointerEvent) => {
-            const drag = dragRef.current
-            if (!drag) return
-            const slot = getSlotFromPoint(me.clientX, me.clientY)
-            if (!slot || slot.hour === undefined) return
-
-            const slotEl = document.elementFromPoint(me.clientX, me.clientY) as HTMLElement | null
-            const slotRect = slotEl?.closest('[data-slot-hour]')?.getBoundingClientRect()
-            let minute = 0
-            if (slotRect) {
-                const fraction = (me.clientY - slotRect.top) / slotRect.height
-                minute = snap15(Math.floor(fraction * 60))
-                if (minute >= 60) minute = 45
-            }
-
-            const endTotalMinutes = slot.hour * 60 + minute
-            const startTotalMinutes = drag.originHour * 60 + drag.originMinute
-            const newDuration = Math.max(15, endTotalMinutes - startTotalMinutes)
-
-            setDragPreview({
-                date: drag.originDay,
-                hour: drag.originHour,
-                minute: drag.originMinute,
-                durationMinutes: newDuration,
-                eventId: drag.eventId,
-            })
-        }
-
+        const onMove = (me: PointerEvent) => handleSlotMove(me)
         const onUp = () => {
             document.removeEventListener('pointermove', onMove)
             document.removeEventListener('pointerup', onUp)
-            const drag = dragRef.current
-            dragRef.current = null
-
-            setDragPreview((prev) => {
-                if (prev && drag) {
-                    const newEnd = dayjs(drag.originDay)
-                        .hour(drag.originHour).minute(drag.originMinute).second(0)
-                        .add(prev.durationMinutes, 'minute')
-                    const originalId = drag.eventId.includes('_') ? drag.eventId.split('_')[0] : drag.eventId
-
-                    setEvents((evts) =>
-                        evts.map((evt) =>
-                            evt.id === originalId ? { ...evt, end: newEnd } : evt
-                        )
-                    )
-
-                    const evt = events.find((e) => e.id === originalId)
-                    if (evt?.isSynced) {
-                        apiUpdateCalendarEvent({
-                            documentId: originalId,
-                            endDate: newEnd.toISOString(),
-                        } as any).catch(() => {})
-                    }
-                }
-                return null
-            })
+            handleDragEnd()
         }
-
         document.addEventListener('pointermove', onMove)
         document.addEventListener('pointerup', onUp)
-    }, [events])
+    }, [handleSlotMove, handleDragEnd])
 
     // ─── HTML5 Drag for Month view ──────────────────────────────────────────
     const handleMonthDragStart = useCallback((_e: React.DragEvent, ev: CalEvent) => {
@@ -1444,7 +1439,7 @@ const CalendarPage = () => {
         monthDragEventId.current = null
         if (evId == null) return
 
-        const originalId = evId.includes('_') ? evId.split('_')[0] : evId
+        const originalId = getOriginalId(String(evId))
 
         setEvents((evts) =>
             evts.map((evt) => {
