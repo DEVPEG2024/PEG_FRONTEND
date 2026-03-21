@@ -437,7 +437,8 @@ export default function DashboardAdmin() {
   }, [invoices, projects])
 
   const invoicePaid = useMemo(() => {
-    return invoices.reduce((a: number, x: any) => {
+    // Paid invoices
+    const fromInvoices = invoices.reduce((a: number, x: any) => {
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
       const st = (x?.state ?? '').toString().toLowerCase()
       const paid =
@@ -448,7 +449,13 @@ export default function DashboardAdmin() {
         st.includes('paid')
       return a + (paid ? (Number(x?.totalAmount) || 0) : 0)
     }, 0)
-  }, [invoices])
+    // Direct payments on projects (paidPrice) without invoices
+    const fromProjects = projects.reduce((a: number, p: any) => {
+      const hasInvoice = Array.isArray(p?.invoices) && p.invoices.length > 0
+      return a + (hasInvoice ? 0 : (Number(p?.paidPrice) || 0))
+    }, 0)
+    return fromInvoices + fromProjects
+  }, [invoices, projects])
 
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
 

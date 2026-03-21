@@ -58,6 +58,9 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           startDate
           endDate
           price
+          paidPrice
+          producerPrice
+          producerPaidPrice
           customer {
             name
           }
