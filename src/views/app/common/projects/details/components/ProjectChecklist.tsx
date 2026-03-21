@@ -7,8 +7,8 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useAppSelector, setChecklistPercent, updateCurrentProject } from '../store';
 import { useAppDispatch } from '@/store';
-import { MdChecklist } from 'react-icons/md';
-import { HiCheck, HiChevronDown, HiTrash } from 'react-icons/hi';
+import { MdChecklist, MdDragIndicator } from 'react-icons/md';
+import { HiCheck, HiChevronDown, HiTrash, HiPlus } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
@@ -31,7 +31,15 @@ const ProjectChecklist = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [newTaskLabel, setNewTaskLabel] = useState('');
+  const [showAddInput, setShowAddInput] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag state
+  const dragIdx = useRef<number | null>(null);
+  const dragOverIdx = useRef<number | null>(null);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
 
   // Load checklistItems + templates, then auto-apply if empty
   useEffect(() => {
@@ -70,12 +78,10 @@ const ProjectChecklist = () => {
               done: false,
             }));
             if (canToggle) {
-              // Admin/producer: save to DB
               apiUpdateProjectChecklistItems(project.documentId, newItems)
                 .then(() => setItems(newItems))
                 .catch(() => setItems(newItems));
             } else {
-              // Customer: display read-only without saving
               setItems(newItems);
             }
           }
@@ -95,6 +101,10 @@ const ProjectChecklist = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (showAddInput && addInputRef.current) addInputRef.current.focus();
+  }, [showAddInput]);
 
   const saveItems = async (newItems: ChecklistItem[]) => {
     if (!project?.documentId) return;
@@ -138,6 +148,50 @@ const ProjectChecklist = () => {
     saveItems(updated);
   };
 
+  const addTask = () => {
+    const label = newTaskLabel.trim();
+    if (!label) return;
+    const updated = [...items, { label, done: false }];
+    saveItems(updated);
+    setNewTaskLabel('');
+    setShowAddInput(false);
+    toast.success('Tâche ajoutée');
+  };
+
+  const removeItem = (index: number) => {
+    const updated = items.filter((_, i) => i !== index);
+    saveItems(updated);
+  };
+
+  // Drag & drop handlers
+  const handleDragStart = (index: number) => {
+    dragIdx.current = index;
+    setDraggingIdx(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIdx.current === null || dragIdx.current === index) return;
+    if (dragOverIdx.current === index) return;
+    dragOverIdx.current = index;
+
+    const next = [...items];
+    const [removed] = next.splice(dragIdx.current, 1);
+    next.splice(index, 0, removed);
+    dragIdx.current = index;
+    setItems(next);
+  };
+
+  const handleDragEnd = () => {
+    if (dragIdx.current !== null) {
+      // Save new order
+      saveItems([...items]);
+    }
+    dragIdx.current = null;
+    dragOverIdx.current = null;
+    setDraggingIdx(null);
+  };
+
   const doneCount = items.filter((i) => i.done).length;
   const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
@@ -156,7 +210,7 @@ const ProjectChecklist = () => {
         }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Checklist du projet
@@ -170,7 +224,26 @@ const ProjectChecklist = () => {
 
             {/* Actions admin/producer */}
             {canToggle && !unavailable && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+
+                {/* Add task button */}
+                <button
+                  onClick={() => setShowAddInput(true)}
+                  disabled={saving}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', borderRadius: '8px',
+                    background: 'rgba(34,197,94,0.12)',
+                    border: '1px solid rgba(34,197,94,0.3)',
+                    color: '#4ade80', fontSize: '12px', fontWeight: 600,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    opacity: saving ? 0.5 : 1,
+                  }}
+                >
+                  <HiPlus size={13} />
+                  Ajouter une tâche
+                </button>
 
                 {/* Remove checklist button */}
                 {items.length > 0 && (
@@ -189,7 +262,7 @@ const ProjectChecklist = () => {
                     }}
                   >
                     <HiTrash size={13} />
-                    Retirer la checklist
+                    Retirer
                   </button>
                 )}
 
@@ -208,7 +281,7 @@ const ProjectChecklist = () => {
                       }}
                     >
                       <MdChecklist size={14} />
-                      Appliquer un modèle
+                      Modèle
                       <HiChevronDown size={12} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
                     </button>
 
@@ -275,34 +348,45 @@ const ProjectChecklist = () => {
                 </div>
               )}
 
-              {items.length === 0 ? (
+              {items.length === 0 && !showAddInput ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
                   <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
                   <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
                   {canToggle && (
                     <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
-                      {checklists.length > 0
-                        ? 'Utilisez le bouton "Appliquer un modèle" ci-dessus pour associer une checklist'
-                        : 'Créez d\'abord un modèle de checklist dans la section Administration'}
+                      Utilisez "Ajouter une tâche" ou "Modèle" ci-dessus
                     </p>
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {items.map((item, index) => (
                     <div
-                      key={index}
+                      key={`${index}-${item.label}`}
+                      draggable={canToggle}
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => toggleItem(index)}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '12px',
-                        padding: '12px 14px', borderRadius: '10px',
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '11px 14px', borderRadius: '10px',
                         background: item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
                         border: `1px solid ${item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'}`,
-                        cursor: canToggle ? 'pointer' : 'default',
+                        cursor: canToggle ? 'grab' : 'default',
                         transition: 'all 0.15s ease',
-                        opacity: saving ? 0.6 : 1,
+                        opacity: draggingIdx === index ? 0.4 : saving ? 0.6 : 1,
                       }}
                     >
+                      {/* Drag handle */}
+                      {canToggle && (
+                        <MdDragIndicator
+                          size={16}
+                          style={{ color: 'rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'grab' }}
+                        />
+                      )}
+
+                      {/* Checkbox */}
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
                         background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
@@ -312,6 +396,8 @@ const ProjectChecklist = () => {
                       }}>
                         {item.done && <HiCheck size={12} style={{ color: '#4ade80' }} />}
                       </div>
+
+                      {/* Label */}
                       <span style={{
                         flex: 1,
                         color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
@@ -322,6 +408,8 @@ const ProjectChecklist = () => {
                       }}>
                         {item.label}
                       </span>
+
+                      {/* Status for customers */}
                       {!canToggle && (
                         <span style={{
                           fontSize: '11px', fontWeight: 600,
@@ -330,8 +418,79 @@ const ProjectChecklist = () => {
                           {item.done ? 'Effectuée' : 'En attente'}
                         </span>
                       )}
+
+                      {/* Delete button for admins */}
+                      {canToggle && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeItem(index); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
+                            background: 'transparent', border: 'none',
+                            color: 'rgba(255,255,255,0.15)', cursor: 'pointer',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
+                          title="Supprimer"
+                        >
+                          <HiTrash size={13} />
+                        </button>
+                      )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Add task inline input */}
+              {showAddInput && canToggle && (
+                <div style={{
+                  display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'center',
+                }}>
+                  <input
+                    ref={addInputRef}
+                    type="text"
+                    placeholder="Nom de la tâche…"
+                    value={newTaskLabel}
+                    onChange={(e) => setNewTaskLabel(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addTask(); if (e.key === 'Escape') { setShowAddInput(false); setNewTaskLabel(''); } }}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(0,0,0,0.25)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      borderRadius: '8px',
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: '13px',
+                      padding: '10px 12px',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  <button
+                    onClick={addTask}
+                    disabled={!newTaskLabel.trim()}
+                    style={{
+                      padding: '10px 16px', borderRadius: '8px',
+                      background: newTaskLabel.trim() ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'rgba(255,255,255,0.05)',
+                      border: 'none',
+                      color: '#fff', fontSize: '12px', fontWeight: 700,
+                      cursor: newTaskLabel.trim() ? 'pointer' : 'not-allowed',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Ajouter
+                  </button>
+                  <button
+                    onClick={() => { setShowAddInput(false); setNewTaskLabel(''); }}
+                    style={{
+                      padding: '10px 12px', borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600,
+                      cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Annuler
+                  </button>
                 </div>
               )}
 
