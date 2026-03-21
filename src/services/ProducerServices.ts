@@ -27,6 +27,14 @@ export async function apiGetProducers(data: GetProducersRequest = {pagination: {
                     documentId
                     name
                 }
+                companyInformations {
+                    email
+                    phoneNumber
+                    city
+                    address
+                    zipCode
+                    country
+                }
             }
             pageInfo {
                 page
