@@ -1,13 +1,25 @@
 .switcher {
   min-width: 2.75rem;
   height: 1.5rem;
-  @apply inline-flex items-center relative rounded-3xl bg-gray-200 dark:bg-gray-600 cursor-pointer transition-colors ease-in-out duration-200;
+  background: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.15);
+  @apply inline-flex items-center relative rounded-3xl cursor-pointer;
+  transition: background 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s ease;
 
   input {
     @apply hidden;
   }
 
+  &:active {
+    transform: scale(0.95);
+  }
+
   &.switcher-checked {
+    background: rgba(34, 197, 94, 0.75);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.35), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+
     .switcher-toggle {
       left: calc(100% - 1.25rem - 0.125rem);
     }
@@ -22,7 +34,12 @@
   }
 
   &.switcher-disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply opacity-40 cursor-not-allowed;
+    box-shadow: none;
+
+    &:active {
+      transform: none;
+    }
   }
 }
 
@@ -31,11 +48,14 @@
   top: 0.125rem;
   width: 1.25rem;
   height: 1.25rem;
-  @apply absolute transition-all ease-in-out duration-200;
+  @apply absolute;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s ease;
 
   &:before {
     content: "";
     @apply absolute left-0 right-0 bottom-0 top-0 bg-white rounded-xl;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -49,7 +69,8 @@
   height: 1.25rem;
   left: 0.125rem;
   top: 0.125rem;
-  @apply absolute transition-all ease-in-out duration-200;
+  @apply absolute;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .switcher-checked-loading {

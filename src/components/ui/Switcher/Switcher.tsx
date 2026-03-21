@@ -91,12 +91,12 @@ const Switcher = forwardRef<HTMLInputElement, SwitcherProps>((props, ref) => {
         }
     }
 
-    const switcherColor = color || `${themeColor}-${primaryColorLevel}`
+    const switcherColor = color ? `bg-${color} dark:bg-${color}` : ''
 
     const switcherClass = classNames(
         'switcher',
         (switcherChecked || controlProps.checked) &&
-            `switcher-checked bg-${switcherColor} dark:bg-${switcherColor}`,
+            `switcher-checked ${switcherColor}`,
         disabled && 'switcher-disabled',
         className
     )

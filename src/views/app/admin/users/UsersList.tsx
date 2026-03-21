@@ -1,4 +1,5 @@
 import { Container } from '@/components/shared';
+import { Switcher } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
@@ -17,14 +18,6 @@ const ROLE_CFG: Record<string, { label: string; bg: string; border: string; colo
 }
 const AVATAR_COLORS = ['rgba(47,111,237,0.3)', 'rgba(168,85,247,0.3)', 'rgba(34,197,94,0.25)', 'rgba(234,179,8,0.25)', 'rgba(239,68,68,0.25)', 'rgba(20,184,166,0.25)']
 const avatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
-
-const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled: boolean }) => (
-  <button onClick={onChange} disabled={disabled} title={checked ? 'Actif — cliquer pour bloquer' : 'Bloqué — cliquer pour activer'}
-    style={{ width: '36px', height: '20px', borderRadius: '100px', background: checked ? '#22c55e' : 'rgba(255,255,255,0.15)', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0, opacity: disabled ? 0.4 : 1 }}
-  >
-    <span style={{ position: 'absolute', top: '2px', left: checked ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s', display: 'block' }} />
-  </button>
-)
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title, disabled }: any) => (
   <button title={title} onClick={onClick} disabled={disabled}
@@ -123,7 +116,7 @@ const UsersList = () => {
                 </div>
 
                 {/* Block toggle */}
-                <Toggle
+                <Switcher
                   checked={!user.blocked}
                   disabled={isSuperAdmin || numericId === undefined}
                   onChange={() => numericId !== undefined && dispatch(updateUser({ user: { blocked: !user.blocked }, id: String(numericId) }))}
