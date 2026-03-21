@@ -35,7 +35,7 @@ function FormsListContent() {
 
   useEffect(() => {
     dispatch(getForms({ pagination: { page: currentPage, pageSize }, searchTerm: debouncedSearch }));
-  }, [currentPage, debouncedSearch]);
+  }, [dispatch, currentPage, debouncedSearch]);
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);

@@ -149,7 +149,7 @@ const ProjectsList = () => {
       searchTerm,
       statusFilter: statusFilter === 'all' ? undefined : statusFilter,
     }));
-  }, [currentPage, pageSize, searchTerm, statusFilter]);
+  }, [dispatch, user, currentPage, pageSize, searchTerm, statusFilter]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);

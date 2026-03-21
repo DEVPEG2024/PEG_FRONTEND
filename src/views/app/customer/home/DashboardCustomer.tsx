@@ -71,7 +71,7 @@ const DashboardCustomer = () => {
     if (user.customer?.documentId) {
       dispatch(getDashboardCustomerInformations(user.customer.documentId));
     }
-  }, [user.customer?.documentId]);
+  }, [dispatch, user.customer?.documentId]);
 
   const navigate = useNavigate();
   const projectsDone = projects.filter((p) => p.state === 'fulfilled').length;

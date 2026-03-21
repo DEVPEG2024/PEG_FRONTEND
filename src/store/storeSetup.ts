@@ -59,7 +59,7 @@ export const persistor = persistStore(store)
 
 export function injectReducer<S>(key: string, reducer: Reducer<S, Action>) {
     if (store.asyncReducers) {
-        if (store.asyncReducers[key]) {
+        if (store.asyncReducers[key] === reducer) {
             return false
         }
         store.asyncReducers[key] = reducer

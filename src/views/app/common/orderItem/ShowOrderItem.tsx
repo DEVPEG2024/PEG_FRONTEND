@@ -35,14 +35,12 @@ const ShowOrderItem = () => {
   );
 
   useEffect(() => {
-    if (!orderItem) {
-      dispatch(getOrderItemById(documentId));
-    }
+    dispatch(getOrderItemById(documentId));
 
     return () => {
       dispatch(clearOrderItemState());
     };
-  }, [dispatch]);
+  }, [dispatch, documentId]);
 
   const handleShowForm = () => {
     dispatch(setOrderItemFormDialog(true));

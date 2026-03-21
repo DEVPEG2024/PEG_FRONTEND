@@ -96,7 +96,7 @@ const EditProduct = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!product && onEdition) {
+    if (onEdition) {
       dispatch(getProductById(documentId)).finally(() => setInitialLoading(false));
     } else {
       setInitialLoading(false);
@@ -104,7 +104,7 @@ const EditProduct = () => {
     return () => {
       dispatch(setProductToEdit(null));
     };
-  }, [dispatch]);
+  }, [dispatch, documentId]);
 
   useEffect(() => {
     fetchCustomers();

@@ -27,14 +27,12 @@ const ProjectDetails = () => {
   );
 
   useEffect(() => {
-    if (!project) {
-      dispatch(getProjectById(documentId));
-    }
+    dispatch(getProjectById(documentId));
 
     return () => {
       dispatch(setProject(undefined));
     };
-  }, [dispatch]);
+  }, [dispatch, documentId]);
 
   return (
     project && (

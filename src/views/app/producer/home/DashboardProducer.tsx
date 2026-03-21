@@ -86,8 +86,10 @@ const DashboardProducer = () => {
   );
 
   useEffect(() => {
-    dispatch(getDashboardProducerInformations(user.producer!.documentId));
-  }, []);
+    if (user.producer?.documentId) {
+      dispatch(getDashboardProducerInformations(user.producer.documentId));
+    }
+  }, [dispatch, user.producer?.documentId]);
 
   const projectsDone = producer?.projects.filter((p) => p.state === 'fulfilled').length ?? 0;
   const projectsInProgress = producer?.projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length ?? 0;

@@ -1,6 +1,7 @@
 import { User } from '@/@types/user'
-import { AuthorityCheck } from '@/components/shared'
 import { useAppSelector } from '@/store'
+import { hasRole } from '@/utils/permissions'
+import { SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant'
 import DashboardAdmin from '@/views/app/admin/home/DashboardAdmin'
 import DashboardCustomer from '@/views/app/customer/home/DashboardCustomer'
 import DashboardProducer from '@/views/app/producer/home/DashboardProducer'
@@ -9,27 +10,12 @@ import { Suspense } from 'react'
 const Home = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user)
 
-  const userAuthority =
-    (user as any)?.authority ||
-    (user as any)?.user?.authority ||
-    (user as any)?.user?.user?.authority ||
-    []
   return (
-  <Suspense fallback={null}>
-
-    <AuthorityCheck authority={['super_admin']} userAuthority={userAuthority}>
-      <DashboardAdmin />
-    </AuthorityCheck>
-
-    <AuthorityCheck authority={['customer']} userAuthority={userAuthority}>
-      <DashboardCustomer />
-    </AuthorityCheck>
-
-    <AuthorityCheck authority={['producer']} userAuthority={userAuthority}>
-      <DashboardProducer />
-    </AuthorityCheck>
-
-  </Suspense>
-)
+    <Suspense fallback={null}>
+      {hasRole(user, [SUPER_ADMIN, ADMIN]) && <DashboardAdmin />}
+      {hasRole(user, [CUSTOMER]) && <DashboardCustomer />}
+      {hasRole(user, [PRODUCER]) && <DashboardProducer />}
+    </Suspense>
+  )
 }
 export default Home

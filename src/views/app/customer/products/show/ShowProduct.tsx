@@ -77,14 +77,16 @@ const ShowProduct = () => {
   const totalPrice = amountSelected * unitPrice;
 
   useEffect(() => {
-    if (!product) {
-      if (onEdition) {
-        navigate('/customer/cart');
-      } else {
-        dispatch(getProductToShow(documentId));
-      }
+    if (onEdition && !product) {
+      navigate('/customer/cart');
+    } else {
+      dispatch(getProductToShow(documentId));
     }
-  }, [dispatch]);
+
+    return () => {
+      dispatch(clearState());
+    };
+  }, [dispatch, documentId]);
 
   useEffect(() => {
     if (orderItemId) {
@@ -98,17 +100,12 @@ const ShowProduct = () => {
         if (items?.length > 0) setOrderItem(items[0]);
       }).catch(() => {});
     }
-  }, [orderItemId, product?.requiresBat, user?.customer?.documentId]);
+  }, [orderItemId, documentId, product?.requiresBat, user?.customer?.documentId]);
 
   useEffect(() => {
     if (isFirstRender) {
       setFirstRender(false);
     }
-    return () => {
-      if (!isFirstRender) {
-        dispatch(clearState());
-      }
-    };
   }, [isFirstRender]);
 
   useEffect(() => {
