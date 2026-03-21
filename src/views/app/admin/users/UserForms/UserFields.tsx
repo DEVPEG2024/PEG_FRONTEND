@@ -221,7 +221,7 @@ const UserFields = (props: UserFieldsProps) => {
             render={({ field }) => (
               <Switcher
                 checked={!field.value}
-                onChange={(val) => field.onChange(!val)}
+                onChange={(val) => field.onChange(val)}
               />
             )}
           />
