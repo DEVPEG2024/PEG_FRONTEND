@@ -183,8 +183,10 @@ const ProjectItem = ({
           {/* Avatars */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', minWidth: 0 }}>
             <AvatarName entity={project.customer} type="Client" />
-            {hasRole(user, [SUPER_ADMIN, PRODUCER]) && (
+            {hasRole(user, [SUPER_ADMIN, PRODUCER]) ? (
               <AvatarName entity={project.producer} type="Producteur" />
+            ) : hasRole(user, [CUSTOMER]) && (
+              <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as any} type="Producteur" />
             )}
           </div>
 

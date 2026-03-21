@@ -8,7 +8,7 @@ import { MdPersonAdd } from 'react-icons/md';
 import ModalEditProject from '../modals/ModalEditProject';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { setEditCurrentProjectDialog, updateCurrentProject } from '../store';
 import { toast } from 'react-toastify';
 
@@ -117,8 +117,10 @@ const ProjectHeader = ({ project }: { project: Project }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginRight: '8px' }}>
               <AvatarName entity={project?.customer} type="Client" />
-              {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) && (
+              {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) ? (
                 <AvatarName entity={project?.producer} type="Producteur" />
+              ) : hasRole(user, [CUSTOMER]) && (
+                <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as any} type="Producteur" />
               )}
             </div>
 

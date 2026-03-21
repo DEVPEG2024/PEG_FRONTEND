@@ -3,6 +3,7 @@ import {
   HiCalendar,
   HiUserCircle,
   HiLightningBolt,
+  HiSwitchHorizontal,
 } from 'react-icons/hi';
 import dayjs from 'dayjs';
 import { statusTextData } from '../../lists/constants';
@@ -15,10 +16,15 @@ import {
 } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { ADMIN, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { updateCurrentProject, useAppSelector } from '../store';
 import ProgressionBar from '../../lists/components/ProgressionBar';
 import { MdPersonAdd } from 'react-icons/md';
+import { useEffect, useRef, useState } from 'react';
+import { unwrapData } from '@/utils/serviceHelper';
+import { apiGetProducers, GetProducersResponse } from '@/services/ProducerServices';
+import { Producer } from '@/@types/producer';
+import { toast } from 'react-toastify';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -66,6 +72,38 @@ const DetailsRight = () => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
+  const isCustomer = hasRole(user, [CUSTOMER]);
+
+  // Quick producer change
+  const [producerDropdownOpen, setProducerDropdownOpen] = useState(false);
+  const [producers, setProducers] = useState<Producer[]>([]);
+  const producerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (producerDropdownRef.current && !producerDropdownRef.current.contains(e.target as Node)) {
+        setProducerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const openProducerDropdown = async () => {
+    if (producers.length === 0) {
+      const { producers_connection }: { producers_connection: GetProducersResponse } =
+        await unwrapData(apiGetProducers());
+      setProducers(producers_connection.nodes || []);
+    }
+    setProducerDropdownOpen((v) => !v);
+  };
+
+  const changeProducer = (producer: Producer) => {
+    dispatch(updateCurrentProject({ documentId: project.documentId, producer: producer.documentId }));
+    toast.success(`Producteur changé : ${producer.name}`);
+    setProducerDropdownOpen(false);
+  };
 
   const status = statusTextData[project.state as keyof typeof statusTextData];
   const statusStyle = statusStyles[project.state] ?? statusStyles.pending;
@@ -270,45 +308,154 @@ const DetailsRight = () => {
         </span>
       </div>
 
-      {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) && (
-        <>
-          <div style={sep} />
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Producteur</p>
-          {project.producer ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(47,111,237,0.2)', border: '1px solid rgba(47,111,237,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                color: '#6b9eff',
-              }}>
-                <HiUserCircle size={18} />
-              </div>
-              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>
-                {project.producer.name}
-              </span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>À définir</span>
-              {hasRole(user, [PRODUCER]) && (
+      {/* Producteur section */}
+      <div style={sep} />
+      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>
+        {isCustomer ? 'Réalisé par' : 'Producteur'}
+      </p>
+
+      {isCustomer ? (
+        /* Client: show "PEG" */
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #2f6fed, #1f4bb6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <span style={{ color: '#fff', fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em' }}>P</span>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600 }}>
+            PEG
+          </span>
+        </div>
+      ) : project.producer ? (
+        /* Admin/Producer: show real name + quick change for admin */
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }} ref={producerDropdownRef}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            color: '#a78bfa',
+          }}>
+            <HiUserCircle size={18} />
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500, flex: 1 }}>
+            {project.producer.name}
+          </span>
+          {isAdmin && (
+            <button
+              onClick={openProducerDropdown}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '28px', height: '28px', borderRadius: '7px',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0,
+              }}
+              title="Changer de producteur"
+            >
+              <HiSwitchHorizontal size={13} />
+            </button>
+          )}
+          {/* Dropdown */}
+          {producerDropdownOpen && (
+            <div style={{
+              position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+              background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '10px', overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              zIndex: 100, minWidth: '180px', maxHeight: '200px', overflowY: 'auto',
+            }}>
+              {producers.filter((p) => p.documentId !== project.producer?.documentId).map((p) => (
                 <button
-                  onClick={assignMeAsProducer}
+                  key={p.documentId}
+                  onClick={() => changeProducer(p)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                    border: 'none', borderRadius: '8px', padding: '6px 12px',
-                    color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    boxShadow: '0 2px 10px rgba(47,111,237,0.4)',
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '10px 14px',
+                    background: 'transparent',
+                    border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    color: 'rgba(255,255,255,0.75)', fontSize: '13px',
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <MdPersonAdd size={14} />
-                  M'assigner
+                  {p.name}
                 </button>
+              ))}
+              {producers.filter((p) => p.documentId !== project.producer?.documentId).length === 0 && (
+                <p style={{ padding: '10px 14px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>
+                  Aucun autre producteur
+                </p>
               )}
             </div>
           )}
-        </>
+        </div>
+      ) : (
+        /* No producer assigned */
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }} ref={!project.producer ? producerDropdownRef : undefined}>
+          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>À définir</span>
+          {hasRole(user, [PRODUCER]) && (
+            <button
+              onClick={assignMeAsProducer}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                border: 'none', borderRadius: '8px', padding: '6px 12px',
+                color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(47,111,237,0.4)',
+              }}
+            >
+              <MdPersonAdd size={14} />
+              M'assigner
+            </button>
+          )}
+          {isAdmin && (
+            <>
+              <button
+                onClick={openProducerDropdown}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: '8px', padding: '6px 12px',
+                  color: '#a78bfa', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <MdPersonAdd size={14} />
+                Assigner
+              </button>
+              {producerDropdownOpen && (
+                <div style={{
+                  position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                  background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px', overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                  zIndex: 100, minWidth: '180px', maxHeight: '200px', overflowY: 'auto',
+                }}>
+                  {producers.map((p) => (
+                    <button
+                      key={p.documentId}
+                      onClick={() => changeProducer(p)}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '10px 14px',
+                        background: 'transparent',
+                        border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        color: 'rgba(255,255,255,0.75)', fontSize: '13px',
+                        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
