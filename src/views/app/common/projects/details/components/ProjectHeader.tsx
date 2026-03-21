@@ -55,7 +55,7 @@ const ProjectHeader = ({ project }: { project: Project }) => {
       paddingBottom: '20px',
       position: 'sticky',
       top: 0,
-      zIndex: 50,
+      zIndex: 20,
     }}>
       <Container className="px-6">
         {/* Project name row */}

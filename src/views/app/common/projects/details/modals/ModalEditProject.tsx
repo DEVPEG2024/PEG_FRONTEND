@@ -7,17 +7,15 @@ import {
   Switcher,
 } from '@/components/ui';
 import { t } from 'i18next';
-import FieldCustom from '../../modals/components/fileds';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { HiOutlineCalendar } from 'react-icons/hi';
+import { HiOutlineCalendar, HiCurrencyEuro, HiUserGroup, HiFlag, HiCog } from 'react-icons/hi';
 import {
   setEditCurrentProjectDialog,
   updateCurrentProject,
   useAppDispatch,
   useAppSelector,
 } from '../store';
-import _ from 'lodash';
 import { priorityData, stateData } from '../../lists/constants';
 import { Project } from '@/@types/project';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -45,6 +43,20 @@ export type ProjectFormModel = Omit<
   customer: string | null;
   producer: string | null;
 };
+
+const SectionTitle = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', marginTop: '8px' }}>
+    <span style={{ color: 'rgba(255,255,255,0.3)' }}>{icon}</span>
+    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+      {label}
+    </span>
+    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+  </div>
+);
+
+const FieldLabel = ({ label }: { label: string }) => (
+  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>{label}</p>
+);
 
 function ModalEditProject() {
   const { editCurrentProjectDialog, project, loading } = useAppSelector(
@@ -84,11 +96,7 @@ function ModalEditProject() {
     }: { customers_connection: GetCustomersResponse } =
       await unwrapData(apiGetCustomers());
     const customersList = customers_connection.nodes || [];
-    const customers = customersList.map((customer: Customer) => ({
-      value: customer.documentId || '',
-      label: customer.name,
-    }));
-    setCustomers(customers);
+    setCustomers(customersList.map((c: Customer) => ({ value: c.documentId || '', label: c.name })));
   };
 
   const fetchProducers = async () => {
@@ -97,11 +105,7 @@ function ModalEditProject() {
     }: { producers_connection: GetProducersResponse } =
       await unwrapData(apiGetProducers());
     const producersList = producers_connection.nodes || [];
-    const producers = producersList.map((producer: Producer) => ({
-      value: producer.documentId || '',
-      label: producer.name || '',
-    }));
-    setProducers(producers);
+    setProducers(producersList.map((p: Producer) => ({ value: p.documentId || '', label: p.name || '' })));
   };
 
   const handleSubmit = async (e: any) => {
@@ -115,196 +119,197 @@ function ModalEditProject() {
   };
 
   return (
-    <div>
-      <Dialog
-        isOpen={editCurrentProjectDialog}
-        onClose={handleClose}
-        width={800}
-      >
-        <div className="flex flex-col h-full justify-between">
-          <h5 className="mb-4">{t('projects.editProject')}</h5>
-          <FieldCustom
-            placeholder={t('projects.projectName')}
+    <Dialog
+      isOpen={editCurrentProjectDialog}
+      onClose={handleClose}
+      width={720}
+      contentClassName="!p-0 !rounded-2xl !border !border-[rgba(255,255,255,0.08)] !bg-gradient-to-br !from-[#16263d] !to-[#0f1c2e]"
+    >
+      <div style={{ fontFamily: 'Inter, sans-serif', padding: '28px 32px', maxHeight: '80vh', overflowY: 'auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            Modifier
+          </p>
+          <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+            {project?.name}
+          </h3>
+        </div>
+
+        {/* Nom + Description */}
+        <div style={{ marginBottom: '20px' }}>
+          <FieldLabel label="Nom du projet" />
+          <Input
             value={formData.name as string}
-            setValue={(e: any) => {
-              setFormData({ ...formData, name: e });
-            }}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Nom du projet"
           />
+        </div>
+        <div style={{ marginBottom: '20px' }}>
+          <FieldLabel label="Description" />
           <Input
             textArea
-            rows={4}
-            className="mt-4"
-            placeholder={t('projects.projectDescription')}
+            rows={3}
             value={formData.description as string}
-            onChange={(e) => {
-              setFormData({ ...formData, description: e.target.value });
-            }}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Description du projet"
           />
-          <div className="flex flex-row gap-2 mt-4">
-            <div className="flex flex-col gap-2 w-1/2">
-              <FieldCustom
-                placeholder={t('projects.amount')}
-                value={formData.price as number}
-                type="number"
-                setValue={(e: any) => {
-                  setFormData({ ...formData, price: parseFloat(e) });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <FieldCustom
-                placeholder={t('projects.producerPrice')}
-                value={formData.producerPrice as number}
-                type="number"
-                setValue={(e: any) => {
-                  setFormData({ ...formData, producerPrice: parseFloat(e) });
-                }}
-              />
-            </div>
+        </div>
+
+        {/* Finances */}
+        <SectionTitle icon={<HiCurrencyEuro size={14} />} label="Finances" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div>
+            <FieldLabel label="Montant total" />
+            <Input
+              type="number"
+              value={formData.price as number}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+            />
           </div>
-          <div className="flex flex-row gap-2 mt-4">
-            <div className="flex flex-col gap-2 w-1/2">
-              <FieldCustom
-                placeholder={t('projects.paidPrice')}
-                value={formData.paidPrice as number}
-                type="number"
-                setValue={(e: any) => {
-                  setFormData({ ...formData, paidPrice: parseFloat(e) });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <FieldCustom
-                placeholder={t('projects.producerPaidPrice')}
-                value={formData.producerPaidPrice as number}
-                type="number"
-                setValue={(e: any) => {
-                  setFormData({
-                    ...formData,
-                    producerPaidPrice: parseFloat(e),
-                  });
-                }}
-              />
-            </div>
+          <div>
+            <FieldLabel label="Commission producteur" />
+            <Input
+              type="number"
+              value={formData.producerPrice as number}
+              onChange={(e) => setFormData({ ...formData, producerPrice: parseFloat(e.target.value) || 0 })}
+            />
           </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-4/12">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Client</p>
-              <Select
-                placeholder={t('projects.selectCustomer')}
-                options={customers}
-                noOptionsMessage={() => 'Aucun client trouvé'}
-                value={customers.find(
-                  (customer) => customer.value == formData.customer
-                )}
-                onChange={(e: any) => {
-                  setFormData({ ...formData, customer: e?.value || null });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-6/12">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Producteur</p>
-              <Select
-                isClearable={true}
-                placeholder={t('projects.selectProducer')}
-                options={producers}
-                noOptionsMessage={() => 'Aucun producteur trouvé'}
-                value={producers.find(
-                  (producer) => producer.value == formData.producer
-                )}
-                onChange={(e: any) => {
-                  setFormData({ ...formData, producer: e?.value || null });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-2/12">
-              <span className="text-sm text-gray-200 mb-2 mt-4">
-                Dans la piscine
-              </span>
-              <Switcher
-                className="self-center"
-                checked={formData.poolable}
-                onChange={() =>
-                  setFormData({ ...formData, poolable: !formData.poolable })
-                }
-              />
-            </div>
+          <div>
+            <FieldLabel label="Payé par le client" />
+            <Input
+              type="number"
+              value={formData.paidPrice as number}
+              onChange={(e) => setFormData({ ...formData, paidPrice: parseFloat(e.target.value) || 0 })}
+            />
           </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
-              <Select
-                placeholder="Choisir une priorité"
-                options={priorityData}
-                noOptionsMessage={() => 'Aucune priorité trouvée'}
-                value={priorityData.find(
-                  (priority) => priority.value == formData.priority
-                )}
-                onChange={(e: any) => {
-                  setFormData({ ...formData, priority: e?.value || null });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Status</p>
-              <Select
-                placeholder={t('projects.selectState')}
-                options={stateData}
-                noOptionsMessage={() => 'Aucun statut trouvé'}
-                value={stateData.find(
-                  (status) => status.value == formData.state
-                )}
-                onChange={(e: any) => {
-                  setFormData({ ...formData, state: e?.value || null });
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                {t('projects.projectStartDate')}
-              </p>
-              <DatePicker
-                placeholder={t('projects.projectStartDate')}
-                value={dayjs(formData.startDate).toDate()}
-                inputPrefix={<HiOutlineCalendar className="text-lg" />}
-                inputFormat="DD/MM/YYYY"
-                onChange={(date: Date | null) => {
-                  setFormData({ ...formData, startDate: dayjs(date).toDate() });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
-                {t('projects.projectEndDate')}
-              </p>
-              <DatePicker
-                placeholder={t('projects.projectEndDate')}
-                value={dayjs(formData.endDate).toDate()}
-                inputPrefix={<HiOutlineCalendar className="text-lg" />}
-                onChange={(date: Date | null) => {
-                  setFormData({ ...formData, endDate: dayjs(date).toDate() });
-                }}
-                inputFormat="DD/MM/YYYY"
-              />
-            </div>
-          </div>
-          <div className="text-right mt-6">
-            <Button
-              className="ltr:mr-2 rtl:ml-2"
-              variant="plain"
-              onClick={handleClose}
-            >
-              {t('cancel')}
-            </Button>
-            <Button variant="solid" onClick={handleSubmit} loading={loading}>
-              {t('save')}
-            </Button>
+          <div>
+            <FieldLabel label="Payé au producteur" />
+            <Input
+              type="number"
+              value={formData.producerPaidPrice as number}
+              onChange={(e) => setFormData({ ...formData, producerPaidPrice: parseFloat(e.target.value) || 0 })}
+            />
           </div>
         </div>
-      </Dialog>
-    </div>
+
+        {/* Acteurs */}
+        <SectionTitle icon={<HiUserGroup size={14} />} label="Acteurs" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end', marginBottom: '20px' }}>
+          <div>
+            <FieldLabel label="Client" />
+            <Select
+              placeholder="Choisir un client"
+              options={customers}
+              noOptionsMessage={() => 'Aucun client trouvé'}
+              value={customers.find((c) => c.value == formData.customer)}
+              onChange={(e: any) => setFormData({ ...formData, customer: e?.value || null })}
+            />
+          </div>
+          <div>
+            <FieldLabel label="Producteur" />
+            <Select
+              isClearable
+              placeholder="Choisir un producteur"
+              options={producers}
+              noOptionsMessage={() => 'Aucun producteur trouvé'}
+              value={producers.find((p) => p.value == formData.producer)}
+              onChange={(e: any) => setFormData({ ...formData, producer: e?.value || null })}
+            />
+          </div>
+          <div style={{ paddingBottom: '4px' }}>
+            <FieldLabel label="Pool" />
+            <Switcher
+              checked={formData.poolable}
+              onChange={() => setFormData({ ...formData, poolable: !formData.poolable })}
+            />
+          </div>
+        </div>
+
+        {/* Statut + Priorité */}
+        <SectionTitle icon={<HiFlag size={14} />} label="Statut & Priorité" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div>
+            <FieldLabel label="Priorité" />
+            <Select
+              placeholder="Choisir une priorité"
+              options={priorityData}
+              value={priorityData.find((p) => p.value == formData.priority)}
+              onChange={(e: any) => setFormData({ ...formData, priority: e?.value || 'low' })}
+            />
+          </div>
+          <div>
+            <FieldLabel label="Statut" />
+            <Select
+              placeholder="Choisir un statut"
+              options={stateData}
+              value={stateData.find((s) => s.value == formData.state)}
+              onChange={(e: any) => setFormData({ ...formData, state: e?.value || 'pending' })}
+            />
+          </div>
+        </div>
+
+        {/* Dates */}
+        <SectionTitle icon={<HiOutlineCalendar size={14} />} label="Dates" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '28px' }}>
+          <div>
+            <FieldLabel label="Date de début" />
+            <DatePicker
+              placeholder="Date de début"
+              value={dayjs(formData.startDate).toDate()}
+              inputPrefix={<HiOutlineCalendar className="text-lg" />}
+              inputFormat="DD/MM/YYYY"
+              onChange={(date: Date | null) => setFormData({ ...formData, startDate: dayjs(date).toDate() })}
+            />
+          </div>
+          <div>
+            <FieldLabel label="Date de fin" />
+            <DatePicker
+              placeholder="Date de fin"
+              value={dayjs(formData.endDate).toDate()}
+              inputPrefix={<HiOutlineCalendar className="text-lg" />}
+              inputFormat="DD/MM/YYYY"
+              onChange={(date: Date | null) => setFormData({ ...formData, endDate: dayjs(date).toDate() })}
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', gap: '10px',
+          paddingTop: '20px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          <button
+            onClick={handleClose}
+            style={{
+              padding: '10px 20px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{
+              padding: '10px 24px', borderRadius: '10px',
+              background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+              border: 'none',
+              color: '#fff', fontSize: '13px', fontWeight: 700,
+              cursor: loading ? 'wait' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {loading ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 
