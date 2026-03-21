@@ -81,8 +81,8 @@ const ProductsList = () => {
   };
 
   const onActivate = (product: Product, checked: boolean) => {
-    dispatch(updateProduct({ documentId: product.documentId, active: !checked }));
-    toast.success(checked ? 'Produit désactivé' : 'Produit activé');
+    dispatch(updateProduct({ documentId: product.documentId, active: checked }));
+    toast.success(checked ? 'Produit activé' : 'Produit désactivé');
   };
 
   const onDuplicate = async (product: Product) => {
