@@ -70,8 +70,8 @@ const DetailsRight = () => {
   const status = statusTextData[project.state as keyof typeof statusTextData];
   const statusStyle = statusStyles[project.state] ?? statusStyles.pending;
   const priorityStyle = priorityStyles[project.priority] ?? priorityStyles.medium;
-  const duration = dayjs(project.endDate).diff(project.startDate, 'day');
-  const durationText = duration > 0 ? `${duration} jours restants` : 'Délai dépassé';
+  const daysRemaining = dayjs(project.endDate).diff(dayjs(), 'day');
+  const durationText = daysRemaining > 0 ? `${daysRemaining} jours restants` : daysRemaining === 0 ? "Aujourd'hui" : 'Délai dépassé';
 
   const tasks = project.tasks ?? [];
   const checklistItems = project.checklistItems ?? [];
@@ -84,6 +84,12 @@ const DetailsRight = () => {
       ? Math.round((checklistItems.filter((i) => i.done).length / checklistItems.length) * 100)
       : taskPercent;
   const progressLabel = checklistPercent !== null || checklistItems.length > 0 ? 'Checklist' : 'Tâches';
+
+  // Timeline visuelle (#11)
+  const totalDays = dayjs(project.endDate).diff(dayjs(project.startDate), 'day');
+  const elapsedDays = dayjs().diff(dayjs(project.startDate), 'day');
+  const timelinePercent = totalDays > 0 ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 100;
+  const isOverdue = daysRemaining < 0;
 
   const assignMeAsProducer = () => {
     dispatch(
@@ -114,6 +120,36 @@ const DetailsRight = () => {
           </span>
         </div>
         <ProgressionBar progression={progressPercent} />
+      </div>
+
+      {/* Timeline visuelle — barre temporelle (#11) */}
+      <div style={{ marginBottom: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Temps écoulé
+          </span>
+          <span style={{ color: isOverdue ? '#f87171' : 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600 }}>
+            {timelinePercent}%
+          </span>
+        </div>
+        <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '100px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${timelinePercent}%`,
+            background: isOverdue
+              ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+              : timelinePercent > 80
+                ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                : 'linear-gradient(90deg, #6b9eff, #2f6fed)',
+            borderRadius: '100px',
+            transition: 'width 0.4s ease',
+            boxShadow: isOverdue ? '0 0 6px rgba(239,68,68,0.4)' : '0 0 6px rgba(47,111,237,0.3)',
+          }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px' }}>{dayjs(project.startDate).format('DD/MM')}</span>
+          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px' }}>{dayjs(project.endDate).format('DD/MM')}</span>
+        </div>
       </div>
 
       {/* Status badge */}
@@ -148,12 +184,70 @@ const DetailsRight = () => {
       <MetaRow icon={<LuCalendarCheck size={14} />} label="Début" value={dayjs(project.startDate).format('DD/MM/YYYY')} />
       <MetaRow icon={<LuCalendarClock size={14} />} label="Fin" value={dayjs(project.endDate).format('DD/MM/YYYY')} />
 
+      {/* Résumé financier (#10) — admin only */}
       {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-        <MetaRow
-          icon={<FaEuroSign size={13} />}
-          label="Montant total"
-          value={`${project.price?.toFixed(2) ?? '0.00'} €`}
-        />
+        <>
+          <div style={sep} />
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
+            Finances
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Prix total</span>
+              <span style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 700 }}>
+                {project.price?.toFixed(2) ?? '0.00'} €
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Payé par client</span>
+              <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>
+                {project.paidPrice?.toFixed(2) ?? '0.00'} €
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Reste dû client</span>
+              <span style={{
+                color: (project.price ?? 0) - (project.paidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80',
+                fontSize: '13px', fontWeight: 700,
+              }}>
+                {((project.price ?? 0) - (project.paidPrice ?? 0)).toFixed(2)} €
+              </span>
+            </div>
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Commission producteur</span>
+              <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: 700 }}>
+                {project.producerPrice?.toFixed(2) ?? '0.00'} €
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Payé au producteur</span>
+              <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>
+                {project.producerPaidPrice?.toFixed(2) ?? '0.00'} €
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Reste dû producteur</span>
+              <span style={{
+                color: (project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80',
+                fontSize: '13px', fontWeight: 700,
+              }}>
+                {((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0)).toFixed(2)} €
+              </span>
+            </div>
+            {/* Marge */}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600 }}>Marge</span>
+              <span style={{
+                color: (project.price ?? 0) - (project.producerPrice ?? 0) >= 0 ? '#4ade80' : '#f87171',
+                fontSize: '13px', fontWeight: 700,
+              }}>
+                {((project.price ?? 0) - (project.producerPrice ?? 0)).toFixed(2)} €
+              </span>
+            </div>
+          </div>
+        </>
       )}
 
       <div style={sep} />

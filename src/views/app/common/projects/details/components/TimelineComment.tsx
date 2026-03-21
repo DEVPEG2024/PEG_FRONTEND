@@ -14,13 +14,18 @@ import { useEffect, useState } from 'react';
 import { deleteComment } from '../store';
 import Timeline from '@/components/ui/Timeline';
 import { Loading } from '@/components/shared';
-import { HiUserCircle, HiTrash } from 'react-icons/hi';
+import { HiUserCircle, HiTrash, HiExclamation } from 'react-icons/hi';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/fr';
 import ReactHtmlParser from 'html-react-parser';
 import { Comment } from '@/@types/project';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
+
+dayjs.extend(relativeTime);
+dayjs.locale('fr');
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
@@ -37,6 +42,7 @@ const visibilityStyle: Record<string, { label: string; color: string; bg: string
 const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
   const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(comment.user?.avatar);
   const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     setAvatarLoading(true);
@@ -67,12 +73,17 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
     for (const pegFileToDelete of pegFilesToDelete) {
       apiDeleteFile(pegFileToDelete.id);
     }
+    setConfirmDelete(false);
   };
 
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
   const vis = isAdmin
     ? (visibilityStyle[comment.visibility] ?? visibilityStyle.all)
     : { label: 'PEG', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)', border: 'rgba(47,111,237,0.25)' };
+
+  // Relative + absolute date
+  const relDate = dayjs(comment.createdAt).fromNow();
+  const absDate = dayjs(comment.createdAt).format('DD/MM/YYYY à HH:mm');
 
   return (
     <Timeline.Item
@@ -96,9 +107,11 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
             <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: '13px' }}>
               {authorLabel}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
-              · {dayjs(comment.createdAt).format('DD/MM/YYYY à HH:mm')}
-            </span>
+            <Tooltip title={absDate}>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', cursor: 'default' }}>
+                · {relDate}
+              </span>
+            </Tooltip>
           </div>
           <span style={{
             display: 'inline-flex', alignItems: 'center',
@@ -127,9 +140,9 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
               {ReactHtmlParser(comment.content)}
             </div>
             <div style={{ marginTop: '10px' }}>
-              <Tooltip title="Supprimer">
+              {!confirmDelete ? (
                 <button
-                  onClick={handleDeleteComment}
+                  onClick={() => setConfirmDelete(true)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)',
@@ -139,7 +152,34 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
                 >
                   <HiTrash size={12} /> Supprimer
                 </button>
-              </Tooltip>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <HiExclamation size={14} style={{ color: '#f87171', flexShrink: 0 }} />
+                  <span style={{ color: '#f87171', fontSize: '11px', fontWeight: 600 }}>Confirmer ?</span>
+                  <button
+                    onClick={handleDeleteComment}
+                    style={{
+                      background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
+                      border: 'none', borderRadius: '6px', padding: '4px 12px',
+                      color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Oui, supprimer
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    style={{
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '6px', padding: '4px 12px',
+                      color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
 import { debounce } from 'lodash';
 import Container from '@/components/shared/Container';
-import { HiUserCircle } from 'react-icons/hi';
+import { HiUserCircle, HiOutlineSearch } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
 import {
@@ -33,6 +33,7 @@ const Comments = () => {
   const [commentText, setCommentText] = useState<string>('');
   const [visibility, setVisibility] = useState<string>('all');
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
@@ -141,6 +142,17 @@ const Comments = () => {
 
   const activeVis = VISIBILITY_OPTIONS.find(o => o.value === visibility) ?? VISIBILITY_OPTIONS[0];
 
+  const visibleComments = useMemo(() => determineVisibleComments(comments, user), [comments, user]);
+  const filteredComments = useMemo(() => {
+    if (!searchTerm.trim()) return visibleComments;
+    const term = searchTerm.toLowerCase();
+    return visibleComments.filter((c) =>
+      c.content?.toLowerCase().includes(term) ||
+      c.user?.firstName?.toLowerCase().includes(term) ||
+      c.user?.lastName?.toLowerCase().includes(term)
+    );
+  }, [visibleComments, searchTerm]);
+
   return (
     <Container className="h-full">
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
@@ -150,14 +162,39 @@ const Comments = () => {
           padding: '24px',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
+
+          {/* Search bar */}
+          {visibleComments.length > 3 && (
+            <div style={{ position: 'relative', marginBottom: '16px' }}>
+              <HiOutlineSearch size={14} style={{
+                position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+                color: 'rgba(255,255,255,0.25)', pointerEvents: 'none',
+              }} />
+              <input
+                type="text"
+                placeholder="Rechercher dans les commentaires…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px',
+                  padding: '8px 12px 8px 34px', color: '#fff', fontSize: '12px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.4)'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+              />
+            </div>
+          )}
+
           <Timeline>
-            {determineVisibleComments(comments, user).map(
+            {filteredComments.map(
               (comment: Comment) => (
                 <TimelineComment
                   key={comment.documentId}
                   comment={comment}
                   user={user}
-                  isLast={comment.documentId === comments[comments.length - 1].documentId}
+                  isLast={comment.documentId === comments[comments.length - 1]?.documentId}
                 />
               )
             )}

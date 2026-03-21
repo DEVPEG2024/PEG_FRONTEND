@@ -8,7 +8,7 @@ import { ADMIN, CUSTOMER, SUPER_ADMIN } from '@/constants/roles.constant';
 const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
 
-  const { selectedTab, project } = useAppSelector(
+  const { selectedTab, project, comments } = useAppSelector(
     (state) => state.projectDetails.data
   );
   const { user }: { user: User } = useRootAppSelector(
@@ -25,15 +25,30 @@ const QuickFilterTab = () => {
     return true;
   });
 
+  const getTabCount = (tab: string): number | undefined => {
+    switch (tab) {
+      case 'Commentaires': return comments?.length;
+      case 'Fichiers': return project?.images?.length;
+      case 'Checklist': {
+        const items = project?.checklistItems ?? [];
+        return items.length > 0 ? items.length : undefined;
+      }
+      case 'Factures': return project?.invoices?.length;
+      default: return undefined;
+    }
+  };
+
   return (
     <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
       {tabs.map((tab, index) => {
         const isActive = selectedTab === tab;
+        const count = getTabCount(tab);
         return (
           <button
             key={`${tab}-${index}`}
             onClick={() => handleTabChange(tab)}
             style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
               padding: '8px 16px',
               borderRadius: '100px',
               border: isActive ? 'none' : '1px solid rgba(255,255,255,0.1)',
@@ -51,6 +66,20 @@ const QuickFilterTab = () => {
             }}
           >
             {tab}
+            {count !== undefined && count > 0 && (
+              <span style={{
+                background: isActive ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
+                borderRadius: '100px',
+                padding: '1px 7px',
+                fontSize: '10px',
+                fontWeight: 700,
+                minWidth: '18px',
+                textAlign: 'center',
+              }}>
+                {count}
+              </span>
+            )}
           </button>
         );
       })}
