@@ -70,8 +70,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
   };
 
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
-  const showDetailedVisibility = isAdmin || comment.visibility === 'all';
-  const vis = showDetailedVisibility
+  const vis = isAdmin
     ? (visibilityStyle[comment.visibility] ?? visibilityStyle.all)
     : { label: 'PEG', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)', border: 'rgba(47,111,237,0.25)' };
 
