@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import ProductCategoryListContent from './components/CategoryList';
 import { injectReducer, useAppDispatch } from '@/store';
@@ -67,6 +67,12 @@ const Categories = () => {
     setCurrentPage(1);
   };
 
+  // Filter out inactive categories for clients
+  const activeCategories = useMemo(
+    () => productCategories.filter((c) => c.active !== false),
+    [productCategories]
+  );
+
   const showPagination = total > pageSize;
 
   return (
@@ -84,9 +90,9 @@ const Categories = () => {
           <h3 style={{ margin: 0, color: '#fff', fontSize: '20px', fontWeight: 700 }}>
             Catalogue
           </h3>
-          {!loading && total > 0 && (
+          {!loading && activeCategories.length > 0 && (
             <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
-              {total} catégorie{total > 1 ? 's' : ''}
+              {activeCategories.length} catégorie{activeCategories.length > 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -136,7 +142,7 @@ const Categories = () => {
         }}>
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-      ) : productCategories.length === 0 ? (
+      ) : activeCategories.length === 0 ? (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -170,7 +176,7 @@ const Categories = () => {
           </div>
         </div>
       ) : (
-        <ProductCategoryListContent productCategories={productCategories} />
+        <ProductCategoryListContent productCategories={activeCategories} />
       )}
 
       {/* Pagination */}
