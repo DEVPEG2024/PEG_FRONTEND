@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Tooltip } from '@/components/ui';
 import { ProductCategory } from '@/@types/product';
 import { HiPencil, HiTrash, HiPhotograph } from 'react-icons/hi';
 
@@ -6,10 +7,12 @@ const ProductCategoryCard = ({
   productCategory,
   handleEditProductCategory,
   handleDeleteProductCategory,
+  handleActivateProductCategory,
 }: {
   productCategory: ProductCategory;
   handleEditProductCategory: (productCategory: ProductCategory) => void;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
+  handleActivateProductCategory: (productCategory: ProductCategory, active: boolean) => void;
 }) => {
   const navigate = useNavigate();
 
@@ -43,6 +46,7 @@ const ProductCategoryCard = ({
           padding: '24px 16px 16px',
           background: 'rgba(255,255,255,0.02)',
           cursor: 'pointer',
+          position: 'relative',
         }}
       >
         {productCategory.image?.url ? (
@@ -60,6 +64,19 @@ const ProductCategoryCard = ({
             <HiPhotograph size={28} style={{ color: 'rgba(255,255,255,0.2)' }} />
           </div>
         )}
+
+        {/* Status badge */}
+        <div style={{
+          position: 'absolute', top: '8px', right: '8px',
+          background: productCategory.active !== false ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)',
+          border: `1px solid ${productCategory.active !== false ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.3)'}`,
+          borderRadius: '100px', padding: '3px 9px',
+          color: productCategory.active !== false ? '#4ade80' : '#fca5a5',
+          fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+        }}>
+          {productCategory.active !== false ? 'Actif' : 'Inactif'}
+        </div>
       </div>
 
       {/* Name + count */}
@@ -81,9 +98,32 @@ const ProductCategoryCard = ({
 
       {/* Actions */}
       <div style={{
-        display: 'flex', gap: '8px', padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
+        {/* Active toggle */}
+        <Tooltip title={productCategory.active !== false ? 'Désactiver' : 'Activer'}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginRight: '4px' }}
+            onClick={() => handleActivateProductCategory(productCategory, productCategory.active === false)}
+          >
+            <div style={{
+              width: '32px', height: '18px', borderRadius: '100px',
+              background: productCategory.active !== false ? '#2f6fed' : 'rgba(255,255,255,0.12)',
+              position: 'relative', transition: 'background 0.2s',
+              boxShadow: productCategory.active !== false ? '0 0 8px rgba(47,111,237,0.45)' : 'none',
+              flexShrink: 0,
+            }}>
+              <div style={{
+                position: 'absolute', top: '2px',
+                left: productCategory.active !== false ? '16px' : '2px',
+                width: '14px', height: '14px', borderRadius: '50%',
+                background: '#fff', transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+              }} />
+            </div>
+          </div>
+        </Tooltip>
         <button
           onClick={() => handleEditProductCategory(productCategory)}
           style={{

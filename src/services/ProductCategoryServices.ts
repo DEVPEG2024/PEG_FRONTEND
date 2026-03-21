@@ -43,6 +43,7 @@ export async function apiCreateProductCategory(data: CreateProductCategoryReques
                 documentId
             }
             name
+            active
             order
             products (pagination: {limit: 100}){
                 documentId
@@ -74,6 +75,7 @@ export async function apiUpdateProductCategory(productCategory: Partial<ProductC
                 documentId
             }
             name
+            active
             order
             products (pagination: {limit: 100}){
                 documentId
@@ -118,6 +120,7 @@ export async function apiGetProductCategories(data: GetProductCategoriesRequest 
                     documentId
                 }
                 name
+                active
                 order
                 products (pagination: {limit: 100}){
                     documentId

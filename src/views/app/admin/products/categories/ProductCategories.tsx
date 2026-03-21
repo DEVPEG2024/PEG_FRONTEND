@@ -2,6 +2,7 @@ import { Container, Loading } from '@/components/shared';
 import { useEffect, useRef, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { HiOutlineSearch, HiPlus, HiPhotograph } from 'react-icons/hi';
+import { toast } from 'react-toastify';
 import { MdDragIndicator } from 'react-icons/md';
 import ProductCategoryCard from './components/ProductCategoryCard';
 import ModalEditProductCategory from './modals/ModalEditProductCategory';
@@ -75,6 +76,14 @@ const Categories = () => {
     setIsOpenEdit(false);
     setIsOpenDelete(false);
     dispatch(setProductCategory(undefined));
+  };
+
+  const handleActivateProductCategory = (cat: ProductCategory, active: boolean) => {
+    dispatch(updateProductCategory({
+      productCategory: { documentId: cat.documentId, name: cat.name, active },
+      imageModified: false,
+    }));
+    toast.success(active ? 'Catégorie activée' : 'Catégorie désactivée');
   };
 
   const handleDragStart = (index: number) => {
@@ -248,6 +257,7 @@ const Categories = () => {
                   productCategory={cat}
                   handleEditProductCategory={handleEditProductCategory}
                   handleDeleteProductCategory={handleDeleteProductCategory}
+                  handleActivateProductCategory={handleActivateProductCategory}
                 />
               </div>
             ))}
