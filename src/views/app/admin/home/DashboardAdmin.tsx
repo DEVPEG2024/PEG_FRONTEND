@@ -1,5 +1,5 @@
 import Container from '@/components/shared/Container'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 import dayjs from 'dayjs'
@@ -7,6 +7,10 @@ import 'dayjs/locale/fr'
 import isoWeek from 'dayjs/plugin/isoWeek'
 dayjs.extend(isoWeek)
 dayjs.locale('fr')
+
+/* ═══════════════════════════════════════════════════════════
+   UTILS
+   ═══════════════════════════════════════════════════════════ */
 
 function safeDate(s?: string) {
   if (!s) return null
@@ -16,182 +20,337 @@ function safeDate(s?: string) {
 
 function eur(n: number) {
   try {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: 0,
-    }).format(n)
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   } catch {
-    return `${Math.round(n)} €`
+    return `${Math.round(n)} \u20AC`
   }
 }
 
 function monthKey(d: Date) {
-  const y = d.getFullYear()
-  const m = d.getMonth() + 1
-  return `${y}-${String(m).padStart(2, '0')}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 function monthLabel(key: string) {
-  const [, mm] = key.split('-')
-  const m = Number(mm) - 1
-  const names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
-  return names[m] ?? key
+  const m = Number(key.split('-')[1]) - 1
+  return ['Jan', 'F\u00E9v', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Ao\u00FB', 'Sep', 'Oct', 'Nov', 'D\u00E9c'][m] ?? key
 }
 
-/** ========= UI (self-contained) ========= */
+/* ═══════════════════════════════════════════════════════════
+   GLASSMORPHISM CARD
+   ═══════════════════════════════════════════════════════════ */
+
+function GlassCard({
+  children,
+  className = '',
+  onClick,
+  glow,
+}: {
+  children: React.ReactNode
+  className?: string
+  onClick?: () => void
+  glow?: 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet' | 'sky'
+}) {
+  const glowMap: Record<string, string> = {
+    cyan: 'shadow-cyan-500/5 hover:shadow-cyan-500/10',
+    emerald: 'shadow-emerald-500/5 hover:shadow-emerald-500/10',
+    amber: 'shadow-amber-500/5 hover:shadow-amber-500/10',
+    rose: 'shadow-rose-500/5 hover:shadow-rose-500/10',
+    violet: 'shadow-violet-500/5 hover:shadow-violet-500/10',
+    sky: 'shadow-sky-500/5 hover:shadow-sky-500/10',
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      className={[
+        'relative overflow-hidden rounded-2xl',
+        'bg-gradient-to-br from-white/[0.07] to-white/[0.02]',
+        'backdrop-blur-xl border border-white/[0.08]',
+        'shadow-xl transition-all duration-300',
+        glow ? glowMap[glow] : '',
+        onClick ? 'cursor-pointer hover:border-white/[0.15] hover:from-white/[0.09] hover:to-white/[0.04] active:scale-[0.98]' : '',
+        className,
+      ].join(' ')}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPI STAT CARD
+   ═══════════════════════════════════════════════════════════ */
 
 type KpiVariant = 'default' | 'success' | 'warning' | 'danger'
 
-function kpiRing(variant: KpiVariant) {
-  if (variant === 'success') return 'ring-1 ring-emerald-400/25'
-  if (variant === 'warning') return 'ring-1 ring-amber-400/25'
-  if (variant === 'danger') return 'ring-1 ring-rose-400/25'
-  return 'ring-1 ring-sky-400/15'
-}
-
-function kpiAccent(variant: KpiVariant) {
-  if (variant === 'success') return 'from-emerald-500/20 to-emerald-500/0'
-  if (variant === 'warning') return 'from-amber-500/20 to-amber-500/0'
-  if (variant === 'danger') return 'from-rose-500/20 to-rose-500/0'
-  return 'from-sky-500/18 to-sky-500/0'
+const variantConfig = {
+  default: { gradient: 'from-cyan-500 to-blue-600', bg: 'from-cyan-500/15 to-blue-600/5', text: 'text-cyan-400', ring: 'ring-cyan-500/20' },
+  success: { gradient: 'from-emerald-500 to-teal-600', bg: 'from-emerald-500/15 to-teal-600/5', text: 'text-emerald-400', ring: 'ring-emerald-500/20' },
+  warning: { gradient: 'from-amber-500 to-orange-600', bg: 'from-amber-500/15 to-orange-600/5', text: 'text-amber-400', ring: 'ring-amber-500/20' },
+  danger: { gradient: 'from-rose-500 to-red-600', bg: 'from-rose-500/15 to-red-600/5', text: 'text-rose-400', ring: 'ring-rose-500/20' },
 }
 
 function KPI({
   title,
   value,
   subtitle,
-  hint,
   icon,
   variant = 'default',
   onClick,
+  sparkData,
 }: {
   title: string
   value: string
   subtitle?: string
-  hint?: string
   icon?: string
   variant?: KpiVariant
   onClick?: () => void
+  sparkData?: number[]
 }) {
+  const cfg = variantConfig[variant]
+
   return (
-    <div
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      className={[
-        'relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] p-4',
-        kpiRing(variant),
-        onClick ? 'cursor-pointer hover:bg-white/[0.055] transition' : '',
-      ].join(' ')}
-      title={onClick ? 'Cliquer pour ouvrir' : title}
-    >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${kpiAccent(variant)}`} />
+    <GlassCard onClick={onClick} glow={variant === 'success' ? 'emerald' : variant === 'warning' ? 'amber' : variant === 'danger' ? 'rose' : 'cyan'}>
+      {/* Gradient accent top */}
+      <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${cfg.gradient} opacity-60`} />
 
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[11px] uppercase tracking-wide text-white/55">{title}</div>
-          <div className="mt-1 text-2xl font-extrabold text-white">{value}</div>
-          {subtitle ? <div className="mt-1 text-xs text-white/45">{subtitle}</div> : null}
-          {hint ? <div className="mt-2 text-xs text-white/60">{hint}</div> : null}
-          {onClick ? <div className="mt-2 text-[11px] text-sky-300/80">Ouvrir →</div> : null}
+      <div className="relative p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">{title}</div>
+            <div className="mt-2 text-3xl font-black text-white tracking-tight">{value}</div>
+            {subtitle && <div className="mt-1 text-xs text-white/45">{subtitle}</div>}
+          </div>
+
+          <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${cfg.bg} ring-1 ${cfg.ring} text-lg`}>
+            {icon ?? '\u2022'}
+          </div>
         </div>
 
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/80">
-          {icon ?? '•'}
-        </div>
+        {/* Mini sparkline */}
+        {sparkData && sparkData.length > 1 && (
+          <div className="mt-3">
+            <Sparkline data={sparkData} color={variant === 'success' ? '#34d399' : variant === 'warning' ? '#fbbf24' : variant === 'danger' ? '#fb7185' : '#22d3ee'} />
+          </div>
+        )}
+
+        {onClick && (
+          <div className={`mt-3 text-[11px] font-medium ${cfg.text} opacity-70`}>
+            Voir d\u00E9tails \u2192
+          </div>
+        )}
       </div>
-    </div>
+    </GlassCard>
   )
 }
 
-function Panel({ title, subtitle, right, children }: { title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }) {
+/* ═══════════════════════════════════════════════════════════
+   SPARKLINE
+   ═══════════════════════════════════════════════════════════ */
+
+function Sparkline({ data, color = '#22d3ee', height = 32 }: { data: number[]; color?: string; height?: number }) {
+  const W = 120
+  const max = Math.max(...data, 1)
+  const min = Math.min(...data, 0)
+  const range = max - min || 1
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * W
+    const y = height - ((v - min) / range) * (height - 4) - 2
+    return `${x},${y}`
+  })
+  const pathD = `M${points.join(' L')}`
+  const areaD = `${pathD} L${W},${height} L0,${height} Z`
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-white">{title}</div>
-          {subtitle ? <div className="mt-1 text-xs text-white/50">{subtitle}</div> : null}
-        </div>
-        {right ? <div className="shrink-0">{right}</div> : null}
-      </div>
-      {children}
-    </div>
+    <svg viewBox={`0 0 ${W} ${height}`} width="100%" height={height} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`spark-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#spark-${color.replace('#', '')})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
-/** Chart barres ultra simple en SVG (pas de lib) */
-function BarsChart({
+/* ═══════════════════════════════════════════════════════════
+   DONUT CHART
+   ═══════════════════════════════════════════════════════════ */
+
+const DONUT_COLORS = ['#22d3ee', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#3b82f6', '#f97316']
+
+function DonutChart({
   data,
-  leftLabel = 'CA',
-  rightLabel = 'Marge',
+  size = 180,
+  thickness = 24,
+  centerLabel,
+  centerValue,
+}: {
+  data: { label: string; value: number }[]
+  size?: number
+  thickness?: number
+  centerLabel?: string
+  centerValue?: string
+}) {
+  const total = data.reduce((a, d) => a + d.value, 0) || 1
+  const radius = (size - thickness) / 2
+  const circumference = 2 * Math.PI * radius
+  let offset = 0
+
+  return (
+    <div className="flex items-center gap-6">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {data.map((d, i) => {
+            const pct = d.value / total
+            const dash = pct * circumference
+            const gap = circumference - dash
+            const rot = (offset / total) * 360 - 90
+            offset += d.value
+            return (
+              <circle
+                key={i}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
+                strokeWidth={thickness}
+                strokeDasharray={`${dash} ${gap}`}
+                strokeLinecap="round"
+                transform={`rotate(${rot} ${size / 2} ${size / 2})`}
+                style={{ filter: `drop-shadow(0 0 6px ${DONUT_COLORS[i % DONUT_COLORS.length]}40)` }}
+              />
+            )
+          })}
+        </svg>
+        {centerValue && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-2xl font-black text-white">{centerValue}</div>
+            {centerLabel && <div className="text-[10px] text-white/40 uppercase tracking-wide">{centerLabel}</div>}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 flex-1">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+            <span className="text-xs text-white/60 truncate flex-1">{d.label}</span>
+            <span className="text-xs font-semibold text-white/80">{d.value}</span>
+            <span className="text-[10px] text-white/35">{Math.round((d.value / total) * 100)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AREA CHART (6 mois CA + Marge)
+   ═══════════════════════════════════════════════════════════ */
+
+function AreaChart({
+  data,
 }: {
   data: { label: string; ca: number; marge: number }[]
-  leftLabel?: string
-  rightLabel?: string
 }) {
-  const W = 760
+  const W = 700
   const H = 220
-  const padL = 34
-  const padR = 12
-  const padT = 14
-  const padB = 30
+  const padL = 50
+  const padR = 20
+  const padT = 20
+  const padB = 35
 
   const maxVal = useMemo(() => {
     let m = 1
     for (const p of data) m = Math.max(m, p.ca, p.marge)
-    return m
+    return m * 1.1
   }, [data])
 
   const plotW = W - padL - padR
   const plotH = H - padT - padB
-  const groupW = data.length ? plotW / data.length : plotW
-  const barW = Math.max(10, Math.min(26, groupW * 0.22))
-  const gap = Math.max(6, Math.min(10, groupW * 0.08))
-
+  const x = (i: number) => padL + (i / (data.length - 1)) * plotW
   const y = (v: number) => padT + (1 - v / maxVal) * plotH
+
+  const caPoints = data.map((d, i) => `${x(i)},${y(d.ca)}`).join(' ')
+  const margePoints = data.map((d, i) => `${x(i)},${y(d.marge)}`).join(' ')
+
+  const caAreaD = `M${padL},${padT + plotH} L${caPoints.split(' ').map(p => p).join(' L')} L${x(data.length - 1)},${padT + plotH} Z`
+  const margeAreaD = `M${padL},${padT + plotH} L${margePoints.split(' ').map(p => p).join(' L')} L${x(data.length - 1)},${padT + plotH} Z`
+
+  // Y axis ticks
+  const ticks = 5
+  const tickVals = Array.from({ length: ticks }, (_, i) => Math.round((maxVal / (ticks - 1)) * i))
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-4 text-xs text-white/65">
-        <span className="inline-flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded bg-sky-400/90" />
-          {leftLabel}
+      <div className="mb-3 flex items-center gap-5 text-xs">
+        <span className="flex items-center gap-2 text-cyan-400">
+          <span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600" />
+          Chiffre d'affaires
         </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded bg-emerald-400/90" />
-          {rightLabel}
+        <span className="flex items-center gap-2 text-emerald-400">
+          <span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
+          Marge brute
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="220" role="img" aria-label="Chart">
-        {Array.from({ length: 5 }).map((_, i) => {
-          const yy = padT + (plotH * i) / 4
-          return <line key={i} x1={padL} x2={W - padR} y1={yy} y2={yy} stroke="rgba(255,255,255,0.08)" />
-        })}
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="220">
+        <defs>
+          <linearGradient id="caGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="margeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#34d399" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-        {data.map((p, i) => {
-          const cx = padL + i * groupW + groupW / 2
-          const x1 = cx - barW - gap / 2
-          const x2 = cx + gap / 2
-          const caY = y(p.ca)
-          const mgY = y(p.marge)
+        {/* Grid lines */}
+        {tickVals.map((v, i) => (
+          <g key={i}>
+            <line x1={padL} x2={W - padR} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,0.06)" />
+            <text x={padL - 8} y={y(v) + 4} textAnchor="end" fontSize="10" fill="rgba(255,255,255,0.3)">
+              {v >= 1000 ? `${Math.round(v / 1000)}k` : v}
+            </text>
+          </g>
+        ))}
 
-          return (
-            <g key={p.label}>
-              <rect x={x1} y={caY} width={barW} height={padT + plotH - caY} rx={6} fill="rgba(56,189,248,0.92)" />
-              <rect x={x2} y={mgY} width={barW} height={padT + plotH - mgY} rx={6} fill="rgba(52,211,153,0.92)" />
-              <text x={cx} y={H - 10} textAnchor="middle" fontSize="12" fill="rgba(255,255,255,0.55)">
-                {p.label}
-              </text>
-            </g>
-          )
-        })}
+        {/* Areas */}
+        <path d={caAreaD} fill="url(#caGrad)" />
+        <path d={margeAreaD} fill="url(#margeGrad)" />
+
+        {/* Lines */}
+        <polyline points={caPoints} fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))' }} />
+        <polyline points={margePoints} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.4))' }} />
+
+        {/* Dots */}
+        {data.map((d, i) => (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(d.ca)} r="4" fill="#22d3ee" stroke="#0f172a" strokeWidth="2" />
+            <circle cx={x(i)} cy={y(d.marge)} r="4" fill="#34d399" stroke="#0f172a" strokeWidth="2" />
+            <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.45)">
+              {d.label}
+            </text>
+          </g>
+        ))}
       </svg>
     </div>
   )
 }
 
-function PipelineBars({
+/* ═══════════════════════════════════════════════════════════
+   HORIZONTAL BAR (pipeline)
+   ═══════════════════════════════════════════════════════════ */
+
+const BAR_COLORS = ['#22d3ee', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#3b82f6', '#f97316']
+
+function HorizontalBars({
   items,
   onClick,
 }: {
@@ -202,27 +361,30 @@ function PipelineBars({
 
   return (
     <div className="space-y-3">
-      {items.map((it) => {
+      {items.map((it, idx) => {
         const pct = Math.round((it.value / max) * 100)
         return (
-          <div key={it.label} className="grid grid-cols-[120px_1fr_44px] items-center gap-3">
-            <button
-              type="button"
-              onClick={() => onClick?.(it.label)}
-              className={[
-                'text-left text-xs text-white/70 truncate',
-                onClick ? 'hover:text-white transition' : '',
-              ].join(' ')}
-              title={onClick ? 'Cliquer pour filtrer' : it.label}
-            >
-              {it.label}
-            </button>
-
-            <div className="h-3.5 rounded-full border border-white/10 bg-white/[0.04] overflow-hidden">
-              <div className="h-full bg-sky-400/80" style={{ width: `${pct}%` }} />
+          <div key={it.label}>
+            <div className="flex items-center justify-between mb-1">
+              <button
+                type="button"
+                onClick={() => onClick?.(it.label)}
+                className={['text-xs text-white/65 truncate', onClick ? 'hover:text-white transition' : ''].join(' ')}
+              >
+                {it.label}
+              </button>
+              <span className="text-xs font-semibold text-white/70">{it.value}</span>
             </div>
-
-            <div className="text-right text-xs text-white/60">{it.value}</div>
+            <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${pct}%`,
+                  background: `linear-gradient(90deg, ${BAR_COLORS[idx % BAR_COLORS.length]}, ${BAR_COLORS[idx % BAR_COLORS.length]}88)`,
+                  boxShadow: `0 0 10px ${BAR_COLORS[idx % BAR_COLORS.length]}40`,
+                }}
+              />
+            </div>
           </div>
         )
       })}
@@ -230,159 +392,366 @@ function PipelineBars({
   )
 }
 
-function TableMini({
-  rows,
-  onRowClick,
-}: {
-  rows: { left: string; right: string; sub?: string }[]
-  onRowClick?: (idx: number) => void
-}) {
+/* ═══════════════════════════════════════════════════════════
+   SECTION HEADER
+   ═══════════════════════════════════════════════════════════ */
+
+function SectionHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
   return (
-    <div className="divide-y divide-white/10">
-      {rows.length === 0 ? <div className="text-xs text-white/55">Aucune donnée.</div> : null}
-      {rows.map((r, idx) => (
-        <div
-          key={idx}
-          onClick={() => onRowClick?.(idx)}
-          className={['py-2 flex items-start justify-between gap-3', onRowClick ? 'cursor-pointer hover:bg-white/[0.03] px-2 -mx-2 rounded-lg transition' : ''].join(' ')}
-        >
-          <div className="min-w-0">
-            <div className="text-sm text-white/85 truncate">{r.left}</div>
-            {r.sub ? <div className="text-xs text-white/50 truncate">{r.sub}</div> : null}
-          </div>
-          <div className="text-sm text-white/60 shrink-0">{r.right}</div>
-        </div>
-      ))}
+    <div className="flex items-end justify-between gap-4 mb-4">
+      <div>
+        <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>
+        {subtitle && <p className="text-xs text-white/40 mt-0.5">{subtitle}</p>}
+      </div>
+      {right}
     </div>
   )
 }
 
-/** ========= Calendar Widget ========= */
+/* ═══════════════════════════════════════════════════════════
+   TODO LIST WIDGET (pense-b\u00EAte)
+   ═══════════════════════════════════════════════════════════ */
+
+const TODO_STORAGE_KEY = 'peg:dashboardTodos'
+
+interface TodoItem {
+  id: number
+  text: string
+  done: boolean
+  createdAt: string
+}
+
+function TodoListWidget() {
+  const [todos, setTodos] = useState<TodoItem[]>([])
+  const [input, setInput] = useState('')
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const raw = localStorage.getItem(TODO_STORAGE_KEY)
+    if (raw) {
+      try { setTodos(JSON.parse(raw)) } catch { /* noop */ }
+    }
+  }, [])
+
+  const persist = useCallback((next: TodoItem[]) => {
+    setTodos(next)
+    localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(next))
+  }, [])
+
+  const addTodo = () => {
+    const txt = input.trim()
+    if (!txt) return
+    persist([{ id: Date.now(), text: txt, done: false, createdAt: new Date().toISOString() }, ...todos])
+    setInput('')
+    inputRef.current?.focus()
+  }
+
+  const toggleTodo = (id: number) => {
+    persist(todos.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  }
+
+  const deleteTodo = (id: number) => {
+    persist(todos.filter(t => t.id !== id))
+  }
+
+  const startEdit = (t: TodoItem) => {
+    setEditId(t.id)
+    setEditText(t.text)
+  }
+
+  const saveEdit = () => {
+    if (editId === null) return
+    const txt = editText.trim()
+    if (!txt) { deleteTodo(editId); setEditId(null); return }
+    persist(todos.map(t => t.id === editId ? { ...t, text: txt } : t))
+    setEditId(null)
+  }
+
+  const pending = todos.filter(t => !t.done)
+  const done = todos.filter(t => t.done)
+
+  return (
+    <GlassCard className="p-5" glow="violet">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500 to-purple-600 opacity-60" />
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/10 ring-1 ring-violet-500/20 text-sm">
+            {'\u2705'}
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Pense-b\u00EAte</h3>
+            <p className="text-[10px] text-white/35">{pending.length} en cours \u00B7 {done.length} termin\u00E9(s)</p>
+          </div>
+        </div>
+
+        {done.length > 0 && (
+          <button
+            onClick={() => persist(todos.filter(t => !t.done))}
+            className="text-[10px] text-white/30 hover:text-white/50 transition"
+          >
+            Vider termin\u00E9s
+          </button>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2 mb-4">
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addTodo()}
+          placeholder="Nouvelle t\u00E2che..."
+          className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition"
+        />
+        <button
+          onClick={addTodo}
+          className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-lg shadow-violet-500/20"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Todo items */}
+      <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+        {todos.length === 0 && (
+          <div className="text-center text-xs text-white/25 py-6">Aucune t\u00E2che pour le moment</div>
+        )}
+
+        {/* Pending first, then done */}
+        {[...pending, ...done].map((t) => (
+          <div
+            key={t.id}
+            className={[
+              'group flex items-center gap-3 rounded-xl px-3 py-2 transition',
+              t.done ? 'opacity-40' : 'hover:bg-white/[0.03]',
+            ].join(' ')}
+          >
+            <button
+              onClick={() => toggleTodo(t.id)}
+              className={[
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition',
+                t.done
+                  ? 'bg-violet-500/30 border-violet-500/40 text-violet-300'
+                  : 'border-white/15 hover:border-violet-500/40',
+              ].join(' ')}
+            >
+              {t.done && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+
+            {editId === t.id ? (
+              <input
+                autoFocus
+                value={editText}
+                onChange={e => setEditText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null) }}
+                onBlur={saveEdit}
+                className="flex-1 bg-transparent text-sm text-white outline-none border-b border-violet-500/30"
+              />
+            ) : (
+              <span
+                onDoubleClick={() => startEdit(t)}
+                className={['flex-1 text-sm cursor-default', t.done ? 'line-through text-white/50' : 'text-white/80'].join(' ')}
+              >
+                {t.text}
+              </span>
+            )}
+
+            <button
+              onClick={() => deleteTodo(t.id)}
+              className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-rose-400 transition text-xs shrink-0"
+            >
+              \u2715
+            </button>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CALENDAR WIDGET
+   ═══════════════════════════════════════════════════════════ */
 
 const CAL_STORAGE_KEY = 'peg:calendarEvents'
 const CAT_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
   production: { dot: 'bg-orange-500', bg: 'bg-orange-500/10 border border-orange-500/20', text: 'text-orange-300' },
-  réunion:    { dot: 'bg-sky-500',    bg: 'bg-sky-500/10 border border-sky-500/20',        text: 'text-sky-300'    },
+  r\u00E9union:    { dot: 'bg-sky-500',    bg: 'bg-sky-500/10 border border-sky-500/20',        text: 'text-sky-300'    },
   livraison:  { dot: 'bg-emerald-500',bg: 'bg-emerald-500/10 border border-emerald-500/20',text: 'text-emerald-300'},
   autre:      { dot: 'bg-violet-500', bg: 'bg-violet-500/10 border border-violet-500/20',  text: 'text-violet-300' },
 }
 
 interface RawCalEvent { id: number; title: string; start: string; end: string; category: string }
 
-function useCalendarEvents() {
+function CalendarMiniWidget() {
   const [events, setEvents] = useState<RawCalEvent[]>([])
+  const today = dayjs()
+
   useEffect(() => {
     const raw = localStorage.getItem(CAL_STORAGE_KEY)
-    if (raw) {
-      try { setEvents(JSON.parse(raw)) } catch { /* noop */ }
-    }
+    if (raw) { try { setEvents(JSON.parse(raw)) } catch { /* */ } }
   }, [])
-  return events
-}
-
-function CalEventRow({ ev }: { ev: RawCalEvent }) {
-  const start = dayjs(ev.start)
-  const end = dayjs(ev.end)
-  const cat = CAT_COLORS[ev.category] ?? CAT_COLORS.autre
-  return (
-    <div className={`flex items-center gap-3 rounded-xl px-3 py-2 ${cat.bg}`}>
-      <span className={`w-2 h-2 rounded-full shrink-0 ${cat.dot}`} />
-      <div className="flex-1 min-w-0">
-        <div className={`text-sm font-semibold truncate ${cat.text}`}>{ev.title}</div>
-        <div className="text-xs text-white/40">{start.format('HH:mm')} – {end.format('HH:mm')}</div>
-      </div>
-    </div>
-  )
-}
-
-function CalendarWidget() {
-  const events = useCalendarEvents()
-  const today = dayjs()
-  const weekStart = today.startOf('isoWeek')
-  const weekEnd = today.endOf('isoWeek')
 
   const todayEvents = events
     .filter((e) => dayjs(e.start).isSame(today, 'day'))
     .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
 
+  const weekStart = today.startOf('isoWeek')
+  const weekEnd = today.endOf('isoWeek')
   const weekEvents = events
     .filter((e) => {
       const s = dayjs(e.start)
-      return s.isAfter(weekStart.subtract(1, 'ms')) && s.isBefore(weekEnd.add(1, 'ms')) && !s.isSame(today, 'day')
+      return s.isAfter(weekStart) && s.isBefore(weekEnd) && !s.isSame(today, 'day')
     })
     .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
-    .slice(0, 6)
+    .slice(0, 5)
+
+  // Mini calendar grid for current month
+  const startOfMonth = today.startOf('month')
+  const daysInMonth = today.daysInMonth()
+  const startDay = startOfMonth.day() === 0 ? 6 : startOfMonth.day() - 1 // Monday start
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Aujourd'hui */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
+    <GlassCard className="p-5" glow="sky">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 to-blue-600 opacity-60" />
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500/20 to-blue-600/10 ring-1 ring-sky-500/20 text-sm">
+            {'\uD83D\uDCC5'}
+          </div>
           <div>
-            <div className="text-sm font-semibold text-white capitalize">
-              📅 Aujourd'hui — {today.format('dddd D MMMM')}
-            </div>
-            <div className="mt-1 text-xs text-white/50">{todayEvents.length} événement{todayEvents.length !== 1 ? 's' : ''}</div>
+            <h3 className="text-sm font-bold text-white capitalize">{today.format('MMMM YYYY')}</h3>
+            <p className="text-[10px] text-white/35">{todayEvents.length} aujourd'hui</p>
           </div>
-          <Link to="/admin/calendar" className="text-xs text-sky-300/80 hover:text-sky-200 transition shrink-0">
-            Ouvrir →
-          </Link>
         </div>
-        {todayEvents.length === 0 ? (
-          <div className="text-xs text-white/35 py-3 text-center">Aucun événement aujourd'hui</div>
-        ) : (
-          <div className="space-y-2">
-            {todayEvents.map((ev) => <CalEventRow key={ev.id} ev={ev} />)}
-          </div>
-        )}
+        <Link to="/admin/calendar" className="text-[11px] text-sky-400/70 hover:text-sky-300 transition">
+          Calendrier \u2192
+        </Link>
       </div>
 
-      {/* Cette semaine */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-white">
-              🗓️ Cette semaine
+      {/* Mini month grid */}
+      <div className="grid grid-cols-7 gap-1 mb-4">
+        {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map(d => (
+          <div key={d} className="text-[9px] text-center text-white/25 font-medium">{d}</div>
+        ))}
+        {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1
+          const isToday = day === today.date()
+          const hasEvent = events.some(e => dayjs(e.start).date() === day && dayjs(e.start).month() === today.month())
+          return (
+            <div
+              key={day}
+              className={[
+                'text-[10px] text-center py-1 rounded-md relative',
+                isToday ? 'bg-sky-500 text-white font-bold shadow-lg shadow-sky-500/30' : 'text-white/40',
+                hasEvent && !isToday ? 'text-white/70 font-semibold' : '',
+              ].join(' ')}
+            >
+              {day}
+              {hasEvent && !isToday && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sky-400" />}
             </div>
-            <div className="mt-1 text-xs text-white/50">
-              {weekStart.format('D MMM')} – {weekEnd.format('D MMM')} · {weekEvents.length} autre{weekEvents.length !== 1 ? 's' : ''} événement{weekEvents.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-          <Link to="/admin/calendar" className="text-xs text-sky-300/80 hover:text-sky-200 transition shrink-0">
-            Calendrier →
-          </Link>
-        </div>
-        {weekEvents.length === 0 ? (
-          <div className="text-xs text-white/35 py-3 text-center">Aucun autre événement cette semaine</div>
-        ) : (
-          <div className="space-y-2">
-            {weekEvents.map((ev) => (
-              <div key={ev.id} className="flex items-center gap-3">
-                <div className="text-xs text-white/35 w-12 shrink-0 text-right">{dayjs(ev.start).format('ddd D')}</div>
-                <CalEventRow ev={ev} />
-              </div>
-            ))}
-          </div>
-        )}
+          )
+        })}
       </div>
+
+      {/* Today events */}
+      {todayEvents.length > 0 && (
+        <div className="space-y-1.5 mb-3">
+          <div className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Aujourd'hui</div>
+          {todayEvents.map(ev => {
+            const cat = CAT_COLORS[ev.category] ?? CAT_COLORS.autre
+            return (
+              <div key={ev.id} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 ${cat.bg}`}>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cat.dot}`} />
+                <span className={`text-xs font-medium truncate ${cat.text}`}>{ev.title}</span>
+                <span className="text-[10px] text-white/30 ml-auto shrink-0">{dayjs(ev.start).format('HH:mm')}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Week events */}
+      {weekEvents.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Cette semaine</div>
+          {weekEvents.map(ev => (
+            <div key={ev.id} className="flex items-center gap-2 text-xs text-white/50">
+              <span className="text-[10px] text-white/25 w-10 shrink-0">{dayjs(ev.start).format('ddd')}</span>
+              <span className="truncate">{ev.title}</span>
+              <span className="text-[10px] text-white/20 ml-auto shrink-0">{dayjs(ev.start).format('HH:mm')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </GlassCard>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACTIVITY FEED
+   ═══════════════════════════════════════════════════════════ */
+
+function ActivityFeed({ items }: { items: { left: string; right: string; sub?: string; type?: string }[] }) {
+  return (
+    <div className="space-y-2">
+      {items.length === 0 && <div className="text-xs text-white/30 text-center py-4">Aucune activit\u00E9 r\u00E9cente</div>}
+      {items.map((item, i) => (
+        <div key={i} className="flex items-start gap-3 group">
+          <div className="mt-1.5 w-2 h-2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shrink-0 shadow-sm shadow-cyan-500/30" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm text-white/75 truncate">{item.left}</div>
+            {item.sub && <div className="text-[11px] text-white/35 truncate">{item.sub}</div>}
+          </div>
+          <div className="text-xs text-white/45 shrink-0 font-medium">{item.right}</div>
+        </div>
+      ))}
     </div>
   )
 }
 
-/** ========= Page ========= */
+/* ═══════════════════════════════════════════════════════════
+   ALERT CARD
+   ═══════════════════════════════════════════════════════════ */
+
+function AlertCard({ variant, children }: { variant: 'danger' | 'warning' | 'success' | 'info'; children: React.ReactNode }) {
+  const colors = {
+    danger: 'from-rose-500/15 to-rose-500/5 border-rose-500/20 text-rose-200',
+    warning: 'from-amber-500/15 to-amber-500/5 border-amber-500/20 text-amber-200',
+    success: 'from-emerald-500/15 to-emerald-500/5 border-emerald-500/20 text-emerald-200',
+    info: 'from-sky-500/15 to-sky-500/5 border-sky-500/20 text-sky-200',
+  }
+
+  return (
+    <div className={`rounded-xl bg-gradient-to-r ${colors[variant]} border px-3.5 py-2.5 text-sm`}>
+      {children}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN DASHBOARD
+   ═══════════════════════════════════════════════════════════ */
 
 export default function DashboardAdmin() {
   const navigate = useNavigate()
   const fileRef = useRef<HTMLInputElement | null>(null)
 
-  // Banner (simple) : on stocke l’image seulement en localStorage
-  // (Plus tard on branchera Strapi settings, mais là tu voulais SIMPLE et fonctionnel)
   const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [gql, setGql] = useState<any>(null)
-
-  const [month, setMonth] = useState('Mars 2026')
   const [refreshTick, setRefreshTick] = useState(0)
 
   const fetchDashboard = async () => {
@@ -391,7 +760,7 @@ export default function DashboardAdmin() {
       setError(null)
       const res = await apiGetDashboardSuperAdminInformations()
       const data = (res as any)?.data?.data ?? (res as any)?.data ?? null
-      if (!data) throw new Error('Réponse GraphQL vide')
+      if (!data) throw new Error('R\u00E9ponse GraphQL vide')
       setGql(data)
     } catch (e: any) {
       setError(e?.message ?? 'Erreur dashboard')
@@ -400,21 +769,15 @@ export default function DashboardAdmin() {
     }
   }
 
-  useEffect(() => {
-    fetchDashboard()
-  }, [month, refreshTick])
+  useEffect(() => { fetchDashboard() }, [refreshTick])
 
-  // Rafraîchissement automatique quand l'onglet redevient visible
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        setRefreshTick((t) => t + 1)
-      }
-    }
+    const onVisible = () => { if (document.visibilityState === 'visible') setRefreshTick(t => t + 1) }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
+  /* ---- Derived data ---- */
   const projects = gql?.projects_connection?.nodes ?? []
   const invoices = gql?.invoices_connection?.nodes ?? []
   const tickets = gql?.tickets_connection?.nodes ?? []
@@ -437,19 +800,12 @@ export default function DashboardAdmin() {
   }, [invoices, projects])
 
   const invoicePaid = useMemo(() => {
-    // Paid invoices
     const fromInvoices = invoices.reduce((a: number, x: any) => {
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
       const st = (x?.state ?? '').toString().toLowerCase()
-      const paid =
-        ps === 'fulfilled' ||
-        st === 'fulfilled' ||
-        ps.includes('paid') ||
-        ps === 'paye' ||
-        st.includes('paid')
+      const paid = ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')
       return a + (paid ? (Number(x?.totalAmount) || 0) : 0)
     }, 0)
-    // Direct payments on projects (paidPrice) without invoices
     const fromProjects = projects.reduce((a: number, p: any) => {
       const hasInvoice = Array.isArray(p?.invoices) && p.invoices.length > 0
       return a + (hasInvoice ? 0 : (Number(p?.paidPrice) || 0))
@@ -466,11 +822,7 @@ export default function DashboardAdmin() {
       if (!d) return false
       const ps = (x?.paymentState ?? '').toString().toLowerCase()
       const st = (x?.state ?? '').toString().toLowerCase()
-      const paid =
-        ps === 'fulfilled' ||
-        st === 'fulfilled' ||
-        ps.includes('paid') ||
-        ps === 'paye'
+      const paid = ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye'
       return d.getTime() < now.getTime() && !paid
     }).length
   }, [invoices])
@@ -495,6 +847,14 @@ export default function DashboardAdmin() {
     return Math.round(days / pairs.length)
   }, [projects])
 
+  const totalCosts = useMemo(() => transactions.reduce((a: number, x: any) => a + (Number(x?.amount) || 0), 0), [transactions])
+  const margeBrute = Math.max(0, invoiceTotal - totalCosts)
+  const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
+
+  const openTickets = useMemo(() => {
+    return tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
+  }, [tickets])
+
   const revenue6m = useMemo(() => {
     const now = new Date()
     const months: string[] = []
@@ -512,7 +872,6 @@ export default function DashboardAdmin() {
       if (!by.has(k)) continue
       by.set(k, { ...by.get(k)!, ca: by.get(k)!.ca + (Number(inv?.totalAmount) || 0) })
     }
-
     for (const tx of transactions) {
       const d = safeDate(tx?.date)
       if (!d) continue
@@ -520,29 +879,26 @@ export default function DashboardAdmin() {
       if (!by.has(k)) continue
       by.set(k, { ...by.get(k)!, costs: by.get(k)!.costs + (Number(tx?.amount) || 0) })
     }
-
     return months.map((k) => {
       const b = by.get(k)!
       return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs) }
     })
   }, [invoices, transactions])
 
+  // Sparkline data from revenue6m
+  const caSparkData = revenue6m.map(d => d.ca)
+  const margeSparkData = revenue6m.map(d => d.marge)
+
   const pipeline = useMemo(() => {
     const m = new Map<string, number>()
-    for (const p of projects) {
-      const s = (p?.state ?? 'unknown').toString()
-      m.set(s, (m.get(s) ?? 0) + 1)
-    }
-    return Array.from(m.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8)
+    for (const p of projects) { const s = (p?.state ?? 'unknown').toString(); m.set(s, (m.get(s) ?? 0) + 1) }
+    return Array.from(m.entries()).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8)
   }, [projects])
 
   const topProducers = useMemo(() => {
     const map = new Map<string, { projects: number; revenue: number }>()
     for (const p of projects) {
-      const name = p?.producer?.name ?? '—'
+      const name = p?.producer?.name ?? '\u2014'
       const cur = map.get(name) ?? { projects: 0, revenue: 0 }
       map.set(name, { projects: cur.projects + 1, revenue: cur.revenue + (Number(p?.price) || 0) })
     }
@@ -552,60 +908,30 @@ export default function DashboardAdmin() {
       .slice(0, 6)
   }, [projects])
 
-  const activity = useMemo(() => {
-    const items: { ts: number; left: string; right: string; sub?: string }[] = []
-
-    for (const inv of invoices.slice(0, 30)) {
-      const d = safeDate(inv?.date)
-      if (!d) continue
-      items.push({
-        ts: d.getTime(),
-        left: `${inv?.customer?.name ?? 'Client'} — Facture ${inv?.name ?? inv?.documentId ?? ''}`,
-        right: eur(Number(inv?.totalAmount) || 0),
-        sub: `${inv?.paymentState ?? inv?.state ?? ''} • ${d.toLocaleString('fr-FR')}`,
-      })
-    }
-
-    for (const p of projects.slice(0, 30)) {
-      const d = safeDate(p?.startDate) ?? safeDate(p?.endDate)
-      if (!d) continue
-      items.push({
-        ts: d.getTime(),
-        left: `${p?.customer?.name ?? 'Client'} — Projet ${p?.name ?? ''}`,
-        right: (p?.state ?? '').toString(),
-        sub: `${p?.producer?.name ?? '—'} • ${d.toLocaleString('fr-FR')}`,
-      })
-    }
-
-    return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
-  }, [invoices, projects])
-
-  const openTickets = useMemo(() => {
-    return tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length
-  }, [tickets])
-
-  // Marge brute = CA - coûts (transactions sortantes/producteurs)
-  const totalCosts = useMemo(
-    () => transactions.reduce((a: number, x: any) => a + (Number(x?.amount) || 0), 0),
-    [transactions]
-  )
-  const margeBrute = Math.max(0, invoiceTotal - totalCosts)
-  const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
-
-  // Top clients par CA facturé
   const topClients = useMemo(() => {
     const map = new Map<string, number>()
     for (const inv of invoices) {
-      const name = inv?.customer?.name ?? '—'
+      const name = inv?.customer?.name ?? '\u2014'
       map.set(name, (map.get(name) ?? 0) + (Number(inv?.totalAmount) || 0))
     }
-    return Array.from(map.entries())
-      .map(([name, revenue]) => ({ name, revenue }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 6)
+    return Array.from(map.entries()).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 6)
   }, [invoices])
 
-  // Échéances à venir (14 jours)
+  const activity = useMemo(() => {
+    const items: { ts: number; left: string; right: string; sub?: string }[] = []
+    for (const inv of invoices.slice(0, 20)) {
+      const d = safeDate(inv?.date)
+      if (!d) continue
+      items.push({ ts: d.getTime(), left: `${inv?.customer?.name ?? 'Client'} \u2014 Facture ${inv?.name ?? ''}`, right: eur(Number(inv?.totalAmount) || 0), sub: `${inv?.paymentState ?? inv?.state ?? ''} \u00B7 ${d.toLocaleDateString('fr-FR')}` })
+    }
+    for (const p of projects.slice(0, 20)) {
+      const d = safeDate(p?.startDate) ?? safeDate(p?.endDate)
+      if (!d) continue
+      items.push({ ts: d.getTime(), left: `${p?.customer?.name ?? 'Client'} \u2014 Projet ${p?.name ?? ''}`, right: (p?.state ?? '').toString(), sub: `${p?.producer?.name ?? '\u2014'} \u00B7 ${d.toLocaleDateString('fr-FR')}` })
+    }
+    return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
+  }, [invoices, projects])
+
   const upcomingDeadlines = useMemo(() => {
     const now = new Date()
     const in14 = new Date(now.getTime() + 14 * 86400000)
@@ -621,30 +947,25 @@ export default function DashboardAdmin() {
       .slice(0, 6)
       .map((p: any) => {
         const end = safeDate(p?.endDate)!
-        const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86400000)
-        return {
-          left: p?.name ?? p?.documentId ?? '—',
-          sub: `${p?.customer?.name ?? '—'} • ${p?.producer?.name ?? '—'}`,
-          right: `J-${daysLeft}`,
-          urgent: daysLeft <= 3,
-        }
+        const daysLeft = Math.ceil((end.getTime() - new Date().getTime()) / 86400000)
+        return { left: p?.name ?? '\u2014', sub: `${p?.customer?.name ?? '\u2014'} \u00B7 ${p?.producer?.name ?? '\u2014'}`, right: `J-${daysLeft}`, urgent: daysLeft <= 3 }
       })
   }, [projects])
 
-  // Commandes par état
   const ordersByState = useMemo(() => {
     const m = new Map<string, number>()
-    for (const o of orderItems) {
-      const s = (o?.state ?? 'inconnu').toString()
-      m.set(s, (m.get(s) ?? 0) + 1)
-    }
-    return Array.from(m.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
+    for (const o of orderItems) { const s = (o?.state ?? 'inconnu').toString(); m.set(s, (m.get(s) ?? 0) + 1) }
+    return Array.from(m.entries()).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
   }, [orderItems])
 
-  const onPickBanner = () => fileRef.current?.click()
+  // Ticket stats for donut
+  const ticketsByState = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const t of tickets) { const s = (t?.state ?? 'inconnu').toString(); m.set(s, (m.get(s) ?? 0) + 1) }
+    return Array.from(m.entries()).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
+  }, [tickets])
 
+  const onPickBanner = () => fileRef.current?.click()
   const onBannerFile = (file?: File | null) => {
     if (!file) return
     const reader = new FileReader()
@@ -656,283 +977,233 @@ export default function DashboardAdmin() {
     reader.readAsDataURL(file)
   }
 
-  const routeForKpi = (title: string) => {
-    switch (title) {
-      case 'Projets':
-      case 'Projets à risque':
-        return '/common/projects'
-      case 'Clients':
-        return '/admin/customers/list'
-      case 'Producteurs':
-        return '/admin/producers/list'
-      case 'Tickets':
-        return '/support'
-      case 'Factures':
-      case 'CA total':
-      case 'Encaissé':
-      case 'En attente':
-      case 'Factures en retard':
-        return '/admin/invoices'
-      default:
-        return null
-    }
-  }
-
+  /* ---- RENDER ---- */
   return (
     <Container>
-      <div className="space-y-6">
+      <div className="space-y-8 pb-10">
 
-        {/* PREMIUM BANNER 20x5 */}
-        <div
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"
-          style={{ aspectRatio: '4 / 1' }} // 20:5 = 4:1
-        >
+        {/* ══════════ HERO BANNER ══════════ */}
+        <div className="relative overflow-hidden rounded-3xl border border-white/[0.08]" style={{ aspectRatio: '4 / 1' }}>
           {bannerUrl ? (
-            <img src={bannerUrl} alt="Dashboard banner" className="h-full w-full object-cover opacity-95" />
+            <img src={bannerUrl} alt="Dashboard banner" className="h-full w-full object-cover" />
           ) : (
-            <div className="h-full w-full bg-gradient-to-r from-sky-500/15 via-white/0 to-emerald-500/10" />
+            <div className="h-full w-full bg-gradient-to-br from-cyan-600/20 via-violet-600/15 to-rose-600/10" />
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-black/0" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
 
-          <div className="absolute left-5 top-5">
-            <div className="text-white text-lg font-extrabold">Tableau de bord</div>
-            <div className="text-white/65 text-sm">Vue d’ensemble opérationnelle — {month}</div>
+          <div className="absolute left-6 bottom-6">
+            <h1 className="text-2xl font-black text-white tracking-tight">Tableau de bord</h1>
+            <p className="text-white/50 text-sm mt-1">Vue d'ensemble op\u00E9rationnelle \u2014 {dayjs().format('MMMM YYYY')}</p>
           </div>
 
-          <div className="absolute right-4 top-4 flex items-center gap-2">
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="bg-white/10 border border-white/15 text-white/85 px-3 py-2 rounded-xl outline-none"
+          <div className="absolute right-5 top-5 flex items-center gap-2">
+            <button
+              onClick={() => setRefreshTick(t => t + 1)}
+              className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-4 py-2 rounded-xl hover:bg-white/15 transition text-sm"
             >
-              <option>Mars 2026</option>
-              <option>Février 2026</option>
-              <option>Janvier 2026</option>
-            </select>
-
+              {loading ? 'Chargement...' : 'Rafra\u00EEchir'}
+            </button>
             <button
               onClick={onPickBanner}
-              className="bg-white/10 border border-white/15 text-white/85 px-3 py-2 rounded-xl hover:bg-white/15 transition"
-              title="Changer la bannière"
+              className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-4 py-2 rounded-xl hover:bg-white/15 transition text-sm"
             >
-              Changer
+              Banni\u00E8re
             </button>
-
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => onBannerFile(e.target.files?.[0] ?? null)}
-            />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onBannerFile(e.target.files?.[0] ?? null)} />
           </div>
 
-          <button
-            onClick={onPickBanner}
-            className="absolute bottom-4 right-4 text-xs text-white/70 hover:text-white transition"
-            title="Clique sur la bannière pour la changer"
-          >
-            Cliquer pour modifier la bannière →
-          </button>
+          {error && (
+            <div className="absolute left-6 top-5 text-xs text-rose-300 bg-rose-500/20 backdrop-blur-md px-3 py-1.5 rounded-lg border border-rose-500/20">{error}</div>
+          )}
         </div>
 
-        {/* STATUS */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-xs text-white/60">
-            {loading ? 'Chargement…' : null}
-            {error ? <span className="text-rose-300">{error}</span> : null}
-          </div>
-
-          <button
-            onClick={() => setRefreshTick((t) => t + 1)}
-            className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs text-white/75 hover:bg-white/[0.06] transition"
-          >
-            Rafraîchir
-          </button>
-        </div>
-
-        {/* KPI ROW 1 — Finances */}
+        {/* ══════════ KPI FINANCES ══════════ */}
         <div>
-          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Finances</div>
+          <SectionHeader title="Finances" subtitle="Suivi du chiffre d'affaires et de la tr\u00E9sorerie" />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <KPI title="CA total" value={eur(invoiceTotal)} icon="€" onClick={() => navigate(routeForKpi('CA total')!)} />
-            <KPI title="Encaissé" value={eur(invoicePaid)} icon="✅" variant="success" onClick={() => navigate(routeForKpi('Encaissé')!)} />
-            <KPI title="En attente" value={eur(invoicePending)} icon="⏳" variant={invoicePending > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('En attente')!)} />
-            <KPI
-              title="Marge brute"
-              value={eur(margeBrute)}
-              subtitle={`${margePct}% du CA`}
-              icon="📈"
-              variant={margePct >= 30 ? 'success' : margePct >= 15 ? 'warning' : 'danger'}
-            />
-            <KPI title="Factures en retard" value={String(overdueInvoices)} icon="🧾" variant={overdueInvoices > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Factures en retard')!)} />
+            <KPI title="CA total" value={eur(invoiceTotal)} icon="\u20AC" onClick={() => navigate('/admin/invoices')} sparkData={caSparkData} />
+            <KPI title="Encaiss\u00E9" value={eur(invoicePaid)} icon="\u2705" variant="success" onClick={() => navigate('/admin/invoices')} />
+            <KPI title="En attente" value={eur(invoicePending)} icon="\u23F3" variant={invoicePending > 0 ? 'warning' : 'default'} onClick={() => navigate('/admin/invoices')} />
+            <KPI title="Marge brute" value={eur(margeBrute)} subtitle={`${margePct}% du CA`} icon="\uD83D\uDCC8" variant={margePct >= 30 ? 'success' : margePct >= 15 ? 'warning' : 'danger'} sparkData={margeSparkData} />
+            <KPI title="Factures retard" value={String(overdueInvoices)} icon="\uD83E\uDDFE" variant={overdueInvoices > 0 ? 'danger' : 'default'} onClick={() => navigate('/admin/invoices')} />
           </div>
         </div>
 
-        {/* KPI ROW 2 — Opérations */}
+        {/* ══════════ KPI OPERATIONS ══════════ */}
         <div>
-          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Opérations</div>
+          <SectionHeader title="Op\u00E9rations" subtitle="Projets, commandes et support" />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <KPI title="Projets" value={String(projectsTotal)} icon="📦" onClick={() => navigate(routeForKpi('Projets')!)} />
-            <KPI title="Projets à risque" value={String(atRiskProjects)} icon="⚠️" variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate(routeForKpi('Projets à risque')!)} />
-            <KPI title="Commandes" value={String(orderItemsTotal)} icon="🛒" onClick={() => navigate('/admin/order-items')} />
-            <KPI title="Délai moyen" value={`${avgDeliveryDays}j`} subtitle="Livraison" icon="🕒" />
-            <KPI title="Tickets ouverts" value={String(openTickets)} icon="🎫" variant={openTickets > 0 ? 'warning' : 'default'} onClick={() => navigate(routeForKpi('Tickets')!)} />
+            <KPI title="Projets" value={String(projectsTotal)} icon="\uD83D\uDCE6" onClick={() => navigate('/common/projects')} />
+            <KPI title="Projets \u00E0 risque" value={String(atRiskProjects)} icon="\u26A0\uFE0F" variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate('/common/projects')} />
+            <KPI title="Commandes" value={String(orderItemsTotal)} icon="\uD83D\uDED2" onClick={() => navigate('/admin/order-items')} />
+            <KPI title="D\u00E9lai moyen" value={`${avgDeliveryDays}j`} subtitle="Livraison" icon="\uD83D\uDD52" />
+            <KPI title="Tickets ouverts" value={String(openTickets)} icon="\uD83C\uDFAB" variant={openTickets > 0 ? 'warning' : 'default'} onClick={() => navigate('/support')} />
           </div>
         </div>
 
-        {/* KPI ROW 3 — Entités */}
+        {/* ══════════ KPI ENTITIES ══════════ */}
         <div>
-          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Entités</div>
+          <SectionHeader title="Entit\u00E9s" subtitle="Clients, producteurs et transactions" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPI title="Clients" value={String(customersTotal)} icon="👥" onClick={() => navigate(routeForKpi('Clients')!)} />
-            <KPI title="Producteurs" value={String(producersTotal)} icon="🏭" onClick={() => navigate(routeForKpi('Producteurs')!)} />
-            <KPI title="Transactions" value={String(transactions.length)} subtitle={eur(totalCosts)} icon="💸" />
-            <KPI title="Tickets total" value={String(ticketsTotal)} icon="🎫" />
+            <KPI title="Clients" value={String(customersTotal)} icon="\uD83D\uDC65" onClick={() => navigate('/admin/customers/list')} />
+            <KPI title="Producteurs" value={String(producersTotal)} icon="\uD83C\uDFED" onClick={() => navigate('/admin/producers/list')} />
+            <KPI title="Transactions" value={String(transactions.length)} subtitle={eur(totalCosts)} icon="\uD83D\uDCB8" />
+            <KPI title="Tickets total" value={String(ticketsTotal)} icon="\uD83C\uDFAB" />
           </div>
         </div>
 
-        {/* CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Panel title="Chiffre d'affaires (6 mois)" subtitle="CA vs marge brute (CA − transactions)">
-            <BarsChart data={revenue6m} leftLabel="CA" rightLabel="Marge brute" />
-          </Panel>
-
-          <Panel
-            title="Pipeline"
-            subtitle="Répartition des projets par statut"
-            right={
-              <button
-                onClick={() => navigate('/common/projects')}
-                className="text-xs text-sky-300/80 hover:text-sky-200 transition"
-              >
-                Ouvrir projets →
-              </button>
-            }
-          >
-            <PipelineBars
-              items={pipeline}
-              onClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)}
+        {/* ══════════ CHARTS ROW ══════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Area chart - 2 cols */}
+          <GlassCard className="lg:col-span-2 p-6" glow="cyan">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 to-blue-600 opacity-60" />
+            <SectionHeader
+              title="Chiffre d'affaires"
+              subtitle="CA vs marge brute sur 6 mois"
             />
-          </Panel>
-        </div>
+            <AreaChart data={revenue6m} />
+          </GlassCard>
 
-        {/* AGENDA WIDGET */}
-        <div>
-          <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Agenda</div>
-          <CalendarWidget />
-        </div>
-
-        {/* BOTTOM ROW 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          <Panel title="Alertes" subtitle="Ce qui nécessite ton attention">
-            <div className="space-y-2 text-sm">
-              {overdueInvoices > 0 ? (
-                <div className="rounded-xl border border-rose-400/15 bg-rose-500/10 px-3 py-2 text-rose-200">
-                  {overdueInvoices} facture(s) en retard
-                  <div className="text-xs text-rose-200/70">Vérifie paymentState / date</div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/10 px-3 py-2 text-emerald-200">
-                  Aucune facture en retard
-                </div>
-              )}
-
-              {atRiskProjects > 0 ? (
-                <div className="rounded-xl border border-amber-400/15 bg-amber-500/10 px-3 py-2 text-amber-200">
-                  {atRiskProjects} projet(s) à risque
-                  <div className="text-xs text-amber-200/70">endDate dépassée et pas terminé</div>
-                </div>
-              ) : null}
-
-              {openTickets > 0 ? (
-                <div className="rounded-xl border border-sky-400/15 bg-sky-500/10 px-3 py-2 text-sky-200">
-                  {openTickets} ticket(s) ouverts
-                  <div className="text-xs text-sky-200/70">Support à traiter</div>
-                </div>
-              ) : null}
-
-              {upcomingDeadlines.length > 0 ? (
-                <div className="rounded-xl border border-amber-400/15 bg-amber-500/10 px-3 py-2 text-amber-200">
-                  {upcomingDeadlines.length} échéance(s) dans 14 jours
-                  <div className="text-xs text-amber-200/70">Voir panneau ci-dessous</div>
-                </div>
-              ) : null}
-            </div>
-          </Panel>
-
-          <Panel title="Top clients" subtitle="Par chiffre d'affaires facturé (top 6)">
-            <TableMini
-              rows={topClients.map((c) => ({
-                left: c.name,
-                right: eur(c.revenue),
-              }))}
-              onRowClick={() => navigate('/admin/customers/list')}
-            />
-          </Panel>
-
-          <Panel title="Top producteurs" subtitle="Basé sur les projets (top 6)">
-            <TableMini
-              rows={topProducers.map((p) => ({
-                left: p.name,
-                sub: `${p.projects} projet(s)`,
-                right: p.revenue ? eur(p.revenue) : '—',
-              }))}
-              onRowClick={() => navigate('/admin/producers/list')}
-            />
-          </Panel>
-
-        </div>
-
-        {/* BOTTOM ROW 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          <Panel
-            title="Échéances (14 jours)"
-            subtitle="Projets non terminés à venir"
-            right={
-              <button onClick={() => navigate('/common/projects')} className="text-xs text-sky-300/80 hover:text-sky-200 transition">
-                Tous →
-              </button>
-            }
-          >
-            {upcomingDeadlines.length === 0 ? (
-              <div className="text-xs text-white/45">Aucune échéance dans les 14 prochains jours.</div>
+          {/* Donut chart - tickets */}
+          <GlassCard className="p-6" glow="violet">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500 to-purple-600 opacity-60" />
+            <SectionHeader title="Tickets" subtitle={`${ticketsTotal} tickets au total`} />
+            {ticketsByState.length > 0 ? (
+              <DonutChart data={ticketsByState} centerValue={String(ticketsTotal)} centerLabel="total" size={160} thickness={20} />
             ) : (
-              <div className="divide-y divide-white/10">
-                {upcomingDeadlines.map((d: any, i: number) => (
-                  <div key={i} className="py-2 flex items-start justify-between gap-3">
+              <div className="text-xs text-white/30 text-center py-8">Aucun ticket</div>
+            )}
+          </GlassCard>
+        </div>
+
+        {/* ══════════ PIPELINE + ORDERS + TODO ══════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <GlassCard className="p-6" glow="cyan">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 to-blue-500 opacity-60" />
+            <SectionHeader
+              title="Pipeline"
+              subtitle="R\u00E9partition par statut"
+              right={<button onClick={() => navigate('/common/projects')} className="text-[11px] text-cyan-400/60 hover:text-cyan-300 transition">Ouvrir \u2192</button>}
+            />
+            <HorizontalBars items={pipeline} onClick={(label) => navigate(`/common/projects?state=${encodeURIComponent(label)}`)} />
+          </GlassCard>
+
+          <GlassCard className="p-6" glow="amber">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500 opacity-60" />
+            <SectionHeader title="Commandes par \u00E9tat" subtitle={`${orderItemsTotal} commandes au total`} />
+            {ordersByState.length > 0 ? (
+              <DonutChart data={ordersByState} centerValue={String(orderItemsTotal)} centerLabel="total" size={160} thickness={20} />
+            ) : (
+              <div className="text-xs text-white/30 text-center py-8">Aucune commande</div>
+            )}
+          </GlassCard>
+
+          <TodoListWidget />
+        </div>
+
+        {/* ══════════ CALENDAR + ALERTS ══════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CalendarMiniWidget />
+
+          <GlassCard className="p-6" glow="rose">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500 to-red-500 opacity-60" />
+            <SectionHeader title="Alertes" subtitle="Points d'attention" />
+            <div className="space-y-2">
+              {overdueInvoices > 0 ? (
+                <AlertCard variant="danger">{overdueInvoices} facture(s) en retard</AlertCard>
+              ) : (
+                <AlertCard variant="success">Aucune facture en retard</AlertCard>
+              )}
+              {atRiskProjects > 0 && <AlertCard variant="warning">{atRiskProjects} projet(s) \u00E0 risque \u2014 deadline d\u00E9pass\u00E9e</AlertCard>}
+              {openTickets > 0 && <AlertCard variant="info">{openTickets} ticket(s) ouvert(s) \u00E0 traiter</AlertCard>}
+              {upcomingDeadlines.length > 0 && <AlertCard variant="warning">{upcomingDeadlines.length} \u00E9ch\u00E9ance(s) dans 14 jours</AlertCard>}
+            </div>
+          </GlassCard>
+
+          {/* Deadlines */}
+          <GlassCard className="p-6" glow="amber">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 to-yellow-500 opacity-60" />
+            <SectionHeader
+              title="\u00C9ch\u00E9ances (14j)"
+              subtitle="Projets non termin\u00E9s"
+              right={<button onClick={() => navigate('/common/projects')} className="text-[11px] text-amber-400/60 hover:text-amber-300 transition">Tous \u2192</button>}
+            />
+            {upcomingDeadlines.length === 0 ? (
+              <div className="text-xs text-white/30 text-center py-4">Aucune \u00E9ch\u00E9ance prochaine</div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingDeadlines.map((d, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3 py-1.5">
                     <div className="min-w-0">
-                      <div className="text-sm text-white/85 truncate">{d.left}</div>
-                      <div className="text-xs text-white/50 truncate">{d.sub}</div>
+                      <div className="text-sm text-white/75 truncate">{d.left}</div>
+                      <div className="text-[11px] text-white/35 truncate">{d.sub}</div>
                     </div>
-                    <span className={['text-xs font-bold px-2 py-0.5 rounded-full shrink-0', d.urgent ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'].join(' ')}>
+                    <span className={['text-xs font-bold px-2.5 py-1 rounded-full shrink-0', d.urgent ? 'bg-rose-500/20 text-rose-300 shadow-sm shadow-rose-500/20' : 'bg-amber-500/15 text-amber-300'].join(' ')}>
                       {d.right}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-          </Panel>
-
-          <Panel title="Commandes par état" subtitle="Répartition des order items">
-            <PipelineBars items={ordersByState} />
-          </Panel>
-
-          <Panel title="Activité récente" subtitle="Projets & factures">
-            <TableMini
-              rows={activity.map((a) => ({
-                left: a.left,
-                sub: a.sub,
-                right: a.right,
-              }))}
-              onRowClick={() => {}}
-            />
-          </Panel>
-
+          </GlassCard>
         </div>
+
+        {/* ══════════ BOTTOM: TOP CLIENTS + PRODUCERS + ACTIVITY ══════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <GlassCard className="p-6" glow="emerald">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500 opacity-60" />
+            <SectionHeader
+              title="Top clients"
+              subtitle="Par CA factur\u00E9"
+              right={<button onClick={() => navigate('/admin/customers/list')} className="text-[11px] text-emerald-400/60 hover:text-emerald-300 transition">Voir tous \u2192</button>}
+            />
+            <div className="space-y-3">
+              {topClients.map((c, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-[10px] font-bold text-emerald-400 ring-1 ring-emerald-500/20">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-white/75 truncate">{c.name}</div>
+                  </div>
+                  <div className="text-sm font-semibold text-emerald-400/80">{eur(c.revenue)}</div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" glow="violet">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500 to-purple-500 opacity-60" />
+            <SectionHeader
+              title="Top producteurs"
+              subtitle="Par nombre de projets"
+              right={<button onClick={() => navigate('/admin/producers/list')} className="text-[11px] text-violet-400/60 hover:text-violet-300 transition">Voir tous \u2192</button>}
+            />
+            <div className="space-y-3">
+              {topProducers.map((p, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/10 text-[10px] font-bold text-violet-400 ring-1 ring-violet-500/20">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-white/75 truncate">{p.name}</div>
+                    <div className="text-[10px] text-white/30">{p.projects} projet(s)</div>
+                  </div>
+                  <div className="text-sm font-semibold text-violet-400/80">{p.revenue ? eur(p.revenue) : '\u2014'}</div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" glow="sky">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 to-blue-500 opacity-60" />
+            <SectionHeader title="Activit\u00E9 r\u00E9cente" subtitle="Projets & factures" />
+            <ActivityFeed items={activity} />
+          </GlassCard>
+        </div>
+
       </div>
     </Container>
   )
