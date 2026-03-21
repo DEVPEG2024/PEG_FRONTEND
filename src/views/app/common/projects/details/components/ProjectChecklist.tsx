@@ -40,6 +40,8 @@ const ProjectChecklist = () => {
   const dragIdx = useRef<number | null>(null);
   const dragOverIdx = useRef<number | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const itemsRef = useRef<ChecklistItem[]>(items);
+  itemsRef.current = items;
 
   // Load checklistItems + templates, then auto-apply if empty
   useEffect(() => {
@@ -164,32 +166,37 @@ const ProjectChecklist = () => {
   };
 
   // Drag & drop handlers
-  const handleDragStart = (index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIdx.current = index;
     setDraggingIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     if (dragIdx.current === null || dragIdx.current === index) return;
     if (dragOverIdx.current === index) return;
     dragOverIdx.current = index;
 
-    const next = [...items];
-    const [removed] = next.splice(dragIdx.current, 1);
-    next.splice(index, 0, removed);
-    dragIdx.current = index;
-    setItems(next);
+    setItems((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(dragIdx.current!, 1);
+      next.splice(index, 0, removed);
+      dragIdx.current = index;
+      return next;
+    });
   };
 
   const handleDragEnd = () => {
-    if (dragIdx.current !== null) {
-      // Save new order
-      saveItems([...items]);
-    }
+    setDraggingIdx(null);
+    const hadDrag = dragIdx.current !== null;
     dragIdx.current = null;
     dragOverIdx.current = null;
-    setDraggingIdx(null);
+    if (hadDrag) {
+      // Use ref to get latest items and save immediately
+      saveItems([...itemsRef.current]);
+    }
   };
 
   const doneCount = items.filter((i) => i.done).length;
@@ -364,7 +371,7 @@ const ProjectChecklist = () => {
                     <div
                       key={`${index}-${item.label}`}
                       draggable={canToggle}
-                      onDragStart={() => handleDragStart(index)}
+                      onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                       onClick={() => toggleItem(index)}
