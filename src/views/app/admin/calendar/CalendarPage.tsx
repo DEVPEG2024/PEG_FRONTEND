@@ -575,7 +575,7 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
                                             onClick={onEventClick}
                                             onDragBegin={onPointerDragStart}
                                             onResizeBegin={onResizeStart}
-                                            style={{ top, height, opacity: isDragging ? 0.3 : 1 }}
+                                            style={{ top, height, opacity: isDragging ? 0.3 : 1, pointerEvents: isDragging ? 'none' : 'auto' }}
                                         />
                                     )
                                 })}
@@ -650,7 +650,7 @@ function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, 
                                     onClick={onEventClick}
                                     onDragBegin={onPointerDragStart}
                                     onResizeBegin={onResizeStart}
-                                    style={{ top, height, left: '0.5rem', right: '0.5rem', opacity: isDragging ? 0.3 : 1 }}
+                                    style={{ top, height, left: '0.5rem', right: '0.5rem', opacity: isDragging ? 0.3 : 1, pointerEvents: isDragging ? 'none' : 'auto' }}
                                 />
                             )
                         })}
