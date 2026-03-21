@@ -80,7 +80,18 @@ const REMINDER_OPTIONS = [
     { value: 1440, label: '1 jour avant' },
 ]
 
-const getCat = (v: CalendarEventCategory) => CATEGORIES.find((c) => c.value === v)!
+/** Map legacy category names (with accents) to new enum values */
+const normalizeCat = (v: string): CalendarEventCategory => {
+    const map: Record<string, CalendarEventCategory> = {
+        'réunion': 'reunion', 'reunion': 'reunion',
+        'production': 'production', 'livraison': 'livraison', 'autre': 'autre',
+    }
+    return map[v] ?? 'autre'
+}
+
+const DEFAULT_CAT = CATEGORIES[3] // 'autre'
+const getCat = (v: CalendarEventCategory | string) =>
+    CATEGORIES.find((c) => c.value === v) ?? CATEGORIES.find((c) => c.value === normalizeCat(v)) ?? DEFAULT_CAT
 
 const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -230,7 +241,7 @@ function scheduleNotification(event: CalEvent) {
     if (event.reminderMinutes <= 0) return
     if (!('Notification' in window)) return
 
-    if (Notification.permission === 'default') {
+    if (window.Notification.permission === 'default') {
         window.Notification.requestPermission()
     }
 
@@ -359,16 +370,42 @@ function DraggableEvent({ event, onClick, onDragStart, onResizeStart, style }: {
     style: React.CSSProperties
 }) {
     const cat = getCat(event.category)
+    const pointerStart = useRef<{ x: number; y: number; didDrag: boolean } | null>(null)
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if ((e.target as HTMLElement).dataset.resize) return
+        e.stopPropagation()
+        e.preventDefault()
+        pointerStart.current = { x: e.clientX, y: e.clientY, didDrag: false }
+
+        const onMove = (me: PointerEvent) => {
+            if (!pointerStart.current) return
+            const dx = me.clientX - pointerStart.current.x
+            const dy = me.clientY - pointerStart.current.y
+            if (!pointerStart.current.didDrag && Math.abs(dx) + Math.abs(dy) > 5) {
+                pointerStart.current.didDrag = true
+                onDragStart(e, event, 'move')
+            }
+        }
+
+        const onUp = () => {
+            document.removeEventListener('pointermove', onMove)
+            document.removeEventListener('pointerup', onUp)
+            if (pointerStart.current && !pointerStart.current.didDrag) {
+                onClick(event)
+            }
+            pointerStart.current = null
+        }
+
+        document.addEventListener('pointermove', onMove)
+        document.addEventListener('pointerup', onUp)
+    }
+
     return (
         <div
             className={`absolute left-0.5 right-0.5 rounded-lg px-2 py-1 text-left ${cat.bg} ${cat.color} shadow-sm hover:shadow-md transition-shadow z-10 overflow-hidden cursor-grab active:cursor-grabbing select-none group`}
             style={style}
-            onPointerDown={(e) => {
-                if ((e.target as HTMLElement).dataset.resize) return
-                e.stopPropagation()
-                onDragStart(e, event, 'move')
-            }}
-            onClick={(e) => { e.stopPropagation(); onClick(event) }}
+            onPointerDown={handlePointerDown}
         >
             <div className="text-[11px] font-semibold truncate flex items-center gap-1">
                 {event.title}
@@ -990,6 +1027,7 @@ const CalendarPage = () => {
                         ...e,
                         start: dayjs(e.start),
                         end: dayjs(e.end),
+                        category: normalizeCat(e.category || 'autre'),
                         recurrence: e.recurrence || 'none',
                         reminderMinutes: e.reminderMinutes || 0,
                         isSynced: false,
