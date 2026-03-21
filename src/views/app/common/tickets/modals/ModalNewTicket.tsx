@@ -60,7 +60,7 @@ function ModalNewTicket() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Priorité</p>
               <Select
                 placeholder="Priorité"
                 options={ticketPriorityData}
@@ -71,7 +71,7 @@ function ModalNewTicket() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Type du ticket</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Type du ticket</p>
               <Select
                 placeholder="Type du ticket"
                 options={ticketTypeData}

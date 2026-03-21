@@ -72,7 +72,7 @@ function ModalNewTask() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Priorité</p>
               <Select
                 placeholder="Priorité"
                 options={priorityData}
@@ -83,7 +83,7 @@ function ModalNewTask() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Statut</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
                 options={statsDataTask}
@@ -96,7 +96,7 @@ function ModalNewTask() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Date de début</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Date de début</p>
               <DatePicker
                 placeholder="Date de début"
                 value={dayjs(formData.startDate).toDate()}
@@ -108,7 +108,7 @@ function ModalNewTask() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Date de fin</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Date de fin</p>
               <DatePicker
                 placeholder="Date de fin"
                 value={dayjs(formData.endDate).toDate()}

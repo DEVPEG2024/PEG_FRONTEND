@@ -149,7 +149,7 @@ function ModalNewProject() {
           />
           <div className="flex flex-row gap-2 mt-4">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">Montant du projet</p>
+              <p className="text-sm text-white/50">Montant du projet</p>
               <Input
                 type="number"
                 placeholder={t('projects.amount')}
@@ -160,7 +160,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">Commission du producteur</p>
+              <p className="text-sm text-white/50">Commission du producteur</p>
               <Input
                 type="number"
                 placeholder={t('projects.producerPrice')}
@@ -174,7 +174,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">
+              <p className="text-sm text-white/50">
                 Montant payé par le client
               </p>
               <Input
@@ -190,7 +190,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200">
+              <p className="text-sm text-white/50">
                 Montant payé au producteur
               </p>
               <Input
@@ -208,7 +208,7 @@ function ModalNewProject() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-4/12">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {t('projects.selectCustomer')}
               </p>
               <Select
@@ -222,7 +222,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-6/12">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {t('projects.selectProducer')}
               </p>
               <Select
@@ -236,7 +236,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-2/12">
-              <span className="text-sm text-gray-200 mb-2 mt-4">
+              <span className="text-sm text-white/50 mb-2 mt-4">
                 Dans la piscine
               </span>
               <Switcher
@@ -250,7 +250,7 @@ function ModalNewProject() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Priorité</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Priorité</p>
               <Select
                 placeholder="Priorité"
                 options={priorityData}
@@ -261,7 +261,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Statut</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
                 options={stateData}
@@ -274,7 +274,7 @@ function ModalNewProject() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {t('projects.projectStartDate')}
               </p>
               <DatePicker
@@ -288,7 +288,7 @@ function ModalNewProject() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {t('projects.projectEndDate')}
               </p>
               <DatePicker

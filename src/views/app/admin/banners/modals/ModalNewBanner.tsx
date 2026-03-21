@@ -114,7 +114,7 @@ function ModalNewBanner() {
               />
             </div>
             <div className="flex justify-center items-center mt-4 w-1/4 gap-2">
-              <span className="text-sm text-gray-200">Active</span>
+              <span className="text-sm text-white/50">Active</span>
               <Switcher
                 checked={formData.active}
                 onChange={(e: any) => {
@@ -128,7 +128,7 @@ function ModalNewBanner() {
           </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Client</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Client</p>
               <Select
                 isClearable={true}
                 placeholder="Client"
@@ -140,7 +140,7 @@ function ModalNewBanner() {
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 Catégorie client
               </p>
               <Select

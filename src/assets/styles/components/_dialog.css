@@ -28,16 +28,56 @@
 }
 
 .dialog-content {
-  @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-gray-800;
+  @apply p-6 rounded-2xl shadow-xl sm:my-16 relative h-full border border-white/[0.08];
+  background: linear-gradient(to bottom right, #16263d, #0f1c2e);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dialog-content h1,
+.dialog-content h2,
+.dialog-content h3,
+.dialog-content h4,
+.dialog-content h5,
+.dialog-content h6 {
+  color: #fff;
+}
+
+.dialog-content p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dialog-content .close-btn {
+  color: rgba(255, 255, 255, 0.4);
+}
+.dialog-content .close-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .dialog-formbuilder {
   @apply p-6 rounded-lg shadow-xl sm:my-16 relative h-full bg-white dark:bg-white max-h-[90vh] overflow-y-auto;
+  color: inherit;
+}
+
+.dialog-formbuilder h1,
+.dialog-formbuilder h2,
+.dialog-formbuilder h3,
+.dialog-formbuilder h4,
+.dialog-formbuilder h5,
+.dialog-formbuilder h6 {
+  color: inherit;
+}
+
+.dialog-formbuilder p {
+  color: inherit;
+}
+
+.dialog-formbuilder .close-btn {
+  color: inherit;
 }
 
 .dialog-overlay {
   transition: all 0.15s ease-in-out;
-  @apply bg-black/60 dark:bg-black/80 inset-0 fixed z-30;
+  @apply bg-black/60 dark:bg-black/80 inset-0 fixed z-30 backdrop-blur-sm;
 }
 
 .dialog-overlay-after-open {

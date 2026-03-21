@@ -88,7 +88,7 @@ function ModalEditInvoice({
 
           <div className="flex flex-row gap-2">
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">Statut</p>
+              <p className="text-sm text-white/50 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
                 options={
@@ -104,7 +104,7 @@ function ModalEditInvoice({
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {"Date d'émission"}
               </p>
               <DatePicker
@@ -121,7 +121,7 @@ function ModalEditInvoice({
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 {"Date d'échéance"}
               </p>
               <DatePicker
@@ -136,7 +136,7 @@ function ModalEditInvoice({
             </div>
 
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 Mode de paiement
               </p>
               <Select
@@ -152,7 +152,7 @@ function ModalEditInvoice({
               />
             </div>
             <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-gray-200 mb-2 mt-4">
+              <p className="text-sm text-white/50 mb-2 mt-4">
                 Statut de paiement
               </p>
               <Select
@@ -176,7 +176,7 @@ function ModalEditInvoice({
 
             {formData.paymentState === 'fulfilled' && (
               <div className="flex flex-col gap-2 w-1/2">
-                <p className="text-sm text-gray-200 mb-2 mt-4">
+                <p className="text-sm text-white/50 mb-2 mt-4">
                   Date de paiement
                 </p>
                 <DatePicker
@@ -196,27 +196,27 @@ function ModalEditInvoice({
           </div>
           <div className="grid grid-cols-12 gap-2 mt-4">
             <div className="flex justify-start items-center gap-2 mt-4 col-span-8">
-              <span className="text-sm text-gray-200">TVA</span>
+              <span className="text-sm text-white/50">TVA</span>
               <Switcher
                 checked={vatEnabled}
                 onChange={() => handleVATToggle(!vatEnabled)}
               />
             </div>
             <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
-              <span className="text-sm text-gray-200">Sous-total: </span>
-              <span className="text-sm text-gray-200">
+              <span className="text-sm text-white/50">Sous-total: </span>
+              <span className="text-sm text-white/50">
                 TVA ({vatEnabled ? VAT_AMOUNT : 0}%):{' '}
               </span>
-              <span className="text-sm text-gray-200">Total:</span>
+              <span className="text-sm text-white/50">Total:</span>
             </div>
             <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
-              <span className="text-sm text-gray-200">
+              <span className="text-sm text-white/50">
                 {formData.amount.toFixed(2)} €
               </span>
-              <span className="text-sm text-gray-200">
+              <span className="text-sm text-white/50">
                 {formData.vatAmount.toFixed(2)} €
               </span>
-              <span className="text-sm text-gray-200">
+              <span className="text-sm text-white/50">
                 {formData.totalAmount.toFixed(2)} €
               </span>
             </div>

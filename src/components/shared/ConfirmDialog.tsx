@@ -106,7 +106,7 @@ const ConfirmDialog = (props: ConfirmDialogProps) => {
                     {children}
                 </div>
             </div>
-            <div className="text-right px-6 py-3 bg-gray-100 dark:bg-gray-700 rounded-bl-lg rounded-br-lg">
+            <div className="text-right px-6 py-3 bg-white/5 rounded-bl-2xl rounded-br-2xl border-t border-white/[0.06]">
                 <Button
                     size="sm"
                     className="ltr:mr-2 rtl:ml-2"

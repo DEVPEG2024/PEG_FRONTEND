@@ -64,7 +64,7 @@ function ModalPayProducer({
             }}
           />
           <div className="mt-4">
-            <p className="text-sm text-gray-200 mb-2">Type de paiement</p>
+            <p className="text-sm text-white/50 mb-2">Type de paiement</p>
             <Select
               placeholder="Type de paiement"
               options={paymentProducerProjectTypes}

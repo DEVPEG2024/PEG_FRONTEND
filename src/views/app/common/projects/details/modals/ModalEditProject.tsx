@@ -123,7 +123,7 @@ function ModalEditProject() {
       isOpen={editCurrentProjectDialog}
       onClose={handleClose}
       width={720}
-      contentClassName="!p-0 !rounded-2xl !border !border-[rgba(255,255,255,0.08)] !bg-gradient-to-br !from-[#16263d] !to-[#0f1c2e]"
+      contentClassName="!p-0"
     >
       <div style={{ fontFamily: 'Inter, sans-serif', padding: '28px 32px', maxHeight: '80vh', overflowY: 'auto' }}>
         {/* Header */}

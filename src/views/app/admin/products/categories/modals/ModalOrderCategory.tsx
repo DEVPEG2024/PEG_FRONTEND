@@ -151,9 +151,9 @@ function ModalOrderCategory({
         width={650}
       >
         <div className="flex flex-col h-full justify-between">
-          <div className="border-b border-gray-200 pb-4 mb-6">
-            <h4 className="text-lg font-semibold text-gray-800">{title}</h4>
-            <p className="text-sm text-gray-500 mt-1">
+          <div className="border-b border-white/10 pb-4 mb-6">
+            <h4 className="text-lg font-semibold text-white">{title}</h4>
+            <p className="text-sm text-white/50 mt-1">
               {t(
                 'cat.orderInstructions',
                 'Utilisez les flèches pour réorganiser les catégories ou glisser-déposer'
@@ -191,7 +191,7 @@ function ModalOrderCategory({
                                 snapshot
                               )}
                               className={classNames(
-                                'flex items-center justify-between p-3 mb-3 bg-white border border-gray-200 rounded-md hover:bg-gray-50 order-category-item',
+                                'flex items-center justify-between p-3 mb-3 bg-white/5 border border-white/10 rounded-md hover:bg-white/10 order-category-item',
                                 {
                                   'moved-up':
                                     lastMovedIndex === index &&
@@ -199,7 +199,7 @@ function ModalOrderCategory({
                                   'moved-down':
                                     lastMovedIndex === index &&
                                     moveDirection === 'down',
-                                  'shadow-md bg-gray-50 z-50 drag-item-clone':
+                                  'shadow-md bg-white/10 z-50 drag-item-clone':
                                     snapshot.isDragging,
                                 }
                               )}
@@ -210,11 +210,11 @@ function ModalOrderCategory({
                                 className="flex items-center flex-1 min-w-0 cursor-grab"
                                 {...provided.dragHandleProps}
                               >
-                                <div className="order-number mr-3 shrink-0">
+                                <div className="order-number mr-3 shrink-0 text-white/60">
                                   {index + 1}
                                 </div>
                                 {category.image && (
-                                  <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden mr-3 shrink-0 bg-gray-50">
+                                  <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden mr-3 shrink-0 bg-white/5">
                                     <img
                                       src={category.image.url}
                                       alt={category.name}
@@ -226,7 +226,7 @@ function ModalOrderCategory({
                                     />
                                   </div>
                                 )}
-                                <span className="font-medium text-gray-800 truncate">
+                                <span className="font-medium text-white truncate">
                                   {category.name}
                                 </span>
                               </div>
@@ -237,9 +237,9 @@ function ModalOrderCategory({
                                   className={classNames(
                                     'p-2 rounded-md arrow-button',
                                     {
-                                      'text-gray-300 cursor-not-allowed':
+                                      'text-white/20 cursor-not-allowed':
                                         index === 0,
-                                      'text-gray-700': index !== 0,
+                                      'text-white/70': index !== 0,
                                     }
                                   )}
                                   title={t('moveUp', 'Move up')}
@@ -255,9 +255,9 @@ function ModalOrderCategory({
                                   className={classNames(
                                     'p-2 rounded-md arrow-button',
                                     {
-                                      'text-gray-300 cursor-not-allowed':
+                                      'text-white/20 cursor-not-allowed':
                                         index === orderedCategories.length - 1,
-                                      'text-gray-700':
+                                      'text-white/70':
                                         index !== orderedCategories.length - 1,
                                     }
                                   )}
@@ -276,16 +276,16 @@ function ModalOrderCategory({
                   )}
                 </StrictModeDroppable>
                 {orderedCategories.length === 0 && !loading && (
-                  <div className="empty-list-container">
+                  <div className="empty-list-container text-white/40">
                     <BsInboxFill size={40} className="mb-3" />
-                    <p>
+                    <p className="text-white/40">
                       {t('cat.noCategories', 'Aucune catégorie à réorganiser')}
                     </p>
                   </div>
                 )}
               </div>
             </DragDropContext>
-            <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-end mt-6 pt-4 border-t border-white/[0.06]">
               <Button
                 className="mr-2"
                 variant="plain"
