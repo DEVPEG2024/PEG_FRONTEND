@@ -36,4 +36,5 @@ export type Producer = {
   priceRange: PriceRange | null;
   volumeDiscountAvailable: boolean | null;
   volumeDiscountRate: number | null;
+  active: boolean;
 }

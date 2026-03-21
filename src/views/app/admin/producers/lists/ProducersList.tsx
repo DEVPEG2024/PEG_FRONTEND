@@ -1,8 +1,9 @@
 import { Container } from '@/components/shared';
+import { Switcher } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { injectReducer, useAppDispatch } from '@/store';
-import reducer, { getProducers, deleteProducer, useAppSelector } from '../store';
+import reducer, { getProducers, deleteProducer, toggleProducerActive, useAppSelector } from '../store';
 import { Producer } from '@/@types/producer';
 import { PRODUCERS_NEW } from '@/constants/navigation.constant';
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiOfficeBuilding, HiMail } from 'react-icons/hi';
@@ -75,9 +76,9 @@ const ProducersList = () => {
             const name = p?.name ?? '?'
             return (
               <div key={p.documentId}
-                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: `1.5px solid ${p.active === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s', opacity: p.active === false ? 0.7 : 1 }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = p.active === false ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.14)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = p.active === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)')}
               >
                 <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: avatarColor(name), border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{initials(name)}</span>
@@ -87,6 +88,9 @@ const ProducersList = () => {
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{name}</span>
                     {p?.producerCategory?.name && (
                       <span style={{ background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#6b9eff', fontSize: '11px', fontWeight: 600 }}>{p.producerCategory.name}</span>
+                    )}
+                    {p.active === false && (
+                      <span style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '100px', padding: '1px 8px', color: '#f87171', fontSize: '11px', fontWeight: 600 }}>Inactif</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -98,6 +102,10 @@ const ProducersList = () => {
                     )}
                   </div>
                 </div>
+                <Switcher
+                  checked={p.active !== false}
+                  onChange={() => dispatch(toggleProducerActive({ documentId: p.documentId, active: p.active === false }))}
+                />
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <Btn onClick={() => navigate(`/admin/producers/edit/${p.documentId}`, { state: { producerData: p } })} icon={<HiPencil size={14} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
                   <Btn onClick={() => dispatch(deleteProducer(p.documentId))} icon={<HiTrash size={14} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" />

@@ -22,6 +22,7 @@ export async function apiGetProducers(data: GetProducersRequest = {pagination: {
             nodes {
                 documentId
                 name
+                active
                 producerCategory {
                     documentId
                     name
@@ -138,6 +139,7 @@ export async function apiCreateProducer(data: CreateProducerRequest): Promise<Ax
         createProducer(data: $data) {
             documentId
             name
+            active
             producerCategory {
                 documentId
                 name
@@ -165,6 +167,7 @@ export async function apiUpdateProducer(producer: Partial<Producer>): Promise<Ax
         updateProducer(documentId: $documentId, data: $data) {
             documentId
             name
+            active
             producerCategory {
                 documentId
                 name

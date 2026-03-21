@@ -5,6 +5,7 @@ import {
   apiDeleteProducer,
   apiGetProducerForEditById,
   apiGetProducers,
+  apiUpdateProducer,
   DeleteProducerResponse,
   GetProducersRequest,
   GetProducersResponse,
@@ -45,6 +46,16 @@ export const getProducerById = createAsyncThunk(
   }
 );
 
+export const toggleProducerActive = createAsyncThunk(
+  SLICE_NAME + '/toggleProducerActive',
+  async ({ documentId, active }: { documentId: string; active: boolean }): Promise<Producer> => {
+    const { updateProducer }: { updateProducer: Producer } = await unwrapData(
+      apiUpdateProducer({ documentId, active })
+    );
+    return updateProducer;
+  }
+);
+
 export const deleteProducer = createAsyncThunk(
   SLICE_NAME + '/deleteProducer',
   async (documentId: string): Promise<DeleteProducerResponse> => {
@@ -82,6 +93,16 @@ const producersSlice = createSlice({
           producer.documentId !== action.payload.documentId
       );
       state.total -= 1;
+    });
+
+    // TOGGLE ACTIVE
+    builder.addCase(toggleProducerActive.fulfilled, (state, action) => {
+      const idx = state.producers.findIndex(
+        (p) => p.documentId === action.payload.documentId
+      );
+      if (idx !== -1) {
+        state.producers[idx].active = action.payload.active;
+      }
     });
 
     builder.addCase(getProducerById.pending, (state) => {
