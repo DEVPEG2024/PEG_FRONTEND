@@ -8,6 +8,7 @@ const statusColorData: Record<string, string> = {
   fulfilled: 'bg-green-100 text-green-700',
   waiting: 'bg-yellow-100 text-yellow-700',
   canceled: 'bg-red-100 text-red-700',
+  sav: 'bg-orange-100 text-orange-700',
 }
 
 const statusTextData: Record<string, string> = {
@@ -15,6 +16,7 @@ const statusTextData: Record<string, string> = {
   fulfilled: 'Terminé',
   waiting: 'En attente',
   canceled: 'Annulé',
+  sav: 'SAV',
 }
 
 type RecentProjectsProps = {

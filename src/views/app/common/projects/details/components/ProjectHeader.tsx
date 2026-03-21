@@ -17,6 +17,7 @@ const statusOptions = [
   { value: 'fulfilled', label: 'Terminé',     color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'  },
   { value: 'waiting',   label: 'En attente',  color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'  },
   { value: 'canceled',  label: 'Annulé',      color: '#f87171', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'  },
+  { value: 'sav',       label: 'SAV',         color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
 ];
 
 const ProjectHeader = ({ project }: { project: Project }) => {

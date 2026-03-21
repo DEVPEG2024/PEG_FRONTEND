@@ -60,6 +60,7 @@ const statusTabs = [
   { key: 'fulfilled', label: 'Terminé',     color: '#4ade80',               bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'   },
   { key: 'waiting',   label: 'En attente',  color: '#fbbf24',               bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'   },
   { key: 'canceled',  label: 'Annulé',      color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
+  { key: 'sav',       label: 'SAV',         color: '#fb923c',               bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)'  },
 ];
 
 const priorityStyles: Record<string, { label: string; color: string }> = {
@@ -73,6 +74,7 @@ const statusLabelStyles: Record<string, { label: string; color: string }> = {
   fulfilled: { label: 'Terminé',    color: '#4ade80' },
   waiting:   { label: 'En attente', color: '#fbbf24' },
   canceled:  { label: 'Annulé',     color: '#f87171' },
+  sav:       { label: 'SAV',        color: '#fb923c' },
 };
 
 function getProjectProgress(project: Project): number {

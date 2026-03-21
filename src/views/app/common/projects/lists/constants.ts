@@ -11,18 +11,21 @@ export const statusColorData = {
   fulfilled: 'bg-green-500',
   waiting: 'bg-yellow-500',
   canceled: 'bg-red-500',
+  sav: 'bg-orange-500',
 };
 export const statusColorText = {
   pending: 'text-blue-500',
   fulfilled: 'text-green-500',
   waiting: 'text-yellow-500',
   canceled: 'text-red-500',
+  sav: 'text-orange-500',
 };
 export const statusTextData = {
   pending: 'En cours',
   fulfilled: 'Terminé',
   waiting: 'En attente',
   canceled: 'Annulé',
+  sav: 'SAV',
 };
 
 export const priorityColorData = {
@@ -66,6 +69,10 @@ export const stateData = [
   {
     value: 'canceled',
     label: 'Annulé',
+  },
+  {
+    value: 'sav',
+    label: 'SAV',
   },
 ];
 export const priorityData = [
