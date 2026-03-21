@@ -384,6 +384,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
 export type GetProjectsRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
+    statusFilter?: string;
   };
 
 export type GetProjectsResponse = {
@@ -393,8 +394,13 @@ export type GetProjectsResponse = {
 
 export async function apiGetProjects(data: GetProjectsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
     const query = `
-    query getProjects($searchTerm: String, $pagination: PaginationArg) {
-        projects_connection(filters: {name: {containsi: $searchTerm}}, pagination: $pagination) {
+    query getProjects($searchTerm: String, $pagination: PaginationArg, $statusFilter: String) {
+        projects_connection(filters: {
+            and: [
+                {name: {containsi: $searchTerm}},
+                {state: {containsi: $statusFilter}}
+            ]
+        }, pagination: $pagination) {
             nodes {
                 documentId
                 customer {
@@ -415,6 +421,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 }
                 poolable
                 price
+                priority
                 producer {
                     documentId
                     name
@@ -439,7 +446,9 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
     }
   `,
   variables = {
-    ...data
+    searchTerm: data.searchTerm,
+    pagination: data.pagination,
+    statusFilter: data.statusFilter || undefined,
   }
     return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
         url: API_GRAPHQL_URL,
@@ -456,11 +465,12 @@ export type GetCustomerProjectsRequest = {
     customerDocumentId: string;
     pagination: PaginationRequest;
     searchTerm: string;
+    statusFilter?: string;
   };
 
 export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = {customerDocumentId: '', pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
     const query = `
-    query getCustomerProjects($customerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+    query getCustomerProjects($customerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg, $statusFilter: String) {
         projects_connection (filters: {
             and: [
             {
@@ -470,6 +480,9 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
             },
             {
                 name: {containsi: $searchTerm}
+            },
+            {
+                state: {containsi: $statusFilter}
             }
             ]
             }, pagination: $pagination){
@@ -498,6 +511,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                     }
                 }
                 price
+                priority
                 producer {
                     documentId
                     name
@@ -520,7 +534,10 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
     }
   `,
   variables = {
-    ...data
+    customerDocumentId: data.customerDocumentId,
+    searchTerm: data.searchTerm,
+    pagination: data.pagination,
+    statusFilter: data.statusFilter || undefined,
   }
     return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
         url: API_GRAPHQL_URL,
@@ -537,11 +554,12 @@ export type GetProducerProjectsRequest = {
     producerDocumentId: string;
     pagination: PaginationRequest;
     searchTerm: string;
+    statusFilter?: string;
   };
 
 export async function apiGetProducerProjects(data: GetProducerProjectsRequest = {producerDocumentId: '', pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{projects_connection: GetProjectsResponse}>>> {
     const query = `
-    query getProducerProjects($producerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg) {
+    query getProducerProjects($producerDocumentId: ID!, $searchTerm: String, $pagination: PaginationArg, $statusFilter: String) {
         projects_connection (filters: {
             and: [
             {
@@ -551,6 +569,9 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
             },
             {
                 name: {containsi: $searchTerm}
+            },
+            {
+                state: {containsi: $statusFilter}
             }
             ]
             }, pagination: $pagination){
@@ -576,6 +597,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                         }
                     }
                 }
+                priority
                 producerPrice
                 startDate
                 state
@@ -595,7 +617,10 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
     }
   `,
   variables = {
-    ...data
+    producerDocumentId: data.producerDocumentId,
+    searchTerm: data.searchTerm,
+    pagination: data.pagination,
+    statusFilter: data.statusFilter || undefined,
   }
     return ApiService.fetchData<ApiResponse<{projects_connection: GetProjectsResponse}>>({
         url: API_GRAPHQL_URL,

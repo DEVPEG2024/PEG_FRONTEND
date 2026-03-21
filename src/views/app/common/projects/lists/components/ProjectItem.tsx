@@ -22,6 +22,12 @@ const statusStyles: Record<string, { label: string; color: string; bg: string; b
   canceled:  { label: 'Annulé',     color: '#f87171', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'  },
 };
 
+const priorityStyles: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  high:   { label: 'Urgent',  color: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)'  },
+  medium: { label: 'Moyen',   color: '#fbbf24', bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.3)'  },
+  low:    { label: 'Faible',  color: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.3)'  },
+};
+
 const ProjectItem = ({
   project,
   handleDeleteProject,
@@ -106,7 +112,7 @@ const ProjectItem = ({
 
         {/* Ligne 1 : statut + délai + dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{
               background: status.bg, border: `1px solid ${status.border}`,
               borderRadius: '100px', padding: '3px 10px',
@@ -114,6 +120,19 @@ const ProjectItem = ({
             }}>
               {status.label}
             </span>
+            {/* Priority badge */}
+            {(() => {
+              const p = priorityStyles[project.priority];
+              return p ? (
+                <span style={{
+                  background: p.bg, border: `1px solid ${p.border}`,
+                  borderRadius: '100px', padding: '3px 9px',
+                  color: p.color, fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em',
+                }}>
+                  {p.label}
+                </span>
+              ) : null;
+            })()}
             <div style={{
               display: 'flex', alignItems: 'center', gap: '4px',
               background: duration < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.06)',

@@ -37,20 +37,23 @@ export type GetProjectsRequest = {
   user: User;
   pagination: PaginationRequest;
   searchTerm: string;
+  statusFilter?: string;
 };
 
 export const getProjects = createAsyncThunk(
   SLICE_NAME + '/getProjects',
   async (data: GetProjectsRequest): Promise<GetProjectsResponse> => {
-    if (hasRole(data.user, [SUPER_ADMIN, ADMIN])) {
+    const { user, statusFilter, ...rest } = data;
+    const apiParams = { ...rest, statusFilter: statusFilter || undefined };
+    if (hasRole(user, [SUPER_ADMIN, ADMIN])) {
       const {
         projects_connection,
       }: { projects_connection: GetProjectsResponse } = await unwrapData(
-        apiGetProjects(data)
+        apiGetProjects(apiParams)
       );
       return projects_connection;
-    } else if (hasRole(data.user, [CUSTOMER])) {
-      const customerDocumentId = data.user.customer?.documentId;
+    } else if (hasRole(user, [CUSTOMER])) {
+      const customerDocumentId = user.customer?.documentId;
       if (!customerDocumentId) {
         return { nodes: [], pageInfo: { page: 1, pageCount: 1, pageSize: 0, total: 0 } };
       }
@@ -58,13 +61,13 @@ export const getProjects = createAsyncThunk(
         projects_connection,
       }: { projects_connection: GetProjectsResponse } = await unwrapData(
         apiGetCustomerProjects({
-          ...data,
+          ...apiParams,
           customerDocumentId,
         })
       );
       return projects_connection;
-    } else if (hasRole(data.user, [PRODUCER])) {
-      const producerDocumentId = data.user.producer?.documentId;
+    } else if (hasRole(user, [PRODUCER])) {
+      const producerDocumentId = user.producer?.documentId;
       if (!producerDocumentId) {
         return { nodes: [], pageInfo: { page: 1, pageCount: 1, pageSize: 0, total: 0 } };
       }
@@ -72,7 +75,7 @@ export const getProjects = createAsyncThunk(
         projects_connection,
       }: { projects_connection: GetProjectsResponse } = await unwrapData(
         apiGetProducerProjects({
-          ...data,
+          ...apiParams,
           producerDocumentId,
         })
       );

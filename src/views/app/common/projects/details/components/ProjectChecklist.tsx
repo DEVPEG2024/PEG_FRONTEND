@@ -5,15 +5,16 @@ import { useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
-import { useAppSelector, setChecklistPercent } from '../store';
+import { useAppSelector, setChecklistPercent, updateCurrentProject } from '../store';
 import { useAppDispatch } from '@/store';
 import { MdChecklist } from 'react-icons/md';
 import { HiCheck, HiChevronDown, HiTrash } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useEffect, useRef, useState } from 'react';
 import { apiGetChecklists } from '@/services/ChecklistServices';
-import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist } from '@/services/ProjectServices';
+import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist, apiUpdateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import { toast } from 'react-toastify';
 
 const ProjectChecklist = () => {
   const { project } = useAppSelector((state) => state.projectDetails.data);
@@ -101,6 +102,13 @@ const ProjectChecklist = () => {
     try {
       await apiUpdateProjectChecklistItems(project.documentId, newItems);
       setItems(newItems);
+
+      // Auto-pass project to "fulfilled" when all checklist items are done
+      const allDone = newItems.length > 0 && newItems.every((i) => i.done);
+      if (allDone && project.state !== 'fulfilled') {
+        await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'fulfilled' }));
+        toast.success('Checklist terminée — projet passé en "Terminé"');
+      }
     } finally {
       setSaving(false);
     }
