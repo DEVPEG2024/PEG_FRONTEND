@@ -36,6 +36,7 @@ export type ConversationSummary = {
 export type Message = {
   role: 'user' | 'assistant';
   content: string;
+  images?: string[];
 };
 
 export type ChatbotDocument = {

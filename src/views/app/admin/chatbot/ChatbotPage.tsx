@@ -559,16 +559,50 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`${EXPRESS_BACKEND_URL}/upload`, { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.fileUrl) {
+          setPendingImages((prev) => [...prev, data.fileUrl]);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removePendingImage = (idx: number) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const send = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: input.trim() };
+    if ((!input.trim() && pendingImages.length === 0) || loading) return;
+    const userMsg: Message = {
+      role: 'user',
+      content: input.trim(),
+      ...(pendingImages.length > 0 ? { images: [...pendingImages] } : {}),
+    };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput('');
+    setPendingImages([]);
     setLoading(true);
     try {
       const res = await apiTestChat(next);
@@ -641,6 +675,15 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
             }}>
+              {msg.images && msg.images.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: msg.content ? '8px' : 0 }}>
+                  {msg.images.map((url, idx) => (
+                    <a key={idx} href={url} target="_blank" rel="noreferrer">
+                      <img src={url} alt="" style={{ maxWidth: '180px', maxHeight: '140px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }} />
+                    </a>
+                  ))}
+                </div>
+              )}
               {msg.content}
             </div>
           </div>
@@ -658,8 +701,54 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
         <div ref={bottomRef} />
       </div>
 
+      {/* Pending images preview */}
+      {pendingImages.length > 0 && (
+        <div style={{ padding: '8px 16px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {pendingImages.map((url, idx) => (
+            <div key={idx} style={{ position: 'relative' }}>
+              <img src={url} alt="" style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }} />
+              <button
+                onClick={() => removePendingImage(idx)}
+                style={{
+                  position: 'absolute', top: '-6px', right: '-6px',
+                  width: '18px', height: '18px', borderRadius: '50%',
+                  background: '#ef4444', border: 'none', color: '#fff',
+                  fontSize: '10px', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '8px' }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleImageUpload}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '10px', color: uploading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)',
+            padding: '8px 10px',
+            cursor: uploading ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', flexShrink: 0,
+          }}
+          title="Joindre une image"
+        >
+          <MdImage size={18} />
+        </button>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -670,12 +759,12 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
         />
         <button
           onClick={send}
-          disabled={loading || !input.trim()}
+          disabled={loading || (!input.trim() && pendingImages.length === 0)}
           style={{
-            background: loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-            border: 'none', borderRadius: '10px', color: '#fff', padding: '0 14px',
-            cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center',
+            background: loading || (!input.trim() && pendingImages.length === 0) ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
+            border: 'none', borderRadius: '10px', color: '#fff', padding: '8px 14px',
+            cursor: loading || (!input.trim() && pendingImages.length === 0) ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', flexShrink: 0,
           }}
         >
           <MdSend size={18} />
