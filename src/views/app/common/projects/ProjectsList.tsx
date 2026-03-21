@@ -369,7 +369,9 @@ const ProjectsList = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  {['Projet', 'Client', 'Statut', 'Priorité', 'Progression', 'Échéance',
+                  {['Projet', 'Client', 'Statut',
+                    ...(isAdminOrSuperAdmin ? ['Priorité'] : []),
+                    'Progression', 'Échéance',
                     ...(isSuperAdmin ? ['Prix'] : []),
                     ...(hasRole(user, [PRODUCER]) ? ['Commission'] : []),
                   ].map((h) => (
@@ -421,16 +423,18 @@ const ProjectsList = () => {
                           {st.label}
                         </span>
                       </td>
-                      {/* Priorité */}
-                      <td style={{ padding: '12px 14px' }}>
-                        {pr ? (
-                          <span style={{
-                            color: pr.color, fontSize: '11px', fontWeight: 700,
-                          }}>
-                            {pr.label}
-                          </span>
-                        ) : '—'}
-                      </td>
+                      {/* Priorité — admin only */}
+                      {isAdminOrSuperAdmin && (
+                        <td style={{ padding: '12px 14px' }}>
+                          {pr ? (
+                            <span style={{
+                              color: pr.color, fontSize: '11px', fontWeight: 700,
+                            }}>
+                              {pr.label}
+                            </span>
+                          ) : '—'}
+                        </td>
+                      )}
                       {/* Progression */}
                       <td style={{ padding: '12px 14px', minWidth: '120px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

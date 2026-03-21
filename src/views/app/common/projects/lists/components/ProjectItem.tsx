@@ -120,8 +120,8 @@ const ProjectItem = ({
             }}>
               {status.label}
             </span>
-            {/* Priority badge */}
-            {(() => {
+            {/* Priority badge — admin only */}
+            {isSuperAdmin && (() => {
               const p = priorityStyles[project.priority];
               return p ? (
                 <span style={{

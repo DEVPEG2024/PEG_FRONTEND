@@ -165,18 +165,20 @@ const DetailsRight = () => {
         </span>
       </div>
 
-      {/* Priority badge */}
-      <div style={{ marginBottom: '16px' }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          background: priorityStyle.bg, border: `1px solid ${priorityStyle.border}`,
-          borderRadius: '100px', padding: '5px 12px',
-          color: priorityStyle.color, fontSize: '12px', fontWeight: 600,
-        }}>
-          <HiLightningBolt size={12} />
-          Priorité {priorityLabel[project.priority] ?? project.priority}
-        </span>
-      </div>
+      {/* Priority badge — admin only */}
+      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+        <div style={{ marginBottom: '16px' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: priorityStyle.bg, border: `1px solid ${priorityStyle.border}`,
+            borderRadius: '100px', padding: '5px 12px',
+            color: priorityStyle.color, fontSize: '12px', fontWeight: 600,
+          }}>
+            <HiLightningBolt size={12} />
+            Priorité {priorityLabel[project.priority] ?? project.priority}
+          </span>
+        </div>
+      )}
 
       <div style={sep} />
 
