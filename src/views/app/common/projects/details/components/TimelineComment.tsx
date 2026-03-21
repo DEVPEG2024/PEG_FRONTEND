@@ -19,6 +19,8 @@ import dayjs from 'dayjs';
 import ReactHtmlParser from 'html-react-parser';
 import { Comment } from '@/@types/project';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
+import { hasRole } from '@/utils/permissions';
+import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 
 type TimelineCommentProps = TimeLineItemProps & {
   comment: Comment;
@@ -67,7 +69,11 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
     }
   };
 
-  const vis = visibilityStyle[comment.visibility] ?? visibilityStyle.all;
+  const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const showDetailedVisibility = isAdmin || comment.visibility === 'all';
+  const vis = showDetailedVisibility
+    ? (visibilityStyle[comment.visibility] ?? visibilityStyle.all)
+    : { label: 'PEG', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)', border: 'rgba(47,111,237,0.25)' };
 
   return (
     <Timeline.Item
