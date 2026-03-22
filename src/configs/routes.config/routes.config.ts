@@ -263,6 +263,12 @@ const protectedCustomersRoutes = [
     component: lazy(() => import("@/views/app/customer/cart/Cancel")),
     authority: [CUSTOMER],
   },
+  {
+    key: "customer.files",
+    path: "/customer/files",
+    component: lazy(() => import("@/views/app/customer/files/MyFiles")),
+    authority: [CUSTOMER],
+  },
 ];
 const protectedProducerRoutes = [
   {

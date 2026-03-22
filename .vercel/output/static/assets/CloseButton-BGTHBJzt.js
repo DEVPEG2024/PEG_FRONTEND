@@ -1,0 +1,1 @@
+import{r,c as u,j as s,bg as b}from"./index-DDLlf-Qe.js";const m=r.forwardRef((t,o)=>{const{absolute:e,className:a,defaultStyle:l,...n}=t,c=u("close-btn",l&&"close-btn-default",e&&"absolute z-10",a);return s.jsx("span",{className:c,role:"button",...n,ref:o,children:s.jsx(b,{})})});m.displayName="CloseButton";export{m as C};

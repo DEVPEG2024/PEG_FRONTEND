@@ -4,6 +4,7 @@ import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
 import reducer, { getCustomerForEditById, updateCustomer, createCustomer } from '../store'
 import CustomerForm, { CustomerFormModel } from './CustomersForm/CustomerForm'
 import { apiGetCustomerCategories } from '@/services/CustomerCategoryServices'
+import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel'
 
 injectReducer('customers', reducer)
 
@@ -76,12 +77,19 @@ const EditCustomer = () => {
   }
 
   return (
-    <CustomerForm
-      initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
-      customerCategories={customerCategories}
-      onFormSubmit={handleSubmit}
-      onDiscard={handleDiscard}
-    />
+    <>
+      <CustomerForm
+        initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
+        customerCategories={customerCategories}
+        onFormSubmit={handleSubmit}
+        onDiscard={handleDiscard}
+      />
+      {isEdit && documentId && (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+          <ClientFilesPanel customerDocumentId={documentId} mode="admin" />
+        </div>
+      )}
+    </>
   )
 }
 

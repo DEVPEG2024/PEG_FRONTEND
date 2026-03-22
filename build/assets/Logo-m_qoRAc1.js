@@ -1,0 +1,1 @@
+import{j as s,a3 as c,c as r}from"./index-DDLlf-Qe.js";const n="/img/logo/",p=o=>{const{type:l="full",mode:t="light",className:a,imgClass:e,imgStyle:g,style:m,logoWidth:i="auto"}=o;return s.jsx("div",{className:r("logo",a),style:{...m,width:i},children:s.jsx("img",{className:e,style:g,src:`${n}logo-${t}-${l}.png`,alt:`${c} logo`})})};export{p as L};

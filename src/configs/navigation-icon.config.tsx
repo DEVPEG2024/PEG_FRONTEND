@@ -10,7 +10,7 @@ import { FiUsers } from "react-icons/fi";
 import { LuUsers } from "react-icons/lu";
 import { RiHomeSmile2Line, RiRobot2Line } from "react-icons/ri";
 import { PiStorefront } from "react-icons/pi";
-import { GoTasklist } from "react-icons/go";
+import { GoTasklist, GoFileDirectory } from "react-icons/go";
 import { SlSupport } from "react-icons/sl";
 import { MdOutlineWorkOutline } from "react-icons/md";
 import { GoPeople } from "react-icons/go";
@@ -48,6 +48,7 @@ const navigationIcon: NavigationIcons = {
     projects: <AiOutlineProject />,
     teams: <RiTeamLine />,
     invoices: <GoFileDiff />,
+    files: <GoFileDirectory />,
     mail: <MdOutlineMail />,
     banners: <PiFlagBannerBold />,
     pool: <PiSwimmingPoolBold />,

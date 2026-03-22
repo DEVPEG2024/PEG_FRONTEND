@@ -48,6 +48,16 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "customer.files",
+    path: "/customer/files",
+    title: "Mes fichiers",
+    translateKey: "nav.mesfichiers",
+    icon: "files",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [CUSTOMER],
+    subMenu: [],
+  },
+  {
     key: "customer.invoices",
     path: "/customer/invoices",
     title: "Mes factures",

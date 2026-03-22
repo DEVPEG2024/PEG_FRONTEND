@@ -8,7 +8,11 @@ import Tasks from './components/Tasks';
 import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
+import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
+import { useAppSelector as useRootAppSelector } from '@/store';
+import { hasRole } from '@/utils/permissions';
+import { PRODUCER } from '@/constants/roles.constant';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -34,15 +38,26 @@ const ProjectDetails = () => {
     };
   }, [dispatch, documentId]);
 
+  const { user } = useRootAppSelector((state) => state.auth.user);
+  const isProducer = hasRole(user, [PRODUCER]);
+  const customerDocId = project?.customer?.documentId;
+
   return (
     project && (
       <>
         <ProjectHeader project={project} />
         <Container className="h-full">
-          {/* <Board /> */}
           {selectedTab === 'Accueil' && <Summary project={project} />}
           {selectedTab === 'Commentaires' && <Comments />}
           {selectedTab === 'Fichiers' && <Files />}
+          {selectedTab === 'Fichiers client' && customerDocId && (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <ClientFilesPanel
+                customerDocumentId={customerDocId}
+                mode={isProducer ? 'producer' : 'admin'}
+              />
+            </div>
+          )}
           {selectedTab === 'Checklist' && <ProjectChecklist />}
           {selectedTab === 'BAT' && <ProjectBat />}
           {selectedTab === 'Factures' && <Invoices />}
