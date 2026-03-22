@@ -192,20 +192,22 @@ interface WidgetDef {
   label: string
   glow: 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet' | 'sky'
   accentGradient: string
+  /** Number of columns this widget spans in the 3-col grid */
+  span: 1 | 2
 }
 
 const WIDGET_DEFS: WidgetDef[] = [
-  { id: 'chart-ca', label: "Chiffre d'affaires", glow: 'cyan', accentGradient: 'from-cyan-500 to-blue-600' },
-  { id: 'chart-tickets', label: 'Tickets', glow: 'violet', accentGradient: 'from-violet-500 to-purple-600' },
-  { id: 'pipeline', label: 'Pipeline', glow: 'cyan', accentGradient: 'from-cyan-500 to-blue-500' },
-  { id: 'orders', label: 'Commandes', glow: 'amber', accentGradient: 'from-amber-500 to-orange-500' },
-  { id: 'todo', label: 'Pense-b\u00EAte', glow: 'violet', accentGradient: 'from-violet-500 to-purple-600' },
-  { id: 'calendar', label: 'Calendrier', glow: 'sky', accentGradient: 'from-sky-500 to-blue-600' },
-  { id: 'alerts', label: 'Alertes', glow: 'rose', accentGradient: 'from-rose-500 to-red-500' },
-  { id: 'deadlines', label: '\u00C9ch\u00E9ances', glow: 'amber', accentGradient: 'from-amber-500 to-yellow-500' },
-  { id: 'top-clients', label: 'Top clients', glow: 'emerald', accentGradient: 'from-emerald-500 to-teal-500' },
-  { id: 'top-producers', label: 'Top producteurs', glow: 'violet', accentGradient: 'from-violet-500 to-purple-500' },
-  { id: 'activity', label: 'Activit\u00E9 r\u00E9cente', glow: 'sky', accentGradient: 'from-sky-500 to-blue-500' },
+  { id: 'chart-ca', label: "Chiffre d'affaires", glow: 'cyan', accentGradient: 'from-cyan-500 to-blue-600', span: 2 },
+  { id: 'chart-tickets', label: 'Tickets', glow: 'violet', accentGradient: 'from-violet-500 to-purple-600', span: 1 },
+  { id: 'pipeline', label: 'Pipeline', glow: 'cyan', accentGradient: 'from-cyan-500 to-blue-500', span: 1 },
+  { id: 'orders', label: 'Commandes', glow: 'amber', accentGradient: 'from-amber-500 to-orange-500', span: 1 },
+  { id: 'todo', label: 'Pense-b\u00EAte', glow: 'violet', accentGradient: 'from-violet-500 to-purple-600', span: 1 },
+  { id: 'calendar', label: 'Calendrier', glow: 'sky', accentGradient: 'from-sky-500 to-blue-600', span: 1 },
+  { id: 'alerts', label: 'Alertes', glow: 'rose', accentGradient: 'from-rose-500 to-red-500', span: 1 },
+  { id: 'deadlines', label: '\u00C9ch\u00E9ances', glow: 'amber', accentGradient: 'from-amber-500 to-yellow-500', span: 1 },
+  { id: 'top-clients', label: 'Top clients', glow: 'emerald', accentGradient: 'from-emerald-500 to-teal-500', span: 1 },
+  { id: 'top-producers', label: 'Top producteurs', glow: 'violet', accentGradient: 'from-violet-500 to-purple-500', span: 1 },
+  { id: 'activity', label: 'Activit\u00E9 r\u00E9cente', glow: 'sky', accentGradient: 'from-sky-500 to-blue-500', span: 1 },
 ]
 
 const DEFAULT_LAYOUT: WidgetId[] = ['chart-ca', 'chart-tickets', 'pipeline', 'orders', 'todo', 'calendar', 'alerts', 'deadlines', 'top-clients', 'top-producers', 'activity']
@@ -370,10 +372,10 @@ export default function DashboardAdmin() {
     <div className="relative">
       <MeshBackground />
       <Container>
-        <div className="relative z-10 space-y-6 pb-10">
+        <div className="relative z-10 space-y-4 pb-8">
 
           {/* HERO BANNER */}
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative overflow-hidden rounded-3xl border border-white/[0.08] aspect-[4/1] md:aspect-[5/1]">
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative overflow-hidden rounded-3xl border border-white/[0.08] aspect-[5/1] md:aspect-[6/1]">
             {bannerUrl ? <img src={bannerUrl} alt="" className="h-full w-full object-cover" /> : <><div className="h-full w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" /><HeroIllustration /></>}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
@@ -402,9 +404,9 @@ export default function DashboardAdmin() {
               </div>
             } />
             {!dataReady ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={i} />)}</div> : (
-              <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <motion.div variants={fadeInUp} custom={0} className="md:col-span-2">
-                  <GlassCard onClick={() => navigate('/admin/invoices')} glow="cyan" className="h-full"><div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-90" /><div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none"><Sparkline data={caSparkData} color="#22d3ee" height={96} /></div><div className="relative p-6 md:p-8"><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-widest text-cyan-400/60 flex items-center gap-2"><HiOutlineLightningBolt className="w-3.5 h-3.5" />CA total</div><div className="mt-3 text-4xl md:text-5xl font-black text-white tracking-tight"><AnimatedValue value={invoiceTotal} format={eur} /></div><div className="flex items-center gap-3 mt-3"><DeltaBadge current={invoiceTotal} previous={caLastMonth} />{caLastMonth > 0 && <span className="text-xs text-white/35">vs mois pr\u00E9c.</span>}</div></div><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-500/25 shrink-0 text-cyan-400"><HiOutlineCurrencyEuro className="w-7 h-7" /></div></div></div></GlassCard>
+                  <GlassCard onClick={() => navigate('/admin/invoices')} glow="cyan" className="h-full"><div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-90" /><div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none"><Sparkline data={caSparkData} color="#22d3ee" height={96} /></div><div className="relative p-5 md:p-6"><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-widest text-cyan-400/60 flex items-center gap-2"><HiOutlineLightningBolt className="w-3.5 h-3.5" />CA total</div><div className="mt-2 text-3xl md:text-4xl font-black text-white tracking-tight"><AnimatedValue value={invoiceTotal} format={eur} /></div><div className="flex items-center gap-3 mt-3"><DeltaBadge current={invoiceTotal} previous={caLastMonth} />{caLastMonth > 0 && <span className="text-xs text-white/35">vs mois pr\u00E9c.</span>}</div></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-500/25 shrink-0 text-cyan-400"><HiOutlineCurrencyEuro className="w-6 h-6" /></div></div></div></GlassCard>
                 </motion.div>
                 <motion.div variants={fadeInUp} custom={1}><KPI title="Encaiss\u00E9" value={eur(invoicePaid)} icon={<HiOutlineCheckCircle className="w-5 h-5" />} variant="success" onClick={() => navigate('/admin/invoices')} delta={<DeltaBadge current={paidThisMonth} previous={paidLastMonth} />} /></motion.div>
                 <motion.div variants={fadeInUp} custom={2}>
@@ -416,7 +418,7 @@ export default function DashboardAdmin() {
 
           {/* OPERATIONS KPI (fixed) */}
           {dataReady && (
-            <AnimatedSection className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <AnimatedSection className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               <motion.div variants={fadeInUp} custom={0}><KPI title="Projets" value={String(projectsTotal)} icon={<HiOutlineCube className="w-5 h-5" />} onClick={() => navigate('/common/projects')} /></motion.div>
               <motion.div variants={fadeInUp} custom={1}><KPI title="Projets \u00E0 risque" value={String(atRiskProjects)} icon={<HiOutlineExclamation className="w-5 h-5" />} variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate('/common/projects')} /></motion.div>
               <motion.div variants={fadeInUp} custom={2}><KPI title="Commandes" value={String(orderItemsTotal)} icon={<HiOutlineShoppingCart className="w-5 h-5" />} onClick={() => navigate('/admin/order-items')} /></motion.div>
@@ -428,7 +430,7 @@ export default function DashboardAdmin() {
           {/* DRAGGABLE WIDGETS GRID */}
           {editMode && <div className="text-center text-xs text-cyan-400/60 bg-cyan-500/5 border border-cyan-500/10 rounded-xl py-2 px-4 flex items-center justify-center gap-2"><HiOutlineSelector className="w-4 h-4" />Glisse les widgets pour r\u00E9organiser ton dashboard</div>}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {widgetOrder.map((wid, index) => {
               const def = WIDGET_DEFS.find(w => w.id === wid)
               if (!def) return null
@@ -444,14 +446,14 @@ export default function DashboardAdmin() {
                   onDrop={editMode ? handleDrop(index) : undefined}
                   onDragEnd={editMode ? handleDragEnd : undefined}
                   className={[
-                    wid === 'chart-ca' ? 'lg:col-span-2' : '',
+                    def.span === 2 ? 'md:col-span-2' : '',
                     'transition-all duration-200',
-                    isDragging ? 'opacity-40 scale-95' : '',
-                    isOver ? 'scale-[1.02]' : '',
+                    isDragging ? 'opacity-40 scale-[0.97]' : '',
+                    isOver ? 'scale-[1.01]' : '',
                   ].join(' ')}
                 >
                   <GlassCard glow={def.glow} className={[
-                    'p-5 md:p-6',
+                    'p-4 md:p-5 h-full',
                     editMode ? 'ring-1 ring-cyan-500/20 cursor-grab active:cursor-grabbing' : '',
                     isOver ? 'ring-2 ring-cyan-400/50 shadow-2xl shadow-cyan-500/20' : '',
                   ].join(' ')}>
@@ -464,7 +466,7 @@ export default function DashboardAdmin() {
                       </div>
                     )}
 
-                    <div className={`relative ${editMode ? 'pt-6' : ''}`}>
+                    <div className={`relative ${editMode ? 'pt-5' : ''}`}>
                       {renderWidget(wid)}
                     </div>
                   </GlassCard>
