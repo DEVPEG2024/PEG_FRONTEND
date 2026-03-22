@@ -39,7 +39,7 @@ const navigationProducteur: NavigationTree[] = [
   {
     key: "producer.wallet",
     path: "/producer/wallet",
-    title: "Mon Wallet",
+    title: "Mon wallet",
     translateKey: "nav.wallet",
     icon: "wallet",
     type: NAV_ITEM_TYPE_ITEM,
@@ -49,7 +49,7 @@ const navigationProducteur: NavigationTree[] = [
   {
     key: "producer.support",
     path: "/support",
-    title: "Support",
+    title: "Tickets",
     translateKey: "nav.support",
     icon: "support",
     type: NAV_ITEM_TYPE_ITEM,
@@ -59,7 +59,7 @@ const navigationProducteur: NavigationTree[] = [
   {
     key: "producer.settings",
     path: "/settings/profile",
-    title: "PARAMÈTRES",
+    title: "Paramètres",
     translateKey: "nav.settings",
     icon: "settings",
     type: NAV_ITEM_TYPE_ITEM,

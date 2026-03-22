@@ -10,7 +10,7 @@ const navigationAdmin: NavigationTree[] = [
   {
     key: "admin.home",
     path: "/home",
-    title: "ACCUEIL",
+    title: "Accueil",
     translateKey: "nav.home",
     icon: "home",
     type: NAV_ITEM_TYPE_ITEM,
@@ -346,7 +346,7 @@ const navigationAdmin: NavigationTree[] = [
   {
     key: "admin.support",
     path: "/support",
-    title: "Support",
+    title: "Tickets",
     translateKey: "nav.support",
     icon: "support",
     type: NAV_ITEM_TYPE_ITEM,
@@ -356,7 +356,7 @@ const navigationAdmin: NavigationTree[] = [
   {
     key: "admin.settings",
     path: "/settings/profile",
-    title: "PARAMÈTRES",
+    title: "Paramètres",
     translateKey: "nav.settings",
     icon: "settings",
     type: NAV_ITEM_TYPE_ITEM,

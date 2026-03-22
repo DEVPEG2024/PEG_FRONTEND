@@ -20,14 +20,12 @@ const QuickFilterTab = () => {
   };
 
   const isProducer = hasRole(user, [PRODUCER]);
+  const isAssignedProducer = isProducer && project?.producer?.documentId && user?.producer?.documentId === project.producer.documentId;
   const tabs = labelList.filter((tab) => {
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
-    // Producteur : pas de checklist ni de fichiers client (accès lecture seule via Fichiers projet)
-    if (tab === 'Checklist') return !isProducer;
-    // Fichiers client : visible seulement si l'utilisateur n'est pas producteur
-    // (le producteur voit les fichiers partagés dans l'onglet Fichiers)
-    if (tab === 'Fichiers client') return !isProducer;
+    // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
+    if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;
     return true;
   });
 

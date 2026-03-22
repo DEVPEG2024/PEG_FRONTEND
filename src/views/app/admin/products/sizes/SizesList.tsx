@@ -445,7 +445,7 @@ const SizesList = () => {
               style={{ padding: '10px 18px', background: saving ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(47,111,237,0.35)' }}
             >
               <HiCheck size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {saving ? 'Sauvegarde…' : 'Modifier'}
+              {saving ? 'Sauvegarde…' : 'Enregistrer'}
             </button>
           </div>
         </div>

@@ -70,7 +70,7 @@ const navigationCustomer: NavigationTree[] = [
   {
     key: "customer.support",
     path: "/support",
-    title: "Support",
+    title: "Tickets",
     translateKey: "nav.support",
     icon: "support",
     type: NAV_ITEM_TYPE_ITEM,
@@ -80,7 +80,7 @@ const navigationCustomer: NavigationTree[] = [
   {
     key: "customer.settings",
     path: "/settings/profile",
-    title: "PARAMÈTRES",
+    title: "Paramètres",
     translateKey: "nav.settings",
     icon: "settings",
     type: NAV_ITEM_TYPE_ITEM,

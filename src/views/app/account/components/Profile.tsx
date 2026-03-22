@@ -105,7 +105,7 @@ const Profile = () => {
       apiDeleteFile(avatarToDelete.id);
       updatedValues.avatar = null;
     }
-    await dispatch(updateOwnUser({ user: updatedValues, id: String(user.id) }));
+    await dispatch(updateOwnUser({ user: updatedValues, id: user.documentId || String(user.id) }));
     navigate('/home');
   };
 
