@@ -632,7 +632,7 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
           </div>
           <div>
             <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{botName}</div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Aperçu</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px' }}>Aperçu</div>
           </div>
         </div>
         <button onClick={() => setMessages([])} style={{ ...btnGhost, fontSize: '11px', padding: '4px 10px' }}>
@@ -815,7 +815,7 @@ const HistoryPanel = () => {
       {/* Liste */}
       <div style={{ ...PANEL, flex: '0 0 360px', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '20px' }}>
         <div style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <MdHistory size={18} color="#6b9eff" /> Conversations <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, fontSize: '12px' }}>({total})</span>
+          <MdHistory size={18} color="#6b9eff" /> Conversations <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, fontSize: '12px' }}>({total})</span>
         </div>
         <input
           type="date"
@@ -824,7 +824,7 @@ const HistoryPanel = () => {
           style={{ ...inputStyle, marginBottom: '10px' }}
         />
         {loading ? (
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', textAlign: 'center', marginTop: '32px' }}>Chargement...</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', textAlign: 'center', marginTop: '32px' }}>Chargement...</div>
         ) : conversations.length === 0 ? (
           <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', textAlign: 'center', marginTop: '32px' }}>Aucune conversation</div>
         ) : (
@@ -847,7 +847,7 @@ const HistoryPanel = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <HiChevronRight size={14} color="rgba(255,255,255,0.3)" />
+                  <HiChevronRight size={14} color="rgba(255,255,255,0.55)" />
                   <button onClick={(e) => handleDelete(e, c._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(239,68,68,0.6)', padding: '2px', display: 'flex', alignItems: 'center' }}>
                     <MdDelete size={15} />
                   </button>
@@ -861,7 +861,7 @@ const HistoryPanel = () => {
       {/* Détail */}
       <div style={{ ...PANEL, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '20px' }}>
         {loadingConv ? (
-          <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '32px' }}>Chargement...</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: '32px' }}>Chargement...</div>
         ) : !selected ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'rgba(255,255,255,0.2)', gap: '12px' }}>
             <MdChat size={40} />
@@ -977,7 +977,7 @@ const ChatbotPage = () => {
       )}
 
       {loading ? (
-        <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>Chargement...</div>
+        <div style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>Chargement...</div>
       ) : showHistory ? (
         <div style={{ flex: 1, minHeight: 0, height: 'calc(100vh - 130px)' }}>
           <HistoryPanel />

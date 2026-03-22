@@ -108,7 +108,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
               {authorLabel}
             </span>
             <Tooltip title={absDate}>
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', cursor: 'default' }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', cursor: 'default' }}>
                 · {relDate}
               </span>
             </Tooltip>

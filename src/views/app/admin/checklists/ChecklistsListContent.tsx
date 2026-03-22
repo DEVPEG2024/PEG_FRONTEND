@@ -254,7 +254,7 @@ function ChecklistsListContent() {
         <div>
           <p
             style={{
-              color: 'rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.55)',
               fontSize: '11px',
               fontWeight: 600,
               letterSpacing: '0.1em',
@@ -322,7 +322,7 @@ function ChecklistsListContent() {
             left: '13px',
             top: '50%',
             transform: 'translateY(-50%)',
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(255,255,255,0.55)',
             pointerEvents: 'none',
           }}
         />
@@ -387,7 +387,7 @@ function ChecklistsListContent() {
           />
           <p
             style={{
-              color: 'rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.55)',
               fontSize: '15px',
               fontWeight: 600,
             }}
@@ -547,7 +547,7 @@ function ChecklistsListContent() {
                         cursor: 'pointer',
                         color: isExpanded
                           ? '#818cf8'
-                          : 'rgba(255,255,255,0.3)',
+                          : 'rgba(255,255,255,0.55)',
                         display: 'flex',
                         padding: '4px',
                         borderRadius: '6px',
@@ -716,7 +716,7 @@ function ChecklistsListContent() {
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                color: 'rgba(255,255,255,0.4)',
+                color: 'rgba(255,255,255,0.6)',
                 width: '32px',
                 height: '32px',
                 display: 'flex',
@@ -1019,7 +1019,7 @@ const dlgInput: React.CSSProperties = {
 
 const dlgLabel: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(255,255,255,0.6)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.09em',

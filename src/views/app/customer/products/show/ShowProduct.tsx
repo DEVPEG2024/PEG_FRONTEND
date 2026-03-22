@@ -424,7 +424,7 @@ const ShowProduct = () => {
                 </div>
                 <div>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: '#c084fc' }}>Bon à Tirer — Validation requise</p>
-                  <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>Veuillez valider le BAT avant de passer commande</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>Veuillez valider le BAT avant de passer commande</p>
                 </div>
               </div>
               <a
@@ -489,7 +489,7 @@ const ShowProduct = () => {
                       </button>
                       <button
                         onClick={() => setBatAction(null)}
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}
                       >
                         Annuler
                       </button>
@@ -519,7 +519,7 @@ const ShowProduct = () => {
                       </button>
                       <button
                         onClick={() => { setBatAction(null); setBatComment(''); }}
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}
                       >
                         Annuler
                       </button>

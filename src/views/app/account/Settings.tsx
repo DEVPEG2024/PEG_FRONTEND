@@ -36,7 +36,7 @@ const Settings = () => {
 
         {/* Header */}
         <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Compte</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Compte</p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Paramètres</h2>
         </div>
 
@@ -44,7 +44,7 @@ const Settings = () => {
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '20px' }}>
           {TABS.map((tab) => (
             <button key={tab.key} onClick={() => onTabChange(tab.key)}
-              style={{ flex: 1, padding: '8px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, background: currentTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: currentTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}
+              style={{ flex: 1, padding: '8px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, background: currentTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: currentTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
             >{tab.label}</button>
           ))}
         </div>

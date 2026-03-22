@@ -217,7 +217,7 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '8px',
             padding: '6px 12px',
-            color: 'rgba(255,255,255,0.4)',
+            color: 'rgba(255,255,255,0.6)',
             fontSize: '12px',
             fontWeight: 600,
             whiteSpace: 'nowrap',

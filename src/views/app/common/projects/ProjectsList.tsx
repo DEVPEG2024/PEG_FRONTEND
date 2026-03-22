@@ -205,7 +205,7 @@ const ProjectsList = () => {
         gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Gestion
           </p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -269,7 +269,7 @@ const ProjectsList = () => {
         <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
           <HiOutlineSearch size={15} style={{
             position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-            color: 'rgba(255,255,255,0.3)', pointerEvents: 'none',
+            color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
           }} />
           <input
             type="text"
@@ -341,7 +341,7 @@ const ProjectsList = () => {
               {count !== undefined && (
                 <span style={{
                   background: active ? tab.border : 'rgba(255,255,255,0.08)',
-                  color: active ? tab.color : 'rgba(255,255,255,0.3)',
+                  color: active ? tab.color : 'rgba(255,255,255,0.55)',
                   borderRadius: '100px', padding: '1px 7px',
                   fontSize: '10px', fontWeight: 700,
                 }}>
@@ -447,7 +447,7 @@ const ProjectsList = () => {
                               transition: 'width 0.3s',
                             }} />
                           </div>
-                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, minWidth: '30px', textAlign: 'right' }}>
+                          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, minWidth: '30px', textAlign: 'right' }}>
                             {progress}%
                           </span>
                         </div>
@@ -481,7 +481,7 @@ const ProjectsList = () => {
                 })}
                 {filteredAndSortedProjects.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
+                    <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
                       Aucun projet
                     </td>
                   </tr>

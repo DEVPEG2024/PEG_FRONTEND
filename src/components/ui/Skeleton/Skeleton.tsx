@@ -27,6 +27,7 @@ const Skeleton = forwardRef<ElementType, SkeletonProps>((props, ref) => {
             ref={ref}
             className={classNames(
                 'skeleton',
+                'relative overflow-hidden',
                 variant === 'circle' && 'skeleton-circle',
                 variant === 'block' && 'skeleton-block',
                 animation && 'animate-pulse',
@@ -37,7 +38,11 @@ const Skeleton = forwardRef<ElementType, SkeletonProps>((props, ref) => {
                 height,
                 ...style,
             }}
-        />
+        >
+            {animation && (
+                <div className="skeleton-shimmer absolute inset-0 rounded-[inherit]" />
+            )}
+        </Component>
     )
 })
 

@@ -189,8 +189,8 @@ const ProductForm = (props: ProductFormProps) => {
           <div style={{ position: 'sticky', top: '20px' }}>
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                <HiOutlinePhotograph size={16} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
+                <HiOutlinePhotograph size={16} style={{ color: 'rgba(255,255,255,0.55)' }} />
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>
                   Images du produit
                 </p>
               </div>

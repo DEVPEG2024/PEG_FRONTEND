@@ -141,7 +141,7 @@ const Invoices = () => {
                       <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {invoice.name}
                       </span>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', flexShrink: 0 }}>{stateLabel}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', flexShrink: 0 }}>{stateLabel}</span>
                       <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0 }}>{dayjs(invoice.date).format('DD/MM/YYYY')}</span>
                     </div>
 
@@ -189,7 +189,7 @@ const Invoices = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
                 <Empty icon={<GoTasklist size={80} style={{ color: 'rgba(255,255,255,0.12)' }} />}>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', marginTop: '12px' }}>Aucune facture trouvée</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', marginTop: '12px' }}>Aucune facture trouvée</p>
                 </Empty>
               </div>
             )}

@@ -64,7 +64,7 @@ const ProjectHeader = ({ project }: { project: Project }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div>
               <p style={{
-                color: 'rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.55)',
                 fontSize: '11px',
                 fontWeight: 600,
                 letterSpacing: '0.1em',
@@ -98,7 +98,7 @@ const ProjectHeader = ({ project }: { project: Project }) => {
                         borderRadius: '100px',
                         border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.08)'}`,
                         background: isActive ? opt.bg : 'transparent',
-                        color: isActive ? opt.color : 'rgba(255,255,255,0.3)',
+                        color: isActive ? opt.color : 'rgba(255,255,255,0.55)',
                         fontSize: '11px',
                         fontWeight: 700,
                         cursor: 'pointer',

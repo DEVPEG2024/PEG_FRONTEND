@@ -93,7 +93,7 @@ const CustomerProducts = () => {
               left: '12px',
               top: '50%',
               transform: 'translateY(-50%)',
-              color: 'rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.55)',
               pointerEvents: 'none',
             }}
           />
@@ -155,7 +155,7 @@ const CustomerProducts = () => {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '16px', fontWeight: 600, margin: 0 }}>
               {searchTerm ? 'Aucun résultat' : 'Aucune offre personnalisée'}
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', margin: '6px 0 0' }}>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '6px 0 0' }}>
               {searchTerm
                 ? `Aucun produit ne correspond à « ${searchTerm} »`
                 : 'Vos offres personnalisées apparaîtront ici'}

@@ -294,7 +294,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                                         <button type="button" onClick={() => setShowPassword(v => !v)} style={{
                                             position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                                             background: 'none', border: 'none', cursor: 'pointer',
-                                            color: 'rgba(255,255,255,0.3)', padding: 0, display: 'flex',
+                                            color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',
                                         }}>
                                             {showPassword ? <HiEyeOff size={16} /> : <HiEye size={16} />}
                                         </button>
@@ -315,7 +315,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                                         <button type="button" onClick={() => setShowConfirm(v => !v)} style={{
                                             position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                                             background: 'none', border: 'none', cursor: 'pointer',
-                                            color: 'rgba(255,255,255,0.3)', padding: 0, display: 'flex',
+                                            color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',
                                         }}>
                                             {showConfirm ? <HiEyeOff size={16} /> : <HiEye size={16} />}
                                         </button>

@@ -116,14 +116,14 @@ export default function PropertiesPanel({ field, onChange, onClose }: Props) {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(255,255,255,0.55)',
             display: 'flex',
             padding: '4px',
             borderRadius: '6px',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
           onMouseLeave={(e) =>
-            (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')
+            (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')
           }
         >
           <HiOutlineX size={15} />
@@ -520,7 +520,7 @@ const input: React.CSSProperties = {
 
 const lbl: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.3)',
+  color: 'rgba(255,255,255,0.55)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.09em',

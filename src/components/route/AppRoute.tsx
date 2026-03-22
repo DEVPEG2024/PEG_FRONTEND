@@ -7,6 +7,7 @@ import {
     useAppDispatch,
 } from '@/store'
 import { useLocation } from 'react-router-dom'
+import PageTransition from '@/components/shared/PageTransition'
 import type { LayoutType } from '@/@types/theme'
 import type { ComponentType } from 'react'
 
@@ -48,7 +49,11 @@ const AppRoute = <T extends Record<string, unknown>>({
         handleLayoutChange()
     }, [location, handleLayoutChange])
 
-    return <Component {...(props as T)} />
+    return (
+        <PageTransition key={location.pathname}>
+            <Component {...(props as T)} />
+        </PageTransition>
+    )
 }
 
 export default AppRoute

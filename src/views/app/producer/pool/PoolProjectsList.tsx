@@ -60,7 +60,7 @@ const StatWidget = ({
       {icon}
     </div>
     <div>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
         {label}
       </p>
       <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -126,7 +126,7 @@ const PoolProjectsList = () => {
         gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Producteur
           </p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -172,7 +172,7 @@ const PoolProjectsList = () => {
         <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
           <HiOutlineSearch size={15} style={{
             position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-            color: 'rgba(255,255,255,0.3)', pointerEvents: 'none',
+            color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
           }} />
           <input
             type="text"
@@ -222,7 +222,7 @@ const PoolProjectsList = () => {
               {tab.label}
               <span style={{
                 background: active ? tab.border : 'rgba(255,255,255,0.08)',
-                color: active ? tab.color : 'rgba(255,255,255,0.3)',
+                color: active ? tab.color : 'rgba(255,255,255,0.55)',
                 borderRadius: '100px', padding: '1px 7px',
                 fontSize: '10px', fontWeight: 700,
               }}>
@@ -247,7 +247,7 @@ const PoolProjectsList = () => {
             boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
           }}>
             <MdOutlinePool size={52} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>La piscine est vide</p>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', fontWeight: 600 }}>La piscine est vide</p>
             <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '13px', marginTop: '6px' }}>Aucun projet ne correspond à ce filtre</p>
           </div>
         )}

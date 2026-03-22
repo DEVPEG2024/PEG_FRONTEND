@@ -182,7 +182,7 @@ const ChatWidget = () => {
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}
             >
               <MdClose size={18} />
             </button>
@@ -194,7 +194,7 @@ const ChatWidget = () => {
               <div style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center', height: '100%', gap: '12px',
-                color: 'rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.55)',
               }}>
                 <MdSmartToy size={40} />
                 <div style={{ textAlign: 'center', fontSize: '13px', lineHeight: 1.5 }}>

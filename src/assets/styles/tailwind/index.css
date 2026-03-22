@@ -63,7 +63,18 @@
   .heading-text {
     @apply text-gray-900 dark:text-gray-100;
   }
- 
+
+  /* Keyboard focus indicator */
+  *:focus-visible {
+    outline: 2px solid var(--tw-ring-color, #3b82f6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default focus for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
 .side-nav {
@@ -82,7 +93,7 @@
   transform: scale(1.02);
   transition: transform 0.3s ease-in-out;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  
+
 }
 
 
@@ -100,7 +111,7 @@
 }
 
 .card-product:hover {
-  border: 2px solid #F96260;  
+  border: 2px solid #F96260;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -173,4 +184,35 @@
   max-width: 600px !important;
   left: auto !important;
   margin: 0 auto !important;
+}
+
+/* Skeleton shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
 }

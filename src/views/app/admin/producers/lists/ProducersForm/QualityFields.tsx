@@ -21,7 +21,7 @@ const cardInner: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  color: 'rgba(255,255,255,0.3)',
+  color: 'rgba(255,255,255,0.55)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.1em',
@@ -31,7 +31,7 @@ const sectionTitle: React.CSSProperties = {
 
 const fieldLabel: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(255,255,255,0.6)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.08em',

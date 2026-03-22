@@ -104,7 +104,7 @@ const ProducerForm = (props: ProducerFormProps) => {
       <FormContainer>
         {/* Page header */}
         <div style={{ paddingTop: '8px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Producteurs
           </p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>

@@ -20,7 +20,7 @@ const PAY_STATE_CFG: Record<string, { label: string; bg: string; color: string; 
 
 const Row = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}>{label}</p>
+    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}>{label}</p>
     <p style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>{value}</p>
   </div>
 )
@@ -98,14 +98,14 @@ const BankTransferPage = () => {
         {/* Back */}
         <button
           onClick={() => navigate('/customer/invoices')}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer', padding: 0, marginBottom: '24px' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer', padding: 0, marginBottom: '24px' }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
         >
           <HiArrowLeft size={16} /> Retour aux factures
         </button>
 
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Finance</p>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Finance</p>
         <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 24px' }}>
           Paiement par virement
         </h2>
@@ -126,14 +126,14 @@ const BankTransferPage = () => {
             <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Référence de virement</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Référence de virement</p>
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '17px', fontFamily: 'monospace', letterSpacing: '0.04em' }}>{reference}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Montant à payer</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Montant à payer</p>
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{invoice.totalAmount?.toFixed(2)} €</p>
                   {invoice.vatAmount > 0 && (
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>dont TVA {invoice.vatAmount?.toFixed(2)} €</p>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>dont TVA {invoice.vatAmount?.toFixed(2)} €</p>
                   )}
                 </div>
               </div>
@@ -155,7 +155,7 @@ const BankTransferPage = () => {
                 <Row label="Banque" value={BANK} />
                 <Row label="Titulaire du compte" value={HOLDER} />
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>IBAN</p>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>IBAN</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px', fontFamily: 'monospace', letterSpacing: '0.06em' }}>{IBAN}</span>
                     <button

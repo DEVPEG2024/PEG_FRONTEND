@@ -220,7 +220,7 @@ const Comments = () => {
             {/* Visibility picker — admins only */}
             {isAdmin && (
               <div style={{ marginBottom: '14px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
                   Destinataire
                 </p>
                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -239,7 +239,7 @@ const Comments = () => {
                           fontWeight: 600,
                           fontFamily: 'Inter, sans-serif',
                           background: isActive ? opt.bg : 'rgba(255,255,255,0.04)',
-                          color: isActive ? opt.color : 'rgba(255,255,255,0.4)',
+                          color: isActive ? opt.color : 'rgba(255,255,255,0.6)',
                           transition: 'all 0.15s ease',
                         }}
                       >

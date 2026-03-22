@@ -29,7 +29,7 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(255,255,255,0.6)',
   fontSize: '11px',
   fontWeight: 600,
   marginBottom: '5px',
@@ -135,7 +135,7 @@ function Cart() {
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
       <div style={{ paddingTop: '28px', paddingBottom: '20px' }}>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
           Commande
         </p>
         <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -203,7 +203,7 @@ function Cart() {
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: '0 0 2px 0' }}>
                     {totalItem.toFixed(2)} €
                   </p>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: 0 }}>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', margin: 0 }}>
                     {unitPrice.toFixed(2)} € / u.
                   </p>
                 </div>
@@ -237,7 +237,7 @@ function Cart() {
             style={{
               background: 'rgba(255,255,255,0.02)', border: '1.5px dashed rgba(255,255,255,0.09)',
               borderRadius: '16px', padding: '14px',
-              color: 'rgba(255,255,255,0.3)', fontSize: '13px', fontWeight: 600,
+              color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 600,
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
               fontFamily: 'Inter, sans-serif',
             }}

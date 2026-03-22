@@ -1,4 +1,4 @@
-import { Container } from '@/components/shared';
+import { Container, EmptyState } from '@/components/shared';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Invoice } from '@/@types/invoice';
@@ -63,7 +63,7 @@ const InvoicesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       <div style={{ paddingTop: '28px', paddingBottom: '20px' }}>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Finance</p>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Finance</p>
         <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
           Factures <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
         </h2>
@@ -74,17 +74,17 @@ const InvoicesList = () => {
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
           {TAB_STATES.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, background: activeTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.4)', transition: 'all 0.15s' }}
+              style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, background: activeTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
             >
               {tab.label}
-              <span style={{ marginLeft: '5px', background: activeTab === tab.key ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.08)', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.3)' }}>
+              <span style={{ marginLeft: '5px', background: activeTab === tab.key ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.08)', borderRadius: '100px', padding: '1px 6px', fontSize: '10px', color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.55)' }}>
                 {tabCount(tab.key)}
               </span>
             </button>
           ))}
         </div>
         <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '340px' }}>
-          <HiOutlineSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+          <HiOutlineSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)', pointerEvents: 'none' }} />
           <input type="text" placeholder="Rechercher une facture…" value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }}
             style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '8px 14px 8px 33px', color: '#fff', fontSize: '13px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
@@ -99,10 +99,11 @@ const InvoicesList = () => {
           {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', height: '68px', border: '1px solid rgba(255,255,255,0.06)' }} />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <HiDocumentText size={48} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucune facture</p>
-        </div>
+        <EmptyState
+          title="Aucune facture"
+          description="Aucune facture à afficher pour le moment"
+          icon={<HiDocumentText size={48} />}
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '40px' }}>
           {filtered.map((inv: Invoice) => {
@@ -128,18 +129,18 @@ const InvoicesList = () => {
                     <span style={{ background: payCfg.bg, border: payCfg.border ? `1px solid ${payCfg.border}` : 'none', borderRadius: '100px', padding: '1px 8px', color: payCfg.color, fontSize: '11px', fontWeight: 600 }}>{payCfg.label}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
                       <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>{initials(customerName)}</span>
                       {customerName}
                     </span>
-                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>{dayjs(inv.date).format('DD/MM/YYYY')}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>{dayjs(inv.date).format('DD/MM/YYYY')}</span>
                   </div>
                 </div>
 
                 {/* Amount */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>{inv.totalAmount?.toFixed(2)} €</div>
-                  {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>dont TVA {inv.vatAmount?.toFixed(2)} €</div>}
+                  {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px' }}>dont TVA {inv.vatAmount?.toFixed(2)} €</div>}
                 </div>
 
                 {/* Actions */}

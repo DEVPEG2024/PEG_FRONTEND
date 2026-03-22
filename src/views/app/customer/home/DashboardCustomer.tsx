@@ -48,7 +48,7 @@ const StatWidget = ({
       {icon}
     </div>
     <div>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
         {label}
       </p>
       <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -177,7 +177,7 @@ const DashboardCustomer = () => {
               <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
                 Votre espace client
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '6px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginTop: '6px' }}>
                 Découvrez vos offres et suivez vos projets
               </p>
             </div>
@@ -203,7 +203,7 @@ const DashboardCustomer = () => {
           <h2 style={{ color: '#fff', fontSize: '26px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
             Bonjour, {user?.firstName} 👋
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginTop: '6px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginTop: '6px' }}>
             Bienvenue sur votre espace client
           </p>
         </div>
@@ -236,7 +236,7 @@ const DashboardCustomer = () => {
             {/* BAT en attente */}
             {pendingBats.length > 0 && (
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '12px' }}>
                   Bon à Tirer — Validation requise
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -261,7 +261,7 @@ const DashboardCustomer = () => {
                         <span style={{ fontSize: '20px' }}>📄</span>
                         <div>
                           <p style={{ margin: 0, fontWeight: 700, fontSize: '13px', color: '#c084fc' }}>{p.name}</p>
-                          <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>{p.orderItem!.product.name}</p>
+                          <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '2px' }}>{p.orderItem!.product.name}</p>
                         </div>
                       </div>
                       <span style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '4px 10px', whiteSpace: 'nowrap' }}>
@@ -278,7 +278,7 @@ const DashboardCustomer = () => {
               {/* Section header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
                     Catalogue personnalisé
                   </p>
                   <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
@@ -331,7 +331,7 @@ const DashboardCustomer = () => {
                   boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
                 }}>
                   <HiOutlineCollection size={48} style={{ color: 'rgba(255,255,255,0.12)', margin: '0 auto 12px' }} />
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune offre personnalisée disponible</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucune offre personnalisée disponible</p>
                 </div>
               )}
             </div>

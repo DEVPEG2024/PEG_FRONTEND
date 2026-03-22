@@ -28,7 +28,7 @@ const ProgressionBar = ({ progression }: ProgressionBarProps) => {
           boxShadow: `0 0 6px ${color.glow}`,
         }} />
       </div>
-      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>
+      <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, flexShrink: 0, minWidth: '30px', textAlign: 'right' }}>
         {progression}%
       </span>
     </div>

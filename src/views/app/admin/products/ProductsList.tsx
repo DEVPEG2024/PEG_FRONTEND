@@ -12,7 +12,7 @@ import reducer, {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { Product } from '@/@types/product';
-import { Container, Loading } from '@/components/shared';
+import { Container, Loading, EmptyState } from '@/components/shared';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
@@ -291,7 +291,7 @@ const ProductsList = () => {
         gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Catalogue
           </p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -365,7 +365,7 @@ const ProductsList = () => {
       <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
         <HiOutlineSearch size={15} style={{
           position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-          color: 'rgba(255,255,255,0.3)', pointerEvents: 'none',
+          color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
         }} />
         <input
           type="text"
@@ -471,15 +471,11 @@ const ProductsList = () => {
           </>
         ) : (
           !loading && (
-            <div style={{
-              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-              borderRadius: '16px', padding: '64px 24px', textAlign: 'center',
-              border: '1px solid rgba(255,255,255,0.07)',
-            }}>
-              <HiOutlineSearch size={48} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucun produit</p>
-              <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '13px', marginTop: '6px' }}>Ajoutez votre premier produit pour commencer</p>
-            </div>
+            <EmptyState
+              title="Aucun produit"
+              description="Ajoutez votre premier produit pour commencer"
+              icon={<HiOutlineSearch size={48} />}
+            />
           )
         )}
 

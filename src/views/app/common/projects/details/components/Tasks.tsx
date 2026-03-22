@@ -36,7 +36,7 @@ const Tasks = () => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
                   <Empty icon={<GoTasklist size={80} style={{ color: 'rgba(255,255,255,0.12)' }} />}>
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', marginTop: '12px' }}>Aucune tâche trouvée</p>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', marginTop: '12px' }}>Aucune tâche trouvée</p>
                   </Empty>
                 </div>
               )}

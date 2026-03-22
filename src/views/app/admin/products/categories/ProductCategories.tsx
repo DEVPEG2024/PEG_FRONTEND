@@ -144,7 +144,7 @@ const Categories = () => {
         gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Produits
           </p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -206,7 +206,7 @@ const Categories = () => {
       <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
         <HiOutlineSearch size={15} style={{
           position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-          color: 'rgba(255,255,255,0.3)', pointerEvents: 'none',
+          color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
         }} />
         <input
           type="text"
@@ -269,7 +269,7 @@ const Categories = () => {
             border: '1px solid rgba(255,255,255,0.07)',
           }}>
             <HiPhotograph size={52} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucune catégorie</p>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', fontWeight: 600 }}>Aucune catégorie</p>
           </div>
         )}
         <div style={{

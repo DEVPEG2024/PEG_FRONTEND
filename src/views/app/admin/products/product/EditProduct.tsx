@@ -299,7 +299,7 @@ const EditProduct = () => {
   };
 
   if (onEdition && initialLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', color: 'rgba(255,255,255,0.4)' }}>Chargement...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', color: 'rgba(255,255,255,0.6)' }}>Chargement...</div>;
   }
 
   if (onEdition && !product && !initialLoading) {

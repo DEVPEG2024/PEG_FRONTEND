@@ -1,4 +1,4 @@
-import { Container } from '@/components/shared';
+import { Container, EmptyState } from '@/components/shared';
 import { useEffect, useState } from 'react';
 import { injectReducer, useAppDispatch, RootState } from '@/store';
 import reducer, {
@@ -197,7 +197,7 @@ const OrderItemsList = () => {
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
       <div style={{ paddingTop: '28px', paddingBottom: '20px' }}>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Boutique</p>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Boutique</p>
         <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
           Commandes <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({counts.pending + counts.fulfilled})</span>
         </h2>
@@ -214,7 +214,7 @@ const OrderItemsList = () => {
                 padding: '6px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600,
                 background: activeTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent',
-                color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.4)',
+                color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)',
                 transition: 'all 0.15s',
               }}
             >
@@ -222,7 +222,7 @@ const OrderItemsList = () => {
               <span style={{
                 marginLeft: '6px', background: activeTab === tab.key ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.08)',
                 borderRadius: '100px', padding: '1px 7px', fontSize: '10px',
-                color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.3)',
+                color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.55)',
               }}>
                 {tabCount(tab.key)}
               </span>
@@ -231,7 +231,7 @@ const OrderItemsList = () => {
         </div>
 
         <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '340px' }}>
-          <HiOutlineSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+          <HiOutlineSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)', pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder="Rechercher un produit…"
@@ -252,10 +252,11 @@ const OrderItemsList = () => {
           ))}
         </div>
       ) : orderItems.length === 0 ? (
-        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <HiShoppingBag size={48} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucune commande</p>
-        </div>
+        <EmptyState
+          title="Aucune commande"
+          description="Aucune commande à afficher pour le moment"
+          icon={<HiShoppingBag size={48} />}
+        />
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
@@ -299,7 +300,7 @@ const OrderItemsList = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       {/* Client */}
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
                         <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(47,111,237,0.2)', border: '1px solid rgba(47,111,237,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#6b9eff', flexShrink: 0 }}>
                           {(order.customer?.name ?? '?')[0].toUpperCase()}
                         </span>
@@ -399,7 +400,7 @@ const OrderItemsList = () => {
           {/* Pagination */}
           {pageCount > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 4px' }}>
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>
                 {from}–{to} sur {total} commande{total > 1 ? 's' : ''}
               </span>
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -419,7 +420,7 @@ const OrderItemsList = () => {
                   }, [])
                   .map((p, i) =>
                     p === '...' ? (
-                      <span key={`dots-${i}`} style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', padding: '0 4px' }}>…</span>
+                      <span key={`dots-${i}`} style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', padding: '0 4px' }}>…</span>
                     ) : (
                       <button
                         key={p}

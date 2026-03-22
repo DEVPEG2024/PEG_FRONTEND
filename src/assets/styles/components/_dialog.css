@@ -28,9 +28,10 @@
 }
 
 .dialog-content {
-  @apply p-6 rounded-2xl shadow-xl sm:my-16 relative h-full border border-white/[0.08];
-  background: linear-gradient(to bottom right, #16263d, #0f1c2e);
-  color: rgba(255, 255, 255, 0.9);
+  @apply p-6 rounded-2xl shadow-xl sm:my-16 relative h-full;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .dialog-content h1,
@@ -39,17 +40,43 @@
 .dialog-content h4,
 .dialog-content h5,
 .dialog-content h6 {
-  color: #fff;
+  color: rgba(0, 0, 0, 0.9);
 }
 
 .dialog-content p {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .dialog-content .close-btn {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(0, 0, 0, 0.4);
 }
 .dialog-content .close-btn:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.dark .dialog-content {
+  background: linear-gradient(to bottom right, #16263d, #0f1c2e);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dark .dialog-content h1,
+.dark .dialog-content h2,
+.dark .dialog-content h3,
+.dark .dialog-content h4,
+.dark .dialog-content h5,
+.dark .dialog-content h6 {
+  color: #fff;
+}
+
+.dark .dialog-content p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .dialog-content .close-btn {
+  color: rgba(255, 255, 255, 0.4);
+}
+.dark .dialog-content .close-btn:hover {
   color: rgba(255, 255, 255, 0.8);
 }
 

@@ -272,11 +272,11 @@ const ProjectChecklist = () => {
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Checklist du projet
               </p>
               {items.length > 0 && (
-                <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.4)', fontSize: '12px', transition: 'color 0.2s' }}>
+                <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '12px', transition: 'color 0.2s' }}>
                   {saving ? '● Sauvegarde...' : `${doneCount} / ${items.length} effectuée${doneCount > 1 ? 's' : ''}`}
                 </span>
               )}
@@ -397,7 +397,7 @@ const ProjectChecklist = () => {
                         style={{
                           padding: '6px 8px', borderRadius: '8px',
                           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                          color: 'rgba(255,255,255,0.4)', fontSize: '12px',
+                          color: 'rgba(255,255,255,0.6)', fontSize: '12px',
                           cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                         }}
                       >
@@ -449,7 +449,7 @@ const ProjectChecklist = () => {
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
                             {cl.name}
-                            <span style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '2px' }}>
+                            <span style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '11px', marginTop: '2px' }}>
                               {(cl.items ?? []).length} étape{(cl.items ?? []).length > 1 ? 's' : ''}
                             </span>
                           </button>
@@ -465,12 +465,12 @@ const ProjectChecklist = () => {
           {/* Loading state */}
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>Chargement...</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px' }}>Chargement...</p>
             </div>
           ) : unavailable ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '12px' }}>
               <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Fonctionnalité non disponible sur cet environnement</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Fonctionnalité non disponible sur cet environnement</p>
             </div>
           ) : (
             <>
@@ -491,7 +491,7 @@ const ProjectChecklist = () => {
               {items.length === 0 && !showAddInput ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
                   <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
                   {canToggle && (
                     <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
                       Utilisez "Ajouter une tâche" ou "Modèle" ci-dessus

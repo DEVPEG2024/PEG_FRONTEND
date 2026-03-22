@@ -62,7 +62,7 @@ const StatWidget = ({
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
           {label}
         </p>
         <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -125,7 +125,7 @@ const DashboardProducer = () => {
           <h2 style={{ color: '#fff', fontSize: '26px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
             Bonjour, {user?.firstName} 👋
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginTop: '6px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginTop: '6px' }}>
             Bienvenue sur votre espace producteur
           </p>
         </div>
@@ -160,7 +160,7 @@ const DashboardProducer = () => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
                     Activité
                   </p>
                   <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
@@ -199,7 +199,7 @@ const DashboardProducer = () => {
                   boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
                 }}>
                   <HiOutlineClipboardList size={48} style={{ color: 'rgba(255,255,255,0.12)', margin: '0 auto 12px' }} />
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>Aucun projet en cours</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucun projet en cours</p>
                   <Link to="/producer/pool" style={{ textDecoration: 'none' }}>
                     <button style={{
                       marginTop: '16px',

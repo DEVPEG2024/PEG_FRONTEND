@@ -1,5 +1,7 @@
 .button {
   @apply font-semibold focus:outline-none whitespace-nowrap;
+  transition: all 150ms ease;
+  transform: translateZ(0); /* GPU acceleration */
 
   &.radius-round {
     @apply rounded-md;
@@ -12,4 +14,8 @@
   &.radius-none {
     @apply rounded-none;
   }
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.97);
 }

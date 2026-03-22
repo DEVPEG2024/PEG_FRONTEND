@@ -55,7 +55,7 @@ const card: React.CSSProperties = {
 };
 
 const sectionTitle: React.CSSProperties = {
-  color: 'rgba(255,255,255,0.3)',
+  color: 'rgba(255,255,255,0.55)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.1em',
@@ -65,7 +65,7 @@ const sectionTitle: React.CSSProperties = {
 
 const fieldLabel: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(255,255,255,0.6)',
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.08em',
@@ -213,7 +213,7 @@ const ProductFields = (props: ProductFieldsProps) => {
     <>
       {/* ── Header ── */}
       <div style={{ paddingTop: '28px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
           Produits
         </p>
         <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -268,7 +268,7 @@ const ProductFields = (props: ProductFieldsProps) => {
                   <Switcher checked={field.value} onChange={(val) => field.onChange(!val)} />
                 )}
               />
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
                 {watch('inCatalogue') ? 'Visible' : 'Masqué'}
               </span>
             </div>
@@ -504,7 +504,7 @@ const ProductFields = (props: ProductFieldsProps) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: requiresBat ? '18px' : '0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: requiresBat ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${requiresBat ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-              <MdOutlineVerifiedUser size={18} style={{ color: requiresBat ? '#c084fc' : 'rgba(255,255,255,0.3)' }} />
+              <MdOutlineVerifiedUser size={18} style={{ color: requiresBat ? '#c084fc' : 'rgba(255,255,255,0.55)' }} />
             </div>
             <div>
               <p style={{ color: requiresBat ? '#c084fc' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '13px', margin: 0, transition: 'color 0.2s' }}>
@@ -546,7 +546,7 @@ const ProductFields = (props: ProductFieldsProps) => {
                 <button
                   type="button"
                   onClick={() => setBatFile(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', display: 'flex', padding: '2px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', display: 'flex', padding: '2px' }}
                   title="Retirer le fichier"
                 >
                   <HiX size={14} />
@@ -597,7 +597,7 @@ const ProductFields = (props: ProductFieldsProps) => {
                     <Switcher checked={!!field.value} onChange={(val) => field.onChange(!val)} />
                   )}
                 />
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>
                   Afficher sur la fiche client
                 </span>
               </div>

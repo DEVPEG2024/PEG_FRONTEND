@@ -48,8 +48,8 @@ export type ProjectFormModel = Omit<
 
 const SectionTitle = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', marginTop: '8px' }}>
-    <span style={{ color: 'rgba(255,255,255,0.3)' }}>{icon}</span>
-    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+    <span style={{ color: 'rgba(255,255,255,0.55)' }}>{icon}</span>
+    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
       {label}
     </span>
     <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
@@ -146,7 +146,7 @@ function ModalEditProject() {
       <div style={{ fontFamily: 'Inter, sans-serif', padding: '28px 32px', maxHeight: '80vh', overflowY: 'auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Modifier
           </p>
           <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>

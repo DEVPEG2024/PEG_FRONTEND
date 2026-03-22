@@ -274,7 +274,7 @@ const Summary = ({ project }: { project: Project }) => {
                       {project.name}
                     </h3>
                     {project.description && !project.orderItem && (
-                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.5 }}>
+                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: 1.5 }}>
                         {strippedDescription.slice(0, 120)}
                         {strippedDescription.length > 120 ? '…' : ''}
                       </p>

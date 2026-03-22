@@ -295,7 +295,7 @@ const ColorsList = () => {
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap' }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Produits</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Produits</p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
             Couleurs <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
           </h2>
@@ -491,7 +491,7 @@ const ColorsList = () => {
 
       {/* ── Recherche ── */}
       <div style={{ position: 'relative', marginBottom: '28px', maxWidth: '400px' }}>
-        <HiOutlineSearch size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+        <HiOutlineSearch size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)', pointerEvents: 'none' }} />
         <input
           type="text"
           placeholder="Rechercher une couleur ou catégorie…"
@@ -505,11 +505,11 @@ const ColorsList = () => {
 
       {/* ── Liste par catégorie ── */}
       {loading ? (
-        <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '64px' }}>Chargement…</div>
+        <div style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', padding: '64px' }}>Chargement…</div>
       ) : Object.keys(grouped).length === 0 ? (
         <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
           <IoColorPaletteOutline size={48} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '15px', fontWeight: 600 }}>Aucune couleur — crée-en une ci-dessus</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', fontWeight: 600 }}>Aucune couleur — crée-en une ci-dessus</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
@@ -521,7 +521,7 @@ const ColorsList = () => {
                 </div>
                 <div>
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: 0 }}>{category?.name || 'Sans catégorie'}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>{catColors.length} couleur{catColors.length > 1 ? 's' : ''}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', margin: 0 }}>{catColors.length} couleur{catColors.length > 1 ? 's' : ''}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -549,9 +549,9 @@ const ColorsList = () => {
                     </button>
                     <button
                       onClick={() => handleDelete(color)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', padding: '0 2px' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', padding: '0 2px' }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
                       title="Supprimer"
                     >
                       <HiTrash size={12} />

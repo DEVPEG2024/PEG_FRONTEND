@@ -118,7 +118,7 @@ const ProductCard = memo(
           {/* Price + ref */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.03em', lineHeight: 1 }}>
-              {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>€</span>
+              {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>€</span>
             </span>
             {product.productRef && (
               <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: '10px', letterSpacing: '0.03em' }}>
@@ -191,7 +191,7 @@ const ProductCard = memo(
                     boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
                   }} />
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
                   {product.active ? 'Actif' : 'Inactif'}
                 </span>
               </div>

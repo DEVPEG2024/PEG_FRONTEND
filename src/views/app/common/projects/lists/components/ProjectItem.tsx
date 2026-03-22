@@ -140,7 +140,7 @@ const ProjectItem = ({
               border: `1px solid ${duration < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
               borderRadius: '100px', padding: '3px 9px',
             }}>
-              <MdAccessTime size={11} style={{ color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <MdAccessTime size={11} style={{ color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.6)', flexShrink: 0 }} />
               <span style={{ fontSize: '11px', fontWeight: 600, color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>
                 {duration > 0 ? `${duration}j` : duration === 0 ? "Auj." : 'Dépassé'}
               </span>

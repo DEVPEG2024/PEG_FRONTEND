@@ -186,7 +186,7 @@ function OrderChecklist({ items }: { items: ChecklistItem[] }) {
               Suivi de ma commande
             </p>
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
             {doneCount} / {items.length} étape{doneCount > 1 ? 's' : ''} effectuée{doneCount > 1 ? 's' : ''}
           </span>
         </div>

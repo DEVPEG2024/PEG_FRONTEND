@@ -13,6 +13,7 @@ import useAuth from '@/utils/hooks/useAuth'
 import useDirection from '@/utils/hooks/useDirection'
 import useLocale from '@/utils/hooks/useLocale'
 import ChatWidget from '@/components/template/ChatWidget'
+import ScrollToTop from '@/components/shared/ScrollToTop'
 import { CUSTOMER } from '@/constants/roles.constant'
 
 const layouts = {
@@ -52,6 +53,7 @@ const Layout = () => {
         >
             <AppLayout />
             {isCustomer && <ChatWidget />}
+            <ScrollToTop />
         </Suspense>
     )
 }

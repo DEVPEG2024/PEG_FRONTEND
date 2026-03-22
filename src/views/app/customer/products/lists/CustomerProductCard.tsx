@@ -199,7 +199,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
               </span>
             ))}
             {product.sizes.length > 5 && (
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', alignSelf: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', alignSelf: 'center' }}>
                 +{product.sizes.length - 5}
               </span>
             )}
@@ -224,7 +224,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
               />
             ))}
             {product.colors.length > 8 && (
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', alignSelf: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', alignSelf: 'center' }}>
                 +{product.colors.length - 8}
               </span>
             )}

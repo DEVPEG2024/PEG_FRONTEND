@@ -55,12 +55,12 @@ const MetaRow = ({ icon, label, value }: { icon: React.ReactNode; label?: string
       width: '30px', height: '30px', borderRadius: '8px',
       background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      color: 'rgba(255,255,255,0.4)',
+      color: 'rgba(255,255,255,0.6)',
     }}>
       {icon}
     </div>
     <div>
-      {label && <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>{label}</p>}
+      {label && <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>{label}</p>}
       <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{value}</div>
     </div>
   </div>
@@ -146,14 +146,14 @@ const DetailsRight = () => {
       fontFamily: 'Inter, sans-serif',
       boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
     }}>
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '14px' }}>
         Détails
       </p>
 
       {/* Progress */}
       <div style={{ marginBottom: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {progressLabel}
           </span>
         </div>
@@ -163,10 +163,10 @@ const DetailsRight = () => {
       {/* Timeline visuelle — barre temporelle (#11) */}
       <div style={{ marginBottom: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             Temps écoulé
           </span>
-          <span style={{ color: isOverdue ? '#f87171' : 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600 }}>
+          <span style={{ color: isOverdue ? '#f87171' : 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: 600 }}>
             {timelinePercent}%
           </span>
         </div>
@@ -228,7 +228,7 @@ const DetailsRight = () => {
       {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
         <>
           <div style={sep} />
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
             Finances
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -293,7 +293,7 @@ const DetailsRight = () => {
       <div style={sep} />
 
       {/* Client */}
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Client</p>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Client</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
         <div style={{
           width: '32px', height: '32px', borderRadius: '50%',
@@ -310,7 +310,7 @@ const DetailsRight = () => {
 
       {/* Producteur section */}
       <div style={sep} />
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>
         {isCustomer ? 'Réalisé par' : 'Producteur'}
       </p>
 
@@ -349,7 +349,7 @@ const DetailsRight = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '28px', height: '28px', borderRadius: '7px',
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0,
+                color: 'rgba(255,255,255,0.6)', cursor: 'pointer', flexShrink: 0,
               }}
               title="Changer de producteur"
             >
@@ -384,7 +384,7 @@ const DetailsRight = () => {
                 </button>
               ))}
               {producers.filter((p) => p.documentId !== project.producer?.documentId).length === 0 && (
-                <p style={{ padding: '10px 14px', color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>
+                <p style={{ padding: '10px 14px', color: 'rgba(255,255,255,0.55)', fontSize: '12px', margin: 0 }}>
                   Aucun autre producteur
                 </p>
               )}

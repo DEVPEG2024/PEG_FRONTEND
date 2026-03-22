@@ -64,7 +64,7 @@ const CopyButton = ({ text }: { text: string }) => {
         background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)',
         border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
         borderRadius: '6px', padding: '5px 10px',
-        color: copied ? '#4ade80' : 'rgba(255,255,255,0.4)',
+        color: copied ? '#4ade80' : 'rgba(255,255,255,0.6)',
         fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
         transition: 'all 0.2s', whiteSpace: 'nowrap',
       }}
@@ -233,7 +233,7 @@ const IAContentPage = () => {
 
           {/* Top bar — copy all */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
               Contenu généré pour <span style={{ color: '#fff', fontWeight: 600 }}>{productName}</span>
             </div>
             <CopyButton text={fullContent} />

@@ -253,7 +253,7 @@ const CompanyProfile = () => {
                                 <HiCamera size={14} />
                                 {logoUrl ? 'Changer le logo' : 'Ajouter un logo'}
                             </div>
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', margin: '4px 0 0' }}>
+                            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', margin: '4px 0 0' }}>
                                 JPG, PNG ou WEBP · Recommandé : 200×200px
                             </p>
                         </div>
@@ -291,7 +291,7 @@ const CompanyProfile = () => {
                     <div style={{
                         ...inputStyle,
                         background: 'rgba(255,255,255,0.02)',
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'rgba(255,255,255,0.6)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
@@ -305,7 +305,7 @@ const CompanyProfile = () => {
                             boxShadow: deferredPayment ? '0 0 6px rgba(74,222,128,0.6)' : 'none',
                             flexShrink: 0,
                         }} />
-                        <span style={{ fontSize: '13px', color: deferredPayment ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
+                        <span style={{ fontSize: '13px', color: deferredPayment ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
                             {deferredPayment ? 'Activé' : 'Non activé'}
                         </span>
                         <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>

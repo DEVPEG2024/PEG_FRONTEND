@@ -126,7 +126,7 @@ const ProjectBat = () => {
         }}>
           {/* Title */}
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>
               Bon à Tirer
             </p>
             <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', margin: 0 }}>
@@ -159,7 +159,7 @@ const ProjectBat = () => {
               borderRadius: '10px',
               padding: '14px 16px',
             }}>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>
                 Motif du refus
               </p>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
@@ -212,7 +212,7 @@ const ProjectBat = () => {
               borderRadius: '12px',
               padding: '24px',
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.55)',
               fontSize: '14px',
             }}>
               Aucun BAT disponible
@@ -246,7 +246,7 @@ const ProjectBat = () => {
                     <button onClick={handleBatSubmit} disabled={batSubmitting} style={{ flex: 1, background: 'rgba(34,197,94,0.15)', border: '1.5px solid rgba(34,197,94,0.4)', borderRadius: '8px', padding: '10px', color: '#4ade80', fontWeight: 700, fontSize: '13px', cursor: batSubmitting ? 'not-allowed' : 'pointer' }}>
                       {batSubmitting ? 'Envoi...' : 'Confirmer l\'approbation'}
                     </button>
-                    <button onClick={() => setBatAction(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>
+                    <button onClick={() => setBatAction(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}>
                       Annuler
                     </button>
                   </div>
@@ -268,7 +268,7 @@ const ProjectBat = () => {
                     <button onClick={handleBatSubmit} disabled={batSubmitting || !batCommentInput.trim()} style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '8px', padding: '10px', color: '#f87171', fontWeight: 700, fontSize: '13px', cursor: (batSubmitting || !batCommentInput.trim()) ? 'not-allowed' : 'pointer', opacity: !batCommentInput.trim() ? 0.5 : 1 }}>
                       {batSubmitting ? 'Envoi...' : 'Confirmer le refus'}
                     </button>
-                    <button onClick={() => { setBatAction(null); setBatCommentInput(''); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>
+                    <button onClick={() => { setBatAction(null); setBatCommentInput(''); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}>
                       Annuler
                     </button>
                   </div>
@@ -281,7 +281,7 @@ const ProjectBat = () => {
           {isSuperAdmin && orderItem && batStatus !== 'approved' && (
             <div>
               <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0.08) 60%, transparent)', marginBottom: '20px' }} />
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px' }}>
                 {batStatus === 'rejected' ? 'Envoyer un nouveau BAT' : batFile ? 'Remplacer le BAT' : 'Envoyer le BAT'}
               </p>
               <input
@@ -315,7 +315,7 @@ const ProjectBat = () => {
                   <p style={{ color: '#6b9eff', fontSize: '14px', fontWeight: 600, margin: 0 }}>
                     {uploading ? 'Envoi en cours...' : 'Cliquer pour sélectionner un fichier'}
                   </p>
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: '2px 0 0' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', margin: '2px 0 0' }}>
                     PDF, image, ZIP, AI, PSD
                   </p>
                 </div>

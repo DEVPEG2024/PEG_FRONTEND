@@ -114,7 +114,7 @@ const ReferenceUpload = ({
   return (
     <div>
       <label style={labelStyle}>Images de référence (optionnel)</label>
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginBottom: '10px', marginTop: 0, lineHeight: 1.5 }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', marginBottom: '10px', marginTop: 0, lineHeight: 1.5 }}>
         Uploadez des photos de référence pour guider le style de génération.
       </p>
 
@@ -200,7 +200,7 @@ const HistoryPanel = ({
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {items.length} image{items.length > 1 ? 's' : ''}
         </span>
         <button
@@ -367,7 +367,7 @@ const IAImagesPage = () => {
                 >
                   <div style={{ fontSize: '18px', marginBottom: '4px' }}>{s.emoji}</div>
                   <div style={{ color: style === s.value ? '#c084fc' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 700 }}>{s.label}</div>
-                  <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginTop: '2px' }}>{s.description}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginTop: '2px' }}>{s.description}</div>
                 </button>
               ))}
             </div>
@@ -469,7 +469,7 @@ const IAImagesPage = () => {
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
                     borderRadius: '8px', padding: '9px 16px',
-                    color: 'rgba(255,255,255,0.3)', fontSize: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    color: 'rgba(255,255,255,0.55)', fontSize: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   }}
                 >
                   Nouvelle génération

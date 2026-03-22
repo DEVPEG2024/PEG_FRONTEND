@@ -84,10 +84,6 @@ const FormItem = forwardRef<HTMLDivElement, FormItemProps>((props, ref) => {
         return { ...style }
     }
 
-    const enterStyle = { opacity: 1, marginTop: 3, bottom: -21 }
-    const exitStyle = { opacity: 0, marginTop: -10 }
-    const initialStyle = exitStyle
-
     return (
         <div ref={ref} className={formItemClass}>
             <label
@@ -114,10 +110,10 @@ const FormItem = forwardRef<HTMLDivElement, FormItemProps>((props, ref) => {
                     {invalid && (
                         <motion.div
                             className="form-explain"
-                            initial={initialStyle}
-                            animate={enterStyle}
-                            exit={exitStyle}
-                            transition={{ duration: 0.15, type: 'tween' }}
+                            initial={{ opacity: 0, y: -4, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -4, height: 0 }}
+                            transition={{ duration: 0.2 }}
                         >
                             {errorMessage}
                         </motion.div>

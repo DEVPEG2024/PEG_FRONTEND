@@ -85,9 +85,9 @@ const TaskCard = ({
           <div style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
             {isOpen ? <FaAngleUp size={14} /> : <FaAngleDown size={14} />}
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
           <span style={{
-            color: checked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.9)',
+            color: checked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.9)',
             fontSize: '13px',
             fontWeight: 600,
             textDecoration: checked ? 'line-through' : 'none',

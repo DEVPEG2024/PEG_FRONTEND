@@ -115,7 +115,7 @@ export default function FieldCard({
               >
                 {field.label || 'Sans titre'}
               </div>
-              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px' }}>
                 {def.label}
                 {field.required ? ' · Requis' : ''}
                 {' · '}{field.width}%

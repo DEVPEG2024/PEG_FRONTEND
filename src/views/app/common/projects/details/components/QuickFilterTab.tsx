@@ -69,7 +69,7 @@ const QuickFilterTab = () => {
             {count !== undefined && count > 0 && (
               <span style={{
                 background: isActive ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
                 borderRadius: '100px',
                 padding: '1px 7px',
                 fontSize: '10px',

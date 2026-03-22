@@ -159,7 +159,7 @@ const SignInForm = (props: SignInFormProps) => {
                       position: 'absolute', right: '12px', top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'rgba(255,255,255,0.3)', padding: 0, display: 'flex',
+                      color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',
                     }}
                   >
                     {showPassword ? <HiEyeOff size={16} /> : <HiEye size={16} />}

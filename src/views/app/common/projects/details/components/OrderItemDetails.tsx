@@ -33,7 +33,7 @@ const OrderItemDetails = ({
 
   return (
     <div style={{ width: '100%', fontFamily: 'Inter, sans-serif' }}>
-      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '18px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '18px' }}>
         Détails de la commande
       </p>
 
@@ -48,7 +48,7 @@ const OrderItemDetails = ({
           <HiOfficeBuilding size={14} />
         </div>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Client</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Client</p>
           <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{customer?.name ?? 'Client supprimé'}</span>
         </div>
       </div>
@@ -63,7 +63,7 @@ const OrderItemDetails = ({
               style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'contain', flexShrink: 0, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)' }}
             />
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
             </div>
           </div>
@@ -73,14 +73,14 @@ const OrderItemDetails = ({
               <HiBookOpen size={18} />
             </div>
             <div>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '1px' }}>Produit</p>
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{productTitle}</span>
             </div>
           </div>
         )
       ) : (
         <div style={{ marginBottom: '12px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>Produit</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>Produit</p>
           <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '14px', fontWeight: 600 }}>{productTitle}</span>
         </div>
       )}
@@ -97,7 +97,7 @@ const OrderItemDetails = ({
             <HiAdjustments size={14} />
           </div>
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>Sélections</p>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>Sélections</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {productSizeAndColors.map((sizeAndColor) => (
                 <div
@@ -113,7 +113,7 @@ const OrderItemDetails = ({
                     {sizeAndColor.size.value === 'DEFAULT' ? 'Quantité' : sizeAndColor.size.name}
                     {sizeAndColor.color.value !== 'DEFAULT' && ` (${sizeAndColor.color.name})`}
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>:</span>
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>:</span>
                   <span style={{ color: '#fff', fontWeight: 600 }}>{sizeAndColor.quantity}</span>
                 </div>
               ))}
