@@ -1,1 +1,0 @@
-import{j as s,c as o}from"./index-DDLlf-Qe.js";import{P as t}from"./ProjectItem-Dk9JL3yc.js";const a=({projects:r,handleDeleteProject:e})=>s.jsx("div",{className:o("mt-6 h-full flex flex-col"),children:s.jsx("div",{className:"grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4",children:r.map(l=>s.jsx(t,{project:l,handleDeleteProject:e},l.documentId))})});export{a as P};

@@ -3,6 +3,10 @@
 # dependencies
 node_modules/
 
+# Build output
+build/
+.vercel/
+
 # Expo
 .expo/
 dist/
