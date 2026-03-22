@@ -124,7 +124,7 @@ const Categories = () => {
       );
       setOrderChanged(false);
     } catch (e) {
-      console.error('Error saving order', e);
+      // Error handled silently
     } finally {
       setSavingOrder(false);
     }

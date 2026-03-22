@@ -4,7 +4,7 @@ import { env } from '@/configs/env.config';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
-import ReactHtmlParser from 'html-react-parser';
+import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { Project } from '@/@types/project';
 import DetailsRight from './DetailsRight';
 import { Button } from '@/components/ui';
@@ -142,7 +142,6 @@ const Summary = ({ project }: { project: Project }) => {
       ).unwrap();
       await dispatch(getProjectById(project.documentId));
     } catch (err) {
-      console.error('Photo upload failed:', err);
       toast.error("Échec de l'envoi de la photo");
     } finally {
       setUploadingPhoto(false);
@@ -315,7 +314,7 @@ const Summary = ({ project }: { project: Project }) => {
                       <RichTextEditor value={description} onChange={onEdit} />
                     ) : (
                       <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.7 }}>
-                        {ReactHtmlParser(description || '')}
+                        {safeHtmlParse(description || '')}
                       </div>
                     )}
                   </div>

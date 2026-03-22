@@ -42,7 +42,7 @@ function FileUplaodDragCustom({
       setImage(fileUrl);
       setFileType(files[0].type);
     } catch (error) {
-      console.error("Error uploading file:", error);
+      // Upload failed silently
     }
   };
   return (

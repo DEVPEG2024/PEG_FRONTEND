@@ -70,7 +70,6 @@ const ProjectBat = () => {
       await dispatch(getProjectById(project!.documentId));
       toast.success('Nouveau BAT soumis au client');
     } catch (err) {
-      console.error('BAT upload failed:', err);
       toast.error("Échec de l'envoi du BAT");
     } finally {
       setUploading(false);

@@ -16,7 +16,7 @@ import { SizeAndColorSelection } from '@/@types/product';
 import { ChecklistItem } from '@/@types/checklist';
 import { getTotalPriceForCartItem } from '@/utils/productHelpers';
 import { useParams } from 'react-router-dom';
-import ReactHtmlParser from 'html-react-parser';
+import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { HiCheck, HiClock } from 'react-icons/hi';
 import { MdChecklist } from 'react-icons/md';
 
@@ -71,7 +71,7 @@ const ShowOrderItem = () => {
                 </div>
 
                 <div className="mt-4 leading-relaxed mb-8 prose dark:prose-invert max-w-none text-sm">
-                  {ReactHtmlParser(orderItem.product.description || '')}
+                  {safeHtmlParse(orderItem.product.description || '')}
                 </div>
 
                 {orderItem.product.sizes.length > 0 ? (

@@ -6,7 +6,7 @@ import {
   useAppDispatch,
   useAppSelector as useRootAppSelector,
 } from '@/store';
-import ReactHtmlParser from 'html-react-parser';
+import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
@@ -142,7 +142,7 @@ const TaskCard = ({
       {isOpen && (
         <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', lineHeight: 1.7, marginBottom: '14px' }}>
-            {ReactHtmlParser(task.description || '')}
+            {safeHtmlParse(task.description || '')}
           </div>
           {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
             <div style={{ display: 'flex', gap: '8px' }}>

@@ -18,7 +18,7 @@ import { HiUserCircle, HiTrash, HiExclamation } from 'react-icons/hi';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
-import ReactHtmlParser from 'html-react-parser';
+import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { Comment } from '@/@types/project';
 import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 import { hasRole } from '@/utils/permissions';
@@ -137,7 +137,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
         }}>
           <div>
             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', lineHeight: 1.7 }}>
-              {ReactHtmlParser(comment.content)}
+              {safeHtmlParse(comment.content)}
             </div>
             <div style={{ marginTop: '10px' }}>
               {!confirmDelete ? (

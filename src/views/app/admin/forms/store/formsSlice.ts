@@ -126,7 +126,6 @@ const formsSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(deleteForm.fulfilled, (state, action) => {
-      console.log(action.payload);
       state.loading = false;
       state.forms = state.forms.filter(
         (form) => form.documentId !== action.payload.documentId

@@ -227,7 +227,6 @@ const projectListSlice = createSlice({
       state.selectedTask = action.payload;
     },
     setEditTaskSelected: (state, action) => {
-      console.log('action.payload', action.payload);
       if (state.project) {
         state.project.tasks = state.project.tasks.map((task: Task) =>
           task.documentId === action.payload.documentId ? action.payload : task

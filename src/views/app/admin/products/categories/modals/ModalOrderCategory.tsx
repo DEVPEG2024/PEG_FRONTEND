@@ -114,7 +114,7 @@ function ModalOrderCategory({
       await Promise.all(updatePromises);
       handleCloseModal();
     } catch (error) {
-      console.error('Error saving category order', error);
+      // Error handled silently
     }
   };
 

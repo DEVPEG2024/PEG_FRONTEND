@@ -8,13 +8,13 @@ import './locales';
 import { useEffect } from 'react';
 import { PERSIST_STORE_NAME } from './constants/app.constant';
 import { ToastContainer } from 'react-toastify';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 function App() {
   useEffect(() => {
     const pegItem: string = localStorage.getItem(PERSIST_STORE_NAME) ?? ""
 
     if (pegItem.includes('_id')) {
-      console.log('Removing localstorage peg and token key')
       localStorage.removeItem(PERSIST_STORE_NAME);
       localStorage.removeItem('token');
     }
@@ -24,10 +24,12 @@ function App() {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
-          <Theme>
-            <Layout />
-            <ToastContainer position="bottom-right" />
-          </Theme>
+          <ErrorBoundary>
+            <Theme>
+              <Layout />
+              <ToastContainer position="bottom-right" />
+            </Theme>
+          </ErrorBoundary>
         </BrowserRouter>
       </PersistGate>
     </Provider>
