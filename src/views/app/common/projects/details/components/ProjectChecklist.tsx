@@ -23,7 +23,10 @@ const ProjectChecklist = () => {
   );
   const dispatch = useAppDispatch();
 
-  const canToggle = hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]);
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
+  const isProducer = hasRole(user, [PRODUCER]);
+  const canToggle = isAdmin || isProducer; // peut cocher les tâches
+  const canEdit = isAdmin; // peut ajouter, supprimer, réordonner, templates
 
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -56,7 +59,7 @@ const ProjectChecklist = () => {
       .then((res: any) => res?.data?.data?.project?.checklistItems ?? [])
       .catch(() => { setUnavailable(true); return null; });
 
-    const fetchTemplates = canToggle
+    const fetchTemplates = canEdit
       ? unwrapData(apiGetChecklists())
           .then((data: { checklists_connection: { nodes: Checklist[] } }) =>
             data.checklists_connection?.nodes ?? []
@@ -83,7 +86,7 @@ const ProjectChecklist = () => {
               label,
               done: false,
             }));
-            if (canToggle) {
+            if (canEdit) {
               apiUpdateProjectChecklistItems(project.documentId, newItems)
                 .then(() => setItems(newItems))
                 .catch(() => setItems(newItems));
@@ -283,7 +286,7 @@ const ProjectChecklist = () => {
             </div>
 
             {/* Actions admin/producer */}
-            {canToggle && !unavailable && (
+            {canEdit && !unavailable && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setShowAddInput(true)}
@@ -492,7 +495,7 @@ const ProjectChecklist = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
                   <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
-                  {canToggle && (
+                  {canEdit && (
                     <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
                       Utilisez "Ajouter une tâche" ou "Modèle" ci-dessus
                     </p>
@@ -507,7 +510,7 @@ const ProjectChecklist = () => {
                   {items.map((item, index) => (
                     <div
                       key={`item-${index}`}
-                      draggable={canToggle && !saving}
+                      draggable={canEdit && !saving}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
@@ -522,7 +525,7 @@ const ProjectChecklist = () => {
                             ? 'rgba(47,111,237,0.4)'
                             : item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'
                         }`,
-                        cursor: canToggle ? 'grab' : 'default',
+                        cursor: canEdit ? 'grab' : 'default',
                         transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
                         opacity: saving && draggingIdx === null ? 0.6 : 1,
                         transform: draggingIdx === index ? 'scale(1.02)' : 'scale(1)',
@@ -531,7 +534,7 @@ const ProjectChecklist = () => {
                       }}
                     >
                       {/* Drag handle */}
-                      {canToggle && (
+                      {canEdit && (
                         <MdDragIndicator
                           size={16}
                           style={{
@@ -580,7 +583,7 @@ const ProjectChecklist = () => {
                       )}
 
                       {/* Delete button for admins */}
-                      {canToggle && (
+                      {canEdit && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeItem(index); }}
                           style={{
@@ -603,7 +606,7 @@ const ProjectChecklist = () => {
               )}
 
               {/* Add task inline input */}
-              {showAddInput && canToggle && (
+              {showAddInput && canEdit && (
                 <div style={{
                   display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'center',
                 }}>

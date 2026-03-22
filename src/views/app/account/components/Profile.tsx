@@ -8,6 +8,7 @@ import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFile, apiLoadPegFilesAndFiles, apiUploadFile } from '@/services/FileServices';
 import { useNavigate } from 'react-router-dom';
 import { HiCamera, HiOutlineUser } from 'react-icons/hi';
+import { toast } from 'react-toastify';
 import { AiOutlineSave } from 'react-icons/ai';
 
 type UserFormModel = Omit<
@@ -96,17 +97,22 @@ const Profile = () => {
   };
 
   const onFormSubmit = async (values: UserFormModel) => {
-    const updatedValues = { ...values } as any;
-    if (newAvatarFile) {
-      const uploaded = await apiUploadFile(newAvatarFile);
-      if (avatar) apiDeleteFile(avatar.id);
-      updatedValues.avatar = uploaded.id;
-    } else if (avatarToDelete) {
-      apiDeleteFile(avatarToDelete.id);
-      updatedValues.avatar = null;
+    try {
+      const updatedValues = { ...values } as any;
+      if (newAvatarFile) {
+        const uploaded = await apiUploadFile(newAvatarFile);
+        if (!uploaded?.id) throw new Error("Erreur lors de l'upload de la photo");
+        if (avatar) apiDeleteFile(avatar.id).catch(() => {});
+        updatedValues.avatar = Number(uploaded.id);
+      } else if (avatarToDelete) {
+        apiDeleteFile(avatarToDelete.id).catch(() => {});
+        updatedValues.avatar = null;
+      }
+      await dispatch(updateOwnUser({ user: updatedValues, id: String(user.id) }));
+      navigate('/home');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Erreur lors de la sauvegarde du profil');
     }
-    await dispatch(updateOwnUser({ user: updatedValues, id: user.documentId || String(user.id) }));
-    navigate('/home');
   };
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<UserFormModel>({
