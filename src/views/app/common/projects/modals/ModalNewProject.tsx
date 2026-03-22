@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { HiOutlineCalendar, HiSparkles } from 'react-icons/hi';
 import { apiRewriteDescription } from '@/services/ChatbotServices';
+import { toast } from 'react-toastify';
 import {
   createProject,
   setNewProjectDialog,
@@ -85,9 +86,12 @@ function ModalNewProject() {
       const res = await apiRewriteDescription(formData.description, formData.name ? `Projet : ${formData.name}` : undefined);
       if (res.data?.result && res.data.description) {
         setFormData({ ...formData, description: res.data.description });
+      } else {
+        toast.error('Erreur lors de la reformulation');
       }
-    } catch { /* silently fail */ }
-    finally { setRewriting(false); }
+    } catch {
+      toast.error('Service IA indisponible — vérifiez que le backend est déployé');
+    } finally { setRewriting(false); }
   };
 
   useEffect(() => {
