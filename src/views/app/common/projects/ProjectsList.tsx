@@ -160,16 +160,16 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
               onDrop={handleColDrop(col.key)}
               onDragLeave={() => { setDragOverCol(null); setDragOverColKey(null) }}
             >
-              {/* Column header — draggable */}
+              {/* Column header — draggable only for admin */}
               <div
-                draggable
-                onDragStart={handleColHeaderDragStart(col.key)}
-                onDragEnd={handleDragEnd}
+                draggable={isAdmin}
+                onDragStart={isAdmin ? handleColHeaderDragStart(col.key) : undefined}
+                onDragEnd={isAdmin ? handleDragEnd : undefined}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 14px', marginBottom: '10px',
                   background: col.bg, border: `1px solid ${isColOver ? '#fff' : isCardOver ? col.color : col.border}`,
-                  borderRadius: '12px', cursor: 'grab',
+                  borderRadius: '12px', cursor: isAdmin ? 'grab' : 'default',
                   transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.15s',
                   boxShadow: isCardOver ? `0 0 20px ${col.color}30` : isColOver ? '0 0 20px rgba(255,255,255,0.15)' : 'none',
                   transform: isColOver ? 'scale(1.03)' : 'none',
