@@ -5,13 +5,13 @@ import { PegFile } from '@/@types/pegFile';
 /*export async function apiUploadFileToEntity(file: File, ref: string, refId: string, field: string) {
     const formData = new FormData();
     
-    formData.append("files", file);
+    formData.append("file", file);
     formData.append("ref", ref);
     formData.append("refId", refId);
     formData.append("field", field);
     
     const response = await ApiService.fetchData<File[]>({
-        url: API_BASE_URL + "/upload",
+        url: API_BASE_URL + "/upload-single",
         method: 'post',
         headers: {
             'Content-Type': 'multipart/form-data',
@@ -25,10 +25,10 @@ import { PegFile } from '@/@types/pegFile';
 export async function apiUploadFile(file: File): Promise<PegFile> {
     const formData = new FormData();
 
-    formData.append("files", file);
+    formData.append("file", file);
 
-    const response = await ApiService.fetchData<PegFile[]>({
-        url: API_BASE_URL + "/upload",
+    const response = await ApiService.fetchData<PegFile | PegFile[]>({
+        url: API_BASE_URL + "/upload-single",
         method: 'post',
         data: formData,
         headers: {
@@ -38,7 +38,7 @@ export async function apiUploadFile(file: File): Promise<PegFile> {
         },
     })
 
-    return response.data[0]
+    return Array.isArray(response.data) ? response.data[0] : response.data
 }
 
 export async function apiGetFile(documentId: string): Promise<PegFile[]> {
@@ -55,7 +55,7 @@ export async function apiGetFile(documentId: string): Promise<PegFile[]> {
 }
 
 export async function apiGetAllFiles() : Promise<PegFile[]> {    
-    const response = await ApiService.fetchData<PegFile[]>({
+    const response = await ApiService.fetchData<PegFile | PegFile[]>({
         url: API_BASE_URL + "/upload/files/",
         method: 'get'
     })
@@ -95,7 +95,7 @@ const convertPegFileUrlToFile = async(url: string, fileName: string) : Promise<F
 
 // TODO: Voir pour mettre en place un cache de l'ensemble des fichiers qui se MAJ quand ajout et delete + permet de faire la conversion de documentId à id
 export async function apiDeleteFile(id: string) {    
-    const response = await ApiService.fetchData<PegFile[]>({
+    const response = await ApiService.fetchData<PegFile | PegFile[]>({
         url: API_BASE_URL + "/upload/files/" + id,
         method: 'delete'
     })
@@ -106,7 +106,7 @@ export async function apiDeleteFile(id: string) {
 /*export async function apiUploadFileTest(file: any, ref: string, refId: string, field: string) {
     const formData = new FormData();
     
-    formData.append("files", file);
+    formData.append("file", file);
     formData.append("ref", ref);
     formData.append("refId", refId);
     formData.append("field", field);

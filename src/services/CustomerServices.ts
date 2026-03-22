@@ -1,6 +1,6 @@
 // src/services/CustomerServices.ts
 import ApiService from './ApiService'
-import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import { ApiResponse, PageInfo } from '@/utils/serviceHelper'
 import { Customer } from '@/@types/customer'
 import { AxiosResponse } from 'axios'
@@ -137,14 +137,14 @@ export const apiUpdateCustomerByDocumentId = async (documentId: string, data: an
 // UPLOAD (Strapi)
 export const apiUploadFile = (file: File) => {
   const formData = new FormData()
-  formData.append('files', file)
+  formData.append('file', file)
 
   return ApiService.fetchData({
-    url: `/upload`,
+    url: API_BASE_URL + '/upload-single',
     method: 'post',
     data: formData,
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': undefined as any,
     },
   })
 }
