@@ -15,7 +15,7 @@ import {
   HiOutlineCalendar, HiOutlineClipboardList, HiOutlineRefresh, HiOutlinePhotograph,
   HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineArrowSmUp, HiOutlineArrowSmDown,
   HiOutlineDocumentDuplicate, HiOutlineLightningBolt, HiOutlineSelector,
-  HiOutlineLockClosed, HiOutlineLockOpen,
+  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineX, HiOutlinePlus, HiOutlineEye, HiOutlineEyeOff,
 } from 'react-icons/hi'
 
 dayjs.extend(isoWeek); dayjs.extend(relativeTime); dayjs.locale('fr')
@@ -210,19 +210,24 @@ const WIDGET_DEFS: WidgetDef[] = [
   { id: 'activity', label: 'Activité récente', glow: 'sky', accentGradient: 'from-sky-500 to-blue-500', span: 1 },
 ]
 
-const DEFAULT_LAYOUT: WidgetId[] = ['chart-ca', 'chart-tickets', 'pipeline', 'orders', 'todo', 'calendar', 'alerts', 'deadlines', 'top-clients', 'top-producers', 'activity']
+const ALL_WIDGET_IDS: WidgetId[] = ['chart-ca', 'chart-tickets', 'pipeline', 'orders', 'todo', 'calendar', 'alerts', 'deadlines', 'top-clients', 'top-producers', 'activity']
+const HIDDEN_KEY = 'peg:dashboardHidden'
 
 function loadLayout(): WidgetId[] {
   try {
     const raw = localStorage.getItem(LAYOUT_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as WidgetId[]
-      // Ensure all widgets are present (in case new ones were added)
-      const missing = DEFAULT_LAYOUT.filter(id => !parsed.includes(id))
+      const missing = ALL_WIDGET_IDS.filter(id => !parsed.includes(id) && !loadHidden().includes(id))
       return [...parsed, ...missing]
     }
   } catch {}
-  return [...DEFAULT_LAYOUT]
+  return [...ALL_WIDGET_IDS]
+}
+
+function loadHidden(): WidgetId[] {
+  try { const raw = localStorage.getItem(HIDDEN_KEY); if (raw) return JSON.parse(raw) } catch {}
+  return []
 }
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -245,6 +250,7 @@ export default function DashboardAdmin() {
   const [lastUpdatedText, setLastUpdatedText] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(loadLayout)
+  const [hiddenWidgets, setHiddenWidgets] = useState<WidgetId[]>(loadHidden)
 
   const fetchDashboard = async () => { try { setLoading(true); setError(null); const res = await apiGetDashboardSuperAdminInformations(); const data = (res as any)?.data?.data ?? (res as any)?.data ?? null; if (!data) throw new Error('Réponse vide'); setGql(data); setLastUpdated(new Date()) } catch (e: any) { setError(e?.message ?? 'Erreur') } finally { setLoading(false) } }
   useEffect(() => { fetchDashboard() }, [refreshTick])
@@ -345,7 +351,27 @@ export default function DashboardAdmin() {
     setDragOverIdx(null)
   }
 
-  const resetLayout = () => { setWidgetOrder([...DEFAULT_LAYOUT]); localStorage.removeItem(LAYOUT_KEY) }
+  const resetLayout = () => { setWidgetOrder([...ALL_WIDGET_IDS]); setHiddenWidgets([]); localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(HIDDEN_KEY) }
+
+  const hideWidget = (id: WidgetId) => {
+    const newOrder = widgetOrder.filter(w => w !== id)
+    const newHidden = [...hiddenWidgets, id]
+    setWidgetOrder(newOrder)
+    setHiddenWidgets(newHidden)
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(newOrder))
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(newHidden))
+  }
+
+  const showWidget = (id: WidgetId) => {
+    const newOrder = [...widgetOrder, id]
+    const newHidden = hiddenWidgets.filter(w => w !== id)
+    setWidgetOrder(newOrder)
+    setHiddenWidgets(newHidden)
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(newOrder))
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(newHidden))
+  }
+
+  const visibleWidgets = widgetOrder.filter(w => !hiddenWidgets.includes(w))
 
   /* ── Widget renderer ── */
   const renderWidget = (id: WidgetId) => {
@@ -428,10 +454,38 @@ export default function DashboardAdmin() {
           )}
 
           {/* DRAGGABLE WIDGETS GRID */}
-          {editMode && <div className="text-center text-xs text-cyan-400/60 bg-cyan-500/5 border border-cyan-500/10 rounded-xl py-2 px-4 flex items-center justify-center gap-2"><HiOutlineSelector className="w-4 h-4" />Glisse les widgets pour réorganiser ton dashboard</div>}
+          {editMode && (
+            <div className="space-y-3">
+              <div className="text-center text-xs text-cyan-400/60 bg-cyan-500/5 border border-cyan-500/10 rounded-xl py-2 px-4 flex items-center justify-center gap-2">
+                <HiOutlineSelector className="w-4 h-4" />
+                Glisse les widgets pour réorganiser · Clique ✕ pour masquer
+              </div>
+
+              {/* Hidden widgets — click to restore */}
+              {hiddenWidgets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] text-white/30 flex items-center gap-1"><HiOutlineEyeOff className="w-3.5 h-3.5" />Masqués :</span>
+                  {hiddenWidgets.map(hid => {
+                    const hDef = WIDGET_DEFS.find(w => w.id === hid)
+                    if (!hDef) return null
+                    return (
+                      <button
+                        key={hid}
+                        onClick={() => showWidget(hid)}
+                        className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white/80 hover:border-white/15 transition"
+                      >
+                        <HiOutlinePlus className="w-3 h-3" />
+                        {hDef.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {widgetOrder.map((wid, index) => {
+            {visibleWidgets.map((wid, index) => {
               const def = WIDGET_DEFS.find(w => w.id === wid)
               if (!def) return null
               const isDragging = draggingIdx === index
@@ -460,9 +514,18 @@ export default function DashboardAdmin() {
                     <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${def.accentGradient} opacity-80`} />
 
                     {editMode && (
-                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/[0.08] backdrop-blur-md border border-white/10 rounded-lg px-2 py-1">
-                        <HiOutlineSelector className="w-3.5 h-3.5 text-white/40" />
-                        <span className="text-[10px] text-white/30">{def.label}</span>
+                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                        <div className="flex items-center gap-1 bg-white/[0.08] backdrop-blur-md border border-white/10 rounded-lg px-2 py-1">
+                          <HiOutlineSelector className="w-3.5 h-3.5 text-white/40" />
+                          <span className="text-[10px] text-white/30">{def.label}</span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); hideWidget(wid) }}
+                          className="flex items-center justify-center h-6 w-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition"
+                          title="Masquer ce widget"
+                        >
+                          <HiOutlineX className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     )}
 
