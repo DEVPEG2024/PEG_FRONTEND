@@ -9,7 +9,8 @@ import {
 import { t } from 'i18next';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { HiOutlineCalendar, HiCurrencyEuro, HiUserGroup, HiFlag, HiCog } from 'react-icons/hi';
+import { HiOutlineCalendar, HiCurrencyEuro, HiUserGroup, HiFlag, HiCog, HiSparkles } from 'react-icons/hi';
+import { apiRewriteDescription } from '@/services/ChatbotServices';
 import {
   setEditCurrentProjectDialog,
   updateCurrentProject,
@@ -84,6 +85,19 @@ function ModalEditProject() {
   });
   const [customers, setCustomers] = useState<Option[]>([]);
   const [producers, setProducers] = useState<Option[]>([]);
+  const [rewriting, setRewriting] = useState(false);
+
+  const handleRewrite = async () => {
+    if (!formData.description?.trim() || rewriting) return;
+    setRewriting(true);
+    try {
+      const res = await apiRewriteDescription(formData.description as string, formData.name ? `Projet : ${formData.name}` : undefined);
+      if (res.data?.result && res.data.description) {
+        setFormData({ ...formData, description: res.data.description });
+      }
+    } catch { /* silently fail */ }
+    finally { setRewriting(false); }
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -154,6 +168,28 @@ function ModalEditProject() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Description du projet"
           />
+          {(formData.description as string)?.trim() && (
+            <button
+              type="button"
+              onClick={handleRewrite}
+              disabled={rewriting}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                marginTop: '8px',
+                padding: '6px 14px', borderRadius: '8px',
+                background: rewriting ? 'rgba(168,85,247,0.08)' : 'linear-gradient(90deg, rgba(168,85,247,0.15), rgba(139,92,246,0.15))',
+                border: '1px solid rgba(168,85,247,0.3)',
+                color: '#c084fc', fontSize: '12px', fontWeight: 600,
+                cursor: rewriting ? 'wait' : 'pointer',
+                fontFamily: 'Inter, sans-serif',
+                transition: 'all 0.15s',
+                opacity: rewriting ? 0.6 : 1,
+              }}
+            >
+              <HiSparkles size={13} style={{ animation: rewriting ? 'spin 1s linear infinite' : 'none' }} />
+              {rewriting ? 'Reformulation en cours…' : 'Reformuler avec l\'IA'}
+            </button>
+          )}
         </div>
 
         {/* Finances */}

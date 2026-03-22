@@ -88,6 +88,10 @@ export const apiUploadDocument = (form: FormData) =>
 export const apiDeleteDocument = (docId: number) =>
   backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
 
+// AI rewrite description
+export const apiRewriteDescription = (text: string, context?: string) =>
+  backend().post<{ result: boolean; description: string }>('/chatbot/rewrite-description', { text, context });
+
 // AI product fill
 export const apiAiFillProduct = (
   name: string,
