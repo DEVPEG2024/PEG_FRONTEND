@@ -91,68 +91,89 @@ function getProjectProgress(project: Project): number {
 /*  KANBAN BOARD COMPONENT                                    */
 /* ═══════════════════════════════════════════════════════════ */
 
+const KANBAN_COL_ORDER_KEY = 'peg:kanbanColOrder'
+type ColDef = typeof statusTabs[number]
+
 function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, navigate, dispatch, user }: {
-  projects: Project[]; statusTabs: typeof statusTabs_; priorityStyles: Record<string, { label: string; color: string }>; isSuperAdmin: boolean; navigate: any; dispatch: any; user: User
+  projects: Project[]; statusTabs: ColDef[]; priorityStyles: Record<string, { label: string; color: string }>; isSuperAdmin: boolean; navigate: any; dispatch: any; user: User
 }) {
+  // Column order (D&D columns)
+  const [colOrder, setColOrder] = useState<string[]>(() => {
+    try { const raw = localStorage.getItem(KANBAN_COL_ORDER_KEY); if (raw) return JSON.parse(raw) } catch {}
+    return statusTabs.filter(t => t.key !== 'all').map(t => t.key)
+  })
   const [dragProjectId, setDragProjectId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
+  const [dragColKey, setDragColKey] = useState<string | null>(null)
+  const [dragOverColKey, setDragOverColKey] = useState<string | null>(null)
 
+  const orderedCols = colOrder.map(key => statusTabs.find(t => t.key === key)).filter(Boolean) as ColDef[]
+
+  // Card D&D
   const handleCardDragStart = (projectId: string) => (e: React.DragEvent) => {
-    setDragProjectId(projectId)
-    e.dataTransfer.effectAllowed = 'move'
+    setDragProjectId(projectId); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('type', 'card')
     const el = document.createElement('div'); el.style.opacity = '0'; document.body.appendChild(el); e.dataTransfer.setDragImage(el, 0, 0); setTimeout(() => document.body.removeChild(el), 0)
   }
-
-  const handleColDragOver = (colKey: string) => (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    if (dragOverCol !== colKey) setDragOverCol(colKey)
-  }
-
+  const handleColDragOver = (colKey: string) => (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverCol !== colKey) setDragOverCol(colKey) }
   const handleColDrop = (newState: string) => async (e: React.DragEvent) => {
     e.preventDefault()
+    // Column reorder
+    if (dragColKey && !dragProjectId) {
+      if (dragColKey !== newState) {
+        const newOrder = [...colOrder]; const fromIdx = newOrder.indexOf(dragColKey); const toIdx = newOrder.indexOf(newState)
+        if (fromIdx !== -1 && toIdx !== -1) { newOrder.splice(fromIdx, 1); newOrder.splice(toIdx, 0, dragColKey); setColOrder(newOrder); localStorage.setItem(KANBAN_COL_ORDER_KEY, JSON.stringify(newOrder)) }
+      }
+      setDragColKey(null); setDragOverColKey(null); return
+    }
+    // Card move
     if (!dragProjectId) return
     const project = projects.find(p => p.documentId === dragProjectId)
     if (!project || project.state === newState) { setDragProjectId(null); setDragOverCol(null); return }
-
     try {
       await dispatch(updateProject({ documentId: dragProjectId, state: newState } as any))
       toast.success(`Projet déplacé → ${statusTabs.find(t => t.key === newState)?.label ?? newState}`)
-      // Refresh projects list
       dispatch(getProjects({ user, pagination: { page: 1, pageSize: 30 }, searchTerm: '' }))
-    } catch {
-      toast.error('Erreur lors du changement de statut')
-    }
-
-    setDragProjectId(null)
-    setDragOverCol(null)
+    } catch { toast.error('Erreur lors du changement de statut') }
+    setDragProjectId(null); setDragOverCol(null)
   }
+  const handleDragEnd = () => { setDragProjectId(null); setDragOverCol(null); setDragColKey(null); setDragOverColKey(null) }
 
-  const handleDragEnd = () => { setDragProjectId(null); setDragOverCol(null) }
+  // Column header D&D
+  const handleColHeaderDragStart = (colKey: string) => (e: React.DragEvent) => {
+    setDragColKey(colKey); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('type', 'column')
+    const el = document.createElement('div'); el.style.opacity = '0'; document.body.appendChild(el); e.dataTransfer.setDragImage(el, 0, 0); setTimeout(() => document.body.removeChild(el), 0)
+  }
 
   return (
     <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
       <div style={{ display: 'flex', gap: '14px', minWidth: 'max-content' }}>
-        {statusTabs.filter(t => t.key !== 'all').map((col) => {
+        {orderedCols.map((col) => {
           const colProjects = projects.filter(p => p.state === col.key)
-          const isOver = dragOverCol === col.key
+          const isCardOver = dragOverCol === col.key && dragProjectId
+          const isColDragging = dragColKey === col.key
+          const isColOver = dragColKey && !dragProjectId && dragOverCol === col.key && dragColKey !== col.key
           return (
             <div
               key={col.key}
-              style={{ width: '280px', flexShrink: 0 }}
+              style={{ width: '280px', flexShrink: 0, opacity: isColDragging ? 0.4 : 1, transition: 'opacity 0.15s' }}
               onDragOver={handleColDragOver(col.key)}
               onDrop={handleColDrop(col.key)}
-              onDragLeave={() => setDragOverCol(null)}
+              onDragLeave={() => { setDragOverCol(null); setDragOverColKey(null) }}
             >
-              {/* Column header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px', marginBottom: '10px',
-                background: col.bg, border: `1px solid ${isOver ? col.color : col.border}`,
-                borderRadius: '12px',
-                transition: 'border-color 0.15s, box-shadow 0.15s',
-                boxShadow: isOver ? `0 0 20px ${col.color}30` : 'none',
-              }}>
+              {/* Column header — draggable */}
+              <div
+                draggable
+                onDragStart={handleColHeaderDragStart(col.key)}
+                onDragEnd={handleDragEnd}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px', marginBottom: '10px',
+                  background: col.bg, border: `1px solid ${isColOver ? '#fff' : isCardOver ? col.color : col.border}`,
+                  borderRadius: '12px', cursor: 'grab',
+                  transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.15s',
+                  boxShadow: isCardOver ? `0 0 20px ${col.color}30` : isColOver ? '0 0 20px rgba(255,255,255,0.15)' : 'none',
+                  transform: isColOver ? 'scale(1.03)' : 'none',
+                }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.color }} />
                   <span style={{ color: col.color, fontSize: '13px', fontWeight: 700 }}>{col.label}</span>
@@ -165,63 +186,32 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, navig
               {/* Drop zone */}
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: '8px',
-                minHeight: '80px', padding: '4px',
-                borderRadius: '12px',
+                minHeight: '80px', padding: '4px', borderRadius: '12px',
                 transition: 'background 0.15s',
-                background: isOver ? `${col.color}08` : 'transparent',
-                border: isOver ? `1.5px dashed ${col.color}40` : '1.5px dashed transparent',
+                background: isCardOver ? `${col.color}08` : 'transparent',
+                border: isCardOver ? `1.5px dashed ${col.color}40` : '1.5px dashed transparent',
               }}>
                 {colProjects.length === 0 && (
                   <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.15)', fontSize: '12px', borderRadius: '12px' }}>
-                    {isOver ? 'Déposer ici' : 'Aucun projet'}
+                    {isCardOver ? 'Déposer ici' : 'Aucun projet'}
                   </div>
                 )}
                 {colProjects.map((project) => {
-                  const progress = getProjectProgress(project)
-                  const duration = dayjs(project.endDate).diff(dayjs(), 'day')
-                  const pr = priorityStyles[project.priority]
-                  const progressColor = progress > 70 ? '#22c55e' : progress < 40 ? '#ef4444' : '#f59e0b'
+                  const progress = getProjectProgress(project); const duration = dayjs(project.endDate).diff(dayjs(), 'day')
+                  const pr = priorityStyles[project.priority]; const progressColor = progress > 70 ? '#22c55e' : progress < 40 ? '#ef4444' : '#f59e0b'
                   const isDragging = dragProjectId === project.documentId
-
                   return (
-                    <div
-                      key={project.documentId}
-                      draggable
-                      onDragStart={handleCardDragStart(project.documentId)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
-                      style={{
-                        background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-                        border: '1.5px solid rgba(255,255,255,0.07)',
-                        borderRadius: '12px', padding: '12px 14px',
-                        cursor: 'grab', fontFamily: 'Inter, sans-serif',
-                        transition: 'all 0.15s',
-                        opacity: isDragging ? 0.4 : 1,
-                        transform: isDragging ? 'scale(0.95)' : 'none',
-                      }}
+                    <div key={project.documentId} draggable onDragStart={handleCardDragStart(project.documentId)} onDragEnd={handleDragEnd} onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
+                      style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 14px', cursor: 'grab', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', opacity: isDragging ? 0.4 : 1, transform: isDragging ? 'scale(0.95)' : 'none' }}
                       onMouseEnter={(e) => { if (!isDragging) { e.currentTarget.style.borderColor = `${col.color}40`; e.currentTarget.style.transform = 'translateY(-1px)' } }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = isDragging ? 'scale(0.95)' : 'none' }}
-                    >
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = isDragging ? 'scale(0.95)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
                         <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{project.name}</span>
                         {pr && <span style={{ color: pr.color, fontSize: '9px', fontWeight: 700, background: `${pr.color}20`, border: `1px solid ${pr.color}40`, borderRadius: '4px', padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pr.label}</span>}
                       </div>
-                      <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '8px' }}>
-                        {project.customer?.name ?? '—'}
-                        {project.producer?.name && <span style={{ color: 'rgba(255,255,255,0.25)' }}> · {project.producer.name}</span>}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '100px' }} />
-                        </div>
-                        <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600 }}>{progress}%</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}>
-                          <MdAccessTime size={10} />{dayjs(project.endDate).format('DD/MM')}{duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}
-                        </span>
-                        {isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{project.price?.toFixed(0)} €</span>}
-                      </div>
+                      <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '8px' }}>{project.customer?.name ?? '—'}{project.producer?.name && <span style={{ color: 'rgba(255,255,255,0.25)' }}> · {project.producer.name}</span>}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}><div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '100px' }} /></div><span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600 }}>{progress}%</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}><MdAccessTime size={10} />{dayjs(project.endDate).format('DD/MM')}{duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}</span>{isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{project.price?.toFixed(0)} €</span>}</div>
                     </div>
                   )
                 })}
@@ -233,9 +223,6 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, navig
     </div>
   )
 }
-
-// Type alias for statusTabs (needed for KanbanBoard props)
-type statusTabs_ = typeof statusTabs
 
 const ProjectsList = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);

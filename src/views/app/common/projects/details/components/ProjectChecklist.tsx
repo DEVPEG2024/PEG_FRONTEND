@@ -25,7 +25,9 @@ const ProjectChecklist = () => {
 
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isProducer = hasRole(user, [PRODUCER]);
-  const canToggle = isAdmin || isProducer; // peut cocher les tâches
+  // Producteur peut cocher seulement s'il est assigné au projet
+  const isAssignedProducer = isProducer && project?.producer?.documentId && user?.producer?.documentId === project.producer.documentId;
+  const canToggle = isAdmin || isAssignedProducer; // peut cocher les tâches
   const canEdit = isAdmin; // peut ajouter, supprimer, réordonner, templates
 
   const [items, setItems] = useState<ChecklistItem[]>([]);

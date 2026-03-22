@@ -54,9 +54,6 @@ const ProjectHeader = ({ project }: { project: Project }) => {
       fontFamily: 'Inter, sans-serif',
       paddingTop: '28px',
       paddingBottom: '20px',
-      position: 'sticky',
-      top: 0,
-      zIndex: 20,
     }}>
       <Container className="px-6">
         {/* Project name row */}

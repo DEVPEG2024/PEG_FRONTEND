@@ -131,12 +131,18 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
 }
 
 // update user (Strapi v5 REST)
-export async function apiUpdateUser(user: Partial<User>, documentId: string): Promise<AxiosResponse<User>> {
+export async function apiUpdateUser(user: Partial<User>, id: string): Promise<AxiosResponse<User>> {
     const { documentId: _, ...data } = user as any
-    return ApiService.fetchData<User>({
-        url: `/users/${documentId}`,
+    // PUT pour mettre à jour
+    await ApiService.fetchData<User>({
+        url: `/users/${id}`,
         method: 'put',
         data,
+    })
+    // GET avec populate pour récupérer l'avatar et les relations
+    return ApiService.fetchData<User>({
+        url: `/users/${id}?populate=*`,
+        method: 'get',
     })
 }
 
