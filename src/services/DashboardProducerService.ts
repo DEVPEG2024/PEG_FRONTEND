@@ -17,10 +17,30 @@ export async function apiGetDashboardProducerInformations(documentId: string): P
             documentId
             name
           }
+          producer {
+            documentId
+            name
+          }
           producerPrice
+          price
           startDate
           endDate
           state
+          priority
+          checklistItems
+          images {
+            documentId
+            url
+            name
+          }
+          orderItem {
+            product {
+              images {
+                url
+                name
+              }
+            }
+          }
           tasks (pagination: {limit: 100}){
             documentId
             state
