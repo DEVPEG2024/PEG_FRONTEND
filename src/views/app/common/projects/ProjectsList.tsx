@@ -94,8 +94,8 @@ function getProjectProgress(project: Project): number {
 const KANBAN_COL_ORDER_KEY = 'peg:kanbanColOrder'
 type ColDef = typeof statusTabs[number]
 
-function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, navigate, dispatch, user }: {
-  projects: Project[]; statusTabs: ColDef[]; priorityStyles: Record<string, { label: string; color: string }>; isSuperAdmin: boolean; navigate: any; dispatch: any; user: User
+function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdmin, navigate, dispatch, user }: {
+  projects: Project[]; statusTabs: ColDef[]; priorityStyles: Record<string, { label: string; color: string }>; isSuperAdmin: boolean; isAdmin: boolean; navigate: any; dispatch: any; user: User
 }) {
   // Column order (D&D columns)
   const [colOrder, setColOrder] = useState<string[]>(() => {
@@ -201,8 +201,8 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, navig
                   const pr = priorityStyles[project.priority]; const progressColor = progress > 70 ? '#22c55e' : progress < 40 ? '#ef4444' : '#f59e0b'
                   const isDragging = dragProjectId === project.documentId
                   return (
-                    <div key={project.documentId} draggable onDragStart={handleCardDragStart(project.documentId)} onDragEnd={handleDragEnd} onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
-                      style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 14px', cursor: 'grab', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', opacity: isDragging ? 0.4 : 1, transform: isDragging ? 'scale(0.95)' : 'none' }}
+                    <div key={project.documentId} draggable={isAdmin} onDragStart={isAdmin ? handleCardDragStart(project.documentId) : undefined} onDragEnd={isAdmin ? handleDragEnd : undefined} onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
+                      style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 14px', cursor: isAdmin ? 'grab' : 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', opacity: isDragging ? 0.4 : 1, transform: isDragging ? 'scale(0.95)' : 'none' }}
                       onMouseEnter={(e) => { if (!isDragging) { e.currentTarget.style.borderColor = `${col.color}40`; e.currentTarget.style.transform = 'translateY(-1px)' } }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = isDragging ? 'scale(0.95)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
@@ -486,6 +486,7 @@ const ProjectsList = () => {
             statusTabs={statusTabs}
             priorityStyles={priorityStyles}
             isSuperAdmin={isSuperAdmin}
+            isAdmin={isAdminOrSuperAdmin}
             navigate={navigate}
             dispatch={dispatch}
             user={user}
