@@ -103,6 +103,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           state
           paymentState
           date
+          dueDate
           customer {
             name
           }
