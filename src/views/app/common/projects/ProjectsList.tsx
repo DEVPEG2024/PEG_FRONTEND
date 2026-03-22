@@ -1,7 +1,7 @@
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Pagination, Select } from '@/components/ui';
-import { HiOutlineSearch, HiPlus, HiViewGrid, HiViewList, HiSortDescending } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiViewGrid, HiViewList, HiViewBoards } from 'react-icons/hi';
 import { MdAccessTime } from 'react-icons/md';
 
 import ProjectListContent from './lists/components/ProjectListContent';
@@ -95,7 +95,7 @@ const ProjectsList = () => {
   const [customersSelected, setCustomersSelected] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('endDate_asc');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'kanban'>('cards');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -218,30 +218,15 @@ const ProjectsList = () => {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* View toggle */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <button
-              onClick={() => setViewMode('cards')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '36px', height: '36px', border: 'none', cursor: 'pointer',
-                borderRadius: '10px 0 0 10px',
-                background: viewMode === 'cards' ? 'rgba(47,111,237,0.25)' : 'transparent',
-                color: viewMode === 'cards' ? '#6b9eff' : 'rgba(255,255,255,0.35)',
-              }}
-            >
-              <HiViewGrid size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '36px', height: '36px', border: 'none', cursor: 'pointer',
-                borderRadius: '0 10px 10px 0',
-                background: viewMode === 'table' ? 'rgba(47,111,237,0.25)' : 'transparent',
-                color: viewMode === 'table' ? '#6b9eff' : 'rgba(255,255,255,0.35)',
-              }}
-            >
-              <HiViewList size={16} />
-            </button>
+            {([
+              { mode: 'cards' as const, icon: <HiViewGrid size={16} />, radius: '10px 0 0 10px' },
+              { mode: 'table' as const, icon: <HiViewList size={16} />, radius: '0' },
+              { mode: 'kanban' as const, icon: <HiViewBoards size={16} />, radius: '0 10px 10px 0' },
+            ]).map(({ mode, icon, radius }) => (
+              <button key={mode} onClick={() => setViewMode(mode)} title={mode === 'kanban' ? 'Vue Kanban' : mode === 'table' ? 'Vue tableau' : 'Vue cartes'}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: radius, background: viewMode === mode ? 'rgba(47,111,237,0.25)' : 'transparent', color: viewMode === mode ? '#6b9eff' : 'rgba(255,255,255,0.35)' }}
+              >{icon}</button>
+            ))}
           </div>
           {isAdminOrSuperAdmin && (
             <button
@@ -355,7 +340,109 @@ const ProjectsList = () => {
 
       {/* Content */}
       <Loading loading={loading}>
-        {viewMode === 'cards' ? (
+        {viewMode === 'kanban' ? (
+          /* ═══ KANBAN VIEW ═══ */
+          <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '14px', minWidth: 'max-content' }}>
+              {statusTabs.filter(t => t.key !== 'all').map((col) => {
+                const colProjects = filteredAndSortedProjects.filter(p => p.state === col.key)
+                return (
+                  <div key={col.key} style={{ width: '280px', flexShrink: 0 }}>
+                    {/* Column header */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 14px', marginBottom: '10px',
+                      background: col.bg, border: `1px solid ${col.border}`,
+                      borderRadius: '12px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.color }} />
+                        <span style={{ color: col.color, fontSize: '13px', fontWeight: 700 }}>{col.label}</span>
+                      </div>
+                      <span style={{
+                        background: `${col.color}25`, color: col.color,
+                        borderRadius: '100px', padding: '1px 8px',
+                        fontSize: '11px', fontWeight: 700,
+                      }}>
+                        {colProjects.length}
+                      </span>
+                    </div>
+
+                    {/* Column cards */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '60px' }}>
+                      {colProjects.length === 0 && (
+                        <div style={{
+                          padding: '20px', textAlign: 'center',
+                          color: 'rgba(255,255,255,0.15)', fontSize: '12px',
+                          border: '1.5px dashed rgba(255,255,255,0.08)',
+                          borderRadius: '12px',
+                        }}>
+                          Aucun projet
+                        </div>
+                      )}
+                      {colProjects.map((project) => {
+                        const progress = getProjectProgress(project)
+                        const duration = dayjs(project.endDate).diff(dayjs(), 'day')
+                        const pr = priorityStyles[project.priority]
+                        const progressColor = progress > 70 ? '#22c55e' : progress < 40 ? '#ef4444' : '#f59e0b'
+
+                        return (
+                          <div
+                            key={project.documentId}
+                            onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
+                            style={{
+                              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                              border: '1.5px solid rgba(255,255,255,0.07)',
+                              borderRadius: '12px',
+                              padding: '12px 14px',
+                              cursor: 'pointer',
+                              transition: 'border-color 0.15s, transform 0.15s',
+                              fontFamily: 'Inter, sans-serif',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${col.color}40`; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'none' }}
+                          >
+                            {/* Priority + Name */}
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
+                              <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                {project.name}
+                              </span>
+                              {pr && <span style={{ color: pr.color, fontSize: '9px', fontWeight: 700, background: `${pr.color}20`, border: `1px solid ${pr.color}40`, borderRadius: '4px', padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0 }}>{pr.label}</span>}
+                            </div>
+
+                            {/* Client */}
+                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '8px' }}>
+                              {project.customer?.name ?? '—'}
+                              {project.producer?.name && <span style={{ color: 'rgba(255,255,255,0.25)' }}> · {project.producer.name}</span>}
+                            </div>
+
+                            {/* Progress bar */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                              <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '100px', transition: 'width 0.3s' }} />
+                              </div>
+                              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600 }}>{progress}%</span>
+                            </div>
+
+                            {/* Footer: deadline + price */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}>
+                                <MdAccessTime size={10} />
+                                {dayjs(project.endDate).format('DD/MM')}
+                                {duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}
+                              </span>
+                              {isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{project.price?.toFixed(0)} €</span>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : viewMode === 'cards' ? (
           <ProjectListContent
             projects={filteredAndSortedProjects}
             handleDeleteProject={handleDeleteProject}

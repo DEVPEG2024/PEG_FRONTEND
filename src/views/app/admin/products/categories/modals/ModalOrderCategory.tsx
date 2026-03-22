@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { DragDropContext, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { BsInboxFill } from 'react-icons/bs';
-import { HiOutlineArrowDown, HiOutlineArrowUp } from 'react-icons/hi';
+import { HiOutlineArrowDown, HiOutlineArrowUp, HiOutlineCheck } from 'react-icons/hi';
 import classNames from 'classnames';
 import { ProductCategory } from '@/@types/product';
 import { Loading } from '@/components/shared';
 import StrictModeDroppable from '@/components/shared/StrictModeDroppable';
 import { Button, Dialog } from '@/components/ui';
 import { updateProductCategory, useAppDispatch } from '../store';
+import { toast } from 'react-toastify';
 
 function ModalOrderCategory({
   title,
@@ -32,7 +33,10 @@ function ModalOrderCategory({
   const [moveDirection, setMoveDirection] = useState<'up' | 'down' | null>(
     null
   );
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
   const dragAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +44,26 @@ function ModalOrderCategory({
       setOrderedCategories([...categories]);
     }
   }, [categories]);
+
+  // Auto-save debounced (800ms after last move)
+  const triggerAutoSave = useCallback((newOrder: ProductCategory[]) => {
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    setSaved(false);
+    autoSaveRef.current = setTimeout(async () => {
+      try {
+        setSaving(true);
+        await Promise.all(newOrder.map((cat, index) =>
+          dispatch(updateProductCategory({ productCategory: { documentId: cat.documentId, name: cat.name, order: index }, imageModified: false }))
+        ));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch {
+        toast.error('Erreur lors de la sauvegarde');
+      } finally {
+        setSaving(false);
+      }
+    }, 800);
+  }, [dispatch]);
 
   useEffect(() => {
     if (lastMovedIndex !== null) {
@@ -63,6 +87,7 @@ function ModalOrderCategory({
     setOrderedCategories(newOrder);
     setLastMovedIndex(index - 1);
     setMoveDirection('up');
+    triggerAutoSave(newOrder);
   };
 
   const moveDown = (index: number) => {
@@ -74,6 +99,7 @@ function ModalOrderCategory({
     setOrderedCategories(newOrder);
     setLastMovedIndex(index + 1);
     setMoveDirection('down');
+    triggerAutoSave(newOrder);
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -94,6 +120,7 @@ function ModalOrderCategory({
     setOrderedCategories(newOrder);
     setLastMovedIndex(destination.index);
     setMoveDirection(destination.index > source.index ? 'down' : 'up');
+    triggerAutoSave(newOrder);
   };
 
   const handleSaveOrder = async () => {
@@ -285,20 +312,14 @@ function ModalOrderCategory({
                 )}
               </div>
             </DragDropContext>
-            <div className="flex justify-end mt-6 pt-4 border-t border-white/[0.06]">
-              <Button
-                className="mr-2"
-                variant="plain"
-                onClick={handleCloseModal}
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                variant="solid"
-                onClick={handleSaveOrder}
-                disabled={orderedCategories.length === 0}
-              >
-                {t('save')}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/[0.06]">
+              <div className="text-xs text-white/40 flex items-center gap-1.5">
+                {saving && <span className="text-cyan-400">Sauvegarde...</span>}
+                {saved && <span className="text-emerald-400 flex items-center gap-1"><HiOutlineCheck size={14} /> Sauvegardé</span>}
+                {!saving && !saved && <span>Sauvegarde automatique</span>}
+              </div>
+              <Button variant="plain" onClick={handleCloseModal}>
+                Fermer
               </Button>
             </div>
           </Loading>
