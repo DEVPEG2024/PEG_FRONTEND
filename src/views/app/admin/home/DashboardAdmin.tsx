@@ -4,8 +4,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAppSelector } from '@/store'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 import { motion } from 'framer-motion'
-import { DragDropContext, Draggable, DropResult } from 'react-beautiful-dnd'
-import StrictModeDroppable from '@/components/shared/StrictModeDroppable'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
 import isoWeek from 'dayjs/plugin/isoWeek'
@@ -296,14 +294,53 @@ export default function DashboardAdmin() {
   const firstName = user?.firstName || user?.username || ''
   const attentionCount = (overdueInvoices > 0 ? 1 : 0) + (atRiskProjects > 0 ? 1 : 0) + (openTickets > 0 ? 1 : 0) + (upcomingDeadlines.length > 0 ? 1 : 0)
 
-  /* ── D&D handler ── */
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return
+  /* ── Native HTML5 D&D ── */
+  const dragFromRef = useRef<number | null>(null)
+  const dragOverRef = useRef<number | null>(null)
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+
+  const handleDragStart = (idx: number) => (e: React.DragEvent) => {
+    dragFromRef.current = idx
+    setDraggingIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    // Transparent drag image (we use visual feedback via state)
+    const el = document.createElement('div')
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    e.dataTransfer.setDragImage(el, 0, 0)
+    setTimeout(() => document.body.removeChild(el), 0)
+  }
+
+  const handleDragOver = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverRef.current !== idx) {
+      dragOverRef.current = idx
+      setDragOverIdx(idx)
+    }
+  }
+
+  const handleDrop = (idx: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    const from = dragFromRef.current
+    if (from === null || from === idx) { setDraggingIdx(null); setDragOverIdx(null); return }
     const items = Array.from(widgetOrder)
-    const [moved] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, moved)
+    const [moved] = items.splice(from, 1)
+    items.splice(idx, 0, moved)
     setWidgetOrder(items)
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(items))
+    dragFromRef.current = null
+    dragOverRef.current = null
+    setDraggingIdx(null)
+    setDragOverIdx(null)
+  }
+
+  const handleDragEnd = () => {
+    dragFromRef.current = null
+    dragOverRef.current = null
+    setDraggingIdx(null)
+    setDragOverIdx(null)
   }
 
   const resetLayout = () => { setWidgetOrder([...DEFAULT_LAYOUT]); localStorage.removeItem(LAYOUT_KEY) }
@@ -391,50 +428,50 @@ export default function DashboardAdmin() {
           {/* DRAGGABLE WIDGETS GRID */}
           {editMode && <div className="text-center text-xs text-cyan-400/60 bg-cyan-500/5 border border-cyan-500/10 rounded-xl py-2 px-4 flex items-center justify-center gap-2"><HiOutlineSelector className="w-4 h-4" />Glisse les widgets pour r\u00E9organiser ton dashboard</div>}
 
-          <DragDropContext onDragEnd={onDragEnd}>
-            <StrictModeDroppable droppableId="widgets" direction="horizontal">
-              {(provided) => (
-                <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {widgetOrder.map((wid, index) => {
-                    const def = WIDGET_DEFS.find(w => w.id === wid)
-                    if (!def) return null
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {widgetOrder.map((wid, index) => {
+              const def = WIDGET_DEFS.find(w => w.id === wid)
+              if (!def) return null
+              const isDragging = draggingIdx === index
+              const isOver = dragOverIdx === index && draggingIdx !== index
 
-                    return (
-                      <Draggable key={wid} draggableId={wid} index={index} isDragDisabled={!editMode}>
-                        {(prov, snap) => (
-                          <div
-                            ref={prov.innerRef}
-                            {...prov.draggableProps}
-                            className={[
-                              wid === 'chart-ca' ? 'lg:col-span-2' : '',
-                              snap.isDragging ? 'z-50' : '',
-                            ].join(' ')}
-                          >
-                            <GlassCard glow={def.glow} className={`p-5 md:p-6 ${editMode ? 'ring-1 ring-cyan-500/20' : ''} ${snap.isDragging ? 'ring-2 ring-cyan-400/40 shadow-2xl shadow-cyan-500/20 scale-[1.02]' : ''}`}>
-                              <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${def.accentGradient} opacity-80`} />
+              return (
+                <div
+                  key={wid}
+                  draggable={editMode}
+                  onDragStart={editMode ? handleDragStart(index) : undefined}
+                  onDragOver={editMode ? handleDragOver(index) : undefined}
+                  onDrop={editMode ? handleDrop(index) : undefined}
+                  onDragEnd={editMode ? handleDragEnd : undefined}
+                  className={[
+                    wid === 'chart-ca' ? 'lg:col-span-2' : '',
+                    'transition-all duration-200',
+                    isDragging ? 'opacity-40 scale-95' : '',
+                    isOver ? 'scale-[1.02]' : '',
+                  ].join(' ')}
+                >
+                  <GlassCard glow={def.glow} className={[
+                    'p-5 md:p-6',
+                    editMode ? 'ring-1 ring-cyan-500/20 cursor-grab active:cursor-grabbing' : '',
+                    isOver ? 'ring-2 ring-cyan-400/50 shadow-2xl shadow-cyan-500/20' : '',
+                  ].join(' ')}>
+                    <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${def.accentGradient} opacity-80`} />
 
-                              {/* Drag handle */}
-                              {editMode && (
-                                <div {...prov.dragHandleProps} className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 cursor-grab active:cursor-grabbing">
-                                  <HiOutlineSelector className="w-3.5 h-3.5 text-white/40" />
-                                  <span className="text-[10px] text-white/30">{def.label}</span>
-                                </div>
-                              )}
+                    {editMode && (
+                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white/[0.08] backdrop-blur-md border border-white/10 rounded-lg px-2 py-1">
+                        <HiOutlineSelector className="w-3.5 h-3.5 text-white/40" />
+                        <span className="text-[10px] text-white/30">{def.label}</span>
+                      </div>
+                    )}
 
-                              <div className={`relative ${editMode ? 'pt-6' : ''}`}>
-                                {renderWidget(wid)}
-                              </div>
-                            </GlassCard>
-                          </div>
-                        )}
-                      </Draggable>
-                    )
-                  })}
-                  {provided.placeholder}
+                    <div className={`relative ${editMode ? 'pt-6' : ''}`}>
+                      {renderWidget(wid)}
+                    </div>
+                  </GlassCard>
                 </div>
-              )}
-            </StrictModeDroppable>
-          </DragDropContext>
+              )
+            })}
+          </div>
 
         </div>
       </Container>
