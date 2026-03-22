@@ -1,4 +1,5 @@
 import ApiService from './ApiService'
+import { API_BASE_URL } from '@/configs/api.config'
 
 export type ClientFile = {
   id: number
@@ -95,9 +96,9 @@ export const apiUploadFile = (file: File) => {
   const formData = new FormData()
   formData.append('files', file)
   return ApiService.fetchData<any>({
-    url: '/upload',
+    url: API_BASE_URL + '/upload',
     method: 'post',
     data: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined as any },
   })
 }
