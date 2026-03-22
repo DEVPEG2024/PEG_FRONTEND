@@ -1,6 +1,6 @@
 import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { User } from '@/@types/user';
@@ -8,6 +8,7 @@ import { HiOutlineClipboardList, HiOutlineCheckCircle } from 'react-icons/hi';
 import { MdOutlinePool } from 'react-icons/md';
 import { BsArrowRight } from 'react-icons/bs';
 import ProjectItem from '../../common/projects/lists/components/ProjectItem';
+import { apiGetPoolProjects } from '@/services/ProjectServices';
 import reducer, {
   getDashboardProducerInformations,
   useAppSelector,
@@ -91,6 +92,19 @@ const DashboardProducer = () => {
     }
   }, [dispatch, user.producer?.documentId]);
 
+  const [poolCount, setPoolCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      apiGetPoolProjects({ user, pagination: { page: 1, pageSize: 1 }, searchTerm: '' })
+        .then((res: any) => {
+          const total = res?.data?.data?.projects_connection?.pageInfo?.total ?? 0;
+          setPoolCount(total);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
   const projectsDone = producer?.projects.filter((p) => p.state === 'fulfilled').length ?? 0;
   const projectsInProgress = producer?.projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length ?? 0;
   const activeProjects = producer?.projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled') ?? [];
@@ -150,7 +164,7 @@ const DashboardProducer = () => {
               <StatWidget
                 icon={<MdOutlinePool size={22} color="#a78bfa" />}
                 label="Voir la piscine"
-                value={0}
+                value={poolCount}
                 color="rgba(139,92,246,0.18)"
                 href="/producer/pool"
               />

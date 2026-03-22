@@ -3,7 +3,7 @@ import { setSelectedTab, useAppDispatch, useAppSelector } from '../store';
 import { RootState, useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { ADMIN, CUSTOMER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, CUSTOMER, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 
 const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
@@ -19,9 +19,15 @@ const QuickFilterTab = () => {
     dispatch(setSelectedTab(val));
   };
 
+  const isProducer = hasRole(user, [PRODUCER]);
   const tabs = labelList.filter((tab) => {
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
+    // Producteur : pas de checklist ni de fichiers client (accès lecture seule via Fichiers projet)
+    if (tab === 'Checklist') return !isProducer;
+    // Fichiers client : visible seulement si l'utilisateur n'est pas producteur
+    // (le producteur voit les fichiers partagés dans l'onglet Fichiers)
+    if (tab === 'Fichiers client') return !isProducer;
     return true;
   });
 

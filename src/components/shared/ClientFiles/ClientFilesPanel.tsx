@@ -112,10 +112,11 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
     try {
       setUploading(true)
 
-      // 1. Upload file to S3
+      // 1. Upload file to S3 via Strapi upload plugin (returns array)
       const uploadRes = await apiUploadFile(uploadFile)
-      const fileData = (uploadRes as any)?.data ?? uploadRes
-      const fileId = fileData?.id
+      const uploadData = (uploadRes as any)?.data
+      const fileEntry = Array.isArray(uploadData) ? uploadData[0] : uploadData
+      const fileId = fileEntry?.id
 
       if (!fileId) {
         toast.error("Erreur lors de l'upload du fichier")

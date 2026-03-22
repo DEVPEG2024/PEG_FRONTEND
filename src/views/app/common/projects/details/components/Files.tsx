@@ -4,7 +4,7 @@ import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
 import { PegFile } from '@/@types/pegFile';
 import { Upload } from '@/components/ui';
-import { useAppDispatch } from '@/store';
+import { useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
 import { updateCurrentProject, useAppSelector } from '../store';
 import {
   apiDeleteFile,
@@ -13,6 +13,9 @@ import {
 } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 import { HiDownload, HiTrash, HiPhotograph, HiDocumentText } from 'react-icons/hi';
+import { hasRole } from '@/utils/permissions';
+import { PRODUCER } from '@/constants/roles.constant';
+import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 
 const isImageUrl = (url: string) => /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(url);
 
@@ -25,6 +28,9 @@ const Files = () => {
   const { project } = useAppSelector(
     (state) => state.projectDetails.data
   );
+  const { user } = useRootAppSelector((state) => state.auth.user);
+  const isProducer = hasRole(user, [PRODUCER]);
+  const customerDocId = project?.customer?.documentId;
 
   useEffect(() => {
     fetchFiles();
@@ -229,6 +235,23 @@ const Files = () => {
         </div>
         <DetailsRight />
       </div>
+
+      {/* Fichiers client partagés — visible par le producteur assigné */}
+      {customerDocId && (
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
+          padding: '24px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
+          marginTop: '20px',
+          marginBottom: '28px',
+        }}>
+          <ClientFilesPanel
+            customerDocumentId={customerDocId}
+            mode={isProducer ? 'producer' : 'admin'}
+          />
+        </div>
+      )}
     </Container>
   );
 };
