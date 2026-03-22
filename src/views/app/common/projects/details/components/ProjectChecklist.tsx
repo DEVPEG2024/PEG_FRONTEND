@@ -7,11 +7,11 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useAppSelector, setChecklistPercent, updateCurrentProject } from '../store';
 import { useAppDispatch } from '@/store';
-import { MdChecklist, MdDragIndicator } from 'react-icons/md';
+import { MdChecklist, MdDragIndicator, MdSave } from 'react-icons/md';
 import { HiCheck, HiChevronDown, HiTrash, HiPlus } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiGetChecklists } from '@/services/ChecklistServices';
+import { apiGetChecklists, apiCreateChecklist, apiUpdateChecklist } from '@/services/ChecklistServices';
 import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist, apiUpdateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { toast } from 'react-toastify';
@@ -34,8 +34,13 @@ const ProjectChecklist = () => {
   const [newTaskLabel, setNewTaskLabel] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
+  const templateInputRef = useRef<HTMLInputElement>(null);
 
   // D&D: dedicated ref that always holds the latest order during a drag
   const dragFromIdx = useRef<number | null>(null);
@@ -107,6 +112,10 @@ const ProjectChecklist = () => {
     if (showAddInput && addInputRef.current) addInputRef.current.focus();
   }, [showAddInput]);
 
+  useEffect(() => {
+    if (saveTemplateOpen && templateInputRef.current) templateInputRef.current.focus();
+  }, [saveTemplateOpen]);
+
   // Persist to API — the single source of truth for saving
   const persistItems = useCallback(async (newItems: ChecklistItem[]) => {
     if (!project?.documentId) return;
@@ -144,6 +153,7 @@ const ProjectChecklist = () => {
       done: false,
     }));
     saveItems(newItems);
+    setAppliedTemplateId(checklist.documentId);
     setDropdownOpen(false);
   };
 
@@ -166,6 +176,35 @@ const ProjectChecklist = () => {
 
   const removeItem = (index: number) => {
     saveItems(items.filter((_, i) => i !== index));
+  };
+
+  const saveAsTemplate = async () => {
+    if (items.length === 0) return;
+    const labels = items.map((i) => i.label);
+    setSavingTemplate(true);
+    try {
+      const appliedChecklist = appliedTemplateId ? checklists.find((c) => c.documentId === appliedTemplateId) : null;
+      if (appliedChecklist) {
+        await apiUpdateChecklist({ documentId: appliedChecklist.documentId, name: appliedChecklist.name, items: labels });
+        toast.success(`Modèle "${appliedChecklist.name}" mis à jour`);
+      } else {
+        const name = templateName.trim();
+        if (!name) return;
+        const res = await apiCreateChecklist({ name, items: labels });
+        const created = (res as any)?.data?.data?.createChecklist;
+        if (created) {
+          setChecklists((prev) => [...prev, created]);
+          setAppliedTemplateId(created.documentId);
+        }
+        toast.success(`Modèle "${name}" créé`);
+      }
+      setSaveTemplateOpen(false);
+      setTemplateName('');
+    } catch {
+      toast.error('Erreur lors de la sauvegarde du modèle');
+    } finally {
+      setSavingTemplate(false);
+    }
   };
 
   // ─── Drag & Drop (HTML5, reliable save) ────────────────────────
@@ -282,6 +321,90 @@ const ProjectChecklist = () => {
                     <HiTrash size={13} />
                     Retirer
                   </button>
+                )}
+
+                {items.length > 0 && (
+                  appliedTemplateId ? (
+                    <button
+                      onClick={saveAsTemplate}
+                      disabled={savingTemplate}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '6px 12px', borderRadius: '8px',
+                        background: 'rgba(168,85,247,0.12)',
+                        border: '1px solid rgba(168,85,247,0.3)',
+                        color: '#c084fc', fontSize: '12px', fontWeight: 600,
+                        cursor: savingTemplate ? 'not-allowed' : 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                        opacity: savingTemplate ? 0.5 : 1,
+                      }}
+                    >
+                      <MdSave size={13} />
+                      {savingTemplate ? 'Sauvegarde...' : 'Mettre à jour le modèle'}
+                    </button>
+                  ) : !saveTemplateOpen ? (
+                    <button
+                      onClick={() => setSaveTemplateOpen(true)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '6px 12px', borderRadius: '8px',
+                        background: 'rgba(168,85,247,0.12)',
+                        border: '1px solid rgba(168,85,247,0.3)',
+                        color: '#c084fc', fontSize: '12px', fontWeight: 600,
+                        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      <MdSave size={13} />
+                      Sauvegarder comme modèle
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <input
+                        ref={templateInputRef}
+                        type="text"
+                        placeholder="Nom du modèle…"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveAsTemplate(); if (e.key === 'Escape') { setSaveTemplateOpen(false); setTemplateName(''); } }}
+                        style={{
+                          background: 'rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(168,85,247,0.3)',
+                          borderRadius: '8px',
+                          color: 'rgba(255,255,255,0.85)',
+                          fontSize: '12px',
+                          padding: '6px 10px',
+                          outline: 'none',
+                          fontFamily: 'inherit',
+                          width: '160px',
+                        }}
+                      />
+                      <button
+                        onClick={saveAsTemplate}
+                        disabled={!templateName.trim() || savingTemplate}
+                        style={{
+                          padding: '6px 12px', borderRadius: '8px',
+                          background: templateName.trim() ? 'linear-gradient(90deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.05)',
+                          border: 'none',
+                          color: '#fff', fontSize: '12px', fontWeight: 700,
+                          cursor: templateName.trim() ? 'pointer' : 'not-allowed',
+                          fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        {savingTemplate ? '...' : 'Créer'}
+                      </button>
+                      <button
+                        onClick={() => { setSaveTemplateOpen(false); setTemplateName(''); }}
+                        style={{
+                          padding: '6px 8px', borderRadius: '8px',
+                          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                          color: 'rgba(255,255,255,0.4)', fontSize: '12px',
+                          cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )
                 )}
 
                 {checklists.length > 0 && (
