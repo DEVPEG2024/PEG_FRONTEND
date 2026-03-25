@@ -146,14 +146,14 @@ interface TodoItem { id: number; text: string; done: boolean; createdAt: string 
 function TodoListWidget() {
   const [todos, setTodos] = useState<TodoItem[]>([]); const [input, setInput] = useState(''); const [editId, setEditId] = useState<number | null>(null); const [editText, setEditText] = useState(''); const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => { const r = localStorage.getItem(TK); if (r) { try { setTodos(JSON.parse(r)) } catch {} } }, [])
-  const persist = useCallback((n: TodoItem[]) => { setTodos(n); localStorage.setItem(TK, JSON.stringify(n)) }, [])
-  const addTodo = () => { const t = input.trim(); if (!t) return; persist([{ id: Date.now(), text: t, done: false, createdAt: new Date().toISOString() }, ...todos]); setInput(''); inputRef.current?.focus() }
-  const toggleTodo = (id: number) => persist(todos.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  const deleteTodo = (id: number) => persist(todos.filter(t => t.id !== id))
-  const saveEdit = () => { if (editId === null) return; const t = editText.trim(); if (!t) { deleteTodo(editId); setEditId(null); return }; persist(todos.map(x => x.id === editId ? { ...x, text: t } : x)); setEditId(null) }
+  const persist = useCallback((updater: (prev: TodoItem[]) => TodoItem[]) => { setTodos(prev => { const n = updater(prev); localStorage.setItem(TK, JSON.stringify(n)); return n }) }, [])
+  const addTodo = () => { const t = input.trim(); if (!t) return; persist(prev => [{ id: Date.now(), text: t, done: false, createdAt: new Date().toISOString() }, ...prev]); setInput(''); inputRef.current?.focus() }
+  const toggleTodo = (id: number) => persist(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  const deleteTodo = (id: number) => persist(prev => prev.filter(t => t.id !== id))
+  const saveEdit = () => { if (editId === null) return; const t = editText.trim(); if (!t) { deleteTodo(editId); setEditId(null); return }; persist(prev => prev.map(x => x.id === editId ? { ...x, text: t } : x)); setEditId(null) }
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done)
   return <>
-    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/10 ring-1 ring-violet-500/20 text-violet-400"><HiOutlineClipboardList className="w-4 h-4" /></div><div><h3 className="text-sm font-bold text-white">Pense-bête</h3><p className="text-[10px] text-white/35">{pending.length} en cours · {done.length} terminé(s)</p></div></div>{done.length > 0 && <button onClick={() => persist(todos.filter(t => !t.done))} className="text-[10px] text-white/30 hover:text-white/50 transition">Vider</button>}</div>
+    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/10 ring-1 ring-violet-500/20 text-violet-400"><HiOutlineClipboardList className="w-4 h-4" /></div><div><h3 className="text-sm font-bold text-white">Pense-bête</h3><p className="text-[10px] text-white/35">{pending.length} en cours · {done.length} terminé(s)</p></div></div>{done.length > 0 && <button onClick={() => persist(prev => prev.filter(t => !t.done))} className="text-[10px] text-white/30 hover:text-white/50 transition">Vider</button>}</div>
     <div className="flex gap-2 mb-4"><input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTodo()} placeholder="Nouvelle tâche..." className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition" /><button onClick={addTodo} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-lg shadow-violet-500/20">+</button></div>
     <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
       {todos.length === 0 && <div className="text-center py-4"><EmptyClipboard /><div className="text-xs text-white/25">Aucune tâche</div></div>}
@@ -165,11 +165,25 @@ function TodoListWidget() {
 /* ═══════════════════════════════════════════════ */
 /*  CALENDAR                                      */
 /* ═══════════════════════════════════════════════ */
-const CK = 'peg:calendarEvents'; const CCo: Record<string, { dot: string; bg: string; text: string }> = { production: { dot: 'bg-orange-500', bg: 'bg-orange-500/10 border border-orange-500/20', text: 'text-orange-300' }, réunion: { dot: 'bg-sky-500', bg: 'bg-sky-500/10 border border-sky-500/20', text: 'text-sky-300' }, livraison: { dot: 'bg-emerald-500', bg: 'bg-emerald-500/10 border border-emerald-500/20', text: 'text-emerald-300' }, autre: { dot: 'bg-violet-500', bg: 'bg-violet-500/10 border border-violet-500/20', text: 'text-violet-300' } }
+const CK = 'peg:calendarEvents'; const CCo: Record<string, { dot: string; bg: string; text: string }> = { production: { dot: 'bg-orange-500', bg: 'bg-orange-500/10 border border-orange-500/20', text: 'text-orange-300' }, reunion: { dot: 'bg-sky-500', bg: 'bg-sky-500/10 border border-sky-500/20', text: 'text-sky-300' }, réunion: { dot: 'bg-sky-500', bg: 'bg-sky-500/10 border border-sky-500/20', text: 'text-sky-300' }, livraison: { dot: 'bg-emerald-500', bg: 'bg-emerald-500/10 border border-emerald-500/20', text: 'text-emerald-300' }, autre: { dot: 'bg-violet-500', bg: 'bg-violet-500/10 border border-violet-500/20', text: 'text-violet-300' } }
 interface RawCalEvent { id: number; title: string; start: string; end: string; category: string }
 function CalendarContent() {
   const [events, setEvents] = useState<RawCalEvent[]>([]); const [mOff, setMOff] = useState(0); const today = dayjs(); const vm = today.add(mOff, 'month')
-  useEffect(() => { const r = localStorage.getItem(CK); if (r) { try { setEvents(JSON.parse(r)) } catch {} } }, [])
+  useEffect(() => {
+    // Try Strapi API first, fallback to localStorage
+    import('@/services/CalendarEventService').then(({ apiGetCalendarEvents }) =>
+      import('@/utils/serviceHelper').then(({ unwrapData }) =>
+        unwrapData(apiGetCalendarEvents()).then((data) => {
+          const evts = data.calendarEvents_connection.nodes.map((e: any) => ({
+            id: e.documentId, title: e.title, start: e.startDate, end: e.endDate, category: e.category,
+          }))
+          setEvents(evts)
+        })
+      )
+    ).catch(() => {
+      const r = localStorage.getItem(CK); if (r) { try { setEvents(JSON.parse(r)) } catch {} }
+    })
+  }, [])
   const todayEv = events.filter(e => dayjs(e.start).isSame(today, 'day')).sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
   const dim = vm.daysInMonth(); const sd = vm.startOf('month').day() === 0 ? 6 : vm.startOf('month').day() - 1
   return <>

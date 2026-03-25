@@ -442,12 +442,13 @@ function DraggableEvent({ event, onClick, onDragBegin, onResizeBegin, style }: {
 }
 
 // ─── Month View ─────────────────────────────────────────────────────────────────
-function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, onMonthDrop, dropTargetDate }: {
+function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, onMonthDrop, dropTargetDate, onRangeSelect }: {
     date: Dayjs; events: CalEvent[]
     onDayClick: (d: Dayjs) => void; onEventClick: (e: CalEvent) => void
     onMonthDragStart: (e: React.DragEvent, ev: CalEvent) => void
     onMonthDrop: (e: React.DragEvent, targetDate: Dayjs) => void
     dropTargetDate: string | null
+    onRangeSelect: (start: Dayjs, end: Dayjs) => void
 }) {
     const firstDay = date.startOf('month').isoWeekday() - 1
     const daysInMonth = date.daysInMonth()
@@ -457,8 +458,61 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
     ]
     while (cells.length % 7 !== 0) cells.push(null)
 
+    // ── Drag-to-select state ──
+    const selectStart = useRef<Dayjs | null>(null)
+    const [selectEnd, setSelectEnd] = useState<Dayjs | null>(null)
+    const isDraggingSelect = useRef(false)
+
+    const selRange = useMemo(() => {
+        if (!selectStart.current || !selectEnd) return null
+        const a = selectStart.current, b = selectEnd
+        return { from: a.isBefore(b) ? a : b, to: a.isBefore(b) ? b : a }
+    }, [selectEnd])
+
+    const isInRange = (day: Dayjs | null) => {
+        if (!day || !selRange) return false
+        return (day.isSame(selRange.from, 'day') || day.isAfter(selRange.from, 'day')) &&
+               (day.isSame(selRange.to, 'day') || day.isBefore(selRange.to, 'day'))
+    }
+
+    const handleMouseDown = (day: Dayjs, e: React.MouseEvent) => {
+        // Don't start range select if clicking on an event pill
+        if ((e.target as HTMLElement).closest('button[draggable]')) return
+        e.preventDefault()
+        selectStart.current = day
+        setSelectEnd(day)
+        isDraggingSelect.current = true
+    }
+
+    const handleMouseEnter = (day: Dayjs) => {
+        if (isDraggingSelect.current && selectStart.current) {
+            setSelectEnd(day)
+        }
+    }
+
+    useEffect(() => {
+        const handleMouseUp = () => {
+            if (isDraggingSelect.current && selectStart.current && selectEnd) {
+                const a = selectStart.current, b = selectEnd
+                const from = a.isBefore(b) ? a : b
+                const to = a.isBefore(b) ? b : a
+                // Only trigger range select if more than one day selected
+                if (!from.isSame(to, 'day')) {
+                    onRangeSelect(from.hour(9).minute(0), to.hour(18).minute(0))
+                } else {
+                    onDayClick(from)
+                }
+            }
+            isDraggingSelect.current = false
+            selectStart.current = null
+            setSelectEnd(null)
+        }
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => document.removeEventListener('mouseup', handleMouseUp)
+    }, [selectEnd, onRangeSelect, onDayClick])
+
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full select-none">
             <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
                 {DAYS_FR.map((d) => (
                     <div key={d} className="text-center text-xs font-semibold text-gray-400 uppercase py-2 tracking-wide">{d}</div>
@@ -470,11 +524,13 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
                     const isCurrentMonth = day && day.month() === date.month()
                     const dayEvents = day ? eventsOfDay(events, day) : []
                     const isDragOver = day && dropTargetDate === day.format('YYYY-MM-DD')
+                    const inRange = isInRange(day)
                     return (
                         <div
                             key={i}
                             data-day-date={day?.format('YYYY-MM-DD')}
-                            onClick={() => day && onDayClick(day)}
+                            onMouseDown={(e) => day && handleMouseDown(day, e)}
+                            onMouseEnter={() => day && handleMouseEnter(day)}
                             onDragOver={(e) => { if (day) e.preventDefault() }}
                             onDrop={(e) => { if (day) onMonthDrop(e, day) }}
                             className={`
@@ -482,6 +538,7 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
                                 ${day ? 'cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-700/30' : ''}
                                 ${!isCurrentMonth ? 'bg-gray-50/50 dark:bg-gray-800/30' : ''}
                                 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-400' : ''}
+                                ${inRange ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-inset ring-blue-300 dark:ring-blue-600' : ''}
                                 transition-colors
                             `}
                         >
@@ -514,18 +571,67 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
 }
 
 // ─── Week View ──────────────────────────────────────────────────────────────────
-function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview }: {
+function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview, onSlotRangeSelect }: {
     date: Dayjs; events: CalEvent[]
     onSlotClick: (d: Dayjs) => void; onEventClick: (e: CalEvent) => void
     onPointerDragStart: (ev: CalEvent) => void
     onResizeStart: (ev: CalEvent) => void
     dragPreview: { date: string; hour: number; minute: number; durationMinutes: number; eventId: string } | null
+    onSlotRangeSelect: (start: Dayjs, end: Dayjs) => void
 }) {
     const weekStart = date.startOf('isoWeek')
     const weekDays = Array.from({ length: 7 }, (_, i) => weekStart.add(i, 'day'))
 
+    // ── Slot drag-to-select ──
+    const slotDragStart = useRef<{ date: string; hour: number } | null>(null)
+    const [slotDragEnd, setSlotDragEnd] = useState<{ date: string; hour: number } | null>(null)
+    const isSlotDragging = useRef(false)
+
+    const slotRange = useMemo(() => {
+        if (!slotDragStart.current || !slotDragEnd) return null
+        const s = slotDragStart.current, e = slotDragEnd
+        if (s.date !== e.date) return null // same day only
+        const minH = Math.min(s.hour, e.hour), maxH = Math.max(s.hour, e.hour)
+        return { date: s.date, startHour: minH, endHour: maxH + 1 }
+    }, [slotDragEnd])
+
+    const handleSlotMouseDown = (dayStr: string, hour: number, e: React.MouseEvent) => {
+        e.preventDefault()
+        slotDragStart.current = { date: dayStr, hour }
+        setSlotDragEnd({ date: dayStr, hour })
+        isSlotDragging.current = true
+    }
+
+    const handleSlotMouseEnter = (dayStr: string, hour: number) => {
+        if (isSlotDragging.current && slotDragStart.current && slotDragStart.current.date === dayStr) {
+            setSlotDragEnd({ date: dayStr, hour })
+        }
+    }
+
+    useEffect(() => {
+        const handleMouseUp = () => {
+            if (isSlotDragging.current && slotDragStart.current && slotDragEnd) {
+                const s = slotDragStart.current, e = slotDragEnd
+                if (s.date === e.date) {
+                    const minH = Math.min(s.hour, e.hour), maxH = Math.max(s.hour, e.hour)
+                    const d = dayjs(s.date)
+                    if (minH !== maxH) {
+                        onSlotRangeSelect(d.hour(minH).minute(0), d.hour(maxH + 1).minute(0))
+                    } else {
+                        onSlotClick(d.hour(minH).minute(0))
+                    }
+                }
+            }
+            isSlotDragging.current = false
+            slotDragStart.current = null
+            setSlotDragEnd(null)
+        }
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => document.removeEventListener('mouseup', handleMouseUp)
+    }, [slotDragEnd, onSlotRangeSelect, onSlotClick])
+
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden select-none">
             <div className="grid grid-cols-8 border-b border-gray-100 dark:border-gray-700 shrink-0">
                 <div className="py-2" />
                 {weekDays.map((d) => {
@@ -555,15 +661,23 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
                         const dayStr = d.format('YYYY-MM-DD')
                         return (
                             <div key={d.toString()} className="border-l border-gray-100 dark:border-gray-700 relative">
-                                {HOURS.map((h) => (
-                                    <div
-                                        key={h}
-                                        data-slot-date={dayStr}
-                                        data-slot-hour={h}
-                                        onClick={() => onSlotClick(d.hour(h).minute(0))}
-                                        className="h-14 border-b border-gray-50 dark:border-gray-700/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
-                                    />
-                                ))}
+                                {HOURS.map((h) => {
+                                    const inSlotRange = slotRange && slotRange.date === dayStr && h >= slotRange.startHour && h < slotRange.endHour
+                                    return (
+                                        <div
+                                            key={h}
+                                            data-slot-date={dayStr}
+                                            data-slot-hour={h}
+                                            onMouseDown={(e) => handleSlotMouseDown(dayStr, h, e)}
+                                            onMouseEnter={() => handleSlotMouseEnter(dayStr, h)}
+                                            className={`h-14 border-b border-gray-50 dark:border-gray-700/50 cursor-pointer transition-colors ${
+                                                inSlotRange
+                                                    ? 'bg-blue-100/70 dark:bg-blue-900/40'
+                                                    : 'hover:bg-blue-50/30 dark:hover:bg-blue-900/10'
+                                            }`}
+                                        />
+                                    )
+                                })}
                                 {dayEvs.map((ev) => {
                                     const isDragging = dragPreview?.eventId === ev.id
                                     const top = (ev.start.hour() + ev.start.minute() / 60) * SLOT_HEIGHT
@@ -602,18 +716,59 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
 }
 
 // ─── Day View ───────────────────────────────────────────────────────────────────
-function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview }: {
+function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, onResizeStart, dragPreview, onSlotRangeSelect }: {
     date: Dayjs; events: CalEvent[]
     onSlotClick: (d: Dayjs) => void; onEventClick: (e: CalEvent) => void
     onPointerDragStart: (ev: CalEvent) => void
     onResizeStart: (ev: CalEvent) => void
     dragPreview: { date: string; hour: number; minute: number; durationMinutes: number; eventId: string } | null
+    onSlotRangeSelect: (start: Dayjs, end: Dayjs) => void
 }) {
     const dayEvs = eventsOfDay(events, date)
     const dayStr = date.format('YYYY-MM-DD')
 
+    // ── Slot drag-to-select ──
+    const slotDragStart = useRef<number | null>(null)
+    const [slotDragEnd, setSlotDragEnd] = useState<number | null>(null)
+    const isSlotDragging = useRef(false)
+
+    const slotRange = useMemo(() => {
+        if (slotDragStart.current === null || slotDragEnd === null) return null
+        const minH = Math.min(slotDragStart.current, slotDragEnd), maxH = Math.max(slotDragStart.current, slotDragEnd)
+        return { startHour: minH, endHour: maxH + 1 }
+    }, [slotDragEnd])
+
+    const handleSlotMouseDown = (hour: number, e: React.MouseEvent) => {
+        e.preventDefault()
+        slotDragStart.current = hour
+        setSlotDragEnd(hour)
+        isSlotDragging.current = true
+    }
+
+    const handleSlotMouseEnter = (hour: number) => {
+        if (isSlotDragging.current) setSlotDragEnd(hour)
+    }
+
+    useEffect(() => {
+        const handleMouseUp = () => {
+            if (isSlotDragging.current && slotDragStart.current !== null && slotDragEnd !== null) {
+                const minH = Math.min(slotDragStart.current, slotDragEnd), maxH = Math.max(slotDragStart.current, slotDragEnd)
+                if (minH !== maxH) {
+                    onSlotRangeSelect(date.hour(minH).minute(0), date.hour(maxH + 1).minute(0))
+                } else {
+                    onSlotClick(date.hour(minH).minute(0))
+                }
+            }
+            isSlotDragging.current = false
+            slotDragStart.current = null
+            setSlotDragEnd(null)
+        }
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => document.removeEventListener('mouseup', handleMouseUp)
+    }, [slotDragEnd, onSlotRangeSelect, onSlotClick, date])
+
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden select-none">
             <div className="border-b border-gray-100 dark:border-gray-700 py-3 px-4 shrink-0">
                 <div className="text-sm font-semibold text-gray-400 uppercase tracking-wide">{date.format('dddd')}</div>
                 <div className={`text-3xl font-bold ${sameDay(date, dayjs()) ? 'text-blue-600' : 'text-gray-800 dark:text-gray-100'}`}>
@@ -630,15 +785,23 @@ function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, 
                         ))}
                     </div>
                     <div className="border-l border-gray-100 dark:border-gray-700 relative">
-                        {HOURS.map((h) => (
-                            <div
-                                key={h}
-                                data-slot-date={dayStr}
-                                data-slot-hour={h}
-                                onClick={() => onSlotClick(date.hour(h).minute(0))}
-                                className="h-14 border-b border-gray-50 dark:border-gray-700/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
-                            />
-                        ))}
+                        {HOURS.map((h) => {
+                            const inSlotRange = slotRange && h >= slotRange.startHour && h < slotRange.endHour
+                            return (
+                                <div
+                                    key={h}
+                                    data-slot-date={dayStr}
+                                    data-slot-hour={h}
+                                    onMouseDown={(e) => handleSlotMouseDown(h, e)}
+                                    onMouseEnter={() => handleSlotMouseEnter(h)}
+                                    className={`h-14 border-b border-gray-50 dark:border-gray-700/50 cursor-pointer transition-colors ${
+                                        inSlotRange
+                                            ? 'bg-blue-100/70 dark:bg-blue-900/40'
+                                            : 'hover:bg-blue-50/30 dark:hover:bg-blue-900/10'
+                                    }`}
+                                />
+                            )
+                        })}
                         {dayEvs.map((ev) => {
                             const isDragging = dragPreview?.eventId === ev.id
                             const top = (ev.start.hour() + ev.start.minute() / 60) * SLOT_HEIGHT
@@ -675,9 +838,10 @@ function DayView({ date, events, onSlotClick, onEventClick, onPointerDragStart, 
 }
 
 // ─── Event Modal ────────────────────────────────────────────────────────────────
-function EventModal({ event, defaultStart, projects, onSave, onDelete, onClose }: {
+function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelete, onClose }: {
     event: CalEvent | null
     defaultStart: Dayjs
+    defaultEnd?: Dayjs | null
     projects: Project[]
     onSave: (data: Omit<CalEvent, 'id' | 'isSynced'>) => void
     onDelete: () => void
@@ -687,7 +851,7 @@ function EventModal({ event, defaultStart, projects, onSave, onDelete, onClose }
     const [description, setDescription] = useState(event?.description ?? '')
     const [category, setCategory] = useState<CalendarEventCategory>(event?.category ?? 'production')
     const [start, setStart] = useState(event ? event.start.format('YYYY-MM-DDTHH:mm') : defaultStart.format('YYYY-MM-DDTHH:mm'))
-    const [end, setEnd] = useState(event ? event.end.format('YYYY-MM-DDTHH:mm') : defaultStart.add(1, 'hour').format('YYYY-MM-DDTHH:mm'))
+    const [end, setEnd] = useState(event ? event.end.format('YYYY-MM-DDTHH:mm') : (defaultEnd ?? defaultStart.add(1, 'hour')).format('YYYY-MM-DDTHH:mm'))
     const [recurrence, setRecurrence] = useState<RecurrenceType>(event?.recurrence ?? 'none')
     const [recurrenceEnd, setRecurrenceEnd] = useState(event?.recurrenceEnd?.format('YYYY-MM-DD') ?? '')
     const [reminderMinutes, setReminderMinutes] = useState(event?.reminderMinutes ?? 0)
@@ -1007,6 +1171,7 @@ const CalendarPage = () => {
     } | null>(null)
     const [monthDropTarget] = useState<string | null>(null)
     const monthDragEventId = useRef<string | null>(null)
+    const rangeEndRef = useRef<Dayjs | null>(null)
 
     // ─── Load events from Strapi ────────────────────────────────────────────
     const loadEvents = useCallback(async () => {
@@ -1018,7 +1183,7 @@ const CalendarPage = () => {
                 description: e.description,
                 start: dayjs(e.startDate),
                 end: dayjs(e.endDate),
-                category: e.category,
+                category: normalizeCat(e.category),
                 allDay: e.allDay,
                 recurrence: e.recurrence,
                 recurrenceEnd: e.recurrenceEnd ? dayjs(e.recurrenceEnd) : undefined,
@@ -1029,6 +1194,19 @@ const CalendarPage = () => {
                 isSynced: true,
             }))
             setEvents(strapiEvents)
+
+            // Persist to localStorage so dashboard calendar widget can read them
+            try {
+                localStorage.setItem('peg:calendarEvents', JSON.stringify(
+                    strapiEvents.map((ev) => ({
+                        id: ev.id,
+                        title: ev.title,
+                        start: ev.start.toISOString(),
+                        end: ev.end.toISOString(),
+                        category: ev.category,
+                    }))
+                ))
+            } catch { /* localStorage full or unavailable */ }
 
             // Schedule notifications for upcoming events
             strapiEvents.forEach(scheduleNotification)
@@ -1475,6 +1653,12 @@ const CalendarPage = () => {
     const goToday = () => { setDirection(0); setDate(dayjs()) }
 
     const openNew = (start: Dayjs) => setModal({ open: true, event: null, defaultStart: start })
+    const openNewRange = useCallback((start: Dayjs, end: Dayjs) => {
+        setModal({ open: true, event: null, defaultStart: start })
+        // Store end so EventModal can use it — we pass it via defaultStart + the modal reads end from start+1h,
+        // but for range select we want a custom end. We'll set it via a ref.
+        rangeEndRef.current = end
+    }, [])
     const openEdit = (event: CalEvent) => setModal({ open: true, event, defaultStart: event.start })
 
     const toggleCategory = (cat: CalendarEventCategory) => {
@@ -1672,6 +1856,7 @@ const CalendarPage = () => {
                                     onMonthDragStart={handleMonthDragStart}
                                     onMonthDrop={handleMonthDrop}
                                     dropTargetDate={monthDropTarget}
+                                    onRangeSelect={openNewRange}
                                 />
                             )}
                             {view === 'week' && (
@@ -1683,6 +1868,7 @@ const CalendarPage = () => {
                                     onPointerDragStart={handlePointerDragStart}
                                     onResizeStart={handleResizeStart}
                                     dragPreview={dragPreview}
+                                    onSlotRangeSelect={openNewRange}
                                 />
                             )}
                             {view === 'day' && (
@@ -1694,6 +1880,7 @@ const CalendarPage = () => {
                                     onPointerDragStart={handlePointerDragStart}
                                     onResizeStart={handleResizeStart}
                                     dragPreview={dragPreview}
+                                    onSlotRangeSelect={openNewRange}
                                 />
                             )}
                         </motion.div>
@@ -1706,10 +1893,11 @@ const CalendarPage = () => {
                 <EventModal
                     event={modal.event}
                     defaultStart={modal.defaultStart}
+                    defaultEnd={rangeEndRef.current}
                     projects={projects}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    onClose={() => setModal({ open: false, event: null, defaultStart: dayjs() })}
+                    onSave={(data) => { rangeEndRef.current = null; handleSave(data) }}
+                    onDelete={() => { rangeEndRef.current = null; handleDelete() }}
+                    onClose={() => { rangeEndRef.current = null; setModal({ open: false, event: null, defaultStart: dayjs() }) }}
                 />
             )}
 
