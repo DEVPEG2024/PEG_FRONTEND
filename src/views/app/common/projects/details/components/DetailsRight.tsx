@@ -75,6 +75,35 @@ const DetailsRight = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]);
 
+  // Inline edit paidPrice / producerPaidPrice
+  const [editingField, setEditingField] = useState<'paidPrice' | 'producerPaidPrice' | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const editFieldRef = useRef<HTMLInputElement>(null);
+
+  const startEditField = (field: 'paidPrice' | 'producerPaidPrice') => {
+    setEditingField(field);
+    setEditingValue(String(project[field] ?? 0));
+  };
+
+  const confirmEditField = () => {
+    if (!editingField) return;
+    const val = parseFloat(editingValue);
+    if (isNaN(val) || val < 0) { cancelEditField(); return; }
+    dispatch(updateCurrentProject({ documentId: project.documentId, [editingField]: val }));
+    toast.success(editingField === 'paidPrice' ? 'Montant payé par client mis à jour' : 'Montant payé au producteur mis à jour');
+    setEditingField(null);
+    setEditingValue('');
+  };
+
+  const cancelEditField = () => {
+    setEditingField(null);
+    setEditingValue('');
+  };
+
+  useEffect(() => {
+    if (editingField && editFieldRef.current) editFieldRef.current.focus();
+  }, [editingField]);
+
   // Quick producer change
   const [producerDropdownOpen, setProducerDropdownOpen] = useState(false);
   const [producers, setProducers] = useState<Producer[]>([]);
@@ -240,9 +269,33 @@ const DetailsRight = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Payé par client</span>
-              <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>
-                {project.paidPrice?.toFixed(2) ?? '0.00'} €
-              </span>
+              {editingField === 'paidPrice' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    ref={editFieldRef}
+                    type="number"
+                    step="0.01"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEditField(); if (e.key === 'Escape') cancelEditField(); }}
+                    onBlur={confirmEditField}
+                    style={{
+                      width: '80px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(34,197,94,0.4)',
+                      borderRadius: '6px', color: '#4ade80', fontSize: '13px', fontWeight: 700,
+                      padding: '2px 6px', outline: 'none', textAlign: 'right', fontFamily: 'inherit',
+                    }}
+                  />
+                  <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>€</span>
+                </div>
+              ) : (
+                <span
+                  onClick={() => isAdmin && startEditField('paidPrice')}
+                  style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: isAdmin ? 'pointer' : 'default' }}
+                  title={isAdmin ? 'Cliquer pour modifier' : undefined}
+                >
+                  {project.paidPrice?.toFixed(2) ?? '0.00'} €
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Reste dû client</span>
@@ -262,9 +315,33 @@ const DetailsRight = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Payé au producteur</span>
-              <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>
-                {project.producerPaidPrice?.toFixed(2) ?? '0.00'} €
-              </span>
+              {editingField === 'producerPaidPrice' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input
+                    ref={editFieldRef}
+                    type="number"
+                    step="0.01"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEditField(); if (e.key === 'Escape') cancelEditField(); }}
+                    onBlur={confirmEditField}
+                    style={{
+                      width: '80px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(34,197,94,0.4)',
+                      borderRadius: '6px', color: '#4ade80', fontSize: '13px', fontWeight: 700,
+                      padding: '2px 6px', outline: 'none', textAlign: 'right', fontFamily: 'inherit',
+                    }}
+                  />
+                  <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>€</span>
+                </div>
+              ) : (
+                <span
+                  onClick={() => isAdmin && startEditField('producerPaidPrice')}
+                  style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: isAdmin ? 'pointer' : 'default' }}
+                  title={isAdmin ? 'Cliquer pour modifier' : undefined}
+                >
+                  {project.producerPaidPrice?.toFixed(2) ?? '0.00'} €
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Reste dû producteur</span>
