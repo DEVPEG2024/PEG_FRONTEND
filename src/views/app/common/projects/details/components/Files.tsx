@@ -57,7 +57,7 @@ const Files = () => {
   };
 
   const onFileAdd = async (file: File) => {
-    setPegFiles([...pegFiles, { file, name: file.name } as PegFile]);
+    setPegFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
     setPegFilesChanged(true);
   };
 
