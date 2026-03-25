@@ -83,11 +83,6 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                     }
                     sizeAndColorSelections
                 }
-                file {
-                    documentId
-                    url
-                    name
-                }
             }
             name
             orderItem {
@@ -194,11 +189,6 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                         name
                     }
                     sizeAndColorSelections
-                }
-                file {
-                    documentId
-                    url
-                    name
                 }
             }
             name
@@ -330,11 +320,6 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                         name
                     }
                     sizeAndColorSelections
-                }
-                file {
-                    documentId
-                    url
-                    name
                 }
             }
             name

@@ -34,11 +34,6 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
             paymentMethod
             date
             dueDate
-            file {
-                documentId
-                url
-                name
-            }
         }
     }
   `,
@@ -47,7 +42,7 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
         ...data,
         customer: data.customer?.documentId,
         orderItems: data.orderItems?.map(({documentId}) => documentId) ?? [],
-        file: data.file ?? null,
+        // file: data.file ?? null, // TODO: activer après déploiement backend avec champ file
     }
   }
     return ApiService.fetchData<ApiResponse<{createInvoice: Invoice}>>({
@@ -109,11 +104,6 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
                 paymentMethod
                 date
                 dueDate
-                file {
-                    documentId
-                    url
-                    name
-                }
             }
             pageInfo {
                 page
@@ -193,11 +183,6 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                 paymentMethod
                 date
                 dueDate
-                file {
-                    documentId
-                    url
-                    name
-                }
             }
             pageInfo {
                 page
