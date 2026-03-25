@@ -17,4 +17,5 @@ export type Invoice = {
   paymentReference: string;
   paymentAmount: number;
   state: string;
+  file?: { documentId: string; url: string; name: string } | null;
 }

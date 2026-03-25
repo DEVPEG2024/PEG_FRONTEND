@@ -1,6 +1,7 @@
+import { useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Container from '@/components/shared/Container';
-import { HiBan, HiCheck, HiPencil, HiPrinter } from 'react-icons/hi';
+import { HiBan, HiCheck, HiPencil, HiPrinter, HiUpload, HiDocumentText } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
@@ -23,6 +24,7 @@ import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvo
 import { stateData } from '@/views/app/common/invoices/constants';
 import createUID from '@/components/ui/utils/createUid';
 import { toast } from 'react-toastify';
+import { apiUploadFile } from '@/services/FileServices';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -37,6 +39,8 @@ const Invoices = () => {
     project,
     loading,
   } = useAppSelector((state) => state.projectDetails.data);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCancelInvoice = (invoice: Invoice) => {
     dispatch(
@@ -95,6 +99,43 @@ const Invoices = () => {
     return errors;
   };
 
+  const handleUploadInvoice = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Seuls les fichiers PDF sont acceptés');
+      return;
+    }
+    setUploading(true);
+    try {
+      const uploadedFile = await apiUploadFile(file);
+      const invoice: Omit<Invoice, 'documentId'> = {
+        customer: project.customer,
+        orderItems: [],
+        amount: project.price || 0,
+        vatAmount: (project.price || 0) * 0.2,
+        totalAmount: (project.price || 0) * 1.2,
+        name: file.name.replace(/\.pdf$/i, ''),
+        date: dayjs().toDate(),
+        dueDate: dayjs().add(30, 'day').toDate(),
+        state: 'pending',
+        paymentMethod: 'transfer',
+        paymentAmount: 0,
+        paymentReference: '',
+        paymentState: 'pending',
+        paymentDate: new Date(0),
+        file: uploadedFile.id as any,
+      };
+      await dispatch(addInvoice({ invoice, project }));
+      toast.success('Facture téléversée avec succès');
+    } catch {
+      toast.error('Erreur lors du téléversement de la facture');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const iconBtn = (danger = false): React.CSSProperties => ({
     width: '30px', height: '30px', borderRadius: '8px', border: 'none', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -113,10 +154,29 @@ const Invoices = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
               <Button loading={loading} onClick={generateInvoice}>
                 Générer la facture du projet
               </Button>
+              {!project?.orderItem && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    style={{ display: 'none' }}
+                    onChange={handleUploadInvoice}
+                  />
+                  <Button
+                    loading={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="twoTone"
+                    icon={<HiUpload />}
+                  >
+                    Téléverser une facture
+                  </Button>
+                </>
+              )}
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -165,6 +225,17 @@ const Invoices = () => {
                         {isPaid && <HiCheck size={12} style={{ color: '#4ade80' }} />}
                       </div>
 
+                      {invoice.file?.url && (
+                        <a
+                          href={invoice.file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ ...iconBtn(), color: '#6fa3f5', textDecoration: 'none' }}
+                          title="Voir le PDF"
+                        >
+                          <HiDocumentText size={14} />
+                        </a>
+                      )}
                       <button style={iconBtn()} onClick={() => handlePrintInvoice(invoice)}>
                         <HiPrinter size={14} />
                       </button>
