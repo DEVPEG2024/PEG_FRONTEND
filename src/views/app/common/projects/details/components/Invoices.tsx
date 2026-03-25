@@ -108,7 +108,8 @@ const Invoices = () => {
     }
     setUploading(true);
     try {
-      const uploadedFile = await apiUploadFile(file);
+      // Upload le fichier pour référence future (lien sera activé après déploiement backend)
+      await apiUploadFile(file);
       const invoice: Omit<Invoice, 'documentId'> = {
         customer: project.customer,
         orderItems: [],
@@ -124,7 +125,6 @@ const Invoices = () => {
         paymentReference: '',
         paymentState: 'pending',
         paymentDate: new Date(0),
-        file: uploadedFile.id as any,
       };
       await dispatch(addInvoice({ invoice, project }));
       toast.success('Facture téléversée avec succès');

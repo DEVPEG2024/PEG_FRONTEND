@@ -37,12 +37,13 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
         }
     }
   `,
+  // Extraire uniquement les champs connus par le schema GraphQL
+  { customer: _c, orderItems: _o, file: _f, ...invoiceData } = data,
   variables = {
     data: {
-        ...data,
+        ...invoiceData,
         customer: data.customer?.documentId,
         orderItems: data.orderItems?.map(({documentId}) => documentId) ?? [],
-        // file: data.file ?? null, // TODO: activer après déploiement backend avec champ file
     }
   }
     return ApiService.fetchData<ApiResponse<{createInvoice: Invoice}>>({
