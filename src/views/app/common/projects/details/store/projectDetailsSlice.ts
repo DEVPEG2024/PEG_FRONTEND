@@ -18,7 +18,9 @@ import {
 import {
   apiCreateInvoice,
   apiUpdateInvoice,
+  apiDeleteInvoice,
   CreateInvoiceRequest,
+  DeleteInvoiceResponse,
 } from '@/services/InvoicesServices';
 import {
   apiCreateComment,
@@ -173,6 +175,28 @@ export const addInvoice = createAsyncThunk(
       })
     );
     return updateProject;
+  }
+);
+
+export type DeleteInvoice = {
+  invoiceDocumentId: string;
+  project: Project;
+};
+
+export const deleteProjectInvoice = createAsyncThunk(
+  SLICE_NAME + '/deleteProjectInvoice',
+  async (data: DeleteInvoice): Promise<{ deleteInvoice: DeleteInvoiceResponse; project: Project }> => {
+    const { deleteInvoice }: { deleteInvoice: DeleteInvoiceResponse } =
+      await unwrapData(apiDeleteInvoice(data.invoiceDocumentId));
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject({
+        documentId: data.project.documentId,
+        invoices: data.project.invoices.filter(
+          (inv) => inv.documentId !== data.invoiceDocumentId
+        ),
+      })
+    );
+    return { deleteInvoice, project: updateProject };
   }
 );
 
@@ -343,6 +367,18 @@ const projectListSlice = createSlice({
       state.invoices = action.payload.invoices;
     });
     builder.addCase(addInvoice.rejected, (state) => {
+      state.loading = false;
+    });
+    // DELETE INVOICE
+    builder.addCase(deleteProjectInvoice.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteProjectInvoice.fulfilled, (state, action) => {
+      state.loading = false;
+      state.project = action.payload.project;
+      state.invoices = action.payload.project.invoices;
+    });
+    builder.addCase(deleteProjectInvoice.rejected, (state) => {
       state.loading = false;
     });
     // UPDATE INVOICE

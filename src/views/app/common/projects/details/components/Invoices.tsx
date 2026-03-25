@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Container from '@/components/shared/Container';
-import { HiBan, HiCheck, HiPencil, HiPrinter, HiUpload, HiDocumentText } from 'react-icons/hi';
+import { HiBan, HiCheck, HiPencil, HiPrinter, HiUpload, HiDocumentText, HiTrash } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { User } from '@/@types/user';
 import { RootState, useAppDispatch } from '@/store';
 import {
   addInvoice,
+  deleteProjectInvoice,
   setEditProjectInvoiceDialog,
   setPrintProjectInvoiceDialog,
   setSelectedProjectInvoice,
@@ -49,6 +50,11 @@ const Invoices = () => {
         state: 'canceled',
       })
     );
+  };
+
+  const handleDeleteInvoice = (invoice: Invoice) => {
+    if (!window.confirm(`Supprimer la facture "${invoice.name}" ?`)) return;
+    dispatch(deleteProjectInvoice({ invoiceDocumentId: invoice.documentId, project }));
   };
 
   const handleUpdateInvoice = (invoice: Invoice) => {
@@ -249,8 +255,18 @@ const Invoices = () => {
                           style={{ ...iconBtn(true), opacity: isCanceled ? 0.4 : 1, cursor: isCanceled ? 'not-allowed' : 'pointer' }}
                           onClick={() => !isCanceled && handleCancelInvoice(invoice)}
                           disabled={isCanceled}
+                          title="Annuler"
                         >
                           <HiBan size={14} />
+                        </button>
+                      )}
+                      {hasRole(user, [SUPER_ADMIN]) && (
+                        <button
+                          style={iconBtn(true)}
+                          onClick={() => handleDeleteInvoice(invoice)}
+                          title="Supprimer"
+                        >
+                          <HiTrash size={14} />
                         </button>
                       )}
                     </div>
