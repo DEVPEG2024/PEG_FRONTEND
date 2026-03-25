@@ -11,7 +11,7 @@ import { MdChecklist, MdDragIndicator, MdSave } from 'react-icons/md';
 import { HiCheck, HiChevronDown, HiTrash, HiPlus } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiGetChecklists, apiCreateChecklist, apiUpdateChecklist } from '@/services/ChecklistServices';
+import { apiGetChecklists, apiCreateChecklist } from '@/services/ChecklistServices';
 import { apiGetProjectChecklistItems, apiUpdateProjectChecklistItems, apiGetProductChecklist, apiUpdateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { toast } from 'react-toastify';
@@ -185,28 +185,22 @@ const ProjectChecklist = () => {
 
   const saveAsTemplate = async () => {
     if (items.length === 0) return;
+    const name = templateName.trim();
+    if (!name) return;
     const labels = items.map((i) => i.label);
     setSavingTemplate(true);
     try {
-      const appliedChecklist = appliedTemplateId ? checklists.find((c) => c.documentId === appliedTemplateId) : null;
-      if (appliedChecklist) {
-        await apiUpdateChecklist({ documentId: appliedChecklist.documentId, name: appliedChecklist.name, items: labels });
-        toast.success(`Modèle "${appliedChecklist.name}" mis à jour`);
-      } else {
-        const name = templateName.trim();
-        if (!name) return;
-        const res = await apiCreateChecklist({ name, items: labels });
-        const created = (res as any)?.data?.data?.createChecklist;
-        if (created) {
-          setChecklists((prev) => [...prev, created]);
-          setAppliedTemplateId(created.documentId);
-        }
-        toast.success(`Modèle "${name}" créé`);
+      const res = await apiCreateChecklist({ name, items: labels });
+      const created = (res as any)?.data?.data?.createChecklist;
+      if (created) {
+        setChecklists((prev) => [...prev, created]);
+        setAppliedTemplateId(created.documentId);
       }
+      toast.success(`Modèle "${name}" créé`);
       setSaveTemplateOpen(false);
       setTemplateName('');
     } catch {
-      toast.error('Erreur lors de la sauvegarde du modèle');
+      toast.error('Erreur lors de la création du modèle');
     } finally {
       setSavingTemplate(false);
     }
@@ -329,25 +323,7 @@ const ProjectChecklist = () => {
                 )}
 
                 {items.length > 0 && (
-                  appliedTemplateId ? (
-                    <button
-                      onClick={saveAsTemplate}
-                      disabled={savingTemplate}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        padding: '6px 12px', borderRadius: '8px',
-                        background: 'rgba(168,85,247,0.12)',
-                        border: '1px solid rgba(168,85,247,0.3)',
-                        color: '#c084fc', fontSize: '12px', fontWeight: 600,
-                        cursor: savingTemplate ? 'not-allowed' : 'pointer',
-                        fontFamily: 'Inter, sans-serif',
-                        opacity: savingTemplate ? 0.5 : 1,
-                      }}
-                    >
-                      <MdSave size={13} />
-                      {savingTemplate ? 'Sauvegarde...' : 'Mettre à jour le modèle'}
-                    </button>
-                  ) : !saveTemplateOpen ? (
+                  !saveTemplateOpen ? (
                     <button
                       onClick={() => setSaveTemplateOpen(true)}
                       style={{
@@ -360,7 +336,7 @@ const ProjectChecklist = () => {
                       }}
                     >
                       <MdSave size={13} />
-                      Sauvegarder comme modèle
+                      Créer nouveau modèle
                     </button>
                   ) : (
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
