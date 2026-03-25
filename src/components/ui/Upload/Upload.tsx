@@ -121,8 +121,10 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
             const updatedFiles = addNewFiles(newFiles)
             setFiles(updatedFiles)
             onChange?.(updatedFiles, files)
-            if (newFiles?.[0]) {
-                onFileAdd?.(newFiles[0])
+            if (newFiles) {
+                for (let i = 0; i < newFiles.length; i++) {
+                    onFileAdd?.(newFiles[i])
+                }
             }
         }
     }

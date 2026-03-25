@@ -12,12 +12,19 @@ import {
   apiUploadFile,
 } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
-import { HiDownload, HiTrash, HiPhotograph, HiDocumentText } from 'react-icons/hi';
+import { HiDownload, HiTrash, HiPhotograph, HiDocumentText, HiArchive, HiCode, HiDocument } from 'react-icons/hi';
 import { hasRole } from '@/utils/permissions';
 import { PRODUCER } from '@/constants/roles.constant';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 
 const isImageUrl = (url: string) => /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(url);
+const isPdfUrl = (url: string) => /\.pdf$/i.test(url);
+const isZipUrl = (url: string) => /\.(zip|rar|7z|tar|gz)$/i.test(url);
+const isPsdUrl = (url: string) => /\.(psd|ai|eps|ps)$/i.test(url);
+const getFileExtension = (url: string) => {
+  const match = url.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1].toUpperCase() : 'FILE';
+};
 
 const Files = () => {
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
@@ -170,15 +177,40 @@ const Files = () => {
                           <img
                             src={file.url}
                             alt={file.name}
-                            style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }}
+                            style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
                           />
                         ) : (
                           <div style={{
-                            width: '100%', height: '100px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(255,255,255,0.02)',
+                            width: '100%', height: '120px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            background: isPdfUrl(file.url)
+                              ? 'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.04) 100%)'
+                              : isZipUrl(file.url)
+                              ? 'linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(234,179,8,0.04) 100%)'
+                              : isPsdUrl(file.url)
+                              ? 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.04) 100%)'
+                              : 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+                            gap: '6px',
                           }}>
-                            <HiDocumentText size={32} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                            {isPdfUrl(file.url) ? (
+                              <HiDocumentText size={36} style={{ color: '#f87171' }} />
+                            ) : isZipUrl(file.url) ? (
+                              <HiArchive size={36} style={{ color: '#facc15' }} />
+                            ) : isPsdUrl(file.url) ? (
+                              <HiCode size={36} style={{ color: '#60a5fa' }} />
+                            ) : (
+                              <HiDocument size={36} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                            )}
+                            <span style={{
+                              fontSize: '10px', fontWeight: 700, letterSpacing: '0.05em',
+                              color: isPdfUrl(file.url) ? '#f87171'
+                                : isZipUrl(file.url) ? '#facc15'
+                                : isPsdUrl(file.url) ? '#60a5fa'
+                                : 'rgba(255,255,255,0.35)',
+                              textTransform: 'uppercase',
+                            }}>
+                              {getFileExtension(file.url)}
+                            </span>
                           </div>
                         )}
                       </a>
