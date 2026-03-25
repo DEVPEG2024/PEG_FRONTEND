@@ -25,6 +25,7 @@ import Container from '@/components/shared/Container';
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { getProductBasePrice, getProductPriceForQuantity } from '@/utils/productHelpers';
+import { toTTC } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
@@ -289,11 +290,16 @@ const ShowProduct = () => {
 
           {/* Price + tier badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
-              <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-                {unitPrice.toFixed(2)}
+            <div style={{ display: 'inline-flex', flexDirection: 'column', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+                <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                  {unitPrice.toFixed(2)}
+                </span>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>€ HT / pièce</span>
+              </div>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
+                {toTTC(unitPrice).toFixed(2)} € TTC
               </span>
-              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>€ / pièce</span>
             </div>
             {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (
               <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
@@ -334,9 +340,14 @@ const ShowProduct = () => {
                             -{savings}%
                           </span>
                         )}
-                        <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
-                          {tier.price.toFixed(2)} €
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
+                            {tier.price.toFixed(2)} € HT
+                          </span>
+                          <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
+                            {toTTC(tier.price).toFixed(2)} € TTC
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -364,10 +375,15 @@ const ShowProduct = () => {
                 <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
                 {' '}pièce{amountSelected > 1 ? 's' : ''}
                 {' × '}
-                <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toFixed(2)} €</span>
+                <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toFixed(2)} € HT</span>
               </div>
-              <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>
-                {totalPrice.toFixed(2)}<span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€</span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>
+                  {totalPrice.toFixed(2)}<span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€ HT</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
+                  {toTTC(totalPrice).toFixed(2)} € TTC
+                </div>
               </div>
             </div>
           )}
@@ -399,7 +415,7 @@ const ShowProduct = () => {
                 disabled={!canAddToCart}
                 onClick={handleAddToCart}
               >
-                {canAddToCart ? `Ajouter au panier — ${totalPrice.toFixed(2)} €` : 'Sélectionnez une quantité'}
+                {canAddToCart ? `Ajouter au panier — ${totalPrice.toFixed(2)} € HT (${toTTC(totalPrice).toFixed(2)} € TTC)` : 'Sélectionnez une quantité'}
               </Button>
             )}
           </div>

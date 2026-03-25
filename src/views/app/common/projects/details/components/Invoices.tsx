@@ -26,6 +26,7 @@ import { stateData } from '@/views/app/common/invoices/constants';
 import createUID from '@/components/ui/utils/createUid';
 import { toast } from 'react-toastify';
 import { apiUploadFile } from '@/services/FileServices';
+import { TVA_RATE } from '@/utils/priceHelpers';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -78,8 +79,8 @@ const Invoices = () => {
         customer: project.customer,
         orderItems: [],
         amount: project.price,
-        vatAmount: project.price * 0.2,
-        totalAmount: project.price * 1.2,
+        vatAmount: project.price * TVA_RATE,
+        totalAmount: project.price * (1 + TVA_RATE),
         name: createUID(10).toUpperCase(),
         date: dayjs().toDate(),
         dueDate: dayjs().add(30, 'day').toDate(),
@@ -119,8 +120,8 @@ const Invoices = () => {
         customer: project.customer,
         orderItems: [],
         amount: project.price || 0,
-        vatAmount: (project.price || 0) * 0.2,
-        totalAmount: (project.price || 0) * 1.2,
+        vatAmount: (project.price || 0) * TVA_RATE,
+        totalAmount: (project.price || 0) * (1 + TVA_RATE),
         name: file.name.replace(/\.pdf$/i, ''),
         date: dayjs().toDate(),
         dueDate: dayjs().add(30, 'day').toDate(),
@@ -213,13 +214,18 @@ const Invoices = () => {
 
                     {/* Right: amount + actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      <span style={{
-                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                        borderRadius: '100px', padding: '3px 10px',
-                        color: '#6b9eff', fontSize: '12px', fontWeight: 700,
-                      }}>
-                        {invoice.totalAmount.toFixed(2)} €
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                        <span style={{
+                          background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                          borderRadius: '100px', padding: '3px 10px',
+                          color: '#6b9eff', fontSize: '12px', fontWeight: 700,
+                        }}>
+                          {invoice.totalAmount.toFixed(2)} € TTC
+                        </span>
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
+                          {invoice.amount.toFixed(2)} € HT
+                        </span>
+                      </div>
 
                       {/* Paid indicator */}
                       <div style={{

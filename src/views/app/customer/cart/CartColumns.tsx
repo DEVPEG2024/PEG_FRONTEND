@@ -3,6 +3,7 @@ import {
   getProductPriceForSizeAndColors,
   getTotalPriceForCartItem,
 } from '@/utils/productHelpers';
+import { toTTC } from '@/utils/priceHelpers';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { CartItem } from '@/@types/cart';
 
@@ -29,18 +30,19 @@ export const useColumns = (
       },
     },
     {
-      header: 'Prix',
+      header: 'Prix unitaire',
       accessorKey: 'price',
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
+        const ht = getProductPriceForSizeAndColors(
+          row.original.product,
+          row.original.sizeAndColors
+        );
         return (
-          <p>
-            {getProductPriceForSizeAndColors(
-              row.original.product,
-              row.original.sizeAndColors
-            ).toFixed(2)}{' '}
-            €
-          </p>
+          <div>
+            <p className="font-semibold">{ht.toFixed(2)} € HT</p>
+            <p className="text-xs text-gray-400">{toTTC(ht).toFixed(2)} € TTC</p>
+          </div>
         );
       },
     },
@@ -71,13 +73,14 @@ export const useColumns = (
       accessorKey: 'totalPrice',
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
+        const ht = getTotalPriceForCartItem(
+          row.original.product,
+          row.original.sizeAndColors
+        );
         return (
-          <div className="flex items-center gap-2" key={row.original.id}>
-            {getTotalPriceForCartItem(
-              row.original.product,
-              row.original.sizeAndColors
-            ).toFixed(2)}
-            {' €'}
+          <div className="flex flex-col" key={row.original.id}>
+            <span className="font-semibold">{ht.toFixed(2)} € HT</span>
+            <span className="text-xs text-gray-400">{toTTC(ht).toFixed(2)} € TTC</span>
           </div>
         );
       },

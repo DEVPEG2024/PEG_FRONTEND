@@ -13,6 +13,7 @@ import { TOKEN_TYPE } from '@/constants/api.constant';
 import { FormAnswer } from '@/@types/formAnswer';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { unwrapData } from '@/utils/serviceHelper';
+import { TVA_RATE } from '@/utils/priceHelpers';
 import { apiCreateOrderItem } from '@/services/OrderItemServices';
 import { OrderItem } from '@/@types/orderItem';
 import { User } from '@/@types/user';
@@ -98,7 +99,7 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
       orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
         documentId: orderItem.documentId,
         productName: orderItem.product.name,
-        productPrice: Math.trunc(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections) * 100 * 1.2),
+        productPrice: Math.trunc(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections) * 100 * (1 + TVA_RATE)),
         productQuantity: orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
@@ -167,7 +168,7 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
   }, 0);
 
   const totalPrice: number = subtotalHT + SHIPPING_HT;
-  const totalPriceWithVAT: number = totalPrice * 1.2;
+  const totalPriceWithVAT: number = totalPrice * (1 + TVA_RATE);
   const tva = totalPriceWithVAT - totalPrice;
 
   return (

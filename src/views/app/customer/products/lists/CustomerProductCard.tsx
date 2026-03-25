@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { getProductBasePrice } from '@/utils/productHelpers';
+import { toTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
 import { HiArrowRight } from 'react-icons/hi';
@@ -20,7 +21,8 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
 
   const imageUrl = product.images[0]?.url;
   const shortDesc = product.description ? getShortSentence(product.description) : null;
-  const price = getProductBasePrice(product).toFixed(2);
+  const priceHT = getProductBasePrice(product);
+  const priceTTC = toTTC(priceHT);
   const initial = product.name.charAt(0).toUpperCase();
 
   const handleMouseEnter = () => {
@@ -236,15 +238,20 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
 
         {/* Price + CTA */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
-          <span style={{
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: '20px',
-            letterSpacing: '-0.03em',
-            lineHeight: 1,
-          }}>
-            {price} <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€</span>
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '20px',
+              letterSpacing: '-0.03em',
+              lineHeight: 1,
+            }}>
+              {priceHT.toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
+            </span>
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+              {priceTTC.toFixed(2)} € TTC
+            </span>
+          </div>
           <div style={{
             display: 'flex',
             alignItems: 'center',

@@ -1,5 +1,6 @@
 import { Product } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
+import { toTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { HiPhotograph } from 'react-icons/hi';
 
@@ -10,7 +11,8 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
     <>
       {products.map((product) => {
         const imageUrl = product.images?.[0]?.url;
-        const price = getProductBasePrice(product).toFixed(2);
+        const priceHT = getProductBasePrice(product);
+        const priceTTC = toTTC(priceHT);
         return (
           <div
             key={product.documentId}
@@ -84,7 +86,7 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
                 boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
                 display: 'inline-block',
               }}>
-                {price} €
+                {priceHT.toFixed(2)} € HT <span style={{ fontSize: '10px', fontWeight: 500, opacity: 0.7 }}>({priceTTC.toFixed(2)} € TTC)</span>
               </span>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { SizeAndColorSelection } from '@/@types/product';
 import { User } from '@/@types/user';
 import { SUPER_ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
+import { toTTC } from '@/utils/priceHelpers';
 
 export const useColumns = (
   handleShowOrderItem: (order: OrderItem) => void,
@@ -74,12 +75,15 @@ export const useColumns = (
       accessorKey: 'price',
       enableSorting: false,
       cell: ({ row }: { row: { original: OrderItem } }) => {
+        const ht = row.original.price;
+        const ttc = toTTC(ht);
         return (
           <div
-            className="flex items-center gap-2"
+            className="flex flex-col"
             key={row.original.documentId}
           >
-            {row.original.price} €
+            <span className="font-semibold">{ht.toFixed(2)} € HT</span>
+            <span className="text-xs text-gray-400">{ttc.toFixed(2)} € TTC</span>
           </div>
         );
       },
