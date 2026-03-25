@@ -34,11 +34,15 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
             paymentMethod
             date
             dueDate
+            file {
+                documentId
+                url
+                name
+            }
         }
     }
   `,
-  // Extraire uniquement les champs connus par le schema GraphQL
-  { customer: _c, orderItems: _o, file: _f, ...invoiceData } = data,
+  { customer: _c, orderItems: _o, ...invoiceData } = data,
   variables = {
     data: {
         ...invoiceData,
@@ -105,6 +109,11 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
                 paymentMethod
                 date
                 dueDate
+                file {
+                    documentId
+                    url
+                    name
+                }
             }
             pageInfo {
                 page
@@ -184,6 +193,11 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                 paymentMethod
                 date
                 dueDate
+                file {
+                    documentId
+                    url
+                    name
+                }
             }
             pageInfo {
                 page
@@ -245,6 +259,11 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
             paymentMethod
             date
             dueDate
+            file {
+                documentId
+                url
+                name
+            }
         }
     }
   `,
