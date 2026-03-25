@@ -8,7 +8,7 @@ import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useAppSelector, setChecklistPercent, updateCurrentProject } from '../store';
 import { useAppDispatch } from '@/store';
 import { MdChecklist, MdDragIndicator, MdSave } from 'react-icons/md';
-import { HiCheck, HiChevronDown, HiTrash, HiPlus } from 'react-icons/hi';
+import { HiCheck, HiChevronDown, HiTrash, HiPlus, HiPencil } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiGetChecklists, apiCreateChecklist } from '@/services/ChecklistServices';
@@ -39,6 +39,9 @@ const ProjectChecklist = () => {
   const [newTaskLabel, setNewTaskLabel] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingLabel, setEditingLabel] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -118,6 +121,10 @@ const ProjectChecklist = () => {
   }, [showAddInput]);
 
   useEffect(() => {
+    if (editingIdx !== null && editInputRef.current) editInputRef.current.focus();
+  }, [editingIdx]);
+
+  useEffect(() => {
     if (saveTemplateOpen && templateInputRef.current) templateInputRef.current.focus();
   }, [saveTemplateOpen]);
 
@@ -181,6 +188,28 @@ const ProjectChecklist = () => {
 
   const removeItem = (index: number) => {
     saveItems(items.filter((_, i) => i !== index));
+  };
+
+  const startEdit = (index: number) => {
+    setEditingIdx(index);
+    setEditingLabel(items[index].label);
+  };
+
+  const confirmEdit = () => {
+    if (editingIdx === null) return;
+    const label = editingLabel.trim();
+    if (!label) { cancelEdit(); return; }
+    const updated = items.map((item, i) =>
+      i === editingIdx ? { ...item, label } : item
+    );
+    saveItems(updated);
+    setEditingIdx(null);
+    setEditingLabel('');
+  };
+
+  const cancelEdit = () => {
+    setEditingIdx(null);
+    setEditingLabel('');
   };
 
   const saveAsTemplate = async () => {
@@ -539,16 +568,43 @@ const ProjectChecklist = () => {
                       </div>
 
                       {/* Label */}
-                      <span style={{
-                        flex: 1,
-                        color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        textDecoration: item.done ? 'line-through' : 'none',
-                        transition: 'color 0.15s',
-                      }}>
-                        {item.label}
-                      </span>
+                      {editingIdx === index && canEdit ? (
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          value={editingLabel}
+                          onChange={(e) => setEditingLabel(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') confirmEdit(); if (e.key === 'Escape') cancelEdit(); }}
+                          onBlur={confirmEdit}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(47,111,237,0.4)',
+                            borderRadius: '6px',
+                            color: 'rgba(255,255,255,0.9)',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            padding: '4px 8px',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                      ) : (
+                        <span
+                          onDoubleClick={() => { if (canEdit) startEdit(index); }}
+                          style={{
+                            flex: 1,
+                            color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            textDecoration: item.done ? 'line-through' : 'none',
+                            transition: 'color 0.15s',
+                            cursor: canEdit ? 'text' : 'default',
+                          }}>
+                          {item.label}
+                        </span>
+                      )}
 
                       {/* Status for customers */}
                       {!canToggle && (
@@ -558,6 +614,25 @@ const ProjectChecklist = () => {
                         }}>
                           {item.done ? 'Effectuée' : 'En attente'}
                         </span>
+                      )}
+
+                      {/* Edit button for admins */}
+                      {canEdit && editingIdx !== index && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startEdit(index); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
+                            background: 'transparent', border: 'none',
+                            color: 'rgba(255,255,255,0.15)', cursor: 'pointer',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#6fa3f5')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
+                          title="Modifier"
+                        >
+                          <HiPencil size={13} />
+                        </button>
                       )}
 
                       {/* Delete button for admins */}
