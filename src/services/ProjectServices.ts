@@ -43,7 +43,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             }
             description
             endDate
-            images {
+            images (pagination: {limit: 100}){
                 documentId
                 url
                 name
@@ -150,7 +150,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             }
             description
             endDate
-            images {
+            images (pagination: {limit: 100}){
                 documentId
                 url
                 name
@@ -281,7 +281,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             }
             description
             endDate
-            images {
+            images (pagination: {limit: 100}){
                 documentId
                 url
                 name
