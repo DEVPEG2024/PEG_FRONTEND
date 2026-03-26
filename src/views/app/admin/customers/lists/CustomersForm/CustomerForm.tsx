@@ -42,21 +42,17 @@ type CustomerFormProps = {
 }
 
 const validationSchema = Yup.object().shape({
-  website: Yup.string(),
-  siretNumber: Yup.string().required(t('cust.error.siretNumber')),
-  vatNumber: Yup.string().required(t('cust.error.vatNumber')),
-  customerCategory: Yup.string().required(t('cust.error.customerCategory')),
-  name: Yup.string().required(t('cust.error.name')),
-  address: Yup.string().required(t('cust.error.address')),
-  zipCode: Yup.string().required(t('cust.error.zipCode')),
-  city: Yup.string().required(t('cust.error.city')),
-  country: Yup.string().required(t('cust.error.country')),
-  email: Yup.string().email(t('cust.error.invalidEmail')).required(t('cust.error.email')),
-  phoneNumber: Yup.string()
-    .matches(/^0[1-9](?: [0-9]{2}){4}$/, 'Numéro de téléphone invalide')
-    .required(t('cust.error.phoneNumber')),
-
-  // ✅ logoFile: pas obligatoire
+  name: Yup.string().required('Le nom du client est obligatoire'),
+  email: Yup.string().email('Email invalide').nullable(),
+  phoneNumber: Yup.string().nullable(),
+  address: Yup.string().nullable(),
+  zipCode: Yup.string().nullable(),
+  city: Yup.string().nullable(),
+  country: Yup.string().nullable(),
+  customerCategory: Yup.string().nullable(),
+  vatNumber: Yup.string().nullable(),
+  siretNumber: Yup.string().nullable(),
+  website: Yup.string().nullable(),
   logoFile: Yup.mixed().nullable(),
 })
 

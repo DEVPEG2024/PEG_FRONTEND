@@ -98,16 +98,22 @@ const LogoUpload = ({ value, onChange }: { value: File | null | undefined; onCha
   )
 }
 
+/** EU countries that use intra-community VAT numbers */
+const EU_COUNTRIES = [
+  'FR', 'DE', 'IT', 'ES', 'BE', 'NL', 'LU', 'AT', 'PT', 'IE', 'FI', 'SE',
+  'DK', 'PL', 'CZ', 'SK', 'HU', 'RO', 'BG', 'HR', 'SI', 'EE', 'LV', 'LT',
+  'MT', 'CY', 'EL', 'GR',
+]
+
 const CustomerFields = (props: CustomerFieldsProps) => {
   const { countries, errors, control, watch, setValue } = props
 
-  const formatPhoneNumber = (value: string): string => {
-    const digitsOnly = value.replace(/\D/g, '')
-    return digitsOnly
-      .slice(0, 10)
-      .replace(/(\d{2})(?=\d)/g, '$1 ')
-      .trim()
-  }
+  const selectedCountry = watch('country') ?? ''
+  const isFrance = selectedCountry === 'FR'
+  const isEU = EU_COUNTRIES.includes(selectedCountry)
+
+  const vatLabel = isFrance ? 'N° TVA intracommunautaire' : isEU ? 'N° TVA intracommunautaire' : 'N° identification fiscale'
+  const vatPlaceholder = isFrance ? 'FR XX XXXXXXXXX' : isEU ? 'N° TVA' : 'Tax ID'
 
   return (
     <AdaptableCard bordered={false} className="mb-4">
@@ -115,7 +121,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
       <p className="mb-6">{t('cust.customer_description')}</p>
 
       <FormItem
-        label="Nom du client"
+        label="Nom du client *"
         invalid={!!errors.name}
         errorMessage={errors.name?.message}
       >
@@ -128,12 +134,28 @@ const CustomerFields = (props: CustomerFieldsProps) => {
         />
       </FormItem>
 
+      <FormItem
+        label={t('country')}
+        invalid={!!errors.country}
+        errorMessage={errors.country?.message}
+      >
+        <Controller
+          name="country"
+          control={control}
+          render={({ field }) => (
+            <Select
+              field={field}
+              options={countries}
+              placeholder="Choisissez le pays"
+              value={countries.filter((c) => c.value === field.value)}
+              onChange={(option) => field.onChange(option?.value)}
+            />
+          )}
+        />
+      </FormItem>
+
       <div className="flex gap-6">
-        <FormItem
-          label="Paiement différé"
-          invalid={!!errors.deferredPayment}
-          errorMessage={errors.deferredPayment?.message as any}
-        >
+        <FormItem label="Paiement différé">
           <Controller
             name="deferredPayment"
             control={control}
@@ -143,9 +165,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
           />
         </FormItem>
 
-        <FormItem
-          label="Accès au catalogue"
-        >
+        <FormItem label="Accès au catalogue">
           <Controller
             name="catalogAccess"
             control={control}
@@ -179,7 +199,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
       <div className="flex gap-4">
         <FormItem
           label={t('zipCode')}
-          className="w-1/3"
+          className="w-1/2"
           invalid={!!errors.zipCode}
           errorMessage={errors.zipCode?.message}
         >
@@ -194,7 +214,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
 
         <FormItem
           label={t('city')}
-          className="w-1/3"
+          className="w-1/2"
           invalid={!!errors.city}
           errorMessage={errors.city?.message}
         >
@@ -203,27 +223,6 @@ const CustomerFields = (props: CustomerFieldsProps) => {
             control={control}
             render={({ field }) => (
               <Input {...field} type="text" autoComplete="off" placeholder={t('city')} />
-            )}
-          />
-        </FormItem>
-
-        <FormItem
-          label={t('country')}
-          className="w-1/3"
-          invalid={!!errors.country}
-          errorMessage={errors.country?.message}
-        >
-          <Controller
-            name="country"
-            control={control}
-            render={({ field }) => (
-              <Select
-                field={field}
-                options={countries}
-                placeholder="Choisissez le pays"
-                value={countries.filter((c) => c.value === field.value)}
-                onChange={(option) => field.onChange(option?.value)}
-              />
             )}
           />
         </FormItem>
@@ -244,11 +243,7 @@ const CustomerFields = (props: CustomerFieldsProps) => {
                 {...field}
                 type="text"
                 autoComplete="off"
-                placeholder={t('phone')}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const formattedNumber = formatPhoneNumber(e.target.value)
-                  field.onChange(formattedNumber)
-                }}
+                placeholder={isFrance ? '06 12 34 56 78' : t('phone')}
               />
             )}
           />
