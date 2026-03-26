@@ -130,19 +130,13 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
     })
 }
 
-// update user (Strapi v5 REST)
+// update user via custom admin endpoint
 export async function apiUpdateUser(user: Partial<User>, id: string): Promise<AxiosResponse<User>> {
     const { documentId: _, ...data } = user as any
-    // PUT pour mettre à jour
-    await ApiService.fetchData<User>({
-        url: `/users/${id}`,
+    return ApiService.fetchData<User>({
+        url: API_BASE_URL + `/auth/admin-update-user/${id}`,
         method: 'put',
         data,
-    })
-    // GET avec populate pour récupérer l'avatar et les relations
-    return ApiService.fetchData<User>({
-        url: `/users/${id}?populate=*`,
-        method: 'get',
     })
 }
 
