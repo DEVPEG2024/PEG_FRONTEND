@@ -45,7 +45,7 @@ const _UserDropdown = ({ className }: CommonProps) => {
             </Loading>
             <div className="hidden md:block">
                 <div className="text-xs capitalize">{t("hello")}</div>
-                <div className="font-bold">{user?.lastName}</div>
+                <div className="font-bold">{user?.firstName || user?.lastName || user?.email}</div>
             </div>
         </div>
     )
@@ -63,7 +63,7 @@ const _UserDropdown = ({ className }: CommonProps) => {
                         <div>
                             <div className="text-xs">{t("hello")}</div>
                             <div className="font-bold text-gray-900 dark:text-gray-100">
-                                {user?.lastName}
+                                {user?.firstName || user?.lastName || user?.email}
                             </div>
                         </div>
                     </div>
