@@ -1,4 +1,5 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import lazy from '@/utils/lazyWithRetry';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store';
 import { User } from '@/@types/user';

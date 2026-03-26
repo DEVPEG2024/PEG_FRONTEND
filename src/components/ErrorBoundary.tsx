@@ -26,6 +26,23 @@ class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary] Erreur attrapée:', error)
     console.error('[ErrorBoundary] Component stack:', info.componentStack)
     this.setState({ errorInfo: info.componentStack || '' })
+
+    // Auto-reload on stale chunk errors (after deploy)
+    const isChunkError =
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('Loading CSS chunk') ||
+      error.name === 'ChunkLoadError'
+
+    if (isChunkError) {
+      const reloadKey = 'chunk-reload-' + window.location.pathname
+      const lastReload = sessionStorage.getItem(reloadKey)
+      const now = Date.now()
+      if (!lastReload || now - Number(lastReload) > 30_000) {
+        sessionStorage.setItem(reloadKey, String(now))
+        window.location.reload()
+      }
+    }
   }
 
   handleRetry = () => {

@@ -1,7 +1,7 @@
-import { lazy } from "react";
 import authRoute from "./authRoute";
 import type { Routes } from "@/@types/routes";
 import { SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER } from "@/constants/roles.constant";
+import lazy from "@/utils/lazyWithRetry";
 
 export const publicRoutes: Routes = [...authRoute];
 

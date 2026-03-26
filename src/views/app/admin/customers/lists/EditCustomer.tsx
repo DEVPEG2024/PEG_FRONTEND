@@ -77,19 +77,17 @@ const EditCustomer = () => {
   }
 
   return (
-    <>
-      <CustomerForm
-        initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
-        customerCategories={customerCategories}
-        onFormSubmit={handleSubmit}
-        onDiscard={handleDiscard}
-      />
-      {isEdit && documentId && (
+    <CustomerForm
+      initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
+      customerCategories={customerCategories}
+      onFormSubmit={handleSubmit}
+      onDiscard={handleDiscard}
+      extraContent={isEdit && documentId ? (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
           <ClientFilesPanel customerDocumentId={documentId} mode="admin" />
         </div>
-      )}
-    </>
+      ) : undefined}
+    />
   )
 }
 

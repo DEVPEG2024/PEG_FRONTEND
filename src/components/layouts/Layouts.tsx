@@ -1,4 +1,5 @@
-import { useMemo, lazy, Suspense } from 'react'
+import { useMemo, Suspense } from 'react'
+import lazy from '@/utils/lazyWithRetry'
 import Loading from '@/components/shared/Loading'
 import { useAppSelector } from '@/store'
 import {

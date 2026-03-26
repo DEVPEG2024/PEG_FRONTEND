@@ -38,6 +38,7 @@ type CustomerFormProps = {
   customerCategories: Options[]
   onDiscard?: () => void
   onFormSubmit: (formData: CustomerFormModel) => void
+  extraContent?: React.ReactNode
 }
 
 const validationSchema = Yup.object().shape({
@@ -60,7 +61,7 @@ const validationSchema = Yup.object().shape({
 })
 
 const CustomerForm = (props: CustomerFormProps) => {
-  const { initialData, onFormSubmit, onDiscard, customerCategories } = props
+  const { initialData, onFormSubmit, onDiscard, customerCategories, extraContent } = props
 
   const {
     control,
@@ -102,6 +103,8 @@ const CustomerForm = (props: CustomerFormProps) => {
             />
           </div>
         </div>
+
+        {extraContent}
 
         <StickyFooter
           className="-mx-8 px-8 flex items-center justify-end py-4"
