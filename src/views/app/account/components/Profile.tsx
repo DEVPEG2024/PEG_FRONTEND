@@ -25,8 +25,8 @@ type UserFormModel = Omit<
 
 const validationSchema = Yup.object().shape({
   username: Yup.string().required("Nom d'utilisateur requis"),
-  firstName: Yup.string().required('Nom requis'),
-  lastName: Yup.string().required('Prénom requis'),
+  firstName: Yup.string().required('Prénom requis'),
+  lastName: Yup.string().required('Nom requis'),
   email: Yup.string().email('Email invalide').required('Email requis'),
   jobTitle: Yup.string(),
 });
@@ -180,18 +180,6 @@ const Profile = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom *</label>
-            <Controller name="lastName" control={control} render={({ field }) => (
-              <input {...field} type="text" placeholder="Nom"
-                style={{ ...inputStyle, borderColor: errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
-                onBlur={(e) => { e.target.style.borderColor = errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
-              />
-            )} />
-            {errors.lastName && <p style={{ color: '#f87171', fontSize: '11px', marginTop: '4px' }}>{errors.lastName.message}</p>}
-          </div>
-
-          <div>
             <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Prénom *</label>
             <Controller name="firstName" control={control} render={({ field }) => (
               <input {...field} type="text" placeholder="Prénom"
@@ -201,6 +189,18 @@ const Profile = () => {
               />
             )} />
             {errors.firstName && <p style={{ color: '#f87171', fontSize: '11px', marginTop: '4px' }}>{errors.firstName.message}</p>}
+          </div>
+
+          <div>
+            <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom *</label>
+            <Controller name="lastName" control={control} render={({ field }) => (
+              <input {...field} type="text" placeholder="Nom"
+                style={{ ...inputStyle, borderColor: errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
+                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
+                onBlur={(e) => { e.target.style.borderColor = errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
+              />
+            )} />
+            {errors.lastName && <p style={{ color: '#f87171', fontSize: '11px', marginTop: '4px' }}>{errors.lastName.message}</p>}
           </div>
         </div>
 

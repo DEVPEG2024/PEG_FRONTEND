@@ -1,4 +1,5 @@
-import { Button, Dialog, Input, Select } from '@/components/ui';
+import { Button, Dialog, Select } from '@/components/ui';
+import FieldCustom from '@/views/app/common/projects/modals/components/fileds';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -81,21 +82,18 @@ function ModalEditTicket() {
 
   return (
     <div>
-      <Dialog isOpen={editTicketDialog} onClose={handleClose} width={1200}>
-        <div className="flex flex-col justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-2 ">
-              <Input
-                value={formData.name}
-                placeholder="Titre"
-                onChange={(e: any) => {
-                  setFormData({ ...formData, name: e.target.value });
-                }}
-              />
-            </div>
-          </div>
+      <Dialog isOpen={editTicketDialog} onClose={handleClose} width={800}>
+        <div className="flex flex-col h-full justify-between">
+          <h5 className="mb-4">Modifier le ticket</h5>
+          <FieldCustom
+            placeholder="Titre"
+            value={formData.name}
+            setValue={(e: any) => {
+              setFormData({ ...formData, name: e });
+            }}
+          />
           <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/4">
+            <div className="flex flex-col gap-2 w-1/3">
               <p className="text-sm text-white/50 mb-2 mt-4">Statut</p>
               <Select
                 placeholder="Statut"
@@ -109,7 +107,7 @@ function ModalEditTicket() {
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/4">
+            <div className="flex flex-col gap-2 w-1/3">
               <p className="text-sm text-white/50 mb-2 mt-4">Priorité</p>
               <Select
                 placeholder="Priorité"
@@ -123,7 +121,7 @@ function ModalEditTicket() {
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
+            <div className="flex flex-col gap-2 w-1/3">
               <p className="text-sm text-white/50 mb-2 mt-4">Type du ticket</p>
               <Select
                 placeholder="Type du ticket"
@@ -146,10 +144,12 @@ function ModalEditTicket() {
               }}
             />
           </div>
-          <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
+          <div className="flex flex-col gap-2 mt-4">
             <Loading loading={imageLoading}>
               <FileUplaodCustom image={image} setImage={setImage} />
             </Loading>
+          </div>
+          <div className="text-right mt-6">
             <Button
               className="ltr:mr-2 rtl:ml-2"
               variant="plain"
