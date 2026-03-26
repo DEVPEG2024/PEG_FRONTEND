@@ -30,4 +30,5 @@ export type Customer = {
   banner: Banner;
   logo?: PegFile;
   deferredPayment: boolean;
+  catalogAccess: boolean;
 }

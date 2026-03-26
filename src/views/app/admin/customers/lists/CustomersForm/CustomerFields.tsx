@@ -114,24 +114,23 @@ const CustomerFields = (props: CustomerFieldsProps) => {
       <h5>{t('cust.customer')}</h5>
       <p className="mb-6">{t('cust.customer_description')}</p>
 
-      <div className="flex gap-4">
-        <FormItem
-          label="Nom du client"
-          className="w-2/3"
-          invalid={!!errors.name}
-          errorMessage={errors.name?.message}
-        >
-          <Controller
-            name="name"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} type="text" autoComplete="off" placeholder="Nom du client" />
-            )}
-          />
-        </FormItem>
+      <FormItem
+        label="Nom du client"
+        invalid={!!errors.name}
+        errorMessage={errors.name?.message}
+      >
+        <Controller
+          name="name"
+          control={control}
+          render={({ field }) => (
+            <Input {...field} type="text" autoComplete="off" placeholder="Nom du client" />
+          )}
+        />
+      </FormItem>
 
+      <div className="flex gap-6">
         <FormItem
-          label="Paiment différé"
+          label="Paiement différé"
           invalid={!!errors.deferredPayment}
           errorMessage={errors.deferredPayment?.message as any}
         >
@@ -140,6 +139,18 @@ const CustomerFields = (props: CustomerFieldsProps) => {
             control={control}
             render={({ field }) => (
               <Switcher checked={field.value} onChange={(checked) => field.onChange(!checked)} />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Accès au catalogue"
+        >
+          <Controller
+            name="catalogAccess"
+            control={control}
+            render={({ field }) => (
+              <Switcher checked={field.value ?? true} onChange={(checked) => field.onChange(!checked)} />
             )}
           />
         </FormItem>

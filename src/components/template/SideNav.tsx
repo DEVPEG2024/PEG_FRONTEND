@@ -14,6 +14,7 @@ import navigationConfig from '@/configs/navigation.config'
 import CustomVerticalMenu from '@/components/template/CustomVerticalMenu'
 import useResponsive from '@/utils/hooks/useResponsive'
 import { useAppSelector } from '@/store'
+import { useMemo } from 'react'
 
 const sideNavStyle = {
     width: SIDE_NAV_WIDTH,
@@ -37,8 +38,18 @@ const SideNav = () => {
         (state) => state.theme.layout.sideNavCollapse
     )
     const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
+    const customer = useAppSelector((state) => state.auth.user.user?.customer)
 
     const { larger } = useResponsive()
+
+    const filteredNav = useMemo(() => {
+        if (customer && customer.catalogAccess === false) {
+            return navigationConfig.filter(
+                (item) => item.key !== 'customer.catalogue' && item.key !== 'customer.products'
+            )
+        }
+        return navigationConfig
+    }, [customer])
 
     const sideNavColor = () => {
         if (navMode === NAV_MODE_THEMED) {
@@ -61,7 +72,7 @@ const SideNav = () => {
 
     const menuContent = (
         <CustomVerticalMenu
-            navigationTree={navigationConfig}
+            navigationTree={filteredNav}
             userAuthority={userAuthority as string[]}
             collapsed={sideNavCollapse}
         />

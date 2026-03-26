@@ -1,4 +1,5 @@
-import { useState, Suspense, lazy } from 'react'
+import { useState, Suspense } from 'react'
+import lazy from '@/utils/lazyWithRetry'
 import classNames from 'classnames'
 import Drawer from '@/components/ui/Drawer'
 import {
@@ -11,6 +12,7 @@ import NavToggle from '@/components/shared/NavToggle'
 import navigationConfig from '@/configs/navigation.config'
 import useResponsive from '@/utils/hooks/useResponsive'
 import { useAppSelector } from '@/store'
+import { useMemo } from 'react'
 
 const VerticalMenuContent = lazy(
     () => import('@/components/template/VerticalMenuContent')
@@ -49,8 +51,18 @@ const MobileNav = () => {
         (state) => state.theme.layout.sideNavCollapse
     )
     const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
+    const customer = useAppSelector((state) => state.auth.user.user?.customer)
 
     const { smaller } = useResponsive()
+
+    const filteredNav = useMemo(() => {
+        if (customer && customer.catalogAccess === false) {
+            return navigationConfig.filter(
+                (item) => item.key !== 'customer.catalogue' && item.key !== 'customer.products'
+            )
+        }
+        return navigationConfig
+    }, [customer])
 
     const navColor = () => {
         if (navMode === NAV_MODE_THEMED) {
@@ -85,7 +97,7 @@ const MobileNav = () => {
                                 <VerticalMenuContent
                                     navMode={navMode}
                                     collapsed={sideNavCollapse}
-                                    navigationTree={navigationConfig}
+                                    navigationTree={filteredNav}
                                     routeKey={currentRouteKey}
                                     userAuthority={userAuthority as string[]}
                                     direction={direction}

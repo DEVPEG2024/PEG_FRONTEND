@@ -103,6 +103,9 @@ const CustomersList = () => {
                     {c?.deferredPayment && (
                       <span style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#c084fc', fontSize: '11px', fontWeight: 600 }}>Paiement différé</span>
                     )}
+                    {c?.catalogAccess === false && (
+                      <span style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#f87171', fontSize: '11px', fontWeight: 600 }}>Sans catalogue</span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {c?.companyInformations?.email && (
