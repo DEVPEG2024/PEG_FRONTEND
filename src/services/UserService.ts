@@ -170,8 +170,8 @@ export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<D
 // create user via REST API (admin-level, not public register)
 export type CreateUserRequest = Omit<User, "documentId">
 
-export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<{user: UserWithId}>> {
-    return ApiService.fetchData<{user: UserWithId}>({
+export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<UserWithId>> {
+    return ApiService.fetchData<UserWithId>({
         url: `/users`,
         method: 'post',
         data: {
