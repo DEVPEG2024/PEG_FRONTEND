@@ -167,17 +167,19 @@ export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<D
     })
 }
 
-// create user
+// create user via REST API (admin-level, not public register)
 export type CreateUserRequest = Omit<User, "documentId">
 
 export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<{user: UserWithId}>> {
     return ApiService.fetchData<{user: UserWithId}>({
-        url: API_BASE_URL + "/auth/local/register",
+        url: `/users`,
         method: 'post',
         data: {
-            username: data.username,
+            username: data.username || data.email,
             email: data.email,
             password: 'Peg2025',
+            confirmed: true,
+            role: data.role,
         }
     })
 }
