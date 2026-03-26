@@ -167,7 +167,7 @@ export async function apiDeleteUser(documentId: string): Promise<AxiosResponse<D
     })
 }
 
-// create user via custom admin endpoint
+// create user via custom admin endpoint (creates + assigns role/customer/producer in one call)
 export type CreateUserRequest = Omit<User, "documentId">
 
 export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosResponse<{ id: number; documentId: string; email: string }>> {
@@ -181,6 +181,9 @@ export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosRespo
             firstName: data.firstName,
             lastName: data.lastName,
             role: data.role,
+            customer: data.customer || undefined,
+            producer: data.producer || undefined,
+            blocked: data.blocked || false,
         }
     })
 }
