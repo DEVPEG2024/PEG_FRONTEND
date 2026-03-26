@@ -50,11 +50,16 @@ const EditCustomer = () => {
   }
 
   const nestCustomer = (formData: CustomerFormModel) => {
-    const { logoFile, email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website, ...rest } = formData
+    const { logoFile, email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website,
+      documentId: _docId, logo: _logo, banner: _banner, companyInformations: _ci,
+      ...rest } = formData as any
     return {
       data: {
-        ...rest,
-        companyInformations: { email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website },
+        name: rest.name,
+        customerCategory: rest.customerCategory || null,
+        deferredPayment: rest.deferredPayment ?? false,
+        catalogAccess: rest.catalogAccess ?? true,
+        companyInformations: { email: email || '', phoneNumber: phoneNumber || '', vatNumber: vatNumber || '', siretNumber: siretNumber || '', address: address || '', zipCode: zipCode || '', city: city || '', country: country || '', website: website || '' },
       },
       logoFile: logoFile ?? null,
     }
