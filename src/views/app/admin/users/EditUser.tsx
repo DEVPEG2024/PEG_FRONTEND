@@ -149,7 +149,7 @@ const EditUser = () => {
       return response.data;
     }
     const created = await apiCreateUser(data);
-    const userId = (created.data as any).user?.id ?? (created.data as any).id;
+    const userId = created.data.id;
     const response: any = await apiUpdateUser(data, String(userId));
     return response.data;
   };
