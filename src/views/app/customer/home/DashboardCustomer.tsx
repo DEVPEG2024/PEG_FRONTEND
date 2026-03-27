@@ -300,6 +300,22 @@ const DashboardCustomer = () => {
                       Toutes mes offres <BsArrowRight size={14} />
                     </button>
                   </Link>
+                  {customer.catalogAccess && (
+                    <Link to="/customer/catalogue">
+                      <button style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '10px',
+                        padding: '9px 16px',
+                        color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                      }}>
+                        Catalogue <BsArrowRight size={14} />
+                      </button>
+                    </Link>
+                  )}
                 </div>
               </div>
 
