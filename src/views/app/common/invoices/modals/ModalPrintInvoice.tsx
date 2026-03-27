@@ -83,23 +83,23 @@ const ModalPrintInvoice = ({
                 <View style={styles.page}>
                   <View style={styles.section}>
                     <Image
-                      src={'../../../../../../img/logo/logo-light-full.png'}
+                      src={'../../../../../../img/logo/logo-nova.png'}
                       style={{ width: '200px', height: '70px' }}
                     />
                     <Text
                       style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}
                     >
-                      SAS ZOOM PROJECT
+                      NOVA 2.0
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      33 Avenue Roosevelt
+                      3 rue du bois arquet
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      57800 Freyming-Merlebach
+                      74140 DOUVAINE
                     </Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>France</Text>
                     <Text style={{ fontSize: 10, marginTop: 3 }}>
-                      Email : contact@zoom-project.com
+                      Email : contact@hellonova.fr
                     </Text>
                     <View style={{ flexDirection: 'row', marginTop: 10 }}>
                       <View style={styles.section2}>
@@ -408,17 +408,17 @@ const ModalPrintInvoice = ({
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
-                    SAS ZOOM PROJECT
+                    NOVA 2.0
                   </Text>
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
-                    SIRET 87764973100016 - RCS Sarreguemines B - NAF 7420Z
+                    Siret: 94333576000014
                   </Text>
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
                   >
-                    TVA intracommunautaire: FR23877649731
+                    TVA: FR88943335760
                   </Text>
                   <Text
                     style={{ fontSize: 6, padding: 3, textAlign: 'center' }}
