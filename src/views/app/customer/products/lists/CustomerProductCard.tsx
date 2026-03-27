@@ -264,7 +264,9 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             flexShrink: 0,
             color: '#fff',
             boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+            animation: 'btnPulse 2s ease-in-out infinite',
           }}>
+            <style>{`@keyframes btnPulse{0%,100%{transform:scale(1);box-shadow:0 4px 14px rgba(47,111,237,0.4)}50%{transform:scale(1.12);box-shadow:0 6px 20px rgba(47,111,237,0.6)}}`}</style>
             <HiArrowRight size={14} />
           </div>
         </div>
