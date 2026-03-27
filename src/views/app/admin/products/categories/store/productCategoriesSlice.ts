@@ -209,21 +209,14 @@ const productCategoriesSlice = createSlice({
       state.loading = false;
     });
 
-    // UPDATE PRODUCT CATEGORY
-    builder.addCase(updateProductCategory.pending, (state) => {
-      state.loading = true;
-    });
+    // UPDATE PRODUCT CATEGORY (pas de loading global pour ne pas bloquer la page lors de la sauvegarde d'ordre)
     builder.addCase(updateProductCategory.fulfilled, (state, action) => {
-      state.loading = false;
       state.productCategories = state.productCategories.map(
         (productCategory) =>
           productCategory.documentId === action.payload.documentId
             ? action.payload
             : productCategory
       );
-    });
-    builder.addCase(updateProductCategory.rejected, (state) => {
-      state.loading = false;
     });
   },
 });
