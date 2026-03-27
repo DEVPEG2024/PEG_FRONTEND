@@ -238,17 +238,18 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
 
         {/* Price + CTA */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
             <span style={{
               color: '#fff',
               fontWeight: 800,
-              fontSize: '20px',
+              fontSize: priceHT >= 1000 ? '16px' : '20px',
               letterSpacing: '-0.03em',
               lineHeight: 1,
+              whiteSpace: 'nowrap',
             }}>
-              {priceHT.toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
+              {priceHT.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
             </span>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {priceTTC.toFixed(2)} € TTC
             </span>
           </div>

@@ -323,12 +323,12 @@ const DashboardCustomer = () => {
                   <Link to="/customer/catalogue">
                     <button style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '10px',
+                      background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                      border: 'none', borderRadius: '10px',
                       padding: '9px 16px',
-                      color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+                      color: '#fff', fontSize: '13px', fontWeight: 600,
                       cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
                       fontFamily: 'Inter, sans-serif',
                     }}>
                       Catalogue <BsArrowRight size={14} />
