@@ -242,7 +242,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             <span style={{
               color: '#fff',
               fontWeight: 800,
-              fontSize: priceHT >= 1000 ? '16px' : '20px',
+              fontSize: '20px',
               letterSpacing: '-0.03em',
               lineHeight: 1,
               whiteSpace: 'nowrap',
@@ -256,17 +256,16 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            justifyContent: 'center',
             background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-            borderRadius: '10px',
-            padding: '7px 13px',
+            borderRadius: '8px',
+            width: '32px',
+            height: '32px',
+            flexShrink: 0,
             color: '#fff',
-            fontSize: '12px',
-            fontWeight: 700,
             boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
           }}>
-            Commander
-            <HiArrowRight size={13} />
+            <HiArrowRight size={14} />
           </div>
         </div>
       </div>
