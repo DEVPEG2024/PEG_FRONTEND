@@ -66,6 +66,8 @@ const ModalPrintInvoice = ({
     (item: any) => item.value === selectedInvoice?.paymentMethod
   )?.label;
 
+  const isAutoLiquidation = customer?.companyInformations?.country && customer.companyInformations.country !== 'FR';
+
   const handleClose = () => {
     dispatch(setPrintInvoiceDialog(false));
     dispatch(setSelectedInvoice(null));
@@ -355,29 +357,38 @@ const ModalPrintInvoice = ({
                         </Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                      <View style={styles.section2}>
-                        <Text style={{ fontSize: 10, padding: 3 }}>
-                          TVA {selectedInvoice!.vatAmount > 0 ? VAT_AMOUNT : 0}{' '}
-                          %
-                        </Text>
+                    {isAutoLiquidation ? (
+                      <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                        <View style={{ ...styles.section2, width: 200 }}>
+                          <Text style={{ fontSize: 9, padding: 3 }}>
+                            TVA autoliquidation
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.section5}>
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            padding: 3,
-                            textAlign: 'right',
-                          }}
-                        >
-                          {selectedInvoice?.vatAmount.toFixed(2)} €
-                        </Text>
+                    ) : (
+                      <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                        <View style={styles.section2}>
+                          <Text style={{ fontSize: 10, padding: 3 }}>
+                            TVA {selectedInvoice!.vatAmount > 0 ? VAT_AMOUNT : 0}{' '}%
+                          </Text>
+                        </View>
+                        <View style={styles.section5}>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              padding: 3,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {selectedInvoice?.vatAmount.toFixed(2)} €
+                          </Text>
+                        </View>
                       </View>
-                    </View>
+                    )}
                     <View style={{ flexDirection: 'row', marginTop: 2 }}>
                       <View style={styles.section2}>
                         <Text style={{ fontSize: 12, padding: 3 }}>
-                          Total TTC :{' '}
+                          {isAutoLiquidation ? 'Total HT :' : 'Total TTC :'}{' '}
                         </Text>
                       </View>
                       <View style={styles.section5}>
@@ -388,10 +399,17 @@ const ModalPrintInvoice = ({
                             textAlign: 'right',
                           }}
                         >
-                          {selectedInvoice?.totalAmount.toFixed(2)} €
+                          {isAutoLiquidation
+                            ? selectedInvoice?.amount.toFixed(2)
+                            : selectedInvoice?.totalAmount.toFixed(2)} €
                         </Text>
                       </View>
                     </View>
+                    {isAutoLiquidation && (
+                      <Text style={{ fontSize: 8, marginTop: 6, fontStyle: 'italic' }}>
+                        Autoliquidation de la TVA - Article 283-2 du CGI
+                      </Text>
+                    )}
                   </View>
                 </View>
                 <View style={styles.page}>
@@ -403,6 +421,20 @@ const ModalPrintInvoice = ({
                       BIC: QNTOFRP1XXX
                     </Text>
                   </View>
+                </View>
+                <View style={{ marginLeft: 20, marginRight: 20, marginTop: 10 }}>
+                  <Text style={{ fontSize: 8, fontWeight: 'bold', marginBottom: 4 }}>
+                    Conditions de paiement
+                  </Text>
+                  <Text style={{ fontSize: 7, lineHeight: 1.4 }}>
+                    Un acompte de 50 % du montant total TTC est exigé à la validation de la commande afin de confirmer celle-ci et de permettre le lancement de la production.
+                  </Text>
+                  <Text style={{ fontSize: 7, lineHeight: 1.4, marginTop: 2 }}>
+                    Le solde de 50 % est payable à la fin du chantier, à réception des travaux ou avant la livraison des produits.
+                  </Text>
+                  <Text style={{ fontSize: 7, lineHeight: 1.4, marginTop: 2 }}>
+                    La commande ne sera considérée comme ferme et définitive qu'à réception de l'acompte.
+                  </Text>
                 </View>
                 <View style={styles.sectionFooter}>
                   <Text
