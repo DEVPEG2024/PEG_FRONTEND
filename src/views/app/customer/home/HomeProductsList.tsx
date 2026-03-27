@@ -75,19 +75,24 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
               }}>
                 {product.name}
               </p>
-              <span style={{
-                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                borderRadius: '100px',
-                padding: '3px 10px',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '13px',
-                letterSpacing: '-0.01em',
-                boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
-                display: 'inline-block',
-              }}>
-                {priceHT.toFixed(2)} € HT <span style={{ fontSize: '10px', fontWeight: 500, opacity: 0.7 }}>({priceTTC.toFixed(2)} € TTC)</span>
-              </span>
+              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span style={{
+                  background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                  borderRadius: '100px',
+                  padding: '3px 10px',
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  letterSpacing: '-0.01em',
+                  boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
+                  display: 'inline-block',
+                }}>
+                  {priceHT.toFixed(2)} € HT
+                </span>
+                <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
+                  {priceTTC.toFixed(2)} € TTC
+                </span>
+              </div>
             </div>
           </div>
         );

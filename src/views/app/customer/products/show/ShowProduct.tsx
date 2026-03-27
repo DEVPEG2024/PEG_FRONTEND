@@ -415,7 +415,7 @@ const ShowProduct = () => {
                 disabled={!canAddToCart}
                 onClick={handleAddToCart}
               >
-                {canAddToCart ? `Ajouter au panier — ${totalPrice.toFixed(2)} € HT (${toTTC(totalPrice).toFixed(2)} € TTC)` : 'Sélectionnez une quantité'}
+                {canAddToCart ? `Ajouter au panier — ${toTTC(totalPrice).toFixed(2)} € TTC` : 'Sélectionnez une quantité'}
               </Button>
             )}
           </div>

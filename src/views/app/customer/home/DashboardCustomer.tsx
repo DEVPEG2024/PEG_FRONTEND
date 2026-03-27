@@ -276,47 +276,13 @@ const DashboardCustomer = () => {
             {/* Personalized offers */}
             <div>
               {/* Section header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                    Catalogue personnalisé
-                  </p>
-                  <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
-                    Mes offres personnalisées
-                  </h3>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <Link to="/customer/products">
-                    <button style={{
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                      border: 'none', borderRadius: '10px',
-                      padding: '9px 16px',
-                      color: '#fff', fontSize: '13px', fontWeight: 600,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
-                      fontFamily: 'Inter, sans-serif',
-                    }}>
-                      Toutes mes offres <BsArrowRight size={14} />
-                    </button>
-                  </Link>
-                  {user.customer?.catalogAccess !== false && (
-                    <Link to="/customer/catalogue">
-                      <button style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '10px',
-                        padding: '9px 16px',
-                        color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
-                        cursor: 'pointer',
-                        fontFamily: 'Inter, sans-serif',
-                      }}>
-                        Catalogue <BsArrowRight size={14} />
-                      </button>
-                    </Link>
-                  )}
-                </div>
+              <div style={{ marginBottom: '20px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  Catalogue personnalisé
+                </p>
+                <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
+                  Mes offres personnalisées
+                </h3>
               </div>
 
               {/* Products grid */}
@@ -336,6 +302,40 @@ const DashboardCustomer = () => {
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucune offre personnalisée disponible</p>
                 </div>
               )}
+
+              {/* Buttons under offers */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '20px' }}>
+                <Link to="/customer/products">
+                  <button style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+                    border: 'none', borderRadius: '10px',
+                    padding: '9px 16px',
+                    color: '#fff', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(34,197,94,0.4)',
+                    fontFamily: 'Inter, sans-serif',
+                  }}>
+                    Toutes mes offres <BsArrowRight size={14} />
+                  </button>
+                </Link>
+                {user.customer?.catalogAccess !== false && (
+                  <Link to="/customer/catalogue">
+                    <button style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      padding: '9px 16px',
+                      color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}>
+                      Catalogue <BsArrowRight size={14} />
+                    </button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </Container>

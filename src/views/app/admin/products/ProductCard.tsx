@@ -3,6 +3,7 @@ import { Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
+import { toTTC } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
 
 const ProductCard = memo(
@@ -117,9 +118,14 @@ const ProductCard = memo(
 
           {/* Price + ref */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.03em', lineHeight: 1 }}>
-              {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>€</span>
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
+              </span>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                {toTTC(getProductBasePrice(product)).toFixed(2)} € TTC
+              </span>
+            </div>
             {product.productRef && (
               <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: '10px', letterSpacing: '0.03em' }}>
                 {product.productRef}
