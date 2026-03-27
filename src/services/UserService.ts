@@ -140,6 +140,16 @@ export async function apiUpdateUser(user: Partial<User>, id: string): Promise<Ax
     })
 }
 
+// update own profile (no admin role required)
+export async function apiUpdateOwnProfile(user: Partial<User>): Promise<AxiosResponse<User>> {
+    const { documentId: _, ...data } = user as any
+    return ApiService.fetchData<User>({
+        url: API_BASE_URL + `/auth/update-own-profile`,
+        method: 'put',
+        data,
+    })
+}
+
 // update user password (Strapi v5 REST)
 export async function apiUpdateUserPassword(password: string, documentId: string): Promise<AxiosResponse<User>> {
     return ApiService.fetchData<User>({

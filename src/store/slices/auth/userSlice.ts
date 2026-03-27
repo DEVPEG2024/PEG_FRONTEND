@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SLICE_BASE_NAME } from './constants'
 import { User } from '@/@types/user'
-import { apiUpdateUser, apiUpdateUserPassword } from '@/services/UserService';
+import { apiUpdateUser, apiUpdateUserPassword, apiUpdateOwnProfile } from '@/services/UserService';
 
 export const SLICE_NAME = 'userAuth';
 
@@ -34,7 +34,7 @@ export type UpdateUser = {
 export const updateOwnUser = createAsyncThunk(
   SLICE_NAME + '/updateOwnUser',
   async (data: UpdateUser): Promise<User> => {
-    const response: any = await apiUpdateUser(data.user, data.id);
+    const response: any = await apiUpdateOwnProfile(data.user);
     return response.data;
   }
 );
