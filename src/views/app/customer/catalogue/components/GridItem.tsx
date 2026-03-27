@@ -12,7 +12,6 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(-6px) scale(1.02)';
       cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.12)';
-      cardRef.current.style.background = 'rgba(255,255,255,0.1)';
     }
     if (imgRef.current) {
       imgRef.current.style.transform = 'scale(1.08)';
@@ -23,7 +22,6 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(0) scale(1)';
       cardRef.current.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08)';
-      cardRef.current.style.background = 'rgba(255,255,255,0.06)';
     }
     if (imgRef.current) {
       imgRef.current.style.transform = 'scale(1)';
@@ -45,41 +43,37 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         cursor: 'pointer',
         height: '230px',
         background: 'rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.1)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
         fontFamily: 'Inter, sans-serif',
         flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
       }}
     >
-      {/* Image zone */}
-      <div style={{
-        flex: 1,
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px 20px 10px',
-      }}>
-        {image?.url ? (
-          <img
-            ref={imgRef}
-            src={image.url}
-            alt={name}
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
-              display: 'block',
-              transition: 'transform 0.4s ease',
-              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))',
-            }}
-          />
-        ) : (
+      {/* Image plein cadre */}
+      {image?.url ? (
+        <img
+          ref={imgRef}
+          src={image.url}
+          alt={name}
+          style={{
+            position: 'absolute',
+            inset: '-1px',
+            width: 'calc(100% + 2px)',
+            height: 'calc(100% + 2px)',
+            objectFit: 'cover',
+            display: 'block',
+            transition: 'transform 0.5s ease',
+          }}
+        />
+      ) : (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
           <span style={{
             fontSize: '64px',
             fontWeight: 800,
@@ -89,10 +83,18 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           }}>
             {name.charAt(0).toUpperCase()}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Top-right glass badge */}
+      {/* Dégradé bleu en bas pour lisibilité du titre */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(to top, rgba(8,18,38,0.95) 0%, rgba(8,18,38,0.6) 35%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Badge nombre de produits */}
       {count > 0 && (
         <div style={{
           position: 'absolute',
@@ -113,9 +115,13 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         </div>
       )}
 
-      {/* Bottom text */}
+      {/* Titre en bas */}
       <div style={{
-        padding: '0 18px 16px',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: '16px 18px',
       }}>
         <p style={{
           color: '#fff',
@@ -124,11 +130,12 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           letterSpacing: '-0.01em',
           margin: 0,
           lineHeight: 1.3,
+          textShadow: '0 1px 6px rgba(0,0,0,0.5)',
         }}>
           {name}
         </p>
         <p style={{
-          color: 'rgba(255,255,255,0.45)',
+          color: 'rgba(255,255,255,0.5)',
           fontSize: '12px',
           margin: '4px 0 0',
           fontWeight: 500,
