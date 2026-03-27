@@ -7,24 +7,31 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const glassRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = 'translateY(-6px)';
-      cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(47,111,237,0.3)';
+      cardRef.current.style.transform = 'translateY(-6px) scale(1.02)';
+      cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15), inset 0 1px 0 rgba(255,255,255,0.1)';
     }
     if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1.08)';
+      imgRef.current.style.transform = 'scale(1.1)';
+    }
+    if (glassRef.current) {
+      glassRef.current.style.background = 'rgba(255,255,255,0.12)';
     }
   };
 
   const handleMouseLeave = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = 'translateY(0)';
-      cardRef.current.style.boxShadow = '0 4px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)';
+      cardRef.current.style.transform = 'translateY(0) scale(1)';
+      cardRef.current.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)';
     }
     if (imgRef.current) {
       imgRef.current.style.transform = 'scale(1)';
+    }
+    if (glassRef.current) {
+      glassRef.current.style.background = 'rgba(255,255,255,0.06)';
     }
   };
 
@@ -38,13 +45,13 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       onMouseLeave={handleMouseLeave}
       style={{
         position: 'relative',
-        borderRadius: '18px',
+        borderRadius: '20px',
         overflow: 'hidden',
         cursor: 'pointer',
-        height: '220px',
-        background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)',
-        transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+        height: '230px',
+        background: 'rgba(255,255,255,0.04)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
         fontFamily: 'Inter, sans-serif',
         flexShrink: 0,
       }}
@@ -62,14 +69,14 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
             height: 'calc(100% + 2px)',
             objectFit: 'cover',
             display: 'block',
-            transition: 'transform 0.4s ease',
+            transition: 'transform 0.5s ease',
           }}
         />
       ) : (
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 30%, rgba(47,111,237,0.2) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% 30%, rgba(47,111,237,0.15) 0%, transparent 70%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -77,7 +84,7 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           <span style={{
             fontSize: '64px',
             fontWeight: 800,
-            color: 'rgba(47,111,237,0.3)',
+            color: 'rgba(47,111,237,0.25)',
             letterSpacing: '-0.04em',
             userSelect: 'none',
           }}>
@@ -86,42 +93,52 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         </div>
       )}
 
-      {/* Gradient overlay */}
+      {/* Glass overlay */}
       <div style={{
         position: 'absolute',
         inset: 0,
-        background: 'linear-gradient(to top, rgba(5,15,30,0.92) 0%, rgba(5,15,30,0.3) 50%, transparent 100%)',
+        background: 'linear-gradient(to top, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.2) 55%, transparent 100%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Top-right product count badge */}
+      {/* Top-right glass badge */}
       {count > 0 && (
         <div style={{
           position: 'absolute',
-          top: '12px',
-          right: '12px',
-          background: 'rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.12)',
+          top: '14px',
+          right: '14px',
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255,255,255,0.18)',
           borderRadius: '100px',
-          padding: '3px 10px',
-          color: 'rgba(255,255,255,0.8)',
+          padding: '4px 12px',
+          color: 'rgba(255,255,255,0.9)',
           fontSize: '11px',
           fontWeight: 600,
+          letterSpacing: '0.02em',
         }}>
           {count} produit{count > 1 ? 's' : ''}
         </div>
       )}
 
-      {/* Bottom content */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: '16px 18px',
-      }}>
+      {/* Bottom glass panel */}
+      <div
+        ref={glassRef}
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '12px',
+          right: '12px',
+          background: 'rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '14px',
+          padding: '14px 16px',
+          transition: 'background 0.3s ease',
+        }}
+      >
         <p style={{
           color: '#fff',
           fontWeight: 700,
@@ -129,15 +146,15 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           letterSpacing: '-0.01em',
           margin: 0,
           lineHeight: 1.3,
-          textShadow: '0 1px 6px rgba(0,0,0,0.6)',
         }}>
           {name}
         </p>
         <p style={{
           color: 'rgba(255,255,255,0.5)',
           fontSize: '12px',
-          margin: '4px 0 0',
+          margin: '5px 0 0',
           fontWeight: 500,
+          letterSpacing: '0.01em',
         }}>
           Voir les produits →
         </p>
