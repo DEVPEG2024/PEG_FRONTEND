@@ -300,7 +300,7 @@ const DashboardCustomer = () => {
                       Toutes mes offres <BsArrowRight size={14} />
                     </button>
                   </Link>
-                  {customer.catalogAccess && (
+                  {user.customer?.catalogAccess && (
                     <Link to="/customer/catalogue">
                       <button style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
