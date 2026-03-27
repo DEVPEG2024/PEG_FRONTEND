@@ -9,6 +9,7 @@ export async function apiGetDashboardCustomerInformations(documentId: string): P
     query DashboardCustomerInformationsQuery($documentId: ID!) {
       customer(documentId: $documentId) {
         documentId
+        catalogAccess
         customerCategory {
           documentId
         }
