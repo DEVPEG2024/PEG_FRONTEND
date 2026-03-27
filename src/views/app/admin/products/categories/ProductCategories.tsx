@@ -42,6 +42,7 @@ const Categories = () => {
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const draggedIdx = useRef<number | null>(null);
   const draggedOverIdx = useRef<number | null>(null);
+  const isSavingOrder = useRef(false);
 
   const { productCategories, productCategory, loading, total } = useAppSelector(
     (state) => state.productCategories.data
@@ -52,6 +53,7 @@ const Categories = () => {
   }, [dispatch, searchTerm, currentPage, pageSize]);
 
   useEffect(() => {
+    if (isSavingOrder.current) return;
     setOrderedCategories([...productCategories]);
     setOrderChanged(false);
   }, [productCategories]);
@@ -113,6 +115,7 @@ const Categories = () => {
 
   const handleSaveOrder = async () => {
     setSavingOrder(true);
+    isSavingOrder.current = true;
     try {
       await Promise.all(
         orderedCategories.map((cat, index) =>
@@ -123,9 +126,12 @@ const Categories = () => {
         )
       );
       setOrderChanged(false);
+      // Re-fetch pour récupérer les catégories triées par order:asc depuis le backend
+      dispatch(getProductCategories({ pagination: { page: currentPage, pageSize }, searchTerm }));
     } catch (e) {
       // Error handled silently
     } finally {
+      isSavingOrder.current = false;
       setSavingOrder(false);
     }
   };
