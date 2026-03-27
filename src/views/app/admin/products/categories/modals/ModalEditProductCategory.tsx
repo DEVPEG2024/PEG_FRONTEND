@@ -39,15 +39,18 @@ function ModalEditProductCategory({
   }, [productCategory]);
 
   const fetchImage = async (): Promise<void> => {
+    if (!productCategory?.image) return;
     setImageLoading(true);
-    if (productCategory?.image) {
+    try {
       const imageLoaded: PegFile = (
         await apiLoadPegFilesAndFiles([productCategory.image])
       )[0];
-
       setImage(imageLoaded);
+    } catch (e) {
+      console.error('Erreur chargement image catégorie:', e);
+    } finally {
+      setImageLoading(false);
     }
-    setImageLoading(false);
   };
 
   const updateImage = (image: { file: File; name: string }) => {
