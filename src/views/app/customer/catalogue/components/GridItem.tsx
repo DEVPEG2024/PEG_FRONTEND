@@ -57,9 +57,9 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           alt={name}
           style={{
             position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
+            inset: '-1px',
+            width: 'calc(100% + 2px)',
+            height: 'calc(100% + 2px)',
             objectFit: 'cover',
             display: 'block',
             transition: 'transform 0.4s ease',
