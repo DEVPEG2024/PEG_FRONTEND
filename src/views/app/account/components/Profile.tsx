@@ -68,13 +68,23 @@ const Profile = () => {
   }, []);
 
   const fetchAvatar = async () => {
+    if (!user?.avatar) return;
     setAvatarLoading(true);
-    if (user?.avatar) {
-      const loaded: PegFile = (await apiLoadPegFilesAndFiles([user.avatar]))[0];
-      setAvatar(loaded);
-      setPreviewUrl(loaded.url);
+    try {
+      // Utiliser l'URL directement si disponible (évite un re-fetch inutile)
+      if (user.avatar.url) {
+        setAvatar(user.avatar);
+        setPreviewUrl(user.avatar.url);
+      } else {
+        const loaded: PegFile = (await apiLoadPegFilesAndFiles([user.avatar]))[0];
+        setAvatar(loaded);
+        setPreviewUrl(loaded.url);
+      }
+    } catch (e) {
+      console.error('Erreur chargement avatar:', e);
+    } finally {
+      setAvatarLoading(false);
     }
-    setAvatarLoading(false);
   };
 
   const handleAvatarClick = () => fileInputRef.current?.click();
