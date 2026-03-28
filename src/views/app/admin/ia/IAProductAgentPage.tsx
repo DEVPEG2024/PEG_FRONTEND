@@ -15,11 +15,11 @@ import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { apiGetChecklists, GetChecklistsResponse } from '@/services/ChecklistServices';
 import { apiGetProductCategorySizes } from '@/services/SizeServices';
 import { apiGetProductCategoryColors } from '@/services/ColorServices';
-import { apiAiFillProduct, apiGenerateProductImage } from '@/services/ChatbotServices';
+import { apiAiFillProduct, apiGenerateProductImage, apiGetProductSuggestions, ProductSuggestion } from '@/services/ChatbotServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { toast } from 'react-toastify';
 import { Container } from '@/components/shared';
-import { HiSparkles, HiArrowRight } from 'react-icons/hi';
+import { HiSparkles, HiArrowRight, HiLightBulb, HiRefresh } from 'react-icons/hi';
 
 interface Options {
   value: string;
@@ -44,9 +44,14 @@ const IAProductAgentPage = () => {
   const [images, setImages] = useState<PegFile[]>([]);
   const [initialData, setInitialData] = useState<ProductFormModel | null>(null);
 
-  // Fetch all option lists on mount
+  // Suggestions
+  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Fetch all option lists + suggestions on mount
   useEffect(() => {
     fetchAllOptions();
+    fetchSuggestions();
   }, []);
 
   const fetchAllOptions = async () => {
@@ -76,6 +81,30 @@ const IAProductAgentPage = () => {
     } catch {
       // Options will be empty — user can still fill manually
     }
+  };
+
+  const fetchSuggestions = async () => {
+    setLoadingSuggestions(true);
+    try {
+      const categoryLabels = productCategories.map((c) => c.label);
+      const res = await apiGetProductSuggestions(categoryLabels);
+      if (res.data?.suggestions) setSuggestions(res.data.suggestions);
+    } catch {
+      // Suggestions are optional — fail silently
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: ProductSuggestion) => {
+    setProductName(suggestion.name);
+  };
+
+  const tagColors: Record<string, { bg: string; text: string }> = {
+    'saison': { bg: 'rgba(34,197,94,0.15)', text: '#4ade80' },
+    'événement': { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
+    'tendance': { bg: 'rgba(168,85,247,0.15)', text: '#c084fc' },
+    'best-seller': { bg: 'rgba(251,191,36,0.15)', text: '#fbbf24' },
   };
 
   const updateSizesList = async (productCategoryDocumentId: string) => {
@@ -394,6 +423,104 @@ const IAProductAgentPage = () => {
         </button>
 
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+
+      {/* Suggestions section */}
+      <div style={{ marginTop: '28px', maxWidth: '800px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <HiLightBulb size={18} style={{ color: '#fbbf24' }} />
+            <h3 style={{ color: '#fff', fontSize: '15px', fontWeight: 700, margin: 0 }}>
+              Suggestions du moment
+            </h3>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+              tendances & evenements a venir
+            </span>
+          </div>
+          <button
+            onClick={fetchSuggestions}
+            disabled={loadingSuggestions}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px', padding: '6px 12px', color: 'rgba(255,255,255,0.5)',
+              fontSize: '12px', fontWeight: 600, cursor: loadingSuggestions ? 'not-allowed' : 'pointer',
+              fontFamily: 'Inter, sans-serif', transition: 'all 0.2s',
+            }}
+          >
+            <HiRefresh size={14} style={{ animation: loadingSuggestions ? 'spin 0.8s linear infinite' : 'none' }} />
+            Actualiser
+          </button>
+        </div>
+
+        {loadingSuggestions && suggestions.length === 0 ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            padding: '40px', color: 'rgba(255,255,255,0.4)', fontSize: '13px',
+          }}>
+            <div style={{
+              width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.2)',
+              borderTopColor: 'rgba(255,255,255,0.5)', borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }} />
+            Chargement des suggestions...
+          </div>
+        ) : suggestions.length > 0 ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+            gap: '12px',
+          }}>
+            {suggestions.map((s, i) => {
+              const colors = tagColors[s.tag] || tagColors['tendance'];
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleSuggestionClick(s)}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                    background: 'linear-gradient(160deg, rgba(22,38,61,0.8) 0%, rgba(15,28,46,0.9) 100%)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: '12px', padding: '16px',
+                    cursor: 'pointer', textAlign: 'left',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(47,111,237,0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '22px' }}>{s.emoji}</span>
+                    <span style={{
+                      background: colors.bg, color: colors.text,
+                      fontSize: '10px', fontWeight: 700, padding: '3px 8px',
+                      borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                    }}>
+                      {s.tag}
+                    </span>
+                  </div>
+                  <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
+                    {s.name}
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', lineHeight: 1.4, margin: '0 0 10px 0' }}>
+                    {s.reason}
+                  </p>
+                  <span style={{
+                    color: '#6b9eff', fontSize: '13px', fontWeight: 700,
+                  }}>
+                    {s.priceRange}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </Container>
   );

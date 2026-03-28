@@ -103,6 +103,22 @@ export const apiAiFillProduct = (
     suggestedChecklist: string;
   }>({ url: '/chatbot/ai-fill-product', method: 'post', data: { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists } });
 
+// AI product suggestions (trends & events)
+export type ProductSuggestion = {
+  name: string;
+  reason: string;
+  priceRange: string;
+  tag: 'saison' | 'événement' | 'tendance' | 'best-seller';
+  emoji: string;
+};
+
+export const apiGetProductSuggestions = (availableCategories: string[] = []) =>
+  ApiService.fetchData<{ result: boolean; suggestions: ProductSuggestion[] }>({
+    url: '/chatbot/product-suggestions',
+    method: 'post',
+    data: { availableCategories },
+  });
+
 // AI image generation (simple)
 export const apiGenerateProductImage = (name: string) =>
   ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name } });
