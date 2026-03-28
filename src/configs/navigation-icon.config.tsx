@@ -59,6 +59,7 @@ const navigationIcon: NavigationIcons = {
     ia: <RiRobot2Line />,
     iaImages: <MdOutlineImage />,
     iaContent: <MdOutlineArticle />,
+    iaProductAgent: <MdSmartToy />,
 }
 
 export default navigationIcon
