@@ -12,7 +12,7 @@ import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
 import { useAppSelector as useRootAppSelector } from '@/store';
 import { hasRole } from '@/utils/permissions';
-import { PRODUCER } from '@/constants/roles.constant';
+import { CUSTOMER, PRODUCER } from '@/constants/roles.constant';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -40,6 +40,7 @@ const ProjectDetails = () => {
 
   const { user } = useRootAppSelector((state) => state.auth.user);
   const isProducer = hasRole(user, [PRODUCER]);
+  const isCustomer = hasRole(user, [CUSTOMER]);
   const customerDocId = project?.customer?.documentId;
 
   return (
@@ -54,7 +55,7 @@ const ProjectDetails = () => {
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
               <ClientFilesPanel
                 customerDocumentId={customerDocId}
-                mode={isProducer ? 'producer' : 'admin'}
+                mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
               />
             </div>
           )}

@@ -360,7 +360,7 @@ const Files = () => {
         }}>
           <ClientFilesPanel
             customerDocumentId={customerDocId}
-            mode={isProducer ? 'producer' : 'admin'}
+            mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
           />
         </div>
       )}
