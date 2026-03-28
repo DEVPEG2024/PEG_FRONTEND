@@ -431,6 +431,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                     documentId
                     name
                     logo { url documentId }
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 endDate
                 name
@@ -450,6 +451,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 producer {
                     documentId
                     name
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 producerPrice
                 producerPaidPrice
@@ -517,6 +519,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                     documentId
                     name
                     logo { url documentId }
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 endDate
                 name
@@ -542,6 +545,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 producer {
                     documentId
                     name
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 startDate
                 state
@@ -608,10 +612,12 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                     documentId
                     name
                     logo { url documentId }
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 producer {
                     documentId
                     name
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 endDate
                 name
@@ -693,6 +699,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                     documentId
                     name
                     logo { url documentId }
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 endDate
                 name
@@ -711,6 +718,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 producer {
                     documentId
                     name
+                    users (pagination: {limit: 1}) { avatar { url } }
                 }
                 producerPrice
                 startDate
