@@ -31,6 +31,7 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             }
             requiresBat
             batFile { documentId url name }
+            catalogPrice
             # checklist { documentId name items }  — activer après config Strapi
         }
     }
@@ -82,6 +83,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             # checklist { documentId name items }  — activer après déploiement Strapi
             requiresBat
             batFile { documentId url name }
+            catalogPrice
             # productRef                           — activer après déploiement Strapi
             # refVisibleToCustomer                 — activer après déploiement Strapi
             customerCategories {
@@ -349,6 +351,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 price
                 priceTiers
                 inCatalogue
+                catalogPrice
             }
             pageInfo {
                 page

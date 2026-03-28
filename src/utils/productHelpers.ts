@@ -56,6 +56,22 @@ export function getProductPriceForSizeAndColors(
   return getProductPriceForQuantity(product, totalQuantity);
 }
 
+/**
+ * Compute the savings percentage compared to the public catalog price.
+ * Returns null when no catalog price is set or when there is no saving.
+ */
+export function getCatalogSavingsPercent(
+  product: Product,
+  quantity: number = 1
+): number | null {
+  if (!product.catalogPrice || product.catalogPrice <= 0) return null;
+  const currentPrice = getProductPriceForQuantity(product, quantity);
+  if (currentPrice >= product.catalogPrice) return null;
+  return Math.round(
+    ((product.catalogPrice - currentPrice) / product.catalogPrice) * 100
+  );
+}
+
 export function getTotalPriceForCartItem(
   product: Product,
   sizeAndColors: SizeAndColorSelection[]

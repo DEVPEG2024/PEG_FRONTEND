@@ -369,6 +369,34 @@ const ProductFields = (props: ProductFieldsProps) => {
         />
       </div>
 
+      {/* ── Prix catalogue (référence pour % économie) ── */}
+      <div style={card}>
+        <p style={sectionTitle}>Prix catalogue public (référence)</p>
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '12px', marginTop: 0 }}>
+          Si ce produit existe dans le catalogue public à un prix plus élevé, indiquez-le ici. Le client verra le pourcentage économisé.
+        </p>
+        <div style={{ maxWidth: '280px' }}>
+          <label style={fieldLabel}>Prix catalogue HT (€)</label>
+          <Controller
+            name="catalogPrice"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="number"
+                value={field.value ?? ''}
+                min={0}
+                step={0.01}
+                placeholder="Ex: 15.00"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  field.onChange(val === '' ? null : parseFloat(val));
+                }}
+              />
+            )}
+          />
+        </div>
+      </div>
+
       {/* ── Section 3 : Catégories & clients ── */}
       <div style={card}>
         <p style={sectionTitle}>Catégories & clients</p>

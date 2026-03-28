@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { getProductBasePrice } from '@/utils/productHelpers';
+import { getProductBasePrice, getCatalogSavingsPercent } from '@/utils/productHelpers';
 import { toTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
@@ -23,6 +23,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
   const shortDesc = product.description ? getShortSentence(product.description) : null;
   const priceHT = getProductBasePrice(product);
   const priceTTC = toTTC(priceHT);
+  const savingsPercent = getCatalogSavingsPercent(product);
   const initial = product.name.charAt(0).toUpperCase();
 
   const handleMouseEnter = () => {
@@ -127,6 +128,26 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             textTransform: 'uppercase',
           }}>
             {product.productCategory.name}
+          </div>
+        )}
+
+        {/* Savings badge */}
+        {savingsPercent && (
+          <div style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            background: 'rgba(34,197,94,0.9)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            borderRadius: '100px',
+            padding: '4px 10px',
+            color: '#fff',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+          }}>
+            -{savingsPercent}% vs catalogue
           </div>
         )}
 
@@ -252,6 +273,11 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {priceTTC.toFixed(2)} € TTC
             </span>
+            {savingsPercent && product.catalogPrice && (
+              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 500, whiteSpace: 'nowrap', textDecoration: 'line-through' }}>
+                {product.catalogPrice.toFixed(2)} € HT
+              </span>
+            )}
           </div>
           <div style={{
             display: 'flex',

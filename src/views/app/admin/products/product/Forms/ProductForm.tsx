@@ -41,6 +41,7 @@ export type ProductFormModel = Omit<
   productRef?: string;
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
+  catalogPrice?: number | null;
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;

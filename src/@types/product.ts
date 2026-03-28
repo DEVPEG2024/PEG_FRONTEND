@@ -34,6 +34,7 @@ export type Product = {
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
   batFile?: PegFile | null;
+  catalogPrice?: number | null;
 };
 
 export type Size = {

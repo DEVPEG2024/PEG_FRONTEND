@@ -24,7 +24,7 @@ import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice, getProductPriceForQuantity } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent } from '@/utils/productHelpers';
 import { toTTC } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
@@ -234,6 +234,7 @@ const ShowProduct = () => {
   );
 
   const basePrice = getProductBasePrice(product);
+  const savingsPercent = getCatalogSavingsPercent(product, amountSelected > 0 ? amountSelected : 1);
   const hasTiers = product.priceTiers?.length > 1;
   const activeTierIndex = hasTiers
     ? product.priceTiers.findIndex((t) => t.price === tierPriceSelected)
@@ -304,6 +305,16 @@ const ShowProduct = () => {
             {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (
               <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
                 -{(((product.priceTiers[0].price - tierPriceSelected) / product.priceTiers[0].price) * 100).toFixed(0)}% appliqué
+              </div>
+            )}
+            {savingsPercent && product.catalogPrice && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', padding: '5px 12px' }}>
+                <span style={{ fontSize: '13px', color: '#4ade80', fontWeight: 700 }}>
+                  -{savingsPercent}% vs catalogue
+                </span>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
+                  {product.catalogPrice.toFixed(2)} € HT
+                </span>
               </div>
             )}
           </div>
