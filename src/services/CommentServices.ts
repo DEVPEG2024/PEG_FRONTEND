@@ -16,6 +16,7 @@ export async function apiCreateComment(data: CreateCommentRequest): Promise<Axio
             user {
                 avatar {
                     documentId
+                    url
                 }
                 firstName
                 lastName

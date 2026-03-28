@@ -66,6 +66,10 @@ export async function apiGetUsers(data: GetUsersRequest = {pagination: {page: 1,
                     type
                     description
                 }
+                avatar {
+                    url
+                    documentId
+                }
             }
             pageInfo {
                 page

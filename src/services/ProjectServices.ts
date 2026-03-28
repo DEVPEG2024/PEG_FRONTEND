@@ -17,6 +17,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 user {
                     avatar {
                         documentId
+                        url
                     }
                     firstName
                     lastName
@@ -271,6 +272,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 user {
                     avatar {
                         documentId
+                        url
                     }
                     firstName
                     lastName
