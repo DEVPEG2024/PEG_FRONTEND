@@ -111,8 +111,8 @@ const LogoPlacementEditor = ({ productImageUrl, logoFile, onConfirm, onBack }: L
   const handleConfirm = async () => {
     setSaving(true);
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = 2048;
-    exportCanvas.height = 2048;
+    exportCanvas.width = 1024;
+    exportCanvas.height = 1024;
     const ctx = exportCanvas.getContext('2d');
     if (!ctx || !productImg) return;
 
@@ -126,10 +126,10 @@ const LogoPlacementEditor = ({ productImageUrl, logoFile, onConfirm, onBack }: L
     // Draw logo at same relative position
     if (logoImg) {
       const lAspect = logoImg.width / logoImg.height;
-      const lw = 2048 * logoScale;
+      const lw = 1024 * logoScale;
       const lh = lw / lAspect;
-      const lx = logoPos.x * 2048 - lw / 2;
-      const ly = logoPos.y * 2048 - lh / 2;
+      const lx = logoPos.x * 1024 - lw / 2;
+      const ly = logoPos.y * 1024 - lh / 2;
       ctx.drawImage(logoImg, lx, ly, lw, lh);
     }
 
@@ -212,7 +212,7 @@ const LogoPlacementEditor = ({ productImageUrl, logoFile, onConfirm, onBack }: L
             borderRadius: '12px', padding: '20px',
           }}>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
-              Positionnez le logo en cliquant sur l'image. L'image finale sera exportee en 2048x2048px (4K).
+              Positionnez le logo en cliquant sur l'image. L'image finale sera exportee en HD.
             </p>
           </div>
 
