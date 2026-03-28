@@ -124,7 +124,7 @@ const UsersList = () => {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                  <Btn onClick={() => navigate(`/admin/users/edit/${user.documentId}`)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" disabled={isSuperAdmin} />
+                  <Btn onClick={() => navigate(`/admin/users/edit/${user.documentId}`)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
                   <Btn onClick={() => numericId !== undefined && dispatch(deleteUser(String(numericId)))} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" disabled={isSuperAdmin || numericId === undefined} />
                 </div>
               </div>
