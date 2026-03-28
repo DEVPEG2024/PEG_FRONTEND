@@ -21,7 +21,6 @@ import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
 import { Loading, RichTextEditor } from '@/components/shared';
 import TimelineComment from './TimelineComment';
-import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 
 const VISIBILITY_OPTIONS = [
   { value: 'all',      label: 'Visible par tous',      color: '#6b9eff', bg: 'rgba(47,111,237,0.12)',  border: 'rgba(47,111,237,0.3)'  },
@@ -41,18 +40,9 @@ const Comments = () => {
   const { project, comments, loading } = useAppSelector(
     (state) => state.projectDetails.data
   );
-  const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(user?.avatar);
-  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  const avatarUrl = user?.avatar?.url;
 
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
-
-  useEffect(() => {
-    setAvatarLoading(true);
-    if (!avatarUrl) {
-      fetchAvatarUrl();
-    }
-    setAvatarLoading(false);
-  }, [avatarUrl]);
 
   const onEdit = (val: string) => {
     debounceFn(val);
@@ -209,9 +199,9 @@ const Comments = () => {
             padding: '16px',
           }}>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
-              <Loading loading={avatarLoading}>
+              <div>
                 <Avatar size={32} shape="circle" src={avatarUrl} icon={<HiUserCircle />} />
-              </Loading>
+              </div>
               <div style={{ flex: 1 }}>
                 <RichTextEditor onChange={onEdit} value={commentText} />
               </div>

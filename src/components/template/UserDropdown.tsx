@@ -9,9 +9,6 @@ import type { CommonProps } from '@/@types/common'
 import { useAppSelector } from '@/store'
 import { useTranslation } from 'react-i18next'
 import { User } from '@/@types/user'
-import { useEffect, useState } from 'react'
-import { Loading } from '../shared'
-import useAvatarUrl from '@/utils/hooks/useAvatarUrl'
 
 type DropdownList = {
     label: string
@@ -26,23 +23,11 @@ const _UserDropdown = ({ className }: CommonProps) => {
     const { signOut } = useAuth()
     const {user} : {user: User} = useAppSelector((state) => state.auth.user)
 
-    const {avatarUrl, fetchAvatarUrl} = useAvatarUrl(user?.avatar)
-    const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
-    
-    // Spécifique PEG
-    useEffect(() => {
-        setAvatarLoading(true)
-        if (!avatarUrl) {
-            fetchAvatarUrl();
-        }
-        setAvatarLoading(false)
-    }, [avatarUrl]);
+    const avatarUrl = user?.avatar?.url
 
     const UserAvatar = (
         <div className={classNames(className, 'flex items-center gap-2')}>
-            <Loading loading={avatarLoading}>
-                <Avatar size={32} shape="circle" src={avatarUrl} icon={<HiOutlineUser />} />
-            </Loading>
+            <Avatar size={32} shape="circle" src={avatarUrl} icon={<HiOutlineUser />} />
             <div className="hidden md:block">
                 <div className="text-xs capitalize">{t("hello")}</div>
                 <div className="font-bold">{user?.firstName || user?.lastName || user?.email}</div>
@@ -59,7 +44,7 @@ const _UserDropdown = ({ className }: CommonProps) => {
             >
                 <Dropdown.Item variant="header">
                     <div className="py-2 px-3 flex items-center gap-2">
-                        <Avatar shape="circle" icon={<HiOutlineUser />} />
+                        <Avatar shape="circle" src={avatarUrl} icon={<HiOutlineUser />} />
                         <div>
                             <div className="text-xs">{t("hello")}</div>
                             <div className="font-bold text-gray-900 dark:text-gray-100">
@@ -75,8 +60,8 @@ const _UserDropdown = ({ className }: CommonProps) => {
                         eventKey={item.label}
                         className="mb-1 px-0"
                     >
-                        <Link 
-                            className="flex h-full w-full px-2" 
+                        <Link
+                            className="flex h-full w-full px-2"
                             to={item.path}
                         >
                             <span className="flex gap-2 items-center w-full">

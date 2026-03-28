@@ -10,17 +10,15 @@ import {
   apiLoadPegFilesAndFiles,
 } from '@/services/FileServices';
 import { useAppDispatch } from '@/store';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { deleteComment } from '../store';
 import Timeline from '@/components/ui/Timeline';
-import { Loading } from '@/components/shared';
 import { HiUserCircle, HiTrash, HiExclamation } from 'react-icons/hi';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { Comment } from '@/@types/project';
-import useAvatarUrl from '@/utils/hooks/useAvatarUrl';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 
@@ -40,17 +38,8 @@ const visibilityStyle: Record<string, { label: string; color: string; bg: string
 };
 
 const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
-  const { avatarUrl, fetchAvatarUrl } = useAvatarUrl(comment.user?.avatar);
-  const [avatarLoading, setAvatarLoading] = useState<boolean>(false);
+  const avatarUrl = comment.user?.avatar?.url;
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    setAvatarLoading(true);
-    if (!avatarUrl) {
-      fetchAvatarUrl();
-    }
-    setAvatarLoading(false);
-  }, [avatarUrl]);
 
   const determineAuthorRoleLabel = (u: User): string => {
     switch (u.role.name) {
@@ -89,14 +78,12 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
     <Timeline.Item
       className="w-full mt-4"
       media={
-        <Loading loading={avatarLoading}>
-          <Avatar
-            size={30}
-            shape="circle"
-            src={avatarUrl}
-            icon={<HiUserCircle />}
-          />
-        </Loading>
+        <Avatar
+          size={30}
+          shape="circle"
+          src={avatarUrl}
+          icon={<HiUserCircle />}
+        />
       }
       {...rest}
     >
