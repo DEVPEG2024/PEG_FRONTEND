@@ -19,7 +19,7 @@ import { apiAiFillProduct, apiGenerateProductImage, apiGetProductSuggestions, Pr
 import { unwrapData } from '@/utils/serviceHelper';
 import { toast } from 'react-toastify';
 import { Container } from '@/components/shared';
-import { HiSparkles, HiArrowRight, HiLightBulb, HiRefresh } from 'react-icons/hi';
+import { HiSparkles, HiArrowRight, HiLightBulb, HiRefresh, HiPhotograph, HiX } from 'react-icons/hi';
 
 interface Options {
   value: string;
@@ -43,6 +43,10 @@ const IAProductAgentPage = () => {
   const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [initialData, setInitialData] = useState<ProductFormModel | null>(null);
+
+  // Logo / marquage
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Suggestions
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
@@ -140,10 +144,21 @@ const IAProductAgentPage = () => {
       const formLabels = forms.map((f) => f.label);
       const checklistLabels = checklists.map((c) => c.label);
 
+      // Upload logo to S3 if provided
+      let uploadedLogoUrl: string | undefined;
+      if (logoFile) {
+        try {
+          const uploaded = await apiUploadFile(logoFile);
+          uploadedLogoUrl = uploaded.url;
+        } catch {
+          // Logo upload failed — continue without
+        }
+      }
+
       // Run AI text fill + image generation in parallel
       const [fillResult, imgResult] = await Promise.allSettled([
         apiAiFillProduct(productName.trim(), sizeLabels, colorLabels, categoryLabels, formLabels, checklistLabels),
-        apiGenerateProductImage(productName.trim()),
+        apiGenerateProductImage(productName.trim(), uploadedLogoUrl),
       ]);
 
       const formData: ProductFormModel = {
@@ -376,6 +391,72 @@ const IAProductAgentPage = () => {
           onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
           onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
         />
+
+        {/* Logo / Marquage upload */}
+        <div style={{ marginTop: '20px' }}>
+          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+            Logo / Marquage client <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>(optionnel)</span>
+          </label>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '10px', lineHeight: 1.5 }}>
+            Importez le logo du client pour que l'IA le place sur le produit genere.
+          </p>
+          {logoPreview ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '80px', height: '80px', borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+                background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <img src={logoPreview} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              </div>
+              <div>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 600, margin: '0 0 6px 0' }}>
+                  {logoFile?.name}
+                </p>
+                <button
+                  onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: '6px', padding: '4px 10px', color: '#f87171',
+                    fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <HiX size={12} /> Retirer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+              padding: '20px', borderRadius: '10px',
+              border: '2px dashed rgba(255,255,255,0.12)', cursor: 'pointer',
+              transition: 'border-color 0.2s',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(47,111,237,0.4)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            >
+              <HiPhotograph size={24} style={{ color: 'rgba(255,255,255,0.25)' }} />
+              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 500 }}>
+                Glissez ou cliquez pour importer un logo
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px' }}>
+                PNG, JPG, SVG — fond transparent recommande
+              </span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setLogoFile(file);
+                  setLogoPreview(URL.createObjectURL(file));
+                }}
+              />
+            </label>
+          )}
+        </div>
 
         {error && (
           <p style={{ color: '#f87171', fontSize: '12px', marginTop: '8px' }}>{error}</p>

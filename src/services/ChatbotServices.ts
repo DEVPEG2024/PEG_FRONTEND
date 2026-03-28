@@ -119,9 +119,9 @@ export const apiGetProductSuggestions = (availableCategories: string[] = []) =>
     data: { availableCategories },
   });
 
-// AI image generation (simple)
-export const apiGenerateProductImage = (name: string) =>
-  ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name } });
+// AI image generation (simple, with optional logo for branding placement)
+export const apiGenerateProductImage = (name: string, logoUrl?: string) =>
+  ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name, ...(logoUrl ? { logoUrl } : {}) } });
 
 // AI image generation (advanced — with style & reference images)
 export const apiGenerateImageAdvanced = (prompt: string, style: string, referenceUrls?: string[]) =>
