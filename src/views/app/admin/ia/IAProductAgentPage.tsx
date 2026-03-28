@@ -144,21 +144,10 @@ const IAProductAgentPage = () => {
       const formLabels = forms.map((f) => f.label);
       const checklistLabels = checklists.map((c) => c.label);
 
-      // Upload logo to S3 if provided
-      let uploadedLogoUrl: string | undefined;
-      if (logoFile) {
-        try {
-          const uploaded = await apiUploadFile(logoFile);
-          uploadedLogoUrl = uploaded.url;
-        } catch {
-          // Logo upload failed — continue without
-        }
-      }
-
       // Run AI text fill + image generation in parallel
       const [fillResult, imgResult] = await Promise.allSettled([
         apiAiFillProduct(productName.trim(), sizeLabels, colorLabels, categoryLabels, formLabels, checklistLabels),
-        apiGenerateProductImage(productName.trim(), uploadedLogoUrl),
+        apiGenerateProductImage(productName.trim()),
       ]);
 
       const formData: ProductFormModel = {
@@ -246,6 +235,12 @@ const IAProductAgentPage = () => {
         } catch {
           // Image fetch failed silently
         }
+      }
+
+      // Ajouter le logo client comme image de référence
+      if (logoFile) {
+        newImages.push({ file: logoFile, name: logoFile.name } as unknown as PegFile);
+        formData.requiresBat = true;
       }
 
       setImages(newImages);
@@ -398,7 +393,7 @@ const IAProductAgentPage = () => {
             Logo / Marquage client <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>(optionnel)</span>
           </label>
           <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '10px', lineHeight: 1.5 }}>
-            Importez le logo du client pour que l'IA le place sur le produit genere.
+            Importez le logo du client — il sera ajoute aux images du produit et le BAT sera active automatiquement.
           </p>
           {logoPreview ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
