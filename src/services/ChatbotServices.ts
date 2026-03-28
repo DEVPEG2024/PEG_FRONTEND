@@ -1,12 +1,6 @@
 import axios from 'axios';
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
-
-const backend = () =>
-  axios.create({
-    baseURL: EXPRESS_BACKEND_URL,
-    headers: { 'Content-Type': 'application/json' },
-    timeout: 30000,
-  });
+import ApiService from './ApiService';
+import { API_BASE_URL } from '@/configs/api.config';
 
 export type FAQ = {
   _id: string;
@@ -50,47 +44,44 @@ export type ChatbotDocument = {
 
 // Config
 export const apiGetChatbotConfig = () =>
-  backend().get<{ result: boolean; config: ChatbotConfig }>('/chatbot/config');
+  ApiService.fetchData<{ result: boolean; config: ChatbotConfig }>({ url: '/chatbot/config', method: 'get' });
 
 export const apiUpdateChatbotConfig = (systemPrompt: string, name?: string, description?: string, avatarUrl?: string | null) =>
-  backend().put<{ result: boolean; config: ChatbotConfig }>('/chatbot/config', { systemPrompt, name, description, avatarUrl });
+  ApiService.fetchData<{ result: boolean; config: ChatbotConfig }>({ url: '/chatbot/config', method: 'put', data: { systemPrompt, name, description, avatarUrl } });
 
 // FAQs
 export const apiAddFaq = (question: string, reponse: string) =>
-  backend().post<{ result: boolean; config: ChatbotConfig }>('/chatbot/config/faq', { question, reponse });
+  ApiService.fetchData<{ result: boolean; config: ChatbotConfig }>({ url: '/chatbot/config/faq', method: 'post', data: { question, reponse } });
 
 export const apiUpdateFaq = (faqId: string, question: string, reponse: string) =>
-  backend().put<{ result: boolean; config: ChatbotConfig }>(`/chatbot/config/faq/${faqId}`, { question, reponse });
+  ApiService.fetchData<{ result: boolean; config: ChatbotConfig }>({ url: `/chatbot/config/faq/${faqId}`, method: 'put', data: { question, reponse } });
 
 export const apiDeleteFaq = (faqId: string) =>
-  backend().delete<{ result: boolean; config: ChatbotConfig }>(`/chatbot/config/faq/${faqId}`);
+  ApiService.fetchData<{ result: boolean; config: ChatbotConfig }>({ url: `/chatbot/config/faq/${faqId}`, method: 'delete' });
 
 // History
 export const apiGetChatHistory = (params?: { page?: number; pageSize?: number; userId?: string; dateFrom?: string; dateTo?: string }) =>
-  backend().get<{ result: boolean; conversations: ConversationSummary[]; total: number }>('/chatbot/history', { params });
+  ApiService.fetchData<{ result: boolean; conversations: ConversationSummary[]; total: number }>({ url: '/chatbot/history', method: 'get', params });
 
 export const apiGetConversation = (conversationId: string) =>
-  backend().get<{ result: boolean; conversation: any }>(`/chatbot/history/${conversationId}`);
+  ApiService.fetchData<{ result: boolean; conversation: any }>({ url: `/chatbot/history/${conversationId}`, method: 'get' });
 
 export const apiDeleteConversation = (conversationId: string) =>
-  backend().delete<{ result: boolean }>(`/chatbot/history/${conversationId}`);
+  ApiService.fetchData<{ result: boolean }>({ url: `/chatbot/history/${conversationId}`, method: 'delete' });
 
 // Documents
 export const apiGetDocuments = () =>
-  backend().get<{ result: boolean; documents: ChatbotDocument[] }>('/chatbot/config/documents');
+  ApiService.fetchData<{ result: boolean; documents: ChatbotDocument[] }>({ url: '/chatbot/config/documents', method: 'get' });
 
 export const apiUploadDocument = (form: FormData) =>
-  axios.post<{ result: boolean; document: ChatbotDocument }>(`${EXPRESS_BACKEND_URL}/chatbot/config/documents`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 60000,
-  });
+  ApiService.fetchData<{ result: boolean; document: ChatbotDocument }>({ url: '/chatbot/config/documents', method: 'post', data: form, headers: { 'Content-Type': undefined } });
 
 export const apiDeleteDocument = (docId: number) =>
-  backend().delete<{ result: boolean }>(`/chatbot/config/documents/${docId}`);
+  ApiService.fetchData<{ result: boolean }>({ url: `/chatbot/config/documents/${docId}`, method: 'delete' });
 
 // AI rewrite description
 export const apiRewriteDescription = (text: string, context?: string) =>
-  backend().post<{ result: boolean; description: string }>('/chatbot/rewrite-description', { text, context });
+  ApiService.fetchData<{ result: boolean; description: string }>({ url: '/chatbot/rewrite-description', method: 'post', data: { text, context } });
 
 // AI product fill
 export const apiAiFillProduct = (
@@ -101,7 +92,7 @@ export const apiAiFillProduct = (
   availableForms: string[] = [],
   availableChecklists: string[] = [],
 ) =>
-  backend().post<{
+  ApiService.fetchData<{
     result: boolean;
     description: string;
     priceTiers: { minQuantity: number; price: number }[];
@@ -110,25 +101,25 @@ export const apiAiFillProduct = (
     suggestedCategory: string;
     suggestedForm: string;
     suggestedChecklist: string;
-  }>('/chatbot/ai-fill-product', { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists });
+  }>({ url: '/chatbot/ai-fill-product', method: 'post', data: { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists } });
 
 // AI image generation (simple)
 export const apiGenerateProductImage = (name: string) =>
-  backend().post<{ result: boolean; imageUrl: string }>('/chatbot/generate-image', { name });
+  ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name } });
 
 // AI image generation (advanced — with style & reference images)
 export const apiGenerateImageAdvanced = (prompt: string, style: string, referenceUrls?: string[]) =>
-  backend().post<{ result: boolean; imageUrl: string }>('/chatbot/generate-image', { name: prompt, style, referenceUrls });
+  ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name: prompt, style, referenceUrls } });
 
 // AI content generation (description, highlights, selling points)
 export const apiGenerateProductContent = (productName: string) =>
-  backend().post<{
+  ApiService.fetchData<{
     result: boolean;
     description: string;
     highlights: string[];
     sellingPoints: string[];
-  }>('/chatbot/generate-content', { productName });
+  }>({ url: '/chatbot/generate-content', method: 'post', data: { productName } });
 
 // Live test
 export const apiTestChat = (messages: Message[]) =>
-  backend().post<{ result: boolean; reply: string }>('/chatbot/test', { messages });
+  ApiService.fetchData<{ result: boolean; reply: string }>({ url: '/chatbot/test', method: 'post', data: { messages } });
