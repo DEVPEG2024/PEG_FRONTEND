@@ -41,6 +41,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 documentId
                 name
                 logo { url documentId }
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             description
             endDate
@@ -108,6 +109,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             producer {
                 documentId
                 name
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             startDate
             state
@@ -154,6 +156,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 documentId
                 name
                 logo { url documentId }
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             description
             endDate
@@ -221,6 +224,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             producer {
                 documentId
                 name
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             startDate
             state
@@ -291,6 +295,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 documentId
                 name
                 logo { url documentId }
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             description
             endDate
@@ -371,6 +376,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             producer {
                 documentId
                 name
+                users (pagination: {limit: 1}) { avatar { url } }
             }
             startDate
             state

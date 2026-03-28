@@ -7,10 +7,12 @@ const AvatarName = ({
   entity,
   type,
 }: {
-  entity: Customer | Producer | undefined;
+  entity: (Customer | Producer) & { users?: { avatar?: { url?: string } }[] } | undefined;
   type: string;
 }) => {
   const logoUrl = entity && 'logo' in entity ? entity.logo?.url : undefined;
+  const userAvatarUrl = entity?.users?.[0]?.avatar?.url;
+  const imageUrl = logoUrl || userAvatarUrl;
 
   return (
     entity && (
@@ -25,8 +27,8 @@ const AvatarName = ({
             color: type === 'Client' ? '#6b9eff' : '#a78bfa',
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em',
           }}>
-            {logoUrl ? (
-              <img src={logoUrl} alt={entity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {imageUrl ? (
+              <img src={imageUrl} alt={entity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               acronym(entity.name)
             )}
