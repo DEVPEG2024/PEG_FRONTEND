@@ -20,6 +20,7 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { toast } from 'react-toastify';
 import { Container } from '@/components/shared';
 import { HiSparkles, HiArrowRight, HiLightBulb, HiRefresh, HiPhotograph, HiX } from 'react-icons/hi';
+import LogoPlacementEditor from './LogoPlacementEditor';
 
 interface Options {
   value: string;
@@ -28,7 +29,7 @@ interface Options {
 
 const IAProductAgentPage = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'input' | 'preview'>('input');
+  const [step, setStep] = useState<'input' | 'logo-placement' | 'preview'>('input');
   const [productName, setProductName] = useState('');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +48,7 @@ const IAProductAgentPage = () => {
   // Logo / marquage
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
 
   // Suggestions
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
@@ -224,28 +226,32 @@ const IAProductAgentPage = () => {
       }
 
       // AI generated image
-      const newImages: PegFile[] = [];
-      if (imgResult.status === 'fulfilled' && imgResult.value.data.imageUrl) {
-        try {
-          const imgResp = await fetch(imgResult.value.data.imageUrl);
-          const blob = await imgResp.blob();
-          const safeName = productName.trim().replace(/\s+/g, '-').toLowerCase();
-          const file = new File([blob], `${safeName}-ai.jpg`, { type: blob.type || 'image/jpeg' });
-          newImages.push({ file, name: file.name } as unknown as PegFile);
-        } catch {
-          // Image fetch failed silently
-        }
-      }
+      const generatedImageUrl = imgResult.status === 'fulfilled' ? imgResult.value.data.imageUrl : null;
 
-      // Ajouter le logo client comme image de référence
-      if (logoFile) {
-        newImages.push({ file: logoFile, name: logoFile.name } as unknown as PegFile);
-        formData.requiresBat = true;
-      }
-
-      setImages(newImages);
       setInitialData(formData);
-      setStep('preview');
+
+      // Si logo uploadé + image IA générée → étape placement du logo
+      if (logoFile && generatedImageUrl) {
+        setAiImageUrl(generatedImageUrl);
+        formData.requiresBat = true;
+        setStep('logo-placement');
+      } else {
+        // Pas de logo → ajouter l'image IA directement et aller au preview
+        const newImages: PegFile[] = [];
+        if (generatedImageUrl) {
+          try {
+            const imgResp = await fetch(generatedImageUrl);
+            const blob = await imgResp.blob();
+            const safeName = productName.trim().replace(/\s+/g, '-').toLowerCase();
+            const file = new File([blob], `${safeName}-ai.jpg`, { type: blob.type || 'image/jpeg' });
+            newImages.push({ file, name: file.name } as unknown as PegFile);
+          } catch {
+            // Image fetch failed silently
+          }
+        }
+        setImages(newImages);
+        setStep('preview');
+      }
     } catch {
       setError('Erreur inattendue. Reessayez.');
     } finally {
@@ -295,6 +301,28 @@ const IAProductAgentPage = () => {
     setInitialData(null);
     setImages([]);
   };
+
+  if (step === 'logo-placement' && aiImageUrl && logoFile) {
+    return (
+      <Container style={{ fontFamily: 'Inter, sans-serif', paddingTop: '28px' }}>
+        <LogoPlacementEditor
+          productImageUrl={aiImageUrl}
+          logoFile={logoFile}
+          onConfirm={(compositeFile) => {
+            setImages([
+              { file: compositeFile, name: compositeFile.name } as unknown as PegFile,
+              { file: logoFile, name: logoFile.name } as unknown as PegFile,
+            ]);
+            setStep('preview');
+          }}
+          onBack={() => {
+            setStep('input');
+            setAiImageUrl(null);
+          }}
+        />
+      </Container>
+    );
+  }
 
   if (step === 'preview' && initialData) {
     return (
