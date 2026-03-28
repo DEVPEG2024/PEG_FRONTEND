@@ -32,7 +32,7 @@ const QuickFilterTab = () => {
   const getTabCount = (tab: string): number | undefined => {
     switch (tab) {
       case 'Commentaires': return comments?.length;
-      case 'Fichiers': return (project?.images?.length || 0) + (project?.customerImages?.length || 0) || undefined;
+      case 'Fichiers': return project?.images?.length;
       case 'Checklist': {
         const items = project?.checklistItems ?? [];
         return items.length > 0 ? items.length : undefined;

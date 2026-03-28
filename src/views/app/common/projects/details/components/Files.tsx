@@ -140,16 +140,9 @@ const FileThumbnail = ({ file, canDelete, onRemove }: { file: PegFile; canDelete
 );
 
 const Files = () => {
-  // Admin files (images)
-  const [adminFiles, setAdminFiles] = useState<PegFile[]>([]);
-  const [adminFilesIdToDelete, setAdminFilesIdToDelete] = useState<string[]>([]);
-  const [adminFilesChanged, setAdminFilesChanged] = useState<boolean>(false);
-
-  // Customer files (customerImages)
-  const [custFiles, setCustFiles] = useState<PegFile[]>([]);
-  const [custFilesIdToDelete, setCustFilesIdToDelete] = useState<string[]>([]);
-  const [custFilesChanged, setCustFilesChanged] = useState<boolean>(false);
-
+  const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
+  const [pegFilesIdToDelete, setPegFilesIdToDelete] = useState<string[]>([]);
+  const [pegFilesChanged, setPegFilesChanged] = useState<boolean>(false);
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const { project } = useAppSelector(
@@ -166,85 +159,58 @@ const Files = () => {
 
   const fetchFiles = async (): Promise<void> => {
     setFilesLoading(true);
-    const [adminLoaded, custLoaded] = await Promise.all([
-      project?.images?.length > 0 ? apiGetPegFiles(project.images) : Promise.resolve([]),
-      project?.customerImages?.length > 0 ? apiGetPegFiles(project.customerImages) : Promise.resolve([]),
-    ]);
-    setAdminFiles(adminLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
-    setCustFiles(custLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
+    if (project?.images?.length > 0) {
+      const pegFilesLoaded: PegFile[] = await apiGetPegFiles(project.images);
+      setPegFiles(pegFilesLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
+    } else {
+      setPegFiles([]);
+    }
     setFilesLoading(false);
   };
 
-  // Admin file handlers
-  const onAdminFileAdd = (file: File) => {
-    setAdminFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
-    setAdminFilesChanged(true);
-  };
-  const onAdminFileRemove = (fileName: string) => {
-    const f = adminFiles.find(({ name }) => name === fileName);
-    if (f) {
-      setAdminFilesIdToDelete((prev) => [...prev, f.id]);
-      setAdminFiles((prev) => prev.filter(({ name }) => name !== fileName));
-      setAdminFilesChanged(true);
-    }
+  const onFileAdd = (file: File) => {
+    setPegFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
+    setPegFilesChanged(true);
   };
 
-  // Customer file handlers
-  const onCustFileAdd = (file: File) => {
-    setCustFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
-    setCustFilesChanged(true);
-  };
-  const onCustFileRemove = (fileName: string) => {
-    const f = custFiles.find(({ name }) => name === fileName);
+  const onFileRemove = (fileName: string) => {
+    const f = pegFiles.find(({ name }) => name === fileName);
     if (f) {
-      setCustFilesIdToDelete((prev) => [...prev, f.id]);
-      setCustFiles((prev) => prev.filter(({ name }) => name !== fileName));
-      setCustFilesChanged(true);
+      setPegFilesIdToDelete((prev) => [...prev, f.id]);
+      setPegFiles((prev) => prev.filter(({ name }) => name !== fileName));
+      setPegFilesChanged(true);
     }
   };
 
   const handleSubmit = async () => {
     setFilesLoading(true);
     try {
-      const uploadFiles = async (files: PegFile[]) => {
-        const result: PegFile[] = [];
-        for (const pf of files) {
-          if (pf.id) {
-            result.push(pf);
-          } else {
-            result.push(await apiUploadFile(pf.file));
-          }
+      const newPegFiles: PegFile[] = [];
+      for (const pf of pegFiles) {
+        if (pf.id) {
+          newPegFiles.push(pf);
+        } else {
+          newPegFiles.push(await apiUploadFile(pf.file));
         }
-        return result;
-      };
-
-      const updateData: Record<string, unknown> = { documentId: project.documentId };
-
-      if (adminFilesChanged) {
-        const newAdminFiles = await uploadFiles(adminFiles);
-        for (const id of adminFilesIdToDelete) apiDeleteFile(id);
-        updateData.images = newAdminFiles.map(({ id }) => id) as unknown as PegFile[];
-        setAdminFilesIdToDelete([]);
-        setAdminFilesChanged(false);
       }
 
-      if (custFilesChanged) {
-        const newCustFiles = await uploadFiles(custFiles);
-        for (const id of custFilesIdToDelete) apiDeleteFile(id);
-        updateData.customerImages = newCustFiles.map(({ id }) => id) as unknown as PegFile[];
-        setCustFilesIdToDelete([]);
-        setCustFilesChanged(false);
+      for (const id of pegFilesIdToDelete) {
+        apiDeleteFile(id);
       }
 
-      await dispatch(updateCurrentProject(updateData as any));
+      await dispatch(
+        updateCurrentProject({
+          documentId: project.documentId,
+          images: newPegFiles.map(({ id }) => id) as unknown as PegFile[],
+        })
+      );
+      setPegFilesChanged(false);
     } finally {
       setFilesLoading(false);
     }
   };
 
-  const existingAdminFiles = adminFiles.filter((f) => f.url);
-  const existingCustFiles = custFiles.filter((f) => f.url);
-  const hasChanges = adminFilesChanged || custFilesChanged;
+  const existingFiles = pegFiles.filter((f) => f.url);
 
   return (
     <Container className="h-full">
@@ -256,87 +222,39 @@ const Files = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           <Loading loading={filesLoading}>
-            {/* ── Section fichiers admin ── */}
+            {/* Upload zone — admin/producteur uniquement */}
             {!isCustomer && (
-              <>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-                  Fichiers PEG
-                </p>
-                <Upload
-                  multiple
-                  showList={false}
-                  draggable
-                  beforeUpload={beforeUpload}
-                  onFileAdd={(file) => onAdminFileAdd(file)}
-                  onFileRemove={(file) => onAdminFileRemove(file)}
-                  field={{ name: 'images' }}
-                  fileList={adminFiles.map((pf) => {
-                    const file = pf.file as File & { previewUrl?: string };
-                    file.previewUrl = pf.url;
-                    return file;
-                  })}
-                  clickable
-                />
-              </>
+              <Upload
+                multiple
+                showList={false}
+                draggable
+                beforeUpload={beforeUpload}
+                onFileAdd={(file) => onFileAdd(file)}
+                onFileRemove={(file) => onFileRemove(file)}
+                field={{ name: 'images' }}
+                fileList={pegFiles.map((pf) => {
+                  const file = pf.file as File & { previewUrl?: string };
+                  file.previewUrl = pf.url;
+                  return file;
+                })}
+                clickable
+              />
             )}
 
-            {existingAdminFiles.length > 0 && (
+            {existingFiles.length > 0 && (
               <div style={{ marginTop: '20px' }}>
-                {isCustomer && (
-                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    Fichiers PEG ({existingAdminFiles.length})
-                  </p>
-                )}
-                {!isCustomer && (
-                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    Fichiers PEG ({existingAdminFiles.length})
-                  </p>
-                )}
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                  Fichiers ({existingFiles.length})
+                </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                  {existingAdminFiles.map((file) => (
-                    <FileThumbnail key={file.id || file.name} file={file} canDelete={!isCustomer} onRemove={onAdminFileRemove} />
+                  {existingFiles.map((file) => (
+                    <FileThumbnail key={file.id || file.name} file={file} canDelete={!isCustomer} onRemove={onFileRemove} />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* ── Séparateur ── */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '24px 0' }} />
-
-            {/* ── Section fichiers client ── */}
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-              Vos fichiers
-            </p>
-            <Upload
-              multiple
-              showList={false}
-              draggable
-              beforeUpload={beforeUpload}
-              onFileAdd={(file) => onCustFileAdd(file)}
-              onFileRemove={(file) => onCustFileRemove(file)}
-              field={{ name: 'customerImages' }}
-              fileList={custFiles.map((pf) => {
-                const file = pf.file as File & { previewUrl?: string };
-                file.previewUrl = pf.url;
-                return file;
-              })}
-              clickable
-            />
-
-            {existingCustFiles.length > 0 && (
-              <div style={{ marginTop: '20px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-                  Vos fichiers ({existingCustFiles.length})
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                  {existingCustFiles.map((file) => (
-                    <FileThumbnail key={file.id || file.name} file={file} canDelete={true} onRemove={onCustFileRemove} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {hasChanges && (
+            {pegFilesChanged && !isCustomer && (
               <div style={{ marginTop: '16px' }}>
                 <Button variant="solid" onClick={handleSubmit} loading={filesLoading}>
                   Enregistrer
