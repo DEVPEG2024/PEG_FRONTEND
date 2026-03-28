@@ -10,6 +10,8 @@ const AvatarName = ({
   entity: Customer | Producer | undefined;
   type: string;
 }) => {
+  const logoUrl = entity && 'logo' in entity ? entity.logo?.url : undefined;
+
   return (
     entity && (
       <Tooltip title={entity.name}>
@@ -19,10 +21,15 @@ const AvatarName = ({
             background: type === 'Client' ? 'rgba(47,111,237,0.2)' : 'rgba(139,92,246,0.2)',
             border: `1px solid ${type === 'Client' ? 'rgba(47,111,237,0.35)' : 'rgba(139,92,246,0.35)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
             color: type === 'Client' ? '#6b9eff' : '#a78bfa',
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em',
           }}>
-            {acronym(entity.name)}
+            {logoUrl ? (
+              <img src={logoUrl} alt={entity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              acronym(entity.name)
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{type}</span>

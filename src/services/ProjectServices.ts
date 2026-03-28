@@ -40,6 +40,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             customer {
                 documentId
                 name
+                logo { url documentId }
             }
             description
             endDate
@@ -152,6 +153,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             customer {
                 documentId
                 name
+                logo { url documentId }
             }
             description
             endDate
@@ -288,6 +290,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             customer {
                 documentId
                 name
+                logo { url documentId }
             }
             description
             endDate
@@ -421,6 +424,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 customer {
                     documentId
                     name
+                    logo { url documentId }
                 }
                 endDate
                 name
@@ -504,7 +508,9 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
             nodes {
                 documentId
                 customer {
+                    documentId
                     name
+                    logo { url documentId }
                 }
                 endDate
                 name
@@ -595,6 +601,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 customer {
                     documentId
                     name
+                    logo { url documentId }
                 }
                 producer {
                     documentId
@@ -679,6 +686,7 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 customer {
                     documentId
                     name
+                    logo { url documentId }
                 }
                 endDate
                 name
