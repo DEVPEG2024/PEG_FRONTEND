@@ -14,6 +14,7 @@ import {
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
+import { apiUpdateCustomerByDocumentId } from '@/services/CustomerServices';
 
 export const SLICE_NAME = 'banners';
 
@@ -37,15 +38,27 @@ export const getBanners = createAsyncThunk(
 
 export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
-  async (data: CreateBannerRequest): Promise<Banner> => {
+  async (data: CreateBannerRequest, { dispatch }): Promise<Banner> => {
     let imageUploaded: PegFile | undefined = undefined;
     if (data.image) {
       imageUploaded = await apiUploadFile(data.image.file);
     }
-    const { createBanner }: { createBanner: Banner } = await unwrapData(
+    // Extract customer documentId before API call (banner.customer is mappedBy in Strapi)
+    const customerDocumentId = typeof data.customer === 'string' && data.customer !== '' ? data.customer : null;
+
+    const { createBanner: created }: { createBanner: Banner } = await unwrapData(
       apiCreateBanner({ ...data, image: imageUploaded?.id ?? null })
     );
-    return createBanner;
+
+    // Link customer→banner via REST (relation owned by Customer side)
+    if (customerDocumentId && created.documentId) {
+      await apiUpdateCustomerByDocumentId(customerDocumentId, { banner: created.documentId });
+    }
+
+    // Refresh list to get populated relations
+    dispatch(getBanners({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }));
+
+    return created;
   }
 );
 
@@ -65,18 +78,39 @@ export type UpdateBanner = {
 
 export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
-  async (data: UpdateBanner): Promise<Banner> => {
+  async (data: UpdateBanner, { dispatch, getState }): Promise<Banner> => {
     let imageUploaded: PegFile | undefined = undefined;
     if (data.imageModified && data.banner.image) {
       imageUploaded = await apiUploadFile(data.banner.image.file);
     }
-    const { updateBanner }: { updateBanner: Banner } = await unwrapData(
+
+    // Detect customer change (banner.customer is mappedBy in Strapi)
+    const state = getState() as any;
+    const oldBanner = state.banners.data.selectedBanner as Banner | null;
+    const oldCustomerDocId = oldBanner?.customer?.documentId || null;
+    const newCustomerDocId = typeof data.banner.customer === 'string' && data.banner.customer !== '' ? data.banner.customer : null;
+
+    const { updateBanner: updated }: { updateBanner: Banner } = await unwrapData(
       apiUpdateBanner({
         ...data.banner,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
       })
     );
-    return updateBanner;
+
+    // Update customer→banner relation via REST if customer changed
+    if (oldCustomerDocId !== newCustomerDocId) {
+      if (oldCustomerDocId) {
+        await apiUpdateCustomerByDocumentId(oldCustomerDocId, { banner: null });
+      }
+      if (newCustomerDocId && updated.documentId) {
+        await apiUpdateCustomerByDocumentId(newCustomerDocId, { banner: updated.documentId });
+      }
+    }
+
+    // Refresh list to get populated relations
+    dispatch(getBanners({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }));
+
+    return updated;
   }
 );
 
