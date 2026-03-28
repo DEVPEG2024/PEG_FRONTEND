@@ -22,6 +22,7 @@ export type Project = {
   producerPaidPrice: number;
   comments: Comment[];
   images: PegFile[];
+  customerImages: PegFile[];
   tasks: Task[];
   orderItem?: OrderItem;
   //deleted: boolean;
