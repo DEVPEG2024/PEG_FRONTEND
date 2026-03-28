@@ -51,11 +51,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 url
                 name
             }
-            customerImages (pagination: {limit: 100}){
-                documentId
-                url
-                name
-            }
+
             invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
@@ -171,11 +167,7 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
                 url
                 name
             }
-            customerImages (pagination: {limit: 100}){
-                documentId
-                url
-                name
-            }
+
             invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
@@ -316,11 +308,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 url
                 name
             }
-            customerImages (pagination: {limit: 100}){
-                documentId
-                url
-                name
-            }
+
             invoices (pagination: {limit: 100}){
                 documentId
                 createdAt
