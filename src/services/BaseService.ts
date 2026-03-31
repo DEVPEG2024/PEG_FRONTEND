@@ -43,7 +43,7 @@ BaseService.interceptors.request.use(
         if (accessToken) {
             // Auto sign-out if JWT is expired
             if (isTokenExpired(accessToken)) {
-                localStorage.removeItem('token')
+                sessionStorage.removeItem('token')
                 store.dispatch(signOutSuccess())
                 return Promise.reject(new Error('Token expired'))
             }

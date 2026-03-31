@@ -16,7 +16,7 @@ function App() {
 
     if (pegItem.includes('_id')) {
       localStorage.removeItem(PERSIST_STORE_NAME);
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
     }
   }, []);
 

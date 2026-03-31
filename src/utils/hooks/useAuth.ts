@@ -41,7 +41,7 @@ function useAuth() {
                 const { jwt: token } = resp.data
                 const user: User = await getUser(token)
                 dispatch(signInSuccess(token))
-                localStorage.setItem('token', token)
+                sessionStorage.setItem('token', token)
                 if (user) {
                     dispatch(setOwnUser(user))
                     const userRole = user.authority[0]
@@ -78,13 +78,13 @@ function useAuth() {
                 authority: [],
             })
         )
-        localStorage.removeItem('token')
+        sessionStorage.removeItem('token')
         navigate(appConfig.unAuthenticatedEntryPath)
     }
 
     const signOut = async () => {
         // await apiSignOut()
-        localStorage.removeItem('token')
+        sessionStorage.removeItem('token')
         handleSignOut()
     }
 
