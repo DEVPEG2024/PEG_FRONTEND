@@ -1210,7 +1210,8 @@ const CalendarPage = () => {
 
             // Schedule notifications for upcoming events
             strapiEvents.forEach(scheduleNotification)
-        } catch {
+        } catch (err: any) {
+            console.error('[CalendarPage] Erreur chargement événements :', err)
             // Fallback: load from localStorage if Strapi is unavailable
             const saved = localStorage.getItem('peg:calendarEvents')
             if (saved) {
@@ -1226,9 +1227,12 @@ const CalendarPage = () => {
                         reminderMinutes: e.reminderMinutes || 0,
                         isSynced: false,
                     })))
+                    toast.warning('Mode hors-ligne : données locales affichées.')
                 } catch { /* ignore */ }
+            } else {
+                const msg = err?.message || 'Erreur inconnue'
+                toast.error(`Impossible de charger l'agenda : ${msg}`)
             }
-            toast.warning('Mode hors-ligne : données locales affichées.')
         } finally {
             setLoading(false)
         }
