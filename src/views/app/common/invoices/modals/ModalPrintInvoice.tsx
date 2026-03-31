@@ -7,7 +7,6 @@ import {
   StyleSheet,
   PDFViewer,
   Image,
-  Font,
 } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 import dayjs from 'dayjs';
@@ -35,30 +34,18 @@ const ModalPrintInvoice = ({
 }) => {
   const customer: Customer = selectedInvoice!.customer;
   const [qrcod, setQrcode] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
-    Font.register({
-      family: 'Roboto',
-      fonts: [
-        {
-          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf',
-        },
-        {
-          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf',
-          fontWeight: 'bold',
-        },
-        {
-          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf',
-          fontWeight: 'normal',
-          fontStyle: 'italic',
-        },
-        {
-          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bolditalic-webfont.ttf',
-          fontWeight: 'bold',
-          fontStyle: 'italic',
-        },
-      ],
-    });
+    // Convertir le logo en data URL pour @react-pdf/renderer
+    fetch('/img/logo/logo-nova.png')
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoUrl(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {});
     QRCode.toDataURL(selectedInvoice!.documentId.toString()).then(setQrcode);
   }, [selectedInvoice?.documentId]);
 
@@ -84,10 +71,12 @@ const ModalPrintInvoice = ({
               <Page size="A4">
                 <View style={styles.page}>
                   <View style={styles.section}>
-                    <Image
-                      src={'/img/logo/logo-nova.png'}
-                      style={{ width: '200px', height: '70px' }}
-                    />
+                    {logoUrl && (
+                      <Image
+                        src={logoUrl}
+                        style={{ width: '200px', height: '70px' }}
+                      />
+                    )}
                     <Text
                       style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}
                     >
