@@ -256,7 +256,7 @@ export default function DashboardAdmin() {
   const fileRef = useRef<HTMLInputElement | null>(null)
   const { user } = useAppSelector((state) => state.auth.user)
 
-  const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
+  const [bannerUrl, setBannerUrl] = useState<string>(() => sessionStorage.getItem('peg:dashboardBanner') || '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gql, setGql] = useState<any>(null)
@@ -309,7 +309,7 @@ export default function DashboardAdmin() {
   const ticketsByState = useMemo(() => { const m = new Map<string, number>(); for (const t of tickets) m.set((t?.state ?? 'inconnu').toString(), (m.get((t?.state ?? 'inconnu').toString()) ?? 0) + 1); return Array.from(m.entries()).map(([l, v]) => ({ label: l, value: v })).sort((a, b) => b.value - a.value) }, [tickets])
 
   const onPickBanner = () => fileRef.current?.click()
-  const onBannerFile = (file?: File | null) => { if (!file) return; if (file.size > MAX_BANNER) { setError('Image trop lourde. Max 2MB.'); return }; const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; try { localStorage.setItem('peg:dashboardBanner', b); setBannerUrl(b) } catch { setError('Stockage local plein.') } }; r.readAsDataURL(file) }
+  const onBannerFile = (file?: File | null) => { if (!file) return; if (file.size > MAX_BANNER) { setError('Image trop lourde. Max 2MB.'); return }; const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; try { sessionStorage.setItem('peg:dashboardBanner', b); setBannerUrl(b) } catch { setError('Stockage local plein.') } }; r.readAsDataURL(file) }
 
   const dataReady = gql !== null
   const greetHour = new Date().getHours()

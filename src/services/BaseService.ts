@@ -8,6 +8,17 @@ import { API_BASE_URL } from '@/configs/api.config'
 
 const unauthorizedCode = [401]
 
+/** Decode JWT payload and check expiration (returns true if expired or invalid) */
+function isTokenExpired(token: string): boolean {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (!payload.exp) return false // no expiration claim
+        return payload.exp * 1000 < Date.now()
+    } catch {
+        return true // malformed token = treat as expired
+    }
+}
+
 const BaseService = axios.create({
     timeout: 60000,
     baseURL: API_BASE_URL,
@@ -30,6 +41,12 @@ BaseService.interceptors.request.use(
         }
 
         if (accessToken) {
+            // Auto sign-out if JWT is expired
+            if (isTokenExpired(accessToken)) {
+                localStorage.removeItem('token')
+                store.dispatch(signOutSuccess())
+                return Promise.reject(new Error('Token expired'))
+            }
             config.headers[
                 REQUEST_HEADER_AUTH_KEY
             ] = `${TOKEN_TYPE}${accessToken}`

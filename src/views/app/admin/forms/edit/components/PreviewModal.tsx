@@ -1,6 +1,7 @@
 import { Dialog } from '@/components/ui';
 import { Field, FormStructure } from '../types';
 import { HiX } from 'react-icons/hi';
+import { safeHtmlParse } from '@/utils/sanitizeHtml';
 
 type Props = {
   isOpen: boolean;
@@ -208,8 +209,9 @@ function PreviewField({ field }: { field: Field }) {
     return (
       <div
         style={{ ...wrap, width: '100%', color: '#374151', fontSize: '14px', lineHeight: 1.7 }}
-        dangerouslySetInnerHTML={{ __html: field.content ?? '' }}
-      />
+      >
+        {safeHtmlParse(field.content ?? '')}
+      </div>
     );
   }
 

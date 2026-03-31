@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#000000" />
     <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob: https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
+        connect-src 'self' https://api.mypeg.fr https://api-int.mypeg.fr https://*.stripe.com;
+        frame-src https://*.stripe.com;
+        font-src 'self';
+      "
+    />
+    <meta
       name="description"
       content="MyPEG - Plateforme d'échanges graphiques"
     />
