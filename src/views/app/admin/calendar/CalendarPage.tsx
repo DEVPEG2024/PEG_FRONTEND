@@ -1177,7 +1177,8 @@ const CalendarPage = () => {
     const loadEvents = useCallback(async () => {
         try {
             const data = await unwrapData(apiGetCalendarEvents())
-            const strapiEvents: CalEvent[] = data.calendarEvents_connection.nodes.map((e) => ({
+            const nodes = data.calendarEvents_connection?.nodes ?? []
+            const strapiEvents: CalEvent[] = nodes.map((e) => ({
                 id: e.documentId,
                 title: e.title,
                 description: e.description,
