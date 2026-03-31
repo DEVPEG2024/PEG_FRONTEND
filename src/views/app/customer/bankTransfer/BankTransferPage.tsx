@@ -59,7 +59,7 @@ const BankTransferPage = () => {
         variables: { documentId: id },
       },
     })
-      .then((res) => setInvoice(res.data.data.invoice))
+      .then((res) => setInvoice(res.data?.data?.invoice))
       .catch(() => setError('Impossible de charger la facture.'))
       .finally(() => setLoading(false))
   }, [id])

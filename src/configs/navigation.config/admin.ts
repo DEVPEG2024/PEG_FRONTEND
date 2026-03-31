@@ -24,7 +24,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.calendar",
     icon: "calendar",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
   {
@@ -34,7 +34,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.projects",
     icon: "projects",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
   {

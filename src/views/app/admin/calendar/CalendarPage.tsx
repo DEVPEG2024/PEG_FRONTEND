@@ -1243,7 +1243,7 @@ const CalendarPage = () => {
     const loadProjects = useCallback(async () => {
         try {
             const data = await unwrapData(apiGetProjects())
-            setProjects(data.projects_connection.nodes)
+            setProjects(data.projects_connection?.nodes ?? [])
         } catch { /* projects are optional */ }
     }, [])
 

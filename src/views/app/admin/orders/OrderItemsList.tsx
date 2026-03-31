@@ -136,7 +136,7 @@ const OrderItemsList = () => {
   };
 
   const handleShowProject = (orderItem: OrderItem) => {
-    navigate(`/common/projects/details/${orderItem.project.documentId}`);
+    navigate(`/common/projects/details/${orderItem.project?.documentId}`);
   };
 
   const handleCreateProject = async (orderItem: OrderItem) => {
@@ -147,7 +147,7 @@ const OrderItemsList = () => {
         product?.checklist?.items?.map((label: string) => ({ label, done: false })) ?? [];
       const { createProject }: { createProject: Project } = await unwrapData(
         apiCreateProject({
-          name: `Projet - ${orderItem.product.name}`,
+          name: `Projet - ${orderItem.product?.name ?? ''}`,
           description: '',
           startDate: new Date(),
           endDate: new Date(),

@@ -361,7 +361,7 @@ const TransactionsList = () => {
                             <button
                               onClick={() =>
                                 navigate(
-                                  `/common/projects/details/${tx.project.documentId}`
+                                  `/common/projects/details/${tx.project?.documentId}`
                                 )
                               }
                               className="max-w-full truncate text-left text-xs text-sky-400/75 transition hover:text-sky-300"

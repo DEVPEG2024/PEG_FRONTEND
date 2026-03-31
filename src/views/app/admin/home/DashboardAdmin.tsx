@@ -175,7 +175,7 @@ function CalendarContent() {
     import('@/services/CalendarEventService').then(({ apiGetCalendarEvents }) =>
       import('@/utils/serviceHelper').then(({ unwrapData }) =>
         unwrapData(apiGetCalendarEvents()).then((data) => {
-          const evts = data.calendarEvents_connection.nodes.map((e: any) => ({
+          const evts = (data.calendarEvents_connection?.nodes ?? []).map((e: any) => ({
             id: e.documentId, title: e.title, start: e.startDate, end: e.endDate, category: e.category,
           }))
           setEvents(evts)

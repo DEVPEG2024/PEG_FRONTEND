@@ -101,7 +101,7 @@ const BannerCard = ({
               color: '#6b9eff', fontSize: '11px', fontWeight: 600,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px',
             }}>
-              {banner.customer.name}
+              {banner.customer?.name}
             </span>
           </div>
         )}

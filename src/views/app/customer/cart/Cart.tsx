@@ -66,7 +66,7 @@ function Cart() {
     const fetchSuggestions = async () => {
       try {
         const res = await apiGetProducts({ pagination: { page: 1, pageSize: 100 }, searchTerm: '' });
-        const all: Product[] = res.data.data.products_connection.nodes.filter(
+        const all: Product[] = (res.data?.data?.products_connection?.nodes ?? []).filter(
           (p: Product) => p.active && p.inCatalogue
         );
         const cartIds = new Set(cart.map((c) => c.product.documentId));
