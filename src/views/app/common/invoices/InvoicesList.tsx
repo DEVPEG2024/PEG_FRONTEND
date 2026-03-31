@@ -1,11 +1,11 @@
 import { Container, EmptyState } from '@/components/shared';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Invoice } from '@/@types/invoice';
 import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
 import reducer, { deleteInvoice, getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
 import ModalEditInvoice from './modals/ModalEditInvoice';
-import ModalPrintInvoice from './modals/ModalPrintInvoice';
+const ModalPrintInvoice = lazy(() => import('./modals/ModalPrintInvoice'));
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
@@ -172,7 +172,9 @@ const InvoicesList = () => {
         <ModalEditInvoice editInvoiceDialog={editInvoiceDialog} selectedInvoice={selectedInvoice} setEditInvoiceDialog={setEditInvoiceDialog} setSelectedInvoice={setSelectedInvoice} updateInvoice={updateInvoice} dispatch={dispatch} loading={loading} />
       )}
       {selectedInvoice && printInvoiceDialog && (
-        <ModalPrintInvoice printInvoiceDialog={printInvoiceDialog} selectedInvoice={selectedInvoice} setPrintInvoiceDialog={setPrintInvoiceDialog} setSelectedInvoice={setSelectedInvoice} dispatch={dispatch} />
+        <Suspense fallback={null}>
+          <ModalPrintInvoice printInvoiceDialog={printInvoiceDialog} selectedInvoice={selectedInvoice} setPrintInvoiceDialog={setPrintInvoiceDialog} setSelectedInvoice={setSelectedInvoice} dispatch={dispatch} />
+        </Suspense>
       )}
     </Container>
   );

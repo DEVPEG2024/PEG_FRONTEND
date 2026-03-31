@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Dialog } from '@/components/ui';
 import {
   useAppDispatch,
@@ -8,7 +9,7 @@ import {
 } from '../show/store';
 import { Form } from '@/@types/form';
 
-import ShowForm from './ShowForm';
+const ShowForm = lazy(() => import('./ShowForm'));
 import {
   CartItemFormAnswerEdition,
   editFormAnswerCartItem,
@@ -75,12 +76,14 @@ function ModalCompleteForm({
           </button>
         </div>
         <div className="dialog-formbuilder-body">
-          <ShowForm
-            onSubmit={onSubmit}
-            fields={form.fields}
-            formAnswer={formAnswer}
-            readOnly={false}
-          />
+          <Suspense fallback={<div>Chargement…</div>}>
+            <ShowForm
+              onSubmit={onSubmit}
+              fields={form.fields}
+              formAnswer={formAnswer}
+              readOnly={false}
+            />
+          </Suspense>
         </div>
       </Dialog>
     </div>

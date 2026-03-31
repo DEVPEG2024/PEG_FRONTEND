@@ -1,7 +1,9 @@
+import { lazy, Suspense } from 'react';
 import { Dialog } from '@/components/ui';
 import { useAppDispatch, setOrderItemFormDialog } from '../store';
-import ShowForm from '@/views/app/customer/products/modal/ShowForm';
 import { FormAnswer } from '@/@types/formAnswer';
+
+const ShowForm = lazy(() => import('@/views/app/customer/products/modal/ShowForm'));
 
 function ModalShowForm({
   formAnswer,
@@ -36,12 +38,14 @@ function ModalShowForm({
           </button>
         </div>
         <div className="dialog-formbuilder-body">
-          <ShowForm
-            onSubmit={() => {}}
-            fields={formAnswer.form.fields}
-            formAnswer={formAnswer}
-            readOnly={true}
-          />
+          <Suspense fallback={<div>Chargement…</div>}>
+            <ShowForm
+              onSubmit={() => {}}
+              fields={formAnswer.form.fields}
+              formAnswer={formAnswer}
+              readOnly={true}
+            />
+          </Suspense>
         </div>
       </Dialog>
     </div>

@@ -14,7 +14,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.home",
     icon: "home",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
   {
@@ -44,7 +44,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.leads",
     icon: "leads",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
 
@@ -56,7 +56,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "",
     icon: "customers",
     type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [
       {
         key: "admin.customers",
@@ -65,7 +65,7 @@ const navigationAdmin: NavigationTree[] = [
         translateKey: "nav.customers",
         icon: "customers",
         type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
+        authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
             key: "admin.customers.list",
@@ -74,7 +74,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.customersList",
             icon: "customers",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -84,7 +84,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.customersCategories",
             icon: "customers",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
         ],
@@ -100,7 +100,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "",
     icon: "producers",
     type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [
       {
         key: "admin.producers",
@@ -109,7 +109,7 @@ const navigationAdmin: NavigationTree[] = [
         translateKey: "nav.producers",
         icon: "producers",
         type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
+        authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
             key: "admin.producers.list",
@@ -118,7 +118,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.producersList",
             icon: "producers",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -128,7 +128,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.producersCategories",
             icon: "producers",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
         ],
@@ -144,7 +144,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "",
     icon: "store",
     type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [
       {
         key: "admin.store",
@@ -153,7 +153,7 @@ const navigationAdmin: NavigationTree[] = [
         translateKey: "nav.store",
         icon: "store",
         type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
+        authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
             key: "admin.products",
@@ -162,7 +162,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.storeList",
             icon: "store",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -172,7 +172,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.storeCategories",
             icon: "store",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -182,7 +182,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.storeOrders",
             icon: "store",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
         ],
@@ -198,7 +198,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "",
     icon: "categories",
     type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [
       {
         key: "admin.attributes",
@@ -207,7 +207,7 @@ const navigationAdmin: NavigationTree[] = [
         translateKey: "nav.attributes",
         icon: "categories",
         type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
+        authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
             key: "admin.products.sizes",
@@ -216,7 +216,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.storeSizes",
             icon: "categories",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -226,7 +226,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.storeColors",
             icon: "categories",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -236,7 +236,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.forms",
             icon: "forms",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -246,7 +246,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.checklists",
             icon: "checklist",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
         ],
@@ -262,7 +262,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.invoices",
     icon: "invoices",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
 
@@ -274,7 +274,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.banners",
     icon: "banners",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
 
@@ -286,7 +286,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "",
     icon: "ia",
     type: NAV_ITEM_TYPE_TITLE,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [
       {
         key: "admin.ia",
@@ -295,7 +295,7 @@ const navigationAdmin: NavigationTree[] = [
         translateKey: "nav.ia",
         icon: "ia",
         type: NAV_ITEM_TYPE_ITEM,
-        authority: [SUPER_ADMIN],
+        authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
             key: "admin.ia.images",
@@ -304,7 +304,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.iaImages",
             icon: "iaImages",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -314,7 +314,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.iaChatbot",
             icon: "chatbot",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -324,7 +324,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.iaContent",
             icon: "iaContent",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
           {
@@ -334,7 +334,7 @@ const navigationAdmin: NavigationTree[] = [
             translateKey: "nav.iaProductAgent",
             icon: "iaProductAgent",
             type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN],
+            authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
           },
         ],
@@ -350,7 +350,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.users",
     icon: "users",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
   {
@@ -370,7 +370,7 @@ const navigationAdmin: NavigationTree[] = [
     translateKey: "nav.settings",
     icon: "settings",
     type: NAV_ITEM_TYPE_ITEM,
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
 ];

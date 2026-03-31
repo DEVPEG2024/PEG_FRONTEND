@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Container from '@/components/shared/Container';
 import { HiBan, HiCheck, HiPencil, HiPrinter, HiUpload, HiDocumentText, HiTrash } from 'react-icons/hi';
@@ -21,7 +21,7 @@ import { Invoice } from '@/@types/invoice';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
-import ModalPrintInvoice from '@/views/app/common/invoices/modals/ModalPrintInvoice';
+const ModalPrintInvoice = lazy(() => import('@/views/app/common/invoices/modals/ModalPrintInvoice'));
 import { stateData } from '@/views/app/common/invoices/constants';
 import createUID from '@/components/ui/utils/createUid';
 import { toast } from 'react-toastify';
@@ -302,13 +302,15 @@ const Invoices = () => {
         />
       )}
       {selectedInvoice && printInvoiceDialog && (
-        <ModalPrintInvoice
-          printInvoiceDialog={printInvoiceDialog}
-          selectedInvoice={selectedInvoice}
-          setPrintInvoiceDialog={setPrintProjectInvoiceDialog}
-          setSelectedInvoice={setSelectedProjectInvoice}
-          dispatch={dispatch}
-        />
+        <Suspense fallback={null}>
+          <ModalPrintInvoice
+            printInvoiceDialog={printInvoiceDialog}
+            selectedInvoice={selectedInvoice}
+            setPrintInvoiceDialog={setPrintProjectInvoiceDialog}
+            setSelectedInvoice={setSelectedProjectInvoice}
+            dispatch={dispatch}
+          />
+        </Suspense>
       )}
     </Container>
   );
