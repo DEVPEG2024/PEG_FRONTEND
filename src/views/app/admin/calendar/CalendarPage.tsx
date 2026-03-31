@@ -286,7 +286,13 @@ const getOriginalId = (id: string | number) => {
 }
 
 const eventsOfDay = (events: CalEvent[], day: Dayjs) =>
-    events.filter((e) => sameDay(e.start, day)).sort((a, b) => a.start.valueOf() - b.start.valueOf())
+    events.filter((e) => {
+        // Show event on all days it spans (multi-day support)
+        const startDay = e.start.startOf('day')
+        const endDay = e.end.startOf('day')
+        const d = day.startOf('day')
+        return d.valueOf() >= startDay.valueOf() && d.valueOf() <= endDay.valueOf()
+    }).sort((a, b) => a.start.valueOf() - b.start.valueOf())
 
 // ─── Mini Calendar ─────────────────────────────────────────────────────────────
 function MiniCalendar({ current, selected, onChange }: { current: Dayjs; selected: Dayjs; onChange: (d: Dayjs) => void }) {
