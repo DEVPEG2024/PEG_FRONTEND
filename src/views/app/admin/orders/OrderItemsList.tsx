@@ -18,7 +18,7 @@ import { apiCreateProject } from '@/services/ProjectServices';
 import { apiUpdateOrderItem } from '@/services/OrderItemServices';
 import { ChecklistItem } from '@/@types/checklist';
 import { Project } from '@/@types/project';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
 import {
   HiOutlineSearch,
@@ -381,7 +381,7 @@ const OrderItemsList = () => {
                         onClick={() => handleCreateProject(order)}
                         icon={creatingProject === order.documentId ? <span style={{ fontSize: 10 }}>…</span> : <HiPlus size={15} />}
                         color="#a78bfa" title="Créer un projet"
-                        disabled={!hasRole(user, [SUPER_ADMIN]) || creatingProject === order.documentId}
+                        disabled={!hasRole(user, [SUPER_ADMIN, ADMIN]) || creatingProject === order.documentId}
                       />
                     )}
                     <ActionBtn
@@ -390,7 +390,7 @@ const OrderItemsList = () => {
                       color={order.state === 'pending' ? '#4ade80' : '#fbbf24'}
                       title={order.state === 'pending' ? 'Marquer comme terminée' : 'Remettre en attente'}
                     />
-                    <ActionBtn onClick={() => handleDeleteOrderItem(order)} icon={<HiTrash size={15} />} color="#f87171" title="Supprimer" disabled={!hasRole(user, [SUPER_ADMIN])} />
+                    <ActionBtn onClick={() => handleDeleteOrderItem(order)} icon={<HiTrash size={15} />} color="#f87171" title="Supprimer" disabled={!hasRole(user, [SUPER_ADMIN, ADMIN])} />
                   </div>
                 </div>
               );

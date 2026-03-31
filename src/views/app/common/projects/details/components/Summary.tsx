@@ -19,7 +19,7 @@ import {
   useAppSelector as useRootAppSelector,
 } from '@/store';
 import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import {
   useAppSelector,
   updateCurrentProject,
@@ -231,7 +231,7 @@ const Summary = ({ project }: { project: Project }) => {
                       <HiPhotograph style={{ fontSize: '48px', color: 'rgba(47,111,237,0.4)' }} />
                     </div>
                   )}
-                  {hasRole(user, [SUPER_ADMIN]) && (
+                  {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                     // Fix #4 : couleur via état React, plus de mutation DOM directe
                     <label
                       style={{
@@ -296,7 +296,7 @@ const Summary = ({ project }: { project: Project }) => {
                       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                         Description détaillée
                       </p>
-                      {hasRole(user, [SUPER_ADMIN]) && (
+                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                         <div>
                           {editDescription ? (
                             <Button size="sm" variant="solid" onClick={onEditComplete} loading={loading}>
@@ -310,7 +310,7 @@ const Summary = ({ project }: { project: Project }) => {
                         </div>
                       )}
                     </div>
-                    {hasRole(user, [SUPER_ADMIN]) && editDescription ? (
+                    {hasRole(user, [SUPER_ADMIN, ADMIN]) && editDescription ? (
                       <RichTextEditor value={description} onChange={onEdit} />
                     ) : (
                       <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.7 }}>

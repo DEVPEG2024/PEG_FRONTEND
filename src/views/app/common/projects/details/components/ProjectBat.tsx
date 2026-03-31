@@ -7,7 +7,7 @@ import { useAppSelector, getProjectById, useAppDispatch } from '../store';
 import { RootState, useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import { apiUploadFile } from '@/services/FileServices';
 import { apiUpdateBatFile, apiUpdateBatStatus } from '@/services/ProductServices';
 
@@ -41,7 +41,7 @@ const ProjectBat = () => {
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
-  const isSuperAdmin = hasRole(user, [SUPER_ADMIN]);
+  const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);

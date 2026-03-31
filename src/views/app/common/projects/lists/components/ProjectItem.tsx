@@ -12,7 +12,7 @@ import { RootState, useAppSelector } from '@/store';
 import { useState } from 'react';
 import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
-import { CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
+import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
 
 const statusStyles: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -37,7 +37,7 @@ const ProjectItem = ({
   handleDeleteProject?: (project: Project) => void;
 }) => {
   const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
-  const isSuperAdmin = hasRole(user, [SUPER_ADMIN]);
+  const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
 

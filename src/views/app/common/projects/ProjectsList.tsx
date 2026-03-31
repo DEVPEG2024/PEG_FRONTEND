@@ -227,7 +227,7 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
 const ProjectsList = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const isAdminOrSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
-  const isSuperAdmin = hasRole(user, [SUPER_ADMIN]);
+  const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(pageSelections[4].value);
   const [searchTerm, setSearchTerm] = useState('');

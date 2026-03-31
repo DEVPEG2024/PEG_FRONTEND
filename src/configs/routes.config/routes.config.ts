@@ -11,21 +11,21 @@ const protectedAdminRoutes = [
     key: "admin.leads",
     path: "/admin/leads",
     component: lazy(() => import("@/views/app/admin/leads/LeadsPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   // calendar
   {
     key: "admin.calendar",
     path: "/admin/calendar",
     component: lazy(() => import("@/views/app/admin/calendar/CalendarPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   // customers
   {
     key: "admin.customers.list",
     path: "/admin/customers/list",
     component: lazy(() => import("@/views/app/admin/customers/lists/CustomersList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.customers.add",
@@ -33,7 +33,7 @@ const protectedAdminRoutes = [
     component: lazy(
       () => import("@/views/app/admin/customers/lists/EditCustomer")
     ),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.customers.edit",
@@ -41,20 +41,20 @@ const protectedAdminRoutes = [
     component: lazy(
       () => import("@/views/app/admin/customers/lists/EditCustomer")
     ),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.customers.categories",
     path: "/admin/customers/categories",
     component: lazy(() => import("@/views/app/admin/customers/categories/CustomerCategoriesList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   // producers
   {
     key: "admin.producers.list",
     path: "/admin/producers/list",
     component: lazy(() => import("@/views/app/admin/producers/lists/ProducersList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.producers.add",
@@ -62,7 +62,7 @@ const protectedAdminRoutes = [
     component: lazy(
       () => import("@/views/app/admin/producers/lists/EditProducer")
     ),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.producers.edit",
@@ -70,13 +70,13 @@ const protectedAdminRoutes = [
     component: lazy(
       () => import("@/views/app/admin/producers/lists/EditProducer")
     ),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.producers.categories",
     path: "/admin/producers/categories",
     component: lazy(() => import("@/views/app/admin/producers/categories/ProducerCategoriesList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
 
   // products
@@ -84,83 +84,83 @@ const protectedAdminRoutes = [
     key: "admin.products",
     path: "/admin/products",
     component: lazy(() => import("@/views/app/admin/products/ProductsList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.new",
     path: "/admin/products/new",
     component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.edit",
     path: "/admin/products/edit/:documentId",
     component: lazy(() => import("@/views/app/admin/products/product/EditProduct")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.categories",
     path: "/admin/products/categories",
     component: lazy(() => import("@/views/app/admin/products/categories/ProductCategories")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.categories.products",
     path: "/admin/products/categories/:documentId",
     component: lazy(() => import("@/views/app/admin/products/categories/AdminProductsOfCategory")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.sizes",
     path: "/admin/products/sizes",
     component: lazy(() => import("@/views/app/admin/products/sizes/SizesList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.products.colors",
     path: "/admin/products/colors",
     component: lazy(() => import("@/views/app/admin/products/colors/ColorsList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   //orders
   {
     key: "admin.store.orders",
     path: "/admin/store/orders",
     component: lazy(() => import("@/views/app/admin/orders/OrderItemsList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   //forms
   {
     key: "admin.forms",
     path: "/admin/forms",
     component: lazy(() => import("@/views/app/admin/forms/FormsList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   //checklists
   {
     key: "admin.checklists",
     path: "/admin/checklists",
     component: lazy(() => import("@/views/app/admin/checklists/ChecklistsList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   //users
   {
     key: "admin.users",
     path: "/admin/users",
     component: lazy(() => import("@/views/app/admin/users/UsersList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.users.add",
     path: "/admin/users/add",
     component: lazy(() => import("@/views/app/admin/users/EditUser")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.users.edit",
     path: "/admin/users/edit/:documentId",
     component: lazy(() => import("@/views/app/admin/users/EditUser")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   //invoices
   {
@@ -174,39 +174,39 @@ const protectedAdminRoutes = [
     key: "admin.banners",
     path: "/admin/banners",
     component: lazy(() => import("@/views/app/admin/banners/BannersList")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   // chatbot (legacy route kept for backward compat)
   {
     key: "admin.chatbot",
     path: "/admin/chatbot",
     component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   // IA section
   {
     key: "admin.ia.images",
     path: "/admin/ia/images",
     component: lazy(() => import("@/views/app/admin/ia/IAImagesPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.ia.chatbot",
     path: "/admin/ia/chatbot",
     component: lazy(() => import("@/views/app/admin/chatbot/ChatbotPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.ia.content",
     path: "/admin/ia/content",
     component: lazy(() => import("@/views/app/admin/ia/IAContentPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
   {
     key: "admin.ia.product-agent",
     path: "/admin/ia/product-agent",
     component: lazy(() => import("@/views/app/admin/ia/IAProductAgentPage")),
-    authority: [SUPER_ADMIN],
+    authority: [SUPER_ADMIN, ADMIN],
   },
 ];
 const protectedCustomersRoutes = [

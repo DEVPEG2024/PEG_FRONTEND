@@ -140,7 +140,7 @@ const ProjectHeader = ({ project }: { project: Project }) => {
               </button>
             )}
 
-            {hasRole(user, [SUPER_ADMIN]) && (
+            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
               <button
                 onClick={handleEditProject}
                 style={{
@@ -166,7 +166,7 @@ const ProjectHeader = ({ project }: { project: Project }) => {
         {/* Tabs row */}
         <QuickFilterTab />
       </Container>
-      {hasRole(user, [SUPER_ADMIN]) && <ModalEditProject />}
+      {hasRole(user, [SUPER_ADMIN, ADMIN]) && <ModalEditProject />}
     </div>
   );
 };

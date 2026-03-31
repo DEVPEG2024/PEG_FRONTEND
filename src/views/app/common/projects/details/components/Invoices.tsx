@@ -251,12 +251,12 @@ const Invoices = () => {
                       <button style={iconBtn()} onClick={() => handlePrintInvoice(invoice)}>
                         <HiPrinter size={14} />
                       </button>
-                      {hasRole(user, [SUPER_ADMIN]) && (
+                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                         <button style={iconBtn()} onClick={() => handleUpdateInvoice(invoice)}>
                           <HiPencil size={14} />
                         </button>
                       )}
-                      {hasRole(user, [SUPER_ADMIN]) && (
+                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                         <button
                           style={{ ...iconBtn(true), opacity: isCanceled ? 0.4 : 1, cursor: isCanceled ? 'not-allowed' : 'pointer' }}
                           onClick={() => !isCanceled && handleCancelInvoice(invoice)}
@@ -266,7 +266,7 @@ const Invoices = () => {
                           <HiBan size={14} />
                         </button>
                       )}
-                      {hasRole(user, [SUPER_ADMIN]) && (
+                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                         <button
                           style={iconBtn(true)}
                           onClick={() => handleDeleteInvoice(invoice)}
@@ -290,7 +290,7 @@ const Invoices = () => {
         </div>
         <DetailsRight />
       </div>
-      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN]) && (
+      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN, ADMIN]) && (
         <ModalEditInvoice
           editInvoiceDialog={editInvoiceDialog}
           selectedInvoice={selectedInvoice}

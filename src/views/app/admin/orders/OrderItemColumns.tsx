@@ -3,7 +3,7 @@ import { HiBan, HiCheck, HiInformationCircle, HiPlus, HiTrash } from 'react-icon
 import { OrderItem } from '@/@types/orderItem';
 import { SizeAndColorSelection } from '@/@types/product';
 import { User } from '@/@types/user';
-import { SUPER_ADMIN } from '@/constants/roles.constant';
+import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
 import { toTTC } from '@/utils/priceHelpers';
 
@@ -132,7 +132,7 @@ export const useColumns = (
                   size="sm"
                   variant="twoTone"
                   icon={<HiPlus size={20} />}
-                  disabled={!hasRole(user, [SUPER_ADMIN])}
+                  disabled={!hasRole(user, [SUPER_ADMIN, ADMIN])}
                 />
               </Tooltip>
             )}
@@ -204,7 +204,7 @@ export const useColumns = (
                 size="sm"
                 variant="twoTone"
                 icon={<HiTrash size={20} />}
-                disabled={!hasRole(user, [SUPER_ADMIN])}
+                disabled={!hasRole(user, [SUPER_ADMIN, ADMIN])}
               />
             </Tooltip>
           </div>
