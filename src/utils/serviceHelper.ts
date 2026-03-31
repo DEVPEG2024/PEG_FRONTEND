@@ -18,9 +18,15 @@ export type PageInfo = {
 
 export async function unwrapData<T>(promise: Promise<AxiosResponse<ApiResponse<T> & { errors?: { message: string }[] }>>): Promise<T> {
     const response = await promise;
-    if ((response.data as any).errors?.length) {
-        throw new Error((response.data as any).errors[0]?.message ?? 'GraphQL error');
+    const errors = (response.data as any).errors;
+    const data = response.data.data;
+    if (errors?.length) {
+        if (data) {
+            console.warn('[GraphQL] Réponse partielle :', errors.map((e: any) => e.message).join(', '));
+        } else {
+            throw new Error(errors[0]?.message ?? 'GraphQL error');
+        }
     }
-    return response.data.data;
+    return data;
 }
   
