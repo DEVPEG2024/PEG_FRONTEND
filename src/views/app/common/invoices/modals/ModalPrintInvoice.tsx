@@ -41,19 +41,19 @@ const ModalPrintInvoice = ({
       family: 'Roboto',
       fonts: [
         {
-          src: '../../../../assets/fonts/Roboto/Roboto-Regular.ttf',
+          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf',
         },
         {
-          src: '../../../../assets/fonts/Roboto/Roboto-Bold.ttf',
+          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf',
           fontWeight: 'bold',
         },
         {
-          src: '../../../../assets/fonts/Roboto/Roboto-Italic.ttf',
+          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf',
           fontWeight: 'normal',
           fontStyle: 'italic',
         },
         {
-          src: '../../../../assets/fonts/Roboto/Roboto-BoldItalic.ttf',
+          src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bolditalic-webfont.ttf',
           fontWeight: 'bold',
           fontStyle: 'italic',
         },
@@ -85,7 +85,7 @@ const ModalPrintInvoice = ({
                 <View style={styles.page}>
                   <View style={styles.section}>
                     <Image
-                      src={'../../../../../../img/logo/logo-nova.png'}
+                      src={'/img/logo/logo-nova.png'}
                       style={{ width: '200px', height: '70px' }}
                     />
                     <Text
