@@ -9,12 +9,13 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self';
+        script-src 'self' 'unsafe-inline';
         style-src 'self' 'unsafe-inline';
         img-src 'self' data: blob: https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
-        connect-src 'self' https://api.mypeg.fr https://api-int.mypeg.fr https://*.stripe.com;
-        frame-src https://*.stripe.com;
-        font-src 'self';
+        connect-src 'self' https://api.mypeg.fr https://api-int.mypeg.fr https://*.stripe.com https://cdnjs.cloudflare.com;
+        frame-src blob: https://*.stripe.com;
+        font-src 'self' https://cdnjs.cloudflare.com;
+        worker-src blob:;
       "
     />
     <meta
