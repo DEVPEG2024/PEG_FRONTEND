@@ -6,7 +6,9 @@ import HomeProductsList from './HomeProductsList';
 import { BsArrowRight } from 'react-icons/bs';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
-import { HiOutlineClipboardList, HiOutlineCheckCircle, HiOutlineCollection } from 'react-icons/hi';
+import { HiOutlineClipboardList, HiOutlineCheckCircle, HiOutlineCollection, HiOutlineClock } from 'react-icons/hi';
+import { Project } from '@/@types/project';
+import dayjs from 'dayjs';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -269,6 +271,101 @@ const DashboardCustomer = () => {
                       </span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Projets en cours */}
+            {projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length > 0 && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Suivi
+                    </p>
+                    <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
+                      Mes projets en cours
+                    </h3>
+                  </div>
+                  <Link to="/customer/projects">
+                    <button style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      padding: '8px 14px',
+                      color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}>
+                      Tous les projets <BsArrowRight size={12} />
+                    </button>
+                  </Link>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {projects
+                    .filter((p: Project) => p.state !== 'fulfilled' && p.state !== 'canceled')
+                    .map((p: Project) => {
+                      const stateLabels: Record<string, { label: string; color: string; bg: string }> = {
+                        pending: { label: 'En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+                        waiting: { label: 'En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+                        sav: { label: 'SAV', color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
+                      };
+                      const stateInfo = stateLabels[p.state] || { label: 'En cours', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)' };
+                      return (
+                        <div
+                          key={p.documentId}
+                          onClick={() => navigate(`/common/projects/details/${p.documentId}`)}
+                          style={{
+                            background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                            border: '1px solid rgba(255,255,255,0.07)',
+                            borderRadius: '12px',
+                            padding: '14px 18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            cursor: 'pointer',
+                            fontFamily: 'Inter, sans-serif',
+                            transition: 'border-color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              width: '36px', height: '36px', borderRadius: '10px',
+                              background: 'rgba(47,111,237,0.15)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                            }}>
+                              <HiOutlineClock size={18} color="#6b9eff" />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.name}
+                              </p>
+                              {p.endDate && (
+                                <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                                  Échéance : {dayjs(p.endDate).format('DD/MM/YYYY')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                            <span style={{
+                              fontSize: '11px', fontWeight: 700,
+                              color: stateInfo.color,
+                              background: stateInfo.bg,
+                              borderRadius: '8px', padding: '4px 10px',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {stateInfo.label}
+                            </span>
+                            <BsArrowRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             )}
