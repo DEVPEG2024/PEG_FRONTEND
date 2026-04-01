@@ -86,14 +86,19 @@ function ModalEditBanner() {
 
   const fetchImage = async (): Promise<void> => {
     setImageLoading(true);
-    if (selectedBanner?.image) {
-      const imageLoaded: PegFile = (
-        await apiLoadPegFilesAndFiles([selectedBanner.image])
-      )[0];
+    try {
+      if (selectedBanner?.image) {
+        const imageLoaded: PegFile = (
+          await apiLoadPegFilesAndFiles([selectedBanner.image])
+        )[0];
 
-      setImage(imageLoaded);
+        setImage(imageLoaded);
+      }
+    } catch (error) {
+      console.error('Erreur chargement image bannière:', error);
+    } finally {
+      setImageLoading(false);
     }
-    setImageLoading(false);
   };
 
   const handleSubmit = async (e: any) => {

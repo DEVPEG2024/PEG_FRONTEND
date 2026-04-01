@@ -23,6 +23,7 @@ export async function apiGetBanners(data: GetBannersRequest = {pagination: {page
                 documentId
                 image {
                     documentId
+                    name
                     url
                 }
                 name
@@ -68,6 +69,7 @@ export async function apiCreateBanner(data: CreateBannerRequest): Promise<AxiosR
             documentId
             image {
                 documentId
+                name
                 url
             }
             name
@@ -130,6 +132,7 @@ export async function apiUpdateBanner(banner: Partial<Banner>): Promise<AxiosRes
             documentId
             image {
                 documentId
+                name
                 url
             }
             name
