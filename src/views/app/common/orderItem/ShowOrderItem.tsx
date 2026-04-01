@@ -126,18 +126,18 @@ const ShowOrderItem = () => {
                     )}
                   </div>
                 ) : (
-                  orderItem.sizeAndColorSelections?.length > 0 ? (
-                  <div className="mt-4 flex flex-row gap-4 items-center">
-                    <span>Quantité</span>
-                    <Input
-                      name="Default"
-                      value={orderItem.sizeAndColorSelections[0].quantity}
-                      type="number"
-                      autoComplete="off"
-                      disabled={true}
-                    />
-                  </div>
-                  ) : null
+                  orderItem.sizeAndColorSelections?.length > 0 && (
+                    <div className="mt-4 flex flex-row gap-4 items-center">
+                      <span>Quantité</span>
+                      <Input
+                        name="Default"
+                        value={orderItem.sizeAndColorSelections[0].quantity}
+                        type="number"
+                        autoComplete="off"
+                        disabled={true}
+                      />
+                    </div>
+                  )
                 )}
 
                 {orderItem.formAnswer?.form && (
