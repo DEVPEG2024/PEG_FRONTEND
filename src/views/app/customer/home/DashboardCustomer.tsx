@@ -329,32 +329,19 @@ const DashboardCustomer = () => {
                           onMouseEnter={(e) => { e.currentTarget.style.borderColor = stateInfo.border; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                         >
-                          {/* Image du projet */}
-                          <div style={{
-                            width: '100%', height: '120px',
-                            background: imageUrl ? `url(${imageUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #1e3a5f 0%, #0f1c2e 100%)',
-                            position: 'relative',
-                          }}>
-                            {!imageUrl && (
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <HiOutlineCollection size={32} color="rgba(255,255,255,0.15)" />
-                              </div>
-                            )}
-                            {/* Badge statut */}
-                            <span style={{
-                              position: 'absolute', top: '10px', right: '10px',
-                              fontSize: '10px', fontWeight: 700,
-                              color: stateInfo.color,
-                              background: stateInfo.bg,
-                              backdropFilter: 'blur(8px)',
-                              border: `1px solid ${stateInfo.border}`,
-                              borderRadius: '8px', padding: '4px 10px',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              {stateInfo.label}
-                            </span>
-                          </div>
-                          {/* Infos */}
+                          {/* Image du projet — pleine carte */}
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={p.name}
+                              style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #1e3a5f 0%, #0f1c2e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <HiOutlineCollection size={40} color="rgba(255,255,255,0.15)" />
+                            </div>
+                          )}
+                          {/* Infos + barre statut colorée en bas */}
                           <div style={{ padding: '14px 16px' }}>
                             <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.92)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {p.name}
@@ -367,7 +354,15 @@ const DashboardCustomer = () => {
                                 </p>
                               </div>
                             )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: stateInfo.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: stateInfo.color }}>
+                                {stateInfo.label}
+                              </span>
+                            </div>
                           </div>
+                          {/* Barre colorée statut */}
+                          <div style={{ height: '3px', background: stateInfo.color }} />
                         </div>
                       );
                     })}
