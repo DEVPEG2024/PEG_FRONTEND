@@ -128,7 +128,7 @@ function ModalEditProject() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(updateCurrentProject(formData));
+    await dispatch(updateCurrentProject(formData));
     handleClose();
   };
 

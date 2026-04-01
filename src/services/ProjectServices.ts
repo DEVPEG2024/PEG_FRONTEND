@@ -132,15 +132,23 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
     }
   `,
   {documentId, ...data} = project,
-  variables = {
+  cleanData: Record<string, any> = { ...data }
+
+  // Map relations to documentId arrays for Strapi GraphQL
+  if (cleanData.invoices) cleanData.invoices = cleanData.invoices.map((invoice: any) => invoice.documentId);
+  if (cleanData.comments) cleanData.comments = cleanData.comments.map((comment: any) => comment.documentId);
+  if (cleanData.tasks) cleanData.tasks = cleanData.tasks.map((task: any) => task.documentId);
+  if (cleanData.devis) cleanData.devis = cleanData.devis.map((d: any) => d.id);
+
+  // Remove fields that are not part of ProjectInput
+  delete cleanData.orderItem;
+  delete cleanData.checklistItems;
+  delete cleanData.customerImages;
+  delete cleanData.images;
+
+  const variables = {
     documentId,
-    data: {
-        ...data,
-        invoices: data.invoices?.map((invoice) => invoice.documentId),
-        comments: data.comments?.map((comment) => comment.documentId),
-        tasks: data.tasks?.map((task) => task.documentId),
-        devis: data.devis?.map((d) => d.id),
-    }
+    data: cleanData,
   }
     return ApiService.fetchData<ApiResponse<{updateProject: Project}>>({
         url: API_GRAPHQL_URL,
