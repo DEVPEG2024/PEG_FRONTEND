@@ -302,16 +302,17 @@ const DashboardCustomer = () => {
                     </button>
                   </Link>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
                   {projects
                     .filter((p: Project) => p.state !== 'fulfilled' && p.state !== 'canceled')
                     .map((p: Project) => {
-                      const stateLabels: Record<string, { label: string; color: string; bg: string }> = {
-                        pending: { label: 'En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-                        waiting: { label: 'En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-                        sav: { label: 'SAV', color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
+                      const stateLabels: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                        pending:   { label: 'En cours',   color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
+                        waiting:   { label: 'En attente', color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)' },
+                        sav:       { label: 'SAV',        color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
                       };
-                      const stateInfo = stateLabels[p.state] || { label: 'En cours', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)' };
+                      const stateInfo = stateLabels[p.state] || { label: 'En cours', color: '#6b9eff', bg: 'rgba(47,111,237,0.15)', border: 'rgba(47,111,237,0.35)' };
+                      const imageUrl = p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url;
                       return (
                         <div
                           key={p.documentId}
@@ -319,49 +320,53 @@ const DashboardCustomer = () => {
                           style={{
                             background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
                             border: '1px solid rgba(255,255,255,0.07)',
-                            borderRadius: '12px',
-                            padding: '14px 18px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px',
+                            borderRadius: '14px',
+                            overflow: 'hidden',
                             cursor: 'pointer',
                             fontFamily: 'Inter, sans-serif',
-                            transition: 'border-color 0.15s',
+                            transition: 'border-color 0.2s, transform 0.2s',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = stateInfo.border; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              width: '36px', height: '36px', borderRadius: '10px',
-                              background: 'rgba(47,111,237,0.15)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                            }}>
-                              <HiOutlineClock size={18} color="#6b9eff" />
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {p.name}
-                              </p>
-                              {p.endDate && (
-                                <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
-                                  Échéance : {dayjs(p.endDate).format('DD/MM/YYYY')}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                          {/* Image du projet */}
+                          <div style={{
+                            width: '100%', height: '120px',
+                            background: imageUrl ? `url(${imageUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #1e3a5f 0%, #0f1c2e 100%)',
+                            position: 'relative',
+                          }}>
+                            {!imageUrl && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <HiOutlineCollection size={32} color="rgba(255,255,255,0.15)" />
+                              </div>
+                            )}
+                            {/* Badge statut */}
                             <span style={{
-                              fontSize: '11px', fontWeight: 700,
+                              position: 'absolute', top: '10px', right: '10px',
+                              fontSize: '10px', fontWeight: 700,
                               color: stateInfo.color,
                               background: stateInfo.bg,
+                              backdropFilter: 'blur(8px)',
+                              border: `1px solid ${stateInfo.border}`,
                               borderRadius: '8px', padding: '4px 10px',
                               whiteSpace: 'nowrap',
                             }}>
                               {stateInfo.label}
                             </span>
-                            <BsArrowRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                          </div>
+                          {/* Infos */}
+                          <div style={{ padding: '14px 16px' }}>
+                            <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.92)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.name}
+                            </p>
+                            {p.endDate && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                                <HiOutlineClock size={13} color="rgba(255,255,255,0.35)" />
+                                <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                                  Échéance : {dayjs(p.endDate).format('DD/MM/YYYY')}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
