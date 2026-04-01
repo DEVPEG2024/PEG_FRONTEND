@@ -2,13 +2,14 @@ import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
-import { HiOutlineClipboardList, HiOutlineCheckCircle } from 'react-icons/hi';
+import { HiOutlineClipboardList, HiOutlineCheckCircle, HiOutlineClock, HiOutlineCollection } from 'react-icons/hi';
 import { MdOutlinePool } from 'react-icons/md';
 import { BsArrowRight } from 'react-icons/bs';
-import ProjectItem from '../../common/projects/lists/components/ProjectItem';
 import { apiGetPoolProjects } from '@/services/ProjectServices';
+import { Project } from '@/@types/project';
+import dayjs from 'dayjs';
 import reducer, {
   getDashboardProducerInformations,
   useAppSelector,
@@ -79,8 +80,15 @@ const StatWidget = ({
   return href ? <Link to={href} style={{ textDecoration: 'none' }}>{inner}</Link> : inner;
 };
 
+const stateLabels: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  pending:   { label: 'En cours',   color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
+  waiting:   { label: 'En attente', color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)' },
+  sav:       { label: 'SAV',        color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
+};
+
 const DashboardProducer = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { producer } = useAppSelector((state) => state.dashboardProducer.data);
   const { user }: { user: User } = useSelector(
     (state: RootState) => state.auth.user
@@ -198,10 +206,56 @@ const DashboardProducer = () => {
               </div>
 
               {activeProjects.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {activeProjects.map((project) => (
-                    <ProjectItem key={project.documentId} project={project} />
-                  ))}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+                  {activeProjects.map((p: Project) => {
+                    const stateInfo = stateLabels[p.state] || stateLabels.pending;
+                    const imageUrl = p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url;
+                    return (
+                      <div
+                        key={p.documentId}
+                        onClick={() => navigate(`/common/projects/details/${p.documentId}`)}
+                        style={{
+                          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          borderRadius: '14px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          fontFamily: 'Inter, sans-serif',
+                          transition: 'border-color 0.2s, transform 0.2s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = stateInfo.border; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        {imageUrl ? (
+                          <img src={imageUrl} alt={p.name} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #1e3a5f 0%, #0f1c2e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <HiOutlineCollection size={40} color="rgba(255,255,255,0.15)" />
+                          </div>
+                        )}
+                        <div style={{ padding: '14px 16px' }}>
+                          <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.92)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.name}
+                          </p>
+                          {p.endDate && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                              <HiOutlineClock size={13} color="rgba(255,255,255,0.35)" />
+                              <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                                Échéance : {dayjs(p.endDate).format('DD/MM/YYYY')}
+                              </p>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: stateInfo.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: stateInfo.color }}>
+                              {stateInfo.label}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ height: '3px', background: stateInfo.color }} />
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div style={{
