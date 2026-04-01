@@ -196,6 +196,31 @@ function ModalEditProject() {
           )}
         </div>
 
+        {/* Dates */}
+        <SectionTitle icon={<HiOutlineCalendar size={14} />} label="Dates" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div>
+            <FieldLabel label="Date de début" />
+            <DatePicker
+              placeholder="Date de début"
+              value={dayjs(formData.startDate).toDate()}
+              inputPrefix={<HiOutlineCalendar className="text-lg" />}
+              inputFormat="DD/MM/YYYY"
+              onChange={(date: Date | null) => setFormData({ ...formData, startDate: dayjs(date).toDate() })}
+            />
+          </div>
+          <div>
+            <FieldLabel label="Date de fin" />
+            <DatePicker
+              placeholder="Date de fin"
+              value={dayjs(formData.endDate).toDate()}
+              inputPrefix={<HiOutlineCalendar className="text-lg" />}
+              inputFormat="DD/MM/YYYY"
+              onChange={(date: Date | null) => setFormData({ ...formData, endDate: dayjs(date).toDate() })}
+            />
+          </div>
+        </div>
+
         {/* Finances */}
         <SectionTitle icon={<HiCurrencyEuro size={14} />} label="Finances" />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
@@ -285,31 +310,6 @@ function ModalEditProject() {
               options={stateData}
               value={stateData.find((s) => s.value == formData.state)}
               onChange={(e: any) => setFormData({ ...formData, state: e?.value || 'pending' })}
-            />
-          </div>
-        </div>
-
-        {/* Dates */}
-        <SectionTitle icon={<HiOutlineCalendar size={14} />} label="Dates" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '28px' }}>
-          <div>
-            <FieldLabel label="Date de début" />
-            <DatePicker
-              placeholder="Date de début"
-              value={dayjs(formData.startDate).toDate()}
-              inputPrefix={<HiOutlineCalendar className="text-lg" />}
-              inputFormat="DD/MM/YYYY"
-              onChange={(date: Date | null) => setFormData({ ...formData, startDate: dayjs(date).toDate() })}
-            />
-          </div>
-          <div>
-            <FieldLabel label="Date de fin" />
-            <DatePicker
-              placeholder="Date de fin"
-              value={dayjs(formData.endDate).toDate()}
-              inputPrefix={<HiOutlineCalendar className="text-lg" />}
-              inputFormat="DD/MM/YYYY"
-              onChange={(date: Date | null) => setFormData({ ...formData, endDate: dayjs(date).toDate() })}
             />
           </div>
         </div>
