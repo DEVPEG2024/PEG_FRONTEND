@@ -324,7 +324,7 @@ const OrderItemsList = () => {
 
                   {/* Price */}
                   <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700, flexShrink: 0 }}>
-                    {order.price?.toFixed(2)} €
+                    {(order.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                   </span>
 
                   {/* Project badge */}

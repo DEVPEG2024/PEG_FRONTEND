@@ -71,7 +71,7 @@ function Cart() {
         );
         const cartIds = new Set(cart.map((c) => c.product.documentId));
         setSuggestions(all.filter((p) => !cartIds.has(p.documentId)));
-      } catch {}
+      } catch (err) { console.error('Failed to fetch suggestions:', err); }
     };
     fetchSuggestions();
   }, [cart.length]);
@@ -201,10 +201,10 @@ function Cart() {
                 {/* Price */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: '0 0 2px 0' }}>
-                    {totalItem.toFixed(2)} €
+                    {totalItem.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', margin: 0 }}>
-                    {unitPrice.toFixed(2)} € / u.
+                    {unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / u.
                   </p>
                 </div>
 
@@ -411,7 +411,7 @@ function Cart() {
                         borderRadius: '100px', padding: '3px 10px',
                         color: '#6b9eff', fontSize: '12px', fontWeight: 600,
                       }}>
-                        {(product.price ?? 0).toFixed(2)} €
+                        {(product.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </span>
                       <span style={{ color: 'rgba(107,158,255,0.75)', fontSize: '12px', fontWeight: 600 }}>
                         Commander →

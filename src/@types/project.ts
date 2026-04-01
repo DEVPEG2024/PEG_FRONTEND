@@ -27,6 +27,7 @@ export type Project = {
   orderItem?: OrderItem;
   //deleted: boolean;
   invoices: Invoice[];
+  devis: PegFile[];
   poolable: boolean;
   checklistItems: ChecklistItem[];
 }

@@ -18,7 +18,9 @@ import { countries } from '@/constants/countries.constant';
 
 const safeAmount = (val: any) => {
   const n = Number(val);
-  return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  return Number.isFinite(n)
+    ? n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '0,00';
 };
 
 // Composant Document PDF séparé
@@ -137,8 +139,8 @@ const InvoicePDF = ({
                   <View style={styles.section14}><Text style={{ fontSize: 8, padding: 4 }}>{orderItem?.product?.name ?? ''}</Text></View>
                   <View style={styles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{qty}</Text></View>
                   <View style={styles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(orderItem?.price)} €</Text></View>
-                  <View style={styles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>20% </Text></View>
-                  <View style={styles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{total.toFixed(2)} €</Text></View>
+                  <View style={styles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{selectedInvoice?.vatAmount && selectedInvoice?.amount ? `${Math.round((selectedInvoice.vatAmount / selectedInvoice.amount) * 100)}%` : '0%'} </Text></View>
+                  <View style={styles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</Text></View>
                 </View>
               );
             })}
@@ -189,8 +191,8 @@ const InvoicePDF = ({
 
         <View style={styles.page}>
           <View style={styles.section}>
-            <Text style={{ fontSize: 10, padding: 3 }}>IBAN: FR76 1695 8000 0118 6558 7801 641</Text>
-            <Text style={{ fontSize: 10, padding: 3 }}>BIC: QNTOFRP1XXX</Text>
+            <Text style={{ fontSize: 10, padding: 3 }}>IBAN: FR76 1679 8000 0100 0178 1163 397</Text>
+            <Text style={{ fontSize: 10, padding: 3 }}>BIC: TRZOFR21XXX</Text>
           </View>
         </View>
 

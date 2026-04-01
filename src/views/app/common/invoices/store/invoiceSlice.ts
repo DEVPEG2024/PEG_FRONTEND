@@ -15,7 +15,6 @@ import { hasRole } from '@/utils/permissions';
 import {
   ADMIN,
   CUSTOMER,
-  PRODUCER,
   SUPER_ADMIN,
 } from '@/constants/roles.constant';
 
@@ -45,23 +44,16 @@ export const getInvoices = createAsyncThunk(
         apiGetInvoices(data.request)
       );
       return invoices_connection;
-    } else if (hasRole(data.user, [CUSTOMER])) {
+    } else if (hasRole(data.user, [CUSTOMER]) && data.user.customer?.documentId) {
       const {
         invoices_connection,
       }: { invoices_connection: GetInvoicesResponse } = await unwrapData(
         apiGetCustomerInvoices({
           ...data.request,
-          customerDocumentId: data.user.customer!.documentId,
+          customerDocumentId: data.user.customer.documentId,
         })
       );
       return invoices_connection;
-    } else if (hasRole(data.user, [PRODUCER])) {
-      const {
-        projects_connection,
-      }: { projects_connection: GetInvoicesResponse } = await unwrapData(
-        apiGetProducerInvoices(data)
-      ); // TODO: à corriger (est-ce nécessaire pour le producteur?)
-      return projects_connection;
     }
     return {
       nodes: [],
@@ -121,6 +113,9 @@ const invoiceListSlice = createSlice({
     builder.addCase(getInvoices.fulfilled, (state, action) => {
       state.invoices = action.payload.nodes;
       state.total = action.payload.pageInfo.total;
+      state.loading = false;
+    });
+    builder.addCase(getInvoices.rejected, (state) => {
       state.loading = false;
     });
     // DELETE INVOICE

@@ -282,6 +282,38 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
     })
 }
 
+// get next invoice number (FAC-XXXX)
+export async function apiGetNextInvoiceNumber(): Promise<string> {
+    const query = `
+    query GetLastInvoiceNumber {
+        invoices_connection(
+            filters: { name: { containsi: "FAC-" } },
+            pagination: { page: 1, pageSize: 1000 },
+            sort: ["createdAt:desc"]
+        ) {
+            nodes {
+                name
+            }
+        }
+    }
+    `;
+    const res = await ApiService.fetchData<ApiResponse<{ invoices_connection: { nodes: { name: string }[] } }>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query }
+    });
+    const nodes = res.data?.data?.invoices_connection?.nodes ?? [];
+    let maxNum = 0;
+    for (const node of nodes) {
+        const match = node.name?.match(/^FAC-(\d+)$/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > maxNum) maxNum = num;
+        }
+    }
+    return `FAC-${String(maxNum + 1).padStart(4, '0')}`;
+}
+
 // delete invoice
 export type DeleteInvoiceResponse = {
     documentId: string

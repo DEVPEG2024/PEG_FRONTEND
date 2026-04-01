@@ -87,10 +87,10 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
                   boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
                   display: 'inline-block',
                 }}>
-                  {priceHT.toFixed(2)} € HT
+                  {priceHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
                 </span>
                 <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
-                  {priceTTC.toFixed(2)} € TTC
+                  {priceTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
                 </span>
               </div>
             </div>

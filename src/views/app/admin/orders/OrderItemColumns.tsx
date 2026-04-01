@@ -82,8 +82,8 @@ export const useColumns = (
             className="flex flex-col"
             key={row.original.documentId}
           >
-            <span className="font-semibold">{ht.toFixed(2)} € HT</span>
-            <span className="text-xs text-gray-400">{ttc.toFixed(2)} € TTC</span>
+            <span className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
+            <span className="text-xs text-gray-400">{ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
           </div>
         );
       },

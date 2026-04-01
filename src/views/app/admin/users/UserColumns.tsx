@@ -71,7 +71,7 @@ export const useColumns = (
       cell: ({ row }: { row: {original: User} }) => {
         return (
           <Tag prefix={<IoWalletOutline size={20} />} prefixClass="mr-2">
-            <p className="text-sm ml-2">{row.original.wallet.toFixed(2)} €</p>
+            <p className="text-sm ml-2">{row.original.wallet.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</p>
           </Tag>
         );
       },
@@ -85,14 +85,12 @@ export const useColumns = (
           <Switcher
             checked={!row.original.blocked}
             disabled={row.original.role.name === 'super_admin'}
-            onChange={() =>
-              handleBlockUser(
-                row.original,
-                usersId.find(
-                  ({ documentId }) => documentId === row.original.documentId
-                )!.id
-              )
-            }
+            onChange={() => {
+              const found = usersId.find(
+                ({ documentId }) => documentId === row.original.documentId
+              );
+              if (found) handleBlockUser(row.original, found.id);
+            }}
           />
           <Button
             onClick={() => handleEditUser(row.original)}
@@ -103,13 +101,12 @@ export const useColumns = (
             <HiPencil size={20} />
           </Button>
           <Button
-            onClick={() =>
-              handleDeleteUser(
-                usersId.find(
-                  ({ documentId }) => documentId === row.original.documentId
-                )!.id
-              )
-            }
+            onClick={() => {
+              const found = usersId.find(
+                ({ documentId }) => documentId === row.original.documentId
+              );
+              if (found) handleDeleteUser(found.id);
+            }}
             disabled={row.original.role.name === 'super_admin'}
             size="sm"
             variant="twoTone"

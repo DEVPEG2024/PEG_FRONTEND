@@ -5,6 +5,7 @@ import Summary from './components/Summary';
 import Comments from './components/Comments';
 import Files from './components/Files';
 import Tasks from './components/Tasks';
+import Devis from './components/Devis';
 import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
@@ -61,6 +62,7 @@ const ProjectDetails = () => {
           )}
           {selectedTab === 'Checklist' && <ProjectChecklist />}
           {selectedTab === 'BAT' && <ProjectBat />}
+          {selectedTab === 'Devis' && <Devis />}
           {selectedTab === 'Factures' && <Invoices />}
         </Container>
       </>

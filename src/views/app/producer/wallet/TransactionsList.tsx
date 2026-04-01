@@ -383,7 +383,7 @@ const TransactionsList = () => {
                             }`}
                           >
                             {isAdd ? '+' : '−'}
-                            {tx.amount.toFixed(2)} €
+                            {tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                           </div>
                           <div className="text-[10px] text-white/35">
                             {dayjs(tx.date).format('DD/MM/YY')}

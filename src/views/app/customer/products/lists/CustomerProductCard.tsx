@@ -268,14 +268,14 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
               lineHeight: 1,
               whiteSpace: 'nowrap',
             }}>
-              {priceHT.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
+              {priceHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
             </span>
             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {priceTTC.toFixed(2)} € TTC
+              {priceTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
             </span>
             {savingsPercent && product.catalogPrice && (
               <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 500, whiteSpace: 'nowrap', textDecoration: 'line-through' }}>
-                {product.catalogPrice.toFixed(2)} € HT
+                {product.catalogPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
               </span>
             )}
           </div>

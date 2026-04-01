@@ -65,12 +65,12 @@ export const TransactionsListColumns = () => {
       cell: ({ row }: { row: { original: Transaction } }) => {
         const paymentWay = paymentTypes.find(
           ({ value }) => value === row.original.type
-        )!.type;
+        )?.type ?? 'add';
         return (
           <Tag className={paymentWay === 'add' ? 'bg-green-500' : 'bg-red-500'}>
             <p className="text-sm text-white">
               {paymentWay === 'add' ? '+' : '-'}{' '}
-              {row.original.amount.toFixed(2)} €
+              {row.original.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
             </p>
           </Tag>
         );

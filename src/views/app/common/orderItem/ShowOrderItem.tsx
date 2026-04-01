@@ -66,7 +66,7 @@ const ShowOrderItem = () => {
                     {orderItem.product.name}
                   </h1>
                   <p className="text-2xl font-semibold">
-                    {getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections).toFixed(2)} €
+                    {getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                   </p>
                 </div>
 
@@ -126,6 +126,7 @@ const ShowOrderItem = () => {
                     )}
                   </div>
                 ) : (
+                  {orderItem.sizeAndColorSelections?.length > 0 && (
                   <div className="mt-4 flex flex-row gap-4 items-center">
                     <span>Quantité</span>
                     <Input
@@ -136,6 +137,7 @@ const ShowOrderItem = () => {
                       disabled={true}
                     />
                   </div>
+                  )}
                 )}
 
                 {orderItem.formAnswer?.form && (

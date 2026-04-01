@@ -21,8 +21,8 @@ const ProductCard = memo(
     const navigate = useNavigate();
     const cardRef = useRef<HTMLDivElement>(null);
     const imageUrl = product.images[0]?.url;
-    const initial = product.name.charAt(0).toUpperCase();
-    const price = getProductBasePrice(product).toFixed(2);
+    const initial = (product.name || '?').charAt(0).toUpperCase();
+    const price = getProductBasePrice(product).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const handleMouseEnter = () => {
       if (cardRef.current) {
@@ -123,7 +123,7 @@ const ProductCard = memo(
                 {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
               </span>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-                {toTTC(getProductBasePrice(product)).toFixed(2)} € TTC
+                {toTTC(getProductBasePrice(product)).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
               </span>
             </div>
             {product.productRef && (

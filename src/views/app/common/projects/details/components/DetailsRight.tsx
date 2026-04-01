@@ -162,7 +162,7 @@ const DetailsRight = () => {
     dispatch(
       updateCurrentProject({
         documentId: project.documentId,
-        producer: user.producer!.documentId,
+        producer: user.producer?.documentId ?? '',
       })
     );
   };
@@ -264,7 +264,7 @@ const DetailsRight = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Prix total</span>
               <span style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 700 }}>
-                {project.price?.toFixed(2) ?? '0.00'} €
+                {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0,00'} €
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -293,7 +293,7 @@ const DetailsRight = () => {
                   style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: isAdmin ? 'pointer' : 'default' }}
                   title={isAdmin ? 'Cliquer pour modifier' : undefined}
                 >
-                  {project.paidPrice?.toFixed(2) ?? '0.00'} €
+                  {project.paidPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0,00'} €
                 </span>
               )}
             </div>
@@ -303,14 +303,14 @@ const DetailsRight = () => {
                 color: (project.price ?? 0) - (project.paidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80',
                 fontSize: '13px', fontWeight: 700,
               }}>
-                {((project.price ?? 0) - (project.paidPrice ?? 0)).toFixed(2)} €
+                {((project.price ?? 0) - (project.paidPrice ?? 0)).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Commission producteur</span>
               <span style={{ color: '#a78bfa', fontSize: '13px', fontWeight: 700 }}>
-                {project.producerPrice?.toFixed(2) ?? '0.00'} €
+                {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0,00'} €
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -339,7 +339,7 @@ const DetailsRight = () => {
                   style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: isAdmin ? 'pointer' : 'default' }}
                   title={isAdmin ? 'Cliquer pour modifier' : undefined}
                 >
-                  {project.producerPaidPrice?.toFixed(2) ?? '0.00'} €
+                  {project.producerPaidPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0,00'} €
                 </span>
               )}
             </div>
@@ -349,7 +349,7 @@ const DetailsRight = () => {
                 color: (project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80',
                 fontSize: '13px', fontWeight: 700,
               }}>
-                {((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0)).toFixed(2)} €
+                {((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0)).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
             {/* Marge */}
@@ -360,7 +360,7 @@ const DetailsRight = () => {
                 color: (project.price ?? 0) - (project.producerPrice ?? 0) >= 0 ? '#4ade80' : '#f87171',
                 fontSize: '13px', fontWeight: 700,
               }}>
-                {((project.price ?? 0) - (project.producerPrice ?? 0)).toFixed(2)} €
+                {((project.price ?? 0) - (project.producerPrice ?? 0)).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
           </div>

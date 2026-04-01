@@ -70,7 +70,7 @@ export const InvoicesListColumns = (
       cell: ({ row }: { row: { original: Invoice } }) => {
         return (
           <Tag>
-            <p className="text-sm">{row.original.totalAmount.toFixed(2)} €</p>
+            <p className="text-sm">{row.original.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</p>
           </Tag>
         );
       },

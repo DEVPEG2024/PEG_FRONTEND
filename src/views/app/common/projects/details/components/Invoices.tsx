@@ -23,10 +23,10 @@ import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
 const ModalPrintInvoice = lazy(() => import('@/views/app/common/invoices/modals/ModalPrintInvoice'));
 import { stateData } from '@/views/app/common/invoices/constants';
-import createUID from '@/components/ui/utils/createUid';
 import { toast } from 'react-toastify';
 import { apiUploadFile } from '@/services/FileServices';
 import { TVA_RATE } from '@/utils/priceHelpers';
+import { apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -68,30 +68,35 @@ const Invoices = () => {
     dispatch(setPrintProjectInvoiceDialog(true));
   };
 
-  const generateInvoice = (): void => {
+  const generateInvoice = async (): Promise<void> => {
     const errorsOnGeneration: string[] = verifyGeneration();
     if (errorsOnGeneration.length > 0) {
       errorsOnGeneration.forEach((errorOnGeneration) =>
         toast.error(errorOnGeneration)
       );
     } else {
-      const invoice: Omit<Invoice, 'documentId'> = {
-        customer: project.customer,
-        orderItems: [],
-        amount: project.price,
-        vatAmount: project.price * TVA_RATE,
-        totalAmount: project.price * (1 + TVA_RATE),
-        name: createUID(10).toUpperCase(),
-        date: dayjs().toDate(),
-        dueDate: dayjs().add(30, 'day').toDate(),
-        state: 'pending',
-        paymentMethod: 'transfer',
-        paymentAmount: 0,
-        paymentReference: '',
-        paymentState: 'pending',
-        paymentDate: new Date(0),
-      };
-      dispatch(addInvoice({ invoice, project }));
+      try {
+        const nextNumber = await apiGetNextInvoiceNumber();
+        const invoice: Omit<Invoice, 'documentId'> = {
+          customer: project.customer,
+          orderItems: [],
+          amount: project.price,
+          vatAmount: project.price * TVA_RATE,
+          totalAmount: project.price * (1 + TVA_RATE),
+          name: nextNumber,
+          date: dayjs().toDate(),
+          dueDate: dayjs().add(30, 'day').toDate(),
+          state: 'pending',
+          paymentMethod: 'transfer',
+          paymentAmount: 0,
+          paymentReference: '',
+          paymentState: 'pending',
+          paymentDate: new Date(0),
+        };
+        dispatch(addInvoice({ invoice, project }));
+      } catch {
+        toast.error('Erreur lors de la génération du numéro de facture');
+      }
     }
   };
 
@@ -220,10 +225,10 @@ const Invoices = () => {
                           borderRadius: '100px', padding: '3px 10px',
                           color: '#6b9eff', fontSize: '12px', fontWeight: 700,
                         }}>
-                          {invoice.totalAmount.toFixed(2)} € TTC
+                          {invoice.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
                         </span>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
-                          {invoice.amount.toFixed(2)} € HT
+                          {invoice.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
                         </span>
                       </div>
 

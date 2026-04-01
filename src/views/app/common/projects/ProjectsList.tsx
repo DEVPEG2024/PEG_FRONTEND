@@ -227,7 +227,7 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
 const ProjectsList = () => {
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const isAdminOrSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
-  const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
+  const isSuperAdmin = hasRole(user, [SUPER_ADMIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(pageSelections[4].value);
   const [searchTerm, setSearchTerm] = useState('');
@@ -603,13 +603,13 @@ const ProjectsList = () => {
                       {/* Prix (SuperAdmin) */}
                       {isSuperAdmin && (
                         <td style={{ padding: '12px 14px', color: '#6b9eff', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {project.price?.toFixed(2)} €
+                          {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </td>
                       )}
                       {/* Commission (Producer) */}
                       {hasRole(user, [PRODUCER]) && (
                         <td style={{ padding: '12px 14px', color: '#a78bfa', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {project.producerPrice?.toFixed(2)} €
+                          {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </td>
                       )}
                     </tr>

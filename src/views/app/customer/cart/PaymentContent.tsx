@@ -31,6 +31,16 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  const SHIPPING_HT = 9.90;
+
+  const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
+    return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
+  }, 0);
+
+  const totalPrice: number = Math.round((subtotalHT + SHIPPING_HT) * 100) / 100;
+  const totalPriceWithVAT: number = Math.round(totalPrice * (1 + TVA_RATE) * 100) / 100;
+  const tva = Math.round((totalPriceWithVAT - totalPrice) * 100) / 100;
+
   const createFormAnswer = async (
     item: CartItem
   ): Promise<FormAnswer | null> => {
@@ -161,16 +171,6 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
     }
   };
 
-  const SHIPPING_HT = 9.90;
-
-  const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
-    return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
-  }, 0);
-
-  const totalPrice: number = subtotalHT + SHIPPING_HT;
-  const totalPriceWithVAT: number = totalPrice * (1 + TVA_RATE);
-  const tva = totalPriceWithVAT - totalPrice;
-
   return (
     <div style={{
       background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
@@ -185,15 +185,15 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Sous-total HT</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{subtotalHT.toFixed(2)} €</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Livraison HT</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{SHIPPING_HT.toFixed(2)} €</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{SHIPPING_HT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>TVA (20%)</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{tva.toFixed(2)} €</span>
+          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{tva.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Total TTC</span>
         <span style={{ color: '#6b9eff', fontWeight: 800, fontSize: '18px' }}>
-          {totalPriceWithVAT.toFixed(2)} €
+          {totalPriceWithVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
         </span>
       </div>
 

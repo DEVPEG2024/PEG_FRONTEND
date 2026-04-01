@@ -201,14 +201,14 @@ const ProjectItem = ({
                   borderRadius: '100px', padding: '2px 9px',
                   color: '#6b9eff', fontSize: '11px', fontWeight: 600,
                 }}>
-                  {project.price?.toFixed(2)} €
+                  {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
                 <span style={{
                   background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
                   borderRadius: '100px', padding: '2px 9px',
                   color: '#a78bfa', fontSize: '11px', fontWeight: 600,
                 }}>
-                  Prod. {project.producerPrice?.toFixed(2)} €
+                  Prod. {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
               </>
             )}
@@ -218,7 +218,7 @@ const ProjectItem = ({
                 borderRadius: '100px', padding: '2px 9px',
                 color: '#a78bfa', fontSize: '11px', fontWeight: 600,
               }}>
-                {project.producerPrice?.toFixed(2)} €
+                {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             )}
             {hasRole(user, [CUSTOMER]) && (
@@ -227,7 +227,7 @@ const ProjectItem = ({
                 borderRadius: '100px', padding: '2px 9px',
                 color: '#6b9eff', fontSize: '11px', fontWeight: 600,
               }}>
-                {project.price?.toFixed(2)} €
+                {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             )}
           </div>

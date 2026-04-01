@@ -51,6 +51,11 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
                 url
                 name
             }
+            devis (pagination: {limit: 100}){
+                documentId
+                url
+                name
+            }
 
             invoices (pagination: {limit: 100}){
                 documentId
@@ -134,6 +139,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
         invoices: data.invoices?.map((invoice) => invoice.documentId),
         comments: data.comments?.map((comment) => comment.documentId),
         tasks: data.tasks?.map((task) => task.documentId),
+        devis: data.devis?.map((d) => d.id),
     }
   }
     return ApiService.fetchData<ApiResponse<{updateProject: Project}>>({
@@ -163,6 +169,11 @@ export async function apiCreateProject(data: CreateProjectRequest): Promise<Axio
             description
             endDate
             images (pagination: {limit: 100}){
+                documentId
+                url
+                name
+            }
+            devis (pagination: {limit: 100}){
                 documentId
                 url
                 name
@@ -304,6 +315,11 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             description
             endDate
             images (pagination: {limit: 100}){
+                documentId
+                url
+                name
+            }
+            devis (pagination: {limit: 100}){
                 documentId
                 url
                 name

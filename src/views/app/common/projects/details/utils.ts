@@ -5,5 +5,6 @@ export const labelList = [
   'Fichiers client',
   'Checklist',
   'BAT',
+  'Devis',
   'Factures',
 ];

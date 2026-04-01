@@ -131,10 +131,10 @@ const BankTransferPage = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Montant à payer</p>
-                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{invoice.totalAmount?.toFixed(2)} € <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>TTC</span></p>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{invoice.amount?.toFixed(2)} € HT</p>
+                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{invoice.totalAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>TTC</span></p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{invoice.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</p>
                   {invoice.vatAmount > 0 && (
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>TVA {invoice.vatAmount?.toFixed(2)} €</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>TVA {invoice.vatAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</p>
                   )}
                 </div>
               </div>

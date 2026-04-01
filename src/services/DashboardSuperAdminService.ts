@@ -50,13 +50,14 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
 > {
   const query = `
     query DashboardSuperAdminQuery {
-      projects_connection(pagination: { limit: -1 }) {
+      projects_connection(pagination: { limit: 500 }) {
         nodes {
           documentId
           name
           state
           startDate
           endDate
+          createdAt
           price
           paidPrice
           producerPrice
@@ -85,7 +86,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           total
         }
       }
-      tickets_connection(pagination: { limit: -1 }) {
+      tickets_connection(pagination: { limit: 500 }) {
         nodes {
           documentId
           state
@@ -94,7 +95,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           total
         }
       }
-      invoices_connection(pagination: { limit: -1 }) {
+      invoices_connection(pagination: { limit: 500 }) {
         nodes {
           documentId
           name
@@ -109,7 +110,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           }
         }
       }
-      orderItems_connection(pagination: { limit: -1 }, sort: "createdAt:desc") {
+      orderItems_connection(pagination: { limit: 500 }, sort: "createdAt:desc") {
         nodes {
           documentId
           price
@@ -125,7 +126,7 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           total
         }
       }
-      transactions_connection(pagination: { limit: -1 }) {
+      transactions_connection(pagination: { limit: 500 }) {
         nodes {
           documentId
           amount

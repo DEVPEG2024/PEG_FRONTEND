@@ -94,12 +94,12 @@ const ShowProduct = () => {
       apiGetOrderItem(orderItemId).then((res: any) => {
         const data = res.data?.data?.orderItem;
         if (data) setOrderItem(data);
-      }).catch(() => {});
+      }).catch((err) => console.error('ShowProduct fetch error:', err));
     } else if (product?.requiresBat && user?.customer?.documentId) {
       apiGetOrderItemByProduct(documentId, user.customer.documentId).then((res: any) => {
         const items = res.data?.data?.orderItems;
         if (items?.length > 0) setOrderItem(items[0]);
-      }).catch(() => {});
+      }).catch((err) => console.error('ShowProduct fetch error:', err));
     }
   }, [orderItemId, documentId, product?.requiresBat, user?.customer?.documentId]);
 
@@ -294,12 +294,12 @@ const ShowProduct = () => {
             <div style={{ display: 'inline-flex', flexDirection: 'column', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                 <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-                  {unitPrice.toFixed(2)}
+                  {unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>€ HT / pièce</span>
               </div>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
-                {toTTC(unitPrice).toFixed(2)} € TTC
+                {toTTC(unitPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
               </span>
             </div>
             {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (
@@ -313,7 +313,7 @@ const ShowProduct = () => {
                   -{savingsPercent}% vs catalogue
                 </span>
                 <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
-                  {product.catalogPrice.toFixed(2)} € HT
+                  {product.catalogPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
                 </span>
               </div>
             )}
@@ -353,10 +353,10 @@ const ShowProduct = () => {
                         )}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
-                            {tier.price.toFixed(2)} € HT
+                            {tier.price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
                           </span>
                           <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
-                            {toTTC(tier.price).toFixed(2)} € TTC
+                            {toTTC(tier.price).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
                           </span>
                         </div>
                       </div>
@@ -386,14 +386,14 @@ const ShowProduct = () => {
                 <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
                 {' '}pièce{amountSelected > 1 ? 's' : ''}
                 {' × '}
-                <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toFixed(2)} € HT</span>
+                <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>
-                  {totalPrice.toFixed(2)}<span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€ HT</span>
+                  {totalPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€ HT</span>
                 </div>
                 <div style={{ fontSize: '12px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
-                  {toTTC(totalPrice).toFixed(2)} € TTC
+                  {toTTC(totalPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
                 </div>
               </div>
             </div>
@@ -426,7 +426,7 @@ const ShowProduct = () => {
                 disabled={!canAddToCart}
                 onClick={handleAddToCart}
               >
-                {canAddToCart ? `Ajouter au panier — ${toTTC(totalPrice).toFixed(2)} € TTC` : 'Sélectionnez une quantité'}
+                {canAddToCart ? `Ajouter au panier — ${toTTC(totalPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC` : 'Sélectionnez une quantité'}
               </Button>
             )}
           </div>

@@ -40,8 +40,8 @@ export const useColumns = (
         );
         return (
           <div>
-            <p className="font-semibold">{ht.toFixed(2)} € HT</p>
-            <p className="text-xs text-gray-400">{toTTC(ht).toFixed(2)} € TTC</p>
+            <p className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</p>
+            <p className="text-xs text-gray-400">{toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</p>
           </div>
         );
       },
@@ -53,8 +53,8 @@ export const useColumns = (
       cell: ({ row }: { row: { original: CartItem } }) => {
         return (
           <div className="flex-col justify-center gap-2">
-            {row.original.sizeAndColors.map((sizeAndColor) => (
-              <p key={sizeAndColor.size.value}>
+            {row.original.sizeAndColors.map((sizeAndColor, idx) => (
+              <p key={`${sizeAndColor.size.value}-${sizeAndColor.color.value}-${idx}`}>
                 {sizeAndColor.size.value === 'DEFAULT'
                   ? 'Quantité'
                   : sizeAndColor.size.name}{' '}
@@ -79,8 +79,8 @@ export const useColumns = (
         );
         return (
           <div className="flex flex-col" key={row.original.id}>
-            <span className="font-semibold">{ht.toFixed(2)} € HT</span>
-            <span className="text-xs text-gray-400">{toTTC(ht).toFixed(2)} € TTC</span>
+            <span className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
+            <span className="text-xs text-gray-400">{toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
           </div>
         );
       },

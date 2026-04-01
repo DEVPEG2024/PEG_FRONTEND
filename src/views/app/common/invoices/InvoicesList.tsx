@@ -139,9 +139,9 @@ const InvoicesList = () => {
 
                 {/* Amount */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>{inv.totalAmount?.toFixed(2)} € <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>TTC</span></div>
-                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{inv.amount?.toFixed(2)} € HT</div>
-                  {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>TVA {inv.vatAmount?.toFixed(2)} €</div>}
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>{inv.totalAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € <span style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>TTC</span></div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{inv.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</div>
+                  {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>TVA {inv.vatAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</div>}
                 </div>
 
                 {/* Actions */}

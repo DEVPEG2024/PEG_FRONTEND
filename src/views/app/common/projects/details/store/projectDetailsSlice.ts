@@ -28,6 +28,7 @@ import {
   CreateCommentRequest,
   DeleteCommentResponse,
 } from '@/services/CommentServices';
+import { PegFile } from '@/@types/pegFile';
 
 export const SLICE_NAME = 'projectDetails';
 
@@ -197,6 +198,44 @@ export const deleteProjectInvoice = createAsyncThunk(
       })
     );
     return { deleteInvoice, project: updateProject };
+  }
+);
+
+export type AddDevis = {
+  file: PegFile;
+  project: Project;
+};
+
+export const addDevis = createAsyncThunk(
+  SLICE_NAME + '/addDevis',
+  async (data: AddDevis): Promise<Project> => {
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject({
+        documentId: data.project.documentId,
+        devis: [...(data.project.devis || []), data.file],
+      })
+    );
+    return updateProject;
+  }
+);
+
+export type DeleteDevis = {
+  fileDocumentId: string;
+  project: Project;
+};
+
+export const deleteDevis = createAsyncThunk(
+  SLICE_NAME + '/deleteDevis',
+  async (data: DeleteDevis): Promise<Project> => {
+    const { updateProject }: { updateProject: Project } = await unwrapData(
+      apiUpdateProject({
+        documentId: data.project.documentId,
+        devis: (data.project.devis || []).filter(
+          (d) => d.documentId !== data.fileDocumentId
+        ),
+      })
+    );
+    return updateProject;
   }
 );
 
@@ -396,6 +435,28 @@ const projectListSlice = createSlice({
       state.selectedProjectInvoice = null;
     });
     builder.addCase(updateProjectInvoice.rejected, (state) => {
+      state.loading = false;
+    });
+    // ADD DEVIS
+    builder.addCase(addDevis.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(addDevis.fulfilled, (state, action) => {
+      state.loading = false;
+      state.project = action.payload;
+    });
+    builder.addCase(addDevis.rejected, (state) => {
+      state.loading = false;
+    });
+    // DELETE DEVIS
+    builder.addCase(deleteDevis.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(deleteDevis.fulfilled, (state, action) => {
+      state.loading = false;
+      state.project = action.payload;
+    });
+    builder.addCase(deleteDevis.rejected, (state) => {
       state.loading = false;
     });
   },

@@ -22,6 +22,7 @@ const QuickFilterTab = () => {
   const isProducer = hasRole(user, [PRODUCER]);
   const isAssignedProducer = isProducer && project?.producer?.documentId && user?.producer?.documentId === project.producer.documentId;
   const tabs = labelList.filter((tab) => {
+    if (tab === 'Devis') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
@@ -37,6 +38,7 @@ const QuickFilterTab = () => {
         const items = project?.checklistItems ?? [];
         return items.length > 0 ? items.length : undefined;
       }
+      case 'Devis': return project?.devis?.length;
       case 'Factures': return project?.invoices?.length;
       default: return undefined;
     }

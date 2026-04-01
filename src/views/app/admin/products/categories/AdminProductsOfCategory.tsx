@@ -62,7 +62,7 @@ const AdminProductsOfCategory = () => {
               <Card key={product.documentId}>
                 <div className="flex flex-col gap-4">
                   <img
-                    src={product.images[0].url}
+                    src={product.images?.[0]?.url ?? '/img/others/img-2.png'}
                     alt={product.name}
                     className=" rounded-lg bg-slate-50"
                     style={{
@@ -74,7 +74,7 @@ const AdminProductsOfCategory = () => {
                   <div className="flex flex-col justify-between">
                     <p className="text-lg font-bold">{product.name}</p>
                     <p className="text-lg font-bold text-white">
-                      {getProductBasePrice(product).toFixed(2)}€
+                      {getProductBasePrice(product).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </p>
                   </div>
                 </div>

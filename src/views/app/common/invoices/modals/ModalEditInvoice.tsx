@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import { paymentModeData, paymentStateData, stateData } from '../constants';
 import { Invoice } from '@/@types/invoice';
+import { TVA_RATE } from '@/utils/priceHelpers';
 
 export const VAT_AMOUNT = 20;
 
@@ -60,6 +61,9 @@ function ModalEditInvoice({
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (!formData.name?.trim() || formData.amount <= 0 || !formData.state) {
+      return;
+    }
     dispatch(updateInvoice(formData));
   };
 
@@ -70,7 +74,7 @@ function ModalEditInvoice({
 
   const handleVATToggle = (checked: boolean) => {
     setVatEnabled(checked);
-    const vatAmount = checked ? formData.amount * 0.2 : 0;
+    const vatAmount = checked ? Math.round(formData.amount * TVA_RATE * 100) / 100 : 0;
     const totalAmount = formData.amount + vatAmount;
 
     setFormData({
@@ -211,13 +215,13 @@ function ModalEditInvoice({
             </div>
             <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
               <span className="text-sm text-white/50">
-                {formData.amount.toFixed(2)} €
+                {formData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
               <span className="text-sm text-white/50">
-                {formData.vatAmount.toFixed(2)} €
+                {formData.vatAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
               <span className="text-sm text-white/50">
-                {formData.totalAmount.toFixed(2)} €
+                {formData.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
           </div>

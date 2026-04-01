@@ -115,6 +115,17 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 🧾 Numérotation des factures (mise à jour 01/04/2026)
+
+### Séquence partagée FAC-XXXX
+- **PEG et NOVA partagent la même séquence** de numéros de facture : `FAC-0001`, `FAC-0002`, etc.
+- Côté PEG Frontend (`Invoices.tsx`), la fonction `apiGetNextInvoiceNumber()` dans `InvoicesServices.ts` requête Strapi GraphQL pour trouver le plus grand numéro FAC-XXXX existant et retourne le suivant
+- Côté NOVA (`peg.py`), le même mécanisme existe via SQL direct (`SELECT MAX(...)`)
+- Le paramètre `name` n'est **jamais** généré par le LLM de NOVA — il est supprimé dans `execute_tool` de `main.py`
+- Les factures uploadées manuellement (PDF) conservent le nom du fichier comme identifiant
+
+---
+
 ## 🐛 Problèmes connus (au 14/03/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification
