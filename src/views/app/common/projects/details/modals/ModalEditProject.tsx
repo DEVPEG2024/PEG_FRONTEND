@@ -75,8 +75,8 @@ function ModalEditProject() {
     producerPrice: project?.producerPrice || 0,
     customer: project?.customer?.documentId || null,
     producer: project?.producer?.documentId || null,
-    startDate: dayjs(project?.startDate).toDate(),
-    endDate: dayjs(project?.endDate).toDate(),
+    startDate: project?.startDate && dayjs(project.startDate).isValid() ? dayjs(project.startDate).toDate() : new Date(),
+    endDate: project?.endDate && dayjs(project.endDate).isValid() ? dayjs(project.endDate).toDate() : null,
     paidPrice: project?.paidPrice || 0,
     producerPaidPrice: project?.producerPaidPrice || 0,
     comments: project?.comments || [],
@@ -203,20 +203,20 @@ function ModalEditProject() {
             <FieldLabel label="Date de début" />
             <DatePicker
               placeholder="Date de début"
-              value={dayjs(formData.startDate).toDate()}
+              value={formData.startDate ? dayjs(formData.startDate).toDate() : null}
               inputPrefix={<HiOutlineCalendar className="text-lg" />}
               inputFormat="DD/MM/YYYY"
-              onChange={(date: Date | null) => setFormData({ ...formData, startDate: dayjs(date).toDate() })}
+              onChange={(date: Date | null) => setFormData({ ...formData, startDate: date ? dayjs(date).toDate() : new Date() })}
             />
           </div>
           <div>
             <FieldLabel label="Date de fin" />
             <DatePicker
               placeholder="Date de fin"
-              value={dayjs(formData.endDate).toDate()}
+              value={formData.endDate ? dayjs(formData.endDate).toDate() : null}
               inputPrefix={<HiOutlineCalendar className="text-lg" />}
               inputFormat="DD/MM/YYYY"
-              onChange={(date: Date | null) => setFormData({ ...formData, endDate: dayjs(date).toDate() })}
+              onChange={(date: Date | null) => setFormData({ ...formData, endDate: date ? dayjs(date).toDate() : null })}
             />
           </div>
         </div>
