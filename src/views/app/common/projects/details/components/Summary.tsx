@@ -270,15 +270,9 @@ const Summary = ({ project }: { project: Project }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '8px' }}>
                   <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} />
                   <div style={{ minWidth: 0 }}>
-                    <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '8px', lineHeight: 1.25 }}>
+                    <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '0', lineHeight: 1.25 }}>
                       {project.name}
                     </h3>
-                    {project.description && !project.orderItem && (
-                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: 1.5 }}>
-                        {strippedDescription.slice(0, 120)}
-                        {strippedDescription.length > 120 ? '…' : ''}
-                      </p>
-                    )}
                   </div>
                 </div>
 
