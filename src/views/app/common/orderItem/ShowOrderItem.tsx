@@ -126,7 +126,7 @@ const ShowOrderItem = () => {
                     )}
                   </div>
                 ) : (
-                  {orderItem.sizeAndColorSelections?.length > 0 && (
+                  orderItem.sizeAndColorSelections?.length > 0 ? (
                   <div className="mt-4 flex flex-row gap-4 items-center">
                     <span>Quantité</span>
                     <Input
@@ -137,7 +137,7 @@ const ShowOrderItem = () => {
                       disabled={true}
                     />
                   </div>
-                  )}
+                  ) : null
                 )}
 
                 {orderItem.formAnswer?.form && (

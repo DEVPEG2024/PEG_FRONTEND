@@ -46,8 +46,9 @@ export const createBanner = createAsyncThunk(
     // Extract customer documentId before API call (banner.customer is mappedBy in Strapi)
     const customerDocumentId = typeof data.customer === 'string' && data.customer !== '' ? data.customer : null;
 
+    const { customer: _customer, ...dataWithoutCustomer } = data;
     const { createBanner: created }: { createBanner: Banner } = await unwrapData(
-      apiCreateBanner({ ...data, image: imageUploaded?.id ?? null })
+      apiCreateBanner({ ...dataWithoutCustomer, image: imageUploaded?.id ?? null })
     );
 
     // Link customer→banner via REST (relation owned by Customer side)
@@ -90,9 +91,10 @@ export const updateBanner = createAsyncThunk(
     const oldCustomerDocId = oldBanner?.customer?.documentId || null;
     const newCustomerDocId = typeof data.banner.customer === 'string' && data.banner.customer !== '' ? data.banner.customer : null;
 
+    const { customer: _customerField, ...bannerWithoutCustomer } = data.banner;
     const { updateBanner: updated }: { updateBanner: Banner } = await unwrapData(
       apiUpdateBanner({
-        ...data.banner,
+        ...bannerWithoutCustomer,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
       })
     );
