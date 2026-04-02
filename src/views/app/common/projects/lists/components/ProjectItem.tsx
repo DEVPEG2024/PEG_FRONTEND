@@ -157,6 +157,17 @@ const ProjectItem = ({
                 {duration > 0 ? `${duration}j` : duration === 0 ? "Auj." : 'Dépassé'}
               </span>
             </div>
+            {isSuperAdmin && customerLastSeen && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                borderRadius: '100px', padding: '3px 8px',
+                fontSize: '10px', fontWeight: 600, color: '#a5b4fc', whiteSpace: 'nowrap',
+              }}>
+                <HiOutlineEye size={11} />
+                {formatLastSeen(customerLastSeen)}
+              </span>
+            )}
           </div>
           {isSuperAdmin && handleDeleteProject && (
             <ProjectItemDropdown
@@ -167,31 +178,18 @@ const ProjectItem = ({
           )}
         </div>
 
-        {/* Ligne 2 : Nom du projet + dernière vue client */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <p
-            onClick={handleNavigate}
-            style={{
-              color: '#fff', fontWeight: 700, fontSize: '15px',
-              letterSpacing: '-0.01em', lineHeight: 1.3,
-              cursor: 'pointer', margin: 0,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}
-          >
-            {project.name}
-          </p>
-          {isSuperAdmin && customerLastSeen && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '4px',
-              background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-              borderRadius: '100px', padding: '2px 8px',
-              fontSize: '10px', fontWeight: 600, color: '#a5b4fc', whiteSpace: 'nowrap', flexShrink: 0,
-            }}>
-              <HiOutlineEye size={11} />
-              {formatLastSeen(customerLastSeen)}
-            </span>
-          )}
-        </div>
+        {/* Ligne 2 : Nom du projet */}
+        <p
+          onClick={handleNavigate}
+          style={{
+            color: '#fff', fontWeight: 700, fontSize: '15px',
+            letterSpacing: '-0.01em', lineHeight: 1.3,
+            cursor: 'pointer', margin: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+        >
+          {project.name}
+        </p>
 
         {/* Ligne 3 : Barre de progression */}
         <div onClick={handleNavigate} style={{ cursor: 'pointer' }}>
