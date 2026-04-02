@@ -43,7 +43,7 @@ const NotificationBell = () => {
   );
   const userId = useAppSelector((state: RootState) => {
     const u = state.auth.user.user;
-    return u?._id ?? u?.id ?? u?.documentId ?? null;
+    return u?.documentId || u?.id || u?._id || null;
   });
 
   // Close dropdown on outside click

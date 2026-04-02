@@ -36,7 +36,7 @@ export default function useNotifications() {
   const socketRef = useRef<Socket | null>(null);
 
   const user = useAppSelector((state: RootState) => state.auth.user.user);
-  const userId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const userId = user?.documentId || user?.id || user?._id || null;
 
   // Load initial notifications
   const loadNotifications = useCallback(async () => {

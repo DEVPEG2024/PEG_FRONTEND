@@ -53,7 +53,7 @@ const NotificationPreferences = () => {
 
   const userId = useAppSelector((state: RootState) => {
     const u = state.auth.user.user;
-    return u?._id ?? u?.id ?? u?.documentId ?? null;
+    return u?.documentId || u?.id || u?._id || null;
   });
   const userAuthority = useAppSelector(
     (state: RootState) => state.auth.user.user.authority,
