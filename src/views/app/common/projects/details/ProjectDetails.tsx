@@ -16,7 +16,7 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -57,7 +57,7 @@ const ProjectDetails = () => {
   // Customer: track project view
   useEffect(() => {
     if (!isCustomer || !documentId || !user?.documentId || !token) return;
-    fetch(`${EXPRESS_BACKEND_URL}/projects/view/${documentId}`, {
+    fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ userId: user.documentId }),
@@ -68,7 +68,7 @@ const ProjectDetails = () => {
   useEffect(() => {
     if (!isAdmin || !documentId || !token) return;
     const fetchView = () => {
-      fetch(`${EXPRESS_BACKEND_URL}/projects/view/${documentId}`, {
+      fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((r) => r.json())
