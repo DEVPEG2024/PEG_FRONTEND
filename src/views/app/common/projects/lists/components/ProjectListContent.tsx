@@ -54,10 +54,12 @@ const ProjectListContent = ({
     const map: Record<string, Project[]> = {};
     statusSections.forEach((s) => (map[s.key] = []));
     projects.forEach((p) => {
+      const paid = Number(p.paidPrice) || 0;
+      const total = Number(p.price) || 0;
       if (p.state === 'fulfilled') {
-        console.log(`[GROUP] ${p.name} → price=${p.price} (${typeof p.price}), paidPrice=${p.paidPrice} (${typeof p.paidPrice}), diff=${(p.price ?? 0) - (p.paidPrice ?? 0)}`);
+        console.log(`[GROUP] ${p.name} → price=${total}, paidPrice=${paid}, unpaid=${paid < total}`);
       }
-      if (p.state === 'fulfilled' && (p.paidPrice ?? 0) < (p.price ?? 0)) {
+      if (p.state === 'fulfilled' && paid < total) {
         map['unpaid'].push(p);
       } else if (map[p.state]) {
         map[p.state].push(p);
