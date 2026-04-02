@@ -63,7 +63,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       fontFamily: 'Inter, sans-serif',
       paddingTop: '32px',
-      paddingBottom: '0',
+      paddingBottom: '20px',
     }}>
       <Container className="px-6">
         {/* Row 1 — Title + badge + avatars + edit */}
