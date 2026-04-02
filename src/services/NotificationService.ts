@@ -130,11 +130,13 @@ export async function subscribePush(data: {
 /** Trigger a notification from the frontend (for Strapi-based actions that bypass Express controllers) */
 export async function triggerNotification(data: {
   eventType: string;
-  recipients: { userId: string; email?: string }[];
+  recipients?: { userId: string; email?: string }[];
   title: string;
   message: string;
   link?: string;
   metadata?: Record<string, any>;
+  notifyAdmins?: boolean;
+  senderId: string;
 }) {
   try {
     const res = await fetch(`${BASE}/notifications/trigger`, {

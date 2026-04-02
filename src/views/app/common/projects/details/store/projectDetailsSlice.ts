@@ -87,7 +87,7 @@ export type CreateTask = {
 
 export const createTask = createAsyncThunk(
   SLICE_NAME + '/createTask',
-  async (data: CreateTask): Promise<Project> => {
+  async (data: CreateTask, { getState }): Promise<Project> => {
     const { createTask }: { createTask: Task } = await unwrapData(
       apiCreateTask(data.task)
     );
@@ -98,18 +98,25 @@ export const createTask = createAsyncThunk(
       })
     );
 
+    const state = getState() as any;
+    const user = state.auth?.user?.user;
+    const senderId = user?.documentId || user?.id || user?._id;
     const projectTitle = data.project.title || 'Projet';
-    triggerNotification({
-      eventType: 'new_task',
-      recipients: data.project.customer?.documentId
-        ? [{ userId: data.project.customer.documentId }]
-        : [],
-      notifyAdmins: true,
-      title: 'Nouvelle tâche',
-      message: `Tâche "${data.task.title}" ajoutée au projet "${projectTitle}"`,
-      link: `/common/projects/details/${data.project.documentId}`,
-      metadata: { projectId: data.project.documentId, projectTitle, taskTitle: data.task.title },
-    } as any);
+
+    if (senderId) {
+      triggerNotification({
+        eventType: 'new_task',
+        senderId,
+        recipients: data.project.customer?.documentId
+          ? [{ userId: data.project.customer.documentId }]
+          : [],
+        notifyAdmins: true,
+        title: 'Nouvelle tâche',
+        message: `Tâche "${data.task.title}" ajoutée au projet "${projectTitle}"`,
+        link: `/common/projects/details/${data.project.documentId}`,
+        metadata: { projectId: data.project.documentId, projectTitle, taskTitle: data.task.title },
+      });
+    }
 
     return updateProject;
   }
@@ -152,7 +159,7 @@ export type CreateComment = {
 
 export const createComment = createAsyncThunk(
   SLICE_NAME + '/createComment',
-  async (data: CreateComment): Promise<Comment> => {
+  async (data: CreateComment, { getState }): Promise<Comment> => {
     const { createComment }: { createComment: Comment } = await unwrapData(
       apiCreateComment(data.comment)
     );
@@ -161,19 +168,26 @@ export const createComment = createAsyncThunk(
       comments: [...data.project.comments, createComment],
     });
 
-    // Notify admins + project customer of new comment
+    const state = getState() as any;
+    const user = state.auth?.user?.user;
+    const senderId = user?.documentId || user?.id || user?._id;
+    const senderName = user?.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '';
     const projectTitle = data.project.title || 'Projet';
-    triggerNotification({
-      eventType: 'new_comment',
-      recipients: data.project.customer?.documentId
-        ? [{ userId: data.project.customer.documentId }]
-        : [],
-      notifyAdmins: true,
-      title: 'Nouveau message',
-      message: `Nouveau commentaire sur le projet "${projectTitle}"`,
-      link: `/common/projects/details/${data.project.documentId}`,
-      metadata: { projectId: data.project.documentId, projectTitle },
-    } as any);
+
+    if (senderId) {
+      triggerNotification({
+        eventType: 'new_comment',
+        senderId,
+        recipients: data.project.customer?.documentId
+          ? [{ userId: data.project.customer.documentId }]
+          : [],
+        notifyAdmins: true,
+        title: 'Nouveau message',
+        message: `${senderName} a commenté le projet "${projectTitle}"`,
+        link: `/common/projects/details/${data.project.documentId}`,
+        metadata: { projectId: data.project.documentId, projectTitle },
+      });
+    }
 
     return createComment;
   }
@@ -195,7 +209,7 @@ export type AddInvoice = {
 
 export const addInvoice = createAsyncThunk(
   SLICE_NAME + '/addInvoice',
-  async (data: AddInvoice): Promise<Project> => {
+  async (data: AddInvoice, { getState }): Promise<Project> => {
     const { createInvoice }: { createInvoice: Invoice } = await unwrapData(
       apiCreateInvoice(data.invoice)
     );
@@ -206,18 +220,25 @@ export const addInvoice = createAsyncThunk(
       })
     );
 
+    const state = getState() as any;
+    const user = state.auth?.user?.user;
+    const senderId = user?.documentId || user?.id || user?._id;
     const projectTitle = data.project.title || 'Projet';
-    triggerNotification({
-      eventType: 'new_invoice',
-      recipients: data.project.customer?.documentId
-        ? [{ userId: data.project.customer.documentId }]
-        : [],
-      notifyAdmins: true,
-      title: 'Nouvelle facture',
-      message: `Facture ajoutée au projet "${projectTitle}"`,
-      link: `/common/projects/details/${data.project.documentId}`,
-      metadata: { projectId: data.project.documentId, projectTitle },
-    } as any);
+
+    if (senderId) {
+      triggerNotification({
+        eventType: 'new_invoice',
+        senderId,
+        recipients: data.project.customer?.documentId
+          ? [{ userId: data.project.customer.documentId }]
+          : [],
+        notifyAdmins: true,
+        title: 'Nouvelle facture',
+        message: `Facture ajoutée au projet "${projectTitle}"`,
+        link: `/common/projects/details/${data.project.documentId}`,
+        metadata: { projectId: data.project.documentId, projectTitle },
+      });
+    }
 
     return updateProject;
   }
