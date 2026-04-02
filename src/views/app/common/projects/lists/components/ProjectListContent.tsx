@@ -56,9 +56,6 @@ const ProjectListContent = ({
     projects.forEach((p) => {
       const paid = Number(p.paidPrice) || 0;
       const total = Number(p.price) || 0;
-      if (p.state === 'fulfilled') {
-        console.log('[GROUP]', p.name, { price: p.price, paidPrice: p.paidPrice, paid, total, unpaid: total > 0 && paid < total });
-      }
       if (p.state === 'fulfilled' && total > 0 && paid < total) {
         map['unpaid'].push(p);
       } else if (map[p.state]) {

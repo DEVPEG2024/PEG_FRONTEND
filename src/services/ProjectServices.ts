@@ -476,6 +476,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                         }
                     }
                 }
+                paidPrice
                 poolable
                 price
                 priority
@@ -571,6 +572,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                         }
                     }
                 }
+                paidPrice
                 price
                 priority
                 producer {
@@ -662,6 +664,8 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                         }
                     }
                 }
+                paidPrice
+                price
                 priority
                 producerPrice
                 startDate
