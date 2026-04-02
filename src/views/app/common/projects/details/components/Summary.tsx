@@ -29,12 +29,6 @@ import {
 import { apiUploadFile } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 
-const sep: React.CSSProperties = {
-  height: '1px',
-  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.1) 75%, transparent)',
-  margin: '22px 0',
-};
-
 // Fix #6 : strip HTML via DOM plutôt que regex fragile
 const stripHtml = (html: string): string => {
   const div = document.createElement('div');
@@ -43,27 +37,27 @@ const stripHtml = (html: string): string => {
 };
 
 // Fix #8 : ID de gradient unique par instance via useId
-const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; label?: string }) => {
+const CircularProgress = ({ percent, label = 'tâches', size = 88 }: { percent: number; label?: string; size?: number }) => {
   const rawId = useId();
   const gradId = `pgGrad-${rawId.replace(/:/g, '')}`;
-  const r = 42;
+  const r = size * 0.42;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
   return (
-    <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
-      <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
+    <div style={{ position: 'relative', width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#2f6fed" />
-            <stop offset="100%" stopColor="#1f4bb6" />
+            <stop offset="100%" stopColor="#6b9eff" />
           </linearGradient>
         </defs>
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="8" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="7" />
         <circle
-          cx="50" cy="50" r={r}
+          cx={size / 2} cy={size / 2} r={r}
           fill="none"
           stroke={`url(#${gradId})`}
-          strokeWidth="8"
+          strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
@@ -74,11 +68,27 @@ const CircularProgress = ({ percent, label = 'tâches' }: { percent: number; lab
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.03em', lineHeight: 1 }}>{percent}%</span>
-        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.03em', marginTop: '3px' }}>{label}</span>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: `${size * 0.22}px`, letterSpacing: '-0.03em', lineHeight: 1 }}>{percent}%</span>
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: `${size * 0.1}px`, letterSpacing: '0.03em', marginTop: '2px' }}>{label}</span>
       </div>
     </div>
   );
+};
+
+const cardStyle: React.CSSProperties = {
+  background: 'linear-gradient(160deg, rgba(22,38,61,0.8) 0%, rgba(15,28,46,0.9) 100%)',
+  borderRadius: '16px',
+  overflow: 'hidden',
+  border: '1px solid rgba(255,255,255,0.06)',
+};
+
+const sectionLabel: React.CSSProperties = {
+  color: 'rgba(255,255,255,0.4)',
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  marginBottom: '14px',
 };
 
 const Summary = ({ project }: { project: Project }) => {
@@ -157,53 +167,36 @@ const Summary = ({ project }: { project: Project }) => {
     : 0;
   const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
 
-  // Fix #6 : strip HTML calculé en amont, réutilisé dans le JSX
-  const strippedDescription = project.description ? stripHtml(project.description) : '';
+  const hasImage = project.orderItem?.product?.images?.[0]?.url || (!project.orderItem && project.images?.[0]?.url);
+  const imageUrl = project.orderItem?.product?.images?.[0]?.url
+    ? resolveUrl(project.orderItem.product.images[0].url)
+    : project.images?.[0]?.url
+      ? resolveUrl(project.images[0].url)
+      : null;
 
   return (
     <Container className="h-full">
       <Loading loading={loading}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: '20px',
-          paddingTop: '28px',
-          paddingBottom: '28px',
+          gridTemplateColumns: '1fr 300px',
+          gap: '16px',
+          paddingTop: '24px',
+          paddingBottom: '24px',
           fontFamily: 'Inter, sans-serif',
+          alignItems: 'start',
         }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '20px' }}>
-            {/* Main card */}
-            <div style={{
-              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-              borderRadius: '18px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
-              display: 'flex',
-            }}>
-              {/* Image sidebar */}
-              {project.orderItem?.product?.images?.[0]?.url ? (
+          {/* Left column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Top row: Image + Progress circle + Project name */}
+            <div style={{ ...cardStyle, display: 'flex', alignItems: 'stretch' }}>
+              {/* Image column */}
+              {(hasImage || !project.orderItem) && (
                 <div style={{
-                  width: '200px',
+                  width: '180px',
                   flexShrink: 0,
-                  borderRight: '1px solid rgba(255,255,255,0.06)',
-                  background: 'rgba(255,255,255,0.02)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '20px',
-                }}>
-                  <img
-                    src={resolveUrl(project.orderItem.product.images[0].url)}
-                    alt={project.orderItem.product.name}
-                    style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '8px' }}
-                  />
-                </div>
-              ) : !project.orderItem ? (
-                <div style={{
-                  width: '200px',
-                  flexShrink: 0,
-                  borderRight: '1px solid rgba(255,255,255,0.06)',
-                  background: 'rgba(255,255,255,0.02)',
+                  borderRight: '1px solid rgba(255,255,255,0.05)',
+                  background: 'rgba(0,0,0,0.15)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -211,46 +204,51 @@ const Summary = ({ project }: { project: Project }) => {
                   padding: '20px',
                   gap: '10px',
                 }}>
-                  {project.images?.[0]?.url ? (
+                  {imageUrl ? (
                     <img
-                      src={resolveUrl(project.images[0].url)}
+                      src={imageUrl}
                       alt={project.name}
-                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px' }}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '140px',
+                        objectFit: 'contain',
+                        borderRadius: '10px',
+                      }}
                     />
                   ) : (
                     <div style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '12px',
-                      background: 'rgba(47,111,237,0.08)',
-                      border: '1px solid rgba(47,111,237,0.2)',
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '14px',
+                      background: 'rgba(47,111,237,0.06)',
+                      border: '1px dashed rgba(47,111,237,0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <HiPhotograph style={{ fontSize: '48px', color: 'rgba(47,111,237,0.4)' }} />
+                      <HiPhotograph style={{ fontSize: '36px', color: 'rgba(47,111,237,0.3)' }} />
                     </div>
                   )}
-                  {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                    // Fix #4 : couleur via état React, plus de mutation DOM directe
+                  {hasRole(user, [SUPER_ADMIN, ADMIN]) && !project.orderItem && (
                     <label
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        gap: '5px',
                         cursor: uploadingPhoto ? 'wait' : 'pointer',
-                        color: photoLabelHovered ? '#fff' : 'rgba(255,255,255,0.5)',
-                        fontSize: '12px',
-                        padding: '6px 10px',
+                        color: photoLabelHovered ? '#fff' : 'rgba(255,255,255,0.4)',
+                        fontSize: '11px',
+                        padding: '5px 10px',
                         borderRadius: '6px',
-                        border: '1px dashed rgba(255,255,255,0.2)',
+                        border: '1px dashed rgba(255,255,255,0.15)',
                         transition: 'all 0.2s',
+                        fontWeight: 500,
                       }}
                       onMouseEnter={() => setPhotoLabelHovered(true)}
                       onMouseLeave={() => setPhotoLabelHovered(false)}
                     >
-                      <HiPhotograph />
-                      {uploadingPhoto ? 'Upload...' : project.images?.[0]?.url ? 'Changer' : 'Ajouter une photo'}
+                      <HiPhotograph size={13} />
+                      {uploadingPhoto ? 'Upload...' : project.images?.[0]?.url ? 'Changer' : 'Ajouter'}
                       <input
                         ref={photoInputRef}
                         type="file"
@@ -262,63 +260,81 @@ const Summary = ({ project }: { project: Project }) => {
                     </label>
                   )}
                 </div>
-              ) : null}
+              )}
 
-              {/* Content */}
-              <div style={{ flex: 1, padding: '28px', minWidth: 0 }}>
-                {/* Progress + project name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '8px' }}>
-                  <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} />
-                  <div style={{ minWidth: 0 }}>
-                    <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', marginBottom: '0', lineHeight: 1.25 }}>
-                      {project.name}
-                    </h3>
-                  </div>
+              {/* Progress + Name */}
+              <div style={{ flex: 1, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} size={88} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3 style={{
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '17px',
+                    letterSpacing: '-0.01em',
+                    marginBottom: '6px',
+                    lineHeight: 1.3,
+                  }}>
+                    {project.name}
+                  </h3>
+                  {project.orderItem?.product?.name && (
+                    <p style={{
+                      color: 'rgba(255,255,255,0.35)',
+                      fontSize: '12px',
+                      margin: 0,
+                    }}>
+                      Produit : {project.orderItem.product.name}
+                    </p>
+                  )}
                 </div>
-
-                <div style={sep} />
-
-                {project.orderItem ? (
-                  <OrderItemDetails
-                    orderItem={project.orderItem}
-                    customer={project.customer!}
-                    hideImage
-                  />
-                ) : (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                        Description détaillée
-                      </p>
-                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                        <div>
-                          {editDescription ? (
-                            <Button size="sm" variant="solid" onClick={onEditComplete} loading={loading}>
-                              Terminer
-                            </Button>
-                          ) : (
-                            <Button size="sm" icon={<HiPencil />} onClick={onEditModeActive}>
-                              Modifier
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {hasRole(user, [SUPER_ADMIN, ADMIN]) && editDescription ? (
-                      <RichTextEditor value={description} onChange={onEdit} />
-                    ) : (
-                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.7 }}>
-                        {safeHtmlParse(description || '')}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Right details */}
-            <DetailsRight />
+            {/* Description card */}
+            {project.orderItem ? (
+              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+                <OrderItemDetails
+                  orderItem={project.orderItem}
+                  customer={project.customer!}
+                  hideImage
+                />
+              </div>
+            ) : (
+              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <p style={sectionLabel}>
+                    Description détaillée
+                  </p>
+                  {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+                    <div>
+                      {editDescription ? (
+                        <Button size="sm" variant="solid" onClick={onEditComplete} loading={loading}>
+                          Terminer
+                        </Button>
+                      ) : (
+                        <Button size="sm" icon={<HiPencil />} onClick={onEditModeActive}>
+                          Modifier
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {hasRole(user, [SUPER_ADMIN, ADMIN]) && editDescription ? (
+                  <RichTextEditor value={description} onChange={onEdit} />
+                ) : (
+                  <div style={{
+                    color: 'rgba(255,255,255,0.55)',
+                    fontSize: '13.5px',
+                    lineHeight: 1.75,
+                  }}>
+                    {safeHtmlParse(description || '')}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Right column — details */}
+          <DetailsRight />
         </div>
       </Loading>
     </Container>
