@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAppSelector } from '@/store'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
+import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
+import { env } from '@/configs/env.config'
 import { toHT } from '@/utils/priceHelpers'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
@@ -140,27 +142,6 @@ function ActivityFeed({ items }: { items: { left: string; right: string; sub?: s
 }
 
 /* ═══════════════════════════════════════════════ */
-/*  BACKEND PREFS SYNC                            */
-/* ═══════════════════════════════════════════════ */
-const PREFS_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
-
-const saveToBackend = (userId: string, key: string, value: string) => {
-  fetch(`${PREFS_URL}/user-prefs/${userId}/${key}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ value }),
-  }).catch(() => {});
-};
-
-const loadFromBackend = async (userId: string, key: string): Promise<string | null> => {
-  try {
-    const r = await fetch(`${PREFS_URL}/user-prefs/${userId}/${key}`);
-    const data = await r.json();
-    return data.value ?? null;
-  } catch { return null; }
-};
-
-/* ═══════════════════════════════════════════════ */
 /*  TODO LIST                                     */
 /* ═══════════════════════════════════════════════ */
 const TK = 'peg:dashboardTodos'
@@ -168,9 +149,21 @@ interface TodoItem { id: number; text: string; done: boolean; createdAt: string 
 function TodoListWidget() {
   const userId = useAppSelector((state) => state.auth.user.user?.documentId || '');
   const [todos, setTodos] = useState<TodoItem[]>(() => { try { const r = localStorage.getItem(TK); if (r) return JSON.parse(r) } catch {} return [] }); const [input, setInput] = useState(''); const [editId, setEditId] = useState<number | null>(null); const [editText, setEditText] = useState(''); const inputRef = useRef<HTMLInputElement>(null)
-  // Restore from backend if localStorage is empty
-  useEffect(() => { if (todos.length > 0 || !userId) return; loadFromBackend(userId, 'dashboardTodos').then(v => { if (v) { try { const parsed = JSON.parse(v); if (parsed.length > 0) { setTodos(parsed); localStorage.setItem(TK, v) } } catch {} } }) }, [userId])
-  const persist = useCallback((updater: (prev: TodoItem[]) => TodoItem[]) => { setTodos(prev => { const n = updater(prev); const json = JSON.stringify(n); localStorage.setItem(TK, json); if (userId) saveToBackend(userId, 'dashboardTodos', json); return n }) }, [userId])
+  const prefDocRef = useRef<string | null>(null);
+  // Restore from Strapi if localStorage is empty
+  useEffect(() => {
+    if (!userId) return;
+    apiGetAdminPreference(userId).then(pref => {
+      if (pref) {
+        prefDocRef.current = pref.documentId;
+        if (todos.length === 0 && pref.todos?.length > 0) {
+          setTodos(pref.todos);
+          localStorage.setItem(TK, JSON.stringify(pref.todos));
+        }
+      }
+    }).catch(() => {});
+  }, [userId]);
+  const persist = useCallback((updater: (prev: TodoItem[]) => TodoItem[]) => { setTodos(prev => { const n = updater(prev); localStorage.setItem(TK, JSON.stringify(n)); if (prefDocRef.current) { apiUpdateAdminPreference(prefDocRef.current, { todos: n }).catch(() => {}) } else if (userId) { apiCreateAdminPreference(userId, { todos: n }).then(r => { if (r?.documentId) prefDocRef.current = r.documentId }).catch(() => {}) }; return n }) }, [userId])
   const addTodo = () => { const t = input.trim(); if (!t) return; persist(prev => [{ id: Date.now(), text: t, done: false, createdAt: new Date().toISOString() }, ...prev]); setInput(''); inputRef.current?.focus() }
   const toggleTodo = (id: number) => persist(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
   const deleteTodo = (id: number) => persist(prev => prev.filter(t => t.id !== id))
@@ -280,8 +273,21 @@ export default function DashboardAdmin() {
   const { user } = useAppSelector((state) => state.auth.user)
 
   const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
-  // Restore banner from backend if localStorage is empty
-  useEffect(() => { if (bannerUrl || !user?.documentId) return; loadFromBackend(user.documentId, 'dashboardBanner').then(v => { if (v) { setBannerUrl(v); try { localStorage.setItem('peg:dashboardBanner', v) } catch {} } }) }, [user?.documentId])
+  const prefDocIdRef = useRef<string | null>(null);
+  // Restore banner from Strapi if localStorage is empty
+  useEffect(() => {
+    if (!user?.documentId) return;
+    apiGetAdminPreference(user.documentId).then(pref => {
+      if (pref) {
+        prefDocIdRef.current = pref.documentId;
+        if (!bannerUrl && pref.bannerImage?.url) {
+          const url = pref.bannerImage.url.startsWith('http') ? pref.bannerImage.url : (env?.API_ENDPOINT_URL ?? '') + pref.bannerImage.url;
+          setBannerUrl(url);
+          try { localStorage.setItem('peg:dashboardBanner', url) } catch {}
+        }
+      }
+    }).catch(() => {});
+  }, [user?.documentId]);
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gql, setGql] = useState<any>(null)
@@ -336,7 +342,27 @@ export default function DashboardAdmin() {
   const ticketsByState = useMemo(() => { const m = new Map<string, number>(); for (const t of tickets) m.set((t?.state ?? 'inconnu').toString(), (m.get((t?.state ?? 'inconnu').toString()) ?? 0) + 1); return Array.from(m.entries()).map(([l, v]) => ({ label: l, value: v })).sort((a, b) => b.value - a.value) }, [tickets])
 
   const onPickBanner = () => fileRef.current?.click()
-  const onBannerFile = (file?: File | null) => { if (!file) return; if (file.size > MAX_BANNER) { setError('Image trop lourde. Max 2MB.'); return }; const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; try { localStorage.setItem('peg:dashboardBanner', b); setBannerUrl(b); if (user?.documentId) saveToBackend(user.documentId, 'dashboardBanner', b) } catch { setError('Stockage local plein.') } }; r.readAsDataURL(file) }
+  const onBannerFile = async (file?: File | null) => {
+    if (!file) return;
+    if (file.size > MAX_BANNER) { setError('Image trop lourde. Max 2MB.'); return }
+    // Preview immediately
+    const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; try { localStorage.setItem('peg:dashboardBanner', b); setBannerUrl(b) } catch {} }; r.readAsDataURL(file);
+    // Upload to Strapi
+    try {
+      if (!prefDocIdRef.current && user?.documentId) {
+        const created = await apiCreateAdminPreference(user.documentId, {});
+        if (created?.documentId) prefDocIdRef.current = created.documentId;
+      }
+      if (prefDocIdRef.current) {
+        const uploaded = await apiUploadBanner(file, prefDocIdRef.current);
+        if (uploaded?.[0]?.url) {
+          const url = uploaded[0].url.startsWith('http') ? uploaded[0].url : (env?.API_ENDPOINT_URL ?? '') + uploaded[0].url;
+          setBannerUrl(url);
+          try { localStorage.setItem('peg:dashboardBanner', url) } catch {}
+        }
+      }
+    } catch (err) { console.error('[Banner upload]', err) }
+  }
 
   const dataReady = gql !== null
   const greetHour = new Date().getHours()
