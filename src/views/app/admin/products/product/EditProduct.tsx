@@ -15,7 +15,7 @@ import { Form } from '@/@types/form';
 import { apiGetChecklists, GetChecklistsResponse } from '@/services/ChecklistServices';
 import { Checklist } from '@/@types/checklist';
 import {
-  apiLoadPegFilesAndFiles,
+  apiGetPegFiles,
   apiUploadFile,
 } from '@/services/FileServices';
 import reducer, {
@@ -122,14 +122,18 @@ const EditProduct = () => {
 
   const fetchFiles = async (): Promise<void> => {
     setImagesLoading(true);
-    if (product?.images && product?.images?.length > 0) {
-      const imagesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(
-        product?.images
-      );
-
-      setImages(imagesLoaded);
+    try {
+      if (product?.images && product?.images?.length > 0) {
+        const pegFilesLoaded: PegFile[] = await apiGetPegFiles(product.images);
+        setImages(pegFilesLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
+      } else {
+        setImages([]);
+      }
+    } catch (err) {
+      console.error('Erreur chargement images produit:', err);
+    } finally {
+      setImagesLoading(false);
     }
-    setImagesLoading(false);
   };
 
   const fetchForms = async () => {
