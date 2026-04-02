@@ -54,6 +54,9 @@ const ProjectListContent = ({
     const map: Record<string, Project[]> = {};
     statusSections.forEach((s) => (map[s.key] = []));
     projects.forEach((p) => {
+      if (p.state === 'fulfilled') {
+        console.log(`[GROUP] ${p.name} → price=${p.price} (${typeof p.price}), paidPrice=${p.paidPrice} (${typeof p.paidPrice}), diff=${(p.price ?? 0) - (p.paidPrice ?? 0)}`);
+      }
       if (p.state === 'fulfilled' && (p.paidPrice ?? 0) < (p.price ?? 0)) {
         map['unpaid'].push(p);
       } else if (map[p.state]) {
