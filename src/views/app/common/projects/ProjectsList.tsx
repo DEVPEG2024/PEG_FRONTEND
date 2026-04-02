@@ -153,7 +153,11 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
     <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
       <div style={{ display: 'flex', gap: '14px', minWidth: 'max-content' }}>
         {orderedCols.map((col) => {
-          const colProjects = projects.filter(p => p.state === col.key)
+          const colProjects = col.key === 'unpaid'
+            ? projects.filter(p => p.state === 'fulfilled' && (p.paidPrice ?? 0) < (p.price ?? 0))
+            : col.key === 'fulfilled'
+              ? projects.filter(p => p.state === 'fulfilled' && (p.paidPrice ?? 0) >= (p.price ?? 0))
+              : projects.filter(p => p.state === col.key)
           const isCardOver = dragOverCol === col.key && dragProjectId
           const isColDragging = dragColKey === col.key
           const isColOver = dragColKey && !dragProjectId && dragOverCol === col.key && dragColKey !== col.key
