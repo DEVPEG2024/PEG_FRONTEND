@@ -284,11 +284,14 @@ const ProjectsList = () => {
         } else {
           res = { projects_connection: { nodes: [], pageInfo: { total: 0, page: 1, pageSize: 1000, pageCount: 0 } } };
         }
-        results['unpaid'] = (res.projects_connection.nodes || []).filter(
+        const unpaidCount = (res.projects_connection.nodes || []).filter(
           (p: Project) => (p.paidPrice ?? 0) < (p.price ?? 0)
         ).length;
+        results['unpaid'] = unpaidCount;
+        // Subtract unpaid from fulfilled count
+        results['fulfilled'] = (results['fulfilled'] ?? 0) - unpaidCount;
       } catch { /* ignore */ }
-      results['all'] = (results['pending'] ?? 0) + (results['fulfilled'] ?? 0) + (results['waiting'] ?? 0) + (results['canceled'] ?? 0);
+      results['all'] = (results['pending'] ?? 0) + (results['fulfilled'] ?? 0) + (results['waiting'] ?? 0) + (results['canceled'] ?? 0) + (results['unpaid'] ?? 0);
       setStatusCounts(results);
     };
     fetchCounts();
@@ -337,6 +340,10 @@ const ProjectsList = () => {
     // Filter unpaid: fulfilled but paidPrice < price
     if (statusFilter === 'unpaid') {
       result = result.filter((p) => (p.paidPrice ?? 0) < (p.price ?? 0));
+    }
+    // Exclude unpaid from "Terminé" tab
+    if (statusFilter === 'fulfilled') {
+      result = result.filter((p) => (p.paidPrice ?? 0) >= (p.price ?? 0));
     }
 
     // Sort — use tableSort when in table mode, otherwise use dropdown sortBy
