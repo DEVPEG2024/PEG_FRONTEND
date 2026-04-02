@@ -1,6 +1,6 @@
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
-
-const BASE = EXPRESS_BACKEND_URL.replace('/api', '');
+const BASE = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : 'https://peg-backend.vercel.app';
 
 export async function fetchNotifications(
   userId: string,

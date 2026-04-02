@@ -16,12 +16,9 @@ import {
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
-// Express backend URL (without /api suffix)
-const getBackendUrl = () => {
-  const env = import.meta.env.VITE_API_ENDPOINT_URL;
-  if (import.meta.env.DEV) return 'http://localhost:57002';
-  return env ? `${env}` : 'https://peg-backend.vercel.app';
-};
+const BACKEND_URL = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : 'https://peg-backend.vercel.app';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -64,7 +61,7 @@ export default function useNotifications() {
 
     loadNotifications();
 
-    const socket = io(getBackendUrl(), {
+    const socket = io(BACKEND_URL, {
       transports: ['websocket', 'polling'],
     });
 
