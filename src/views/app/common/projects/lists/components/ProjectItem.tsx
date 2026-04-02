@@ -8,12 +8,21 @@ import { env } from '@/configs/env.config';
 
 const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
 import dayjs from 'dayjs';
+import { HiOutlineEye } from 'react-icons/hi';
 import { RootState, useAppSelector } from '@/store';
 import { useState } from 'react';
 import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
+
+const formatLastSeen = (dateStr: string) => {
+  const d = dayjs(dateStr);
+  const now = dayjs();
+  if (d.isSame(now, 'day')) return `Vu auj. ${d.format('HH:mm')}`;
+  if (d.isSame(now.subtract(1, 'day'), 'day')) return `Vu hier ${d.format('HH:mm')}`;
+  return `Vu le ${d.format('DD/MM')} à ${d.format('HH:mm')}`;
+};
 
 const statusStyles: Record<string, { label: string; color: string; bg: string; border: string }> = {
   pending:   { label: 'En cours',   color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
@@ -32,9 +41,11 @@ const priorityStyles: Record<string, { label: string; color: string; bg: string;
 const ProjectItem = ({
   project,
   handleDeleteProject,
+  customerLastSeen,
 }: {
   project: Project;
   handleDeleteProject?: (project: Project) => void;
+  customerLastSeen?: string;
 }) => {
   const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
   const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
@@ -156,18 +167,31 @@ const ProjectItem = ({
           )}
         </div>
 
-        {/* Ligne 2 : Nom du projet */}
-        <p
-          onClick={handleNavigate}
-          style={{
-            color: '#fff', fontWeight: 700, fontSize: '15px',
-            letterSpacing: '-0.01em', lineHeight: 1.3,
-            cursor: 'pointer', margin: 0,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}
-        >
-          {project.name}
-        </p>
+        {/* Ligne 2 : Nom du projet + dernière vue client */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <p
+            onClick={handleNavigate}
+            style={{
+              color: '#fff', fontWeight: 700, fontSize: '15px',
+              letterSpacing: '-0.01em', lineHeight: 1.3,
+              cursor: 'pointer', margin: 0,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          >
+            {project.name}
+          </p>
+          {isSuperAdmin && customerLastSeen && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '4px',
+              background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+              borderRadius: '100px', padding: '2px 8px',
+              fontSize: '10px', fontWeight: 600, color: '#a5b4fc', whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              <HiOutlineEye size={11} />
+              {formatLastSeen(customerLastSeen)}
+            </span>
+          )}
+        </div>
 
         {/* Ligne 3 : Barre de progression */}
         <div onClick={handleNavigate} style={{ cursor: 'pointer' }}>
