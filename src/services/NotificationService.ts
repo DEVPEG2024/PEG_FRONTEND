@@ -1,6 +1,6 @@
 const BASE = import.meta.env.DEV
   ? 'http://localhost:3000'
-  : 'https://peg-backend.vercel.app';
+  : '/peg-api';
 
 export async function fetchNotifications(
   userId: string,

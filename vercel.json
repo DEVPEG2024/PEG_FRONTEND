@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/peg-api/:path*",
+      "destination": "https://peg-backend.vercel.app/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

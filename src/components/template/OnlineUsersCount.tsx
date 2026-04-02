@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 
-const BACKEND_URL = 'https://peg-backend.vercel.app';
+const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
 const PING_INTERVAL = 30_000;
 const FETCH_INTERVAL = 30_000;
 
