@@ -111,7 +111,7 @@ export default function useNotifications() {
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
-            userPushNotificationService: true,
+            userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           } as any);
         }
