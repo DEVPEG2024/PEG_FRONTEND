@@ -11,6 +11,8 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { setEditCurrentProjectDialog, updateCurrentProject } from '../store';
 import { toast } from 'react-toastify';
+import dayjs from 'dayjs';
+import { HiOutlineEye } from 'react-icons/hi';
 
 const statusOptions = [
   { value: 'pending',   label: 'En cours',    color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
@@ -20,7 +22,15 @@ const statusOptions = [
   { value: 'sav',       label: 'SAV',         color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
 ];
 
-const ProjectHeader = ({ project }: { project: Project }) => {
+const formatLastSeen = (dateStr: string) => {
+  const d = dayjs(dateStr);
+  const now = dayjs();
+  if (d.isSame(now, 'day')) return `Vu auj. ${d.format('HH:mm')}`;
+  if (d.isSame(now.subtract(1, 'day'), 'day')) return `Vu hier ${d.format('HH:mm')}`;
+  return `Vu le ${d.format('DD/MM')} à ${d.format('HH:mm')}`;
+};
+
+const ProjectHeader = ({ project, customerLastSeen }: { project: Project; customerLastSeen?: string | null }) => {
   const dispatch = useAppDispatch();
   const { user }: { user: User } = useAppSelector(
     (state: RootState) => state.auth.user
@@ -70,15 +80,35 @@ const ProjectHeader = ({ project }: { project: Project }) => {
               }}>
                 Projet
               </p>
-              <h2 style={{
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '22px',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
-              }}>
-                {project?.name}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h2 style={{
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: '22px',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                }}>
+                  {project?.name}
+                </h2>
+                {hasRole(user, [SUPER_ADMIN, ADMIN]) && customerLastSeen && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(99,102,241,0.12)',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    borderRadius: '100px',
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: '#a5b4fc',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    <HiOutlineEye size={13} />
+                    {formatLastSeen(customerLastSeen)}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Quick status change — admin only */}
