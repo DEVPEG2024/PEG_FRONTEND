@@ -16,7 +16,7 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
