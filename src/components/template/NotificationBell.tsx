@@ -38,8 +38,8 @@ const NotificationBell = () => {
 
   useNotifications();
 
-  const { unreadCount, notifications } = useAppSelector(
-    (state: RootState) => state.base.notification,
+  const { unreadCount = 0, notifications = [] } = useAppSelector(
+    (state: RootState) => state.base.notification ?? { unreadCount: 0, notifications: [] },
   );
   const userId = useAppSelector((state: RootState) => {
     const u = state.auth.user.user;
