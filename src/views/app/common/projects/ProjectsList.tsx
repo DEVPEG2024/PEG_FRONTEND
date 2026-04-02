@@ -63,6 +63,7 @@ const statusTabs = [
   { key: 'waiting',   label: 'En attente',  color: '#fbbf24',               bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'   },
   { key: 'canceled',  label: 'Annulé',      color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
   { key: 'sav',       label: 'SAV',         color: '#fb923c',               bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)'  },
+  { key: 'unpaid',    label: 'Terminé impayé', color: '#e879f9',            bg: 'rgba(232,121,249,0.15)', border: 'rgba(232,121,249,0.35)' },
 ];
 
 const priorityStyles: Record<string, { label: string; color: string }> = {
@@ -266,7 +267,23 @@ const ProjectsList = () => {
       };
 
       await Promise.all(statuses.map(fetchForStatus));
-      results['all'] = Object.values(results).reduce((a, b) => a + b, 0);
+      // Count "unpaid": fulfilled projects where paidPrice < price
+      try {
+        let res: { projects_connection: GetProjectsResponse };
+        if (hasRole(user, [SUPER_ADMIN, ADMIN])) {
+          res = await unwrapData(apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '', statusFilter: 'fulfilled' }));
+        } else if (hasRole(user, [CUSTOMER]) && user.customer?.documentId) {
+          res = await unwrapData(apiGetCustomerProjects({ customerDocumentId: user.customer.documentId, pagination: { page: 1, pageSize: 1000 }, searchTerm: '', statusFilter: 'fulfilled' }));
+        } else if (hasRole(user, [PRODUCER]) && user.producer?.documentId) {
+          res = await unwrapData(apiGetProducerProjects({ producerDocumentId: user.producer.documentId, pagination: { page: 1, pageSize: 1000 }, searchTerm: '', statusFilter: 'fulfilled' }));
+        } else {
+          res = { projects_connection: { nodes: [], pageInfo: { total: 0, page: 1, pageSize: 1000, pageCount: 0 } } };
+        }
+        results['unpaid'] = (res.projects_connection.nodes || []).filter(
+          (p: Project) => (p.paidPrice ?? 0) < (p.price ?? 0)
+        ).length;
+      } catch { /* ignore */ }
+      results['all'] = (results['pending'] ?? 0) + (results['fulfilled'] ?? 0) + (results['waiting'] ?? 0) + (results['canceled'] ?? 0);
       setStatusCounts(results);
     };
     fetchCounts();
@@ -286,9 +303,9 @@ const ProjectsList = () => {
   useEffect(() => {
     dispatch(getProjects({
       user,
-      pagination: { page: currentPage, pageSize },
+      pagination: { page: currentPage, pageSize: statusFilter === 'unpaid' ? 1000 : pageSize },
       searchTerm,
-      statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+      statusFilter: statusFilter === 'all' ? undefined : statusFilter === 'unpaid' ? 'fulfilled' : statusFilter,
     }));
   }, [dispatch, user, currentPage, pageSize, searchTerm, statusFilter]);
 
@@ -311,6 +328,11 @@ const ProjectsList = () => {
     let result = projects.filter(
       (p) => customersSelected.length === 0 || customersSelected.includes(p.customer?.documentId || '')
     );
+
+    // Filter unpaid: fulfilled but paidPrice < price
+    if (statusFilter === 'unpaid') {
+      result = result.filter((p) => (p.paidPrice ?? 0) < (p.price ?? 0));
+    }
 
     // Sort
     const [field, dir] = sortBy.split('_');
