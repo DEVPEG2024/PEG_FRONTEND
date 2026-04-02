@@ -62,133 +62,153 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
       background: 'linear-gradient(180deg, #0d1b2e 0%, #111827 100%)',
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       fontFamily: 'Inter, sans-serif',
-      paddingTop: '28px',
-      paddingBottom: '20px',
+      paddingTop: '24px',
+      paddingBottom: '0',
     }}>
       <Container className="px-6">
-        {/* Project name row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              <p style={{
-                color: 'rgba(255,255,255,0.55)',
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginBottom: '5px',
+        {/* Row 1 — Title + current status badge + last seen */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              marginBottom: '6px',
+            }}>
+              Projet
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <h2 style={{
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '20px',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                margin: 0,
               }}>
-                Projet
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <h2 style={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '22px',
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.2,
+                {project?.name}
+              </h2>
+              {/* Current status badge */}
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: currentStatus.bg, border: `1px solid ${currentStatus.border}`,
+                borderRadius: '100px', padding: '3px 10px',
+                color: currentStatus.color, fontSize: '11px', fontWeight: 700,
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: currentStatus.color }} />
+                {currentStatus.label}
+              </span>
+              {hasRole(user, [SUPER_ADMIN, ADMIN]) && customerLastSeen && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(99,102,241,0.10)',
+                  border: '1px solid rgba(99,102,241,0.20)',
+                  borderRadius: '100px',
+                  padding: '3px 10px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: '#a5b4fc',
+                  whiteSpace: 'nowrap',
                 }}>
-                  {project?.name}
-                </h2>
-                {hasRole(user, [SUPER_ADMIN, ADMIN]) && customerLastSeen && (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    background: 'rgba(99,102,241,0.12)',
-                    border: '1px solid rgba(99,102,241,0.25)',
-                    borderRadius: '100px',
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#a5b4fc',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    <HiOutlineEye size={13} />
-                    {formatLastSeen(customerLastSeen)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Quick status change — admin only */}
-            {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {statusOptions.map((opt) => {
-                  const isActive = project.state === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => handleStatusChange(opt.value)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: '100px',
-                        border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.08)'}`,
-                        background: isActive ? opt.bg : 'transparent',
-                        color: isActive ? opt.color : 'rgba(255,255,255,0.55)',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        fontFamily: 'Inter, sans-serif',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Right: avatars + action buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginRight: '8px' }}>
-              <AvatarName entity={project?.customer} type="Client" />
-              {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) ? (
-                <AvatarName entity={project?.producer} type="Producteur" />
-              ) : hasRole(user, [CUSTOMER]) && (
-                <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as any} type="Producteur" />
+                  <HiOutlineEye size={12} />
+                  {formatLastSeen(customerLastSeen)}
+                </span>
               )}
             </div>
+          </div>
 
-            {/* Assign me button — prominent for producers */}
+          {/* Right: edit button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingTop: '18px' }}>
             {hasRole(user, [PRODUCER]) && !project.producer && (
               <button
                 onClick={assignMeAsProducer}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   background: 'linear-gradient(90deg, #059669, #047857)',
-                  border: 'none', borderRadius: '10px', padding: '8px 16px',
-                  color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                  boxShadow: '0 3px 12px rgba(5,150,105,0.4)',
+                  border: 'none', borderRadius: '8px', padding: '7px 14px',
+                  color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(5,150,105,0.3)',
                   fontFamily: 'Inter, sans-serif',
                 }}
               >
-                <MdPersonAdd size={16} />
-                M'assigner ce projet
+                <MdPersonAdd size={14} />
+                M'assigner
               </button>
             )}
-
             {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
               <button
                 onClick={handleEditProject}
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '9px',
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.6)',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.5)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  transition: 'all 0.15s',
                 }}
               >
-                <HiOutlinePencil size={15} />
+                <HiOutlinePencil size={14} />
               </button>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2 — Status quick-change (admin) + Avatars */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
+        }}>
+          {/* Quick status change — admin only */}
+          {hasRole(user, [SUPER_ADMIN, ADMIN]) ? (
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {statusOptions.map((opt) => {
+                const isActive = project.state === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    style={{
+                      padding: '4px 11px',
+                      borderRadius: '100px',
+                      border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.06)'}`,
+                      background: isActive ? opt.bg : 'transparent',
+                      color: isActive ? opt.color : 'rgba(255,255,255,0.4)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                      transition: 'all 0.15s',
+                      letterSpacing: '0.01em',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : <div />}
+
+          {/* Avatars */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <AvatarName entity={project?.customer} type="Client" />
+            {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) ? (
+              <AvatarName entity={project?.producer} type="Producteur" />
+            ) : hasRole(user, [CUSTOMER]) && (
+              <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as any} type="Producteur" />
             )}
           </div>
         </div>
