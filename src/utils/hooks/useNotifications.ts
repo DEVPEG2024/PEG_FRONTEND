@@ -22,10 +22,10 @@ const BACKEND_URL = import.meta.env.DEV
   ? 'http://localhost:3000'
   : '/peg-api';
 
-// Socket.io ne fonctionne pas sur Vercel serverless — désactivé en prod
+// Socket.io activé en dev uniquement — le backend Express est sur Vercel serverless (pas de WebSocket)
 const SOCKET_ENABLED = import.meta.env.DEV;
 
-const POLL_INTERVAL = 30_000;
+const POLL_INTERVAL = 5_000;
 const RECONNECT_DELAY = 5_000;
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -45,6 +45,10 @@ const EVENT_ICONS: Record<string, string> = {
   new_invoice: '🧾',
   new_ticket: '🎫',
   payment_received: '💳',
+  new_comment: '💬',
+  new_file: '📎',
+  new_task: '✅',
+  task_status_change: '🔄',
 };
 
 export default function useNotifications() {

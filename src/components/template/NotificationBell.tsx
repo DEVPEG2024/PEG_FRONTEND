@@ -24,6 +24,10 @@ const EVENT_ICONS: Record<string, string> = {
   new_invoice: '🧾',
   new_ticket: '🎫',
   payment_received: '💳',
+  new_comment: '💬',
+  new_file: '📎',
+  new_task: '✅',
+  task_status_change: '🔄',
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -32,6 +36,10 @@ const EVENT_COLORS: Record<string, string> = {
   new_invoice: 'bg-green-100 dark:bg-green-900/30',
   new_ticket: 'bg-purple-100 dark:bg-purple-900/30',
   payment_received: 'bg-emerald-100 dark:bg-emerald-900/30',
+  new_comment: 'bg-indigo-100 dark:bg-indigo-900/30',
+  new_file: 'bg-cyan-100 dark:bg-cyan-900/30',
+  new_task: 'bg-teal-100 dark:bg-teal-900/30',
+  task_status_change: 'bg-amber-100 dark:bg-amber-900/30',
 };
 
 function timeAgo(dateStr: string) {
@@ -326,7 +334,7 @@ const NotificationBell = () => {
               <span className={`w-1.5 h-1.5 rounded-full ${connectionIndicator}`} />
               <span className="text-[10px] text-gray-400">
                 {connectionStatus === 'connected' && 'Temps réel'}
-                {connectionStatus === 'polling' && 'Actualisation auto (30s)'}
+                {connectionStatus === 'polling' && 'Actualisation auto (5s)'}
                 {connectionStatus === 'disconnected' && 'Déconnecté'}
               </span>
             </div>

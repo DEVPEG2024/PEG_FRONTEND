@@ -10,19 +10,19 @@ interface ChannelPref {
 }
 
 interface Preferences {
-  new_order: ChannelPref;
-  project_status_change: ChannelPref;
-  new_invoice: ChannelPref;
-  new_ticket: ChannelPref;
-  payment_received: ChannelPref;
+  [key: string]: ChannelPref;
 }
 
 const EVENT_LABELS: Record<string, { label: string; description: string; roles: string[] }> = {
-  new_order:             { label: 'Nouvelle commande',         description: 'Quand un client passe une commande',        roles: ['admin', 'super_admin', 'producer'] },
-  project_status_change: { label: 'Changement statut projet', description: "Quand l'état d'un projet change",           roles: ['admin', 'super_admin', 'customer'] },
-  new_invoice:           { label: 'Nouvelle facture',          description: 'Quand une facture est créée',               roles: ['admin', 'super_admin', 'customer'] },
-  new_ticket:            { label: 'Nouveau ticket',            description: "Quand un ticket d'assistance est ouvert",   roles: ['admin', 'super_admin', 'customer', 'producer'] },
-  payment_received:      { label: 'Paiement reçu',            description: 'Quand un paiement est confirmé',            roles: ['admin', 'super_admin', 'producer'] },
+  new_order:             { label: 'Nouvelle commande',         description: 'Quand un client passe une commande',                  roles: ['admin', 'super_admin', 'producer'] },
+  project_status_change: { label: 'Changement statut projet', description: "Quand l'état d'un projet change",                     roles: ['admin', 'super_admin', 'customer'] },
+  new_comment:           { label: 'Nouveau message',           description: 'Quand quelqu\'un commente un projet',                roles: ['admin', 'super_admin', 'customer', 'producer'] },
+  new_file:              { label: 'Nouveau fichier',           description: 'Quand un fichier est ajouté à un projet',            roles: ['admin', 'super_admin', 'customer', 'producer'] },
+  new_task:              { label: 'Nouvelle tâche',            description: 'Quand une tâche est créée dans un projet',           roles: ['admin', 'super_admin', 'customer'] },
+  task_status_change:    { label: 'Tâche mise à jour',         description: "Quand le statut d'une tâche change",                 roles: ['admin', 'super_admin', 'customer'] },
+  new_invoice:           { label: 'Nouvelle facture',          description: 'Quand une facture est créée',                        roles: ['admin', 'super_admin', 'customer'] },
+  new_ticket:            { label: 'Nouveau ticket',            description: "Quand un ticket d'assistance est ouvert",            roles: ['admin', 'super_admin', 'customer', 'producer'] },
+  payment_received:      { label: 'Paiement reçu',            description: 'Quand un paiement est confirmé',                     roles: ['admin', 'super_admin', 'producer'] },
 };
 
 const toggleStyle = (enabled: boolean): React.CSSProperties => ({
@@ -62,13 +62,9 @@ const NotificationPreferences = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const defaultPrefs: Preferences = {
-      new_order:             { push: true, email: true },
-      project_status_change: { push: true, email: true },
-      new_invoice:           { push: true, email: true },
-      new_ticket:            { push: true, email: true },
-      payment_received:      { push: true, email: true },
-    };
+    const defaultPrefs: Preferences = Object.fromEntries(
+      Object.keys(EVENT_LABELS).map((key) => [key, { push: true, email: true }]),
+    );
     fetchPreferences(userId)
       .then((data) => {
         setPrefs(data?.preferences ?? defaultPrefs);
@@ -79,7 +75,7 @@ const NotificationPreferences = () => {
   }, [userId]);
 
   const handleToggle = async (
-    eventType: keyof Preferences,
+    eventType: string,
     channel: 'push' | 'email',
   ) => {
     if (!prefs || !userId) return;
@@ -154,7 +150,7 @@ const NotificationPreferences = () => {
 
       {/* Rows */}
       {visibleEvents.map(([eventType, cfg]) => {
-        const ep = prefs[eventType as keyof Preferences];
+        const ep = prefs[eventType as string];
         return (
           <div
             key={eventType}
@@ -177,7 +173,7 @@ const NotificationPreferences = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
-                onClick={() => handleToggle(eventType as keyof Preferences, 'push')}
+                onClick={() => handleToggle(eventType as string, 'push')}
                 style={toggleStyle(ep.push)}
                 disabled={saving}
               >
@@ -186,7 +182,7 @@ const NotificationPreferences = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
-                onClick={() => handleToggle(eventType as keyof Preferences, 'email')}
+                onClick={() => handleToggle(eventType as string, 'email')}
                 style={toggleStyle(ep.email)}
                 disabled={saving}
               >
