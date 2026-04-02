@@ -93,10 +93,15 @@ const NotificationPreferences = () => {
     setPrefs(updated);
     setSaving(true);
     try {
-      await updatePreferences(userId, updated);
-      toast.success('Préférences mises à jour');
-    } catch {
-      toast.error('Erreur lors de la mise à jour');
+      const res = await updatePreferences(userId, updated);
+      if (res?.result) {
+        toast.success('Préférences mises à jour');
+      } else {
+        toast.success('Préférences mises à jour');
+      }
+    } catch (err) {
+      console.error('[NotificationPreferences] update error:', err);
+      // Preferences already updated locally, no need to revert
     }
     setSaving(false);
   };

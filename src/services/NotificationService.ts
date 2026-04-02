@@ -39,12 +39,12 @@ export async function deleteNotification(id: string) {
 }
 
 export async function fetchPreferences(userId: string) {
-  const res = await fetch(`${BASE}/notifications/preferences/${userId}`);
+  const res = await fetch(`${BASE}/notifications/preferences/${encodeURIComponent(userId)}`);
   return res.json();
 }
 
 export async function updatePreferences(userId: string, preferences: any) {
-  const res = await fetch(`${BASE}/notifications/preferences/${userId}`, {
+  const res = await fetch(`${BASE}/notifications/preferences/${encodeURIComponent(userId)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ preferences }),
