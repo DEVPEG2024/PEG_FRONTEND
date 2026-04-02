@@ -20,11 +20,11 @@ const FileItem = (props: FileItemProps) => {
     const renderThumbnail = () => {
         const isImageFile = type.split('/')[0] === 'image'
 
-        if (isImageFile) {
+        if (isImageFile || previewUrl) {
             return (
                 <img
                     className="upload-file-image"
-                    src={URL.createObjectURL(file)}
+                    src={previewUrl || URL.createObjectURL(file)}
                     alt={`file preview ${name}`}
                 />
             )

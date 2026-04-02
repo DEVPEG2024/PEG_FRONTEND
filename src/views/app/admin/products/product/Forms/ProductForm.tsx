@@ -205,7 +205,11 @@ const ProductForm = (props: ProductFormProps) => {
                   onFileAdd={(file) => onFileAdd(file)}
                   onFileRemove={(file) => onFileRemove(file)}
                   field={{ name: 'images' }}
-                  fileList={images.map(({ file }) => file)}
+                  fileList={images.map((pf) => {
+                    const file = pf.file as File & { previewUrl?: string };
+                    file.previewUrl = pf.url;
+                    return file;
+                  })}
                 />
               </Loading>
             </div>
