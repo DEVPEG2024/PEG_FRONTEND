@@ -7,6 +7,7 @@ import { User } from '@/@types/user';
 const Profile = lazy(() => import('./components/Profile'));
 const Password = lazy(() => import('./components/Password'));
 const CompanyProfile = lazy(() => import('./components/CompanyProfile'));
+const NotificationPreferences = lazy(() => import('./components/NotificationPreferences'));
 
 const Settings = () => {
   const [currentTab, setCurrentTab] = useState('profile');
@@ -18,6 +19,7 @@ const Settings = () => {
   const TABS = [
     { key: 'profile', label: 'Mon compte' },
     ...(isCustomer ? [{ key: 'company', label: 'Mon entreprise' }] : []),
+    { key: 'notifications', label: 'Notifications' },
     { key: 'password', label: 'Mot de passe' },
   ];
   const path = location.pathname.substring(location.pathname.lastIndexOf('/') + 1);
@@ -61,6 +63,7 @@ const Settings = () => {
           }>
             {currentTab === 'profile' && <Profile />}
             {currentTab === 'company' && <CompanyProfile />}
+            {currentTab === 'notifications' && <NotificationPreferences />}
             {currentTab === 'password' && <Password onTabChange={onTabChange} />}
           </Suspense>
         </div>
