@@ -61,9 +61,20 @@ const NotificationPreferences = () => {
 
   useEffect(() => {
     if (!userId) return;
-    fetchPreferences(userId).then((data) => {
-      if (data.preferences) setPrefs(data.preferences);
-    });
+    const defaultPrefs: Preferences = {
+      new_order:             { push: true, email: true },
+      project_status_change: { push: true, email: true },
+      new_invoice:           { push: true, email: true },
+      new_ticket:            { push: true, email: true },
+      payment_received:      { push: true, email: true },
+    };
+    fetchPreferences(userId)
+      .then((data) => {
+        setPrefs(data?.preferences ?? defaultPrefs);
+      })
+      .catch(() => {
+        setPrefs(defaultPrefs);
+      });
   }, [userId]);
 
   const handleToggle = async (
