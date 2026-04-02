@@ -54,15 +54,18 @@ const ProjectDetails = () => {
 
   const token = useRootAppSelector((state) => state.auth.session.token);
 
-  // Customer: track project view
+  // Track project view for all users
   useEffect(() => {
-    if (!isCustomer || !documentId || !user?.documentId || !token) return;
+    if (!documentId || !user?.documentId || !token) return;
     fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ userId: user.documentId }),
-    }).catch(() => {});
-  }, [isCustomer, documentId, user?.documentId, token]);
+    })
+      .then((r) => r.json())
+      .then((data) => console.log('[ProjectView] POST:', data))
+      .catch((err) => console.error('[ProjectView] POST error:', err));
+  }, [documentId, user?.documentId, token]);
 
   // Admin: fetch last view by customer
   useEffect(() => {
@@ -73,11 +76,12 @@ const ProjectDetails = () => {
       })
         .then((r) => r.json())
         .then((data) => {
+          console.log('[ProjectView] GET:', data);
           if (data.views?.length > 0) {
             setCustomerLastSeen(data.views[0].last_seen);
           }
         })
-        .catch(() => {});
+        .catch((err) => console.error('[ProjectView] GET error:', err));
     };
     fetchView();
     const iv = setInterval(fetchView, 30_000);
