@@ -59,7 +59,11 @@ export const persistor = persistStore(store)
 
 export function injectReducer<S>(key: string, reducer: Reducer<S, Action>) {
     if (store.asyncReducers) {
-        if (store.asyncReducers[key] === reducer) {
+        // Skip if this key is already injected (same ref OR already present).
+        // The strict-equality check alone misses cases where the module is
+        // re-evaluated (HMR, lazy-import) — checking for key existence avoids
+        // unnecessary replaceReducer calls and the REHYDRATE they trigger.
+        if (store.asyncReducers[key]) {
             return false
         }
         store.asyncReducers[key] = reducer

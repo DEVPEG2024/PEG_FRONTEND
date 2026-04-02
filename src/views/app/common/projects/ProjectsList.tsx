@@ -81,6 +81,9 @@ const statusLabelStyles: Record<string, { label: string; color: string }> = {
   unpaid:    { label: 'Terminé impayé', color: '#e879f9' },
 };
 
+const statusOrder: Record<string, number> = { pending: 0, waiting: 1, sav: 2, fulfilled: 3, canceled: 4, unpaid: 5 };
+const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
 function getProjectProgress(project: Project): number {
   const cl = project.checklistItems ?? [];
   if (cl.length > 0) return Math.round((cl.filter((i) => i.done).length / cl.length) * 100);
@@ -237,6 +240,7 @@ const ProjectsList = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('endDate_asc');
   const [viewMode, setViewMode] = useState<'cards' | 'table' | 'kanban'>('cards');
+  const [tableSort, setTableSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: '', dir: 'asc' });
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -335,8 +339,11 @@ const ProjectsList = () => {
       result = result.filter((p) => (p.paidPrice ?? 0) < (p.price ?? 0));
     }
 
-    // Sort
-    const [field, dir] = sortBy.split('_');
+    // Sort — use tableSort when in table mode, otherwise use dropdown sortBy
+    const useTable = viewMode === 'table' && tableSort.key !== '';
+    const field = useTable ? tableSort.key : sortBy.split('_')[0];
+    const dir = useTable ? tableSort.dir : sortBy.split('_')[1];
+
     result = [...result].sort((a, b) => {
       let cmp = 0;
       switch (field) {
@@ -352,12 +359,24 @@ const ProjectsList = () => {
         case 'name':
           cmp = (a.name ?? '').localeCompare(b.name ?? '');
           break;
+        case 'client':
+          cmp = (a.customer?.name ?? '').localeCompare(b.customer?.name ?? '');
+          break;
+        case 'status':
+          cmp = (statusOrder[a.state] ?? 99) - (statusOrder[b.state] ?? 99);
+          break;
+        case 'priority':
+          cmp = (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
+          break;
+        case 'commission':
+          cmp = (a.producerPrice ?? 0) - (b.producerPrice ?? 0);
+          break;
       }
       return dir === 'desc' ? -cmp : cmp;
     });
 
     return result;
-  }, [projects, customersSelected, sortBy]);
+  }, [projects, customersSelected, sortBy, viewMode, tableSort]);
 
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -530,20 +549,43 @@ const ProjectsList = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  {['Projet', 'Client', 'Statut',
-                    ...(isAdminOrSuperAdmin ? ['Priorité'] : []),
-                    'Progression', 'Échéance',
-                    ...(isSuperAdmin ? ['Prix'] : []),
-                    ...(hasRole(user, [PRODUCER]) ? ['Commission'] : []),
-                  ].map((h) => (
-                    <th key={h} style={{
-                      padding: '12px 14px', textAlign: 'left',
-                      color: 'rgba(255,255,255,0.35)', fontSize: '11px', fontWeight: 700,
-                      letterSpacing: '0.05em', textTransform: 'uppercase',
-                    }}>
-                      {h}
-                    </th>
-                  ))}
+                  {([
+                    { label: 'Projet', key: 'name', defaultDir: 'asc' as const },
+                    { label: 'Client', key: 'client', defaultDir: 'asc' as const },
+                    { label: 'Statut', key: 'status', defaultDir: 'asc' as const },
+                    ...(isAdminOrSuperAdmin ? [{ label: 'Priorité', key: 'priority', defaultDir: 'asc' as const }] : []),
+                    { label: 'Progression', key: 'progress', defaultDir: 'desc' as const },
+                    { label: 'Échéance', key: 'endDate', defaultDir: 'asc' as const },
+                    ...(isSuperAdmin ? [{ label: 'Prix', key: 'price', defaultDir: 'desc' as const }] : []),
+                    ...(hasRole(user, [PRODUCER]) ? [{ label: 'Commission', key: 'commission', defaultDir: 'desc' as const }] : []),
+                  ]).map((col) => {
+                    const isActive = tableSort.key === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        onClick={() => setTableSort(prev =>
+                          prev.key === col.key
+                            ? { key: col.key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+                            : { key: col.key, dir: col.defaultDir }
+                        )}
+                        style={{
+                          padding: '12px 14px', textAlign: 'left',
+                          color: isActive ? '#6b9eff' : 'rgba(255,255,255,0.35)',
+                          fontSize: '11px', fontWeight: 700,
+                          letterSpacing: '0.05em', textTransform: 'uppercase',
+                          cursor: 'pointer', userSelect: 'none',
+                          transition: 'color 0.15s',
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {col.label}
+                          <span style={{ fontSize: '10px', opacity: isActive ? 1 : 0.3 }}>
+                            {isActive ? (tableSort.dir === 'asc' ? '▲' : '▼') : '▲'}
+                          </span>
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
