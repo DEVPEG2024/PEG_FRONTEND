@@ -347,6 +347,12 @@ const protectedDefaultRoutes = [
     authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
   },
   {
+    key: "default.settings.notifications",
+    path: "/settings/notifications",
+    component: lazy(() => import("@/views/app/account/Settings")),
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+  },
+  {
     key: "default.settings.password",
     path: "/settings/password",
     component: lazy(() => import("@/views/app/account/Settings")),
