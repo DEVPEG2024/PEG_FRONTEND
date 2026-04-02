@@ -78,6 +78,7 @@ const statusLabelStyles: Record<string, { label: string; color: string }> = {
   waiting:   { label: 'En attente', color: '#fbbf24' },
   canceled:  { label: 'Annulé',     color: '#f87171' },
   sav:       { label: 'SAV',        color: '#fb923c' },
+  unpaid:    { label: 'Terminé impayé', color: '#e879f9' },
 };
 
 function getProjectProgress(project: Project): number {
@@ -247,7 +248,7 @@ const ProjectsList = () => {
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   useEffect(() => {
     const fetchCounts = async () => {
-      const statuses = ['pending', 'fulfilled', 'waiting', 'canceled'];
+      const statuses = ['pending', 'fulfilled', 'waiting', 'canceled', 'unpaid'];
       const results: Record<string, number> = {};
 
       const fetchForStatus = async (s: string) => {

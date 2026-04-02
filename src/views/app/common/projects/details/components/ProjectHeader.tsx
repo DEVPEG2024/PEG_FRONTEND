@@ -20,6 +20,7 @@ const statusOptions = [
   { value: 'waiting',   label: 'En attente',  color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'  },
   { value: 'canceled',  label: 'Annulé',      color: '#f87171', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'  },
   { value: 'sav',       label: 'SAV',         color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
+  { value: 'unpaid',   label: 'Terminé impayé', color: '#e879f9', bg: 'rgba(232,121,249,0.15)', border: 'rgba(232,121,249,0.35)' },
 ];
 
 const formatLastSeen = (dateStr: string) => {

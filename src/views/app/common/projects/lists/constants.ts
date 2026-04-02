@@ -12,6 +12,7 @@ export const statusColorData = {
   waiting: 'bg-yellow-500',
   canceled: 'bg-red-500',
   sav: 'bg-orange-500',
+  unpaid: 'bg-purple-500',
 };
 export const statusColorText = {
   pending: 'text-blue-500',
@@ -19,6 +20,7 @@ export const statusColorText = {
   waiting: 'text-yellow-500',
   canceled: 'text-red-500',
   sav: 'text-orange-500',
+  unpaid: 'text-purple-500',
 };
 export const statusTextData = {
   pending: 'En cours',
@@ -26,6 +28,7 @@ export const statusTextData = {
   waiting: 'En attente',
   canceled: 'Annulé',
   sav: 'SAV',
+  unpaid: 'Terminé impayé',
 };
 
 export const priorityColorData = {
@@ -73,6 +76,10 @@ export const stateData = [
   {
     value: 'sav',
     label: 'SAV',
+  },
+  {
+    value: 'unpaid',
+    label: 'Terminé impayé',
   },
 ];
 export const priorityData = [
