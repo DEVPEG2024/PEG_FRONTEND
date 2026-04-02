@@ -179,15 +179,15 @@ const Summary = ({ project }: { project: Project }) => {
       <Loading loading={loading}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 300px',
-          gap: '16px',
-          paddingTop: '24px',
-          paddingBottom: '24px',
+          gridTemplateColumns: '1fr 280px',
+          gap: '14px',
+          paddingTop: '20px',
+          paddingBottom: '20px',
           fontFamily: 'Inter, sans-serif',
           alignItems: 'start',
         }}>
           {/* Left column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Top row: Image + Progress circle + Project name */}
             <div style={{ ...cardStyle, display: 'flex', alignItems: 'stretch' }}>
               {/* Image column */}
@@ -276,13 +276,13 @@ const Summary = ({ project }: { project: Project }) => {
                   }}>
                     {project.name}
                   </h3>
-                  {project.orderItem?.product?.name && (
+                  {project.customer?.name && (
                     <p style={{
-                      color: 'rgba(255,255,255,0.35)',
-                      fontSize: '12px',
+                      color: 'rgba(255,255,255,0.3)',
+                      fontSize: '11px',
                       margin: 0,
                     }}>
-                      Produit : {project.orderItem.product.name}
+                      {project.customer.name}
                     </p>
                   )}
                 </div>
