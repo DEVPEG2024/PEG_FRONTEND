@@ -52,28 +52,24 @@ const ProjectDetails = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [customerLastSeen, setCustomerLastSeen] = useState<string | null>(null);
 
-  const token = useRootAppSelector((state) => state.auth.session.token);
-
   // Track project view for all users
   useEffect(() => {
-    if (!documentId || !user?.documentId || !token) return;
+    if (!documentId || !user?.documentId) return;
     fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.documentId }),
     })
       .then((r) => r.json())
       .then((data) => console.log('[ProjectView] POST:', data))
       .catch((err) => console.error('[ProjectView] POST error:', err));
-  }, [documentId, user?.documentId, token]);
+  }, [documentId, user?.documentId]);
 
   // Admin: fetch last view by customer
   useEffect(() => {
-    if (!isAdmin || !documentId || !token) return;
+    if (!isAdmin || !documentId) return;
     const fetchView = () => {
-      fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`)
         .then((r) => r.json())
         .then((data) => {
           console.log('[ProjectView] GET:', data);
@@ -86,7 +82,7 @@ const ProjectDetails = () => {
     fetchView();
     const iv = setInterval(fetchView, 30_000);
     return () => clearInterval(iv);
-  }, [isAdmin, documentId, token]);
+  }, [isAdmin, documentId]);
   const customerDocId = project?.customer?.documentId;
 
   return (
