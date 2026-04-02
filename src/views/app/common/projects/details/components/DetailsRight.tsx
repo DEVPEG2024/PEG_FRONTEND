@@ -31,7 +31,7 @@ import { toast } from 'react-toastify';
 const miniCard: React.CSSProperties = {
   background: 'linear-gradient(160deg, rgba(22,38,61,0.8) 0%, rgba(15,28,46,0.9) 100%)',
   borderRadius: '14px',
-  padding: '18px 20px',
+  padding: '16px 18px',
   border: '1px solid rgba(255,255,255,0.06)',
 };
 
@@ -235,7 +235,7 @@ const DetailsRight = () => {
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '12px',
+      gap: '8px',
       fontFamily: 'Inter, sans-serif',
     }}>
       {/* ── Card 1: Progress & Timeline ── */}
@@ -243,8 +243,8 @@ const DetailsRight = () => {
         <p style={sectionLabel}>Avancement</p>
 
         {/* Progress bar */}
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
             <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 500 }}>
               {progressLabel}
             </span>
@@ -252,7 +252,16 @@ const DetailsRight = () => {
               {progressPercent}%
             </span>
           </div>
-          <ProgressionBar progression={progressPercent} />
+          <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '100px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.max(progressPercent, 2)}%`,
+              background: 'linear-gradient(90deg, #2f6fed, #6b9eff)',
+              borderRadius: '100px',
+              transition: 'width 0.4s ease',
+              minWidth: progressPercent === 0 ? '0px' : undefined,
+            }} />
+          </div>
         </div>
 
         {/* Timeline bar */}
@@ -265,7 +274,7 @@ const DetailsRight = () => {
               {timelinePercent}%
             </span>
           </div>
-          <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}>
+          <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '100px', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${timelinePercent}%`,
