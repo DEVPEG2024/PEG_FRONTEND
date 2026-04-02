@@ -7,6 +7,8 @@ import {
   addNotification,
   setUnreadCount,
   setNotifications,
+  appendNotifications,
+  setConnectionStatus,
 } from '@/store/slices/base/notificationSlice';
 import {
   fetchNotifications,
@@ -23,6 +25,9 @@ const BACKEND_URL = import.meta.env.DEV
 // Socket.io ne fonctionne pas sur Vercel serverless — désactivé en prod
 const SOCKET_ENABLED = import.meta.env.DEV;
 
+const POLL_INTERVAL = 30_000;
+const RECONNECT_DELAY = 5_000;
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -34,59 +39,96 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+const EVENT_ICONS: Record<string, string> = {
+  new_order: '🛒',
+  project_status_change: '📋',
+  new_invoice: '🧾',
+  new_ticket: '🎫',
+  payment_received: '💳',
+};
+
 export default function useNotifications() {
   const dispatch = useAppDispatch();
   const socketRef = useRef<Socket | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const user = useAppSelector((state: RootState) => state.auth.user.user);
   const userId = user?.documentId || user?.id || user?._id || null;
 
-  // Load initial notifications
-  const loadNotifications = useCallback(async () => {
+  const loadNotifications = useCallback(async (page = 1, limit = 20) => {
     if (!userId) return;
     try {
       const [notifData, count] = await Promise.all([
-        fetchNotifications(userId, 1, 20),
+        fetchNotifications(userId, page, limit),
         fetchUnreadCount(userId),
       ]);
-      if (notifData.notifications) {
-        dispatch(setNotifications(notifData.notifications));
+      if (page === 1) {
+        if (notifData.notifications) {
+          dispatch(setNotifications(notifData.notifications));
+        }
+      } else {
+        dispatch(appendNotifications({
+          notifications: notifData.notifications || [],
+          hasMore: notifData.notifications?.length === limit,
+        }));
       }
       dispatch(setUnreadCount(count));
-    } catch {
-      // silent fail
+    } catch (err) {
+      console.warn('[useNotifications] Failed to load notifications:', err);
     }
   }, [userId, dispatch]);
 
-  // Connect Socket.io (dev only — Vercel serverless doesn't support WebSocket)
+  const loadMore = useCallback((page: number) => {
+    return loadNotifications(page, 20);
+  }, [loadNotifications]);
+
+  // Socket.io + polling
   useEffect(() => {
     if (!userId) return;
 
     loadNotifications();
 
-    // Poll for new notifications every 30s in production
-    const pollInterval = !SOCKET_ENABLED
-      ? setInterval(loadNotifications, 30_000)
-      : undefined;
-
     if (SOCKET_ENABLED) {
       const socket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: RECONNECT_DELAY,
       });
 
       socket.on('connect', () => {
         socket.emit('register', userId);
+        dispatch(setConnectionStatus('connected'));
       });
 
       socket.on('notification', (notification) => {
         dispatch(addNotification(notification));
-        toast.info(notification.title, {
+        const icon = EVENT_ICONS[notification.eventType] || '🔔';
+        toast.info(`${icon} ${notification.title}`, {
           position: 'bottom-right',
           autoClose: 5000,
         });
       });
 
+      socket.on('disconnect', () => {
+        dispatch(setConnectionStatus('disconnected'));
+      });
+
+      socket.on('reconnect', () => {
+        socket.emit('register', userId);
+        dispatch(setConnectionStatus('connected'));
+        loadNotifications();
+      });
+
+      socket.on('connect_error', () => {
+        dispatch(setConnectionStatus('disconnected'));
+      });
+
       socketRef.current = socket;
+    } else {
+      // Production: polling fallback
+      dispatch(setConnectionStatus('polling'));
+      pollRef.current = setInterval(() => loadNotifications(), POLL_INTERVAL);
     }
 
     return () => {
@@ -94,26 +136,33 @@ export default function useNotifications() {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
-      if (pollInterval) clearInterval(pollInterval);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      dispatch(setConnectionStatus('disconnected'));
     };
   }, [userId, dispatch, loadNotifications]);
 
   // Register service worker + Web Push subscription
   useEffect(() => {
-    if (!userId || !VAPID_PUBLIC_KEY || !('serviceWorker' in navigator)) return;
+    if (!userId || !VAPID_PUBLIC_KEY) return;
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+    let cancelled = false;
 
     async function registerPush() {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
+        if (permission !== 'granted' || cancelled) return;
 
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-          } as any);
+          } as PushSubscriptionOptionsInit);
         }
 
         const subJson = subscription.toJSON();
@@ -127,12 +176,16 @@ export default function useNotifications() {
           },
         });
       } catch (err) {
-        console.error('[useNotifications] Push registration failed:', err);
+        console.warn('[useNotifications] Push registration failed:', err);
       }
     }
 
     registerPush();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
-  return { loadNotifications };
+  return { loadNotifications, loadMore };
 }

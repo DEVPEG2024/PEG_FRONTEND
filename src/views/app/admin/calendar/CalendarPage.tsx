@@ -238,6 +238,9 @@ function parseICS(icsContent: string): Omit<CalEvent, 'id' | 'isSynced'>[] {
     return events
 }
 
+/** Track scheduled notification timeouts for cleanup */
+const scheduledTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
+
 /** Request browser notification permission and schedule a notification */
 function scheduleNotification(event: CalEvent) {
     if (event.reminderMinutes <= 0) return
@@ -247,11 +250,16 @@ function scheduleNotification(event: CalEvent) {
         window.Notification.requestPermission()
     }
 
+    // Clear existing timer for this event if any
+    const existingTimer = scheduledTimers.get(event.id)
+    if (existingTimer) clearTimeout(existingTimer)
+
     const notifyAt = event.start.subtract(event.reminderMinutes, 'minute')
     const msUntilNotify = notifyAt.diff(dayjs())
 
     if (msUntilNotify > 0 && msUntilNotify < 86400000) { // within 24h
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+            scheduledTimers.delete(event.id)
             if (window.Notification.permission === 'granted') {
                 new window.Notification(`Rappel: ${event.title}`, {
                     body: `Commence à ${event.start.format('HH:mm')}`,
@@ -259,7 +267,14 @@ function scheduleNotification(event: CalEvent) {
                 })
             }
         }, msUntilNotify)
+        scheduledTimers.set(event.id, timer)
     }
+}
+
+/** Clear all scheduled notification timers */
+function clearAllScheduledNotifications() {
+    scheduledTimers.forEach((timer) => clearTimeout(timer))
+    scheduledTimers.clear()
 }
 
 function getSlotFromPoint(x: number, y: number): { date?: string; hour?: number } | null {
@@ -1256,6 +1271,7 @@ const CalendarPage = () => {
     useEffect(() => {
         loadEvents()
         loadProjects()
+        return () => clearAllScheduledNotifications()
     }, [loadEvents, loadProjects])
 
     // ─── Request notification permission on mount ───────────────────────────

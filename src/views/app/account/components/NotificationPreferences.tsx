@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 import { fetchPreferences, updatePreferences } from '@/services/NotificationService';
@@ -17,12 +17,12 @@ interface Preferences {
   payment_received: ChannelPref;
 }
 
-const EVENT_LABELS: Record<string, { label: string; roles: string[] }> = {
-  new_order:             { label: 'Nouvelle commande',           roles: ['admin', 'super_admin', 'producer'] },
-  project_status_change: { label: 'Changement statut projet',   roles: ['admin', 'super_admin', 'customer'] },
-  new_invoice:           { label: 'Nouvelle facture',            roles: ['admin', 'super_admin', 'customer'] },
-  new_ticket:            { label: 'Nouveau ticket',              roles: ['admin', 'super_admin', 'customer', 'producer'] },
-  payment_received:      { label: 'Paiement reçu',              roles: ['admin', 'super_admin', 'producer'] },
+const EVENT_LABELS: Record<string, { label: string; description: string; roles: string[] }> = {
+  new_order:             { label: 'Nouvelle commande',         description: 'Quand un client passe une commande',        roles: ['admin', 'super_admin', 'producer'] },
+  project_status_change: { label: 'Changement statut projet', description: "Quand l'état d'un projet change",           roles: ['admin', 'super_admin', 'customer'] },
+  new_invoice:           { label: 'Nouvelle facture',          description: 'Quand une facture est créée',               roles: ['admin', 'super_admin', 'customer'] },
+  new_ticket:            { label: 'Nouveau ticket',            description: "Quand un ticket d'assistance est ouvert",   roles: ['admin', 'super_admin', 'customer', 'producer'] },
+  payment_received:      { label: 'Paiement reçu',            description: 'Quand un paiement est confirmé',            roles: ['admin', 'super_admin', 'producer'] },
 };
 
 const toggleStyle = (enabled: boolean): React.CSSProperties => ({
@@ -50,6 +50,7 @@ const toggleDotStyle = (enabled: boolean): React.CSSProperties => ({
 const NotificationPreferences = () => {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [saving, setSaving] = useState(false);
+  const previousPrefsRef = useRef<Preferences | null>(null);
 
   const userId = useAppSelector((state: RootState) => {
     const u = state.auth.user.user;
@@ -83,25 +84,30 @@ const NotificationPreferences = () => {
   ) => {
     if (!prefs || !userId) return;
 
-    const updated = {
+    const previous = { ...prefs, [eventType]: { ...prefs[eventType] } };
+    const updated: Preferences = {
       ...prefs,
       [eventType]: {
         ...prefs[eventType],
         [channel]: !prefs[eventType][channel],
       },
     };
+
+    previousPrefsRef.current = previous;
     setPrefs(updated);
     setSaving(true);
+
     try {
       const res = await updatePreferences(userId, updated);
       if (res?.result) {
         toast.success('Préférences mises à jour');
       } else {
-        toast.success('Préférences mises à jour');
+        throw new Error('Update failed');
       }
     } catch (err) {
       console.error('[NotificationPreferences] update error:', err);
-      // Preferences already updated locally, no need to revert
+      setPrefs(previousPrefsRef.current);
+      toast.error('Erreur lors de la mise à jour des préférences');
     }
     setSaving(false);
   };
@@ -161,9 +167,14 @@ const NotificationPreferences = () => {
               borderBottom: '1px solid rgba(255,255,255,0.04)',
             }}
           >
-            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
-              {cfg.label}
-            </span>
+            <div>
+              <span style={{ color: '#fff', fontSize: '13px', fontWeight: 500, display: 'block' }}>
+                {cfg.label}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                {cfg.description}
+              </span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={() => handleToggle(eventType as keyof Preferences, 'push')}
