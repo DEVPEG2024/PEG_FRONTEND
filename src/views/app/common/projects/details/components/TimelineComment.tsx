@@ -66,6 +66,8 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
   };
 
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const isOwnComment = comment.user?.documentId === user?.documentId;
+  const canDelete = isAdmin || isOwnComment;
   const vis = isAdmin
     ? (visibilityStyle[comment.visibility] ?? visibilityStyle.all)
     : { label: 'PEG', color: '#6b9eff', bg: 'rgba(47,111,237,0.12)', border: 'rgba(47,111,237,0.25)' };
@@ -126,6 +128,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', lineHeight: 1.7 }}>
               {safeHtmlParse(comment.content)}
             </div>
+            {canDelete && (
             <div style={{ marginTop: '10px' }}>
               {!confirmDelete ? (
                 <button
@@ -168,6 +171,7 @@ const TimelineComment = ({ comment, user, ...rest }: TimelineCommentProps) => {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           {comment.images.length > 0 && (
