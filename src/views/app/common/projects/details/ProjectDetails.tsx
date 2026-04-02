@@ -52,9 +52,9 @@ const ProjectDetails = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [customerLastSeen, setCustomerLastSeen] = useState<string | null>(null);
 
-  // Track project view for all users
+  // Track project view — customers only
   useEffect(() => {
-    if (!documentId || !user?.documentId) return;
+    if (!isCustomer || !documentId || !user?.documentId) return;
     fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
