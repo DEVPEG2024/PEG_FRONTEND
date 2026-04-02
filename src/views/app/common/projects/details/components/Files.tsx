@@ -12,6 +12,7 @@ import {
   apiUploadFile,
 } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
+import { toast } from 'react-toastify';
 import { HiDownload, HiTrash, HiDocumentText, HiArchive, HiCode, HiDocument } from 'react-icons/hi';
 import { hasRole } from '@/utils/permissions';
 import { CUSTOMER, PRODUCER } from '@/constants/roles.constant';
@@ -205,6 +206,10 @@ const Files = () => {
         })
       );
       setPegFilesChanged(false);
+      toast.success('Fichiers enregistrés');
+    } catch (err) {
+      console.error('Erreur upload fichiers:', err);
+      toast.error("Erreur lors de l'enregistrement des fichiers");
     } finally {
       setFilesLoading(false);
     }

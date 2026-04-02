@@ -145,7 +145,6 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
   delete cleanData.orderItem;
   delete cleanData.checklistItems;
   delete cleanData.customerImages;
-  delete cleanData.images;
 
   const variables = {
     documentId,
