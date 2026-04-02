@@ -3,8 +3,8 @@ import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 
 const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
-const PING_INTERVAL = 30_000;
-const FETCH_INTERVAL = 30_000;
+const PING_INTERVAL = 5_000;
+const FETCH_INTERVAL = 5_000;
 
 const OnlineUsersCount = () => {
   const [count, setCount] = useState(0);

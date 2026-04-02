@@ -39,6 +39,27 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    gain.gain.value = 0.3;
+
+    // Two-tone chime
+    osc.frequency.value = 880;
+    osc.start(ctx.currentTime);
+    osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch {
+    // Audio not supported or blocked by browser
+  }
+}
+
 const EVENT_ICONS: Record<string, string> = {
   new_order: '🛒',
   project_status_change: '📋',
@@ -55,6 +76,7 @@ export default function useNotifications() {
   const dispatch = useAppDispatch();
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastUnreadRef = useRef<number | null>(null);
 
   const user = useAppSelector((state: RootState) => state.auth.user.user);
   const userId = user?.documentId || user?.id || user?._id || null;
@@ -76,6 +98,11 @@ export default function useNotifications() {
           hasMore: notifData.notifications?.length === limit,
         }));
       }
+      // Play sound when unread count increases (polling mode)
+      if (lastUnreadRef.current !== null && count > lastUnreadRef.current) {
+        playNotificationSound();
+      }
+      lastUnreadRef.current = count;
       dispatch(setUnreadCount(count));
     } catch (err) {
       console.warn('[useNotifications] Failed to load notifications:', err);
@@ -107,6 +134,7 @@ export default function useNotifications() {
 
       socket.on('notification', (notification) => {
         dispatch(addNotification(notification));
+        playNotificationSound();
         const icon = EVENT_ICONS[notification.eventType] || '🔔';
         toast.info(`${icon} ${notification.title}`, {
           position: 'bottom-right',
