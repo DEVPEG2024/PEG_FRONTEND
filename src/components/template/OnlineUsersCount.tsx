@@ -3,8 +3,8 @@ import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 
 const BACKEND_URL = 'https://peg-backend.vercel.app';
-const PING_INTERVAL = 60_000;
-const FETCH_INTERVAL = 60_000;
+const PING_INTERVAL = 30_000;
+const FETCH_INTERVAL = 30_000;
 
 const OnlineUsersCount = () => {
   const [count, setCount] = useState(0);
