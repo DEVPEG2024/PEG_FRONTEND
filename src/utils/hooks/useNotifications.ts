@@ -20,6 +20,9 @@ const BACKEND_URL = import.meta.env.DEV
   ? 'http://localhost:3000'
   : 'https://peg-backend.vercel.app';
 
+// Socket.io ne fonctionne pas sur Vercel serverless — désactivé en prod
+const SOCKET_ENABLED = import.meta.env.DEV;
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -55,33 +58,43 @@ export default function useNotifications() {
     }
   }, [userId, dispatch]);
 
-  // Connect Socket.io
+  // Connect Socket.io (dev only — Vercel serverless doesn't support WebSocket)
   useEffect(() => {
     if (!userId) return;
 
     loadNotifications();
 
-    const socket = io(BACKEND_URL, {
-      transports: ['websocket', 'polling'],
-    });
+    // Poll for new notifications every 30s in production
+    const pollInterval = !SOCKET_ENABLED
+      ? setInterval(loadNotifications, 30_000)
+      : undefined;
 
-    socket.on('connect', () => {
-      socket.emit('register', userId);
-    });
-
-    socket.on('notification', (notification) => {
-      dispatch(addNotification(notification));
-      toast.info(notification.title, {
-        position: 'bottom-right',
-        autoClose: 5000,
+    if (SOCKET_ENABLED) {
+      const socket = io(BACKEND_URL, {
+        transports: ['websocket', 'polling'],
       });
-    });
 
-    socketRef.current = socket;
+      socket.on('connect', () => {
+        socket.emit('register', userId);
+      });
+
+      socket.on('notification', (notification) => {
+        dispatch(addNotification(notification));
+        toast.info(notification.title, {
+          position: 'bottom-right',
+          autoClose: 5000,
+        });
+      });
+
+      socketRef.current = socket;
+    }
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, [userId, dispatch, loadNotifications]);
 
