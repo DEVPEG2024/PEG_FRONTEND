@@ -126,3 +126,25 @@ export async function subscribePush(data: {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+/** Trigger a notification from the frontend (for Strapi-based actions that bypass Express controllers) */
+export async function triggerNotification(data: {
+  eventType: string;
+  recipients: { userId: string; email?: string }[];
+  title: string;
+  message: string;
+  link?: string;
+  metadata?: Record<string, any>;
+}) {
+  try {
+    const res = await fetch(`${BASE}/notifications/trigger`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  } catch (err) {
+    console.warn('[triggerNotification] failed:', err);
+  }
+}

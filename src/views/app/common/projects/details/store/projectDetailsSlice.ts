@@ -28,6 +28,7 @@ import {
   CreateCommentRequest,
   DeleteCommentResponse,
 } from '@/services/CommentServices';
+import { triggerNotification } from '@/services/NotificationService';
 import { PegFile } from '@/@types/pegFile';
 
 export const SLICE_NAME = 'projectDetails';
@@ -96,6 +97,20 @@ export const createTask = createAsyncThunk(
         tasks: [...data.project.tasks, createTask],
       })
     );
+
+    const projectTitle = data.project.title || 'Projet';
+    triggerNotification({
+      eventType: 'new_task',
+      recipients: data.project.customer?.documentId
+        ? [{ userId: data.project.customer.documentId }]
+        : [],
+      notifyAdmins: true,
+      title: 'Nouvelle tâche',
+      message: `Tâche "${data.task.title}" ajoutée au projet "${projectTitle}"`,
+      link: `/common/projects/details/${data.project.documentId}`,
+      metadata: { projectId: data.project.documentId, projectTitle, taskTitle: data.task.title },
+    } as any);
+
     return updateProject;
   }
 );
@@ -145,6 +160,21 @@ export const createComment = createAsyncThunk(
       documentId: data.project.documentId,
       comments: [...data.project.comments, createComment],
     });
+
+    // Notify admins + project customer of new comment
+    const projectTitle = data.project.title || 'Projet';
+    triggerNotification({
+      eventType: 'new_comment',
+      recipients: data.project.customer?.documentId
+        ? [{ userId: data.project.customer.documentId }]
+        : [],
+      notifyAdmins: true,
+      title: 'Nouveau message',
+      message: `Nouveau commentaire sur le projet "${projectTitle}"`,
+      link: `/common/projects/details/${data.project.documentId}`,
+      metadata: { projectId: data.project.documentId, projectTitle },
+    } as any);
+
     return createComment;
   }
 );
@@ -175,6 +205,20 @@ export const addInvoice = createAsyncThunk(
         invoices: [...data.project.invoices, createInvoice],
       })
     );
+
+    const projectTitle = data.project.title || 'Projet';
+    triggerNotification({
+      eventType: 'new_invoice',
+      recipients: data.project.customer?.documentId
+        ? [{ userId: data.project.customer.documentId }]
+        : [],
+      notifyAdmins: true,
+      title: 'Nouvelle facture',
+      message: `Facture ajoutée au projet "${projectTitle}"`,
+      link: `/common/projects/details/${data.project.documentId}`,
+      metadata: { projectId: data.project.documentId, projectTitle },
+    } as any);
+
     return updateProject;
   }
 );
