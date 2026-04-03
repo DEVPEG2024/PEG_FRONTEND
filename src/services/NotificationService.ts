@@ -1,6 +1,8 @@
 import store from '@/store';
 import { PERSIST_STORE_NAME } from '@/constants/app.constant';
 import deepParseJson from '@/utils/deepParseJson';
+import ApiService from './ApiService';
+import { API_GRAPHQL_URL } from '@/configs/api.config';
 
 const BASE = import.meta.env.DEV
   ? 'http://localhost:3000'
@@ -127,6 +129,34 @@ export async function subscribePush(data: {
   return res.json();
 }
 
+/** Fetch admin documentIds from Strapi (cached for the session) */
+let cachedAdminIds: string[] | null = null;
+async function getAdminIds(): Promise<string[]> {
+  if (cachedAdminIds) return cachedAdminIds;
+  try {
+    const res = await ApiService.fetchData<any>({
+      url: API_GRAPHQL_URL,
+      method: 'post',
+      data: {
+        query: `{
+          usersPermissionsUsers_connection(
+            pagination: { limit: 100 }
+            filters: { role: { name: { in: ["admin", "super_admin"] } } }
+          ) {
+            nodes { documentId }
+          }
+        }`
+      }
+    });
+    cachedAdminIds = (res.data?.data?.usersPermissionsUsers_connection?.nodes || [])
+      .map((n: any) => n.documentId)
+      .filter(Boolean);
+    return cachedAdminIds;
+  } catch {
+    return [];
+  }
+}
+
 /** Trigger a notification from the frontend (for Strapi-based actions that bypass Express controllers) */
 export async function triggerNotification(data: {
   eventType: string;
@@ -139,10 +169,14 @@ export async function triggerNotification(data: {
   senderId: string;
 }) {
   try {
+    const payload: any = { ...data };
+    if (data.notifyAdmins) {
+      payload.adminIds = await getAdminIds();
+    }
     const res = await fetch(`${BASE}/notifications/trigger`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
