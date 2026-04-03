@@ -3,6 +3,7 @@ export const labelList = [
   'Commentaires',
   'Fichiers',
   'Fichiers client',
+  'Téléchargements',
   'Checklist',
   'BAT',
   'Devis',

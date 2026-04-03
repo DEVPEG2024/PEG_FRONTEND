@@ -10,6 +10,7 @@ import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
+import ClientDownloads from './components/ClientDownloads';
 import { injectReducer, useAppDispatch } from '@/store';
 import { useAppSelector as useRootAppSelector } from '@/store';
 import { hasRole } from '@/utils/permissions';
@@ -101,6 +102,7 @@ const ProjectDetails = () => {
               />
             </div>
           )}
+          {selectedTab === 'Téléchargements' && <ClientDownloads />}
           {selectedTab === 'Checklist' && <ProjectChecklist />}
           {selectedTab === 'BAT' && <ProjectBat />}
           {selectedTab === 'Devis' && <Devis />}
