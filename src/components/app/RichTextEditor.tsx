@@ -29,7 +29,12 @@ const RichTextEditor = ({ value, onChange, readOnly }: RichTextEditorProps) => {
     })
 
     useEffect(() => {
-        if (editor && value !== editor.getHTML()) {
+        if (!editor) return
+        // Only sync external value when it's empty (reset after submit)
+        // or when the editor is not focused (external change)
+        if (value === '' && editor.getHTML() !== '<p></p>') {
+            editor.commands.setContent('')
+        } else if (!editor.isFocused && value && value !== editor.getHTML()) {
             editor.commands.setContent(value)
         }
     }, [value, editor])

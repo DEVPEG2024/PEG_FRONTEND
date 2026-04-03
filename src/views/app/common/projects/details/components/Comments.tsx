@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Timeline from '@/components/ui/Timeline';
-import { debounce } from 'lodash';
 import Container from '@/components/shared/Container';
 import { HiUserCircle, HiOutlineSearch } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
@@ -45,14 +44,8 @@ const Comments = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
 
   const onEdit = (val: string) => {
-    debounceFn(val);
-  };
-
-  const debounceFn = debounce(handleDebounceFn, 1000);
-
-  function handleDebounceFn(val: string) {
     setCommentText(val);
-  }
+  };
 
   const submitComment = async () => {
     if (commentText.trim() || pegFiles.length > 0) {
