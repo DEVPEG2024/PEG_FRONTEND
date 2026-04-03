@@ -3,7 +3,7 @@ import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 import { HiUserCircle } from 'react-icons/hi';
 
-const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
 const PING_INTERVAL = 5_000;
 const FETCH_INTERVAL = 5_000;
 
