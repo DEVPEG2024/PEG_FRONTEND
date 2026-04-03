@@ -20,7 +20,7 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 const BACKEND_URL = import.meta.env.DEV
   ? 'http://localhost:3000'
-  : 'https://peg-backend.vercel.app';
+  : '/peg-api';
 
 // Socket.io activé en dev uniquement — le backend Express est sur Vercel serverless (pas de WebSocket)
 const SOCKET_ENABLED = import.meta.env.DEV;

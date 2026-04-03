@@ -4,7 +4,7 @@ import deepParseJson from '@/utils/deepParseJson';
 
 const BASE = import.meta.env.DEV
   ? 'http://localhost:3000'
-  : 'https://peg-backend.vercel.app';
+  : '/peg-api';
 
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
