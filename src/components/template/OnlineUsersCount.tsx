@@ -4,8 +4,8 @@ import { RootState } from '@/store';
 import { HiUserCircle } from 'react-icons/hi';
 
 const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
-const PING_INTERVAL = 5_000;
-const FETCH_INTERVAL = 5_000;
+const PING_INTERVAL = 10_000;
+const FETCH_INTERVAL = 10_000;
 
 interface OnlineUser {
   user_id: string;
@@ -269,6 +269,32 @@ const OnlineUsersCount = () => {
       )}
     </div>
   );
+};
+
+/** Invisible component — pings the backend so any user appears online */
+export const OnlinePing = () => {
+  const user = useAppSelector((state: RootState) => state.auth.user.user);
+  const userId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const displayName = user?.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '';
+  const avatarUrl = user?.avatar?.url || '';
+  const userRole = user?.authority?.[0] || user?.role?.name || '';
+  const pingRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    if (!userId) return;
+    const ping = () => {
+      fetch(`${BACKEND_URL}/auth/user/ping/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName, avatarUrl, role: userRole }),
+      }).catch(() => {});
+    };
+    ping();
+    pingRef.current = setInterval(ping, PING_INTERVAL);
+    return () => clearInterval(pingRef.current);
+  }, [userId]);
+
+  return null;
 };
 
 export default OnlineUsersCount;

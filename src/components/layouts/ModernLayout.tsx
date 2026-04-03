@@ -5,7 +5,7 @@ import MobileNav from "@/components/template/MobileNav";
 import SideNav from "@/components/template/SideNav";
 import View from "@/views";
 import LanguageSelector from "../template/LanguageSelector";
-import OnlineUsersCount from "../template/OnlineUsersCount";
+import OnlineUsersCount, { OnlinePing } from "../template/OnlineUsersCount";
 import NotificationBell from "../template/NotificationBell";
 import { MdShoppingCart } from "react-icons/md";
 import { Alert } from "../ui";
@@ -50,6 +50,7 @@ const HeaderActionsEnd = () => {
       >
         <OnlineUsersCount />
       </AuthorityCheck>
+      <OnlinePing />
       <NotificationBell />
       <LanguageSelector />
       <UserDropdown hoverable={false} />
