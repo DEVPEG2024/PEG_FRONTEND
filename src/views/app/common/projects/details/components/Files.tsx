@@ -227,24 +227,21 @@ const Files = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           <Loading loading={filesLoading}>
-            {/* Upload zone — admin/producteur uniquement */}
-            {!isCustomer && (
-              <Upload
-                multiple
-                showList={false}
-                draggable
-                beforeUpload={beforeUpload}
-                onFileAdd={(file) => onFileAdd(file)}
-                onFileRemove={(file) => onFileRemove(file)}
-                field={{ name: 'images' }}
-                fileList={pegFiles.map((pf) => {
-                  const file = pf.file as File & { previewUrl?: string };
-                  file.previewUrl = pf.url;
-                  return file;
-                })}
-                clickable
-              />
-            )}
+            <Upload
+              multiple
+              showList={false}
+              draggable
+              beforeUpload={beforeUpload}
+              onFileAdd={(file) => onFileAdd(file)}
+              onFileRemove={(file) => onFileRemove(file)}
+              field={{ name: 'images' }}
+              fileList={pegFiles.map((pf) => {
+                const file = pf.file as File & { previewUrl?: string };
+                file.previewUrl = pf.url;
+                return file;
+              })}
+              clickable
+            />
 
             {existingFiles.length > 0 && (
               <div style={{ marginTop: '20px' }}>
@@ -253,13 +250,13 @@ const Files = () => {
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                   {existingFiles.map((file) => (
-                    <FileThumbnail key={file.id || file.name} file={file} canDelete={!isCustomer} onRemove={onFileRemove} />
+                    <FileThumbnail key={file.id || file.name} file={file} canDelete={isCustomer ? !file.id : true} onRemove={onFileRemove} />
                   ))}
                 </div>
               </div>
             )}
 
-            {pegFilesChanged && !isCustomer && (
+            {pegFilesChanged && (
               <div style={{ marginTop: '16px' }}>
                 <Button variant="solid" onClick={handleSubmit} loading={filesLoading}>
                   Enregistrer
