@@ -24,7 +24,6 @@ const QuickFilterTab = () => {
   const tabs = labelList.filter((tab) => {
     if (tab === 'Devis') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
-    if (tab === 'Téléchargements') return hasRole(user, [CUSTOMER]);
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
     if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;
@@ -38,13 +37,6 @@ const QuickFilterTab = () => {
       case 'Checklist': {
         const items = project?.checklistItems ?? [];
         return items.length > 0 ? items.length : undefined;
-      }
-      case 'Téléchargements': {
-        const imgCount = project?.images?.length || 0;
-        const devisCount = project?.devis?.length || 0;
-        const invoiceFileCount = (project?.invoices || []).filter((inv: any) => inv.file?.url).length;
-        const total = imgCount + devisCount + invoiceFileCount;
-        return total > 0 ? total : undefined;
       }
       case 'Devis': return project?.devis?.length;
       case 'Factures': return project?.invoices?.length;
