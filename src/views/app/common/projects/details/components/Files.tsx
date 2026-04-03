@@ -150,6 +150,7 @@ const Files = () => {
   );
   const { user } = useRootAppSelector((state) => state.auth.user);
   const isCustomer = hasRole(user, [CUSTOMER]);
+  const [myUploadedIds, setMyUploadedIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchFiles();
@@ -184,12 +185,18 @@ const Files = () => {
     setFilesLoading(true);
     try {
       const newPegFiles: PegFile[] = [];
+      const newlyUploadedIds: string[] = [];
       for (const pf of pegFiles) {
         if (pf.id) {
           newPegFiles.push(pf);
         } else {
-          newPegFiles.push(await apiUploadFile(pf.file));
+          const uploaded = await apiUploadFile(pf.file);
+          newPegFiles.push(uploaded);
+          if (isCustomer) newlyUploadedIds.push(uploaded.id);
         }
+      }
+      if (newlyUploadedIds.length > 0) {
+        setMyUploadedIds((prev) => [...prev, ...newlyUploadedIds]);
       }
 
       for (const id of pegFilesIdToDelete) {
@@ -247,7 +254,7 @@ const Files = () => {
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                   {existingFiles.map((file) => (
-                    <FileThumbnail key={file.id || file.name} file={file} canDelete={isCustomer ? !file.id : true} onRemove={onFileRemove} />
+                    <FileThumbnail key={file.id || file.name} file={file} canDelete={isCustomer ? (!file.id || myUploadedIds.includes(file.id)) : true} onRemove={onFileRemove} />
                   ))}
                 </div>
               </div>
