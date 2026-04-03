@@ -126,11 +126,12 @@ Le bucket d'images autorise ces origines :
 
 ---
 
-## 🔔 Système de notifications (ajout 02/04/2026)
+## 🔔 Système de notifications (mise à jour 03/04/2026)
 
 ### Architecture
 - **Dev** : Socket.io WebSocket vers `http://localhost:3000` (transports: websocket + polling)
 - **Prod** : Polling HTTP toutes les **5 secondes** via `/peg-api` (Socket.io désactivé — `SOCKET_ENABLED = import.meta.env.DEV` — car Vercel serverless ne supporte pas WebSocket)
+- **Base de données** : PostgreSQL (tables `notifications`, `notification_preferences`, `push_subscriptions`)
 
 ### Son
 - Web Audio API — chime deux tons (880 Hz → 1174.66 Hz), gain 0.3, durée 0.4s
@@ -139,24 +140,51 @@ Le bucket d'images autorise ces origines :
 ### Types d'événements
 `new_order`, `project_status_change`, `new_invoice`, `new_ticket`, `payment_received`, `new_comment`, `new_file`, `new_task`, `task_status_change`
 
+### Système d'IDs — ATTENTION
+- **Les notifications utilisent `user.documentId`** (string Strapi, ex: `ncgzvxcyahbgztbtflqbf60j`)
+- **Ne JAMAIS utiliser `user.id`** (numérique, ex: `75`) pour les notifications — c'est l'erreur qui cause les notifications perdues
+- Le `userId` dans `useNotifications.ts` est résolu par : `user?.documentId || user?.id || user?._id`
+- Le `senderId` dans les triggers est résolu par : `user?.documentId || user?.id || user?._id`
+- Les tables `notification_preferences` et `push_subscriptions` stockent le `user_id` en tant que `documentId`
+
+### Mécanisme `notifyAdmins`
+- Quand `notifyAdmins: true`, le frontend récupère les `documentId` des admins via **GraphQL Strapi** (requête `usersPermissionsUsers_connection` filtrée sur `role.name IN ["admin", "super_admin"]`)
+- Ces `adminIds` sont envoyés dans le payload du trigger vers le backend Express
+- Le backend ajoute chaque `adminId` comme destinataire (sauf le `senderId`)
+- **⚠️ NE PAS récupérer les admins depuis `user_online`** — cette table utilise `user.id` (numérique), pas `documentId`
+- **⚠️ NE PAS notifier tous les users de `notification_preferences`** — cette table contient aussi les clients/producteurs
+- Le cache des `adminIds` est en mémoire côté frontend (variable `cachedAdminIds` dans `NotificationService.ts`), réinitialisé à chaque refresh
+
+### Destinataires d'une notification
+1. **`recipients`** : liste explicite envoyée par le frontend (ex: le `customer.documentId` du projet pour `new_comment`)
+2. **`adminIds`** : liste des admins envoyée par le frontend quand `notifyAdmins: true`
+3. Le `senderId` est **toujours exclu** des destinataires
+
 ### Fichiers clés
-- `src/utils/hooks/useNotifications.ts` — logique connexion + polling
-- `src/services/NotificationService.ts` — appels API (`/peg-api/notifications/*`)
+- `src/utils/hooks/useNotifications.ts` — logique connexion + polling (userId = documentId)
+- `src/services/NotificationService.ts` — appels API + `triggerNotification()` + `getAdminIds()`
+- `PEG_BACKEND/routes/notifications/index.ts` — endpoint `/trigger`, `/preferences`, push subscriptions
+- `PEG_BACKEND/services/notification.service.ts` — `dispatchNotification()`
 
 ---
 
-## 👁️ Tracking des vues projet (ajout 02/04/2026)
+## 👁️ Tracking des vues projet (mise à jour 03/04/2026)
 
-### Endpoints
+### Endpoints (peg-backend Express)
 - **POST** `/projects/view/{documentId}` — enregistre la vue (clients uniquement, pas les admins)
 - **GET** `/projects/view/{documentId}` — récupère les vues (admins uniquement, polling 30s en vue détail)
 
-### URL
+### URL — ATTENTION : appel direct, PAS le proxy
 - **Dev** : `http://localhost:3000`
 - **Prod** : `https://peg-backend.vercel.app` (hardcodé, ne passe PAS par le proxy `/peg-api`)
+- **Raison** : les vues projet utilisent `fetch()` simple sans credentials, donc pas besoin de proxy same-origin. L'appel direct fonctionne grâce au CORS configuré dans `app.ts` du backend
 
 ### Auth
-- **Aucun Bearer token** — le `userId` (documentId) est envoyé dans le body du POST
+- **Aucun Bearer token** — le `userId` (documentId Strapi) est envoyé dans le body du POST
+
+### Base de données
+- Table PostgreSQL `project_views` sur le pool PG du backend Express
+- Stocke : `project_id` (documentId du projet), `user_id` (documentId du client), `last_seen` (timestamp)
 
 ### Affichage (admin only)
 - Cartes projets : icône œil + timestamp
@@ -168,6 +196,39 @@ Le bucket d'images autorise ces origines :
 - `src/views/app/common/projects/lists/components/ProjectListContent.tsx` — GET batch admin
 - `src/views/app/common/projects/details/components/ProjectHeader.tsx` — affichage header
 - `src/views/app/common/projects/lists/components/ProjectItem.tsx` — affichage carte
+
+---
+
+## 🟢 Utilisateurs en ligne (ajout 03/04/2026)
+
+### Architecture
+- **Ping** : chaque utilisateur connecté (admin, client, producteur) envoie un ping toutes les **10 secondes**
+- **Seuil** : un utilisateur est considéré "en ligne" s'il a pingé dans les **5 dernières minutes** (requête SQL `WHERE last_seen >= NOW() - INTERVAL '5 minutes'`)
+- **Base de données** : table PostgreSQL `user_online` (`user_id`, `display_name`, `avatar_url`, `role`, `last_seen`)
+
+### Système d'IDs — ATTENTION
+- **`user_online` utilise `user.id`** (numérique, ex: `75`) — PAS le `documentId`
+- C'est parce que le ping est envoyé par `OnlinePing` qui utilise `user?._id ?? user?.id ?? user?.documentId`
+- **⚠️ Ne JAMAIS croiser `user_online.user_id` avec les `documentId` des notifications** — ce sont des systèmes d'IDs différents
+
+### Composants
+- **`OnlinePing`** : composant invisible monté pour **TOUS les utilisateurs** (dans `ModernLayout.tsx`, hors du `AuthorityCheck`). Envoie le ping.
+- **`OnlineUsersCount`** : composant visible **uniquement pour les admins** (wrappé dans `AuthorityCheck authority={["admin", "super_admin"]}`). Affiche le compteur vert et la liste déroulante.
+- **⚠️ Le ping DOIT être séparé de l'affichage** — si le ping est à l'intérieur du composant réservé aux admins, les clients/producteurs ne sont jamais visibles en ligne
+
+### URL
+- **Dev** : `http://localhost:3000`
+- **Prod** : `/peg-api` (proxy Vercel same-origin)
+
+### Endpoints (peg-backend Express)
+- **POST** `/auth/user/ping/{userId}` — body: `{ displayName, avatarUrl, role }`
+- **GET** `/auth/user/online-count` — retourne `{ count: N }`
+- **GET** `/auth/user/online-users` — retourne `{ users: [...] }`
+
+### Fichiers clés
+- `src/components/template/OnlineUsersCount.tsx` — composant affichage + `OnlinePing`
+- `src/components/layouts/ModernLayout.tsx` — montage de `OnlinePing` (tous) et `OnlineUsersCount` (admins)
+- `PEG_BACKEND/routes/auth/user/index.ts` — endpoints ping, online-count, online-users
 
 ---
 
@@ -189,19 +250,28 @@ Le bucket d'images autorise ces origines :
 
 ---
 
-## 🔀 Deux backends distincts (mise à jour 02/04/2026)
+## 🔀 Deux backends distincts (mise à jour 03/04/2026)
 
 ### 1. Strapi — via `EXPRESS_BACKEND_URL`
 - **Dev** : `http://localhost:3000`
 - **Prod** : `apiUrl + '/api'` (= `https://api.mypeg.fr/api`)
-- **Utilisé pour** : factures (`/invoices/.../payment-status`), chatbot (`/chatbot/chat`), upload (`/upload`)
+- **Utilisé pour** : factures (`/invoices/.../payment-status`), chatbot (`/chatbot/chat`), upload (`/upload`), GraphQL (`/graphql`)
 - Config : `src/configs/env.config.ts` + `src/configs/api.config.ts`
 
-### 2. peg-backend (Express) — via proxy Vercel `/peg-api`
+### 2. peg-backend (Express) — DEUX modes d'accès
 - **Dev** : `http://localhost:3000`
-- **Prod** : `https://peg-backend.vercel.app` (proxy Vercel : `/peg-api/:path*`)
-- **Utilisé pour** : notifications, online users (ping/count/list), project views
-- Config : hardcodé dans les fichiers concernés + rewrite dans `vercel.json`
+- **Prod** : `https://peg-backend.vercel.app`
+- **Repo** : `PEG_BACKEND` (GitHub), déployé manuellement via `vercel --prod` (PAS d'auto-deploy)
+- **CORS** : `origin` avec liste explicite (`app.mypeg.fr`, `int.mypeg.fr`, etc.) + `credentials: true`
+  - **⚠️ JAMAIS `origin: '*'` avec `credentials: true`** — le navigateur bloque silencieusement
+
+#### Mode proxy `/peg-api` (same-origin, pas de CORS)
+- Utilisé par : **notifications** (`NotificationService.ts`), **ping en ligne** (`OnlineUsersCount.tsx`), **polling notifs** (`useNotifications.ts`)
+- Avantage : pas de problème CORS car same-origin
+
+#### Mode appel direct `https://peg-backend.vercel.app`
+- Utilisé par : **vues projet** (`ProjectDetails.tsx`, `ProjectListContent.tsx`)
+- Raison : ces appels n'envoient pas de credentials, le CORS fonctionne
 
 ---
 
