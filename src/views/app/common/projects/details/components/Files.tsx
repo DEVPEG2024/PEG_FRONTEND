@@ -139,22 +139,41 @@ const FileThumbnail = ({ file, canDelete, onRemove }: { file: PegFile; canDelete
   </div>
 );
 
+const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
+
 const Files = () => {
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
   const [pegFilesIdToDelete, setPegFilesIdToDelete] = useState<string[]>([]);
   const [pegFilesChanged, setPegFilesChanged] = useState<boolean>(false);
   const [filesLoading, setFilesLoading] = useState<boolean>(false);
+  const [myFileIds, setMyFileIds] = useState<string[]>([]);
   const dispatch = useAppDispatch();
   const { project } = useAppSelector(
     (state) => state.projectDetails.data
   );
   const { user } = useRootAppSelector((state) => state.auth.user);
   const isCustomer = hasRole(user, [CUSTOMER]);
-  const [myUploadedIds, setMyUploadedIds] = useState<string[]>([]);
+  const userId = user?.documentId || user?.id || user?._id;
 
   useEffect(() => {
     fetchFiles();
   }, [project]);
+
+  // Load file ownership from backend
+  useEffect(() => {
+    if (!isCustomer || !project?.documentId) return;
+    fetch(`${PEG_BACKEND_URL}/projects/files/ownership/${project.documentId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.files) {
+          const mine = data.files
+            .filter((f: any) => f.user_id === userId)
+            .map((f: any) => f.file_id);
+          setMyFileIds(mine);
+        }
+      })
+      .catch((err) => console.error('[FileOwnership] GET error:', err));
+  }, [isCustomer, project?.documentId, userId]);
 
   const fetchFiles = async (): Promise<void> => {
     setFilesLoading(true);
@@ -195,8 +214,13 @@ const Files = () => {
           if (isCustomer) newlyUploadedIds.push(uploaded.id);
         }
       }
-      if (newlyUploadedIds.length > 0) {
-        setMyUploadedIds((prev) => [...prev, ...newlyUploadedIds]);
+      if (isCustomer && newlyUploadedIds.length > 0) {
+        setMyFileIds((prev) => [...prev, ...newlyUploadedIds]);
+        fetch(`${PEG_BACKEND_URL}/projects/files/ownership`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileIds: newlyUploadedIds, projectId: project.documentId, userId }),
+        }).catch((err) => console.error('[FileOwnership] POST error:', err));
       }
 
       for (const id of pegFilesIdToDelete) {
@@ -254,7 +278,7 @@ const Files = () => {
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                   {existingFiles.map((file) => (
-                    <FileThumbnail key={file.id || file.name} file={file} canDelete={isCustomer ? (!file.id || myUploadedIds.includes(file.id)) : true} onRemove={onFileRemove} />
+                    <FileThumbnail key={file.id || file.name} file={file} canDelete={isCustomer ? (!file.id || myFileIds.includes(file.id)) : true} onRemove={onFileRemove} />
                   ))}
                 </div>
               </div>
