@@ -15,8 +15,7 @@ import { Loading } from '@/components/shared';
 import { toast } from 'react-toastify';
 import { HiDownload, HiTrash, HiDocumentText, HiArchive, HiCode, HiDocument } from 'react-icons/hi';
 import { hasRole } from '@/utils/permissions';
-import { CUSTOMER, PRODUCER } from '@/constants/roles.constant';
-import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
+import { CUSTOMER } from '@/constants/roles.constant';
 
 const isImageUrl = (url: string) => /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(url);
 const isPdfUrl = (url: string) => /\.pdf$/i.test(url);
@@ -150,9 +149,7 @@ const Files = () => {
     (state) => state.projectDetails.data
   );
   const { user } = useRootAppSelector((state) => state.auth.user);
-  const isProducer = hasRole(user, [PRODUCER]);
   const isCustomer = hasRole(user, [CUSTOMER]);
-  const customerDocId = project?.customer?.documentId;
 
   useEffect(() => {
     fetchFiles();
@@ -268,22 +265,6 @@ const Files = () => {
         <DetailsRight />
       </div>
 
-      {/* Fichiers client partagés — visible par le producteur assigné */}
-      {customerDocId && (
-        <div style={{
-          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-          borderRadius: '18px',
-          padding: '24px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
-          marginTop: '20px',
-          marginBottom: '28px',
-        }}>
-          <ClientFilesPanel
-            customerDocumentId={customerDocId}
-            mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
-          />
-        </div>
-      )}
     </Container>
   );
 };
