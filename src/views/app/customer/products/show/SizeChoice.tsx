@@ -89,7 +89,11 @@ const SizeChoice = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {canShowPackSelection && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        <>
+          <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
+            Choisissez un pack
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           {packOptions.map((packSize) => {
             const active = total === packSize;
             return (
