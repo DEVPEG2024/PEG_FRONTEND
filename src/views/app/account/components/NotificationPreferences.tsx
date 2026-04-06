@@ -80,12 +80,13 @@ const NotificationPreferences = () => {
   ) => {
     if (!prefs || !userId) return;
 
-    const previous = { ...prefs, [eventType]: { ...prefs[eventType] } };
+    const current = prefs[eventType] ?? { push: true, email: true };
+    const previous = { ...prefs, [eventType]: { ...current } };
     const updated: Preferences = {
       ...prefs,
       [eventType]: {
-        ...prefs[eventType],
-        [channel]: !prefs[eventType][channel],
+        ...current,
+        [channel]: !current[channel],
       },
     };
 
