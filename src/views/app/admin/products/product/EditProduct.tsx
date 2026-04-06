@@ -291,6 +291,8 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
+      // Remove pricingMode until Strapi schema is deployed
+      delete data.pricingMode;
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
