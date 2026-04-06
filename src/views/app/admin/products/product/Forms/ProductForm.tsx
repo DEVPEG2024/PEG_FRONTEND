@@ -42,6 +42,7 @@ export type ProductFormModel = Omit<
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
   catalogPrice?: number | null;
+  pricingMode?: 'tiers' | 'packs';
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;

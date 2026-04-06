@@ -35,6 +35,7 @@ export type Product = {
   requiresBat?: boolean;
   batFile?: PegFile | null;
   catalogPrice?: number | null;
+  pricingMode?: 'tiers' | 'packs';
 };
 
 export type Size = {

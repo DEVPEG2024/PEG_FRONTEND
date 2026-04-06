@@ -92,6 +92,7 @@ const EditProduct = () => {
     productRef: product?.productRef ?? '',
     refVisibleToCustomer: product?.refVisibleToCustomer ?? false,
     requiresBat: product?.requiresBat ?? false,
+    pricingMode: product?.pricingMode ?? 'tiers',
   };
   const dispatch = useAppDispatch();
 

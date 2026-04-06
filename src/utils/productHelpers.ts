@@ -65,6 +65,10 @@ export function getProductPackOptions(product: Product): number[] {
 }
 
 export function isProductPackPricing(product: Product): boolean {
+  if (product.pricingMode) {
+    return product.pricingMode === 'packs';
+  }
+  // Fallback: auto-detect based on number of tiers
   const packOptions = getProductPackOptions(product);
   return packOptions.length > 1;
 }

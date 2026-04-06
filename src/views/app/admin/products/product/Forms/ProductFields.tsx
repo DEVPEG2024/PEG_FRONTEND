@@ -290,7 +290,60 @@ const ProductFields = (props: ProductFieldsProps) => {
 
       {/* ── Section 2 : Paliers de prix ── */}
       <div style={card}>
-        <p style={sectionTitle}>Paliers de prix</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <p style={{ ...sectionTitle, marginBottom: 0 }}>Paliers de prix</p>
+          <Controller
+            name="pricingMode"
+            control={control}
+            render={({ field }) => {
+              const mode = field.value || 'tiers';
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('tiers')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      fontFamily: 'Inter, sans-serif',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: mode === 'tiers' ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.04)',
+                      color: mode === 'tiers' ? '#7eb3ff' : 'rgba(255,255,255,0.4)',
+                      borderRight: '1px solid rgba(255,255,255,0.08)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    Prix dégressifs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('packs')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      fontFamily: 'Inter, sans-serif',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: mode === 'packs' ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.04)',
+                      color: mode === 'packs' ? '#c084fc' : 'rgba(255,255,255,0.4)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    Packs
+                  </button>
+                </div>
+              );
+            }}
+          />
+        </div>
+        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: 0, marginBottom: '12px' }}>
+          {watch('pricingMode') === 'packs'
+            ? 'Le client choisira parmi les packs disponibles (boutons de sélection)'
+            : 'Le prix s\'adapte automatiquement selon la quantité commandée'}
+        </p>
         {errors.priceTiers && <p style={{ ...fieldError, marginBottom: '10px' }}>{errors.priceTiers.message}</p>}
         <Controller
           name="priceTiers"
