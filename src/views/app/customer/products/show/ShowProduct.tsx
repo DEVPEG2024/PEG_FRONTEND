@@ -76,7 +76,8 @@ const ShowProduct = () => {
   const isPackPricing = product ? isProductPackPricing(product) : false;
   const tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
   const unitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
-  const totalPrice = amountSelected * unitPrice;
+  // In pack mode, the price IS the total (price = pack price, not per-unit)
+  const totalPrice = isPackPricing ? unitPrice : amountSelected * unitPrice;
 
   useEffect(() => {
     if (onEdition && !product) {
@@ -310,11 +311,17 @@ const ShowProduct = () => {
                 </span>
               )}
             </div>
-            {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (
-              <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
-                -{(((product.priceTiers[0].price - tierPriceSelected) / product.priceTiers[0].price) * 100).toFixed(0)}% appliqué
-              </div>
-            )}
+            {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (() => {
+              const baseCPU = product.priceTiers[0].price / product.priceTiers[0].minQuantity;
+              const activeTier = product.priceTiers[activeTierIndex];
+              const activeCPU = activeTier.price / activeTier.minQuantity;
+              const pct = ((baseCPU - activeCPU) / baseCPU * 100).toFixed(0);
+              return Number(pct) > 0 ? (
+                <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
+                  -{pct}% appliqué
+                </div>
+              ) : null;
+            })()}
             {savingsPercent && product.catalogPrice && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', padding: '5px 12px' }}>
                 <span style={{ fontSize: '13px', color: '#4ade80', fontWeight: 700 }}>
@@ -339,13 +346,15 @@ const ShowProduct = () => {
           {hasTiers && (
             <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
-                Tarifs dégressifs
+                {isPackPricing ? 'Tarifs par pack' : 'Tarifs dégressifs'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {product.priceTiers.map((tier, i) => {
                   const isActive = tier.price === tierPriceSelected;
+                  const baseCostPerUnit = product.priceTiers[0].price / product.priceTiers[0].minQuantity;
+                  const tierCostPerUnit = tier.price / tier.minQuantity;
                   const savings = i > 0
-                    ? Math.round(((product.priceTiers[0].price - tier.price) / product.priceTiers[0].price) * 100)
+                    ? Math.round(((baseCostPerUnit - tierCostPerUnit) / baseCostPerUnit) * 100)
                     : null;
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: isActive ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isActive ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.05)'}`, transition: 'all 0.15s' }}>
@@ -392,15 +401,17 @@ const ShowProduct = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(47,111,237,0.1) 0%, rgba(31,75,182,0.06) 100%)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.7)' }}>
                 {isPackPricing ? (
-                  <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>Pack {amountSelected}</span>
+                  <>
+                    <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>Pack {amountSelected}</span>
+                  </>
                 ) : (
                   <>
                     <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
                     {' '}pièce{amountSelected > 1 ? 's' : ''}
+                    {' × '}
+                    <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
                   </>
                 )}
-                {' × '}
-                <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>

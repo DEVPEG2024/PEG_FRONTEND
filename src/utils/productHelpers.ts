@@ -97,7 +97,11 @@ export function getTotalPriceForCartItem(
     (amount, { quantity }) => amount + quantity,
     0
   );
-  const pricePerUnit = getProductPriceForQuantity(product, totalQuantity);
-  
-  return pricePerUnit * totalQuantity;
+  const packPrice = getProductPriceForQuantity(product, totalQuantity);
+
+  // In pack mode, the price IS the total (pack price, not per-unit)
+  if (isProductPackPricing(product)) {
+    return packPrice;
+  }
+  return packPrice * totalQuantity;
 }
