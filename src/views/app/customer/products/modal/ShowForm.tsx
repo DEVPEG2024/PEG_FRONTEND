@@ -47,13 +47,40 @@ function ShowForm({
     };
   }, []);
 
+  if (!fields) {
+    return <div>Aucun formulaire configuré.</div>;
+  }
+
+  // Sanitize components: ensure string fields expected by formio are never undefined
+  const sanitizeComponents = (components: any[]): any[] =>
+    components.map((comp: any) => {
+      const cleaned = { ...comp };
+      if (cleaned.defaultValue === undefined) cleaned.defaultValue = '';
+      if (cleaned.placeholder === undefined) cleaned.placeholder = '';
+      if (cleaned.customDefaultValue === undefined) delete cleaned.customDefaultValue;
+      if (cleaned.calculateValue === undefined) delete cleaned.calculateValue;
+      if (Array.isArray(cleaned.components)) {
+        cleaned.components = sanitizeComponents(cleaned.components);
+      }
+      if (Array.isArray(cleaned.columns)) {
+        cleaned.columns = cleaned.columns.map((col: any) => ({
+          ...col,
+          components: col.components ? sanitizeComponents(col.components) : [],
+        }));
+      }
+      return cleaned;
+    });
+
+  const parsedFields = JSON.parse(JSON.stringify(fields));
+  const components = Array.isArray(parsedFields) ? parsedFields : parsedFields.components || [];
+
   return (
     <div className="formio-scope">
       <FormViewer
         form={{
           type: 'form',
           display: 'form',
-          components: JSON.parse(JSON.stringify(fields)),
+          components: sanitizeComponents(components),
         }}
         submission={formAnswer?.answer}
         options={{
