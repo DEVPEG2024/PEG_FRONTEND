@@ -9,12 +9,12 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.form.io;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.form.io;
         img-src 'self' data: blob: https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
         connect-src 'self' https://api.mypeg.fr https://api-int.mypeg.fr https://*.stripe.com https://peg-backend.vercel.app wss://peg-backend.vercel.app;
         frame-src blob: https://*.stripe.com;
-        font-src 'self' data: https://fonts.gstatic.com;
+        font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;
         worker-src 'self' blob:;
       "
     />
