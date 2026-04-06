@@ -122,7 +122,8 @@ const SizeChoice = ({
               </button>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {sorted.map((size) => {
