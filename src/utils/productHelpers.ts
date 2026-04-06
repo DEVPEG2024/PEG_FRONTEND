@@ -66,10 +66,7 @@ export function getProductPackOptions(product: Product): number[] {
 
 export function isProductPackPricing(product: Product): boolean {
   const packOptions = getProductPackOptions(product);
-  return (
-    packOptions.length > 1 &&
-    (!product.sizes || product.sizes.length === 0)
-  );
+  return packOptions.length > 1;
 }
 
 /**

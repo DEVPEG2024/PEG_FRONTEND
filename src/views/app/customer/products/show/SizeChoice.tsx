@@ -1,5 +1,6 @@
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
+import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
 
 const sizesOrder: string[] = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
 
@@ -78,9 +79,43 @@ const SizeChoice = ({
   const total = sizeAndColorsSelected
     .filter((s) => !color || s.color.value === color.value)
     .reduce((sum, s) => sum + s.quantity, 0);
+  const packOptions = getProductPackOptions(product);
+  const canShowPackSelection = isProductPackPricing(product) && sorted.length === 1;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {canShowPackSelection && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {packOptions.map((packSize) => {
+            const active = total === packSize;
+            return (
+              <button
+                key={packSize}
+                type="button"
+                onClick={() => handleSizeAndColorsChanged(
+                  packSize,
+                  sorted[0],
+                  color ?? (DEFAULT_CHOICE as Color)
+                )}
+                style={{
+                  minWidth: '110px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  border: `1px solid ${active ? 'rgba(47,111,237,0.65)' : 'rgba(255,255,255,0.12)'}`,
+                  background: active ? 'rgba(47,111,237,0.16)' : 'rgba(255,255,255,0.04)',
+                  color: active ? '#dbeafe' : 'rgba(160,185,220,0.8)',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                Pack {packSize}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {sorted.map((size) => {
           const qty = sizeAndColorsSelected.find(
