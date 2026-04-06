@@ -14,7 +14,6 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            pricingMode
             images {
                 url
             }
@@ -60,7 +59,6 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            pricingMode
             images {
                 documentId
                 url
@@ -352,7 +350,6 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 name
                 price
                 priceTiers
-                pricingMode
                 inCatalogue
                 catalogPrice
             }
