@@ -4,7 +4,7 @@ import { Container } from '@/components/shared';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { apiGetProducts } from '@/services/ProductServices';
-import { getTotalPriceForCartItem, getProductPriceForSizeAndColors } from '@/utils/productHelpers';
+import { getTotalPriceForCartItem, getProductPriceForSizeAndColors, isProductPackPricing } from '@/utils/productHelpers';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdShoppingCart, MdOutlineShoppingBag, MdLocationOn } from 'react-icons/md';
@@ -154,6 +154,8 @@ function Cart() {
           {cart.map((item) => {
             const unitPrice = getProductPriceForSizeAndColors(item.product, item.sizeAndColors);
             const totalItem = getTotalPriceForCartItem(item.product, item.sizeAndColors);
+            const isPackPricing = isProductPackPricing(item.product);
+            const totalQuantity = item.sizeAndColors.reduce((sum, s) => sum + s.quantity, 0);
             return (
               <div
                 key={item.id}
@@ -204,7 +206,9 @@ function Cart() {
                     {totalItem.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', margin: 0 }}>
-                    {unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / u.
+                    {isPackPricing
+                      ? `Pack ${totalQuantity}`
+                      : `${unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / u.`}
                   </p>
                 </div>
 

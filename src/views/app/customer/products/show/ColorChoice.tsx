@@ -36,6 +36,7 @@ const ColorChoice = ({
               />
             ) : (
               <DefaultChoice
+                product={product}
                 sizeAndColorsSelected={sizeAndColorsSelected}
                 color={color}
                 handleSizeAndColorsChanged={handleSizeAndColorsChanged}

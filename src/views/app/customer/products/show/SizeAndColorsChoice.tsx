@@ -45,6 +45,7 @@ const SizeAndColorsChoice = ({
   }
   return (
     <QuantityChoice
+      product={product}
       sizeAndColorsSelected={sizeAndColorsSelected}
       handleSizeAndColorsChanged={handleSizeAndColorsChanged}
     />

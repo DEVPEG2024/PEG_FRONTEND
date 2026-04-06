@@ -1,11 +1,14 @@
-import { Color, Size, SizeAndColorSelection } from '@/@types/product';
+import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
+import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
 
 const DefaultChoice = ({
+  product,
   sizeAndColorsSelected,
   color,
   handleSizeAndColorsChanged,
 }: {
+  product: Product;
   sizeAndColorsSelected: SizeAndColorSelection[];
   color?: Color;
   handleSizeAndColorsChanged: (value: number, size: Size, color: Color) => void;
@@ -27,6 +30,50 @@ const DefaultChoice = ({
       DEFAULT_CHOICE as Size,
       color ?? (DEFAULT_CHOICE as Color)
     );
+
+  const isPackPricing = isProductPackPricing(product);
+  const packOptions = getProductPackOptions(product);
+
+  if (isPackPricing && packOptions.length > 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <p style={{ margin: 0, fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
+          Choisissez un pack
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {packOptions.map((packSize) => {
+            const active = qty === packSize;
+            return (
+              <button
+                key={packSize}
+                type="button"
+                onClick={() => onChange(packSize)}
+                style={{
+                  minWidth: '110px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  border: `1px solid ${active ? 'rgba(47,111,237,0.65)' : 'rgba(255,255,255,0.12)'}`,
+                  background: active ? 'rgba(47,111,237,0.16)' : 'rgba(255,255,255,0.04)',
+                  color: active ? '#dbeafe' : 'rgba(160,185,220,0.8)',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                Pack {packSize}
+              </button>
+            );
+          })}
+        </div>
+        {qty > 0 && (
+          <span style={{ fontSize: '13px', color: '#7eb3ff', fontWeight: 700 }}>
+            Pack {qty} sélectionné
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

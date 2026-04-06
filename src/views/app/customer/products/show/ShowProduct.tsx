@@ -24,7 +24,7 @@ import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing } from '@/utils/productHelpers';
 import { toTTC } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
@@ -73,6 +73,7 @@ const ShowProduct = () => {
     (amount, { quantity }) => amount + quantity,
     0
   );
+  const isPackPricing = product ? isProductPackPricing(product) : false;
   const tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
   const unitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
   const totalPrice = amountSelected * unitPrice;
@@ -296,11 +297,18 @@ const ShowProduct = () => {
                 <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
                   {unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>€ HT / pièce</span>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+                  € HT {isPackPricing ? '/ pack' : '/ pièce'}
+                </span>
               </div>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
                 {toTTC(unitPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
               </span>
+              {isPackPricing && amountSelected > 0 && (
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: '4px' }}>
+                  Pack {amountSelected} sélectionné
+                </span>
+              )}
             </div>
             {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (
               <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
@@ -343,7 +351,7 @@ const ShowProduct = () => {
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: isActive ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isActive ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.05)'}`, transition: 'all 0.15s' }}>
                       <span style={{ fontSize: '13px', color: isActive ? '#a0c4ff' : 'rgba(160,185,220,0.5)' }}>
                         {isActive && <span style={{ marginRight: '6px' }}>▶</span>}
-                        {tier.minQuantity}+ pièce{tier.minQuantity > 1 ? 's' : ''}
+                        {isPackPricing ? `Pack ${tier.minQuantity}` : `${tier.minQuantity}+ pièce${tier.minQuantity > 1 ? 's' : ''}`}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {savings && (
@@ -383,8 +391,14 @@ const ShowProduct = () => {
           {amountSelected > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(47,111,237,0.1) 0%, rgba(31,75,182,0.06) 100%)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.7)' }}>
-                <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
-                {' '}pièce{amountSelected > 1 ? 's' : ''}
+                {isPackPricing ? (
+                  <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>Pack {amountSelected}</span>
+                ) : (
+                  <>
+                    <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
+                    {' '}pièce{amountSelected > 1 ? 's' : ''}
+                  </>
+                )}
                 {' × '}
                 <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
               </div>

@@ -2,6 +2,7 @@ import { Button, Tooltip } from '@/components/ui'; // Assurez-vous que le chemin
 import {
   getProductPriceForSizeAndColors,
   getTotalPriceForCartItem,
+  isProductPackPricing,
 } from '@/utils/productHelpers';
 import { toTTC } from '@/utils/priceHelpers';
 import { HiPencil, HiTrash } from 'react-icons/hi';
@@ -30,7 +31,7 @@ export const useColumns = (
       },
     },
     {
-      header: 'Prix unitaire',
+      header: 'Prix',
       accessorKey: 'price',
       enableSorting: false,
       cell: ({ row }: { row: { original: CartItem } }) => {
@@ -38,10 +39,17 @@ export const useColumns = (
           row.original.product,
           row.original.sizeAndColors
         );
+        const isPackPricing = isProductPackPricing(row.original.product);
+        const total = getTotalPriceForCartItem(row.original.product, row.original.sizeAndColors);
+        const totalQuantity = row.original.sizeAndColors.reduce((sum, s) => sum + s.quantity, 0);
         return (
           <div>
-            <p className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</p>
-            <p className="text-xs text-gray-400">{toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</p>
+            <p className="font-semibold">
+              {(isPackPricing ? total : ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+            </p>
+            <p className="text-xs text-gray-400">
+              {isPackPricing ? `Pack ${totalQuantity}` : `${toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC`}
+            </p>
           </div>
         );
       },

@@ -56,6 +56,23 @@ export function getProductPriceForSizeAndColors(
   return getProductPriceForQuantity(product, totalQuantity);
 }
 
+export function getProductPackOptions(product: Product): number[] {
+  if (!product.priceTiers || product.priceTiers.length === 0) return [];
+
+  return [...new Set(product.priceTiers.map((tier) => tier.minQuantity))].sort(
+    (a, b) => a - b
+  );
+}
+
+export function isProductPackPricing(product: Product): boolean {
+  const packOptions = getProductPackOptions(product);
+  return (
+    packOptions.length > 1 &&
+    (!product.sizes || product.sizes.length === 0) &&
+    (!product.colors || product.colors.length === 0)
+  );
+}
+
 /**
  * Compute the savings percentage compared to the public catalog price.
  * Returns null when no catalog price is set or when there is no saving.
