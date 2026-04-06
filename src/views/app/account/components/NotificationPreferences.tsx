@@ -150,7 +150,7 @@ const NotificationPreferences = () => {
 
       {/* Rows */}
       {visibleEvents.map(([eventType, cfg]) => {
-        const ep = prefs[eventType as string];
+        const ep = prefs[eventType as string] ?? { push: true, email: true };
         return (
           <div
             key={eventType}
