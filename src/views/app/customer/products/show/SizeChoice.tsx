@@ -80,7 +80,11 @@ const SizeChoice = ({
     .filter((s) => !color || s.color.value === color.value)
     .reduce((sum, s) => sum + s.quantity, 0);
   const packOptions = getProductPackOptions(product);
-  const canShowPackSelection = isProductPackPricing(product) && sorted.length === 1;
+  const canShowPackSelection = isProductPackPricing(product);
+  const activeSelection = sizeAndColorsSelected.find(
+    (s) => !color || s.color.value === color.value
+  );
+  const defaultSize = activeSelection?.size ?? sorted[0];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -94,7 +98,7 @@ const SizeChoice = ({
                 type="button"
                 onClick={() => handleSizeAndColorsChanged(
                   packSize,
-                  sorted[0],
+                  defaultSize,
                   color ?? (DEFAULT_CHOICE as Color)
                 )}
                 style={{
