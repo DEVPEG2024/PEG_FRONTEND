@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
@@ -85,6 +86,7 @@ const SizeChoice = ({
     (s) => !color || s.color.value === color.value
   );
   const defaultSize = activeSelection?.size ?? sorted[0];
+  const [selectedSize, setSelectedSize] = useState<Size | null>(defaultSize ?? sorted[0] ?? null);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -102,7 +104,7 @@ const SizeChoice = ({
                 type="button"
                 onClick={() => handleSizeAndColorsChanged(
                   packSize,
-                  defaultSize,
+                  selectedSize ?? defaultSize,
                   color ?? (DEFAULT_CHOICE as Color)
                 )}
                 style={{
@@ -123,9 +125,46 @@ const SizeChoice = ({
             );
           })}
           </div>
+          {sorted.length > 1 && (
+            <>
+              <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
+                Format
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {sorted.map((size) => {
+                  const active = selectedSize?.value === size.value;
+                  return (
+                    <button
+                      key={size.value}
+                      type="button"
+                      onClick={() => {
+                        if (total > 0) {
+                          handleSizeAndColorsChanged(total, size, color ?? (DEFAULT_CHOICE as Color));
+                        }
+                        setSelectedSize(size);
+                      }}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        border: `1px solid ${active ? 'rgba(47,111,237,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                        background: active ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.03)',
+                        color: active ? '#7eb3ff' : 'rgba(160,185,220,0.6)',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {size.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
           {total > 0 && (
             <span style={{ fontSize: '13px', color: '#7eb3ff', fontWeight: 700 }}>
-              Pack {total} sélectionné
+              Pack {total} sélectionné{selectedSize ? ` — ${selectedSize.name}` : ''}
             </span>
           )}
         </>
