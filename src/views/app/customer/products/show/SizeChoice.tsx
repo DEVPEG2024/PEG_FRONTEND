@@ -88,7 +88,7 @@ const SizeChoice = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {canShowPackSelection && (
+      {canShowPackSelection ? (
         <>
           <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
             Choisissez un pack
@@ -123,46 +123,54 @@ const SizeChoice = ({
             );
           })}
           </div>
+          {total > 0 && (
+            <span style={{ fontSize: '13px', color: '#7eb3ff', fontWeight: 700 }}>
+              Pack {total} sélectionné
+            </span>
+          )}
         </>
-      )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {sorted.map((size) => {
-          const qty = sizeAndColorsSelected.find(
-            (s) => s.size.value === size.value && (!color || s.color.value === color.value)
-          )?.quantity ?? 0;
-          const active = qty > 0;
-          return (
-            <div
-              key={size.value}
-              style={{
-                background: active ? 'rgba(47,111,237,0.10)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${active ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: '10px',
-                padding: '8px 10px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'border-color 0.15s, background 0.15s',
-                minWidth: '72px',
-              }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 700, color: active ? '#7eb3ff' : 'rgba(160,185,220,0.6)', letterSpacing: '0.04em' }}>
-                {size.name}
-              </span>
-              <Stepper
-                value={qty}
-                active={active}
-                onChange={(v) => handleSizeAndColorsChanged(v, size, color ?? (DEFAULT_CHOICE as Color))}
-              />
-            </div>
-          );
-        })}
-      </div>
-      {total > 0 && (
-        <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.5)' }}>
-          <span style={{ color: '#7eb3ff', fontWeight: 700 }}>{total}</span> pièce{total > 1 ? 's' : ''} sélectionnée{total > 1 ? 's' : ''}
-        </p>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {sorted.map((size) => {
+              const qty = sizeAndColorsSelected.find(
+                (s) => s.size.value === size.value && (!color || s.color.value === color.value)
+              )?.quantity ?? 0;
+              const active = qty > 0;
+              return (
+                <div
+                  key={size.value}
+                  style={{
+                    background: active ? 'rgba(47,111,237,0.10)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${active ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.07)'}`,
+                    borderRadius: '10px',
+                    padding: '8px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'border-color 0.15s, background 0.15s',
+                    minWidth: '72px',
+                  }}
+                >
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: active ? '#7eb3ff' : 'rgba(160,185,220,0.6)', letterSpacing: '0.04em' }}>
+                    {size.name}
+                  </span>
+                  <Stepper
+                    value={qty}
+                    active={active}
+                    onChange={(v) => handleSizeAndColorsChanged(v, size, color ?? (DEFAULT_CHOICE as Color))}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {total > 0 && (
+            <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.5)' }}>
+              <span style={{ color: '#7eb3ff', fontWeight: 700 }}>{total}</span> pièce{total > 1 ? 's' : ''} sélectionnée{total > 1 ? 's' : ''}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
