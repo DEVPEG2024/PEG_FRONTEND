@@ -68,8 +68,7 @@ export function isProductPackPricing(product: Product): boolean {
   const packOptions = getProductPackOptions(product);
   return (
     packOptions.length > 1 &&
-    (!product.sizes || product.sizes.length === 0) &&
-    (!product.colors || product.colors.length === 0)
+    (!product.sizes || product.sizes.length === 0)
   );
 }
 
