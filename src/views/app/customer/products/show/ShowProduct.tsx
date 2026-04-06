@@ -354,18 +354,28 @@ const ShowProduct = () => {
           {hasTiers && (
             <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
-                {isPackPricing ? 'Tarifs par pack' : 'Tarifs dégressifs'}
+                {isPackPricing ? 'Choisissez un pack' : 'Tarifs dégressifs'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {product.priceTiers.map((tier, i) => {
-                  const isActive = tier.price === tierPriceSelected;
+                  const isActive = isPackPricing
+                    ? amountSelected === tier.minQuantity
+                    : tier.price === tierPriceSelected;
                   const baseCostPerUnit = product.priceTiers[0].price / product.priceTiers[0].minQuantity;
                   const tierCostPerUnit = tier.price / tier.minQuantity;
                   const savings = i > 0
                     ? Math.round(((baseCostPerUnit - tierCostPerUnit) / baseCostPerUnit) * 100)
                     : null;
                   return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: isActive ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isActive ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.05)'}`, transition: 'all 0.15s' }}>
+                    <div
+                      key={i}
+                      onClick={isPackPricing ? () => {
+                        const size = product.sizes?.[0] ?? ({ name: 'Default', value: 'DEFAULT', description: 'Default' } as Size);
+                        const clr = product.colors?.[0] ?? ({ name: 'Default', value: 'DEFAULT', description: 'Default' } as Color);
+                        handleSizeAndColorsChanged(tier.minQuantity, size, clr);
+                      } : undefined}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: isActive ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isActive ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.05)'}`, transition: 'all 0.15s', cursor: isPackPricing ? 'pointer' : 'default' }}
+                    >
                       <span style={{ fontSize: '13px', color: isActive ? '#a0c4ff' : 'rgba(160,185,220,0.5)' }}>
                         {isActive && <span style={{ marginRight: '6px' }}>▶</span>}
                         {isPackPricing ? `Pack ${tier.minQuantity}` : `${tier.minQuantity}+ pièce${tier.minQuantity > 1 ? 's' : ''}`}

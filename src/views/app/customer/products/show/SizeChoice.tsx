@@ -100,42 +100,9 @@ const SizeChoice = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {canShowPackSelection ? (
         <>
-          <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
-            Choisissez un pack
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {packOptions.map((packSize) => {
-            const active = total === packSize;
-            return (
-              <button
-                key={packSize}
-                type="button"
-                onClick={() => handleSizeAndColorsChanged(
-                  packSize,
-                  selectedSize ?? defaultSize,
-                  color ?? (DEFAULT_CHOICE as Color)
-                )}
-                style={{
-                  minWidth: '110px',
-                  padding: '12px 14px',
-                  borderRadius: '12px',
-                  border: `1px solid ${active ? 'rgba(47,111,237,0.65)' : 'rgba(255,255,255,0.12)'}`,
-                  background: active ? 'rgba(47,111,237,0.16)' : 'rgba(255,255,255,0.04)',
-                  color: active ? '#dbeafe' : 'rgba(160,185,220,0.8)',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  transition: 'all 0.15s',
-                }}
-              >
-                Pack {packSize}
-              </button>
-            );
-          })}
-          </div>
           {sorted.length > 1 && (
             <>
-              <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
+              <p style={{ margin: 0, fontSize: '12px', color: 'rgba(160,185,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
                 Format
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
