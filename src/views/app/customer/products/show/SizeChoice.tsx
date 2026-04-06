@@ -77,16 +77,24 @@ const SizeChoice = ({
     (a, b) => sizesOrder.indexOf(a.name) - sizesOrder.indexOf(b.name)
   );
 
-  const total = sizeAndColorsSelected
-    .filter((s) => !color || s.color.value === color.value)
-    .reduce((sum, s) => sum + s.quantity, 0);
-  const packOptions = getProductPackOptions(product);
-  const canShowPackSelection = isProductPackPricing(product);
-  const activeSelection = sizeAndColorsSelected.find(
+  const relevantSelections = sizeAndColorsSelected.filter(
     (s) => !color || s.color.value === color.value
   );
+  const total = relevantSelections.reduce((sum, s) => sum + s.quantity, 0);
+  const packOptions = getProductPackOptions(product);
+  const canShowPackSelection = isProductPackPricing(product);
+  const activeSelection = relevantSelections.find((s) => s.quantity > 0);
   const defaultSize = activeSelection?.size ?? sorted[0];
   const [selectedSize, setSelectedSize] = useState<Size | null>(defaultSize ?? sorted[0] ?? null);
+
+  // Sync selectedSize with actual selection from store
+  const currentSelectedSizeValue = activeSelection?.size?.value;
+  if (currentSelectedSizeValue && selectedSize?.value !== currentSelectedSizeValue) {
+    const matchedSize = sorted.find((s) => s.value === currentSelectedSizeValue);
+    if (matchedSize && matchedSize.value !== selectedSize?.value) {
+      setSelectedSize(matchedSize);
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -138,10 +146,10 @@ const SizeChoice = ({
                       key={size.value}
                       type="button"
                       onClick={() => {
+                        setSelectedSize(size);
                         if (total > 0) {
                           handleSizeAndColorsChanged(total, size, color ?? (DEFAULT_CHOICE as Color));
                         }
-                        setSelectedSize(size);
                       }}
                       style={{
                         padding: '10px 16px',

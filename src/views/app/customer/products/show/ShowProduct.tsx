@@ -180,6 +180,14 @@ const ShowProduct = () => {
   };
 
   const determineNewSizeAndColors = (value: number, size: Size, color: Color) => {
+    // In pack mode, only one size entry per color at a time
+    if (isPackPricing && value > 0) {
+      const otherColors = sizeAndColorsSelected.filter(
+        (s) => color && s.color.value !== color.value
+      );
+      return [...otherColors, { size, color, quantity: value }];
+    }
+
     if (value > 0) {
       const index = sizeAndColorsSelected.findIndex(
         (s) => s.size.value === size.value && s.color.value === color.value
