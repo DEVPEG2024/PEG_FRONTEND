@@ -2,6 +2,7 @@ export type SavMessage = {
   id: string;
   content: string;
   images?: string[];     // URLs des images uploadées
+  audioUrl?: string;     // URL du vocal uploadé
   createdBy: string;     // displayName
   createdByRole: string; // 'admin' | 'customer' | 'producer'
   createdAt: string;     // ISO date
@@ -18,5 +19,6 @@ export type SavTicket = {
   createdBy: string;     // displayName de l'utilisateur
   createdByRole: string; // 'admin' | 'customer' | 'producer'
   images?: string[];     // URLs des images jointes à l'ouverture
+  audioUrl?: string;     // URL du vocal joint à l'ouverture
   messages?: SavMessage[];
 };
