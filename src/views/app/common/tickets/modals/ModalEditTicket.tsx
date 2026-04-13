@@ -74,16 +74,7 @@ function ModalEditTicket() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(updateTicket({ ...formData, image: image?.id ?? null }));
-    setFormData({
-      documentId: '',
-      name: '',
-      priority: 'low',
-      description: '',
-      state: 'pending',
-      user: '',
-      type: '',
-    });
+    await dispatch(updateTicket({ ...formData, image: image?.id ?? null }));
     handleClose();
   };
 

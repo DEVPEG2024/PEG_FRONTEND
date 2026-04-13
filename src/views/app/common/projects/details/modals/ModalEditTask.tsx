@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { HiCheck, HiX, HiPencil, HiFlag, HiCalendar } from 'react-icons/hi';
+import { HiCheck, HiX, HiPencil } from 'react-icons/hi';
 import {
   setEditDialogTask,
   updateTask,
@@ -39,6 +39,22 @@ function ModalEditTask() {
     startDate: selectedTask?.startDate || new Date(),
     endDate: selectedTask?.endDate || new Date(),
   });
+
+  // Re-sync when selectedTask changes
+  useEffect(() => {
+    if (selectedTask) {
+      setFormData({
+        documentId: selectedTask.documentId || '',
+        name: selectedTask.name || '',
+        description: selectedTask.description || '',
+        state: selectedTask.state || 'pending',
+        priority: selectedTask.priority || 'low',
+        startDate: selectedTask.startDate || new Date(),
+        endDate: selectedTask.endDate || new Date(),
+      });
+      setDescription(selectedTask.description || '');
+    }
+  }, [selectedTask]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();

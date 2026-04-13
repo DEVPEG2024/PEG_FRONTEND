@@ -61,6 +61,7 @@ function ModalPayProducer({
 
   const handleClose = () => {
     setStep(0);
+    setFormData({ amount: project.producerPrice, type: 'projectPayment' });
     onClosePayProducer();
   };
 

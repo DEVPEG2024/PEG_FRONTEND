@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import dayjs from 'dayjs';
-import { HiCheck, HiX, HiClipboardList, HiFlag, HiCalendar } from 'react-icons/hi';
+import { HiCheck, HiX, HiClipboardList } from 'react-icons/hi';
 import {
   createTask,
   setNewDialogTask,

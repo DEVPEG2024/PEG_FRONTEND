@@ -5,6 +5,7 @@ import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
 import { Loading } from '@/components/shared';
 import ModalEditTask from '../modals/ModalEditTask';
+import ModalNewTask from '../modals/ModalNewTask';
 import { useAppSelector } from '../store';
 import TaskCard from './TaskCard';
 
@@ -45,6 +46,7 @@ const Tasks = () => {
         </div>
         <DetailsRight />
       </div>
+      <ModalNewTask />
       {selectedTask && <ModalEditTask />}
     </Container>
   );

@@ -387,7 +387,7 @@ const ProjectsList = () => {
     });
 
     return result;
-  }, [projects, customersSelected, sortBy, viewMode, tableSort]);
+  }, [projects, customersSelected, sortBy, viewMode, tableSort, statusFilter]);
 
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
