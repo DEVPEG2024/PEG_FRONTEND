@@ -43,6 +43,7 @@ type ProductFieldsProps = {
   batFile: PegFile | null;
   setBatFile: (f: PegFile | null) => void;
   currentBatUrl?: string | null;
+  currentStep?: number;
 };
 
 const card: React.CSSProperties = {
@@ -100,7 +101,11 @@ const ProductFields = (props: ProductFieldsProps) => {
     batFile,
     setBatFile,
     currentBatUrl,
+    currentStep,
   } = props;
+
+  const step = currentStep ?? -1; // -1 = show all (backwards compat)
+  const show = (s: number) => step === -1 || step === s;
 
   const requiresBat = watch('requiresBat');
   const [aiLoading, setAiLoading] = useState(false);
@@ -221,8 +226,8 @@ const ProductFields = (props: ProductFieldsProps) => {
         </h2>
       </div>
 
-      {/* ── Section 1 : Infos de base ── */}
-      <div style={card}>
+      {/* ── Step 0 : Infos de base ── */}
+      {show(0) && <div style={card}>
         <p style={sectionTitle}>Informations générales</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start', marginBottom: '16px' }}>
           <div>
@@ -286,10 +291,10 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
           {errors.description && <p style={fieldError}>{errors.description.message}</p>}
         </div>
-      </div>
+      </div>}
 
-      {/* ── Section 2 : Paliers de prix ── */}
-      <div style={card}>
+      {/* ── Step 1 : Paliers de prix ── */}
+      {show(1) && <><div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <p style={{ ...sectionTitle, marginBottom: 0 }}>Paliers de prix</p>
           <Controller
@@ -423,7 +428,7 @@ const ProductFields = (props: ProductFieldsProps) => {
       </div>
 
       {/* ── Prix catalogue (référence pour % économie) ── */}
-      <div style={card}>
+      <div style={{ ...card, marginTop: 0 }}>
         <p style={sectionTitle}>Prix catalogue public (référence)</p>
         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '12px', marginTop: 0 }}>
           Si ce produit existe dans le catalogue public à un prix plus élevé, indiquez-le ici. Le client verra le pourcentage économisé.
@@ -449,9 +454,10 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
         </div>
       </div>
+      </>}
 
-      {/* ── Section 3 : Catégories & clients ── */}
-      <div style={card}>
+      {/* ── Step 2 : Catégories & Options ── */}
+      {show(2) && <><div style={card}>
         <p style={sectionTitle}>Catégories & clients</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
           <div>
@@ -509,7 +515,6 @@ const ProductFields = (props: ProductFieldsProps) => {
         </div>
       </div>
 
-      {/* ── Section 4 : Options produit ── */}
       <div style={card}>
         <p style={sectionTitle}>Options produit</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '14px' }}>
@@ -580,7 +585,10 @@ const ProductFields = (props: ProductFieldsProps) => {
         </div>
       </div>
 
-      {/* ── Section 5 : BAT ── */}
+      </>}
+
+      {/* ── Step 3 : BAT + Ref ── */}
+      {show(3) && <>
       <div style={{ ...card, border: requiresBat ? '1.5px solid rgba(168,85,247,0.3)' : '1.5px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: requiresBat ? '18px' : '0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -686,6 +694,7 @@ const ProductFields = (props: ProductFieldsProps) => {
           </div>
         </div>
       )}
+      </>}
     </>
   );
 };

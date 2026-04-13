@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HiCheck, HiX, HiCurrencyEuro, HiArrowRight, HiArrowLeft } from 'react-icons/hi';
 import { Project } from '@/@types/project';
 import { useAppDispatch } from '@/store';
@@ -68,7 +69,7 @@ function ModalPayProducer({
   const selectedType = paymentProducerProjectTypes.find((t) => t.value === formData.type);
   const remaining = (project.producerPrice || 0) - (project.producerPaidPrice || 0);
 
-  return (
+  return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
@@ -236,7 +237,8 @@ function ModalPayProducer({
           @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         `}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
