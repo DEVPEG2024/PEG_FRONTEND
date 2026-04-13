@@ -88,17 +88,27 @@ const Comments = () => {
 
   /* ── Auto scroll ── */
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: smooth ? 'smooth' : 'instant',
-    });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: smooth ? 'smooth' : 'instant',
+      });
+    }, 50);
   };
 
+  // Scroll au chargement initial des commentaires
   useEffect(() => {
-    scrollToBottom(false);
-  }, []);
+    if (comments.length > 0) {
+      scrollToBottom(false);
+    }
+  }, [comments.length > 0]);
 
+  // Scroll à chaque nouveau message
+  const prevCount = useRef(comments.length);
   useEffect(() => {
-    scrollToBottom(true);
+    if (comments.length > prevCount.current) {
+      scrollToBottom(true);
+    }
+    prevCount.current = comments.length;
   }, [comments.length]);
 
   /* ── Visibility filtering ── */
