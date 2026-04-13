@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { MdDownload, MdUploadFile, MdCheckCircle, MdCancel, MdHourglassEmpty } from 'react-icons/md';
+import { MdDownload, MdUploadFile, MdCheckCircle, MdCancel, MdHourglassEmpty, MdFullscreen } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
+import BatPreviewModal from './BatPreviewModal';
 import { useAppSelector, getProjectById, useAppDispatch } from '../store';
 import { RootState, useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
@@ -47,6 +48,7 @@ const ProjectBat = () => {
   const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);
   const [batCommentInput, setBatCommentInput] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const orderItem = project?.orderItem;
   const product = orderItem?.product;
@@ -186,24 +188,29 @@ const ProjectBat = () => {
                   {batFile.name}
                 </span>
               </div>
-              <a
-                href={batFile.url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  background: 'rgba(47,111,237,0.15)',
-                  border: '1px solid rgba(47,111,237,0.3)',
-                  borderRadius: '8px',
-                  padding: '6px 14px',
-                  color: '#6b9eff',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  flexShrink: 0,
-                }}
-              >
-                Voir / Télécharger
-              </a>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                <button
+                  onClick={() => setPreviewOpen(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'linear-gradient(90deg, rgba(47,111,237,0.15), rgba(47,111,237,0.1))',
+                    border: '1px solid rgba(47,111,237,0.3)',
+                    borderRadius: '8px', padding: '6px 14px',
+                    color: '#6b9eff', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <MdFullscreen size={16} /> Plein écran
+                </button>
+                <a href={batFile.url} target="_blank" rel="noreferrer"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px', padding: '6px 14px',
+                    color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, textDecoration: 'none',
+                  }}>
+                  Télécharger
+                </a>
+              </div>
             </div>
           ) : (
             <div style={{
@@ -326,6 +333,27 @@ const ProjectBat = () => {
 
         <DetailsRight />
       </div>
+
+      {batFile?.url && (
+        <BatPreviewModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          fileUrl={batFile.url}
+          fileName={batFile.name || ''}
+          batStatus={batStatus}
+          isClient={!isSuperAdmin}
+          onApprove={async () => {
+            await apiUpdateBatStatus(orderItem!.documentId, 'approved', null);
+            toast.success('BAT approuvé');
+            await dispatch(getProjectById(project!.documentId));
+          }}
+          onReject={async (comment: string) => {
+            await apiUpdateBatStatus(orderItem!.documentId, 'rejected', comment);
+            toast.success('BAT refusé');
+            await dispatch(getProjectById(project!.documentId));
+          }}
+        />
+      )}
     </Container>
   );
 };

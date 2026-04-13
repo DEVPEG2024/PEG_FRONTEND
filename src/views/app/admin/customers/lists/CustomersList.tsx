@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
 import reducer, { getCustomers, deleteCustomer } from '../store'
 import { Customer } from '@/@types/customer'
-import { CUSTOMERS_NEW } from '@/constants/navigation.constant'
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiUsers, HiMail, HiLocationMarker } from 'react-icons/hi'
 import { env } from '@/configs/env.config'
+import QuickAddCustomerWizard from './QuickAddCustomerWizard'
 
 const resolveUrl = (url: string) => url?.startsWith('http') ? url : (env?.API_ENDPOINT_URL ?? '') + url
 
@@ -33,6 +33,7 @@ const CustomersList = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(50)
   const [searchTerm, setSearchTerm] = useState('')
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   const customers: Customer[] = useAppSelector((state: any) => state.customers?.customers ?? [])
   const total: number = useAppSelector((state: any) => state.customers?.total ?? 0)
@@ -51,7 +52,7 @@ const CustomersList = () => {
             Clients <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
           </h2>
         </div>
-        <button onClick={() => navigate(CUSTOMERS_NEW)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
           <HiPlus size={16} /> Nouveau client
         </button>
       </div>
@@ -125,6 +126,7 @@ const CustomersList = () => {
           })}
         </div>
       )}
+      <QuickAddCustomerWizard open={wizardOpen} onClose={() => { setWizardOpen(false); dispatch(getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })); }} />
     </Container>
   )
 }
