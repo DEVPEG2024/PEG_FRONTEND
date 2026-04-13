@@ -122,18 +122,14 @@ const ProjectSav = () => {
     const urls: string[] = [];
     for (const file of files) {
       try {
-        console.log('[SAV] Uploading file:', file.name, file.type, file.size);
         const uploaded = await apiUploadFile(file);
-        console.log('[SAV] Upload response:', JSON.stringify(uploaded));
         const url = uploaded?.url;
         if (url) {
           urls.push(ensureAbsoluteUrl(url));
         } else {
-          console.error('[SAV] No URL in upload response:', uploaded);
           toast.error('Upload OK mais pas d\'URL pour: ' + file.name);
         }
-      } catch (err) {
-        console.error('[SAV] Upload error:', err);
+      } catch {
         toast.error('Erreur upload: ' + file.name);
       }
     }
@@ -515,18 +511,12 @@ const ProjectSav = () => {
                         onChange={(e) => {
                           const files = e.target.files;
                           const tid = ticket.id;
-                          console.log('[SAV] File input onChange, files:', files?.length, 'ticketId:', tid);
                           if (files && files.length > 0) {
                             const fileArray = Array.from(files);
-                            console.log('[SAV] Adding files to messageFiles:', fileArray.map(f => f.name));
-                            setMessageFiles((prev) => {
-                              const updated = {
-                                ...prev,
-                                [tid]: [...(prev[tid] || []), ...fileArray],
-                              };
-                              console.log('[SAV] Updated messageFiles:', Object.keys(updated), updated[tid]?.length);
-                              return updated;
-                            });
+                            setMessageFiles((prev) => ({
+                              ...prev,
+                              [tid]: [...(prev[tid] || []), ...fileArray],
+                            }));
                           }
                           // Reset AFTER capturing files
                           setTimeout(() => { e.target.value = ''; }, 100);
@@ -769,7 +759,6 @@ const ProjectSav = () => {
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const files = e.target.files;
-                      console.log('[SAV] Form file input onChange, files:', files?.length);
                       if (files && files.length > 0) {
                         const fileArray = Array.from(files);
                         setFormFiles((prev) => [...prev, ...fileArray]);
