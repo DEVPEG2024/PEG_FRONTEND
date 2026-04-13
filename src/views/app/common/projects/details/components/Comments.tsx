@@ -171,7 +171,7 @@ const Comments = () => {
       content: commentText,
       user: user,
       createdAt: new Date(),
-      images: newPegFiles,
+      images: newPegFiles.map(({ id }) => id) as any,
       visibility: commentVisibility,
     };
 
