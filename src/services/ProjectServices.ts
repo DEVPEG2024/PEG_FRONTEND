@@ -121,6 +121,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             }
             startDate
             state
+            adminNotes
             tasks (pagination: {limit: 100}){
                 documentId
                 name
@@ -411,6 +412,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             }
             startDate
             state
+            adminNotes
             tasks (pagination: {limit: 100}){
                 documentId
                 name

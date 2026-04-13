@@ -4,6 +4,7 @@ import {
   HiUserCircle,
   HiLightningBolt,
   HiSwitchHorizontal,
+  HiPencil,
 } from 'react-icons/hi';
 import dayjs from 'dayjs';
 import { statusTextData } from '../../lists/constants';
@@ -111,6 +112,31 @@ const DetailsRight = () => {
   );
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]);
+
+  // Admin notes
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesValue, setNotesValue] = useState(project.adminNotes ?? '');
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setNotesValue(project.adminNotes ?? '');
+  }, [project.adminNotes]);
+
+  useEffect(() => {
+    if (notesEditing && notesRef.current) {
+      notesRef.current.focus();
+      notesRef.current.selectionStart = notesRef.current.value.length;
+    }
+  }, [notesEditing]);
+
+  const saveNotes = () => {
+    const trimmed = notesValue.trim();
+    if (trimmed !== (project.adminNotes ?? '').trim()) {
+      dispatch(updateCurrentProject({ documentId: project.documentId, adminNotes: trimmed || '' }));
+      toast.success('Notes sauvegardées');
+    }
+    setNotesEditing(false);
+  };
 
   // Inline edit paidPrice / producerPaidPrice
   const [editingField, setEditingField] = useState<'paidPrice' | 'producerPaidPrice' | null>(null);
@@ -499,6 +525,99 @@ const DetailsRight = () => {
           )}
         </div>
       </div>
+
+      {/* ── Card 5: Admin Notes (admin only) ── */}
+      {isAdmin && (
+        <div style={miniCard}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <p style={sectionLabel}>Notes internes</p>
+            {!notesEditing && (
+              <button
+                onClick={() => setNotesEditing(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '24px', height: '24px', borderRadius: '6px',
+                  background: 'transparent', border: 'none',
+                  color: 'rgba(255,255,255,0.2)', cursor: 'pointer',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#6fa3f5')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}
+                title="Modifier les notes"
+              >
+                <HiPencil size={13} />
+              </button>
+            )}
+          </div>
+          {notesEditing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <textarea
+                ref={notesRef}
+                value={notesValue}
+                onChange={(e) => setNotesValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setNotesValue(project.adminNotes ?? ''); setNotesEditing(false); }
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNotes();
+                }}
+                placeholder="Notes visibles uniquement par les admins..."
+                style={{
+                  width: '100%', minHeight: '80px', resize: 'vertical',
+                  background: 'rgba(0,0,0,0.25)',
+                  border: '1px solid rgba(47,111,237,0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(255,255,255,0.85)',
+                  fontSize: '12px', lineHeight: '1.5',
+                  padding: '10px',
+                  outline: 'none',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              />
+              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { setNotesValue(project.adminNotes ?? ''); setNotesEditing(false); }}
+                  style={{
+                    padding: '5px 10px', borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={saveNotes}
+                  style={{
+                    padding: '5px 10px', borderRadius: '6px',
+                    background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                    border: 'none',
+                    color: '#fff', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Enregistrer
+                </button>
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>
+                Ctrl+Entrée pour sauvegarder · Échap pour annuler
+              </span>
+            </div>
+          ) : (
+            <div
+              onClick={() => setNotesEditing(true)}
+              style={{
+                color: notesValue ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)',
+                fontSize: '12px',
+                lineHeight: '1.5',
+                whiteSpace: 'pre-wrap',
+                cursor: 'pointer',
+                minHeight: '24px',
+              }}
+            >
+              {notesValue || 'Cliquer pour ajouter des notes...'}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -31,6 +31,7 @@ export type Project = {
   poolable: boolean;
   checklistItems: ChecklistItem[];
   savTickets?: SavTicket[];
+  adminNotes?: string;
 }
 
 export type Task = {
