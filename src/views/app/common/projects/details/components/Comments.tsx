@@ -170,10 +170,9 @@ const Comments = () => {
     const comment = {
       content: commentText,
       user: user,
-      createdAt: new Date(),
-      images: newPegFiles.map(({ id }) => id) as any,
+      images: newPegFiles.map(({ id }) => id),
       visibility: commentVisibility,
-    };
+    } as any;
 
     dispatch(createComment({ comment, project }));
     setCommentText('');
@@ -252,10 +251,10 @@ const Comments = () => {
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          background: 'linear-gradient(160deg, #0d1b2a 0%, #0a1421 100%)',
-          borderRadius: '20px',
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          borderRadius: '18px',
           border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
           overflow: 'hidden',
           minHeight: '500px',
           maxHeight: '75vh',
@@ -267,8 +266,7 @@ const Comments = () => {
             justifyContent: 'space-between',
             padding: '14px 20px',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(255,255,255,0.02)',
-            backdropFilter: 'blur(10px)',
+            background: 'rgba(255,255,255,0.03)',
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -416,7 +414,7 @@ const Comments = () => {
           {/* ── Input area ── */}
           <div style={{
             borderTop: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(255,255,255,0.02)',
+            background: 'rgba(255,255,255,0.03)',
             padding: '12px 16px',
             flexShrink: 0,
           }}>
