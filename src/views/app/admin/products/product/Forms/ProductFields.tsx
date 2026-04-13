@@ -227,7 +227,8 @@ const ProductFields = (props: ProductFieldsProps) => {
       </div>
 
       {/* ── Step 0 : Infos de base ── */}
-      {show(0) && <div style={card}>
+      {show(0) && (
+      <div style={card}>
         <p style={sectionTitle}>Informations générales</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start', marginBottom: '16px' }}>
           <div>
@@ -291,10 +292,11 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
           {errors.description && <p style={fieldError}>{errors.description.message}</p>}
         </div>
-      </div>}
+      </div>
+      )}
 
       {/* ── Step 1 : Paliers de prix ── */}
-      {show(1) && <><div style={card}>
+      {show(1) && (<><div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <p style={{ ...sectionTitle, marginBottom: 0 }}>Paliers de prix</p>
           <Controller
@@ -454,10 +456,10 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
         </div>
       </div>
-      </>}
+      </>)}
 
       {/* ── Step 2 : Catégories & Options ── */}
-      {show(2) && <><div style={card}>
+      {show(2) && (<><div style={card}>
         <p style={sectionTitle}>Catégories & clients</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
           <div>
@@ -585,10 +587,10 @@ const ProductFields = (props: ProductFieldsProps) => {
         </div>
       </div>
 
-      </>}
+      </>)}
 
       {/* ── Step 3 : BAT + Ref ── */}
-      {show(3) && <>
+      {show(3) && (<>
       <div style={{ ...card, border: requiresBat ? '1.5px solid rgba(168,85,247,0.3)' : '1.5px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: requiresBat ? '18px' : '0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -694,7 +696,7 @@ const ProductFields = (props: ProductFieldsProps) => {
           </div>
         </div>
       )}
-      </>}
+      </>)}
     </>
   );
 };
