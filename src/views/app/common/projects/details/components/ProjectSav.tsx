@@ -14,6 +14,15 @@ import { apiUploadFile } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import { HiPlus, HiX, HiCheck, HiChevronDown, HiChevronUp, HiPhotograph } from 'react-icons/hi';
 import { MdBuildCircle, MdSend } from 'react-icons/md';
+import { env } from '@/configs/env.config';
+
+// Strapi peut retourner des URLs relatives — on les préfixe si nécessaire
+const ensureAbsoluteUrl = (url: string) => {
+  if (!url) return url;
+  if (url.startsWith('http')) return url;
+  const base = env?.API_ENDPOINT_URL || '';
+  return base + url;
+};
 
 const ProjectSav = () => {
   const { project } = useAppSelector((state) => state.projectDetails.data);
@@ -114,9 +123,11 @@ const ProjectSav = () => {
     for (const file of files) {
       try {
         const uploaded = await apiUploadFile(file);
-        if (uploaded?.url) urls.push(uploaded.url);
-      } catch {
-        toast.error(`Erreur upload: ${file.name}`);
+        const url = uploaded?.url;
+        if (url) urls.push(ensureAbsoluteUrl(url));
+      } catch (err) {
+        console.error('[SAV] Upload error:', err);
+        toast.error('Erreur upload: ' + file.name);
       }
     }
     return urls;
@@ -134,7 +145,7 @@ const ProjectSav = () => {
     }
 
     const newTicket: SavTicket = {
-      id: `sav-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: 'sav-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       title,
       description: formDescription.trim(),
       openDate: new Date().toISOString(),
@@ -151,7 +162,7 @@ const ProjectSav = () => {
     // Auto-passer le projet en statut SAV
     if (project && project.state !== 'sav') {
       await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'sav' }));
-      toast.info('Projet pass\u00e9 en statut SAV');
+      toast.info('Projet passé en statut SAV');
     }
 
     setFormTitle('');
@@ -176,7 +187,7 @@ const ProjectSav = () => {
     }
 
     const newMessage: SavMessage = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       content: text,
       images: imageUrls.length > 0 ? imageUrls : undefined,
       createdBy: getDisplayName(),
@@ -192,7 +203,6 @@ const ProjectSav = () => {
     setMessageFiles((prev) => ({ ...prev, [ticketId]: [] }));
     setUploading(false);
 
-    // Auto-scroll
     setTimeout(() => {
       messagesEndRef.current[ticketId]?.scrollIntoView({ behavior: 'smooth' });
     }, 150);
@@ -207,14 +217,13 @@ const ProjectSav = () => {
     setClosingId(null);
     setClosureNote('');
 
-    // Si plus aucun ticket ouvert, repasser en fulfilled
     const stillOpen = updated.filter((t) => t.status === 'open');
     if (stillOpen.length === 0 && project && project.state === 'sav') {
       await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'fulfilled' }));
-      toast.info('Plus aucun ticket SAV ouvert \u2014 projet repass\u00e9 en "Termin\u00e9"');
+      toast.info('Plus aucun ticket ouvert — projet repassé en "Terminé"');
     }
 
-    toast.success('Ticket SAV cl\u00f4tur\u00e9');
+    toast.success('Ticket SAV fermé');
   };
 
   // Reopen ticket
@@ -224,13 +233,12 @@ const ProjectSav = () => {
     );
     saveTickets(updated);
 
-    // Re-passer en SAV si besoin
     if (project && project.state !== 'sav') {
       await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'sav' }));
-      toast.info('Projet repass\u00e9 en statut SAV');
+      toast.info('Projet repassé en statut SAV');
     }
 
-    toast.info('Ticket SAV r\u00e9ouvert');
+    toast.info('Ticket SAV réouvert');
   };
 
   // Delete ticket (admin only)
@@ -238,13 +246,12 @@ const ProjectSav = () => {
     const newTickets = tickets.filter((t) => t.id !== id);
     saveTickets(newTickets);
 
-    // Si plus aucun ticket ouvert, repasser en fulfilled
     const stillOpen = newTickets.filter((t) => t.status === 'open');
     if (stillOpen.length === 0 && project && project.state === 'sav') {
       await dispatch(updateCurrentProject({ documentId: project.documentId, state: 'fulfilled' }));
     }
 
-    toast.success('Ticket SAV supprim\u00e9');
+    toast.success('Ticket supprimé');
   };
 
   const openTickets = tickets.filter((t) => t.status === 'open');
@@ -254,7 +261,7 @@ const ProjectSav = () => {
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      + ' \u00e0 '
+      + ' à '
       + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -267,10 +274,10 @@ const ProjectSav = () => {
     const d = new Date(iso);
     const today = new Date();
     const isToday = d.toDateString() === today.toDateString();
-    if (isToday) return `Aujourd'hui ${formatTime(iso)}`;
+    if (isToday) return 'Aujourd\'hui ' + formatTime(iso);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (d.toDateString() === yesterday.toDateString()) return `Hier ${formatTime(iso)}`;
+    if (d.toDateString() === yesterday.toDateString()) return 'Hier ' + formatTime(iso);
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + formatTime(iso);
   };
 
@@ -294,7 +301,7 @@ const ProjectSav = () => {
         style={{
           borderRadius: '12px',
           background: isOpen ? 'rgba(251,146,60,0.06)' : 'rgba(34,197,94,0.04)',
-          border: `1.5px solid ${isOpen ? 'rgba(251,146,60,0.2)' : 'rgba(34,197,94,0.15)'}`,
+          border: '1.5px solid ' + (isOpen ? 'rgba(251,146,60,0.2)' : 'rgba(34,197,94,0.15)'),
           overflow: 'hidden',
           transition: 'all 0.15s',
         }}
@@ -325,7 +332,7 @@ const ProjectSav = () => {
                 color: isOpen ? '#fb923c' : '#4ade80',
                 textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0,
               }}>
-                {isOpen ? 'Ouvert' : 'Cl\u00f4tur\u00e9'}
+                {isOpen ? 'Ouvert' : 'Fermé'}
               </span>
               {ticketMessages.length > 0 && (
                 <span style={{
@@ -336,8 +343,8 @@ const ProjectSav = () => {
               )}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '2px' }}>
-              Ouvert le {formatDate(ticket.openDate)} par {ticket.createdBy}
-              {ticket.closeDate && ` \u2014 Cl\u00f4tur\u00e9 le ${formatDate(ticket.closeDate)}`}
+              {'Ouvert le ' + formatDate(ticket.openDate) + ' par ' + ticket.createdBy}
+              {ticket.closeDate && (' — Fermé le ' + formatDate(ticket.closeDate))}
             </div>
           </div>
           {isExpanded ? <HiChevronUp size={16} style={{ color: 'rgba(255,255,255,0.3)' }} /> : <HiChevronDown size={16} style={{ color: 'rgba(255,255,255,0.3)' }} />}
@@ -350,7 +357,7 @@ const ProjectSav = () => {
             {ticket.description && (
               <div style={{ marginTop: '12px' }}>
                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                  D\u00e9tails
+                  {'Détails'}
                 </p>
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
                   {ticket.description}
@@ -362,8 +369,8 @@ const ProjectSav = () => {
             {ticket.images && ticket.images.length > 0 && (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                 {ticket.images.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noreferrer">
-                    <img src={url} alt={`SAV-${i}`} style={{
+                  <a key={i} href={ensureAbsoluteUrl(url)} target="_blank" rel="noreferrer">
+                    <img src={ensureAbsoluteUrl(url)} alt={'SAV-' + i} style={{
                       height: '100px', width: '100px', objectFit: 'cover', borderRadius: '8px',
                       border: '1px solid rgba(255,255,255,0.08)',
                     }} />
@@ -376,7 +383,7 @@ const ProjectSav = () => {
             {ticket.closureNote && (
               <div style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.12)' }}>
                 <p style={{ color: 'rgba(34,197,94,0.7)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>
-                  Note de cl\u00f4ture
+                  {'Note de fermeture'}
                 </p>
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
                   {ticket.closureNote}
@@ -387,15 +394,15 @@ const ProjectSav = () => {
             {/* Duration info */}
             {ticket.closeDate && (
               <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
-                Dur\u00e9e : {getDuration(ticket.openDate, ticket.closeDate)}
+                {'Durée : ' + getDuration(ticket.openDate, ticket.closeDate)}
               </div>
             )}
 
-            {/* ─── Messages / Chat ─── */}
+            {/* Messages / Chat */}
             {(ticketMessages.length > 0 || isOpen) && (
               <div style={{ marginTop: '16px' }}>
                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  \u00c9changes ({ticketMessages.length})
+                  {'Échanges (' + ticketMessages.length + ')'}
                 </p>
 
                 {/* Message list */}
@@ -420,7 +427,7 @@ const ProjectSav = () => {
                         <div style={{
                           maxWidth: '80%', padding: '10px 12px', borderRadius: '12px',
                           background: isMe ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${isMe ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.07)'}`,
+                          border: '1px solid ' + (isMe ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.07)'),
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                             <span style={{ fontSize: '11px', fontWeight: 600, color: badge.color }}>
@@ -444,8 +451,8 @@ const ProjectSav = () => {
                           {msg.images && msg.images.length > 0 && (
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                               {msg.images.map((url, i) => (
-                                <a key={i} href={url} target="_blank" rel="noreferrer">
-                                  <img src={url} alt={`msg-${i}`} style={{
+                                <a key={i} href={ensureAbsoluteUrl(url)} target="_blank" rel="noreferrer">
+                                  <img src={ensureAbsoluteUrl(url)} alt={'msg-' + i} style={{
                                     height: '80px', width: '80px', objectFit: 'cover', borderRadius: '6px',
                                     border: '1px solid rgba(255,255,255,0.08)',
                                   }} />
@@ -566,7 +573,7 @@ const ProjectSav = () => {
                       cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     }}
                   >
-                    <HiCheck size={13} /> Cl\u00f4turer le ticket
+                    <HiCheck size={13} /> Fermer le ticket
                   </button>
                 )}
                 {!isOpen && (
@@ -581,7 +588,7 @@ const ProjectSav = () => {
                       cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     }}
                   >
-                    R\u00e9ouvrir
+                    Rouvrir
                   </button>
                 )}
                 <button
@@ -605,7 +612,7 @@ const ProjectSav = () => {
               <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <textarea
                   ref={closureRef}
-                  placeholder="Note de cl\u00f4ture (optionnelle)..."
+                  placeholder="Note de fermeture (optionnelle)..."
                   value={closureNote}
                   onChange={(e) => setClosureNote(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Escape') { setClosingId(null); setClosureNote(''); } }}
@@ -626,7 +633,7 @@ const ProjectSav = () => {
                       cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     }}
                   >
-                    Confirmer la cl\u00f4ture
+                    Confirmer la fermeture
                   </button>
                   <button
                     onClick={() => { setClosingId(null); setClosureNote(''); }}
@@ -669,7 +676,7 @@ const ProjectSav = () => {
               </p>
               {tickets.length > 0 && (
                 <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '12px', transition: 'color 0.2s' }}>
-                  {saving ? '\u25cf Sauvegarde...' : `${openTickets.length} ouvert${openTickets.length > 1 ? 's' : ''} \u2014 ${closedTickets.length} cl\u00f4tur\u00e9${closedTickets.length > 1 ? 's' : ''}`}
+                  {saving ? 'Sauvegarde...' : (openTickets.length + ' ouvert' + (openTickets.length > 1 ? 's' : '') + ' — ' + closedTickets.length + ' fermé' + (closedTickets.length > 1 ? 's' : ''))}
                 </span>
               )}
             </div>
@@ -723,7 +730,7 @@ const ProjectSav = () => {
                     }}
                   />
                   <textarea
-                    placeholder="D\u00e9crivez le probl\u00e8me rencontr\u00e9..."
+                    placeholder="Décrivez le problème rencontré..."
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Escape') { setShowForm(false); setFormTitle(''); setFormDescription(''); setFormFiles([]); } }}
@@ -799,7 +806,7 @@ const ProjectSav = () => {
                         fontFamily: 'Inter, sans-serif',
                       }}
                     >
-                      {uploading ? 'Envoi...' : 'Cr\u00e9er le ticket'}
+                      {uploading ? 'Envoi...' : 'Créer le ticket'}
                     </button>
                     <button
                       onClick={() => { setShowForm(false); setFormTitle(''); setFormDescription(''); setFormFiles([]); }}
@@ -823,27 +830,25 @@ const ProjectSav = () => {
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucun ticket SAV sur ce projet</p>
                   {canOpenTicket && (
                     <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
-                      Cliquez sur "Ouvrir un ticket SAV" pour signaler un probl\u00e8me
+                      Cliquez sur "Ouvrir un ticket SAV" pour signaler un problème
                     </p>
                   )}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {/* Open tickets first */}
                   {openTickets.length > 0 && (
                     <>
                       <p style={{ color: 'rgba(251,146,60,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '4px', marginBottom: '2px' }}>
-                        En cours ({openTickets.length})
+                        {'En cours (' + openTickets.length + ')'}
                       </p>
                       {openTickets.map(renderTicket)}
                     </>
                   )}
 
-                  {/* Closed tickets */}
                   {closedTickets.length > 0 && (
                     <>
                       <p style={{ color: 'rgba(34,197,94,0.5)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: openTickets.length > 0 ? '16px' : '4px', marginBottom: '2px' }}>
-                        Cl\u00f4tur\u00e9s ({closedTickets.length})
+                        {'Fermés (' + closedTickets.length + ')'}
                       </p>
                       {closedTickets.map(renderTicket)}
                     </>
@@ -864,9 +869,9 @@ function getDuration(openDate: string, closeDate: string): string {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}j ${hours % 24}h`;
-  if (hours > 0) return `${hours}h ${minutes % 60}min`;
-  return `${minutes}min`;
+  if (days > 0) return days + 'j ' + (hours % 24) + 'h';
+  if (hours > 0) return hours + 'h ' + (minutes % 60) + 'min';
+  return minutes + 'min';
 }
 
 export default ProjectSav;
