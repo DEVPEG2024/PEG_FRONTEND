@@ -247,7 +247,7 @@ const Comments = () => {
         paddingTop: '28px',
         paddingBottom: '28px',
         fontFamily: 'Inter, sans-serif',
-        height: 'calc(100vh - 240px)',
+        height: 'calc(100vh - 280px)',
         minHeight: '500px',
       }}>
         {/* ── Chat panel ── */}

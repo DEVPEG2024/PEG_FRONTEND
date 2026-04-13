@@ -205,10 +205,10 @@ const Summary = ({ project }: { project: Project }) => {
       <Loading loading={loading}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 280px',
-          gap: '14px',
-          paddingTop: '20px',
-          paddingBottom: '20px',
+          gridTemplateColumns: '2fr 1fr',
+          gap: '20px',
+          paddingTop: '28px',
+          paddingBottom: '28px',
           fontFamily: 'Inter, sans-serif',
           alignItems: 'start',
         }}>

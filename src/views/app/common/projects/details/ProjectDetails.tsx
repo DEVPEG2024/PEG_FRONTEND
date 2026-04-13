@@ -95,11 +95,13 @@ const ProjectDetails = () => {
           {selectedTab === 'Commentaires' && <Comments />}
           {selectedTab === 'Fichiers' && <Files />}
           {selectedTab === 'Fichiers client' && customerDocId && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-              <ClientFilesPanel
-                customerDocumentId={customerDocId}
-                mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
-              />
+            <div style={{ paddingTop: '28px', paddingBottom: '28px' }}>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                <ClientFilesPanel
+                  customerDocumentId={customerDocId}
+                  mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
+                />
+              </div>
             </div>
           )}
           {selectedTab === 'Checklist' && <ProjectChecklist />}
