@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { env } from '@/configs/env.config';
 
 const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
@@ -167,6 +167,32 @@ const Summary = ({ project }: { project: Project }) => {
     : 0;
   const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
 
+  // Admin notes
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesValue, setNotesValue] = useState(project.adminNotes ?? '');
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setNotesValue(project.adminNotes ?? '');
+  }, [project.adminNotes]);
+
+  useEffect(() => {
+    if (notesEditing && notesRef.current) {
+      notesRef.current.focus();
+      notesRef.current.selectionStart = notesRef.current.value.length;
+    }
+  }, [notesEditing]);
+
+  const saveNotes = useCallback(() => {
+    const trimmed = notesValue.trim();
+    if (trimmed !== (project.adminNotes ?? '').trim()) {
+      dispatch(updateCurrentProject({ documentId: project.documentId, adminNotes: trimmed || '' }));
+      toast.success('Notes sauvegardées');
+    }
+    setNotesEditing(false);
+  }, [notesValue, project.adminNotes, project.documentId, dispatch]);
+
   const hasImage = project.orderItem?.product?.images?.[0]?.url || (!project.orderItem && project.images?.[0]?.url);
   const imageUrl = project.orderItem?.product?.images?.[0]?.url
     ? resolveUrl(project.orderItem.product.images[0].url)
@@ -327,6 +353,72 @@ const Summary = ({ project }: { project: Project }) => {
                     lineHeight: 1.75,
                   }}>
                     {safeHtmlParse(description || '')}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Admin Notes card */}
+            {isAdmin && (
+              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <p style={sectionLabel}>Notes internes</p>
+                  {!notesEditing && (
+                    <Button size="sm" icon={<HiPencil />} onClick={() => setNotesEditing(true)}>
+                      Modifier
+                    </Button>
+                  )}
+                </div>
+                {notesEditing ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <textarea
+                      ref={notesRef}
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') { setNotesValue(project.adminNotes ?? ''); setNotesEditing(false); }
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNotes();
+                      }}
+                      placeholder="Notes visibles uniquement par les admins..."
+                      style={{
+                        width: '100%', minHeight: '100px', resize: 'vertical',
+                        background: 'rgba(0,0,0,0.2)',
+                        border: '1px solid rgba(47,111,237,0.3)',
+                        borderRadius: '10px',
+                        color: 'rgba(255,255,255,0.85)',
+                        fontSize: '13px', lineHeight: '1.6',
+                        padding: '12px 14px',
+                        outline: 'none',
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
+                        Ctrl+Entrée pour sauvegarder · Échap pour annuler
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button size="sm" onClick={() => { setNotesValue(project.adminNotes ?? ''); setNotesEditing(false); }}>
+                          Annuler
+                        </Button>
+                        <Button size="sm" variant="solid" onClick={saveNotes}>
+                          Enregistrer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => setNotesEditing(true)}
+                    style={{
+                      color: notesValue ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.2)',
+                      fontSize: '13.5px',
+                      lineHeight: 1.75,
+                      whiteSpace: 'pre-wrap',
+                      cursor: 'pointer',
+                      minHeight: '24px',
+                    }}
+                  >
+                    {notesValue || 'Cliquer pour ajouter des notes...'}
                   </div>
                 )}
               </div>
