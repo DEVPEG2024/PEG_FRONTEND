@@ -36,6 +36,8 @@ export async function apiGetTickets(data: GetTicketsRequest = {pagination: {page
                     lastName
                 }
                 type
+                createdAt
+                messages
             }
             pageInfo {
                 page
@@ -92,6 +94,8 @@ export async function apiGetUserTickets(data: GetUserTicketsRequest = {paginatio
                     lastName
                 }
                 type
+                createdAt
+                messages
             }
             pageInfo {
                 page
@@ -136,6 +140,8 @@ export async function apiGetTicketForEditById(documentId: string): Promise<Axios
                 lastName
             }
             type
+            createdAt
+            messages
         }
     }
   `,
@@ -173,6 +179,8 @@ export async function apiUpdateTicket(ticket: Partial<Ticket>): Promise<AxiosRes
                 lastName
             }
             type
+            createdAt
+            messages
         }
     }
   `,
@@ -214,6 +222,8 @@ export async function apiCreateTicket(data: CreateTicketRequest): Promise<AxiosR
                 lastName
             }
             type
+            createdAt
+            messages
         }
     }
   `,
@@ -227,6 +237,24 @@ export async function apiCreateTicket(data: CreateTicketRequest): Promise<AxiosR
             query,
             variables
         }
+    })
+}
+
+// update ticket messages only
+export async function apiUpdateTicketMessages(documentId: string, messages: import('@/@types/ticket').TicketMessage[]): Promise<AxiosResponse<ApiResponse<{updateTicket: Ticket}>>> {
+    const query = `
+    mutation UpdateTicketMessages($documentId: ID!, $data: TicketInput!) {
+        updateTicket(documentId: $documentId, data: $data) {
+            documentId
+            messages
+        }
+    }
+  `,
+  variables = { documentId, data: { messages } }
+    return ApiService.fetchData<ApiResponse<{updateTicket: Ticket}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
     })
 }
 
