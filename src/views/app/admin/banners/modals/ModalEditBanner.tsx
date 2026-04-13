@@ -1,4 +1,5 @@
-import { Button, Dialog, Input, Select, Switcher } from '@/components/ui';
+import { Input, Select, Switcher } from '@/components/ui';
+import { HiX } from 'react-icons/hi';
 import { t } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -27,6 +28,11 @@ import { Loading } from '@/components/shared';
 type Option = {
   value: string;
   label: string;
+};
+
+const labelStyle: React.CSSProperties = {
+  color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em',
+  textTransform: 'uppercase', marginBottom: '6px', display: 'block',
 };
 
 function ModalEditBanner() {
@@ -130,12 +136,39 @@ function ModalEditBanner() {
     setImageModified(true);
   };
 
+  if (!editBannerDialog) return null;
+
   return (
-    <div>
-      <Dialog isOpen={editBannerDialog} onClose={handleClose} width={1200}>
-        <div className="flex flex-col justify-between">
-          <div className="flex flex-row gap-2 justify-center">
-            <div className="flex w-3/4">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'fadeIn 0.2s ease',
+    }} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
+      <div style={{
+        width: '640px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
+        borderRadius: '20px', padding: '32px', position: 'relative',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
+        animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+      }} onClick={(e) => e.stopPropagation()}>
+
+        <button onClick={handleClose} style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '8px', width: '32px', height: '32px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+        }}><HiX size={16} /></button>
+
+        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 20px' }}>
+          Modifier la banniere
+        </h3>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 3 }}>
+              <span style={labelStyle}>Nom</span>
               <Input
                 value={formData.name}
                 placeholder="Nom"
@@ -144,8 +177,8 @@ function ModalEditBanner() {
                 }}
               />
             </div>
-            <div className="flex justify-center items-center mt-4 w-1/4 gap-2">
-              <span className="text-sm text-white/50">Active</span>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '16px' }}>
+              <span style={{ ...labelStyle, textAlign: 'center' }}>Active</span>
               <Switcher
                 checked={formData.active}
                 onChange={(e: any) => {
@@ -157,9 +190,10 @@ function ModalEditBanner() {
               />
             </div>
           </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">Client</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <span style={labelStyle}>Client</span>
               <Select
                 isClearable={true}
                 placeholder="Clients"
@@ -173,10 +207,8 @@ function ModalEditBanner() {
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">
-                Catégorie client
-              </p>
+            <div>
+              <span style={labelStyle}>Categorie client</span>
               <Select
                 isClearable={true}
                 placeholder="Catégorie client"
@@ -195,25 +227,35 @@ function ModalEditBanner() {
               />
             </div>
           </div>
+
           <Loading loading={imageLoading}>
-            <div className="flex flex-col gap-2 mt-4">
+            <div>
+              <span style={labelStyle}>Image</span>
               <FileUplaodCustom image={image} setImage={updateImage} />
             </div>
           </Loading>
-          <div className="text-right mt-6 flex flex-row items-center justify-end gap-2">
-            <Button
-              className="ltr:mr-2 rtl:ml-2"
-              variant="plain"
-              onClick={handleClose}
-            >
-              {t('cancel')}
-            </Button>
-            <Button variant="solid" onClick={handleSubmit}>
-              {t('save')}
-            </Button>
-          </div>
         </div>
-      </Dialog>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+          <button onClick={handleClose} style={{
+            padding: '10px 20px', borderRadius: '10px',
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+          }}>{t('cancel')}</button>
+          <button onClick={handleSubmit} style={{
+            padding: '12px 28px', borderRadius: '12px', border: 'none', color: '#fff',
+            fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            background: 'linear-gradient(90deg, #2f6fed, #1d4ed8)',
+            boxShadow: '0 4px 20px rgba(47,111,237,0.4)',
+          }}>{t('save')}</button>
+        </div>
+
+        <style>{`
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        `}</style>
+      </div>
     </div>
   );
 }
