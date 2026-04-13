@@ -539,17 +539,15 @@ const ProjectChecklist = () => {
                         padding: '11px 14px', borderRadius: '10px',
                         background: draggingIdx === realIndex
                           ? 'rgba(47,111,237,0.12)'
-                          : item.visible === false ? 'rgba(255,255,255,0.01)'
                           : item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
                         border: `1.5px solid ${
                           draggingIdx === realIndex
                             ? 'rgba(47,111,237,0.4)'
-                            : item.visible === false ? 'rgba(255,255,255,0.04)'
                             : item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'
                         }`,
                         cursor: canEdit ? 'grab' : 'default',
                         transition: 'background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s',
-                        opacity: item.visible === false ? 0.45 : (saving && draggingIdx === null ? 0.6 : 1),
+                        opacity: saving && draggingIdx === null ? 0.6 : 1,
                         transform: draggingIdx === realIndex ? 'scale(1.02)' : 'scale(1)',
                         boxShadow: draggingIdx === realIndex ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
                         userSelect: 'none',
@@ -610,20 +608,14 @@ const ProjectChecklist = () => {
                           onDoubleClick={() => { if (canEdit) startEdit(realIndex); }}
                           style={{
                             flex: 1,
-                            color: item.visible === false ? 'rgba(255,255,255,0.3)' : item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
+                            color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
                             fontSize: '13px',
                             fontWeight: 500,
                             textDecoration: item.done ? 'line-through' : 'none',
-                            fontStyle: item.visible === false ? 'italic' : 'normal',
                             transition: 'color 0.15s',
                             cursor: canEdit ? 'text' : 'default',
                           }}>
                           {item.label}
-                          {canEdit && item.visible === false && (
-                            <span style={{ marginLeft: '8px', fontSize: '10px', color: 'rgba(251,191,36,0.5)', fontStyle: 'normal' }}>
-                              masqu\u00e9e
-                            </span>
-                          )}
                         </span>
                       )}
 
