@@ -122,9 +122,16 @@ const ProjectSav = () => {
     const urls: string[] = [];
     for (const file of files) {
       try {
+        console.log('[SAV] Uploading file:', file.name, file.type, file.size);
         const uploaded = await apiUploadFile(file);
+        console.log('[SAV] Upload response:', JSON.stringify(uploaded));
         const url = uploaded?.url;
-        if (url) urls.push(ensureAbsoluteUrl(url));
+        if (url) {
+          urls.push(ensureAbsoluteUrl(url));
+        } else {
+          console.error('[SAV] No URL in upload response:', uploaded);
+          toast.error('Upload OK mais pas d\'URL pour: ' + file.name);
+        }
       } catch (err) {
         console.error('[SAV] Upload error:', err);
         toast.error('Erreur upload: ' + file.name);
