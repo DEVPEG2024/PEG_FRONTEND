@@ -10,6 +10,7 @@ import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
 import ProjectSav from './components/ProjectSav';
+import DeliveryWizard from './components/DeliveryWizard';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
 import { useAppSelector as useRootAppSelector } from '@/store';
@@ -52,6 +53,8 @@ const ProjectDetails = () => {
   const isCustomer = hasRole(user, [CUSTOMER]);
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const [customerLastSeen, setCustomerLastSeen] = useState<string | null>(null);
+  const [deliveryWizardOpen, setDeliveryWizardOpen] = useState(false);
+  const isAssignedProducer = isProducer && project?.producer?.documentId && user?.producer?.documentId === project?.producer?.documentId;
 
   // Track project view — customers only
   useEffect(() => {
@@ -111,6 +114,28 @@ const ProjectDetails = () => {
             {selectedTab === 'Factures' && <Invoices />}
             {selectedTab === 'SAV' && <ProjectSav />}
           </Container>
+          {/* Delivery wizard for producers */}
+          <DeliveryWizard open={deliveryWizardOpen} onClose={() => setDeliveryWizardOpen(false)} />
+          {/* Floating delivery button for assigned producers on pending projects */}
+          {isAssignedProducer && project?.state === 'pending' && (
+            <button
+              onClick={() => setDeliveryWizardOpen(true)}
+              style={{
+                position: 'fixed', bottom: '24px', right: '24px', zIndex: 100,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '14px 24px', borderRadius: '14px',
+                background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+                border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                boxShadow: '0 8px 32px rgba(34,197,94,0.4), 0 0 0 1px rgba(34,197,94,0.2)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(34,197,94,0.5)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(34,197,94,0.4)'; }}
+            >
+              Livrer le projet
+            </button>
+          )}
         </div>
       </div>
     )
