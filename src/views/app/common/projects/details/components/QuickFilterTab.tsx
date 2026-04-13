@@ -27,6 +27,8 @@ const QuickFilterTab = () => {
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
     if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;
+    // SAV : visible pour admins, ou pour tous quand le projet est en état SAV
+    if (tab === 'SAV') return hasRole(user, [SUPER_ADMIN, ADMIN]) || project?.state === 'sav';
     return true;
   });
 
@@ -40,6 +42,11 @@ const QuickFilterTab = () => {
       }
       case 'Devis': return project?.devis?.length;
       case 'Factures': return project?.invoices?.length;
+      case 'SAV': {
+        const savTickets = (project as any)?.savTickets ?? [];
+        const openCount = savTickets.filter((t: any) => t.status === 'open').length;
+        return openCount > 0 ? openCount : undefined;
+      }
       default: return undefined;
     }
   };

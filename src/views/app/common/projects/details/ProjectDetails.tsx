@@ -9,6 +9,7 @@ import Devis from './components/Devis';
 import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
+import ProjectSav from './components/ProjectSav';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
 import { useAppSelector as useRootAppSelector } from '@/store';
@@ -105,6 +106,7 @@ const ProjectDetails = () => {
           {selectedTab === 'BAT' && <ProjectBat />}
           {selectedTab === 'Devis' && <Devis />}
           {selectedTab === 'Factures' && <Invoices />}
+          {selectedTab === 'SAV' && <ProjectSav />}
         </Container>
       </>
     )

@@ -145,6 +145,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
   delete cleanData.orderItem;
   delete cleanData.checklistItems;
   delete cleanData.customerImages;
+  delete cleanData.savTickets;
 
   const variables = {
     documentId,
@@ -866,6 +867,42 @@ export async function apiGetProductChecklist(productDocumentId: string): Promise
     }
   `,
   variables = { documentId: productDocumentId }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// get project savTickets only (separate query)
+export async function apiGetProjectSavTickets(documentId: string): Promise<AxiosResponse<ApiResponse<{project: { documentId: string; savTickets: import('@/@types/sav').SavTicket[] }}>>> {
+    const query = `
+    query GetProjectSavTickets($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId
+            savTickets
+        }
+    }
+  `,
+  variables = { documentId }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// update project savTickets only (separate mutation)
+export async function apiUpdateProjectSavTickets(documentId: string, savTickets: import('@/@types/sav').SavTicket[]): Promise<AxiosResponse<ApiResponse<{updateProject: { documentId: string; savTickets: import('@/@types/sav').SavTicket[] }}>>> {
+    const query = `
+    mutation UpdateProjectSavTickets($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId
+            savTickets
+        }
+    }
+  `,
+  variables = { documentId, data: { savTickets } }
     return ApiService.fetchData({
         url: API_GRAPHQL_URL,
         method: 'post',

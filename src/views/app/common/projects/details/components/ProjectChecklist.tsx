@@ -8,7 +8,7 @@ import { ADMIN, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useAppSelector, setChecklistPercent, updateCurrentProject } from '../store';
 import { useAppDispatch } from '@/store';
 import { MdChecklist, MdDragIndicator, MdSave } from 'react-icons/md';
-import { HiCheck, HiChevronDown, HiTrash, HiPlus, HiPencil } from 'react-icons/hi';
+import { HiCheck, HiChevronDown, HiTrash, HiPlus, HiPencil, HiEye, HiEyeOff } from 'react-icons/hi';
 import DetailsRight from './DetailsRight';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiGetChecklists, apiCreateChecklist } from '@/services/ChecklistServices';
@@ -280,8 +280,21 @@ const ProjectChecklist = () => {
     setDraggingIdx(null);
   };
 
-  const doneCount = items.filter((i) => i.done).length;
-  const percent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+  const toggleVisibility = (index: number) => {
+    const updated = items.map((item, i) =>
+      i === index ? { ...item, visible: item.visible === false ? true : false } : item
+    );
+    saveItems(updated);
+  };
+
+  // Items visibles pour les clients/producteurs (visible !== false)
+  // On garde l'index réel pour que toggle/edit/delete fonctionnent correctement
+  const displayEntries: { item: ChecklistItem; realIndex: number }[] = canEdit
+    ? items.map((item, i) => ({ item, realIndex: i }))
+    : items.map((item, i) => ({ item, realIndex: i })).filter(({ item }) => item.visible !== false);
+
+  const doneCount = displayEntries.filter(({ item }) => item.done).length;
+  const percent = displayEntries.length > 0 ? Math.round((doneCount / displayEntries.length) * 100) : 0;
 
   useEffect(() => {
     dispatch(setChecklistPercent(items.length > 0 ? percent : null));
@@ -303,9 +316,9 @@ const ProjectChecklist = () => {
               <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Checklist du projet
               </p>
-              {items.length > 0 && (
+              {displayEntries.length > 0 && (
                 <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '12px', transition: 'color 0.2s' }}>
-                  {saving ? '● Sauvegarde...' : `${doneCount} / ${items.length} effectuée${doneCount > 1 ? 's' : ''}`}
+                  {saving ? '● Sauvegarde...' : `${doneCount} / ${displayEntries.length} effectuée${doneCount > 1 ? 's' : ''}`}
                 </span>
               )}
             </div>
@@ -498,7 +511,7 @@ const ProjectChecklist = () => {
                 </div>
               )}
 
-              {items.length === 0 && !showAddInput ? (
+              {displayEntries.length === 0 && !showAddInput ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '12px' }}>
                   <MdChecklist size={60} style={{ color: 'rgba(255,255,255,0.1)' }} />
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucune checklist associée à ce projet</p>
@@ -514,29 +527,31 @@ const ProjectChecklist = () => {
                   onDrop={handleDrop}
                   onDragOver={(e) => e.preventDefault()}
                 >
-                  {items.map((item, index) => (
+                  {displayEntries.map(({ item, realIndex }) => (
                     <div
-                      key={`item-${index}`}
+                      key={`item-${realIndex}`}
                       draggable={canEdit && !saving}
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragStart={(e) => handleDragStart(e, realIndex)}
+                      onDragOver={(e) => handleDragOver(e, realIndex)}
                       onDragEnd={handleDragEnd}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: '11px 14px', borderRadius: '10px',
-                        background: draggingIdx === index
+                        background: draggingIdx === realIndex
                           ? 'rgba(47,111,237,0.12)'
+                          : item.visible === false ? 'rgba(255,255,255,0.01)'
                           : item.done ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
                         border: `1.5px solid ${
-                          draggingIdx === index
+                          draggingIdx === realIndex
                             ? 'rgba(47,111,237,0.4)'
+                            : item.visible === false ? 'rgba(255,255,255,0.04)'
                             : item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.07)'
                         }`,
                         cursor: canEdit ? 'grab' : 'default',
-                        transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
-                        opacity: saving && draggingIdx === null ? 0.6 : 1,
-                        transform: draggingIdx === index ? 'scale(1.02)' : 'scale(1)',
-                        boxShadow: draggingIdx === index ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
+                        transition: 'background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s',
+                        opacity: item.visible === false ? 0.45 : (saving && draggingIdx === null ? 0.6 : 1),
+                        transform: draggingIdx === realIndex ? 'scale(1.02)' : 'scale(1)',
+                        boxShadow: draggingIdx === realIndex ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
                         userSelect: 'none',
                       }}
                     >
@@ -545,7 +560,7 @@ const ProjectChecklist = () => {
                         <MdDragIndicator
                           size={16}
                           style={{
-                            color: draggingIdx === index ? 'rgba(47,111,237,0.6)' : 'rgba(255,255,255,0.15)',
+                            color: draggingIdx === realIndex ? 'rgba(47,111,237,0.6)' : 'rgba(255,255,255,0.15)',
                             flexShrink: 0,
                             cursor: 'grab',
                           }}
@@ -554,7 +569,7 @@ const ProjectChecklist = () => {
 
                       {/* Checkbox */}
                       <div
-                        onClick={(e) => { e.stopPropagation(); toggleItem(index); }}
+                        onClick={(e) => { e.stopPropagation(); toggleItem(realIndex); }}
                         style={{
                           width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
                           background: item.done ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)',
@@ -568,7 +583,7 @@ const ProjectChecklist = () => {
                       </div>
 
                       {/* Label */}
-                      {editingIdx === index && canEdit ? (
+                      {editingIdx === realIndex && canEdit ? (
                         <input
                           ref={editInputRef}
                           type="text"
@@ -592,17 +607,23 @@ const ProjectChecklist = () => {
                         />
                       ) : (
                         <span
-                          onDoubleClick={() => { if (canEdit) startEdit(index); }}
+                          onDoubleClick={() => { if (canEdit) startEdit(realIndex); }}
                           style={{
                             flex: 1,
-                            color: item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
+                            color: item.visible === false ? 'rgba(255,255,255,0.3)' : item.done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
                             fontSize: '13px',
                             fontWeight: 500,
                             textDecoration: item.done ? 'line-through' : 'none',
+                            fontStyle: item.visible === false ? 'italic' : 'normal',
                             transition: 'color 0.15s',
                             cursor: canEdit ? 'text' : 'default',
                           }}>
                           {item.label}
+                          {canEdit && item.visible === false && (
+                            <span style={{ marginLeft: '8px', fontSize: '10px', color: 'rgba(251,191,36,0.5)', fontStyle: 'normal' }}>
+                              masqu\u00e9e
+                            </span>
+                          )}
                         </span>
                       )}
 
@@ -612,14 +633,34 @@ const ProjectChecklist = () => {
                           fontSize: '11px', fontWeight: 600,
                           color: item.done ? '#4ade80' : 'rgba(255,255,255,0.25)',
                         }}>
-                          {item.done ? 'Effectuée' : 'En attente'}
+                          {item.done ? 'Effectu\u00e9e' : 'En attente'}
                         </span>
                       )}
 
-                      {/* Edit button for admins */}
-                      {canEdit && editingIdx !== index && (
+                      {/* Visibility toggle for admins */}
+                      {canEdit && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); startEdit(index); }}
+                          onClick={(e) => { e.stopPropagation(); toggleVisibility(realIndex); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
+                            background: 'transparent', border: 'none',
+                            color: item.visible === false ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.15)',
+                            cursor: 'pointer',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = item.visible === false ? '#fbbf24' : '#fbbf24')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = item.visible === false ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.15)')}
+                          title={item.visible === false ? 'Rendre visible au client/producteur' : 'Masquer au client/producteur'}
+                        >
+                          {item.visible === false ? <HiEyeOff size={14} /> : <HiEye size={14} />}
+                        </button>
+                      )}
+
+                      {/* Edit button for admins */}
+                      {canEdit && editingIdx !== realIndex && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startEdit(realIndex); }}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
@@ -638,7 +679,7 @@ const ProjectChecklist = () => {
                       {/* Delete button for admins */}
                       {canEdit && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); removeItem(index); }}
+                          onClick={(e) => { e.stopPropagation(); removeItem(realIndex); }}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
@@ -710,7 +751,7 @@ const ProjectChecklist = () => {
                 </div>
               )}
 
-              {!canToggle && items.length > 0 && (
+              {!canToggle && displayEntries.length > 0 && (
                 <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '16px' }}>
                   Seuls les administrateurs et producteurs peuvent modifier la checklist
                 </p>

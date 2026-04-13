@@ -5,6 +5,7 @@ import { Producer } from './producer';
 import { Invoice } from './invoice';
 import { PegFile } from './pegFile';
 import { ChecklistItem } from './checklist';
+import { SavTicket } from './sav';
 
 export type Project = {
   documentId: string;
@@ -25,11 +26,11 @@ export type Project = {
   customerImages: PegFile[];
   tasks: Task[];
   orderItem?: OrderItem;
-  //deleted: boolean;
   invoices: Invoice[];
   devis: PegFile[];
   poolable: boolean;
   checklistItems: ChecklistItem[];
+  savTickets?: SavTicket[];
 }
 
 export type Task = {
