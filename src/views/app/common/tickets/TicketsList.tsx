@@ -133,20 +133,20 @@ const TicketsList = () => {
     if (!wizName.trim()) { toast.error('Titre obligatoire'); return; }
     setWizSubmitting(true);
     try {
-      let imageFile: any = undefined;
-      if (wizFiles.length > 0) {
-        const uploaded = await apiUploadFile(wizFiles[0]);
-        if (uploaded) imageFile = uploaded;
-      }
+      // Le thunk createTicket attend image: { file: File } — il gère l'upload
+      const imagePayload = wizFiles.length > 0 ? { file: wizFiles[0] } : undefined;
       await dispatch(createTicket({
         name: wizName.trim(), description: wizDescription.trim(),
         state: 'pending', priority: wizPriority, type: wizType,
-        user: user.documentId, image: imageFile,
+        user: user.documentId, image: imagePayload,
       } as any));
       toast.success('Ticket créé');
       resetWizard();
       dispatch(getTickets({ request: { pagination: { page: currentPage, pageSize }, searchTerm }, user }));
-    } catch { toast.error('Erreur'); }
+    } catch (err) {
+      console.error('[Ticket] Create error:', err);
+      toast.error('Erreur lors de la création');
+    }
     finally { setWizSubmitting(false); }
   };
 
