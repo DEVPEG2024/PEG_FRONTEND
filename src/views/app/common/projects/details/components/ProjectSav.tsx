@@ -510,16 +510,26 @@ const ProjectSav = () => {
                         ref={(el) => { messageFileRefs.current[ticket.id] = el; }}
                         type="file"
                         multiple
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/jpg,image/webp,image/gif"
                         style={{ display: 'none' }}
                         onChange={(e) => {
-                          if (e.target.files) {
-                            setMessageFiles((prev) => ({
-                              ...prev,
-                              [ticket.id]: [...(prev[ticket.id] || []), ...Array.from(e.target.files!)],
-                            }));
+                          const files = e.target.files;
+                          const tid = ticket.id;
+                          console.log('[SAV] File input onChange, files:', files?.length, 'ticketId:', tid);
+                          if (files && files.length > 0) {
+                            const fileArray = Array.from(files);
+                            console.log('[SAV] Adding files to messageFiles:', fileArray.map(f => f.name));
+                            setMessageFiles((prev) => {
+                              const updated = {
+                                ...prev,
+                                [tid]: [...(prev[tid] || []), ...fileArray],
+                              };
+                              console.log('[SAV] Updated messageFiles:', Object.keys(updated), updated[tid]?.length);
+                              return updated;
+                            });
                           }
-                          e.target.value = '';
+                          // Reset AFTER capturing files
+                          setTimeout(() => { e.target.value = ''; }, 100);
                         }}
                       />
                       <button
@@ -755,11 +765,16 @@ const ProjectSav = () => {
                     ref={formFileRef}
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/jpg,image/webp,image/gif"
                     style={{ display: 'none' }}
                     onChange={(e) => {
-                      if (e.target.files) setFormFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
-                      e.target.value = '';
+                      const files = e.target.files;
+                      console.log('[SAV] Form file input onChange, files:', files?.length);
+                      if (files && files.length > 0) {
+                        const fileArray = Array.from(files);
+                        setFormFiles((prev) => [...prev, ...fileArray]);
+                      }
+                      setTimeout(() => { e.target.value = ''; }, 100);
                     }}
                   />
 
