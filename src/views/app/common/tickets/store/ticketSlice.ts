@@ -130,7 +130,7 @@ const projectListSlice = createSlice({
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getTickets.rejected, (state) => {
-      state.loading = true;
+      state.loading = false;
     });
 
     builder.addCase(getTicketById.pending, (state) => {

@@ -70,12 +70,12 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
     setUploading(true);
 
     try {
-      // Upload photos
-      const photoUrls: string[] = [];
+      // Upload photos and collect their uploaded objects (with id/documentId)
+      const uploadedImages: any[] = [];
       for (const file of photos) {
         try {
           const uploaded = await apiUploadFile(file);
-          if (uploaded?.url) photoUrls.push(ensureAbsoluteUrl(uploaded.url));
+          if (uploaded) uploadedImages.push(uploaded);
         } catch {}
       }
 
@@ -85,12 +85,19 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
         await apiUpdateProjectChecklistItems(project.documentId, checklistItems);
       }
 
-      // Update project state to fulfilled
-      await dispatch(updateCurrentProject({
+      // Update project: state fulfilled + attach delivery photos to project images
+      const existingImages = (project.images || []).map((img: any) => img.documentId || img.id || img);
+      const newImageIds = uploadedImages.map((img) => img.documentId || img.id).filter(Boolean);
+      const updateData: any = {
         documentId: project.documentId,
         state: 'fulfilled',
-        description: project.description + (notes.trim() ? '\n\n--- Note de livraison ---\n' + notes.trim() : ''),
-      }));
+        images: [...existingImages, ...newImageIds],
+      };
+      // Store delivery note separately — don't pollute description
+      if (notes.trim()) {
+        updateData.description = (project.description || '') + '\n\n--- Note de livraison (' + new Date().toLocaleDateString('fr-FR') + ') ---\n' + notes.trim();
+      }
+      await dispatch(updateCurrentProject(updateData));
 
       // Send notification to customer
       const senderId = user?.documentId || user?.id || user?._id;

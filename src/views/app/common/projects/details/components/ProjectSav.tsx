@@ -153,7 +153,6 @@ const ProjectSav = () => {
   const [messageFiles, setMessageFiles] = useState<Record<string, File[]>>({});
   const messageFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const messagesEndRef = useRef<Record<string, HTMLDivElement | null>>({});
-  const msgRecorders = useRef<Record<string, ReturnType<typeof useVoiceRecorder>>>({});
 
   // Load
   useEffect(() => {
