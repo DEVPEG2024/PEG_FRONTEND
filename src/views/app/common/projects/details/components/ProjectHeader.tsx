@@ -63,8 +63,8 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
       background: 'linear-gradient(180deg, #0d1b2e 0%, #111827 100%)',
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       fontFamily: 'Inter, sans-serif',
-      paddingTop: '24px',
-      paddingBottom: '16px',
+      paddingTop: '20px',
+      paddingBottom: '12px',
     }}>
       <Container className="px-6">
         {/* Row 1 — Title + badge + avatars + edit */}

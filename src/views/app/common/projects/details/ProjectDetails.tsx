@@ -88,29 +88,31 @@ const ProjectDetails = () => {
 
   return (
     project && (
-      <>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <ProjectHeader project={project} customerLastSeen={customerLastSeen} />
-        <Container className="h-full">
-          {selectedTab === 'Accueil' && <Summary project={project} />}
-          {selectedTab === 'Commentaires' && <Comments />}
-          {selectedTab === 'Fichiers' && <Files />}
-          {selectedTab === 'Fichiers client' && customerDocId && (
-            <div style={{ paddingTop: '28px', paddingBottom: '28px' }}>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-                <ClientFilesPanel
-                  customerDocumentId={customerDocId}
-                  mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
-                />
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          <Container className="h-full">
+            {selectedTab === 'Accueil' && <Summary project={project} />}
+            {selectedTab === 'Commentaires' && <Comments />}
+            {selectedTab === 'Fichiers' && <Files />}
+            {selectedTab === 'Fichiers client' && customerDocId && (
+              <div style={{ paddingTop: '20px', paddingBottom: '20px' }}>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                  <ClientFilesPanel
+                    customerDocumentId={customerDocId}
+                    mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-          {selectedTab === 'Checklist' && <ProjectChecklist />}
-          {selectedTab === 'BAT' && <ProjectBat />}
-          {selectedTab === 'Devis' && <Devis />}
-          {selectedTab === 'Factures' && <Invoices />}
-          {selectedTab === 'SAV' && <ProjectSav />}
-        </Container>
-      </>
+            )}
+            {selectedTab === 'Checklist' && <ProjectChecklist />}
+            {selectedTab === 'BAT' && <ProjectBat />}
+            {selectedTab === 'Devis' && <Devis />}
+            {selectedTab === 'Factures' && <Invoices />}
+            {selectedTab === 'SAV' && <ProjectSav />}
+          </Container>
+        </div>
+      </div>
     )
   );
 };

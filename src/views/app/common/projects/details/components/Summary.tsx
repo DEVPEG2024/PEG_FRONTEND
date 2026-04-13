@@ -207,8 +207,8 @@ const Summary = ({ project }: { project: Project }) => {
           display: 'grid',
           gridTemplateColumns: '2fr 1fr',
           gap: '20px',
-          paddingTop: '28px',
-          paddingBottom: '28px',
+          paddingTop: '20px',
+          paddingBottom: '20px',
           fontFamily: 'Inter, sans-serif',
           alignItems: 'start',
         }}>

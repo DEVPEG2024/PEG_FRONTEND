@@ -244,11 +244,9 @@ const Comments = () => {
         display: 'grid',
         gridTemplateColumns: '2fr 1fr',
         gap: '20px',
-        paddingTop: '28px',
-        paddingBottom: '28px',
+        paddingTop: '20px',
+        paddingBottom: '20px',
         fontFamily: 'Inter, sans-serif',
-        height: 'calc(100vh - 280px)',
-        minHeight: '500px',
       }}>
         {/* ── Chat panel ── */}
         <div style={{
@@ -259,6 +257,8 @@ const Comments = () => {
           border: '1px solid rgba(255,255,255,0.06)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03)',
           overflow: 'hidden',
+          minHeight: '500px',
+          maxHeight: '75vh',
         }}>
           {/* ── Header ── */}
           <div style={{
