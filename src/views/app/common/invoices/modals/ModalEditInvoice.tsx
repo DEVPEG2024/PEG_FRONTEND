@@ -1,7 +1,8 @@
-import { Button, DatePicker, Dialog, Select, Switcher } from '@/components/ui';
+import { DatePicker, Select, Switcher } from '@/components/ui';
 import { t } from 'i18next';
 import dayjs from 'dayjs';
 import { useState } from 'react';
+import { HiX, HiCheck } from 'react-icons/hi';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import { paymentModeData, paymentStateData, stateData } from '../constants';
 import { Invoice } from '@/@types/invoice';
@@ -17,6 +18,17 @@ export type InvoiceFormModel = Omit<
   customer: string | null;
   orderItems: string[];
 };
+
+const modalStyles = `
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+`;
 
 function ModalEditInvoice({
   editInvoiceDialog,
@@ -84,15 +96,98 @@ function ModalEditInvoice({
     });
   };
 
-  return (
-    <div>
-      <Dialog isOpen={editInvoiceDialog} onClose={handleClose} width={1200}>
-        <div className="flex flex-col justify-between">
-          <h5 className="mb-4">REF : {formData.name}</h5>
+  if (!editInvoiceDialog) return null;
 
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">Statut</p>
+  const labelStyle: React.CSSProperties = {
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: '6px',
+    fontWeight: 500,
+    letterSpacing: '0.3px',
+  };
+
+  const fieldGroupStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  };
+
+  return (
+    <>
+      <style>{modalStyles}</style>
+      {/* Overlay */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.25s ease-out',
+        }}
+        onClick={handleClose}
+      >
+        {/* Modal */}
+        <div
+          style={{
+            background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
+            borderRadius: '20px',
+            padding: '36px',
+            width: '95%',
+            maxWidth: '1100px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            position: 'relative',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            animation: 'slideUp 0.35s ease-out',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                Modifier la facture
+              </h2>
+              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', display: 'block' }}>
+                REF : {formData.name}
+              </span>
+            </div>
+            <button
+              onClick={handleClose}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'rgba(255,255,255,0.6)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <HiX size={20} />
+            </button>
+          </div>
+
+          {/* Separator */}
+          <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', marginBottom: '28px' }} />
+
+          {/* Row 1: Status + Dates */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <div style={fieldGroupStyle}>
+              <span style={labelStyle}>Statut</span>
               <Select
                 placeholder="Statut"
                 options={
@@ -107,14 +202,12 @@ function ModalEditInvoice({
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">
-                {"Date d'émission"}
-              </p>
+            <div style={fieldGroupStyle}>
+              <span style={labelStyle}>{"Date d'émission"}</span>
               <DatePicker
                 placeholder="Date de début"
                 value={dayjs(formData.date).toDate()}
-                inputPrefix={<HiOutlineCalendar className="text-lg" />}
+                inputPrefix={<HiOutlineCalendar style={{ fontSize: '18px' }} />}
                 inputFormat="DD/MM/YYYY"
                 onChange={(date: Date | null) => {
                   setFormData({
@@ -124,25 +217,24 @@ function ModalEditInvoice({
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">
-                {"Date d'échéance"}
-              </p>
+            <div style={fieldGroupStyle}>
+              <span style={labelStyle}>{"Date d'échéance"}</span>
               <DatePicker
                 placeholder="Date d'échéance"
                 value={dayjs(formData.dueDate).toDate()}
-                inputPrefix={<HiOutlineCalendar className="text-lg" />}
+                inputPrefix={<HiOutlineCalendar style={{ fontSize: '18px' }} />}
                 onChange={(date: Date | null) => {
                   setFormData({ ...formData, dueDate: dayjs(date).toDate() });
                 }}
                 inputFormat="DD/MM/YYYY"
               />
             </div>
+          </div>
 
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">
-                Mode de paiement
-              </p>
+          {/* Row 2: Payment info */}
+          <div style={{ display: 'grid', gridTemplateColumns: formData.paymentState === 'fulfilled' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
+            <div style={fieldGroupStyle}>
+              <span style={labelStyle}>Mode de paiement</span>
               <Select
                 placeholder="Mode de paiement"
                 options={paymentModeData}
@@ -155,10 +247,8 @@ function ModalEditInvoice({
                 }}
               />
             </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <p className="text-sm text-white/50 mb-2 mt-4">
-                Statut de paiement
-              </p>
+            <div style={fieldGroupStyle}>
+              <span style={labelStyle}>Statut de paiement</span>
               <Select
                 placeholder="Statut de paiement"
                 options={paymentStateData}
@@ -177,16 +267,13 @@ function ModalEditInvoice({
                 }}
               />
             </div>
-
             {formData.paymentState === 'fulfilled' && (
-              <div className="flex flex-col gap-2 w-1/2">
-                <p className="text-sm text-white/50 mb-2 mt-4">
-                  Date de paiement
-                </p>
+              <div style={fieldGroupStyle}>
+                <span style={labelStyle}>Date de paiement</span>
                 <DatePicker
                   placeholder="Date de paiement"
                   value={dayjs(formData.paymentDate).toDate()}
-                  inputPrefix={<HiOutlineCalendar className="text-lg" />}
+                  inputPrefix={<HiOutlineCalendar style={{ fontSize: '18px' }} />}
                   onChange={(date: Date | null) => {
                     setFormData({
                       ...formData,
@@ -198,48 +285,109 @@ function ModalEditInvoice({
               </div>
             )}
           </div>
-          <div className="grid grid-cols-12 gap-2 mt-4">
-            <div className="flex justify-start items-center gap-2 mt-4 col-span-8">
-              <span className="text-sm text-white/50">TVA</span>
+
+          {/* Separator */}
+          <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', marginBottom: '24px' }} />
+
+          {/* Summary section */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            {/* TVA toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>TVA ({VAT_AMOUNT}%)</span>
               <Switcher
                 checked={vatEnabled}
                 onChange={() => handleVATToggle(!vatEnabled)}
               />
             </div>
-            <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
-              <span className="text-sm text-white/50">Sous-total: </span>
-              <span className="text-sm text-white/50">
-                TVA ({vatEnabled ? VAT_AMOUNT : 0}%):{' '}
-              </span>
-              <span className="text-sm text-white/50">Total:</span>
-            </div>
-            <div className="flex flex-col items-end gap-2 justify-end text-right col-span-2">
-              <span className="text-sm text-white/50">
-                {formData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
-              <span className="text-sm text-white/50">
-                {formData.vatAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
-              <span className="text-sm text-white/50">
-                {formData.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
+
+            {/* Totals */}
+            <div
+              style={{
+                background: 'rgba(0,0,0,0.25)',
+                borderRadius: '14px',
+                padding: '20px 28px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                minWidth: '280px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>Sous-total</span>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+                  {formData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>
+                  TVA ({vatEnabled ? VAT_AMOUNT : 0}%)
+                </span>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+                  {formData.vatAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '12px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '16px', color: '#ffffff', fontWeight: 600 }}>Total</span>
+                <span style={{ fontSize: '16px', color: '#60a5fa', fontWeight: 700 }}>
+                  {formData.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
             </div>
           </div>
-          <div className="text-right mt-6">
-            <Button
-              className="ltr:mr-2 rtl:ml-2"
-              variant="plain"
+
+          {/* Separator */}
+          <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', margin: '24px 0' }} />
+
+          {/* Footer buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button
               onClick={handleClose}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '10px 24px',
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
             >
+              <HiX size={16} />
               {t('cancel')}
-            </Button>
-            <Button variant="solid" onClick={handleSubmit} loading={loading}>
-              {t('save')}
-            </Button>
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                background: loading
+                  ? 'rgba(59,130,246,0.3)'
+                  : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '10px 28px',
+                color: '#ffffff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: loading ? 'none' : '0 4px 15px rgba(59,130,246,0.3)',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              <HiCheck size={18} />
+              {loading ? 'Enregistrement...' : t('save')}
+            </button>
           </div>
         </div>
-      </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
 

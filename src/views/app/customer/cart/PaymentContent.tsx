@@ -22,6 +22,7 @@ import {
   removeFromCartItemOfOrderItem,
 } from '@/store/slices/base/cartSlice';
 import { useNavigate } from 'react-router-dom';
+import { HiShieldCheck } from 'react-icons/hi';
 
 function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: ShippingAddress }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
@@ -171,61 +172,163 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
     }
   };
 
+  const itemCount = cart.reduce((sum, item) =>
+    sum + item.sizeAndColors.reduce((s, sc) => s + sc.quantity, 0), 0
+  );
+
   return (
     <div style={{
-      background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-      border: '1.5px solid rgba(255,255,255,0.07)',
-      borderRadius: '16px', padding: '20px',
+      background: 'linear-gradient(160deg, rgba(22,38,61,0.98) 0%, rgba(15,28,46,0.98) 100%)',
+      border: '1.5px solid rgba(255,255,255,0.06)',
+      borderRadius: '20px', padding: '24px',
       fontFamily: 'Inter, sans-serif',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
     }}>
-      <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', margin: '0 0 20px 0' }}>
-        Récapitulatif
-      </h4>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Sous-total HT</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Livraison HT</span>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '13px' }}>{SHIPPING_HT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>TVA (20%)</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>{tva.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-        </div>
-      </div>
-
-      <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '16px 0' }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Total TTC</span>
-        <span style={{ color: '#6b9eff', fontWeight: 800, fontSize: '18px' }}>
-          {totalPriceWithVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
+        <h4 style={{ color: '#fff', fontWeight: 800, fontSize: '16px', margin: 0, letterSpacing: '-0.02em' }}>
+          Recapitulatif
+        </h4>
+        <span style={{
+          background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.15)',
+          borderRadius: '8px', padding: '3px 10px',
+          color: 'rgba(107,158,255,0.7)', fontSize: '11px', fontWeight: 600,
+        }}>
+          {itemCount} art.
         </span>
       </div>
 
+      {/* Line items summary */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.04)',
+        padding: '14px', marginBottom: '18px',
+      }}>
+        {cart.map((item, i) => {
+          const total = getTotalPriceForCartItem(item.product, item.sizeAndColors);
+          const qty = item.sizeAndColors.reduce((s, sc) => s + sc.quantity, 0);
+          return (
+            <div key={item.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '6px 0',
+              borderBottom: i < cart.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{
+                  color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 500,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  display: 'block',
+                }}>
+                  {item.product.name}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>
+                  x{qty}
+                </span>
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, flexShrink: 0, marginLeft: '8px' }}>
+                {total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Totals */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Sous-total HT</span>
+          <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
+            {subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Livraison HT</span>
+          <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
+            {SHIPPING_HT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>TVA (20%)</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 500 }}>
+            {tva.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{
+        height: '1px', margin: '18px 0',
+        background: 'linear-gradient(90deg, transparent, rgba(47,111,237,0.2), transparent)',
+      }} />
+
+      {/* Total TTC */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: '20px',
+        background: 'rgba(47,111,237,0.06)', borderRadius: '12px',
+        padding: '14px 16px',
+        border: '1px solid rgba(47,111,237,0.1)',
+      }}>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>Total TTC</span>
+        <span style={{
+          color: '#6b9eff', fontWeight: 800, fontSize: '22px', letterSpacing: '-0.02em',
+        }}>
+          {totalPriceWithVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span style={{ fontSize: '14px', fontWeight: 600, marginLeft: '2px' }}>€</span>
+        </span>
+      </div>
+
+      {/* Payment button */}
       <button
         disabled={!user.customer || isSubmitting}
         onClick={validateCart}
         style={{
-          width: '100%', padding: '12px',
-          background: !user.customer || isSubmitting ? 'rgba(47,111,237,0.3)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-          border: 'none', borderRadius: '10px',
+          width: '100%', padding: '14px',
+          background: !user.customer || isSubmitting
+            ? 'rgba(47,111,237,0.2)'
+            : 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 50%, #2f6fed 100%)',
+          border: 'none', borderRadius: '14px',
           color: '#fff', fontSize: '14px', fontWeight: 700,
           cursor: !user.customer || isSubmitting ? 'not-allowed' : 'pointer',
-          boxShadow: isSubmitting ? 'none' : '0 4px 16px rgba(47,111,237,0.4)',
+          boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(47,111,237,0.35)',
           fontFamily: 'Inter, sans-serif',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          transition: 'all 0.2s ease',
+          letterSpacing: '0.01em',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+        onMouseEnter={(e) => {
+          if (user.customer && !isSubmitting) {
+            e.currentTarget.style.boxShadow = '0 6px 28px rgba(47,111,237,0.5)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (user.customer && !isSubmitting) {
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(47,111,237,0.35)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }
         }}
       >
-        🔒 {isSubmitting ? 'Traitement…' : 'Valider la commande'}
+        <HiShieldCheck size={16} />
+        {isSubmitting ? 'Traitement en cours...' : 'Valider la commande'}
       </button>
 
-      <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', marginTop: '10px' }}>
-        Paiement sécurisé
-      </p>
+      {/* Security badge */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        marginTop: '14px',
+      }}>
+        <div style={{
+          width: '4px', height: '4px', borderRadius: '50%',
+          background: '#34d399', boxShadow: '0 0 6px rgba(52,211,153,0.4)',
+        }} />
+        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center', margin: 0, fontWeight: 500 }}>
+          Paiement securise par Stripe
+        </p>
+      </div>
     </div>
   );
 }
