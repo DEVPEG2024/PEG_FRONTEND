@@ -308,6 +308,7 @@ const protectedCommonRoutes = [
     authority: [CUSTOMER, PRODUCER, ADMIN, SUPER_ADMIN],
     meta: {
       pageContainerType: "gutterless",
+      footer: false,
     },
   },
   {
