@@ -27,8 +27,8 @@ const QuickFilterTab = () => {
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
     if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;
-    // SAV : visible pour admins, ou pour tous quand le projet est en état SAV
-    if (tab === 'SAV') return hasRole(user, [SUPER_ADMIN, ADMIN]) || project?.state === 'sav';
+    // SAV : visible pour admins et clients, ou pour tous quand le projet est en état SAV
+    if (tab === 'SAV') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]) || project?.state === 'sav';
     return true;
   });
 
