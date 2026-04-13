@@ -12,7 +12,6 @@ import { createComment, setLoading, useAppSelector } from '../store';
 import { User } from '@/@types/user';
 import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
-import { Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
 import ChatMessage from './ChatMessage';
@@ -72,8 +71,7 @@ const Comments = () => {
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -180,34 +178,31 @@ const Comments = () => {
     dispatch(createComment({ comment, project }));
     setCommentText('');
     setPegFiles([]);
-    setShowUpload(false);
   };
 
   /* ── File handlers ── */
-  const onFileAdd = (file: File) => {
-    setPegFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
-  };
+  const allowedFileTypes = [
+    'image/jpeg', 'image/png', 'image/jpg', 'image/webp',
+    'application/pdf', 'application/x-pdf',
+    'application/zip', 'application/x-zip-compressed',
+    'image/vnd.adobe.photoshop', 'application/postscript', 'application/illustrator',
+  ];
 
-  const onFileRemove = (fileName: string) => {
-    setPegFiles((prev) => prev.filter(({ name }) => name !== fileName));
-  };
-
-  const beforeUpload = (files: FileList | null) => {
-    let valid: string | boolean = true;
-    const allowedFileType = [
-      'image/jpeg', 'image/png', 'image/jpg', 'image/webp',
-      'application/pdf', 'application/x-pdf',
-      'application/zip', 'application/x-zip-compressed',
-      'image/vnd.adobe.photoshop', 'application/postscript', 'application/illustrator',
-    ];
-    if (files) {
-      for (const file of files) {
-        if (!allowedFileType.includes(file.type)) {
-          valid = "Le format du fichier n'est pas pris en compte !";
-        }
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const remaining = 4 - pegFiles.length;
+    for (let i = 0; i < Math.min(files.length, remaining); i++) {
+      const file = files[i];
+      if (allowedFileTypes.includes(file.type)) {
+        setPegFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
       }
     }
-    return valid;
+    e.target.value = '';
+  };
+
+  const removeFile = (idx: number) => {
+    setPegFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
   /* ── Empty state ── */
@@ -473,50 +468,67 @@ const Comments = () => {
               </div>
             )}
 
-            {/* Upload area */}
-            {showUpload && (
+            {/* File thumbnails */}
+            {pegFiles.length > 0 && (
               <div style={{
+                display: 'flex',
+                gap: '8px',
                 marginBottom: '10px',
-                padding: '10px',
-                background: 'rgba(255,255,255,0.03)',
-                borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.06)',
-                animation: 'chatFadeIn 0.2s ease-out',
+                flexWrap: 'wrap',
               }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '8px',
-                }}>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Fichiers joints ({pegFiles.length}/4)
-                  </span>
-                  <button
-                    onClick={() => { setShowUpload(false); setPegFiles([]); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '20px', height: '20px', borderRadius: '4px',
-                      background: 'transparent', border: 'none',
-                      color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-                    }}
-                  >
-                    <HiX size={12} />
-                  </button>
-                </div>
-                <Upload
-                  multiple
-                  showList
-                  draggable
-                  uploadLimit={4}
-                  beforeUpload={beforeUpload}
-                  onFileAdd={(file) => onFileAdd(file)}
-                  onFileRemove={(file) => onFileRemove(file)}
-                  field={{ name: 'images' }}
-                  fileList={pegFiles.map(({ file }) => file)}
-                />
+                {pegFiles.map((pf, idx) => (
+                  <div key={idx} style={{
+                    position: 'relative',
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.04)',
+                  }}>
+                    {pf.file?.type?.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(pf.file)}
+                        alt={pf.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'rgba(255,255,255,0.4)', fontSize: '9px', fontWeight: 600,
+                        textAlign: 'center', padding: '4px', wordBreak: 'break-all',
+                      }}>
+                        {pf.name?.split('.').pop()?.toUpperCase()}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removeFile(idx)}
+                      style={{
+                        position: 'absolute', top: '2px', right: '2px',
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.7)', border: 'none',
+                        color: '#fff', fontSize: '10px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <HiX size={8} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/jpg,image/webp,application/pdf,application/zip,.psd,.ai"
+              style={{ display: 'none' }}
+              onChange={handleFileSelect}
+            />
 
             {/* Input row */}
             <div style={{
@@ -524,9 +536,9 @@ const Comments = () => {
               alignItems: 'flex-end',
               gap: '8px',
             }}>
-              {/* Attachment button */}
+              {/* Photo button — opens native file picker */}
               <button
-                onClick={() => setShowUpload(!showUpload)}
+                onClick={() => fileInputRef.current?.click()}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -534,14 +546,16 @@ const Comments = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: showUpload ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${showUpload ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                  color: showUpload ? '#6b9eff' : 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer',
+                  background: pegFiles.length > 0 ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${pegFiles.length > 0 ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  color: pegFiles.length > 0 ? '#6b9eff' : 'rgba(255,255,255,0.4)',
+                  cursor: pegFiles.length >= 4 ? 'not-allowed' : 'pointer',
                   flexShrink: 0,
                   transition: 'all 0.15s ease',
+                  opacity: pegFiles.length >= 4 ? 0.4 : 1,
                 }}
-                title="Joindre un fichier"
+                disabled={pegFiles.length >= 4}
+                title={pegFiles.length >= 4 ? 'Maximum 4 fichiers' : 'Ajouter une photo'}
               >
                 <HiPhotograph size={16} />
               </button>
