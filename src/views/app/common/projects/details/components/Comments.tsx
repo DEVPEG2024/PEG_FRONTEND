@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Button from '@/components/ui/Button';
 import Container from '@/components/shared/Container';
 import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
@@ -16,7 +15,6 @@ import { apiUploadFile } from '@/services/FileServices';
 import { Upload } from '@/components/ui';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
-import { RichTextEditor } from '@/components/shared';
 import ChatMessage from './ChatMessage';
 
 /* ── Visibility options ── */
@@ -171,10 +169,11 @@ const Comments = () => {
           ? 'producer'
           : visibility;
 
-    const comment: Omit<Comment, 'documentId'> = {
+    const comment = {
       content: commentText,
       user: user,
-      images: newPegFiles.map(({ id }) => id),
+      createdAt: new Date(),
+      images: newPegFiles,
       visibility: commentVisibility,
     };
 
@@ -186,7 +185,7 @@ const Comments = () => {
 
   /* ── File handlers ── */
   const onFileAdd = (file: File) => {
-    setPegFiles((prev) => [...prev, { file, name: file.name }]);
+    setPegFiles((prev) => [...prev, { file, name: file.name } as PegFile]);
   };
 
   const onFileRemove = (fileName: string) => {
@@ -547,21 +546,43 @@ const Comments = () => {
                 <HiPhotograph size={16} />
               </button>
 
-              {/* Text editor */}
-              <div style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px',
-                padding: '6px 12px',
-                minHeight: '36px',
-                transition: 'border-color 0.15s ease',
-              }}>
-                <RichTextEditor
-                  onChange={(val: string) => setCommentText(val)}
-                  value={commentText}
-                />
-              </div>
+              {/* Text input */}
+              <textarea
+                placeholder="Votre message..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitComment();
+                  }
+                }}
+                rows={1}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '12px',
+                  padding: '9px 14px',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontFamily: 'Inter, sans-serif',
+                  outline: 'none',
+                  resize: 'none',
+                  minHeight: '36px',
+                  maxHeight: '120px',
+                  lineHeight: '1.4',
+                  transition: 'border-color 0.15s ease',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = 'rgba(47,111,237,0.3)')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                onInput={(e) => {
+                  const t = e.target as HTMLTextAreaElement;
+                  t.style.height = 'auto';
+                  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+                }}
+              />
 
               {/* Send button */}
               <button
