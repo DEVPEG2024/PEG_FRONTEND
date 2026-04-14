@@ -58,6 +58,18 @@ function getFamily(variant: ImbretexVariant): string {
   return variant.categories?.[0]?.families?.fr || '';
 }
 
+function getCategory(variant: ImbretexVariant): string {
+  return variant.categories?.[0]?.categories?.fr || '';
+}
+
+function getProductCategory(product: ImbretexProduct): string {
+  for (const v of product.variants) {
+    const cat = getCategory(v);
+    if (cat) return cat;
+  }
+  return '';
+}
+
 // ─── Product Detail Modal ───
 
 type ProductDetailProps = {
@@ -351,6 +363,7 @@ const ImbretexCatalog = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ImbretexProduct | null>(null);
   const [page, setPage] = useState(1);
 
@@ -368,9 +381,22 @@ const ImbretexCatalog = () => {
     return Array.from(set).sort();
   }, [products]);
 
-  // Client-side filter (search + brand) on current page
+  // Extract unique categories from current page
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      const cat = getProductCategory(p);
+      if (cat) set.add(cat);
+    });
+    return Array.from(set).sort();
+  }, [products]);
+
+  // Client-side filter (search + brand + category) on current page
   const filtered = useMemo(() => {
     let result = products;
+    if (categoryFilter) {
+      result = result.filter((p) => getProductCategory(p) === categoryFilter);
+    }
     if (brandFilter) {
       result = result.filter((p) => p.brands?.name === brandFilter);
     }
@@ -384,7 +410,7 @@ const ImbretexCatalog = () => {
       });
     }
     return result;
-  }, [products, searchTerm, brandFilter]);
+  }, [products, searchTerm, brandFilter, categoryFilter]);
 
   // When viewing a product detail, fetch its price/stock via product reference
   const handleViewProduct = useCallback((product: ImbretexProduct) => {
@@ -422,6 +448,39 @@ const ImbretexCatalog = () => {
             Parcourez le catalogue fournisseur — cliquez sur un produit pour voir prix et stocks
           </p>
         </div>
+      </div>
+
+      {/* Category tabs */}
+      <div style={{
+        display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center',
+      }}>
+        <button
+          onClick={() => setCategoryFilter('')}
+          style={{
+            padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            border: categoryFilter === '' ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
+            background: categoryFilter === '' ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
+            color: categoryFilter === '' ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+          }}
+        >
+          Tous
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+            style={{
+              padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              border: categoryFilter === cat ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
+              background: categoryFilter === cat ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
+              color: categoryFilter === cat ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+            }}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Filters bar */}
