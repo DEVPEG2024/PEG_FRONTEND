@@ -612,7 +612,7 @@ function Cart() {
 
       {/* Suggestions carousel — full width, outside grid */}
       {suggestions.length > 0 && (
-        <div style={{ marginTop: '32px' }}>
+        <div style={{ marginTop: '32px', paddingBottom: '40px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
             <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
@@ -621,7 +621,7 @@ function Cart() {
             <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06))' }} />
           </div>
 
-          <div style={{ position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', overflow: 'visible' }}>
             {/* Fade edges */}
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(90deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(270deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
@@ -633,7 +633,7 @@ function Cart() {
               style={{
                 display: 'flex', gap: '14px',
                 overflowX: 'hidden', scrollbarWidth: 'none',
-                padding: '4px 0',
+                padding: '4px 0 16px 0',
               }}
             >
               {[...suggestions, ...suggestions].map((product, idx) => (
