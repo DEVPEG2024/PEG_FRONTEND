@@ -18,59 +18,66 @@ type NormalizedField = {
   content?: string;
 };
 
+type FieldGroup = {
+  title: string;
+  fields: NormalizedField[];
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Recursively flatten nested components (panels, columns, fieldsets, etc.) */
-function flattenComponents(components: any[]): any[] {
-  const result: any[] = [];
+/** Recursively extract input fields from a component tree */
+function extractFields(components: any[]): NormalizedField[] {
+  const result: NormalizedField[] = [];
   for (const c of components) {
     const t = c.type ?? '';
-    // Layout containers: extract their children instead
-    if (['panel', 'well', 'fieldset', 'container'].includes(t)) {
-      if (Array.isArray(c.components)) {
-        result.push(...flattenComponents(c.components));
-      }
+    // Layout containers → recurse into children
+    if (['panel', 'well', 'fieldset', 'container'].includes(t) && Array.isArray(c.components)) {
+      result.push(...extractFields(c.components));
       continue;
     }
     if (t === 'columns' && Array.isArray(c.columns)) {
       for (const col of c.columns) {
-        if (Array.isArray(col.components)) {
-          result.push(...flattenComponents(col.components));
-        }
+        if (Array.isArray(col.components)) result.push(...extractFields(col.components));
       }
       continue;
     }
     if (t === 'table' && Array.isArray(c.rows)) {
       for (const row of c.rows) {
         for (const cell of row) {
-          if (Array.isArray(cell.components)) {
-            result.push(...flattenComponents(cell.components));
-          }
+          if (Array.isArray(cell.components)) result.push(...extractFields(cell.components));
         }
       }
       continue;
     }
     if (t === 'tabs' && Array.isArray(c.components)) {
       for (const tab of c.components) {
-        if (Array.isArray(tab.components)) {
-          result.push(...flattenComponents(tab.components));
-        }
+        if (Array.isArray(tab.components)) result.push(...extractFields(tab.components));
       }
       continue;
     }
-    // Recurse into any component that has nested components
     if (Array.isArray(c.components) && c.components.length > 0) {
-      result.push(...flattenComponents(c.components));
+      result.push(...extractFields(c.components));
       continue;
     }
-    // Keep this component as-is
-    result.push(c);
+    // Skip non-input elements
+    if (['button', 'content', 'htmlelement'].includes(t) || c.hidden) continue;
+    result.push({
+      id: c.id ?? c.key ?? c.type + '_' + Math.random().toString(36).slice(2, 6),
+      type: mapFieldType(c.type ?? 'textfield'),
+      label: c.label ?? c.panelTitle ?? 'Champ',
+      placeholder: c.placeholder ?? '',
+      description: c.description ?? '',
+      required: c.required ?? c.validate?.required ?? false,
+      defaultValue: c.defaultValue ?? '',
+      options: c.options ?? c.data?.values ?? c.values ?? undefined,
+      content: c.content ?? undefined,
+    });
   }
   return result;
 }
 
-/** Normalize fields from both new custom format and old Form.io format */
-function normalizeFields(raw: JSONValue): NormalizedField[] {
+/** Build groups from the form structure — panels/sections become steps */
+function buildGroups(raw: JSONValue): FieldGroup[] {
   if (!raw) return [];
   const parsed: any = typeof raw === 'string' ? JSON.parse(raw) : JSON.parse(JSON.stringify(raw));
 
@@ -83,26 +90,56 @@ function normalizeFields(raw: JSONValue): NormalizedField[] {
     components = parsed.components;
   }
 
-  // Flatten nested structures (panels, columns, etc.)
-  const flat = flattenComponents(components);
+  // Check if there are natural grouping containers at the top level
+  const hasContainers = components.some((c: any) =>
+    ['panel', 'well', 'fieldset'].includes(c.type ?? '')
+  );
 
-  return flat
-    .filter((c: any) => {
+  if (hasContainers) {
+    // Use containers as step boundaries
+    const groups: FieldGroup[] = [];
+    let loose: NormalizedField[] = [];
+
+    for (const c of components) {
       const t = c.type ?? '';
-      // Skip non-input elements
-      return !['button', 'content', 'htmlelement'].includes(t) && !c.hidden;
-    })
-    .map((c: any) => ({
-      id: c.id ?? c.key ?? c.type + '_' + Math.random().toString(36).slice(2, 6),
-      type: mapFieldType(c.type ?? 'textfield'),
-      label: c.label ?? c.panelTitle ?? 'Champ',
-      placeholder: c.placeholder ?? '',
-      description: c.description ?? '',
-      required: c.required ?? c.validate?.required ?? false,
-      defaultValue: c.defaultValue ?? '',
-      options: c.options ?? c.data?.values ?? c.values ?? undefined,
-      content: c.content ?? undefined,
-    }));
+      if (['panel', 'well', 'fieldset'].includes(t) && Array.isArray(c.components)) {
+        // Flush loose fields first
+        if (loose.length > 0) {
+          groups.push({ title: 'Informations', fields: loose });
+          loose = [];
+        }
+        const fields = extractFields(c.components);
+        if (fields.length > 0) {
+          groups.push({
+            title: c.panelTitle ?? c.title ?? c.label ?? `Section ${groups.length + 1}`,
+            fields,
+          });
+        }
+      } else {
+        const fields = extractFields([c]);
+        loose.push(...fields);
+      }
+    }
+    if (loose.length > 0) {
+      groups.push({ title: 'Informations complémentaires', fields: loose });
+    }
+    return groups.filter(g => g.fields.length > 0);
+  }
+
+  // No containers — group flat fields in chunks of 3
+  const allFields = extractFields(components);
+  if (allFields.length === 0) return [];
+
+  const CHUNK = 3;
+  const groups: FieldGroup[] = [];
+  for (let i = 0; i < allFields.length; i += CHUNK) {
+    const chunk = allFields.slice(i, i + CHUNK);
+    groups.push({
+      title: groups.length === 0 ? 'Informations' : `Suite (${groups.length + 1}/${Math.ceil(allFields.length / CHUNK)})`,
+      fields: chunk,
+    });
+  }
+  return groups;
 }
 
 function mapFieldType(type: string): string {
@@ -125,14 +162,14 @@ function mapFieldType(type: string): string {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.1)',
-  borderRadius: '10px', color: '#fff', fontSize: '15px', padding: '14px 16px',
+  borderRadius: '10px', color: '#fff', fontSize: '14px', padding: '12px 14px',
   outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
   transition: 'border-color 0.2s',
 };
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontWeight: 700, fontSize: '14px', color: '#f0f4ff',
-  marginBottom: '8px',
+  display: 'block', fontWeight: 600, fontSize: '13px', color: '#f0f4ff',
+  marginBottom: '6px',
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -145,13 +182,14 @@ type Props = {
 };
 
 export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit }: Props) {
-  const normalizedFields = useMemo(() => normalizeFields(fields), [fields]);
+  const groups = useMemo(() => buildGroups(fields), [fields]);
+  const allFields = useMemo(() => groups.flatMap(g => g.fields), [groups]);
 
   // Initialize values from existing formAnswer or defaults
   const [values, setValues] = useState<Record<string, any>>(() => {
     const init: Record<string, any> = {};
     const existingData = (formAnswer?.answer as any)?.data ?? {};
-    normalizedFields.forEach((f) => {
+    allFields.forEach((f) => {
       if (existingData[f.id] !== undefined) {
         init[f.id] = existingData[f.id];
       } else if (f.type === 'checkbox') {
@@ -166,7 +204,7 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
   });
 
   const [currentStep, setCurrentStep] = useState(0);
-  const totalSteps = normalizedFields.length;
+  const totalSteps = groups.length;
 
   if (totalSteps === 0) {
     return (
@@ -176,29 +214,31 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
     );
   }
 
-  const field = normalizedFields[currentStep];
-  const value = values[field.id];
+  const group = groups[currentStep];
 
-  const setValue = (v: any) => setValues((prev) => ({ ...prev, [field.id]: v }));
+  const setFieldValue = (id: string, v: any) => setValues((prev) => ({ ...prev, [id]: v }));
 
-  const isFieldValid = (): boolean => {
-    if (!field.required) return true;
-    if (field.type === 'checkbox') return !!value;
-    if (field.type === 'checkboxgroup') return Object.values(value || {}).some(Boolean);
-    return value !== '' && value !== undefined && value !== null;
+  const isGroupValid = (): boolean => {
+    for (const f of group.fields) {
+      if (!f.required) continue;
+      const v = values[f.id];
+      if (f.type === 'checkbox' && !v) return false;
+      if (f.type === 'checkboxgroup' && !Object.values(v || {}).some(Boolean)) return false;
+      if (v === '' || v === undefined || v === null) return false;
+    }
+    return true;
   };
 
   const handleNext = () => {
-    if (!isFieldValid()) {
-      toast.error('Ce champ est obligatoire');
+    if (!isGroupValid()) {
+      toast.error('Veuillez remplir les champs obligatoires');
       return;
     }
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Last step — submit
       const data: Record<string, any> = {};
-      normalizedFields.forEach((f) => { data[f.id] = values[f.id]; });
+      allFields.forEach((f) => { data[f.id] = values[f.id]; });
       onSubmit({ data, metadata: {}, state: 'submitted' });
     }
   };
@@ -212,10 +252,10 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
   return (
     <div>
       {/* Progress bar */}
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
           <span style={{ fontSize: '11px', color: 'rgba(160,185,220,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Question {currentStep + 1} sur {totalSteps}
+            Étape {currentStep + 1} sur {totalSteps}
           </span>
           <span style={{ fontSize: '11px', color: 'rgba(160,185,220,0.35)' }}>
             {Math.round(progress)}%
@@ -231,10 +271,10 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
       </div>
 
       {/* Step dots */}
-      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '28px' }}>
-        {normalizedFields.map((_, i) => (
+      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '24px' }}>
+        {groups.map((_, i) => (
           <div key={i} style={{
-            width: i === currentStep ? '24px' : '8px', height: '8px', borderRadius: '100px',
+            width: i === currentStep ? '28px' : '8px', height: '8px', borderRadius: '100px',
             background: i < currentStep ? '#22c55e' : i === currentStep ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.08)',
             transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             boxShadow: i === currentStep ? '0 0 10px rgba(47,111,237,0.4)' : 'none',
@@ -243,24 +283,31 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
         ))}
       </div>
 
-      {/* Field */}
-      <div key={field.id} style={{ animation: 'wizFadeIn 0.3s ease-out', minHeight: '120px' }}>
-        <label style={labelStyle}>
-          {field.label}
-          {field.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
-        </label>
+      {/* Group title */}
+      <h4 style={{ margin: '0 0 20px', fontSize: '16px', fontWeight: 700, color: '#f0f4ff', textAlign: 'center' }}>
+        {group.title}
+      </h4>
 
-        {field.description && (
-          <p style={{ color: 'rgba(160,185,220,0.45)', fontSize: '12px', margin: '-4px 0 12px', lineHeight: 1.5 }}>
-            {field.description}
-          </p>
-        )}
-
-        {renderInput(field, value, setValue, readOnly, handleNext)}
+      {/* Fields */}
+      <div key={currentStep} style={{ display: 'flex', flexDirection: 'column', gap: '18px', animation: 'wizFadeIn 0.3s ease-out' }}>
+        {group.fields.map((field) => (
+          <div key={field.id}>
+            <label style={labelStyle}>
+              {field.label}
+              {field.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+            </label>
+            {field.description && (
+              <p style={{ color: 'rgba(160,185,220,0.45)', fontSize: '11px', margin: '-2px 0 8px', lineHeight: 1.5 }}>
+                {field.description}
+              </p>
+            )}
+            {renderInput(field, values[field.id], (v: any) => setFieldValue(field.id, v), readOnly)}
+          </div>
+        ))}
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
         <button
           onClick={handlePrev}
           disabled={currentStep === 0}
@@ -313,15 +360,7 @@ function renderInput(
   value: any,
   setValue: (v: any) => void,
   readOnly: boolean,
-  onEnter: () => void,
 ) {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && field.type !== 'textarea') {
-      e.preventDefault();
-      onEnter();
-    }
-  };
-
   switch (field.type) {
     case 'textarea':
       return (
@@ -330,8 +369,8 @@ function renderInput(
           onChange={(e) => setValue(e.target.value)}
           readOnly={readOnly}
           placeholder={field.placeholder}
-          rows={4}
-          style={{ ...inputStyle, resize: 'vertical', minHeight: '100px' }}
+          rows={3}
+          style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }}
         />
       );
 
@@ -352,7 +391,7 @@ function renderInput(
 
     case 'radio':
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {(field.options ?? []).map((opt, i) => {
             const selected = value === opt.value;
             return (
@@ -360,22 +399,22 @@ function renderInput(
                 key={i}
                 onClick={() => { if (!readOnly) setValue(opt.value); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 16px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
                   background: selected ? 'rgba(47,111,237,0.1)' : 'rgba(255,255,255,0.02)',
                   border: `1.5px solid ${selected ? 'rgba(47,111,237,0.4)' : 'rgba(255,255,255,0.08)'}`,
                   transition: 'all 0.2s',
                 }}
               >
                 <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%',
+                  width: '18px', height: '18px', borderRadius: '50%',
                   border: `2px solid ${selected ? '#2f6fed' : 'rgba(255,255,255,0.2)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.2s', flexShrink: 0,
                 }}>
-                  {selected && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2f6fed' }} />}
+                  {selected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2f6fed' }} />}
                 </div>
-                <span style={{ color: selected ? '#a0c4ff' : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: selected ? 600 : 400 }}>
+                <span style={{ color: selected ? '#a0c4ff' : 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: selected ? 600 : 400 }}>
                   {opt.label}
                 </span>
               </label>
@@ -389,23 +428,23 @@ function renderInput(
         <label
           onClick={() => { if (!readOnly) setValue(!value); }}
           style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '14px 16px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '12px 14px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
             background: value ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.02)',
             border: `1.5px solid ${value ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.08)'}`,
             transition: 'all 0.2s',
           }}
         >
           <div style={{
-            width: '22px', height: '22px', borderRadius: '6px',
+            width: '20px', height: '20px', borderRadius: '6px',
             border: `2px solid ${value ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
             background: value ? '#22c55e' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s', flexShrink: 0,
           }}>
-            {value && <HiCheck size={14} style={{ color: '#fff' }} />}
+            {value && <HiCheck size={12} style={{ color: '#fff' }} />}
           </div>
-          <span style={{ color: value ? '#4ade80' : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: value ? 600 : 400 }}>
+          <span style={{ color: value ? '#4ade80' : 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: value ? 600 : 400 }}>
             Oui, je confirme
           </span>
         </label>
@@ -413,7 +452,7 @@ function renderInput(
 
     case 'checkboxgroup':
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {(field.options ?? []).map((opt, i) => {
             const checked = !!(value && value[opt.value]);
             return (
@@ -424,23 +463,23 @@ function renderInput(
                   setValue({ ...(value || {}), [opt.value]: !checked });
                 }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 16px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '10px', cursor: readOnly ? 'default' : 'pointer',
                   background: checked ? 'rgba(47,111,237,0.08)' : 'rgba(255,255,255,0.02)',
                   border: `1.5px solid ${checked ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.08)'}`,
                   transition: 'all 0.2s',
                 }}
               >
                 <div style={{
-                  width: '20px', height: '20px', borderRadius: '6px',
+                  width: '18px', height: '18px', borderRadius: '5px',
                   border: `2px solid ${checked ? '#2f6fed' : 'rgba(255,255,255,0.2)'}`,
                   background: checked ? '#2f6fed' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.2s', flexShrink: 0,
                 }}>
-                  {checked && <HiCheck size={12} style={{ color: '#fff' }} />}
+                  {checked && <HiCheck size={10} style={{ color: '#fff' }} />}
                 </div>
-                <span style={{ color: checked ? '#a0c4ff' : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: checked ? 600 : 400 }}>
+                <span style={{ color: checked ? '#a0c4ff' : 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: checked ? 600 : 400 }}>
                   {opt.label}
                 </span>
               </label>
@@ -453,8 +492,8 @@ function renderInput(
       return (
         <div style={{
           border: '2px dashed rgba(255,255,255,0.12)', borderRadius: '12px',
-          padding: '32px 16px', textAlign: 'center', cursor: 'pointer',
-          background: 'rgba(255,255,255,0.02)', transition: 'all 0.2s',
+          padding: '24px 16px', textAlign: 'center', cursor: 'pointer',
+          background: 'rgba(255,255,255,0.02)',
         }}>
           <input
             type="file"
@@ -467,9 +506,8 @@ function renderInput(
             id={`file_${field.id}`}
           />
           <label htmlFor={`file_${field.id}`} style={{ cursor: 'pointer', display: 'block' }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.3 }}>📎</div>
             <p style={{ color: 'rgba(160,185,220,0.5)', fontSize: '13px', margin: 0 }}>
-              {value ? value : 'Cliquez pour importer un fichier'}
+              {value ? `📎 ${value}` : '📎 Cliquez pour importer un fichier'}
             </p>
           </label>
         </div>
@@ -479,7 +517,7 @@ function renderInput(
       return (
         <div style={{
           border: '2px dashed rgba(255,255,255,0.12)', borderRadius: '12px',
-          height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(255,255,255,0.02)',
         }}>
           <p style={{ color: 'rgba(160,185,220,0.4)', fontSize: '13px' }}>Zone de signature</p>
@@ -494,11 +532,8 @@ function renderInput(
           onChange={(e) => setValue(e.target.value)}
           readOnly={readOnly}
           placeholder={field.placeholder}
-          onKeyDown={handleKeyDown}
-          autoFocus
           style={{
             ...inputStyle,
-            fontSize: '18px', padding: '16px 18px',
             borderColor: value ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.1)',
           }}
         />
