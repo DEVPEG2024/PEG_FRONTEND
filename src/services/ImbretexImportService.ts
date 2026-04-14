@@ -145,12 +145,44 @@ function findBestMatch(name: string, cache: Map<string, string>): string | null 
 async function uploadImageFromUrl(url: string, filename: string): Promise<string | null> {
   try {
     console.log('[Import] Téléchargement image:', url);
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error('[Import] Image HTTP', response.status);
+
+    // Tentative 1 : fetch direct
+    let blob: Blob | null = null;
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (response.ok) {
+        blob = await response.blob();
+      }
+    } catch {
+      console.log('[Import] CORS bloqué, tentative via no-cors...');
+    }
+
+    // Tentative 2 : créer une image canvas pour contourner CORS
+    if (!blob) {
+      try {
+        blob = await new Promise<Blob | null>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d')?.drawImage(img, 0, 0);
+            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9);
+          };
+          img.onerror = () => resolve(null);
+          img.src = url;
+        });
+      } catch {
+        console.log('[Import] Canvas fallback échoué');
+      }
+    }
+
+    if (!blob) {
+      console.error('[Import] Impossible de télécharger l\'image');
       return null;
     }
-    const blob = await response.blob();
+
     const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
     const uploaded = await apiUploadFile(file);
     console.log('[Import] Image uploadée:', uploaded.id, uploaded.url);
@@ -201,15 +233,16 @@ export async function importImbretexProduct(
     }
     console.log(`[Import] ${ref} tailles: ${sizeNames.join(', ')} → ${sizeDocIds.length} matchées`);
 
-    // 3. Colors — match existantes uniquement
+    // 3. Colors — match existantes uniquement, dédupliquées
     onProgress?.(`${ref}: couleurs...`);
     const colorsMap = await loadColors();
     const imbretexColors = getUniqueColors(product.variants);
-    const colorDocIds: string[] = [];
+    const colorDocIdSet = new Set<string>();
     for (const { name } of imbretexColors) {
       const id = findBestMatch(name, colorsMap);
-      if (id) colorDocIds.push(id);
+      if (id) colorDocIdSet.add(id);
     }
+    const colorDocIds = Array.from(colorDocIdSet);
     console.log(`[Import] ${ref} couleurs: ${imbretexColors.map(c => c.name).join(', ')} → ${colorDocIds.length} matchées`);
 
     // 4. Price
