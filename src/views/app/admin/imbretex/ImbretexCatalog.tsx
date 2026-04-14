@@ -343,7 +343,7 @@ const PAGE_SIZE = 60;
 
 const ImbretexCatalog = () => {
   const dispatch = useAppDispatch();
-  const { allProducts, loading, loadingProgress, loadingPrices, priceStockMap, totalProducts } =
+  const { allProducts, loading, loadingProgress, loadingPrices, priceStockMap, totalProducts, error } =
     useAppSelector((state) => state.imbretex.data);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -437,7 +437,7 @@ const ImbretexCatalog = () => {
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
             Catalogue Imbretex{' '}
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>
-              ({totalProducts} produits)
+              ({allProducts.length}{loading ? `/${totalProducts}` : ''} produits)
             </span>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '4px' }}>
@@ -445,6 +445,24 @@ const ImbretexCatalog = () => {
           </p>
         </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+          borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+          color: '#f87171', fontSize: '13px',
+        }}>
+          Erreur : {error}
+          <button onClick={() => dispatch(fetchAllImbretexProducts())} style={{
+            marginLeft: '12px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)',
+            borderRadius: '6px', padding: '4px 12px', color: '#f87171', fontSize: '12px',
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+          }}>
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {/* Loading progress */}
       {loading && (
