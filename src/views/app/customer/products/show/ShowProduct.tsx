@@ -60,8 +60,8 @@ const ShowProduct = () => {
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
 
   // m² state
-  const [m2Width, setM2Width] = useState<number>(1);
-  const [m2Height, setM2Height] = useState<number>(1);
+  const [m2Width, setM2Width] = useState<number>(100);
+  const [m2Height, setM2Height] = useState<number>(100);
   const [m2Quantity, setM2Quantity] = useState<number>(1);
 
   // BAT state
@@ -84,7 +84,7 @@ const ShowProduct = () => {
   const unitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
 
   // m² pricing calculation
-  const m2Data = isM2Pricing && product ? getM2Price(product, m2Width, m2Height, m2Quantity) : null;
+  const m2Data = isM2Pricing && product ? getM2Price(product, m2Width / 100, m2Height / 100, m2Quantity) : null;
 
   // Total price based on mode
   const totalPrice = isM2Pricing && m2Data
@@ -144,7 +144,7 @@ const ShowProduct = () => {
   const handleAddToCart = () => {
     // For m² products, create a selection with dimensions
     const sizeAndColors = isM2Pricing
-      ? [{ size: {} as any, color: {} as any, quantity: m2Quantity, width: m2Width, height: m2Height }]
+      ? [{ size: {} as any, color: {} as any, quantity: m2Quantity, width: m2Width / 100, height: m2Height / 100 }]
       : sizeAndColorsSelected;
 
     dispatch(
@@ -344,9 +344,9 @@ const ShowProduct = () => {
               )}
             </div>
             {hasTiers && amountSelected > 0 && activeTierIndex > 0 && (() => {
-              const baseCPU = product.priceTiers[0].price / product.priceTiers[0].minQuantity;
+              const baseCPU = isPackPricing ? product.priceTiers[0].price / product.priceTiers[0].minQuantity : product.priceTiers[0].price;
               const activeTier = product.priceTiers[activeTierIndex];
-              const activeCPU = activeTier.price / activeTier.minQuantity;
+              const activeCPU = isPackPricing ? activeTier.price / activeTier.minQuantity : activeTier.price;
               const pct = ((baseCPU - activeCPU) / baseCPU * 100).toFixed(0);
               return Number(pct) > 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', color: '#4ade80', fontWeight: 700 }}>
@@ -385,8 +385,8 @@ const ShowProduct = () => {
                   const isActive = isPackPricing
                     ? amountSelected === tier.minQuantity
                     : tier.price === tierPriceSelected;
-                  const baseCostPerUnit = product.priceTiers[0].price / product.priceTiers[0].minQuantity;
-                  const tierCostPerUnit = tier.price / tier.minQuantity;
+                  const baseCostPerUnit = isPackPricing ? product.priceTiers[0].price / product.priceTiers[0].minQuantity : product.priceTiers[0].price;
+                  const tierCostPerUnit = isPackPricing ? tier.price / tier.minQuantity : tier.price;
                   const savings = i > 0
                     ? Math.round(((baseCostPerUnit - tierCostPerUnit) / baseCostPerUnit) * 100)
                     : null;
@@ -437,16 +437,16 @@ const ShowProduct = () => {
                 {/* m² dimension inputs */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (m)</label>
-                    <input type="number" value={m2Width} min={0.01} step={0.01}
-                      onChange={(e) => setM2Width(Math.max(0.01, parseFloat(e.target.value) || 0))}
+                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (cm)</label>
+                    <input type="number" value={m2Width} min={1} step={1}
+                      onChange={(e) => setM2Width(Math.max(1, parseFloat(e.target.value) || 0))}
                       style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (m)</label>
-                    <input type="number" value={m2Height} min={0.01} step={0.01}
-                      onChange={(e) => setM2Height(Math.max(0.01, parseFloat(e.target.value) || 0))}
+                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (cm)</label>
+                    <input type="number" value={m2Height} min={1} step={1}
+                      onChange={(e) => setM2Height(Math.max(1, parseFloat(e.target.value) || 0))}
                       style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
                     />
                   </div>
@@ -464,7 +464,7 @@ const ShowProduct = () => {
                   <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '12px', padding: '14px 16px', marginBottom: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Surface</span>
-                      <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{m2Data.area.toFixed(2)} m²{product.minM2 && m2Width * m2Height < product.minM2 ? ' (min. ' + product.minM2 + ' m²)' : ''}</span>
+                      <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{m2Data.area.toFixed(2)} m²{product.minM2 && (m2Width / 100) * (m2Height / 100) < product.minM2 ? ' (min. ' + product.minM2 + ' m²)' : ''}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
