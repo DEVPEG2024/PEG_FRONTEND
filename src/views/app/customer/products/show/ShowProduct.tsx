@@ -37,7 +37,7 @@ import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 
-const ShowForm = lazy(() => import('../modal/ShowForm'));
+const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
 
 injectReducer('showProduct', reducer);
 
@@ -649,7 +649,7 @@ const ShowProduct = () => {
 
             <div className="dialog-formbuilder-body">
               <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>Chargement...</div>}>
-                <ShowForm
+                <WizardShowForm
                   onSubmit={handleFormSubmit}
                   fields={product.form!.fields!}
                   formAnswer={formAnswer}
