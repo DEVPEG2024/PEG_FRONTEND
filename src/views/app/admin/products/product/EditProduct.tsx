@@ -294,7 +294,15 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
-      // pricingMode is now in Strapi schema — no need to strip
+      // Strip fields not yet deployed on Strapi integration
+      delete data.requiresBat;
+      delete data.batFile;
+      delete data.catalogPrice;
+      delete data.productRef;
+      delete data.refVisibleToCustomer;
+      delete data.pricingMode;
+      delete data.pricePerM2;
+      delete data.minM2;
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
