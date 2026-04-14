@@ -360,7 +360,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
             # pricePerM2                          — activer après déploiement Strapi
             # minM2                               — activer après déploiement Strapi
                 inCatalogue
-                catalogPrice
+                # catalogPrice                         — activer après déploiement Strapi
             }
             pageInfo {
                 page
