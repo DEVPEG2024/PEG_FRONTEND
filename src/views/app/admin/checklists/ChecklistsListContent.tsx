@@ -29,7 +29,7 @@ import {
   Draggable,
   DropResult,
 } from 'react-beautiful-dnd';
-import { Dialog, Pagination, Select } from '@/components/ui';
+import { Pagination, Select } from '@/components/ui';
 
 injectReducer('checklists', reducer);
 
@@ -665,338 +665,351 @@ function ChecklistsListContent() {
         </div>
       )}
 
-      {/* ── Dialog create / edit ── */}
-      <Dialog isOpen={dialogOpen} onClose={handleClose} width={560}>
+      {/* ── Modal create / edit (premium overlay) ── */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
+      {dialogOpen && (
         <div
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0',
-          }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}
+          onClick={handleClose}
         >
-          {/* Dialog header */}
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '24px',
-            }}
+            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '560px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div>
-              <h3
-                style={{
-                  color: '#fff',
-                  fontSize: '17px',
-                  fontWeight: 700,
-                  margin: 0,
-                }}
-              >
-                {checklist?.documentId
-                  ? 'Modifier le modèle'
-                  : 'Nouveau modèle de checklist'}
-              </h3>
-              <p
-                style={{
-                  color: 'rgba(255,255,255,0.35)',
-                  fontSize: '12px',
-                  marginTop: '3px',
-                }}
-              >
-                {checklist?.documentId
-                  ? 'Modifiez le nom et les tâches du modèle'
-                  : 'Définissez un nom et les tâches du modèle'}
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                color: 'rgba(255,255,255,0.6)',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <HiX size={15} />
-            </button>
-          </div>
-
-          {/* Form name */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={dlgLabel}>Nom du modèle</label>
-            <input
-              type="text"
-              placeholder="Ex : Checklist impression offset"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              style={dlgInput}
-              onFocus={(e) =>
-                (e.target.style.borderColor = 'rgba(47,111,237,0.5)')
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = 'rgba(255,255,255,0.1)')
-              }
-            />
-          </div>
-
-          {/* Tasks */}
-          <div style={{ marginBottom: '20px' }}>
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '10px',
+                flexDirection: 'column',
+                gap: '0',
               }}
             >
-              <label style={dlgLabel}>
-                Tâches{' '}
-                <span
-                  style={{
-                    color: 'rgba(129,140,248,0.7)',
-                    fontWeight: 400,
-                    textTransform: 'none',
-                    letterSpacing: 0,
-                    fontSize: '11px',
-                  }}
-                >
-                  — glisser pour réordonner · Entrée pour ajouter
-                </span>
-              </label>
-              <span
+              {/* Dialog header */}
+              <div
                 style={{
-                  background: 'rgba(99,102,241,0.1)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  borderRadius: '100px',
-                  padding: '1px 8px',
-                  color: '#818cf8',
-                  fontSize: '11px',
-                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
                 }}
               >
-                {formItems.filter((i) => i.trim()).length}
-              </span>
-            </div>
-
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="dialog-items">
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
+                <div>
+                  <h3
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px',
-                      maxHeight: '320px',
-                      overflowY: 'auto',
-                      paddingRight: '2px',
+                      color: '#fff',
+                      fontSize: '17px',
+                      fontWeight: 700,
+                      margin: 0,
                     }}
                   >
-                    {formItems.map((item, index) => (
-                      <Draggable
-                        key={`item-${index}`}
-                        draggableId={`item-${index}`}
-                        index={index}
+                    {checklist?.documentId
+                      ? 'Modifier le modèle'
+                      : 'Nouveau modèle de checklist'}
+                  </h3>
+                  <p
+                    style={{
+                      color: 'rgba(255,255,255,0.35)',
+                      fontSize: '12px',
+                      marginTop: '3px',
+                    }}
+                  >
+                    {checklist?.documentId
+                      ? 'Modifiez le nom et les tâches du modèle'
+                      : 'Définissez un nom et les tâches du modèle'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleClose}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.6)',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <HiX size={15} />
+                </button>
+              </div>
+
+              {/* Form name */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={dlgLabel}>Nom du modèle</label>
+                <input
+                  type="text"
+                  placeholder="Ex : Checklist impression offset"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  style={dlgInput}
+                  onFocus={(e) =>
+                    (e.target.style.borderColor = 'rgba(47,111,237,0.5)')
+                  }
+                  onBlur={(e) =>
+                    (e.target.style.borderColor = 'rgba(255,255,255,0.1)')
+                  }
+                />
+              </div>
+
+              {/* Tasks */}
+              <div style={{ marginBottom: '20px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <label style={dlgLabel}>
+                    Tâches{' '}
+                    <span
+                      style={{
+                        color: 'rgba(129,140,248,0.7)',
+                        fontWeight: 400,
+                        textTransform: 'none',
+                        letterSpacing: 0,
+                        fontSize: '11px',
+                      }}
+                    >
+                      — glisser pour réordonner · Entrée pour ajouter
+                    </span>
+                  </label>
+                  <span
+                    style={{
+                      background: 'rgba(99,102,241,0.1)',
+                      border: '1px solid rgba(99,102,241,0.2)',
+                      borderRadius: '100px',
+                      padding: '1px 8px',
+                      color: '#818cf8',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {formItems.filter((i) => i.trim()).length}
+                  </span>
+                </div>
+
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="dialog-items">
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                          maxHeight: '320px',
+                          overflowY: 'auto',
+                          paddingRight: '2px',
+                        }}
                       >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              background: snapshot.isDragging
-                                ? 'rgba(99,102,241,0.12)'
-                                : 'rgba(255,255,255,0.04)',
-                              border: `1px solid ${
-                                snapshot.isDragging
-                                  ? 'rgba(99,102,241,0.4)'
-                                  : 'rgba(255,255,255,0.08)'
-                              }`,
-                              borderRadius: '9px',
-                              padding: '6px 8px',
-                              boxShadow: snapshot.isDragging
-                                ? '0 8px 24px rgba(0,0,0,0.4)'
-                                : 'none',
-                              ...provided.draggableProps.style,
-                            }}
+                        {formItems.map((item, index) => (
+                          <Draggable
+                            key={`item-${index}`}
+                            draggableId={`item-${index}`}
+                            index={index}
                           >
-                            {/* Drag handle */}
-                            <div
-                              {...provided.dragHandleProps}
-                              style={{
-                                color: 'rgba(255,255,255,0.2)',
-                                cursor: 'grab',
-                                display: 'flex',
-                                flexShrink: 0,
-                                padding: '2px',
-                              }}
-                            >
-                              <MdDragIndicator size={16} />
-                            </div>
-
-                            {/* Checkbox visual */}
-                            <span
-                              style={{
-                                width: '14px',
-                                height: '14px',
-                                borderRadius: '4px',
-                                border: '1.5px solid rgba(99,102,241,0.4)',
-                                flexShrink: 0,
-                              }}
-                            />
-
-                            {/* Input */}
-                            <input
-                              ref={(el) => (inputRefs.current[index] = el)}
-                              type="text"
-                              placeholder={`Tâche ${index + 1}…`}
-                              value={item}
-                              onChange={(e) => updateItem(index, e.target.value)}
-                              onKeyDown={(e) => handleItemKeyDown(e, index)}
-                              style={{
-                                flex: 1,
-                                background: 'none',
-                                border: 'none',
-                                outline: 'none',
-                                color: '#fff',
-                                fontSize: '13px',
-                                fontFamily: 'Inter, sans-serif',
-                                padding: '0',
-                              }}
-                            />
-
-                            {/* Remove */}
-                            {formItems.length > 1 && (
-                              <button
-                                onClick={() => removeItem(index)}
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
                                 style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: 'rgba(255,255,255,0.2)',
                                   display: 'flex',
-                                  padding: '2px',
-                                  flexShrink: 0,
-                                  transition: 'color 0.12s',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  background: snapshot.isDragging
+                                    ? 'rgba(99,102,241,0.12)'
+                                    : 'rgba(255,255,255,0.04)',
+                                  border: `1px solid ${
+                                    snapshot.isDragging
+                                      ? 'rgba(99,102,241,0.4)'
+                                      : 'rgba(255,255,255,0.08)'
+                                  }`,
+                                  borderRadius: '9px',
+                                  padding: '6px 8px',
+                                  boxShadow: snapshot.isDragging
+                                    ? '0 8px 24px rgba(0,0,0,0.4)'
+                                    : 'none',
+                                  ...provided.draggableProps.style,
                                 }}
-                                onMouseEnter={(e) =>
-                                  (e.currentTarget.style.color = '#f87171')
-                                }
-                                onMouseLeave={(e) =>
-                                  (e.currentTarget.style.color =
-                                    'rgba(255,255,255,0.2)')
-                                }
                               >
-                                <HiX size={13} />
-                              </button>
+                                {/* Drag handle */}
+                                <div
+                                  {...provided.dragHandleProps}
+                                  style={{
+                                    color: 'rgba(255,255,255,0.2)',
+                                    cursor: 'grab',
+                                    display: 'flex',
+                                    flexShrink: 0,
+                                    padding: '2px',
+                                  }}
+                                >
+                                  <MdDragIndicator size={16} />
+                                </div>
+
+                                {/* Checkbox visual */}
+                                <span
+                                  style={{
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '4px',
+                                    border: '1.5px solid rgba(99,102,241,0.4)',
+                                    flexShrink: 0,
+                                  }}
+                                />
+
+                                {/* Input */}
+                                <input
+                                  ref={(el) => (inputRefs.current[index] = el)}
+                                  type="text"
+                                  placeholder={`Tâche ${index + 1}…`}
+                                  value={item}
+                                  onChange={(e) => updateItem(index, e.target.value)}
+                                  onKeyDown={(e) => handleItemKeyDown(e, index)}
+                                  style={{
+                                    flex: 1,
+                                    background: 'none',
+                                    border: 'none',
+                                    outline: 'none',
+                                    color: '#fff',
+                                    fontSize: '13px',
+                                    fontFamily: 'Inter, sans-serif',
+                                    padding: '0',
+                                  }}
+                                />
+
+                                {/* Remove */}
+                                {formItems.length > 1 && (
+                                  <button
+                                    onClick={() => removeItem(index)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      color: 'rgba(255,255,255,0.2)',
+                                      display: 'flex',
+                                      padding: '2px',
+                                      flexShrink: 0,
+                                      transition: 'color 0.12s',
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.color = '#f87171')
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.color =
+                                        'rgba(255,255,255,0.2)')
+                                    }
+                                  >
+                                    <HiX size={13} />
+                                  </button>
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
 
-            {/* Add task */}
-            <button
-              onClick={() => addItem()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.2)',
-                borderRadius: '9px',
-                padding: '8px 12px',
-                color: '#818cf8',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif',
-                marginTop: '8px',
-                width: '100%',
-                justifyContent: 'center',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(99,102,241,0.15)';
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(99,102,241,0.08)';
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)';
-              }}
-            >
-              <HiPlus size={14} /> Ajouter une tâche
-            </button>
-          </div>
+                {/* Add task */}
+                <button
+                  onClick={() => addItem()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(99,102,241,0.08)',
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    borderRadius: '9px',
+                    padding: '8px 12px',
+                    color: '#818cf8',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    marginTop: '8px',
+                    width: '100%',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(99,102,241,0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(99,102,241,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)';
+                  }}
+                >
+                  <HiPlus size={14} /> Ajouter une tâche
+                </button>
+              </div>
 
-          {/* Footer */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '8px',
-              paddingTop: '4px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-            }}
-          >
-            <button
-              onClick={handleClose}
-              style={{
-                padding: '9px 18px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '9px',
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              style={{
-                padding: '9px 22px',
-                background: loading
-                  ? 'rgba(47,111,237,0.4)'
-                  : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                border: 'none',
-                borderRadius: '9px',
-                color: '#fff',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : '0 4px 14px rgba(47,111,237,0.35)',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              {loading
-                ? 'Enregistrement…'
-                : checklist?.documentId
-                ? 'Modifier'
-                : 'Créer le modèle'}
-            </button>
+              {/* Footer */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '8px',
+                  paddingTop: '4px',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <button
+                  onClick={handleClose}
+                  style={{
+                    padding: '9px 18px',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '9px',
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  style={{
+                    padding: '9px 22px',
+                    background: loading
+                      ? 'rgba(47,111,237,0.4)'
+                      : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                    border: 'none',
+                    borderRadius: '9px',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    boxShadow: loading ? 'none' : '0 4px 14px rgba(47,111,237,0.35)',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {loading
+                    ? 'Enregistrement…'
+                    : checklist?.documentId
+                    ? 'Modifier'
+                    : 'Créer le modèle'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </Dialog>
+      )}
     </div>
   );
 }

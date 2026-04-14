@@ -1,6 +1,6 @@
 import { Container } from '@/components/shared';
 import { useEffect, useRef, useState } from 'react';
-import { Dialog, Select } from '@/components/ui';
+import { Select } from '@/components/ui';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   createColor,
@@ -564,108 +564,125 @@ const ColorsList = () => {
         </div>
       )}
 
-      {/* ── Dialog modification ── */}
-      <Dialog isOpen={dialogOpen} onClose={handleClose} width={520}>
-        <div style={{ fontFamily: 'Inter, sans-serif' }}>
-          <h5 style={{ margin: '0 0 20px', color: '#fff', fontSize: '16px', fontWeight: 700 }}>Modifier la couleur</h5>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Nom */}
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Nom *
-                {formValue && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '1px 8px 1px 5px', fontSize: '11px', fontWeight: 600, color: '#fff', textTransform: 'none', letterSpacing: 0 }}>
-                    <Swatch hex={formValue} size={14} />
-                    {formName || '…'}
-                  </span>
-                )}
-              </label>
-              <input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Ex: Rouge, Bleu marine, Écru…"
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
+      {/* ── Modal modification (premium overlay) ── */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
+      {dialogOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}
+          onClick={handleClose}
+        >
+          <div
+            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '520px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h5 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 700 }}>Modifier la couleur</h5>
+              <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HiX size={15} />
+              </button>
             </div>
-
-            {/* Couleur */}
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur *</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
-                {PALETTE_GRID.map((hex) => (
-                  <button
-                    key={hex}
-                    title={hex}
-                    onClick={() => setFormValue(hex)}
-                    style={{
-                      width: '22px', height: '22px', borderRadius: '50%',
-                      background: hex, border: formValue === hex ? '2.5px solid #fff' : '2px solid rgba(255,255,255,0.15)',
-                      cursor: 'pointer', padding: 0, flexShrink: 0,
-                      boxShadow: formValue === hex ? '0 0 0 2px rgba(47,111,237,0.7)' : 'none',
-                      transition: 'transform 0.1s',
-                      transform: formValue === hex ? 'scale(1.2)' : 'scale(1)',
-                    }}
-                    onMouseEnter={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1.15)'; }}
-                    onMouseLeave={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1)'; }}
-                  />
-                ))}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ position: 'relative', width: '44px', height: '38px', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'pointer' }}>
-                  <div style={{ position: 'absolute', inset: 0, background: formValue }} />
-                  <input type="color" value={formValue} onChange={(e) => setFormValue(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Nom */}
+              <div>
+                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Nom *
+                  {formValue && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '100px', padding: '1px 8px 1px 5px', fontSize: '11px', fontWeight: 600, color: '#fff', textTransform: 'none', letterSpacing: 0 }}>
+                      <Swatch hex={formValue} size={14} />
+                      {formName || '...'}
+                    </span>
+                  )}
+                </label>
                 <input
-                  value={formValue}
-                  onChange={(e) => setFormValue(e.target.value)}
-                  placeholder="#000000"
-                  style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '13px' }}
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: Rouge, Bleu marine, Écru…"
+                  style={inputStyle}
                   onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
                   onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                 />
               </div>
+
+              {/* Couleur */}
+              <div>
+                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Couleur *</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+                  {PALETTE_GRID.map((hex) => (
+                    <button
+                      key={hex}
+                      title={hex}
+                      onClick={() => setFormValue(hex)}
+                      style={{
+                        width: '22px', height: '22px', borderRadius: '50%',
+                        background: hex, border: formValue === hex ? '2.5px solid #fff' : '2px solid rgba(255,255,255,0.15)',
+                        cursor: 'pointer', padding: 0, flexShrink: 0,
+                        boxShadow: formValue === hex ? '0 0 0 2px rgba(47,111,237,0.7)' : 'none',
+                        transition: 'transform 0.1s',
+                        transform: formValue === hex ? 'scale(1.2)' : 'scale(1)',
+                      }}
+                      onMouseEnter={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1.15)'; }}
+                      onMouseLeave={(e) => { if (formValue !== hex) e.currentTarget.style.transform = 'scale(1)'; }}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ position: 'relative', width: '44px', height: '38px', borderRadius: '8px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'pointer' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: formValue }} />
+                    <input type="color" value={formValue} onChange={(e) => setFormValue(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+                  </div>
+                  <input
+                    value={formValue}
+                    onChange={(e) => setFormValue(e.target.value)}
+                    placeholder="#000000"
+                    style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '13px' }}
+                    onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={labelStyle}>Description</label>
+                <input
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Ex: Rouge vif"
+                  style={inputStyle}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                />
+              </div>
+
+              {/* Catégorie */}
+              <div>
+                <label style={labelStyle}>Catégorie</label>
+                <Select
+                  isClearable
+                  placeholder="Sélectionner une catégorie…"
+                  options={productCategories}
+                  value={formCategory}
+                  noOptionsMessage={() => 'Aucune catégorie trouvée'}
+                  onChange={(val: any) => setFormCategory(val || null)}
+                />
+              </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <label style={labelStyle}>Description</label>
-              <input
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Ex: Rouge vif"
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+              <button onClick={handleClose} style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                <HiX size={14} style={{ display: 'inline', marginRight: 4 }} /> Annuler
+              </button>
+              <button onClick={handleSave} disabled={saving} style={{ padding: '10px 18px', background: saving ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(47,111,237,0.35)' }}>
+                <HiCheck size={14} style={{ display: 'inline', marginRight: 4 }} />
+                {saving ? 'Sauvegarde…' : 'Modifier'}
+              </button>
             </div>
-
-            {/* Catégorie */}
-            <div>
-              <label style={labelStyle}>Catégorie</label>
-              <Select
-                isClearable
-                placeholder="Sélectionner une catégorie…"
-                options={productCategories}
-                value={formCategory}
-                noOptionsMessage={() => 'Aucune catégorie trouvée'}
-                onChange={(val: any) => setFormCategory(val || null)}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-            <button onClick={handleClose} style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              <HiX size={14} style={{ display: 'inline', marginRight: 4 }} /> Annuler
-            </button>
-            <button onClick={handleSave} disabled={saving} style={{ padding: '10px 18px', background: saving ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(47,111,237,0.35)' }}>
-              <HiCheck size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {saving ? 'Sauvegarde…' : 'Modifier'}
-            </button>
           </div>
         </div>
-      </Dialog>
+      )}
     </Container>
   );
 };

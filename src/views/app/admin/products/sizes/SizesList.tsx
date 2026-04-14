@@ -1,6 +1,6 @@
 import { Container } from '@/components/shared';
 import { useEffect, useRef, useState } from 'react';
-import { Dialog, Select } from '@/components/ui';
+import { Select } from '@/components/ui';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   createSize,
@@ -393,63 +393,80 @@ const SizesList = () => {
         </div>
       )}
 
-      {/* ── Dialog modification ── */}
-      <Dialog isOpen={dialogOpen} onClose={handleClose} width={480}>
-        <div style={{ fontFamily: 'Inter, sans-serif' }}>
-          <h5 style={{ margin: '0 0 20px', color: '#fff', fontSize: '16px', fontWeight: 700 }}>Modifier la taille</h5>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <label style={labelStyle}>Nom *</label>
-              <input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Ex: XL, 42…"
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
+      {/* ── Modal modification (premium overlay) ── */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
+      {dialogOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}
+          onClick={handleClose}
+        >
+          <div
+            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '480px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h5 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 700 }}>Modifier la taille</h5>
+              <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HiX size={15} />
+              </button>
             </div>
-            <div>
-              <label style={labelStyle}>Description</label>
-              <input
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Ex: Extra Large"
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={labelStyle}>Nom *</label>
+                <input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: XL, 42…"
+                  style={inputStyle}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Description</label>
+                <input
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Ex: Extra Large"
+                  style={inputStyle}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Catégorie</label>
+                <Select
+                  isClearable
+                  placeholder="Sélectionner une catégorie…"
+                  options={productCategories}
+                  value={formCategory}
+                  noOptionsMessage={() => 'Aucune catégorie trouvée'}
+                  onChange={(val: any) => setFormCategory(val || null)}
+                />
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>Catégorie</label>
-              <Select
-                isClearable
-                placeholder="Sélectionner une catégorie…"
-                options={productCategories}
-                value={formCategory}
-                noOptionsMessage={() => 'Aucune catégorie trouvée'}
-                onChange={(val: any) => setFormCategory(val || null)}
-              />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+              <button
+                onClick={handleClose}
+                style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              >
+                <HiX size={14} style={{ display: 'inline', marginRight: 4 }} /> Annuler
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{ padding: '10px 18px', background: saving ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(47,111,237,0.35)' }}
+              >
+                <HiCheck size={14} style={{ display: 'inline', marginRight: 4 }} />
+                {saving ? 'Sauvegarde…' : 'Enregistrer'}
+              </button>
             </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-            <button
-              onClick={handleClose}
-              style={{ padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-            >
-              <HiX size={14} style={{ display: 'inline', marginRight: 4 }} /> Annuler
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{ padding: '10px 18px', background: saving ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(47,111,237,0.35)' }}
-            >
-              <HiCheck size={14} style={{ display: 'inline', marginRight: 4 }} />
-              {saving ? 'Sauvegarde…' : 'Enregistrer'}
-            </button>
           </div>
         </div>
-      </Dialog>
+      )}
     </Container>
   );
 };

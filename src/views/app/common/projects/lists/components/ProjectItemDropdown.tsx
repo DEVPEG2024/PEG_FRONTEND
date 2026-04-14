@@ -1,9 +1,8 @@
 import Dropdown from '@/components/ui/Dropdown';
-import { HiExclamationCircle, HiOutlineTrash } from 'react-icons/hi';
+import { HiExclamation, HiOutlineTrash, HiX } from 'react-icons/hi';
 import EllipsisButton from '@/components/shared/EllipsisButton';
 import { TbPigMoney } from 'react-icons/tb';
 import { useState } from 'react';
-import { Button, Dialog } from '@/components/ui';
 import { Project } from '@/@types/project';
 
 const ProjectItemDropdown = ({
@@ -41,6 +40,10 @@ const ProjectItemDropdown = ({
   };
   return (
     <>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+      `}</style>
       <Dropdown placement="bottom-end" renderTitle={<EllipsisButton />}>
         {dropdownList
           .filter((dropdownItem) => dropdownItem.condition(project))
@@ -55,29 +58,49 @@ const ProjectItemDropdown = ({
             </Dropdown.Item>
           ))}
       </Dropdown>
-      <Dialog
-        isOpen={isValidDeleteOpen}
-        onClose={() => setIsValidDeleteOpen(false)}
-      >
-        <div className="flex flex-col items-center justify-center">
-          <HiExclamationCircle className="text-7xl text-red-500" />
-          <h1 className="text-2xl font-bold mt-4">Suppression du projet</h1>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <p>Voulez-vous vraiment supprimer ce projet ?</p>
-        </div>
-        <div className="flex grow items-center justify-center gap-2 mt-10">
-          <Button onClick={() => setIsValidDeleteOpen(false)}>Annuler</Button>
-
-          <Button
-            onClick={handleConfirmDelete}
-            className="bg-red-500 text-white"
-            variant="solid"
+      {isValidDeleteOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}
+          onClick={() => setIsValidDeleteOpen(false)}
+        >
+          <div
+            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '420px', maxWidth: '95vw', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            Supprimer
-          </Button>
+            {/* Close button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+              <button
+                onClick={() => setIsValidDeleteOpen(false)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <HiX size={15} />
+              </button>
+            </div>
+            {/* Warning icon */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HiExclamation size={28} style={{ color: '#f87171' }} />
+              </div>
+            </div>
+            <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 8px' }}>Suppression du projet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', margin: '0 0 28px' }}>Voulez-vous vraiment supprimer ce projet ?</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button
+                onClick={() => setIsValidDeleteOpen(false)}
+                style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #ef4444, #dc2626)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(239,68,68,0.4)' }}
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
         </div>
-      </Dialog>
+      )}
     </>
   );
 };
