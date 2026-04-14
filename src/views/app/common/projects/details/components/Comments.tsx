@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Container from '@/components/shared/Container';
 import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
@@ -87,29 +87,36 @@ const Comments = () => {
   const activeVis = VISIBILITY_OPTIONS.find(o => o.value === visibility) ?? VISIBILITY_OPTIONS[0];
 
   /* ── Auto scroll ── */
-  const scrollToBottom = (smooth = true) => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'instant',
-      });
-    }, 50);
-  };
+  const scrollToBottom = useCallback((smooth = true) => {
+    requestAnimationFrame(() => {
+      const container = chatContainerRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: smooth ? 'smooth' : 'instant',
+        });
+      }
+    });
+  }, []);
 
-  // Scroll au chargement initial des commentaires
+  // Scroll au dernier message à chaque chargement des commentaires
   useEffect(() => {
     if (comments.length > 0) {
-      scrollToBottom(false);
+      // Double rAF pour s'assurer que le DOM est peint
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollToBottom(false));
+      });
     }
-  }, [comments.length > 0]);
+  }, [comments.length > 0, scrollToBottom]);
 
-  // Scroll à chaque nouveau message
-  const prevCount = useRef(comments.length);
+  // Scroll smooth à chaque nouveau message
+  const prevCount = useRef(0);
   useEffect(() => {
-    if (comments.length > prevCount.current) {
+    if (prevCount.current > 0 && comments.length > prevCount.current) {
       scrollToBottom(true);
     }
     prevCount.current = comments.length;
-  }, [comments.length]);
+  }, [comments.length, scrollToBottom]);
 
   /* ── Visibility filtering ── */
   const determineVisibleComments = (comments: Comment[], user: User): Comment[] => {
