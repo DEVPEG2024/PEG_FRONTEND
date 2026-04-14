@@ -35,7 +35,9 @@ export type Product = {
   requiresBat?: boolean;
   batFile?: PegFile | null;
   catalogPrice?: number | null;
-  pricingMode?: 'tiers' | 'packs';
+  pricingMode?: 'tiers' | 'packs' | 'm2';
+  pricePerM2?: number;
+  minM2?: number;
 };
 
 export type Size = {
@@ -58,6 +60,9 @@ export type SizeAndColorSelection = {
   size: Size;
   color: Color;
   quantity: number;
+  // m² pricing: dimensions in meters
+  width?: number;
+  height?: number;
 };
 
 export type ProductCategory = {

@@ -44,7 +44,9 @@ export type ProductFormModel = Omit<
   refVisibleToCustomer?: boolean;
   requiresBat?: boolean;
   catalogPrice?: number | null;
-  pricingMode?: 'tiers' | 'packs';
+  pricingMode?: 'tiers' | 'packs' | 'm2';
+  pricePerM2?: number;
+  minM2?: number;
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;
@@ -73,19 +75,28 @@ type ProductFormProps = {
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required('Nom du produit requis'),
-  priceTiers: Yup.array()
-    .of(
-      Yup.object().shape({
-        minQuantity: Yup.number()
-          .min(1, 'La quantité minimale doit être >= 1')
-          .required('Quantité minimale requise'),
-        price: Yup.number()
-          .moreThan(0, 'Le prix doit être supérieur à 0')
-          .required('Prix requis'),
-      })
-    )
-    .min(1, 'Au moins un palier de prix est requis')
-    .required('Prix requis'),
+  priceTiers: Yup.array().when('pricingMode', {
+    is: (val: string) => val !== 'm2',
+    then: (schema) => schema
+      .of(
+        Yup.object().shape({
+          minQuantity: Yup.number()
+            .min(1, 'La quantité minimale doit être >= 1')
+            .required('Quantité minimale requise'),
+          price: Yup.number()
+            .moreThan(0, 'Le prix doit être supérieur à 0')
+            .required('Prix requis'),
+        })
+      )
+      .min(1, 'Au moins un palier de prix est requis')
+      .required('Prix requis'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  pricePerM2: Yup.number().when('pricingMode', {
+    is: 'm2',
+    then: (schema) => schema.moreThan(0, 'Prix au m² requis').required('Prix au m² requis'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
   description: Yup.string().required('Description requise'),
 });
 

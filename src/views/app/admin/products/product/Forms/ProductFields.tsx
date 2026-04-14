@@ -336,10 +336,28 @@ const ProductFields = (props: ProductFieldsProps) => {
                       cursor: 'pointer',
                       background: mode === 'packs' ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.04)',
                       color: mode === 'packs' ? '#c084fc' : 'rgba(255,255,255,0.4)',
+                      borderRight: '1px solid rgba(255,255,255,0.08)',
                       transition: 'all 0.15s',
                     }}
                   >
                     Packs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('m2')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      fontFamily: 'Inter, sans-serif',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: mode === 'm2' ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.04)',
+                      color: mode === 'm2' ? '#4ade80' : 'rgba(255,255,255,0.4)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    Prix au m²
                   </button>
                 </div>
               );
@@ -347,12 +365,45 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
         </div>
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: 0, marginBottom: '12px' }}>
-          {watch('pricingMode') === 'packs'
+          {watch('pricingMode') === 'm2'
+            ? 'Le client saisit les dimensions (largeur × hauteur) et le prix est calculé au m²'
+            : watch('pricingMode') === 'packs'
             ? 'Le client choisira parmi les packs disponibles (boutons de sélection)'
             : 'Le prix s\'adapte automatiquement selon la quantité commandée'}
         </p>
-        {errors.priceTiers && <p style={{ ...fieldError, marginBottom: '10px' }}>{errors.priceTiers.message}</p>}
-        <Controller
+        {/* m² pricing fields */}
+        {watch('pricingMode') === 'm2' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
+            <div>
+              <label style={fieldLabel}>Prix par m² (€ HT)</label>
+              <Controller
+                name="pricePerM2"
+                control={control}
+                render={({ field }) => (
+                  <Input type="number" value={field.value ?? ''} min={0} step={0.01} placeholder="Ex: 12.50"
+                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                )}
+              />
+            </div>
+            <div>
+              <label style={fieldLabel}>Surface minimum (m²)</label>
+              <Controller
+                name="minM2"
+                control={control}
+                render={({ field }) => (
+                  <Input type="number" value={field.value ?? ''} min={0} step={0.1} placeholder="Ex: 0.5"
+                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                )}
+              />
+              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', marginTop: '4px' }}>
+                Si la surface calculée est inférieure, le minimum sera appliqué
+              </p>
+            </div>
+          </div>
+        )}
+
+        {watch('pricingMode') !== 'm2' && errors.priceTiers && <p style={{ ...fieldError, marginBottom: '10px' }}>{errors.priceTiers.message}</p>}
+        {watch('pricingMode') !== 'm2' && (<Controller
           name="priceTiers"
           control={control}
           render={({ field }) => {
@@ -426,7 +477,7 @@ const ProductFields = (props: ProductFieldsProps) => {
               </div>
             );
           }}
-        />
+        />)}
       </div>
 
       {/* ── Prix catalogue (référence pour % économie) ── */}

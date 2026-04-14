@@ -15,6 +15,8 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             price
             priceTiers
             pricingMode
+            pricePerM2
+            minM2
             images {
                 url
             }
@@ -61,6 +63,8 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             price
             priceTiers
             pricingMode
+            pricePerM2
+            minM2
             images {
                 documentId
                 url
@@ -353,6 +357,8 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 price
                 priceTiers
                 pricingMode
+            pricePerM2
+            minM2
                 inCatalogue
                 catalogPrice
             }

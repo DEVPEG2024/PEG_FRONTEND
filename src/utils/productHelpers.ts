@@ -65,8 +65,26 @@ export function getProductPackOptions(product: Product): number[] {
 }
 
 export function isProductPackPricing(product: Product): boolean {
-  // pricingMode is the source of truth — default to 'tiers' (degressive) when not set
   return product.pricingMode === 'packs';
+}
+
+export function isProductM2Pricing(product: Product): boolean {
+  return product.pricingMode === 'm2';
+}
+
+/**
+ * Calculate price for m² pricing: width × height × pricePerM2 × quantity
+ * Enforces minM2 if set.
+ */
+export function getM2Price(
+  product: Product,
+  width: number,
+  height: number,
+  quantity: number = 1
+): { area: number; pricePerUnit: number; total: number } {
+  const area = Math.max(width * height, product.minM2 || 0);
+  const pricePerUnit = area * (product.pricePerM2 || 0);
+  return { area, pricePerUnit, total: pricePerUnit * quantity };
 }
 
 /**
@@ -89,6 +107,16 @@ export function getTotalPriceForCartItem(
   product: Product,
   sizeAndColors: SizeAndColorSelection[]
 ): number {
+  // m² pricing: sum area × pricePerM2 × quantity for each selection
+  if (isProductM2Pricing(product)) {
+    return sizeAndColors.reduce((total, sel) => {
+      const w = sel.width || 0;
+      const h = sel.height || 0;
+      const { total: lineTotal } = getM2Price(product, w, h, sel.quantity);
+      return total + lineTotal;
+    }, 0);
+  }
+
   const totalQuantity = sizeAndColors.reduce(
     (amount, { quantity }) => amount + quantity,
     0

@@ -93,6 +93,8 @@ const EditProduct = () => {
     refVisibleToCustomer: product?.refVisibleToCustomer ?? false,
     requiresBat: product?.requiresBat ?? false,
     pricingMode: product?.pricingMode ?? 'tiers',
+    pricePerM2: product?.pricePerM2 ?? undefined,
+    minM2: product?.minM2 ?? undefined,
   };
   const dispatch = useAppDispatch();
 
@@ -291,8 +293,7 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
-      // Remove pricingMode until Strapi schema is deployed
-      delete data.pricingMode;
+      // pricingMode is now in Strapi schema — no need to strip
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');

@@ -24,7 +24,7 @@ import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price } from '@/utils/productHelpers';
 import { toTTC } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import ModalCompleteForm from '../modal/ModalCompleteForm';
@@ -59,6 +59,11 @@ const ShowProduct = () => {
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
 
+  // m² state
+  const [m2Width, setM2Width] = useState<number>(1);
+  const [m2Height, setM2Height] = useState<number>(1);
+  const [m2Quantity, setM2Quantity] = useState<number>(1);
+
   // BAT state
   const [orderItem, setOrderItem] = useState<Partial<OrderItem> | null>(null);
   const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);
@@ -74,10 +79,17 @@ const ShowProduct = () => {
     0
   );
   const isPackPricing = product ? isProductPackPricing(product) : false;
+  const isM2Pricing = product ? isProductM2Pricing(product) : false;
   const tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
   const unitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
-  // In pack mode, the price IS the total (price = pack price, not per-unit)
-  const totalPrice = isPackPricing ? unitPrice : amountSelected * unitPrice;
+
+  // m² pricing calculation
+  const m2Data = isM2Pricing && product ? getM2Price(product, m2Width, m2Height, m2Quantity) : null;
+
+  // Total price based on mode
+  const totalPrice = isM2Pricing && m2Data
+    ? m2Data.total
+    : isPackPricing ? unitPrice : amountSelected * unitPrice;
 
   useEffect(() => {
     if (onEdition && !product) {
@@ -112,23 +124,35 @@ const ShowProduct = () => {
   }, [isFirstRender]);
 
   useEffect(() => {
-    setCanAddToCart(
-      product !== null &&
-        isAtLeastOneItemWanted() &&
+    if (isM2Pricing) {
+      setCanAddToCart(
+        product !== null && m2Width > 0 && m2Height > 0 && m2Quantity > 0 &&
         ((product.form && formCompleted) || !product.form)
-    );
-  }, [sizeAndColorsSelected, formCompleted, product]);
+      );
+    } else {
+      setCanAddToCart(
+        product !== null &&
+          isAtLeastOneItemWanted() &&
+          ((product.form && formCompleted) || !product.form)
+      );
+    }
+  }, [sizeAndColorsSelected, formCompleted, product, m2Width, m2Height, m2Quantity, isM2Pricing]);
 
   const isAtLeastOneItemWanted = (): boolean =>
     sizeAndColorsSelected.reduce((qty, s) => qty + s.quantity, 0) > 0;
 
   const handleAddToCart = () => {
+    // For m² products, create a selection with dimensions
+    const sizeAndColors = isM2Pricing
+      ? [{ size: {} as any, color: {} as any, quantity: m2Quantity, width: m2Width, height: m2Height }]
+      : sizeAndColorsSelected;
+
     dispatch(
       addToCart({
         id: Math.random().toString(16).slice(2),
         product,
         formAnswer,
-        sizeAndColors: sizeAndColorsSelected,
+        sizeAndColors,
         userDocumentId: user.documentId,
       } as CartItem)
     );
@@ -405,20 +429,79 @@ const ShowProduct = () => {
           {/* Séparateur + section commande */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', marginBottom: '16px' }}>
             <p style={{ margin: '0 0 14px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
-              Votre commande
+              {isM2Pricing ? 'Dimensions & quantité' : 'Votre commande'}
             </p>
-            <SizeAndColorsChoice
-              product={product}
-              sizeAndColorsSelected={sizeAndColorsSelected}
-              handleSizeAndColorsChanged={handleSizeAndColorsChanged}
-            />
+
+            {isM2Pricing ? (
+              <div>
+                {/* m² dimension inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (m)</label>
+                    <input type="number" value={m2Width} min={0.01} step={0.01}
+                      onChange={(e) => setM2Width(Math.max(0.01, parseFloat(e.target.value) || 0))}
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (m)</label>
+                    <input type="number" value={m2Height} min={0.01} step={0.01}
+                      onChange={(e) => setM2Height(Math.max(0.01, parseFloat(e.target.value) || 0))}
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Quantité</label>
+                    <input type="number" value={m2Quantity} min={1} step={1}
+                      onChange={(e) => setM2Quantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                    />
+                  </div>
+                </div>
+
+                {/* m² calculation summary */}
+                {m2Data && (
+                  <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '12px', padding: '14px 16px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Surface</span>
+                      <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{m2Data.area.toFixed(2)} m²{product.minM2 && m2Width * m2Height < product.minM2 ? ' (min. ' + product.minM2 + ' m²)' : ''}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{(product.pricePerM2 || 0).toFixed(2)} € HT/m²</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix unitaire</span>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{m2Data.pricePerUnit.toFixed(2)} € HT</span>
+                    </div>
+                    {m2Quantity > 1 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>× {m2Quantity} exemplaire{m2Quantity > 1 ? 's' : ''}</span>
+                        <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{m2Data.total.toFixed(2)} € HT</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <SizeAndColorsChoice
+                product={product}
+                sizeAndColorsSelected={sizeAndColorsSelected}
+                handleSizeAndColorsChanged={handleSizeAndColorsChanged}
+              />
+            )}
           </div>
 
           {/* Résumé total */}
-          {amountSelected > 0 && (
+          {(isM2Pricing ? m2Data && m2Data.total > 0 : amountSelected > 0) && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(47,111,237,0.1) 0%, rgba(31,75,182,0.06) 100%)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.7)' }}>
-                {isPackPricing ? (
+                {isM2Pricing && m2Data ? (
+                  <>
+                    <span style={{ fontWeight: 700, color: '#4ade80', fontSize: '15px' }}>{m2Data.area.toFixed(2)} m²</span>
+                    {m2Quantity > 1 && <span>{' × '}{m2Quantity}</span>}
+                  </>
+                ) : isPackPricing ? (
                   <>
                     <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>Pack {amountSelected}</span>
                   </>
