@@ -59,6 +59,17 @@ async function getColors(): Promise<Map<string, string>> {
   return cols;
 }
 
+// ─── Mapping catégories Imbretex → PEG ───
+
+const CATEGORY_MAP: Record<string, string> = {
+  'CASQUETTE': 'CASQUETTE',
+  'BONNET': 'VÊTEMENT PERSONNALISÉ',
+  'ACCESSOIRES HIVER': 'ACCESSOIRES HIVER',
+  'BIO': 'VÊTEMENT PERSONNALISÉ',
+  'RECYCLÉ': 'VÊTEMENT PERSONNALISÉ',
+  'FIN DE SERIE': 'VÊTEMENT PERSONNALISÉ',
+};
+
 // ─── Match ───
 
 function match(name: string, cache: Map<string, string>): string | null {
@@ -68,6 +79,15 @@ function match(name: string, cache: Map<string, string>): string | null {
     if (pegName.includes(k) || k.includes(pegName)) return id;
   }
   return null;
+}
+
+function matchCategory(imbretexCategory: string, cache: Map<string, string>): string | null {
+  const k = imbretexCategory.toUpperCase().trim();
+  // D'abord le mapping explicite
+  const mapped = CATEGORY_MAP[k];
+  if (mapped && cache.has(mapped)) return cache.get(mapped)!;
+  // Sinon match direct
+  return match(imbretexCategory, cache);
 }
 
 // ─── Extraction données Imbretex ───
@@ -86,10 +106,16 @@ function getTitle(v: ImbretexVariant): string {
 
 function extractSizes(variants: ImbretexVariant[]): string[] {
   const s = new Set<string>();
+  let hasZeroOnly = true;
   for (const v of variants) {
     const a = v.attributes?.find((a) => a.type === 'sizes');
-    if (a?.value && a.value !== '0') s.add(a.value);
+    if (a?.value && a.value !== '0') {
+      s.add(a.value);
+      hasZeroOnly = false;
+    }
   }
+  // Si toutes les variantes ont size=0, c'est taille unique
+  if (hasZeroOnly && variants.length > 0) s.add('TAILLE UNIQUE');
   return Array.from(s);
 }
 
@@ -117,7 +143,7 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
 
     // Catégorie
     const catName = getCategory(product);
-    const catId = catName ? match(catName, catMap) : null;
+    const catId = catName ? matchCategory(catName, catMap) : null;
     console.log(`[Import] ${ref} catégorie: "${catName}" → ${catId || 'aucun match'}`);
 
     // Tailles
