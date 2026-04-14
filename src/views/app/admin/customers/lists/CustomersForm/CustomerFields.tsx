@@ -98,6 +98,78 @@ const LogoUpload = ({ value, onChange }: { value: File | null | undefined; onCha
   )
 }
 
+const BannerUpload = ({ value, onChange, currentUrl }: { value: File | null | undefined; onChange: (f: File | null) => void; currentUrl?: string | null }) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const preview = value instanceof File ? URL.createObjectURL(value) : currentUrl || null
+
+  const handleFile = (file: File | undefined) => {
+    if (file && file.type.startsWith('image/')) onChange(file)
+  }
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+      {preview ? (
+        <div className="relative">
+          <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 shadow-sm">
+            <img src={preview} alt="bannière" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              Changer la banniere
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+            >
+              <HiOutlineX className="w-3 h-3" /> Supprimer
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            handleFile(e.dataTransfer.files[0])
+          }}
+          className={`
+            flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border-2 border-dashed cursor-pointer transition-all
+            ${dragging
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              : 'border-gray-200 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/30'}
+          `}
+        >
+          <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <HiOutlinePhotograph className="w-5 h-5 text-gray-400" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+              Deposer une banniere <span className="text-blue-600">ou parcourir</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">PNG, JPG · format paysage recommande</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** EU countries that use intra-community VAT numbers */
 const EU_COUNTRIES = [
   'FR', 'DE', 'IT', 'ES', 'BE', 'NL', 'LU', 'AT', 'PT', 'IE', 'FI', 'SE',
@@ -182,6 +254,20 @@ const CustomerFields = (props: CustomerFieldsProps) => {
           control={control}
           render={({ field }) => (
             <LogoUpload value={field.value} onChange={(file) => field.onChange(file)} />
+          )}
+        />
+      </FormItem>
+
+      <FormItem label="Banniere client">
+        <Controller
+          name="bannerFile"
+          control={control}
+          render={({ field }) => (
+            <BannerUpload
+              value={field.value}
+              onChange={(file) => field.onChange(file)}
+              currentUrl={watch('bannerImageUrl')}
+            />
           )}
         />
       </FormItem>

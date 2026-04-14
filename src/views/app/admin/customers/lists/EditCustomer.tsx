@@ -46,11 +46,14 @@ const EditCustomer = () => {
       city: ci.city ?? '',
       country: ci.country ?? '',
       website: ci.website ?? '',
+      bannerImageUrl: customer.banner?.image?.url ?? null,
+      bannerDocumentId: customer.banner?.documentId ?? null,
     }
   }
 
   const nestCustomer = (formData: CustomerFormModel) => {
-    const { logoFile, email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website,
+    const { logoFile, bannerFile, bannerImageUrl: _biu, bannerDocumentId,
+      email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website,
       documentId: _docId, logo: _logo, banner: _banner, companyInformations: _ci,
       ...rest } = formData as any
     return {
@@ -62,15 +65,17 @@ const EditCustomer = () => {
         companyInformations: { email: email || '', phoneNumber: phoneNumber || '', vatNumber: vatNumber || '', siretNumber: siretNumber || '', address: address || '', zipCode: zipCode || '', city: city || '', country: country || '', website: website || '' },
       },
       logoFile: logoFile ?? null,
+      bannerFile: bannerFile ?? null,
+      bannerDocumentId: bannerDocumentId ?? null,
     }
   }
 
   const handleSubmit = async (formData: CustomerFormModel) => {
-    const { data, logoFile } = nestCustomer(formData)
+    const { data, logoFile, bannerFile, bannerDocumentId } = nestCustomer(formData)
     if (isEdit) {
-      await dispatch(updateCustomer({ id: documentId!, data, logoFile }))
+      await dispatch(updateCustomer({ id: documentId!, data, logoFile, bannerFile, bannerDocumentId }))
     } else {
-      await dispatch(createCustomer({ data, logoFile }))
+      await dispatch(createCustomer({ data, logoFile, bannerFile }))
     }
     navigate('/admin/customers/list')
   }

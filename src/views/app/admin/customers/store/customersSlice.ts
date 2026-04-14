@@ -10,6 +10,7 @@ import {
   type GetCustomersRequest,
 } from '@/services/CustomerServices'
 import type { Customer } from '@/@types/customer'
+import { apiCreateBanner, apiUpdateBanner } from '@/services/BannerServices'
 
 type CustomersState = {
   loading: boolean
@@ -58,24 +59,42 @@ export const deleteCustomer = createAsyncThunk(
 
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
-  async ({ data, logoFile }: { data: any; logoFile?: File | null }) => {
+  async ({ data, logoFile, bannerFile }: { data: any; logoFile?: File | null; bannerFile?: File | null }) => {
     let payload = { ...data }
 
     if (logoFile) {
       const uploadRes: any = await apiUploadFile(logoFile)
       const uploaded = uploadRes?.data?.[0]
-      // Strapi upload renvoie souvent [{ id, ... }]
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
     const res: any = await apiCreateCustomer(payload)
-    return res?.data?.data ?? null
+    const created = res?.data?.data ?? null
+
+    // Créer une bannière si un fichier est fourni
+    if (bannerFile && created?.documentId) {
+      const uploadRes: any = await apiUploadFile(bannerFile)
+      const uploaded = uploadRes?.data?.[0]
+      if (uploaded?.documentId) {
+        await apiCreateBanner({
+          name: `Bannière ${created.name || ''}`.trim(),
+          customer: created.documentId,
+          image: uploaded.documentId,
+          active: true,
+        } as any)
+      }
+    }
+
+    return created
   }
 )
 
 export const updateCustomer = createAsyncThunk(
   'customers/updateCustomer',
-  async ({ id, data, logoFile }: { id: string; data: any; logoFile?: File | null }) => {
+  async ({ id, data, logoFile, bannerFile, bannerDocumentId }: {
+    id: string; data: any; logoFile?: File | null;
+    bannerFile?: File | null; bannerDocumentId?: string | null
+  }) => {
     let payload = { ...data }
 
     if (logoFile) {
@@ -84,7 +103,29 @@ export const updateCustomer = createAsyncThunk(
       if (uploaded?.id) payload.logo = uploaded.id
     }
 
-    // id ici = documentId dans ton routing (/edit/:id)
+    // Gérer la bannière
+    if (bannerFile) {
+      const uploadRes: any = await apiUploadFile(bannerFile)
+      const uploaded = uploadRes?.data?.[0]
+      if (uploaded?.documentId) {
+        if (bannerDocumentId) {
+          // Mettre à jour la bannière existante
+          await apiUpdateBanner({
+            documentId: bannerDocumentId,
+            image: uploaded.documentId,
+          } as any)
+        } else {
+          // Créer une nouvelle bannière pour ce client
+          await apiCreateBanner({
+            name: `Bannière ${data.name || ''}`.trim(),
+            customer: id,
+            image: uploaded.documentId,
+            active: true,
+          } as any)
+        }
+      }
+    }
+
     const res: any = await apiUpdateCustomerByDocumentId(id, payload)
     return res?.data?.data ?? null
   }

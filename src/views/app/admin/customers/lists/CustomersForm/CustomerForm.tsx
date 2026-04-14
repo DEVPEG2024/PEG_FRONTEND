@@ -31,6 +31,10 @@ export type CustomerFormModel = Omit<
 
   // ✅ nouveau: fichier logo
   logoFile?: File | null
+  // ✅ nouveau: fichier bannière
+  bannerFile?: File | null
+  bannerImageUrl?: string | null
+  bannerDocumentId?: string | null
 }
 
 type CustomerFormProps = {
@@ -54,6 +58,7 @@ const validationSchema = Yup.object().shape({
   siretNumber: Yup.string().nullable(),
   website: Yup.string().nullable(),
   logoFile: Yup.mixed().nullable(),
+  bannerFile: Yup.mixed().nullable(),
 })
 
 const CustomerForm = (props: CustomerFormProps) => {
