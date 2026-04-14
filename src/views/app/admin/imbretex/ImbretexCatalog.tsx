@@ -10,8 +10,7 @@ import { Pagination, Select } from '@/components/ui';
 import { Container, EmptyState } from '@/components/shared';
 import { HiOutlineSearch, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { toast } from 'react-toastify';
-import { apiCreateProduct } from '@/services/ProductServices';
-import { unwrapData } from '@/utils/serviceHelper';
+import { importImbretexProduct, resetImportCaches } from '@/services/ImbretexImportService';
 import type { ImbretexProduct, ImbretexVariant, ImbretexPriceStock } from '@/@types/imbretex';
 
 injectReducer('imbretex', reducer);
@@ -465,40 +464,37 @@ const ImbretexCatalog = () => {
     });
   }, [paginatedProducts]);
 
-  // Import selected products into PEG
+  // Import selected products into PEG (full: category, sizes, colors, price, image)
+  const [importProgress, setImportProgress] = useState('');
+
   const handleImport = useCallback(async () => {
     const toImport = allProducts.filter((p) => selectedRefs.has(p.reference));
     if (toImport.length === 0) return;
 
     setImporting(true);
+    resetImportCaches();
     let created = 0;
     let errors = 0;
 
-    for (const product of toImport) {
-      const mainVariant = product.variants[0];
-      const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
-      const description = mainVariant?.description?.fr || mainVariant?.longDescription?.fr || '';
+    for (let i = 0; i < toImport.length; i++) {
+      const product = toImport[i];
+      setImportProgress(`${i + 1}/${toImport.length} — ${product.reference}`);
 
-      try {
-        await unwrapData(apiCreateProduct({
-          name: `${title} (${product.reference})`,
-          description,
-          active: false,
-          inCatalogue: false,
-          priceTiers: [{ minQuantity: 1, price: 0 }],
-        } as any));
+      const result = await importImbretexProduct(product);
+      if (result.success) {
         created++;
-      } catch (err) {
-        console.error(`Import ${product.reference} failed:`, err);
+      } else {
+        console.error(`Import ${result.reference} failed:`, result.error);
         errors++;
       }
     }
 
     setImporting(false);
+    setImportProgress('');
     setSelectedRefs(new Set());
 
     if (created > 0) {
-      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''} dans PEG`);
+      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''} dans PEG (catégorie, tailles, couleurs, prix, image)`);
     }
     if (errors > 0) {
       toast.warn(`${errors} erreur${errors > 1 ? 's' : ''} lors de l'import`);
@@ -769,7 +765,7 @@ const ImbretexCatalog = () => {
               boxShadow: '0 4px 14px rgba(22,163,74,0.4)',
             }}
           >
-            {importing ? 'Import en cours...' : 'Importer dans PEG'}
+            {importing ? `Import... ${importProgress}` : 'Importer dans PEG'}
           </button>
           <button
             onClick={() => setSelectedRefs(new Set())}
