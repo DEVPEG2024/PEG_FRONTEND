@@ -184,7 +184,7 @@ const ProductForm = (props: ProductFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, onError)} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
+    <form onSubmit={handleSubmit(onSubmit, onError)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault(); }}>
       <FormContainer>
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
