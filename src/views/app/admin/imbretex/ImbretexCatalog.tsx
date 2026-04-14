@@ -1,25 +1,33 @@
 import { injectReducer } from '@/store';
 import reducer, {
   fetchImbretexProducts,
-  fetchImbretexPriceStock,
+  fetchImbretexPriceStockByRef,
   useAppDispatch,
   useAppSelector,
 } from './store';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Pagination } from '@/components/ui';
 import { Container, Loading, EmptyState } from '@/components/shared';
-import { HiOutlineSearch, HiOutlineEye, HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
+import { HiOutlineSearch } from 'react-icons/hi';
 import type { ImbretexProduct, ImbretexVariant, ImbretexPriceStock } from '@/@types/imbretex';
 
 injectReducer('imbretex', reducer);
 
 // ─── Helpers ───
 
-function getProductImage(product: ImbretexProduct): string | null {
+/** Cherche la meilleure image : d'abord product.images, sinon première variante */
+function getBestImage(product: ImbretexProduct): string | null {
+  // Image produit (peut être objet ou tableau)
   if (Array.isArray(product.images)) {
-    return product.images[0]?.url || null;
+    if (product.images.length > 0) return product.images[0].url;
+  } else if (product.images?.url) {
+    return product.images.url;
   }
-  return product.images?.url || null;
+  // Fallback : image de la première variante
+  for (const v of product.variants) {
+    if (v.images?.length > 0) return v.images[0].url;
+  }
+  return null;
 }
 
 function getProductTitle(variant: ImbretexVariant): string {
@@ -45,7 +53,7 @@ function getFamily(variant: ImbretexVariant): string {
   return variant.categories?.[0]?.families?.fr || '';
 }
 
-// ─── Product Detail Panel ───
+// ─── Product Detail Modal ───
 
 type ProductDetailProps = {
   product: ImbretexProduct;
@@ -56,7 +64,7 @@ type ProductDetailProps = {
 
 const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: ProductDetailProps) => {
   const mainVariant = product.variants[0];
-  const image = getProductImage(product);
+  const image = getBestImage(product);
 
   return (
     <div style={{
@@ -70,7 +78,7 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
         border: '1.5px solid rgba(47,111,237,0.2)',
         borderRadius: '20px',
         padding: '32px',
-        maxWidth: '800px', width: '100%', maxHeight: '85vh',
+        maxWidth: '860px', width: '100%', maxHeight: '85vh',
         overflow: 'auto',
         boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
         fontFamily: 'Inter, sans-serif',
@@ -82,7 +90,7 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
             <img src={image} alt={product.reference}
               style={{
                 width: '140px', height: '140px', objectFit: 'contain',
-                borderRadius: '12px', background: '#fff',
+                borderRadius: '12px', background: '#fff', padding: '8px',
                 flexShrink: 0,
               }}
             />
@@ -97,16 +105,26 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', margin: '0 0 8px' }}>
               {mainVariant ? getProductTitle(mainVariant) : ''}
             </p>
-            {mainVariant && getFamily(mainVariant) && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {mainVariant && getFamily(mainVariant) && (
+                <span style={{
+                  display: 'inline-block',
+                  background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
+                  borderRadius: '6px', padding: '3px 10px',
+                  color: '#60a5fa', fontSize: '11px', fontWeight: 600,
+                }}>
+                  {getFamily(mainVariant)}
+                </span>
+              )}
               <span style={{
                 display: 'inline-block',
-                background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: '6px', padding: '3px 10px',
-                color: '#60a5fa', fontSize: '11px', fontWeight: 600,
+                color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600,
               }}>
-                {getFamily(mainVariant)}
+                {product.variants.length} variante{product.variants.length > 1 ? 's' : ''}
               </span>
-            )}
+            </div>
           </div>
           <button onClick={onClose} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
@@ -126,62 +144,80 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
           </p>
         )}
 
-        {/* Variantes */}
+        {/* Variantes — tableau */}
         <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, margin: '0 0 12px' }}>
-          Variantes ({product.variants.length})
+          Prix et stocks {loadingPrices && <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>— chargement...</span>}
         </h4>
-        <div style={{
-          display: 'grid', gap: '8px',
-          maxHeight: '400px', overflow: 'auto',
-        }}>
-          {product.variants.map((v) => {
-            const ps = priceStockMap[v.variantReference];
-            const colorHex = getColorHex(v);
-            return (
-              <div key={v.variantReference} style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '10px', padding: '10px 14px',
-              }}>
-                {/* Color dot */}
-                {colorHex && (
-                  <div style={{
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    background: colorHex,
-                    border: '1.5px solid rgba(255,255,255,0.2)',
-                    flexShrink: 0,
-                  }} />
-                )}
-                {/* Ref */}
-                <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600, minWidth: '120px' }}>
-                  {v.variantReference}
-                </span>
-                {/* Color name */}
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', flex: 1 }}>
-                  {getColor(v)}{getSize(v) ? ` — ${getSize(v)}` : ''}
-                </span>
-                {/* Price/Stock */}
-                {loadingPrices ? (
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>...</span>
-                ) : ps ? (
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <span style={{ color: '#4ade80', fontSize: '12px', fontWeight: 600 }}>
-                      {ps.price}€
-                    </span>
-                    <span style={{
-                      fontSize: '11px', fontWeight: 600,
-                      color: parseInt(ps.stock) > 0 ? '#4ade80' : '#f87171',
-                    }}>
-                      Stock: {ps.stock}
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px' }}>—</span>
-                )}
-              </div>
-            );
-          })}
+
+        <div style={{ overflowX: 'auto', maxHeight: '420px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <th style={{ textAlign: 'left', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Référence</th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Couleur</th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Taille</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Prix unit.</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Prix carton</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Stock</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '11px' }}>Stock fourn.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {product.variants.map((v) => {
+                const ps = priceStockMap[v.variantReference];
+                const colorHex = getColorHex(v);
+                const stock = ps ? parseInt(ps.stock) : 0;
+                const stockSupplier = ps ? parseInt(ps.stock_supplier) : 0;
+                return (
+                  <tr key={v.variantReference} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '8px 10px', color: '#fff', fontWeight: 600 }}>
+                      {v.variantReference}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.6)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {colorHex && (
+                          <span style={{
+                            display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%',
+                            background: colorHex, border: '1px solid rgba(255,255,255,0.2)',
+                          }} />
+                        )}
+                        {getColor(v)}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.6)' }}>
+                      {getSize(v)}
+                    </td>
+                    {ps ? (
+                      <>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: '#fff', fontWeight: 600 }}>
+                          {ps.price}€
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'rgba(255,255,255,0.5)' }}>
+                          {ps.price_box}€ <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>x{ps.quantity_box}</span>
+                        </td>
+                        <td style={{
+                          padding: '8px 10px', textAlign: 'right', fontWeight: 600,
+                          color: stock > 0 ? '#4ade80' : '#f87171',
+                        }}>
+                          {ps.stock}
+                        </td>
+                        <td style={{
+                          padding: '8px 10px', textAlign: 'right',
+                          color: stockSupplier > 0 ? 'rgba(74,222,128,0.6)' : 'rgba(255,255,255,0.2)',
+                        }}>
+                          {ps.stock_supplier}
+                        </td>
+                      </>
+                    ) : (
+                      <td colSpan={4} style={{ padding: '8px 10px', textAlign: 'center', color: 'rgba(255,255,255,0.2)' }}>
+                        {loadingPrices ? '...' : '—'}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         {/* Documents */}
@@ -219,7 +255,7 @@ type ProductCardProps = {
 };
 
 const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
-  const image = getProductImage(product);
+  const image = getBestImage(product);
   const mainVariant = product.variants[0];
   const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
   const family = mainVariant ? getFamily(mainVariant) : '';
@@ -253,7 +289,7 @@ const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
         width: '100%', height: '160px',
         background: '#fff',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
+        overflow: 'hidden', padding: '8px',
       }}>
         {image ? (
           <img src={image} alt={product.reference}
@@ -305,7 +341,7 @@ const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
 
 const ImbretexCatalog = () => {
   const dispatch = useAppDispatch();
-  const { products, loading, loadingPrices, priceStockMap, totalProducts, totalPages, currentPage } =
+  const { products, loading, loadingPrices, priceStockMap, totalProducts, totalPages } =
     useAppSelector((state) => state.imbretex.data);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -345,14 +381,13 @@ const ImbretexCatalog = () => {
     return result;
   }, [products, searchTerm, brandFilter]);
 
-  // When viewing a product detail, fetch its price/stock
+  // When viewing a product detail, fetch its price/stock via product reference
   const handleViewProduct = useCallback((product: ImbretexProduct) => {
     setSelectedProduct(product);
-    const refs = product.variants.map((v) => v.variantReference);
-    // Only fetch refs we don't have yet
-    const missing = refs.filter((r) => !priceStockMap[r]);
-    if (missing.length > 0) {
-      dispatch(fetchImbretexPriceStock(missing));
+    // Check if we already have prices for this product's variants
+    const hasAny = product.variants.some((v) => priceStockMap[v.variantReference]);
+    if (!hasAny) {
+      dispatch(fetchImbretexPriceStockByRef(product.reference));
     }
   }, [dispatch, priceStockMap]);
 
@@ -379,7 +414,7 @@ const ImbretexCatalog = () => {
             </span>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '4px' }}>
-            Parcourez le catalogue fournisseur et consultez les prix/stocks en temps réel
+            Parcourez le catalogue fournisseur — cliquez sur un produit pour voir prix et stocks
           </p>
         </div>
       </div>

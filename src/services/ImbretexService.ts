@@ -98,10 +98,16 @@ export async function apiGetImbretexPriceStock(
 
 // ─── Price + Stock par référence produit (toutes variantes) ───
 
+export type ImbretexPriceStockByRefResponse = {
+  success: boolean;
+  products: ImbretexPriceStock[];
+  products_not_found?: string;
+};
+
 export async function apiGetImbretexPriceStockByRef(
   productReference: string
-): Promise<ImbretexPriceStockResponse> {
-  const { data } = await imbretexAxios.get<ImbretexPriceStockResponse>(
+): Promise<ImbretexPriceStockByRefResponse> {
+  const { data } = await imbretexAxios.get<ImbretexPriceStockByRefResponse>(
     `/products/price-stock/${productReference}`
   );
   return data;

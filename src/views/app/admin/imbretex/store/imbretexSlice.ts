@@ -5,7 +5,7 @@ import type {
 } from '@/@types/imbretex';
 import {
   apiGetImbretexProducts,
-  apiGetImbretexPriceStock,
+  apiGetImbretexPriceStockByRef,
   GetImbretexProductsParams,
 } from '@/services/ImbretexService';
 
@@ -33,11 +33,19 @@ export const fetchImbretexProducts = createAsyncThunk(
   }
 );
 
-export const fetchImbretexPriceStock = createAsyncThunk(
-  SLICE_NAME + '/fetchPriceStock',
-  async (references: string[]) => {
-    const res = await apiGetImbretexPriceStock(references);
-    return res.products;
+// Fetch price/stock by product reference (returns all variants)
+export const fetchImbretexPriceStockByRef = createAsyncThunk(
+  SLICE_NAME + '/fetchPriceStockByRef',
+  async (productReference: string) => {
+    const res = await apiGetImbretexPriceStockByRef(productReference);
+    // Convert array to map keyed by variant code
+    const map: Record<string, ImbretexPriceStock> = {};
+    if (Array.isArray(res.products)) {
+      for (const p of res.products) {
+        map[p.code] = p;
+      }
+    }
+    return map;
   }
 );
 
@@ -85,15 +93,15 @@ const imbretexSlice = createSlice({
       state.error = action.error.message || 'Erreur lors du chargement';
     });
 
-    // Price/Stock
-    builder.addCase(fetchImbretexPriceStock.pending, (state) => {
+    // Price/Stock by ref
+    builder.addCase(fetchImbretexPriceStockByRef.pending, (state) => {
       state.loadingPrices = true;
     });
-    builder.addCase(fetchImbretexPriceStock.fulfilled, (state, action) => {
+    builder.addCase(fetchImbretexPriceStockByRef.fulfilled, (state, action) => {
       state.loadingPrices = false;
       state.priceStockMap = { ...state.priceStockMap, ...action.payload };
     });
-    builder.addCase(fetchImbretexPriceStock.rejected, (state) => {
+    builder.addCase(fetchImbretexPriceStockByRef.rejected, (state) => {
       state.loadingPrices = false;
     });
   },

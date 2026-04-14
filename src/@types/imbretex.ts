@@ -99,6 +99,7 @@ export type ImbretexProductsResponse = {
 // --- Price/Stock API ---
 
 export type ImbretexPriceStock = {
+  code: string;
   quantity_unit: string;
   quantity_box: string;
   price: string;
