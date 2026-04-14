@@ -242,6 +242,7 @@ function Cart() {
   const isPausedRef = useRef(false);
   const animFrameRef = useRef<number | null>(null);
 
+  const shippingRef = useRef<HTMLDivElement>(null);
   const [shippingOpen, setShippingOpen] = useState(false);
   const [shipping, setShipping] = useState<ShippingAddress>({
     firstName: user?.firstName ?? '',
@@ -300,6 +301,14 @@ function Cart() {
     dispatch(removeFromCart(item));
   };
 
+  // Scroll vers l'adresse et ouvrir le formulaire
+  const scrollToShipping = () => {
+    setShippingOpen(true);
+    setTimeout(() => {
+      shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
   const totalHT = cart.reduce((sum, item) =>
     sum + getTotalPriceForCartItem(item.product, item.sizeAndColors), 0
   );
@@ -310,6 +319,10 @@ function Cart() {
       @keyframes cartFadeIn {
         from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes shippingPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.4), inset 0 0 0 0 rgba(251,191,36,0); border-color: rgba(251,191,36,0.35); }
+        50% { box-shadow: 0 0 20px 4px rgba(251,191,36,0.15), inset 0 0 12px rgba(251,191,36,0.03); border-color: rgba(251,191,36,0.55); }
       }
       @media (max-width: 860px) {
         .cart-grid { grid-template-columns: 1fr !important; }
@@ -454,14 +467,15 @@ function Cart() {
           </button>
 
           {/* Shipping address */}
-          <div style={{ marginTop: '20px' }}>
+          <div ref={shippingRef} style={{ marginTop: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <MdLocationOn size={16} style={{ color: 'rgba(107,158,255,0.5)' }} />
+              <MdLocationOn size={16} style={{ color: hasAddress ? 'rgba(52,211,153,0.7)' : 'rgba(251,191,36,0.7)' }} />
               <p style={{
-                color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700,
+                color: hasAddress ? 'rgba(255,255,255,0.4)' : 'rgba(251,191,36,0.8)',
+                fontSize: '11px', fontWeight: 700,
                 letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0,
               }}>
-                Adresse de livraison
+                Adresse de livraison {!hasAddress && '— requise'}
               </p>
               {hasAddress && (
                 <span style={{
@@ -483,23 +497,24 @@ function Cart() {
                 width: '100%',
                 background: hasAddress
                   ? 'linear-gradient(135deg, rgba(47,111,237,0.12) 0%, rgba(31,75,182,0.06) 100%)'
-                  : 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-                border: `2px solid ${hasAddress ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                  : 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(251,191,36,0.02) 100%)',
+                border: `2px solid ${hasAddress ? 'rgba(47,111,237,0.35)' : 'rgba(251,191,36,0.35)'}`,
                 borderRadius: '16px', padding: '16px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 boxShadow: hasAddress ? '0 0 0 4px rgba(47,111,237,0.06)' : 'none',
+                animation: hasAddress ? 'none' : 'shippingPulse 2s ease-in-out infinite',
                 transition: 'all 0.2s ease',
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.45)', fontSize: '13px', fontWeight: 600 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.9)', fontSize: '13px', fontWeight: 600 }}>
                 <div style={{
                   width: '36px', height: '36px', borderRadius: '10px',
-                  background: hasAddress ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${hasAddress ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                  background: hasAddress ? 'rgba(47,111,237,0.12)' : 'rgba(251,191,36,0.08)',
+                  border: `1px solid ${hasAddress ? 'rgba(47,111,237,0.2)' : 'rgba(251,191,36,0.2)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
-                  <MdLocationOn size={18} style={{ color: hasAddress ? '#6b9eff' : 'rgba(255,255,255,0.25)' }} />
+                  <MdLocationOn size={18} style={{ color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.8)' }} />
                 </div>
                 <div style={{ textAlign: 'left' }}>
                   {hasAddress ? (
@@ -508,7 +523,7 @@ function Cart() {
                       <div style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{shipping.zipCode} {shipping.city}, {shipping.country}</div>
                     </>
                   ) : (
-                    <div>Cliquez pour renseigner votre adresse</div>
+                    <div>Renseignez votre adresse pour commander</div>
                   )}
                 </div>
               </span>
@@ -578,7 +593,7 @@ function Cart() {
 
         {/* Payment sidebar — sticky */}
         <div className="cart-sidebar" style={{ position: 'sticky', top: '20px' }}>
-          <PaymentContent cart={cart} shipping={shipping} />
+          <PaymentContent cart={cart} shipping={shipping} hasAddress={hasAddress} onMissingAddress={scrollToShipping} />
         </div>
       </div>
 

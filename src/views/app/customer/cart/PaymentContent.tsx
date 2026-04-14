@@ -23,8 +23,9 @@ import {
 } from '@/store/slices/base/cartSlice';
 import { useNavigate } from 'react-router-dom';
 import { HiShieldCheck } from 'react-icons/hi';
+import { MdLocationOn } from 'react-icons/md';
 
-function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: ShippingAddress }) {
+function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const { token } = useAppSelector((state) => state.auth.session);
   const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
@@ -279,19 +280,48 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
         </span>
       </div>
 
+      {/* Missing address warning */}
+      {!hasAddress && (
+        <button
+          onClick={onMissingAddress}
+          style={{
+            width: '100%', padding: '12px 14px', marginBottom: '12px',
+            background: 'rgba(251,191,36,0.06)',
+            border: '1px solid rgba(251,191,36,0.2)',
+            borderRadius: '12px',
+            color: 'rgba(251,191,36,0.9)', fontSize: '12px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(251,191,36,0.1)';
+            e.currentTarget.style.borderColor = 'rgba(251,191,36,0.35)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(251,191,36,0.06)';
+            e.currentTarget.style.borderColor = 'rgba(251,191,36,0.2)';
+          }}
+        >
+          <MdLocationOn size={16} />
+          Renseignez votre adresse de livraison
+        </button>
+      )}
+
       {/* Payment button */}
       <button
-        disabled={!user.customer || isSubmitting}
-        onClick={validateCart}
+        disabled={!user.customer || isSubmitting || !hasAddress}
+        onClick={hasAddress ? validateCart : onMissingAddress}
         style={{
           width: '100%', padding: '14px',
-          background: !user.customer || isSubmitting
+          background: !user.customer || isSubmitting || !hasAddress
             ? 'rgba(47,111,237,0.2)'
             : 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 50%, #2f6fed 100%)',
           border: 'none', borderRadius: '14px',
-          color: '#fff', fontSize: '14px', fontWeight: 700,
-          cursor: !user.customer || isSubmitting ? 'not-allowed' : 'pointer',
-          boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(47,111,237,0.35)',
+          color: !hasAddress ? 'rgba(255,255,255,0.4)' : '#fff',
+          fontSize: '14px', fontWeight: 700,
+          cursor: !user.customer || isSubmitting || !hasAddress ? 'not-allowed' : 'pointer',
+          boxShadow: !hasAddress || isSubmitting ? 'none' : '0 4px 20px rgba(47,111,237,0.35)',
           fontFamily: 'Inter, sans-serif',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           transition: 'all 0.2s ease',
@@ -300,20 +330,20 @@ function PaymentContent({ cart, shipping }: { cart: CartItem[]; shipping: Shippi
           overflow: 'hidden',
         }}
         onMouseEnter={(e) => {
-          if (user.customer && !isSubmitting) {
+          if (user.customer && !isSubmitting && hasAddress) {
             e.currentTarget.style.boxShadow = '0 6px 28px rgba(47,111,237,0.5)';
             e.currentTarget.style.transform = 'translateY(-1px)';
           }
         }}
         onMouseLeave={(e) => {
-          if (user.customer && !isSubmitting) {
+          if (user.customer && !isSubmitting && hasAddress) {
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(47,111,237,0.35)';
             e.currentTarget.style.transform = 'translateY(0)';
           }
         }}
       >
         <HiShieldCheck size={16} />
-        {isSubmitting ? 'Traitement en cours...' : 'Valider la commande'}
+        {isSubmitting ? 'Traitement en cours...' : !hasAddress ? 'Adresse requise' : 'Valider la commande'}
       </button>
 
       {/* Security badge */}
