@@ -255,13 +255,13 @@ export async function importImbretexProduct(
       if (imgId) imageIds.push(Number(imgId));
     }
 
-    // 6. Create product
+    // 6. Create product — actif et prêt à l'emploi
     onProgress?.(`${ref}: création produit...`);
     await unwrapData(apiCreateProduct({
       name: title || ref,
       description,
-      active: false,
-      inCatalogue: false,
+      active: true,
+      inCatalogue: true,
       priceTiers: [{ minQuantity: 1, price }],
       ...(categoryDocId ? { productCategory: categoryDocId } : {}),
       sizes: sizeDocIds,
