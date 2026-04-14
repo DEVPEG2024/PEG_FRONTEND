@@ -439,7 +439,7 @@ function Cart() {
       <StepIndicator step={shippingOpen ? 1 : 0} hasAddress={hasAddress} />
 
       {/* Main layout — responsive */}
-      <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
+      <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
 
         {/* Left column: cart items + shipping */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

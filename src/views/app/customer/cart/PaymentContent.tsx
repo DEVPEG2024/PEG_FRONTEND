@@ -181,14 +181,14 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
     <div style={{
       background: 'linear-gradient(160deg, rgba(22,38,61,0.98) 0%, rgba(15,28,46,0.98) 100%)',
       border: '1.5px solid rgba(255,255,255,0.06)',
-      borderRadius: '20px', padding: '24px',
+      borderRadius: '18px', padding: '16px 18px',
       fontFamily: 'Inter, sans-serif',
       backdropFilter: 'blur(10px)',
       boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
-        <h4 style={{ color: '#fff', fontWeight: 800, fontSize: '16px', margin: 0, letterSpacing: '-0.02em' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <h4 style={{ color: '#fff', fontWeight: 800, fontSize: '14px', margin: 0, letterSpacing: '-0.02em' }}>
           Recapitulatif
         </h4>
         <span style={{
@@ -204,7 +204,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       <div style={{
         background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.04)',
-        padding: '14px', marginBottom: '18px',
+        padding: '10px 12px', marginBottom: '10px',
       }}>
         {cart.map((item, i) => {
           const total = getTotalPriceForCartItem(item.product, item.sizeAndColors);
@@ -236,7 +236,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       </div>
 
       {/* Totals */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Sous-total HT</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
@@ -259,21 +259,21 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
 
       {/* Divider */}
       <div style={{
-        height: '1px', margin: '18px 0',
+        height: '1px', margin: '10px 0',
         background: 'linear-gradient(90deg, transparent, rgba(47,111,237,0.2), transparent)',
       }} />
 
       {/* Total TTC */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '20px',
-        background: 'rgba(47,111,237,0.06)', borderRadius: '12px',
-        padding: '14px 16px',
+        marginBottom: '12px',
+        background: 'rgba(47,111,237,0.06)', borderRadius: '10px',
+        padding: '10px 14px',
         border: '1px solid rgba(47,111,237,0.1)',
       }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>Total TTC</span>
         <span style={{
-          color: '#6b9eff', fontWeight: 800, fontSize: '22px', letterSpacing: '-0.02em',
+          color: '#6b9eff', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.02em',
         }}>
           {totalPriceWithVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <span style={{ fontSize: '14px', fontWeight: 600, marginLeft: '2px' }}>€</span>
@@ -285,7 +285,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         <button
           onClick={onMissingAddress}
           style={{
-            width: '100%', padding: '12px 14px', marginBottom: '12px',
+            width: '100%', padding: '10px 12px', marginBottom: '8px',
             background: 'rgba(251,191,36,0.06)',
             border: '1px solid rgba(251,191,36,0.2)',
             borderRadius: '12px',
@@ -313,7 +313,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         disabled={!user.customer || isSubmitting || !hasAddress}
         onClick={hasAddress ? validateCart : onMissingAddress}
         style={{
-          width: '100%', padding: '14px',
+          width: '100%', padding: '12px',
           background: !user.customer || isSubmitting || !hasAddress
             ? 'rgba(47,111,237,0.2)'
             : 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 50%, #2f6fed 100%)',
@@ -349,7 +349,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       {/* Security badge */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-        marginTop: '14px',
+        marginTop: '8px',
       }}>
         <div style={{
           width: '4px', height: '4px', borderRadius: '50%',
