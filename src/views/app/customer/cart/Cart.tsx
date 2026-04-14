@@ -273,24 +273,32 @@ function Cart() {
     fetchSuggestions();
   }, [cart.length]);
 
-  // Continuous auto-scroll carousel
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || suggestions.length === 0) return;
+  // Continuous auto-scroll carousel — callback ref to start when DOM is ready
+  const scrollCallbackRef = (node: HTMLDivElement | null) => {
+    // Cleanup previous animation
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    if (!node || suggestions.length === 0) return;
 
     const step = () => {
-      if (!isPausedRef.current && el) {
-        el.scrollLeft += 0.6;
-        if (el.scrollLeft >= el.scrollWidth / 2) {
-          el.scrollLeft = 0;
+      if (!isPausedRef.current && node) {
+        node.scrollLeft += 0.6;
+        if (node.scrollLeft >= node.scrollWidth / 2) {
+          node.scrollLeft = 0;
         }
       }
       animFrameRef.current = requestAnimationFrame(step);
     };
-
     animFrameRef.current = requestAnimationFrame(step);
+  };
+
+  // Cleanup animation on unmount
+  useEffect(() => {
     return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, [suggestions.length]);
+  }, []);
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item));
@@ -607,7 +615,7 @@ function Cart() {
                 <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(270deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
 
                 <div
-                  ref={scrollRef}
+                  ref={scrollCallbackRef}
                   onMouseEnter={() => { isPausedRef.current = true; }}
                   onMouseLeave={() => { isPausedRef.current = false; }}
                   style={{
