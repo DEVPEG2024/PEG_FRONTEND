@@ -244,8 +244,7 @@ const ProductFields = (props: ProductFieldsProps) => {
 
             {/* AI fill button */}
             <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                type="button"
+              <button type="button"
                 onClick={handleAiFill}
                 disabled={aiLoading}
                 style={{

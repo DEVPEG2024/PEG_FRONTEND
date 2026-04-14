@@ -137,6 +137,8 @@ const ProductForm = (props: ProductFormProps) => {
   });
 
   const onSubmit = async (values: ProductFormModel) => {
+    // Guard: only submit from the last step
+    if (currentStep < totalSteps - 1) return;
     const formData = cloneDeep(values);
     await onFormSubmit(formData, batFile);
   };
@@ -174,7 +176,7 @@ const ProductForm = (props: ProductFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
       <FormContainer>
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
