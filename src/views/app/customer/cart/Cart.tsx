@@ -466,99 +466,6 @@ function Cart() {
             <HiPlus size={15} /> Ajouter un produit
           </button>
 
-          {/* Suggestions — inline, visible sans scroller */}
-          {suggestions.length > 0 && (
-            <div style={{ marginTop: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                  Completez votre commande
-                </span>
-                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06))' }} />
-              </div>
-
-              <div style={{ position: 'relative', overflow: 'hidden' }}>
-                {/* Fade edges */}
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(90deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(270deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-
-                <div
-                  ref={scrollRef}
-                  onMouseEnter={() => { isPausedRef.current = true; }}
-                  onMouseLeave={() => { isPausedRef.current = false; }}
-                  style={{
-                    display: 'flex', gap: '14px',
-                    overflowX: 'hidden', scrollbarWidth: 'none',
-                    padding: '4px 0',
-                  }}
-                >
-                  {[...suggestions, ...suggestions].map((product, idx) => (
-                    <div
-                      key={`${product.documentId}-${idx}`}
-                      onClick={() => navigate('/customer/product/' + product.documentId)}
-                      style={{
-                        flexShrink: 0, width: '280px',
-                        background: 'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
-                        border: '1.5px solid rgba(255,255,255,0.06)', borderRadius: '18px',
-                        overflow: 'hidden', cursor: 'pointer',
-                        transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)';
-                        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <div style={{
-                        height: '200px', background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      }}>
-                        {product.images?.[0]?.url ? (
-                          <img src={product.images[0].url} alt={product.name}
-                            style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', padding: '12px' }} />
-                        ) : (
-                          <MdOutlineShoppingBag size={42} style={{ color: 'rgba(255,255,255,0.08)' }} />
-                        )}
-                      </div>
-                      <div style={{ padding: '16px 18px' }}>
-                        <p style={{
-                          color: '#fff', fontWeight: 600, fontSize: '14px', margin: '0 0 10px 0',
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        }}>
-                          {product.name}
-                        </p>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{
-                            background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-                            border: '1px solid rgba(47,111,237,0.2)',
-                            borderRadius: '8px', padding: '5px 12px',
-                            color: '#6b9eff', fontSize: '13px', fontWeight: 700,
-                          }}>
-                            {(product.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                          </span>
-                          <span style={{
-                            color: '#6b9eff', fontSize: '12px', fontWeight: 600,
-                            background: 'rgba(47,111,237,0.06)',
-                            borderRadius: '8px', padding: '5px 12px',
-                            border: '1px solid rgba(47,111,237,0.1)',
-                          }}>
-                            Ajouter →
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Shipping address */}
           <div ref={shippingRef} style={{ marginTop: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -682,6 +589,99 @@ function Cart() {
               </div>
             )}
           </div>
+
+          {/* Suggestions — after shipping */}
+          {suggestions.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                  Completez votre commande
+                </span>
+                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06))' }} />
+              </div>
+
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                {/* Fade edges */}
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(90deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(270deg, var(--color-gray-900, #0f172a), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+
+                <div
+                  ref={scrollRef}
+                  onMouseEnter={() => { isPausedRef.current = true; }}
+                  onMouseLeave={() => { isPausedRef.current = false; }}
+                  style={{
+                    display: 'flex', gap: '14px',
+                    overflowX: 'hidden', scrollbarWidth: 'none',
+                    padding: '4px 0',
+                  }}
+                >
+                  {[...suggestions, ...suggestions].map((product, idx) => (
+                    <div
+                      key={`${product.documentId}-${idx}`}
+                      onClick={() => navigate('/customer/product/' + product.documentId)}
+                      style={{
+                        flexShrink: 0, width: '280px',
+                        background: 'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
+                        border: '1.5px solid rgba(255,255,255,0.06)', borderRadius: '18px',
+                        overflow: 'hidden', cursor: 'pointer',
+                        transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)';
+                        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <div style={{
+                        height: '200px', background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      }}>
+                        {product.images?.[0]?.url ? (
+                          <img src={product.images[0].url} alt={product.name}
+                            style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', padding: '12px' }} />
+                        ) : (
+                          <MdOutlineShoppingBag size={42} style={{ color: 'rgba(255,255,255,0.08)' }} />
+                        )}
+                      </div>
+                      <div style={{ padding: '16px 18px' }}>
+                        <p style={{
+                          color: '#fff', fontWeight: 600, fontSize: '14px', margin: '0 0 10px 0',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {product.name}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{
+                            background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                            border: '1px solid rgba(47,111,237,0.2)',
+                            borderRadius: '8px', padding: '5px 12px',
+                            color: '#6b9eff', fontSize: '13px', fontWeight: 700,
+                          }}>
+                            {(product.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                          </span>
+                          <span style={{
+                            color: '#6b9eff', fontSize: '12px', fontWeight: 600,
+                            background: 'rgba(47,111,237,0.06)',
+                            borderRadius: '8px', padding: '5px 12px',
+                            border: '1px solid rgba(47,111,237,0.1)',
+                          }}>
+                            Ajouter →
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Payment sidebar — sticky */}
