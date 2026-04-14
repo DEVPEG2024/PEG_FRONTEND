@@ -175,8 +175,10 @@ const ProductForm = (props: ProductFormProps) => {
     fontFamily: 'Inter, sans-serif',
   };
 
+  console.log('[ProductForm] currentStep:', currentStep, 'totalSteps:', totalSteps, 'errors:', Object.keys(errors));
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
+    <form onSubmit={(e) => { console.log('[ProductForm] form submit event, step:', currentStep); if (currentStep < totalSteps - 1) { e.preventDefault(); return; } handleSubmit(onSubmit)(e); }} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
       <FormContainer>
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
