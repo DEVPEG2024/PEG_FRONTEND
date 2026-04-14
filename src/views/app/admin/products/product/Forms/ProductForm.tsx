@@ -184,7 +184,7 @@ const ProductForm = (props: ProductFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, onError)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault(); }}>
+    <form onSubmit={(e) => e.preventDefault()}>
       <FormContainer>
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
@@ -303,8 +303,9 @@ const ProductForm = (props: ProductFormProps) => {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
                 disabled={isSubmitting}
+                onClick={handleSubmit(onSubmit, onError)}
                 style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 22px', background: isSubmitting ? 'rgba(34,197,94,0.4)' : 'linear-gradient(90deg, #22c55e, #16a34a)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(34,197,94,0.35)', fontFamily: 'Inter, sans-serif' }}
               >
                 <AiOutlineSave size={15} />
