@@ -15,17 +15,22 @@ injectReducer('imbretex', reducer);
 
 // ─── Helpers ───
 
+/** Les images préprod pointent vers admin.preprod mais sont en 404. Le vrai CDN est www.imbretex.fr */
+function fixImageUrl(url: string): string {
+  return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+}
+
 /** Cherche la meilleure image : d'abord product.images, sinon première variante */
 function getBestImage(product: ImbretexProduct): string | null {
   // Image produit (peut être objet ou tableau)
   if (Array.isArray(product.images)) {
-    if (product.images.length > 0) return product.images[0].url;
+    if (product.images.length > 0) return fixImageUrl(product.images[0].url);
   } else if (product.images?.url) {
-    return product.images.url;
+    return fixImageUrl(product.images.url);
   }
   // Fallback : image de la première variante
   for (const v of product.variants) {
-    if (v.images?.length > 0) return v.images[0].url;
+    if (v.images?.length > 0) return fixImageUrl(v.images[0].url);
   }
   return null;
 }
