@@ -67,6 +67,7 @@ const EditProduct = () => {
   const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [imagesLoading, setImagesLoading] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const initialData: ProductFormModel = useMemo(() => ({
     documentId: documentId ?? '',
     name: product?.name || '',
@@ -332,6 +333,8 @@ const EditProduct = () => {
         imagesLoading={imagesLoading}
         currentBatUrl={product?.batFile?.url ?? null}
         initialData={initialData}
+        currentStep={currentStep}
+        setCurrentStep={setCurrentStep}
         filterSizesListByProductCategory={filterSizesListByProductCategory}
         filterColorsListByProductCategory={filterColorsListByProductCategory}
       />

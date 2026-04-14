@@ -69,6 +69,8 @@ type ProductFormProps = {
   setImages: (images: PegFile[]) => void;
   imagesLoading: boolean;
   currentBatUrl?: string | null;
+  currentStep: number;
+  setCurrentStep: (step: number | ((s: number) => number)) => void;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
@@ -117,12 +119,13 @@ const ProductForm = (props: ProductFormProps) => {
     setImages,
     imagesLoading,
     currentBatUrl,
+    currentStep,
+    setCurrentStep,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
   } = props;
 
   const [batFile, setBatFile] = useState<PegFile | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = STEP_LABELS.length;
 
   const {
