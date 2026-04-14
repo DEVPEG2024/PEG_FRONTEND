@@ -1,7 +1,11 @@
-import { Dialog } from '@/components/ui';
 import { Field, FormStructure } from '../types';
 import { HiX } from 'react-icons/hi';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
+
+const fadeSlideKeyframes = `
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(32px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+`;
 
 type Props = {
   isOpen: boolean;
@@ -18,183 +22,222 @@ export default function PreviewModal({
 }: Props) {
   const { banner, fields } = structure;
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} width={740}>
+    <>
+      <style>{fadeSlideKeyframes}</style>
       <div
+        onClick={onClose}
         style={{
-          fontFamily: 'Inter, sans-serif',
-          background: '#f8fafc',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          maxHeight: '88vh',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1100,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease-out',
+          padding: '24px',
         }}
       >
-        {/* Preview header */}
         <div
+          onClick={(e) => e.stopPropagation()}
           style={{
+            background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '740px',
+            maxHeight: '90vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            animation: 'slideUp 0.3s ease-out',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '13px 18px',
-            borderBottom: '1px solid #e5e7eb',
-            background: '#fff',
-            flexShrink: 0,
+            flexDirection: 'column' as const,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Inner light card */}
+          <div
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              background: '#f8fafc',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              margin: '12px',
+              maxHeight: 'calc(90vh - 24px)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Preview header */}
             <div
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#22c55e',
-              }}
-            />
-            <span style={{ fontWeight: 700, fontSize: '13px', color: '#111827' }}>
-              Aperçu du formulaire
-            </span>
-            <span
-              style={{
-                background: '#f3f4f6',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '11px',
-                color: '#6b7280',
-                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '13px 18px',
+                borderBottom: '1px solid #e5e7eb',
+                background: '#fff',
+                flexShrink: 0,
               }}
             >
-              Lecture seule
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#9ca3af',
-              display: 'flex',
-              padding: '4px',
-              borderRadius: '6px',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#111827')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#9ca3af')}
-          >
-            <HiX size={18} />
-          </button>
-        </div>
-
-        {/* Form content */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {/* Banner */}
-          {(banner?.imageDataUrl || banner?.title || banner?.subtitle) && (
-            <div>
-              {banner.imageDataUrl && (
-                <img
-                  src={banner.imageDataUrl}
-                  alt=""
-                  style={{
-                    width: '100%',
-                    maxHeight: '220px',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
-                />
-              )}
-              {(banner.title || banner.subtitle) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
-                    padding: '28px 36px 20px',
-                    background: banner.imageDataUrl ? '#fff' : '#f1f5f9',
-                    borderBottom: '1px solid #e5e7eb',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#22c55e',
+                  }}
+                />
+                <span style={{ fontWeight: 700, fontSize: '13px', color: '#111827' }}>
+                  Aperçu du formulaire
+                </span>
+                <span
+                  style={{
+                    background: '#f3f4f6',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    color: '#6b7280',
+                    fontWeight: 600,
                   }}
                 >
-                  {banner.title && (
-                    <h1
+                  Lecture seule
+                </span>
+              </div>
+              <button
+                onClick={onClose}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#9ca3af',
+                  display: 'flex',
+                  padding: '4px',
+                  borderRadius: '6px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#111827')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#9ca3af')}
+              >
+                <HiX size={18} />
+              </button>
+            </div>
+
+            {/* Form content */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {/* Banner */}
+              {(banner?.imageDataUrl || banner?.title || banner?.subtitle) && (
+                <div>
+                  {banner.imageDataUrl && (
+                    <img
+                      src={banner.imageDataUrl}
+                      alt=""
                       style={{
-                        color: '#111827',
-                        fontSize: '24px',
-                        fontWeight: 800,
-                        margin: '0 0 6px',
-                        letterSpacing: '-0.02em',
+                        width: '100%',
+                        maxHeight: '220px',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                  )}
+                  {(banner.title || banner.subtitle) && (
+                    <div
+                      style={{
+                        padding: '28px 36px 20px',
+                        background: banner.imageDataUrl ? '#fff' : '#f1f5f9',
+                        borderBottom: '1px solid #e5e7eb',
                       }}
                     >
-                      {banner.title}
-                    </h1>
-                  )}
-                  {banner.subtitle && (
-                    <p
-                      style={{ color: '#6b7280', fontSize: '14px', margin: 0, lineHeight: 1.6 }}
-                    >
-                      {banner.subtitle}
-                    </p>
+                      {banner.title && (
+                        <h1
+                          style={{
+                            color: '#111827',
+                            fontSize: '24px',
+                            fontWeight: 800,
+                            margin: '0 0 6px',
+                            letterSpacing: '-0.02em',
+                          }}
+                        >
+                          {banner.title}
+                        </h1>
+                      )}
+                      {banner.subtitle && (
+                        <p
+                          style={{ color: '#6b7280', fontSize: '14px', margin: 0, lineHeight: 1.6 }}
+                        >
+                          {banner.subtitle}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Form name fallback */}
-          {!banner?.title && formName && (
-            <div style={{ padding: '28px 36px 0' }}>
-              <h2
+              {/* Form name fallback */}
+              {!banner?.title && formName && (
+                <div style={{ padding: '28px 36px 0' }}>
+                  <h2
+                    style={{
+                      color: '#111827',
+                      fontSize: '22px',
+                      fontWeight: 800,
+                      margin: 0,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {formName}
+                  </h2>
+                </div>
+              )}
+
+              {/* Fields */}
+              <div
                 style={{
-                  color: '#111827',
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  margin: 0,
-                  letterSpacing: '-0.02em',
+                  padding: '24px 36px',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  alignItems: 'flex-start',
                 }}
               >
-                {formName}
-              </h2>
+                {fields.length === 0 ? (
+                  <p style={{ color: '#9ca3af', fontSize: '13px' }}>
+                    Aucun champ ajouté au formulaire.
+                  </p>
+                ) : (
+                  fields.map((field) => <PreviewField key={field.id} field={field} />)
+                )}
+              </div>
+
+              {/* Submit button */}
+              <div style={{ padding: '4px 36px 36px' }}>
+                <button
+                  style={{
+                    background: 'linear-gradient(90deg, #2563eb, #1d4ed8)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px 28px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
+                  }}
+                >
+                  Soumettre
+                </button>
+              </div>
             </div>
-          )}
-
-          {/* Fields */}
-          <div
-            style={{
-              padding: '24px 36px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '16px',
-              alignItems: 'flex-start',
-            }}
-          >
-            {fields.length === 0 ? (
-              <p style={{ color: '#9ca3af', fontSize: '13px' }}>
-                Aucun champ ajouté au formulaire.
-              </p>
-            ) : (
-              fields.map((field) => <PreviewField key={field.id} field={field} />)
-            )}
-          </div>
-
-          {/* Submit button */}
-          <div style={{ padding: '4px 36px 36px' }}>
-            <button
-              style={{
-                background: 'linear-gradient(90deg, #2563eb, #1d4ed8)',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '12px 28px',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
-              }}
-            >
-              Soumettre
-            </button>
           </div>
         </div>
       </div>
-    </Dialog>
+    </>
   );
 }
 
