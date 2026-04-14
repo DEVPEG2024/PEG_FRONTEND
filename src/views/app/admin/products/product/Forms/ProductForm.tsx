@@ -12,8 +12,7 @@ import { useState } from 'react';
 import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck } from 'react-icons/hi';
 import { AiOutlineSave } from 'react-icons/ai';
 
-// BAT & Ref masqué — champs pas encore déployés sur Strapi intégration
-const STEP_LABELS = ['Infos', 'Prix', 'Options'];
+const STEP_LABELS = ['Infos', 'Prix', 'Options', 'BAT & Ref'];
 
 interface Options {
   value: string;
