@@ -1,294 +1,172 @@
 /**
  * Service d'import de produits Imbretex → PEG
+ * Simple et fiable : catégorie + tailles + couleurs + prix
+ * Images non importées (CORS bloqué sur www.imbretex.fr)
  */
 
 import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
 import { apiCreateProduct } from './ProductServices';
 import { apiGetSizes } from './SizeServices';
 import { apiGetColors } from './ColorServices';
-import {
-  apiGetProductCategories,
-  GetProductCategoriesResponse,
-} from './ProductCategoryServices';
-import { apiUploadFile } from './FileServices';
+import { apiGetProductCategories, GetProductCategoriesResponse } from './ProductCategoryServices';
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
 import { unwrapData } from '@/utils/serviceHelper';
 
-// ─── Caches ───
+// ─── Caches (chargés une fois par session d'import) ───
 
-let categoryCache: Map<string, string> | null = null; // name upper → documentId
-let sizeCache: Map<string, string> | null = null;
-let colorCache: Map<string, string> | null = null;
+let cats: Map<string, string> | null = null;
+let szs: Map<string, string> | null = null;
+let cols: Map<string, string> | null = null;
 
-export function resetImportCaches() {
-  categoryCache = null;
-  sizeCache = null;
-  colorCache = null;
+export function resetImportCaches() { cats = null; szs = null; cols = null; }
+
+async function getCategories(): Promise<Map<string, string>> {
+  if (cats) return cats;
+  cats = new Map();
+  try {
+    const r = await unwrapData(apiGetProductCategories()) as any;
+    for (const c of r.productCategories_connection.nodes) {
+      cats.set(c.name.toUpperCase().trim(), c.documentId);
+    }
+  } catch (e) { console.error('[Import] Erreur chargement catégories:', e); }
+  console.log('[Import] Catégories PEG:', Array.from(cats.keys()));
+  return cats;
 }
 
-// ─── Helpers ───
-
-function fixImageUrl(url: string): string {
-  return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+async function getSizes(): Promise<Map<string, string>> {
+  if (szs) return szs;
+  szs = new Map();
+  try {
+    const r = await unwrapData(apiGetSizes()) as any;
+    for (const s of r.sizes_connection.nodes) {
+      szs.set(s.name.toUpperCase().trim(), s.documentId);
+    }
+  } catch (e) { console.error('[Import] Erreur chargement tailles:', e); }
+  console.log('[Import] Tailles PEG:', Array.from(szs.keys()));
+  return szs;
 }
 
-function getBestImageUrl(product: ImbretexProduct): string | null {
-  if (Array.isArray(product.images) && product.images.length > 0) {
-    return fixImageUrl(product.images[0].url);
-  }
-  if (!Array.isArray(product.images) && product.images?.url) {
-    return fixImageUrl(product.images.url);
-  }
-  for (const v of product.variants) {
-    if (v.images?.length > 0) return fixImageUrl(v.images[0].url);
+async function getColors(): Promise<Map<string, string>> {
+  if (cols) return cols;
+  cols = new Map();
+  try {
+    const r = await unwrapData(apiGetColors()) as any;
+    for (const c of r.colors_connection.nodes) {
+      cols.set(c.name.toUpperCase().trim(), c.documentId);
+    }
+  } catch (e) { console.error('[Import] Erreur chargement couleurs:', e); }
+  console.log('[Import] Couleurs PEG:', Array.from(cols.keys()));
+  return cols;
+}
+
+// ─── Match ───
+
+function match(name: string, cache: Map<string, string>): string | null {
+  const k = name.toUpperCase().trim();
+  if (cache.has(k)) return cache.get(k)!;
+  for (const [pegName, id] of cache) {
+    if (pegName.includes(k) || k.includes(pegName)) return id;
   }
   return null;
 }
 
-function getImbretexCategory(product: ImbretexProduct): string {
-  for (const v of product.variants) {
-    const cat = v.categories?.[0]?.categories?.fr;
-    if (cat) return cat;
+// ─── Extraction données Imbretex ───
+
+function getCategory(p: ImbretexProduct): string {
+  for (const v of p.variants) {
+    const c = v.categories?.[0]?.categories?.fr;
+    if (c) return c;
   }
   return '';
 }
 
-function getTitle(variant: ImbretexVariant): string {
-  return variant.title?.fr || variant.title?.en || '';
+function getTitle(v: ImbretexVariant): string {
+  return v.title?.fr || v.title?.en || '';
 }
 
-function getUniqueColors(variants: ImbretexVariant[]): { name: string; hex: string }[] {
-  const seen = new Set<string>();
-  const result: { name: string; hex: string }[] = [];
+function extractSizes(variants: ImbretexVariant[]): string[] {
+  const s = new Set<string>();
   for (const v of variants) {
-    const attr = v.attributes?.find((a) => a.type === 'color');
-    const name = attr?.value;
-    if (name && !seen.has(name.toUpperCase())) {
-      seen.add(name.toUpperCase());
-      result.push({ name, hex: attr?.hex || '' });
-    }
+    const a = v.attributes?.find((a) => a.type === 'sizes');
+    if (a?.value && a.value !== '0') s.add(a.value);
   }
-  return result;
+  return Array.from(s);
 }
 
-function getUniqueSizes(variants: ImbretexVariant[]): string[] {
-  const seen = new Set<string>();
+function extractColors(variants: ImbretexVariant[]): string[] {
+  const s = new Set<string>();
   for (const v of variants) {
-    const attr = v.attributes?.find((a) => a.type === 'sizes');
-    if (attr?.value && attr.value !== '0') seen.add(attr.value);
+    const a = v.attributes?.find((a) => a.type === 'color');
+    if (a?.value) s.add(a.value);
   }
-  return Array.from(seen);
+  return Array.from(s);
 }
 
-// ─── Loaders : charge les données PEG existantes (une seule fois) ───
+// ─── Import principal ───
 
-async function loadCategories(): Promise<Map<string, string>> {
-  if (categoryCache) return categoryCache;
-  categoryCache = new Map();
-  try {
-    const { productCategories_connection } = await unwrapData(apiGetProductCategories()) as { productCategories_connection: GetProductCategoriesResponse };
-    for (const cat of productCategories_connection.nodes) {
-      categoryCache.set(cat.name.toUpperCase(), cat.documentId);
-    }
-    console.log('[Import] Catégories PEG chargées:', Array.from(categoryCache.keys()));
-  } catch (err) {
-    console.error('[Import] Erreur chargement catégories:', err);
-  }
-  return categoryCache;
-}
+export type ImportResult = { success: boolean; reference: string; error?: string };
 
-async function loadSizes(): Promise<Map<string, string>> {
-  if (sizeCache) return sizeCache;
-  sizeCache = new Map();
-  try {
-    const { sizes_connection } = await unwrapData(apiGetSizes()) as any;
-    for (const s of sizes_connection.nodes) {
-      sizeCache.set(s.name.toUpperCase(), s.documentId);
-    }
-    console.log('[Import] Tailles PEG chargées:', sizeCache.size);
-  } catch (err) {
-    console.error('[Import] Erreur chargement tailles:', err);
-  }
-  return sizeCache;
-}
-
-async function loadColors(): Promise<Map<string, string>> {
-  if (colorCache) return colorCache;
-  colorCache = new Map();
-  try {
-    const { colors_connection } = await unwrapData(apiGetColors()) as any;
-    for (const c of colors_connection.nodes) {
-      colorCache.set(c.name.toUpperCase(), c.documentId);
-    }
-    console.log('[Import] Couleurs PEG chargées:', colorCache.size);
-  } catch (err) {
-    console.error('[Import] Erreur chargement couleurs:', err);
-  }
-  return colorCache;
-}
-
-// ─── Matching : trouve la correspondance la plus proche ───
-
-function findBestMatch(name: string, cache: Map<string, string>): string | null {
-  const key = name.toUpperCase().trim();
-  // Exact match
-  if (cache.has(key)) return cache.get(key)!;
-  // Partial match : le nom PEG contient le nom Imbretex ou inversement
-  for (const [pegName, docId] of cache) {
-    if (pegName.includes(key) || key.includes(pegName)) return docId;
-  }
-  return null;
-}
-
-// ─── Image download + upload ───
-
-async function uploadImageFromUrl(url: string, filename: string): Promise<string | null> {
-  try {
-    console.log('[Import] Téléchargement image:', url);
-
-    // Tentative 1 : fetch direct
-    let blob: Blob | null = null;
-    try {
-      const response = await fetch(url, { mode: 'cors' });
-      if (response.ok) {
-        blob = await response.blob();
-      }
-    } catch {
-      console.log('[Import] CORS bloqué, tentative via no-cors...');
-    }
-
-    // Tentative 2 : créer une image canvas pour contourner CORS
-    if (!blob) {
-      try {
-        blob = await new Promise<Blob | null>((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            canvas.getContext('2d')?.drawImage(img, 0, 0);
-            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9);
-          };
-          img.onerror = () => resolve(null);
-          img.src = url;
-        });
-      } catch {
-        console.log('[Import] Canvas fallback échoué');
-      }
-    }
-
-    if (!blob) {
-      console.error('[Import] Impossible de télécharger l\'image');
-      return null;
-    }
-
-    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-    const uploaded = await apiUploadFile(file);
-    console.log('[Import] Image uploadée:', uploaded.id, uploaded.url);
-    return uploaded.id;
-  } catch (err) {
-    console.error('[Import] Erreur upload image:', err);
-    return null;
-  }
-}
-
-// ─── Main import function ───
-
-export type ImportResult = {
-  success: boolean;
-  reference: string;
-  error?: string;
-};
-
-export async function importImbretexProduct(
-  product: ImbretexProduct,
-  onProgress?: (msg: string) => void,
-): Promise<ImportResult> {
+export async function importImbretexProduct(product: ImbretexProduct): Promise<ImportResult> {
   const ref = product.reference;
-  const mainVariant = product.variants[0];
-  if (!mainVariant) {
-    return { success: false, reference: ref, error: 'Pas de variante' };
-  }
+  const mv = product.variants[0];
+  if (!mv) return { success: false, reference: ref, error: 'Pas de variante' };
 
   try {
-    const title = getTitle(mainVariant);
-    const description = mainVariant.description?.fr || mainVariant.longDescription?.fr || '';
-    const categoryName = getImbretexCategory(product);
+    // Charger les données PEG (une seule fois)
+    const [catMap, sizeMap, colorMap] = await Promise.all([getCategories(), getSizes(), getColors()]);
 
-    // 1. Category — match existante uniquement, PAS de création
-    onProgress?.(`${ref}: catégorie...`);
-    const cats = await loadCategories();
-    const categoryDocId = categoryName ? findBestMatch(categoryName, cats) : null;
-    console.log(`[Import] ${ref} catégorie "${categoryName}" → ${categoryDocId || 'aucun match'}`);
+    // Catégorie
+    const catName = getCategory(product);
+    const catId = catName ? match(catName, catMap) : null;
+    console.log(`[Import] ${ref} catégorie: "${catName}" → ${catId || 'aucun match'}`);
 
-    // 2. Sizes — match existantes uniquement
-    onProgress?.(`${ref}: tailles...`);
-    const sizes = await loadSizes();
-    const sizeNames = getUniqueSizes(product.variants);
-    const sizeDocIds: string[] = [];
-    for (const name of sizeNames) {
-      const id = findBestMatch(name, sizes);
-      if (id) sizeDocIds.push(id);
-    }
-    console.log(`[Import] ${ref} tailles: ${sizeNames.join(', ')} → ${sizeDocIds.length} matchées`);
+    // Tailles
+    const sizeNames = extractSizes(product.variants);
+    const sizeIds = [...new Set(sizeNames.map(n => match(n, sizeMap)).filter(Boolean))] as string[];
+    console.log(`[Import] ${ref} tailles: [${sizeNames}] → ${sizeIds.length} matchées`);
 
-    // 3. Colors — match existantes uniquement, dédupliquées
-    onProgress?.(`${ref}: couleurs...`);
-    const colorsMap = await loadColors();
-    const imbretexColors = getUniqueColors(product.variants);
-    const colorDocIdSet = new Set<string>();
-    for (const { name } of imbretexColors) {
-      const id = findBestMatch(name, colorsMap);
-      if (id) colorDocIdSet.add(id);
-    }
-    const colorDocIds = Array.from(colorDocIdSet);
-    console.log(`[Import] ${ref} couleurs: ${imbretexColors.map(c => c.name).join(', ')} → ${colorDocIds.length} matchées`);
+    // Couleurs
+    const colorNames = extractColors(product.variants);
+    const colorIds = [...new Set(colorNames.map(n => match(n, colorMap)).filter(Boolean))] as string[];
+    console.log(`[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées`);
 
-    // 4. Price
-    onProgress?.(`${ref}: prix...`);
+    // Prix
     let price = 0;
     try {
-      const priceData = await apiGetImbretexPriceStockByRef(ref);
-      if (Array.isArray(priceData.products) && priceData.products.length > 0) {
-        const p = parseFloat(priceData.products[0].price);
-        if (!isNaN(p)) price = p;
+      const pd = await apiGetImbretexPriceStockByRef(ref);
+      if (Array.isArray(pd.products) && pd.products.length > 0) {
+        price = parseFloat(pd.products[0].price) || 0;
       }
-    } catch { /* price stays 0 */ }
+    } catch { /* */ }
     console.log(`[Import] ${ref} prix: ${price}€`);
 
-    // 5. Image
-    onProgress?.(`${ref}: image...`);
-    const imageUrl = getBestImageUrl(product);
-    let imageIds: number[] = [];
-    if (imageUrl) {
-      const ext = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
-      const imgId = await uploadImageFromUrl(imageUrl, `${ref}.${ext}`);
-      if (imgId) imageIds.push(Number(imgId));
-    }
-    console.log(`[Import] ${ref} images: ${imageIds.length > 0 ? imageIds.join(', ') : 'aucune'}`);
-
-    // 6. Create product
-    onProgress?.(`${ref}: création produit...`);
-    const productData: any = {
-      name: title || ref,
-      description,
+    // Création
+    const data: Record<string, any> = {
+      name: getTitle(mv) || ref,
+      description: mv.description?.fr || '',
       active: true,
       inCatalogue: true,
       priceTiers: [{ minQuantity: 1, price }],
     };
-    if (categoryDocId) productData.productCategory = categoryDocId;
-    if (sizeDocIds.length > 0) productData.sizes = sizeDocIds;
-    if (colorDocIds.length > 0) productData.colors = colorDocIds;
-    if (imageIds.length > 0) productData.images = imageIds;
+    if (catId) data.productCategory = catId;
+    if (sizeIds.length) data.sizes = sizeIds;
+    if (colorIds.length) data.colors = colorIds;
 
-    console.log(`[Import] ${ref} payload:`, JSON.stringify(productData));
-    await unwrapData(apiCreateProduct(productData));
+    console.log(`[Import] ${ref} ENVOI:`, JSON.stringify(data));
+
+    const result = await apiCreateProduct(data as any);
+    const response = result.data;
+    console.log(`[Import] ${ref} RÉPONSE:`, JSON.stringify(response));
+
+    if ((response as any).errors?.length) {
+      const msg = (response as any).errors[0].message;
+      console.error(`[Import] ${ref} ERREUR GRAPHQL:`, msg);
+      return { success: false, reference: ref, error: msg };
+    }
 
     return { success: true, reference: ref };
   } catch (err: any) {
     console.error(`[Import] ${ref} ERREUR:`, err);
-    return { success: false, reference: ref, error: err?.message || 'Erreur inconnue' };
+    return { success: false, reference: ref, error: err?.message || String(err) };
   }
 }
-
