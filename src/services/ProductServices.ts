@@ -14,9 +14,9 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            pricingMode
-            pricePerM2
-            minM2
+            # pricingMode                         — activer après déploiement Strapi
+            # pricePerM2                          — activer après déploiement Strapi
+            # minM2                               — activer après déploiement Strapi
             images {
                 url
             }
@@ -62,9 +62,9 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            pricingMode
-            pricePerM2
-            minM2
+            # pricingMode                         — activer après déploiement Strapi
+            # pricePerM2                          — activer après déploiement Strapi
+            # minM2                               — activer après déploiement Strapi
             images {
                 documentId
                 url
@@ -356,9 +356,9 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 name
                 price
                 priceTiers
-                pricingMode
-            pricePerM2
-            minM2
+                # pricingMode                         — activer après déploiement Strapi
+            # pricePerM2                          — activer après déploiement Strapi
+            # minM2                               — activer après déploiement Strapi
                 inCatalogue
                 catalogPrice
             }
