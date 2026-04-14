@@ -32,9 +32,9 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            requiresBat
-            batFile { documentId url name }
-            catalogPrice
+            # requiresBat                          — activer après déploiement Strapi
+            # batFile { documentId url name }      — activer après déploiement Strapi
+            # catalogPrice                         — activer après déploiement Strapi
             # checklist { documentId name items }  — activer après config Strapi
         }
     }
@@ -87,9 +87,9 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
                 fields
             }
             # checklist { documentId name items }  — activer après déploiement Strapi
-            requiresBat
-            batFile { documentId url name }
-            catalogPrice
+            # requiresBat                          — activer après déploiement Strapi
+            # batFile { documentId url name }      — activer après déploiement Strapi
+            # catalogPrice                         — activer après déploiement Strapi
             # productRef                           — activer après déploiement Strapi
             # refVisibleToCustomer                 — activer après déploiement Strapi
             customerCategories {
@@ -288,8 +288,8 @@ export async function apiGetAllProductsForExport(): Promise<AxiosResponse<ApiRes
             priceTiers
             active
             inCatalogue
-            productRef
-            requiresBat
+            # productRef                           — activer après déploiement Strapi
+            # requiresBat                          — activer après déploiement Strapi
             sizes {
                 name
                 value
