@@ -6,30 +6,49 @@ import type {
 import {
   apiGetImbretexProducts,
   apiGetImbretexPriceStockByRef,
-  GetImbretexProductsParams,
 } from '@/services/ImbretexService';
 
 export const SLICE_NAME = 'imbretex';
 
 export type StateData = {
   loading: boolean;
+  loadingProgress: number; // 0-100
   loadingPrices: boolean;
-  products: ImbretexProduct[];
+  allProducts: ImbretexProduct[];
   priceStockMap: Record<string, ImbretexPriceStock>;
   totalProducts: number;
-  totalPages: number;
-  currentPage: number;
-  perPage: number;
   error: string | null;
 };
 
 // ─── Async thunks ───
 
-export const fetchImbretexProducts = createAsyncThunk(
-  SLICE_NAME + '/fetchProducts',
-  async (params: GetImbretexProductsParams) => {
-    const res = await apiGetImbretexProducts(params);
-    return res;
+// Load entire catalog: first page to get total, then remaining pages in parallel batches
+export const fetchAllImbretexProducts = createAsyncThunk(
+  SLICE_NAME + '/fetchAll',
+  async (_, { dispatch }) => {
+    // Page 1
+    const first = await apiGetImbretexProducts({ page: 1, perPage: 50 });
+    const totalPages = first.totalNumberPage;
+    const all: ImbretexProduct[] = [...first.products];
+
+    dispatch(setLoadingProgress(Math.round(100 / totalPages)));
+
+    // Remaining pages in batches of 10
+    const BATCH_SIZE = 10;
+    for (let start = 2; start <= totalPages; start += BATCH_SIZE) {
+      const end = Math.min(start + BATCH_SIZE - 1, totalPages);
+      const batch = [];
+      for (let p = start; p <= end; p++) {
+        batch.push(apiGetImbretexProducts({ page: p, perPage: 50 }));
+      }
+      const results = await Promise.all(batch);
+      for (const res of results) {
+        all.push(...res.products);
+      }
+      dispatch(setLoadingProgress(Math.round((end / totalPages) * 100)));
+    }
+
+    return { products: all, totalProducts: first.productCount };
   }
 );
 
@@ -38,7 +57,6 @@ export const fetchImbretexPriceStockByRef = createAsyncThunk(
   SLICE_NAME + '/fetchPriceStockByRef',
   async (productReference: string) => {
     const res = await apiGetImbretexPriceStockByRef(productReference);
-    // Convert array to map keyed by variant code
     const map: Record<string, ImbretexPriceStock> = {};
     if (Array.isArray(res.products)) {
       for (const p of res.products) {
@@ -53,13 +71,11 @@ export const fetchImbretexPriceStockByRef = createAsyncThunk(
 
 const initialState: StateData = {
   loading: false,
+  loadingProgress: 0,
   loadingPrices: false,
-  products: [],
+  allProducts: [],
   priceStockMap: {},
   totalProducts: 0,
-  totalPages: 0,
-  currentPage: 1,
-  perPage: 50,
   error: null,
 };
 
@@ -67,28 +83,27 @@ const imbretexSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
   reducers: {
-    setCurrentPage: (state, action: PayloadAction<number>) => {
-      state.currentPage = action.payload;
+    setLoadingProgress: (state, action: PayloadAction<number>) => {
+      state.loadingProgress = action.payload;
     },
     clearPriceStock: (state) => {
       state.priceStockMap = {};
     },
   },
   extraReducers: (builder) => {
-    // Products
-    builder.addCase(fetchImbretexProducts.pending, (state) => {
+    // All products
+    builder.addCase(fetchAllImbretexProducts.pending, (state) => {
       state.loading = true;
+      state.loadingProgress = 0;
       state.error = null;
     });
-    builder.addCase(fetchImbretexProducts.fulfilled, (state, action) => {
+    builder.addCase(fetchAllImbretexProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.products;
-      state.totalProducts = action.payload.productCount;
-      state.totalPages = action.payload.totalNumberPage;
-      state.currentPage = parseInt(action.payload.page, 10);
-      state.perPage = action.payload.perPage;
+      state.loadingProgress = 100;
+      state.allProducts = action.payload.products;
+      state.totalProducts = action.payload.totalProducts;
     });
-    builder.addCase(fetchImbretexProducts.rejected, (state, action) => {
+    builder.addCase(fetchAllImbretexProducts.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message || 'Erreur lors du chargement';
     });
@@ -107,5 +122,5 @@ const imbretexSlice = createSlice({
   },
 });
 
-export const { setCurrentPage, clearPriceStock } = imbretexSlice.actions;
+export const { setLoadingProgress, clearPriceStock } = imbretexSlice.actions;
 export default imbretexSlice.reducer;

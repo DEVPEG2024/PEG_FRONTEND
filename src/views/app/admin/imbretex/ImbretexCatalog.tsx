@@ -1,13 +1,13 @@
 import { injectReducer } from '@/store';
 import reducer, {
-  fetchImbretexProducts,
+  fetchAllImbretexProducts,
   fetchImbretexPriceStockByRef,
   useAppDispatch,
   useAppSelector,
 } from './store';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Pagination } from '@/components/ui';
-import { Container, Loading, EmptyState } from '@/components/shared';
+import { Pagination, Select } from '@/components/ui';
+import { Container, EmptyState } from '@/components/shared';
 import { HiOutlineSearch } from 'react-icons/hi';
 import type { ImbretexProduct, ImbretexVariant, ImbretexPriceStock } from '@/@types/imbretex';
 
@@ -15,20 +15,16 @@ injectReducer('imbretex', reducer);
 
 // ─── Helpers ───
 
-/** Les images préprod pointent vers admin.preprod mais sont en 404. Le vrai CDN est www.imbretex.fr */
 function fixImageUrl(url: string): string {
   return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
 }
 
-/** Cherche la meilleure image : d'abord product.images, sinon première variante */
 function getBestImage(product: ImbretexProduct): string | null {
-  // Image produit (peut être objet ou tableau)
   if (Array.isArray(product.images)) {
     if (product.images.length > 0) return fixImageUrl(product.images[0].url);
   } else if (product.images?.url) {
     return fixImageUrl(product.images.url);
   }
-  // Fallback : image de la première variante
   for (const v of product.variants) {
     if (v.images?.length > 0) return fixImageUrl(v.images[0].url);
   }
@@ -40,18 +36,15 @@ function getProductTitle(variant: ImbretexVariant): string {
 }
 
 function getSize(variant: ImbretexVariant): string {
-  const attr = variant.attributes?.find((a) => a.type === 'sizes');
-  return attr?.value || '';
+  return variant.attributes?.find((a) => a.type === 'sizes')?.value || '';
 }
 
 function getColor(variant: ImbretexVariant): string {
-  const attr = variant.attributes?.find((a) => a.type === 'color');
-  return attr?.value || '';
+  return variant.attributes?.find((a) => a.type === 'color')?.value || '';
 }
 
 function getColorHex(variant: ImbretexVariant): string {
-  const attr = variant.attributes?.find((a) => a.type === 'color');
-  return attr?.hex || '';
+  return variant.attributes?.find((a) => a.type === 'color')?.hex || '';
 }
 
 function getFamily(variant: ImbretexVariant): string {
@@ -125,7 +118,6 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {mainVariant && getFamily(mainVariant) && (
                 <span style={{
-                  display: 'inline-block',
                   background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
                   borderRadius: '6px', padding: '3px 10px',
                   color: '#60a5fa', fontSize: '11px', fontWeight: 600,
@@ -134,7 +126,6 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
                 </span>
               )}
               <span style={{
-                display: 'inline-block',
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: '6px', padding: '3px 10px',
                 color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600,
@@ -266,12 +257,7 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
 
 // ─── Product Card ───
 
-type ProductCardProps = {
-  product: ImbretexProduct;
-  onView: (product: ImbretexProduct) => void;
-};
-
-const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
+const ImbretexProductCard = ({ product, onView }: { product: ImbretexProduct; onView: (p: ImbretexProduct) => void }) => {
   const image = getBestImage(product);
   const mainVariant = product.variants[0];
   const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
@@ -301,7 +287,6 @@ const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
-      {/* Image */}
       <div style={{
         width: '100%', height: '160px',
         background: '#fff',
@@ -316,8 +301,6 @@ const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
           <div style={{ color: '#999', fontSize: '12px' }}>Pas d'image</div>
         )}
       </div>
-
-      {/* Content */}
       <div style={{ padding: '12px 14px' }}>
         <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>
           {product.brands?.name}
@@ -356,9 +339,11 @@ const ImbretexProductCard = ({ product, onView }: ProductCardProps) => {
 
 // ─── Main Catalog View ───
 
+const PAGE_SIZE = 60;
+
 const ImbretexCatalog = () => {
   const dispatch = useAppDispatch();
-  const { products, loading, loadingPrices, priceStockMap, totalProducts, totalPages } =
+  const { allProducts, loading, loadingProgress, loadingPrices, priceStockMap, totalProducts } =
     useAppSelector((state) => state.imbretex.data);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -367,33 +352,37 @@ const ImbretexCatalog = () => {
   const [selectedProduct, setSelectedProduct] = useState<ImbretexProduct | null>(null);
   const [page, setPage] = useState(1);
 
-  // Fetch products on page change
+  // Load all products once on mount
   useEffect(() => {
-    dispatch(fetchImbretexProducts({ page, perPage: 50 }));
-  }, [page, dispatch]);
+    if (allProducts.length === 0 && !loading) {
+      dispatch(fetchAllImbretexProducts());
+    }
+  }, [dispatch, allProducts.length, loading]);
 
-  // Extract unique brands from current page
+  // Extract unique brands (from ALL products)
   const brands = useMemo(() => {
     const set = new Set<string>();
-    products.forEach((p) => {
+    allProducts.forEach((p) => {
       if (p.brands?.name) set.add(p.brands.name);
     });
     return Array.from(set).sort();
-  }, [products]);
+  }, [allProducts]);
 
-  // Extract unique categories from current page
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    products.forEach((p) => {
+  // Extract unique categories with counts
+  const categoriesWithCount = useMemo(() => {
+    const map = new Map<string, number>();
+    allProducts.forEach((p) => {
       const cat = getProductCategory(p);
-      if (cat) set.add(cat);
+      if (cat) map.set(cat, (map.get(cat) || 0) + 1);
     });
-    return Array.from(set).sort();
-  }, [products]);
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => ({ name, count }));
+  }, [allProducts]);
 
-  // Client-side filter (search + brand + category) on current page
+  // Full client-side filter
   const filtered = useMemo(() => {
-    let result = products;
+    let result = allProducts;
     if (categoryFilter) {
       result = result.filter((p) => getProductCategory(p) === categoryFilter);
     }
@@ -406,25 +395,32 @@ const ImbretexCatalog = () => {
         const ref = p.reference?.toLowerCase() || '';
         const brand = p.brands?.name?.toLowerCase() || '';
         const title = p.variants[0] ? getProductTitle(p.variants[0]).toLowerCase() : '';
-        return ref.includes(term) || brand.includes(term) || title.includes(term);
+        const family = p.variants[0] ? getFamily(p.variants[0]).toLowerCase() : '';
+        return ref.includes(term) || brand.includes(term) || title.includes(term) || family.includes(term);
       });
     }
     return result;
-  }, [products, searchTerm, brandFilter, categoryFilter]);
+  }, [allProducts, searchTerm, brandFilter, categoryFilter]);
 
-  // When viewing a product detail, fetch its price/stock via product reference
+  // Client-side pagination
+  const totalFiltered = filtered.length;
+  const totalPages = Math.ceil(totalFiltered / PAGE_SIZE);
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [searchTerm, brandFilter, categoryFilter]);
+
+  // View product detail → fetch price/stock
   const handleViewProduct = useCallback((product: ImbretexProduct) => {
     setSelectedProduct(product);
-    // Check if we already have prices for this product's variants
     const hasAny = product.variants.some((v) => priceStockMap[v.variantReference]);
     if (!hasAny) {
       dispatch(fetchImbretexPriceStockByRef(product.reference));
     }
   }, [dispatch, priceStockMap]);
-
-  const handlePageChange = (newPage: number) => {
-    if (!loading) setPage(newPage);
-  };
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -445,144 +441,167 @@ const ImbretexCatalog = () => {
             </span>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '4px' }}>
-            Parcourez le catalogue fournisseur — cliquez sur un produit pour voir prix et stocks
+            Cliquez sur un produit pour voir prix et stocks en temps réel
           </p>
         </div>
       </div>
 
+      {/* Loading progress */}
+      {loading && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600 }}>
+              Chargement du catalogue...
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+              {loadingProgress}%
+            </span>
+          </div>
+          <div style={{
+            width: '100%', height: '4px', borderRadius: '2px',
+            background: 'rgba(255,255,255,0.06)',
+          }}>
+            <div style={{
+              width: `${loadingProgress}%`, height: '100%', borderRadius: '2px',
+              background: 'linear-gradient(90deg, #2f6fed, #60a5fa)',
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
+        </div>
+      )}
+
       {/* Category tabs */}
-      <div style={{
-        display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center',
-      }}>
-        <button
-          onClick={() => setCategoryFilter('')}
-          style={{
-            padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-            border: categoryFilter === '' ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
-            background: categoryFilter === '' ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
-            color: categoryFilter === '' ? '#60a5fa' : 'rgba(255,255,255,0.5)',
-          }}
-        >
-          Tous
-        </button>
-        {categories.map((cat) => (
+      {!loading && categoriesWithCount.length > 0 && (
+        <div style={{
+          display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center',
+        }}>
           <button
-            key={cat}
-            onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+            onClick={() => setCategoryFilter('')}
             style={{
               padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              border: categoryFilter === cat ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
-              background: categoryFilter === cat ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
-              color: categoryFilter === cat ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+              border: !categoryFilter ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
+              background: !categoryFilter ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
+              color: !categoryFilter ? '#60a5fa' : 'rgba(255,255,255,0.5)',
             }}
           >
-            {cat}
+            Tous ({totalProducts})
           </button>
-        ))}
-      </div>
+          {categoriesWithCount.map(({ name, count }) => (
+            <button
+              key={name}
+              onClick={() => setCategoryFilter(categoryFilter === name ? '' : name)}
+              style={{
+                padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                border: categoryFilter === name ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                background: categoryFilter === name ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
+                color: categoryFilter === name ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+              }}
+            >
+              {name} ({count})
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Filters bar */}
-      <div style={{
-        display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center',
-      }}>
-        {/* Search */}
-        <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '400px' }}>
-          <HiOutlineSearch size={15} style={{
-            position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-            color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
-          }} />
-          <input
-            type="text"
-            placeholder="Rechercher ref, marque, titre..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+      {/* Search + brand filter */}
+      {!loading && (
+        <div style={{
+          display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center',
+        }}>
+          <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '400px' }}>
+            <HiOutlineSearch size={15} style={{
+              position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
+              color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
+            }} />
+            <input
+              type="text"
+              placeholder="Rechercher ref, marque, titre, type..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: '10px',
+                padding: '10px 14px 10px 36px',
+                color: '#fff', fontSize: '13px',
+                fontFamily: 'Inter, sans-serif', outline: 'none',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
+            />
+          </div>
+
+          <select
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
             style={{
-              width: '100%',
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.09)',
               borderRadius: '10px',
-              padding: '10px 14px 10px 36px',
+              padding: '10px 14px',
               color: '#fff', fontSize: '13px',
               fontFamily: 'Inter, sans-serif', outline: 'none',
-              boxSizing: 'border-box',
+              cursor: 'pointer',
+              minWidth: '180px',
             }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
-          />
+          >
+            <option value="" style={{ background: '#1a2f4a' }}>Toutes les marques</option>
+            {brands.map((b) => (
+              <option key={b} value={b} style={{ background: '#1a2f4a' }}>{b}</option>
+            ))}
+          </select>
+
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 500 }}>
+            {totalFiltered} résultat{totalFiltered > 1 ? 's' : ''}
+          </span>
         </div>
-
-        {/* Brand filter */}
-        <select
-          value={brandFilter}
-          onChange={(e) => setBrandFilter(e.target.value)}
-          style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            borderRadius: '10px',
-            padding: '10px 14px',
-            color: '#fff', fontSize: '13px',
-            fontFamily: 'Inter, sans-serif', outline: 'none',
-            cursor: 'pointer',
-            minWidth: '180px',
-          }}
-        >
-          <option value="" style={{ background: '#1a2f4a' }}>Toutes les marques</option>
-          {brands.map((b) => (
-            <option key={b} value={b} style={{ background: '#1a2f4a' }}>{b}</option>
-          ))}
-        </select>
-
-        {/* Count */}
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 500 }}>
-          {filtered.length} affiché{filtered.length > 1 ? 's' : ''} sur cette page
-        </span>
-      </div>
+      )}
 
       {/* Product grid */}
-      <Loading loading={loading} type="cover">
-        {filtered.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '16px',
-          }}>
-            {filtered.map((product) => (
-              <ImbretexProductCard
-                key={product.reference}
-                product={product}
-                onView={handleViewProduct}
-              />
-            ))}
-          </div>
-        ) : (
-          !loading && (
-            <EmptyState
-              title="Aucun produit trouvé"
-              description={searchTerm || brandFilter
-                ? "Modifiez vos filtres pour voir plus de résultats"
-                : "Le catalogue Imbretex n'a retourné aucun produit"}
-              icon={<HiOutlineSearch size={48} />}
+      {paginatedProducts.length > 0 ? (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: '16px',
+        }}>
+          {paginatedProducts.map((product) => (
+            <ImbretexProductCard
+              key={product.reference}
+              product={product}
+              onView={handleViewProduct}
             />
-          )
-        )}
+          ))}
+        </div>
+      ) : (
+        !loading && (
+          <EmptyState
+            title="Aucun produit trouvé"
+            description={searchTerm || brandFilter || categoryFilter
+              ? "Modifiez vos filtres pour voir plus de résultats"
+              : "Le catalogue Imbretex n'a retourné aucun produit"}
+            icon={<HiOutlineSearch size={48} />}
+          />
+        )
+      )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            gap: '12px', marginTop: '32px', paddingBottom: '32px',
-          }}>
-            <Pagination
-              pageSize={50}
-              currentPage={page}
-              total={totalProducts}
-              onChange={handlePageChange}
-            />
-          </div>
-        )}
-      </Loading>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          gap: '12px', marginTop: '32px', paddingBottom: '32px',
+        }}>
+          <Pagination
+            pageSize={PAGE_SIZE}
+            currentPage={page}
+            total={totalFiltered}
+            onChange={(p) => setPage(p)}
+          />
+        </div>
+      )}
 
       {/* Detail modal */}
       {selectedProduct && (
