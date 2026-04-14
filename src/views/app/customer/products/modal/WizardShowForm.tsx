@@ -20,6 +20,55 @@ type NormalizedField = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Recursively flatten nested components (panels, columns, fieldsets, etc.) */
+function flattenComponents(components: any[]): any[] {
+  const result: any[] = [];
+  for (const c of components) {
+    const t = c.type ?? '';
+    // Layout containers: extract their children instead
+    if (['panel', 'well', 'fieldset', 'container'].includes(t)) {
+      if (Array.isArray(c.components)) {
+        result.push(...flattenComponents(c.components));
+      }
+      continue;
+    }
+    if (t === 'columns' && Array.isArray(c.columns)) {
+      for (const col of c.columns) {
+        if (Array.isArray(col.components)) {
+          result.push(...flattenComponents(col.components));
+        }
+      }
+      continue;
+    }
+    if (t === 'table' && Array.isArray(c.rows)) {
+      for (const row of c.rows) {
+        for (const cell of row) {
+          if (Array.isArray(cell.components)) {
+            result.push(...flattenComponents(cell.components));
+          }
+        }
+      }
+      continue;
+    }
+    if (t === 'tabs' && Array.isArray(c.components)) {
+      for (const tab of c.components) {
+        if (Array.isArray(tab.components)) {
+          result.push(...flattenComponents(tab.components));
+        }
+      }
+      continue;
+    }
+    // Recurse into any component that has nested components
+    if (Array.isArray(c.components) && c.components.length > 0) {
+      result.push(...flattenComponents(c.components));
+      continue;
+    }
+    // Keep this component as-is
+    result.push(c);
+  }
+  return result;
+}
+
 /** Normalize fields from both new custom format and old Form.io format */
 function normalizeFields(raw: JSONValue): NormalizedField[] {
   if (!raw) return [];
@@ -34,12 +83,14 @@ function normalizeFields(raw: JSONValue): NormalizedField[] {
     components = parsed.components;
   }
 
-  return components
+  // Flatten nested structures (panels, columns, etc.)
+  const flat = flattenComponents(components);
+
+  return flat
     .filter((c: any) => {
-      // Skip layout-only, buttons, and hidden fields
       const t = c.type ?? '';
-      return !['button', 'columns', 'panel', 'table', 'tabs', 'content', 'htmlelement', 'well', 'fieldset'].includes(t)
-        && !c.hidden;
+      // Skip non-input elements
+      return !['button', 'content', 'htmlelement'].includes(t) && !c.hidden;
     })
     .map((c: any) => ({
       id: c.id ?? c.key ?? c.type + '_' + Math.random().toString(36).slice(2, 6),
