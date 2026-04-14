@@ -483,12 +483,13 @@ const ImbretexCatalog = () => {
         await unwrapData(apiCreateProduct({
           name: `${title} (${product.reference})`,
           description,
-          productRef: product.reference,
           active: false,
           inCatalogue: false,
+          priceTiers: [{ minQuantity: 1, price: 0 }],
         } as any));
         created++;
-      } catch {
+      } catch (err) {
+        console.error(`Import ${product.reference} failed:`, err);
         errors++;
       }
     }
