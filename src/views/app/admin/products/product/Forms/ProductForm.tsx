@@ -137,8 +137,6 @@ const ProductForm = (props: ProductFormProps) => {
   });
 
   const onSubmit = async (values: ProductFormModel) => {
-    // Guard: only submit from the last step
-    if (currentStep < totalSteps - 1) return;
     const formData = cloneDeep(values);
     await onFormSubmit(formData, batFile);
   };
@@ -175,10 +173,15 @@ const ProductForm = (props: ProductFormProps) => {
     fontFamily: 'Inter, sans-serif',
   };
 
-  console.log('[ProductForm] currentStep:', currentStep, 'totalSteps:', totalSteps, 'errors:', Object.keys(errors));
+  // Show validation errors — jump to the step that has errors
+  const onError = (formErrors: any) => {
+    console.log('[ProductForm] Validation errors:', formErrors);
+    if (formErrors.name || formErrors.description) setCurrentStep(0);
+    else if (formErrors.priceTiers || formErrors.pricePerM2) setCurrentStep(1);
+  };
 
   return (
-    <form onSubmit={(e) => { console.log('[ProductForm] form submit event, step:', currentStep); if (currentStep < totalSteps - 1) { e.preventDefault(); return; } handleSubmit(onSubmit)(e); }} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
+    <form onSubmit={handleSubmit(onSubmit, onError)} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < totalSteps - 1) e.preventDefault(); }}>
       <FormContainer>
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
