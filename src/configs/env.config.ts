@@ -1,7 +1,9 @@
 const dev = {
     API_ENDPOINT_URL: import.meta.env.VITE_API_ENDPOINT_URL || 'http://localhost:1337',
     EXPRESS_BACKEND_URL: 'http://localhost:3000',
-    STRIPE_PUBLIC_KEY: import.meta.env.VITE_STRIPE_PUBLIC_KEY || ''
+    STRIPE_PUBLIC_KEY: import.meta.env.VITE_STRIPE_PUBLIC_KEY || '',
+    IMBRETEX_API_URL: import.meta.env.VITE_IMBRETEX_API_URL || 'https://api.preprod.imbretex-upgrade.hegyd.net/api',
+    IMBRETEX_API_TOKEN: import.meta.env.VITE_IMBRETEX_API_TOKEN || '',
   };
 
   // API HEROKU
@@ -12,7 +14,9 @@ const dev = {
   const prod = {
     API_ENDPOINT_URL: apiUrl,
     EXPRESS_BACKEND_URL: apiUrl + '/api',
-    STRIPE_PUBLIC_KEY: stripeKey
+    STRIPE_PUBLIC_KEY: stripeKey,
+    IMBRETEX_API_URL: import.meta.env.VITE_IMBRETEX_API_URL || 'https://api.preprod.imbretex-upgrade.hegyd.net/api',
+    IMBRETEX_API_TOKEN: import.meta.env.VITE_IMBRETEX_API_TOKEN || '',
   };
 
   const getEnv = () => {

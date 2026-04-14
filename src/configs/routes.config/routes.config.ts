@@ -122,6 +122,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/products/colors/ColorsList")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // imbretex supplier catalog
+  {
+    key: "admin.imbretex.catalog",
+    path: "/admin/imbretex/catalog",
+    component: lazy(() => import("@/views/app/admin/imbretex/ImbretexCatalog")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   //orders
   {
     key: "admin.store.orders",

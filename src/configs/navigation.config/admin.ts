@@ -254,6 +254,40 @@ const navigationAdmin: NavigationTree[] = [
     ],
   },
 
+  // --- Fournisseurs ---
+  {
+    key: "admin.suppliers",
+    path: "/admin/imbretex/catalog",
+    title: "",
+    translateKey: "",
+    icon: "store",
+    type: NAV_ITEM_TYPE_TITLE,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [
+      {
+        key: "admin.suppliers",
+        path: "/admin/imbretex/catalog",
+        title: "Fournisseurs",
+        translateKey: "nav.suppliers",
+        icon: "store",
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [SUPER_ADMIN, ADMIN],
+        subMenu: [
+          {
+            key: "admin.imbretex.catalog",
+            path: "/admin/imbretex/catalog",
+            title: "Catalogue Imbretex",
+            translateKey: "nav.imbretexCatalog",
+            icon: "store",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN, ADMIN],
+            subMenu: [],
+          },
+        ],
+      },
+    ],
+  },
+
   // --- Finance ---
   {
     key: "admin.invoices",
