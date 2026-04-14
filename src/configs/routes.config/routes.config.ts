@@ -31,7 +31,7 @@ const protectedAdminRoutes = [
     key: "admin.customers.add",
     path: "/admin/customers/add",
     component: lazy(
-      () => import("@/views/app/admin/customers/lists/EditCustomer")
+      () => import("@/views/app/admin/customers/lists/CustomersList")
     ),
     authority: [SUPER_ADMIN, ADMIN],
   },
@@ -39,7 +39,7 @@ const protectedAdminRoutes = [
     key: "admin.customers.edit",
     path: "/admin/customers/edit/:documentId",
     component: lazy(
-      () => import("@/views/app/admin/customers/lists/EditCustomer")
+      () => import("@/views/app/admin/customers/lists/CustomersList")
     ),
     authority: [SUPER_ADMIN, ADMIN],
   },
