@@ -8,7 +8,10 @@ import reducer, {
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { Container, EmptyState } from '@/components/shared';
-import { HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
+import { toast } from 'react-toastify';
+import { apiCreateProduct } from '@/services/ProductServices';
+import { unwrapData } from '@/utils/serviceHelper';
 import type { ImbretexProduct, ImbretexVariant, ImbretexPriceStock } from '@/@types/imbretex';
 
 injectReducer('imbretex', reducer);
@@ -257,7 +260,14 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
 
 // ─── Product Card ───
 
-const ImbretexProductCard = ({ product, onView }: { product: ImbretexProduct; onView: (p: ImbretexProduct) => void }) => {
+type CardProps = {
+  product: ImbretexProduct;
+  onView: (p: ImbretexProduct) => void;
+  selected: boolean;
+  onToggleSelect: (ref: string) => void;
+};
+
+const ImbretexProductCard = ({ product, onView, selected, onToggleSelect }: CardProps) => {
   const image = getBestImage(product);
   const mainVariant = product.variants[0];
   const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
@@ -266,71 +276,88 @@ const ImbretexProductCard = ({ product, onView }: { product: ImbretexProduct; on
 
   return (
     <div
-      onClick={() => onView(product)}
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: selected ? 'rgba(47,111,237,0.08)' : 'rgba(255,255,255,0.03)',
+        border: selected ? '1.5px solid rgba(47,111,237,0.4)' : '1px solid rgba(255,255,255,0.06)',
         borderRadius: '14px',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         fontFamily: 'Inter, sans-serif',
+        position: 'relative',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)';
+        if (!selected) e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)';
         e.currentTarget.style.transform = 'translateY(-2px)';
         e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+        if (!selected) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
-      <div style={{
-        width: '100%', height: '160px',
-        background: '#fff',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden', padding: '8px',
-      }}>
-        {image ? (
-          <img src={image} alt={product.reference}
-            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-          />
-        ) : (
-          <div style={{ color: '#999', fontSize: '12px' }}>Pas d'image</div>
-        )}
+      {/* Checkbox */}
+      <div
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(product.reference); }}
+        style={{
+          position: 'absolute', top: '8px', left: '8px', zIndex: 2,
+          width: '24px', height: '24px', borderRadius: '6px',
+          background: selected ? '#2f6fed' : 'rgba(0,0,0,0.5)',
+          border: selected ? '2px solid #2f6fed' : '2px solid rgba(255,255,255,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s ease',
+        }}
+      >
+        {selected && <HiOutlineCheck size={14} style={{ color: '#fff', strokeWidth: 3 }} />}
       </div>
-      <div style={{ padding: '12px 14px' }}>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>
-          {product.brands?.name}
-        </p>
-        <h4 style={{ color: '#fff', fontSize: '13px', fontWeight: 700, margin: '0 0 4px', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
-          {product.reference}
-        </h4>
-        <p style={{
-          color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+
+      <div onClick={() => onView(product)}>
+        <div style={{
+          width: '100%', height: '160px',
+          background: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden', padding: '8px',
         }}>
-          {title}
-        </p>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {family && (
-            <span style={{
-              background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-              borderRadius: '5px', padding: '2px 8px',
-              color: '#60a5fa', fontSize: '10px', fontWeight: 600,
-            }}>
-              {family}
-            </span>
+          {image ? (
+            <img src={image} alt={product.reference}
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            />
+          ) : (
+            <div style={{ color: '#999', fontSize: '12px' }}>Pas d'image</div>
           )}
-          <span style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '5px', padding: '2px 8px',
-            color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 600,
+        </div>
+        <div style={{ padding: '12px 14px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>
+            {product.brands?.name}
+          </p>
+          <h4 style={{ color: '#fff', fontSize: '13px', fontWeight: 700, margin: '0 0 4px', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+            {product.reference}
+          </h4>
+          <p style={{
+            color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            {variantCount} variante{variantCount > 1 ? 's' : ''}
-          </span>
+            {title}
+          </p>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {family && (
+              <span style={{
+                background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                borderRadius: '5px', padding: '2px 8px',
+                color: '#60a5fa', fontSize: '10px', fontWeight: 600,
+              }}>
+                {family}
+              </span>
+            )}
+            <span style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '5px', padding: '2px 8px',
+              color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 600,
+            }}>
+              {variantCount} variante{variantCount > 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -351,6 +378,8 @@ const ImbretexCatalog = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ImbretexProduct | null>(null);
   const [page, setPage] = useState(1);
+  const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
 
   // Load all products once on mount
   useEffect(() => {
@@ -412,6 +441,68 @@ const ImbretexCatalog = () => {
 
   // Reset page when filters change
   useEffect(() => { setPage(1); }, [searchTerm, brandFilter, categoryFilter]);
+
+  // Selection
+  const handleToggleSelect = useCallback((ref: string) => {
+    setSelectedRefs((prev) => {
+      const next = new Set(prev);
+      if (next.has(ref)) next.delete(ref);
+      else next.add(ref);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllPage = useCallback(() => {
+    setSelectedRefs((prev) => {
+      const next = new Set(prev);
+      const allSelected = paginatedProducts.every((p) => next.has(p.reference));
+      if (allSelected) {
+        paginatedProducts.forEach((p) => next.delete(p.reference));
+      } else {
+        paginatedProducts.forEach((p) => next.add(p.reference));
+      }
+      return next;
+    });
+  }, [paginatedProducts]);
+
+  // Import selected products into PEG
+  const handleImport = useCallback(async () => {
+    const toImport = allProducts.filter((p) => selectedRefs.has(p.reference));
+    if (toImport.length === 0) return;
+
+    setImporting(true);
+    let created = 0;
+    let errors = 0;
+
+    for (const product of toImport) {
+      const mainVariant = product.variants[0];
+      const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
+      const description = mainVariant?.description?.fr || mainVariant?.longDescription?.fr || '';
+
+      try {
+        await unwrapData(apiCreateProduct({
+          name: `${title} (${product.reference})`,
+          description,
+          productRef: product.reference,
+          active: false,
+          inCatalogue: false,
+        } as any));
+        created++;
+      } catch {
+        errors++;
+      }
+    }
+
+    setImporting(false);
+    setSelectedRefs(new Set());
+
+    if (created > 0) {
+      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''} dans PEG`);
+    }
+    if (errors > 0) {
+      toast.warn(`${errors} erreur${errors > 1 ? 's' : ''} lors de l'import`);
+    }
+  }, [allProducts, selectedRefs]);
 
   // View product detail → fetch price/stock
   const handleViewProduct = useCallback((product: ImbretexProduct) => {
@@ -573,6 +664,20 @@ const ImbretexCatalog = () => {
             ))}
           </select>
 
+          <button
+            onClick={handleSelectAllPage}
+            style={{
+              padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            {paginatedProducts.every((p) => selectedRefs.has(p.reference)) && paginatedProducts.length > 0
+              ? 'Désélectionner la page'
+              : 'Sélectionner la page'}
+          </button>
+
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 500 }}>
             {totalFiltered} résultat{totalFiltered > 1 ? 's' : ''}
           </span>
@@ -591,6 +696,8 @@ const ImbretexCatalog = () => {
               key={product.reference}
               product={product}
               onView={handleViewProduct}
+              selected={selectedRefs.has(product.reference)}
+              onToggleSelect={handleToggleSelect}
             />
           ))}
         </div>
@@ -629,6 +736,52 @@ const ImbretexCatalog = () => {
           loadingPrices={loadingPrices}
           onClose={() => setSelectedProduct(null)}
         />
+      )}
+
+      {/* Floating action bar */}
+      {selectedRefs.size > 0 && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 900,
+          background: 'linear-gradient(160deg, #1a2f4a 0%, #111e30 100%)',
+          border: '1.5px solid rgba(47,111,237,0.3)',
+          borderRadius: '14px',
+          padding: '14px 24px',
+          display: 'flex', alignItems: 'center', gap: '16px',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          fontFamily: 'Inter, sans-serif',
+        }}>
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>
+            {selectedRefs.size} produit{selectedRefs.size > 1 ? 's' : ''} sélectionné{selectedRefs.size > 1 ? 's' : ''}
+          </span>
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'linear-gradient(90deg, #16a34a, #15803d)',
+              border: 'none', borderRadius: '10px', padding: '10px 20px',
+              color: '#fff', fontSize: '13px', fontWeight: 600,
+              cursor: importing ? 'wait' : 'pointer',
+              opacity: importing ? 0.6 : 1,
+              fontFamily: 'Inter, sans-serif',
+              boxShadow: '0 4px 14px rgba(22,163,74,0.4)',
+            }}
+          >
+            {importing ? 'Import en cours...' : 'Importer dans PEG'}
+          </button>
+          <button
+            onClick={() => setSelectedRefs(new Set())}
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '8px', width: '36px', height: '36px',
+              color: 'rgba(255,255,255,0.5)', fontSize: '16px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <HiOutlineX size={16} />
+          </button>
+        </div>
       )}
     </Container>
   );
