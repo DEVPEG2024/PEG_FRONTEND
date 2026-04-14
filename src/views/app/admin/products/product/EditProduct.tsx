@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Color, Product, ProductCategory, Size } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
 import { PegFile } from '@/@types/pegFile';
@@ -67,7 +67,7 @@ const EditProduct = () => {
   const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [imagesLoading, setImagesLoading] = useState<boolean>(false);
-  const initialData: ProductFormModel = {
+  const initialData: ProductFormModel = useMemo(() => ({
     documentId: documentId ?? '',
     name: product?.name || '',
     priceTiers:
@@ -95,7 +95,7 @@ const EditProduct = () => {
     pricingMode: product?.pricingMode ?? 'tiers',
     pricePerM2: product?.pricePerM2 ?? undefined,
     minM2: product?.minM2 ?? undefined,
-  };
+  }), [product?.documentId]);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -117,11 +117,11 @@ const EditProduct = () => {
     fetchChecklists();
     fetchSizes();
     fetchColors();
-  }, [product]);
+  }, [product?.documentId]);
 
   useEffect(() => {
     fetchFiles();
-  }, [product]);
+  }, [product?.documentId]);
 
   const fetchFiles = async (): Promise<void> => {
     setImagesLoading(true);
