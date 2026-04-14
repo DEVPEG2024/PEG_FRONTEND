@@ -6,6 +6,8 @@ import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
 import { apiSignUp } from '@/services/AuthService';
 import { API_BASE_URL } from '@/configs/api.config';
 
+const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
+
 interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -136,7 +138,13 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                 zipCode: values.zipCode,
                 city: values.city,
             });
-            setSuccessMessage('Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.');
+            // Envoi de l'email de bienvenue (non bloquant)
+            fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: values.email, firstName: values.firstName }),
+            }).catch(() => {});
+            setSuccessMessage('Votre compte a été créé avec succès ! Un email de bienvenue vous a été envoyé. Vous pouvez maintenant vous connecter.');
             reset();
         } catch (err: any) {
             const msg = err?.response?.data?.error?.message || 'Une erreur est survenue. Veuillez réessayer.';
