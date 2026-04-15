@@ -251,17 +251,20 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     }
 
     // Étape 2 : mise à jour relations + productRef via REST API Strapi
-    const restData: Record<string, any> = { productRef: ref };
-    if (sizeIds.length) restData.sizes = { connect: sizeIds.map(id => ({ documentId: id })) };
-    if (colorIds.length) restData.colors = { connect: colorIds.map(id => ({ documentId: id })) };
+    // Test tous les formats pour trouver celui qui fonctionne
+    const restData: Record<string, any> = {
+      productRef: ref,
+      sizes: sizeIds,
+      colors: colorIds,
+    };
 
-    console.log(`[Import] ${ref} REST PUT:`, JSON.stringify(restData));
+    console.log(`[Import] ${ref} REST PUT (format plat):`, JSON.stringify(restData));
 
     const restResult = await BaseService.put(
-      `${API_BASE_URL}/products/${createdDocId}`,
+      `${API_BASE_URL}/products/${createdDocId}?populate=sizes,colors`,
       { data: restData }
     );
-    console.log(`[Import] ${ref} REST RÉPONSE:`, JSON.stringify(restResult.data));
+    console.log(`[Import] ${ref} REST RÉPONSE (avec populate):`, JSON.stringify(restResult.data));
 
     return { success: true, reference: ref };
   } catch (err: any) {
