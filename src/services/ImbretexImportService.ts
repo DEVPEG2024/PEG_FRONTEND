@@ -261,7 +261,7 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
 
     try {
       const restResult = await BaseService.put(
-        `${API_BASE_URL}/products/${createdDocId}?populate=sizes,colors`,
+        `${API_BASE_URL}/products/${createdDocId}?populate[0]=sizes&populate[1]=colors`,
         { data: restData }
       );
       console.log(`[Import] ${ref} REST OK:`, JSON.stringify(restResult.data));
