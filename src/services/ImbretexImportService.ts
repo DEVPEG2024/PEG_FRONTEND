@@ -162,15 +162,16 @@ async function fetchImageViaProxy(imageUrl: string): Promise<File | null> {
   }
 }
 
-async function uploadImbretexImage(product: ImbretexProduct): Promise<string | null> {
+async function uploadImbretexImage(product: ImbretexProduct): Promise<number | null> {
   const url = getBestImageUrl(product);
   if (!url) return null;
   const file = await fetchImageViaProxy(url);
   if (!file) return null;
   try {
     const pegFile = await apiUploadFile(file);
-    console.log(`[Import] Image uploadée:`, pegFile.documentId);
-    return pegFile.documentId;
+    const numericId = Number(pegFile.id);
+    console.log(`[Import] Image uploadée: id=${numericId}, docId=${pegFile.documentId}`);
+    return numericId || null;
   } catch (err) {
     console.warn('[Import] Erreur upload Strapi:', err);
     return null;
