@@ -227,6 +227,7 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
       active: true,
       inCatalogue: true,
       priceTiers: [{ minQuantity: 1, price }],
+      productRef: ref,
     };
     if (catId) data.productCategory = catId;
     if (sizeIds.length) data.sizes = sizeIds;
