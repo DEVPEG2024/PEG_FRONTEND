@@ -298,8 +298,6 @@ const EditProduct = () => {
       delete data.requiresBat;
       delete data.batFile;
       delete data.catalogPrice;
-      delete data.productRef;
-      delete data.refVisibleToCustomer;
       delete data.pricingMode;
       delete data.pricePerM2;
       delete data.minM2;

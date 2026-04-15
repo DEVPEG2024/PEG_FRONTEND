@@ -90,8 +90,8 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             # requiresBat                          — activer après déploiement Strapi
             # batFile { documentId url name }      — activer après déploiement Strapi
             # catalogPrice                         — activer après déploiement Strapi
-            # productRef                           — activer après déploiement Strapi
-            # refVisibleToCustomer                 — activer après déploiement Strapi
+            productRef
+            refVisibleToCustomer
             customerCategories {
                 documentId
             }
