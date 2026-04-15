@@ -4,7 +4,7 @@
  */
 
 import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
-import { apiCreateProduct } from './ProductServices';
+import { apiCreateProduct, apiUpdateProduct } from './ProductServices';
 import { apiGetSizes } from './SizeServices';
 import { apiGetColors } from './ColorServices';
 import { apiGetProductCategories, GetProductCategoriesResponse } from './ProductCategoryServices';
@@ -220,30 +220,49 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     } catch { /* */ }
     console.log(`[Import] ${ref} prix: ${price}€`);
 
-    // Création
-    const data: Record<string, any> = {
+    // Étape 1 : création du produit (sans relations many-to-many)
+    const createData: Record<string, any> = {
       name: getTitle(mv) || ref,
       description: mv.description?.fr || '',
       active: true,
       inCatalogue: true,
       priceTiers: [{ minQuantity: 1, price }],
-      productRef: ref,
     };
-    if (catId) data.productCategory = catId;
-    if (sizeIds.length) data.sizes = sizeIds;
-    if (colorIds.length) data.colors = colorIds;
-    if (imageDocId) data.images = [imageDocId];
+    if (catId) createData.productCategory = catId;
+    if (imageDocId) createData.images = [imageDocId];
 
-    console.log(`[Import] ${ref} ENVOI:`, JSON.stringify(data));
+    console.log(`[Import] ${ref} CRÉATION:`, JSON.stringify(createData));
 
-    const result = await apiCreateProduct(data as any);
+    const result = await apiCreateProduct(createData as any);
     const response = result.data;
-    console.log(`[Import] ${ref} RÉPONSE:`, JSON.stringify(response));
+    console.log(`[Import] ${ref} RÉPONSE CRÉATION:`, JSON.stringify(response));
 
     if ((response as any).errors?.length) {
       const msg = (response as any).errors[0].message;
       console.error(`[Import] ${ref} ERREUR GRAPHQL:`, msg);
       return { success: false, reference: ref, error: msg };
+    }
+
+    const createdDocId = (response as any).data?.createProduct?.documentId;
+    if (!createdDocId) {
+      return { success: false, reference: ref, error: 'Pas de documentId retourné' };
+    }
+
+    // Étape 2 : mise à jour avec relations + productRef
+    const updateData: Record<string, any> = { documentId: createdDocId };
+    if (sizeIds.length) updateData.sizes = sizeIds;
+    if (colorIds.length) updateData.colors = colorIds;
+    updateData.productRef = ref;
+
+    console.log(`[Import] ${ref} UPDATE relations:`, JSON.stringify(updateData));
+
+    const updateResult = await apiUpdateProduct(updateData as any);
+    const updateResponse = updateResult.data;
+    console.log(`[Import] ${ref} RÉPONSE UPDATE:`, JSON.stringify(updateResponse));
+
+    if ((updateResponse as any).errors?.length) {
+      const msg = (updateResponse as any).errors[0].message;
+      console.warn(`[Import] ${ref} UPDATE partiel (produit créé mais relations non liées):`, msg);
     }
 
     return { success: true, reference: ref };
