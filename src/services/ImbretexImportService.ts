@@ -5,9 +5,9 @@
 
 import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
 import { apiCreateProduct } from './ProductServices';
-import { apiGetSizes } from './SizeServices';
-import { apiGetColors } from './ColorServices';
-import { apiGetProductCategories, GetProductCategoriesResponse } from './ProductCategoryServices';
+import { apiGetSizes, apiCreateSize } from './SizeServices';
+import { apiGetColors, apiCreateColor } from './ColorServices';
+import { apiGetProductCategories, apiCreateProductCategory } from './ProductCategoryServices';
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
 import { apiUploadFile } from './FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -76,9 +76,9 @@ const CATEGORY_MAP: Record<string, string> = {
   'FIN DE SERIE': 'VÊTEMENT PERSONNALISÉ',
 };
 
-// ─── Match ───
+// ─── Match ou création automatique ───
 
-function match(name: string, cache: Map<string, string>): string | null {
+function findInCache(name: string, cache: Map<string, string>): string | null {
   const k = name.toUpperCase().trim();
   if (cache.has(k)) return cache.get(k)!;
   for (const [pegName, id] of cache) {
@@ -87,13 +87,52 @@ function match(name: string, cache: Map<string, string>): string | null {
   return null;
 }
 
-function matchCategory(imbretexCategory: string, cache: Map<string, string>): string | null {
+async function matchOrCreateCategory(imbretexCategory: string, cache: Map<string, string>): Promise<string | null> {
+  if (!imbretexCategory) return null;
   const k = imbretexCategory.toUpperCase().trim();
   // D'abord le mapping explicite
   const mapped = CATEGORY_MAP[k];
   if (mapped && cache.has(mapped)) return cache.get(mapped)!;
-  // Sinon match direct
-  return match(imbretexCategory, cache);
+  // Match direct
+  const found = findInCache(imbretexCategory, cache);
+  if (found) return found;
+  // Créer la catégorie
+  try {
+    const r = await unwrapData(apiCreateProductCategory({ name: imbretexCategory, active: true, products: [] } as any));
+    const docId = (r as any).createProductCategory.documentId;
+    cache.set(k, docId);
+    console.log(`[Import] Catégorie créée: "${imbretexCategory}" → ${docId}`);
+    return docId;
+  } catch (e) { console.warn(`[Import] Impossible de créer la catégorie "${imbretexCategory}":`, e); }
+  return null;
+}
+
+async function matchOrCreateColor(name: string, cache: Map<string, string>): Promise<string | null> {
+  const found = findInCache(name, cache);
+  if (found) return found;
+  // Créer la couleur
+  try {
+    const r = await unwrapData(apiCreateColor({ name, value: '#000000', description: '' } as any));
+    const docId = (r as any).createColor.documentId;
+    cache.set(name.toUpperCase().trim(), docId);
+    console.log(`[Import] Couleur créée: "${name}" → ${docId}`);
+    return docId;
+  } catch (e) { console.warn(`[Import] Impossible de créer la couleur "${name}":`, e); }
+  return null;
+}
+
+async function matchOrCreateSize(name: string, cache: Map<string, string>): Promise<string | null> {
+  const found = findInCache(name, cache);
+  if (found) return found;
+  // Créer la taille
+  try {
+    const r = await unwrapData(apiCreateSize({ name, value: name, description: '' } as any));
+    const docId = (r as any).createSize.documentId;
+    cache.set(name.toUpperCase().trim(), docId);
+    console.log(`[Import] Taille créée: "${name}" → ${docId}`);
+    return docId;
+  } catch (e) { console.warn(`[Import] Impossible de créer la taille "${name}":`, e); }
+  return null;
 }
 
 // ─── Extraction données Imbretex ───
@@ -193,20 +232,22 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     // Charger les données PEG (une seule fois)
     const [catMap, sizeMap, colorMap] = await Promise.all([getCategories(), getSizes(), getColors()]);
 
-    // Catégorie
+    // Catégorie (match ou création auto)
     const catName = getCategory(product);
-    const catId = catName ? matchCategory(catName, catMap) : null;
+    const catId = catName ? await matchOrCreateCategory(catName, catMap) : null;
     console.log(`[Import] ${ref} catégorie: "${catName}" → ${catId || 'aucun match'}`);
 
-    // Tailles
+    // Tailles (match ou création auto)
     const sizeNames = extractSizes(product.variants);
-    const sizeIds = [...new Set(sizeNames.map(n => match(n, sizeMap)).filter(Boolean))] as string[];
-    console.log(`[Import] ${ref} tailles: [${sizeNames}] → ${sizeIds.length} matchées`);
+    const sizeResults = await Promise.all(sizeNames.map(n => matchOrCreateSize(n, sizeMap)));
+    const sizeIds = [...new Set(sizeResults.filter(Boolean))] as string[];
+    console.log(`[Import] ${ref} tailles: [${sizeNames}] → ${sizeIds.length} matchées/créées`);
 
-    // Couleurs
+    // Couleurs (match ou création auto)
     const colorNames = extractColors(product.variants);
-    const colorIds = [...new Set(colorNames.map(n => match(n, colorMap)).filter(Boolean))] as string[];
-    console.log(`[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées`);
+    const colorResults = await Promise.all(colorNames.map(n => matchOrCreateColor(n, colorMap)));
+    const colorIds = [...new Set(colorResults.filter(Boolean))] as string[];
+    console.log(`[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées/créées`);
 
     // Image
     const imageDocId = await uploadImbretexImage(product);
