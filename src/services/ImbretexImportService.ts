@@ -260,13 +260,13 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     console.log(`[Import] ${ref} UPDATE relations:`, JSON.stringify(restData));
 
     try {
-      await BaseService.put(
-        `${API_BASE_URL}/products/${createdDocId}`,
+      const restResult = await BaseService.put(
+        `${API_BASE_URL}/products/${createdDocId}?status=published&populate[0]=sizes&populate[1]=colors`,
         { data: restData }
       );
-      console.log(`[Import] ${ref} relations OK`);
+      console.log(`[Import] ${ref} REST RÉPONSE:`, JSON.stringify(restResult.data));
     } catch (restErr: any) {
-      console.warn(`[Import] ${ref} relations ERREUR (produit créé sans relations):`, restErr?.response?.data);
+      console.error(`[Import] ${ref} REST ERREUR:`, restErr?.response?.status, JSON.stringify(restErr?.response?.data));
     }
 
     return { success: true, reference: ref };
