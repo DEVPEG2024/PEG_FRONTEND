@@ -4,13 +4,15 @@
  */
 
 import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
-import { apiCreateProduct, apiUpdateProduct } from './ProductServices';
+import { apiCreateProduct } from './ProductServices';
 import { apiGetSizes } from './SizeServices';
 import { apiGetColors } from './ColorServices';
 import { apiGetProductCategories, GetProductCategoriesResponse } from './ProductCategoryServices';
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
 import { apiUploadFile } from './FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import BaseService from './BaseService';
+import { API_BASE_URL } from '@/configs/api.config';
 
 const PEG_BACKEND_BASE = import.meta.env.DEV
   ? 'http://localhost:3000'
@@ -248,22 +250,18 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
       return { success: false, reference: ref, error: 'Pas de documentId retourné' };
     }
 
-    // Étape 2 : mise à jour avec relations + productRef
-    const updateData: Record<string, any> = { documentId: createdDocId };
-    if (sizeIds.length) updateData.sizes = sizeIds;
-    if (colorIds.length) updateData.colors = colorIds;
-    updateData.productRef = ref;
+    // Étape 2 : mise à jour relations + productRef via REST API Strapi
+    const restData: Record<string, any> = { productRef: ref };
+    if (sizeIds.length) restData.sizes = { connect: sizeIds };
+    if (colorIds.length) restData.colors = { connect: colorIds };
 
-    console.log(`[Import] ${ref} UPDATE relations:`, JSON.stringify(updateData));
+    console.log(`[Import] ${ref} REST PUT:`, JSON.stringify(restData));
 
-    const updateResult = await apiUpdateProduct(updateData as any);
-    const updateResponse = updateResult.data;
-    console.log(`[Import] ${ref} RÉPONSE UPDATE:`, JSON.stringify(updateResponse));
-
-    if ((updateResponse as any).errors?.length) {
-      const msg = (updateResponse as any).errors[0].message;
-      console.warn(`[Import] ${ref} UPDATE partiel (produit créé mais relations non liées):`, msg);
-    }
+    const restResult = await BaseService.put(
+      `${API_BASE_URL}/products/${createdDocId}`,
+      { data: restData }
+    );
+    console.log(`[Import] ${ref} REST RÉPONSE:`, JSON.stringify(restResult.data));
 
     return { success: true, reference: ref };
   } catch (err: any) {
