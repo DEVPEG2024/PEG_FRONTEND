@@ -1,7 +1,6 @@
 /**
  * Service d'import de produits Imbretex → PEG
- * Simple et fiable : catégorie + tailles + couleurs + prix
- * Images non importées (CORS bloqué sur www.imbretex.fr)
+ * Catégorie + tailles + couleurs + prix + image (via proxy backend)
  */
 
 import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
@@ -10,7 +9,12 @@ import { apiGetSizes } from './SizeServices';
 import { apiGetColors } from './ColorServices';
 import { apiGetProductCategories, GetProductCategoriesResponse } from './ProductCategoryServices';
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
+import { apiUploadFile } from './FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
+
+const PEG_BACKEND_BASE = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : '/peg-api';
 
 // ─── Caches (chargés une fois par session d'import) ───
 
@@ -128,6 +132,51 @@ function extractColors(variants: ImbretexVariant[]): string[] {
   return Array.from(s);
 }
 
+// ─── Image : proxy backend → upload Strapi ───
+
+function fixImageUrl(url: string): string {
+  return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+}
+
+function getBestImageUrl(p: ImbretexProduct): string | null {
+  if (Array.isArray(p.images) && p.images.length > 0) return fixImageUrl(p.images[0].url);
+  if (!Array.isArray(p.images) && p.images?.url) return fixImageUrl(p.images.url);
+  for (const v of p.variants) {
+    if (v.images?.length > 0) return fixImageUrl(v.images[0].url);
+  }
+  return null;
+}
+
+async function fetchImageViaProxy(imageUrl: string): Promise<File | null> {
+  try {
+    const proxyUrl = `${PEG_BACKEND_BASE}/imbretex/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const ext = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+    const name = `imbretex-${Date.now()}.${ext}`;
+    return new File([blob], name, { type: blob.type || 'image/jpeg' });
+  } catch (err) {
+    console.warn('[Import] Erreur proxy image:', err);
+    return null;
+  }
+}
+
+async function uploadImbretexImage(product: ImbretexProduct): Promise<string | null> {
+  const url = getBestImageUrl(product);
+  if (!url) return null;
+  const file = await fetchImageViaProxy(url);
+  if (!file) return null;
+  try {
+    const pegFile = await apiUploadFile(file);
+    console.log(`[Import] Image uploadée:`, pegFile.documentId);
+    return pegFile.documentId;
+  } catch (err) {
+    console.warn('[Import] Erreur upload Strapi:', err);
+    return null;
+  }
+}
+
 // ─── Import principal ───
 
 export type ImportResult = { success: boolean; reference: string; error?: string };
@@ -156,6 +205,10 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     const colorIds = [...new Set(colorNames.map(n => match(n, colorMap)).filter(Boolean))] as string[];
     console.log(`[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées`);
 
+    // Image
+    const imageDocId = await uploadImbretexImage(product);
+    console.log(`[Import] ${ref} image: ${imageDocId || 'aucune'}`);
+
     // Prix
     let price = 0;
     try {
@@ -177,6 +230,7 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
     if (catId) data.productCategory = catId;
     if (sizeIds.length) data.sizes = sizeIds;
     if (colorIds.length) data.colors = colorIds;
+    if (imageDocId) data.images = [imageDocId];
 
     console.log(`[Import] ${ref} ENVOI:`, JSON.stringify(data));
 
