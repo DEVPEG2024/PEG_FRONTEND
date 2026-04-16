@@ -310,7 +310,7 @@ const Comments = () => {
               {/* WhatsApp button — client only */}
               {!isAdmin && (
                 <a
-                  href={`https://wa.me/33659252823?text=${encodeURIComponent(`Bonjour, je vous contacte au sujet du projet "${project?.name ?? ''}"`)}`}
+                  href={`https://wa.me/33659252823?text=${encodeURIComponent(`Bonjour, je suis ${user?.firstName ?? ''} ${user?.lastName ?? ''} (${project?.customer?.name ?? ''}), je vous contacte au sujet du projet "${project?.name ?? ''}"`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
