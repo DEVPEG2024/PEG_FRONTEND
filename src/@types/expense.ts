@@ -1,5 +1,3 @@
-import { Customer } from './customer';
-
 export type ExpenseCategory =
   | 'supplier'      // Fournisseur matériel
   | 'subcontractor' // Sous-traitance
@@ -25,7 +23,7 @@ export type Expense = {
   dueDate: string;
   paidDate: string;
   supplierName: string;
-  project?: { documentId: string; title: string } | null;
+  project?: { documentId: string; name: string } | null;
   receipt?: { documentId: string; url: string; name: string } | null;
   createdAt: string;
   updatedAt: string;

@@ -4,6 +4,23 @@ import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 import { AxiosResponse } from 'axios';
 
+// Nettoie les données avant envoi : strings vides → null, retire les champs non attendus
+function cleanExpenseInput(raw: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  const ALLOWED = ['label', 'description', 'amount', 'vatAmount', 'totalAmount', 'category', 'status', 'date', 'dueDate', 'paidDate', 'supplierName', 'project', 'receipt'];
+  for (const key of ALLOWED) {
+    if (!(key in raw)) continue;
+    const val = raw[key];
+    // Strapi rejette "" pour les champs Date — envoyer null
+    if (val === '' || val === undefined) {
+      clean[key] = null;
+    } else {
+      clean[key] = val;
+    }
+  }
+  return clean;
+}
+
 // --- Fragment GraphQL commun ---
 const EXPENSE_FIELDS = `
   documentId
@@ -20,7 +37,7 @@ const EXPENSE_FIELDS = `
   supplierName
   project {
     documentId
-    title
+    name
   }
   receipt {
     documentId
@@ -91,11 +108,11 @@ export async function apiCreateExpense(
   `;
   const { project: proj, receipt: rec, ...rest } = data;
   const variables = {
-    data: {
+    data: cleanExpenseInput({
       ...rest,
       project: proj?.documentId ?? null,
       receipt: rec?.documentId ?? null,
-    },
+    }),
   };
   return ApiService.fetchData<ApiResponse<{ createExpense: Expense }>>({
     url: API_GRAPHQL_URL,
@@ -122,7 +139,7 @@ export async function apiUpdateExpense(
   return ApiService.fetchData<ApiResponse<{ updateExpense: Expense }>>({
     url: API_GRAPHQL_URL,
     method: 'post',
-    data: { query, variables: { documentId, data: payload } },
+    data: { query, variables: { documentId, data: cleanExpenseInput(payload) } },
   });
 }
 
