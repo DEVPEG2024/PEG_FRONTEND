@@ -975,7 +975,7 @@ const ProjectSav = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Tickets SAV</p>
               {tickets.length > 0 && (
@@ -994,7 +994,7 @@ const ProjectSav = () => {
                   color: '#fff', fontSize: '15px', fontWeight: 800,
                   cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   letterSpacing: '0.03em',
-                  animation: 'savPulse 2s ease-in-out infinite',
+                  boxShadow: '0 4px 16px rgba(251,146,60,0.3)',
                   transition: 'transform 0.2s ease, filter 0.2s ease',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
