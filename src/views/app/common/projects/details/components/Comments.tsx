@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Container from '@/components/shared/Container';
-import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX, HiPhone } from 'react-icons/hi';
+import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX } from 'react-icons/hi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
 import {
@@ -36,6 +37,11 @@ if (typeof document !== 'undefined' && !document.getElementById(styleId)) {
     @keyframes chatPulse {
       0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
       40% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes whatsappPulse {
+      0% { box-shadow: 0 0 0 0 rgba(37,211,102,0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(37,211,102,0); }
+      100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
     }
     .peg-chat-scroll::-webkit-scrollbar { width: 5px; }
     .peg-chat-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -307,34 +313,6 @@ const Comments = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {/* WhatsApp button — client only */}
-              {!isAdmin && (
-                <a
-                  href={`https://wa.me/33659252823?text=${encodeURIComponent(`Bonjour, je suis ${user?.firstName ?? ''} ${user?.lastName ?? ''} (${project?.customer?.name ?? ''}), je vous contacte au sujet du projet "${project?.name ?? ''}"`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '5px 12px',
-                    borderRadius: '8px',
-                    background: 'rgba(37,211,102,0.12)',
-                    border: '1px solid rgba(37,211,102,0.25)',
-                    color: '#25d366',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    textDecoration: 'none',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                  title="Nous contacter sur WhatsApp"
-                >
-                  <HiPhone size={13} />
-                  WhatsApp
-                </a>
-              )}
               {/* Search toggle */}
               <button
                 onClick={() => { setSearchOpen(!searchOpen); setSearchTerm(''); }}
@@ -706,6 +684,48 @@ const Comments = () => {
             )}
           </div>
         </div>
+
+        {/* ── WhatsApp button below chat — client only ── */}
+        {!isAdmin && (
+          <a
+            href={`https://wa.me/33659252823?text=${encodeURIComponent(`Bonjour, je suis ${user?.firstName ?? ''} ${user?.lastName ?? ''} (${project?.customer?.name ?? ''}), je vous contacte au sujet du projet "${project?.name ?? ''}"`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              gridColumn: '1 / 2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '14px 24px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: 700,
+              fontFamily: 'Inter, sans-serif',
+              letterSpacing: '0.02em',
+              animation: 'whatsappPulse 2s ease-in-out infinite',
+              transition: 'transform 0.2s ease, filter 0.2s ease',
+              marginTop: '-8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.03)';
+              e.currentTarget.style.filter = 'brightness(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'brightness(1)';
+            }}
+            title="Nous contacter sur WhatsApp"
+          >
+            <FaWhatsapp size={20} />
+            Nous contacter sur WhatsApp
+          </a>
+        )}
 
         {/* ── Right sidebar ── */}
         <DetailsRight />
