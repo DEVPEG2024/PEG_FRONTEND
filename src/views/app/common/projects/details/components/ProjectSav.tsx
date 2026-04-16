@@ -975,33 +975,12 @@ const ProjectSav = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Tickets SAV</p>
-              {tickets.length > 0 && (
-                <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-                  {saving ? 'Sauvegarde...' : (openTickets.length + ' ouvert' + (openTickets.length > 1 ? 's' : '') + ' — ' + closedTickets.length + ' fermé' + (closedTickets.length > 1 ? 's' : ''))}
-                </span>
-              )}
-            </div>
-            {canOpenTicket && (
-              <button onClick={() => setWizardOpen(true)} disabled={saving || uploading}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '14px 28px', borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #fb923c 0%, #ea580c 100%)',
-                  border: '2px solid rgba(251,146,60,0.4)',
-                  color: '#fff', fontSize: '15px', fontWeight: 800,
-                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                  letterSpacing: '0.03em',
-                  animation: 'savPulse 2s ease-in-out infinite',
-                  transition: 'transform 0.2s ease, filter 0.2s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'brightness(1)'; }}
-              >
-                <HiPlus size={17} /> Ouvrir un ticket SAV
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Tickets SAV</p>
+            {tickets.length > 0 && (
+              <span style={{ color: saving ? '#fbbf24' : 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                {saving ? 'Sauvegarde...' : (openTickets.length + ' ouvert' + (openTickets.length > 1 ? 's' : '') + ' — ' + closedTickets.length + ' fermé' + (closedTickets.length > 1 ? 's' : ''))}
+              </span>
             )}
           </div>
 
@@ -1035,9 +1014,38 @@ const ProjectSav = () => {
               )}
             </div>
           )}
+          {/* Bouton SAV — en bas, centré */}
+          {canOpenTicket && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+              <button onClick={() => setWizardOpen(true)} disabled={saving || uploading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '14px 28px', borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #fb923c 0%, #ea580c 100%)',
+                  border: '2px solid rgba(251,146,60,0.4)',
+                  color: '#fff', fontSize: '15px', fontWeight: 800,
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  letterSpacing: '0.03em',
+                  animation: 'savBtnPulse 2s ease-in-out infinite',
+                  transition: 'transform 0.2s ease, filter 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'brightness(1)'; }}
+              >
+                <HiPlus size={17} /> Ouvrir un ticket SAV
+              </button>
+            </div>
+          )}
         </div>
         <DetailsRight />
       </div>
+      <style>{`
+        @keyframes savBtnPulse {
+          0% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 0 rgba(251,146,60,0.5); }
+          70% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 14px rgba(251,146,60,0); }
+          100% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 0 rgba(251,146,60,0); }
+        }
+      `}</style>
     </Container>
   );
 };
