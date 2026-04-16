@@ -737,6 +737,11 @@ const ProjectSav = () => {
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
           @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+          @keyframes savPulse {
+            0% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 0 rgba(251,146,60,0.5); }
+            70% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 12px rgba(251,146,60,0); }
+            100% { box-shadow: 0 4px 16px rgba(251,146,60,0.4), 0 0 0 0 rgba(251,146,60,0); }
+          }
         `}</style>
       </div>
     );
@@ -982,18 +987,20 @@ const ProjectSav = () => {
             {canOpenTicket && (
               <button onClick={() => setWizardOpen(true)} disabled={saving || uploading}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 20px', borderRadius: '12px',
-                  background: 'linear-gradient(90deg, #fb923c, #ea580c)',
-                  border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '14px 28px', borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #fb923c 0%, #ea580c 100%)',
+                  border: '2px solid rgba(251,146,60,0.4)',
+                  color: '#fff', fontSize: '15px', fontWeight: 800,
                   cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                  boxShadow: '0 4px 16px rgba(251,146,60,0.3)',
-                  transition: 'transform 0.15s, box-shadow 0.15s',
+                  letterSpacing: '0.03em',
+                  animation: 'savPulse 2s ease-in-out infinite',
+                  transition: 'transform 0.2s ease, filter 0.2s ease',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(251,146,60,0.4)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(251,146,60,0.3)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'brightness(1)'; }}
               >
-                <HiPlus size={15} /> Ouvrir un ticket SAV
+                <HiPlus size={17} /> Ouvrir un ticket SAV
               </button>
             )}
           </div>
