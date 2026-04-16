@@ -290,14 +290,46 @@ const navigationAdmin: NavigationTree[] = [
 
   // --- Finance ---
   {
-    key: "admin.invoices",
+    key: "admin.finance",
     path: "/admin/invoices",
-    title: "Factures",
-    translateKey: "nav.invoices",
+    title: "",
+    translateKey: "",
     icon: "invoices",
-    type: NAV_ITEM_TYPE_ITEM,
+    type: NAV_ITEM_TYPE_TITLE,
     authority: [SUPER_ADMIN, ADMIN],
-    subMenu: [],
+    subMenu: [
+      {
+        key: "admin.finance",
+        path: "/admin/invoices",
+        title: "Finance",
+        translateKey: "nav.finance",
+        icon: "invoices",
+        type: NAV_ITEM_TYPE_ITEM,
+        authority: [SUPER_ADMIN, ADMIN],
+        subMenu: [
+          {
+            key: "admin.invoices",
+            path: "/admin/invoices",
+            title: "Factures",
+            translateKey: "nav.invoices",
+            icon: "invoices",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN, ADMIN],
+            subMenu: [],
+          },
+          {
+            key: "admin.expenses",
+            path: "/admin/expenses",
+            title: "Dépenses",
+            translateKey: "nav.expenses",
+            icon: "expenses",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN, ADMIN],
+            subMenu: [],
+          },
+        ],
+      },
+    ],
   },
 
   // --- Communication ---

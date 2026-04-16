@@ -14,7 +14,7 @@ import { GoTasklist, GoFileDirectory } from "react-icons/go";
 import { SlSupport } from "react-icons/sl";
 import { MdOutlineWorkOutline } from "react-icons/md";
 import { GoPeople } from "react-icons/go";
-import { IoWalletOutline } from "react-icons/io5";
+import { IoWalletOutline, IoReceiptOutline } from "react-icons/io5";
 import { AiOutlineProject } from "react-icons/ai";
 import { RiTeamLine } from "react-icons/ri";
 import { GoFileDiff } from "react-icons/go";
@@ -60,6 +60,7 @@ const navigationIcon: NavigationIcons = {
     iaImages: <MdOutlineImage />,
     iaContent: <MdOutlineArticle />,
     iaProductAgent: <MdSmartToy />,
+    expenses: <IoReceiptOutline />,
 }
 
 export default navigationIcon

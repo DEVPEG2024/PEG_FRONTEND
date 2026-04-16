@@ -176,6 +176,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  //expenses
+  {
+    key: "admin.expenses",
+    path: "/admin/expenses",
+    component: lazy(() => import("@/views/app/admin/expenses/ExpensesList")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   //banners
   {
     key: "admin.banners",
