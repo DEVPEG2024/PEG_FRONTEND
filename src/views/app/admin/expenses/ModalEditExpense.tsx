@@ -72,9 +72,10 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
     setUploading(true);
     try {
       const uploaded = await apiUploadFile(file);
+      // Stocker l'id numérique (pour REST media link) ET le documentId
       setForm((f) => ({
         ...f,
-        receipt: { documentId: uploaded.documentId ?? (uploaded as any).id?.toString(), url: (uploaded as any).url, name: uploaded.name ?? file.name },
+        receipt: { documentId: (uploaded as any).id?.toString() ?? uploaded.documentId, url: (uploaded as any).url, name: uploaded.name ?? file.name },
       }));
     } catch (err) {
       console.error('Upload failed:', err);

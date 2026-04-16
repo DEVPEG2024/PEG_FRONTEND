@@ -1,13 +1,14 @@
 import { Expense } from '@/@types/expense';
 import ApiService from './ApiService';
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
-import { API_GRAPHQL_URL } from '@/configs/api.config';
+import { API_GRAPHQL_URL, API_BASE_URL } from '@/configs/api.config';
 import { AxiosResponse } from 'axios';
 
 // Nettoie les données avant envoi : strings vides → null, retire les champs non attendus
+// NOTE: 'receipt' (media) n'est PAS dans ALLOWED — les médias se lient via REST, pas GraphQL
 function cleanExpenseInput(raw: Record<string, unknown>): Record<string, unknown> {
   const clean: Record<string, unknown> = {};
-  const ALLOWED = ['label', 'description', 'amount', 'vatAmount', 'totalAmount', 'category', 'status', 'date', 'dueDate', 'paidDate', 'supplierName', 'project', 'receipt'];
+  const ALLOWED = ['label', 'description', 'amount', 'vatAmount', 'totalAmount', 'category', 'status', 'date', 'dueDate', 'paidDate', 'supplierName', 'project'];
   for (const key of ALLOWED) {
     if (!(key in raw)) continue;
     const val = raw[key];
@@ -19,6 +20,24 @@ function cleanExpenseInput(raw: Record<string, unknown>): Record<string, unknown
     }
   }
   return clean;
+}
+
+// Lie un fichier média à un champ d'une entry Strapi via REST
+async function linkMediaToExpense(expenseDocumentId: string, fileId: number | string): Promise<void> {
+  await ApiService.fetchData({
+    url: `${API_BASE_URL}/expenses/${expenseDocumentId}`,
+    method: 'put',
+    data: { data: { receipt: fileId } },
+  });
+}
+
+// Supprime le lien média d'une expense
+async function unlinkMediaFromExpense(expenseDocumentId: string): Promise<void> {
+  await ApiService.fetchData({
+    url: `${API_BASE_URL}/expenses/${expenseDocumentId}`,
+    method: 'put',
+    data: { data: { receipt: null } },
+  });
 }
 
 // --- Fragment GraphQL commun ---
@@ -111,14 +130,25 @@ export async function apiCreateExpense(
     data: cleanExpenseInput({
       ...rest,
       project: proj?.documentId ?? null,
-      receipt: rec?.documentId ?? null,
     }),
   };
-  return ApiService.fetchData<ApiResponse<{ createExpense: Expense }>>({
+  const result = await ApiService.fetchData<ApiResponse<{ createExpense: Expense }>>({
     url: API_GRAPHQL_URL,
     method: 'post',
     data: { query, variables },
   });
+
+  // Lier le justificatif via REST après création (media ≠ relation)
+  const created = result.data?.data?.createExpense;
+  if (created?.documentId && rec?.documentId) {
+    try {
+      await linkMediaToExpense(created.documentId, rec.documentId);
+    } catch (e) {
+      console.warn('[Expense] Erreur liaison justificatif:', e);
+    }
+  }
+
+  return result;
 }
 
 // --- UPDATE expense ---
@@ -135,12 +165,27 @@ export async function apiUpdateExpense(
   const { documentId, project: proj, receipt: rec, createdAt: _c, updatedAt: _u, ...rest } = expense;
   const payload: Record<string, unknown> = { ...rest };
   if (proj !== undefined) payload.project = proj?.documentId ?? null;
-  if (rec !== undefined) payload.receipt = rec?.documentId ?? null;
-  return ApiService.fetchData<ApiResponse<{ updateExpense: Expense }>>({
+
+  const result = await ApiService.fetchData<ApiResponse<{ updateExpense: Expense }>>({
     url: API_GRAPHQL_URL,
     method: 'post',
     data: { query, variables: { documentId, data: cleanExpenseInput(payload) } },
   });
+
+  // Lier/délier le justificatif via REST
+  if (rec !== undefined && documentId) {
+    try {
+      if (rec?.documentId) {
+        await linkMediaToExpense(documentId, rec.documentId);
+      } else {
+        await unlinkMediaFromExpense(documentId);
+      }
+    } catch (e) {
+      console.warn('[Expense] Erreur liaison justificatif:', e);
+    }
+  }
+
+  return result;
 }
 
 // --- DELETE expense ---
