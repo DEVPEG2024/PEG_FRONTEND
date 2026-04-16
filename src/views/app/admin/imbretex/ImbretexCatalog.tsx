@@ -8,7 +8,7 @@ import reducer, {
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { Container, EmptyState } from '@/components/shared';
-import { HiOutlineSearch, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineCheck, HiOutlineX, HiStar, HiOutlineStar } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import { importImbretexProduct, resetImportCaches } from '@/services/ImbretexImportService';
 import type { ImbretexProduct, ImbretexVariant, ImbretexPriceStock } from '@/@types/imbretex';
@@ -264,9 +264,11 @@ type CardProps = {
   onView: (p: ImbretexProduct) => void;
   selected: boolean;
   onToggleSelect: (ref: string) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (ref: string) => void;
 };
 
-const ImbretexProductCard = ({ product, onView, selected, onToggleSelect }: CardProps) => {
+const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavorite, onToggleFavorite }: CardProps) => {
   const image = getBestImage(product);
   const mainVariant = product.variants[0];
   const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
@@ -309,6 +311,23 @@ const ImbretexProductCard = ({ product, onView, selected, onToggleSelect }: Card
         }}
       >
         {selected && <HiOutlineCheck size={14} style={{ color: '#fff', strokeWidth: 3 }} />}
+      </div>
+
+      {/* Favorite */}
+      <div
+        onClick={(e) => { e.stopPropagation(); onToggleFavorite(product.reference); }}
+        style={{
+          position: 'absolute', top: '8px', right: '8px', zIndex: 2,
+          width: '28px', height: '28px', borderRadius: '50%',
+          background: isFavorite ? 'rgba(250,204,21,0.2)' : 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s ease',
+        }}
+      >
+        {isFavorite
+          ? <HiStar size={16} style={{ color: '#facc15' }} />
+          : <HiOutlineStar size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
+        }
       </div>
 
       <div onClick={() => onView(product)}>
@@ -375,10 +394,30 @@ const ImbretexCatalog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ImbretexProduct | null>(null);
   const [page, setPage] = useState(1);
   const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+
+  // Favoris persistés dans localStorage
+  const FAVORITES_KEY = 'imbretex_favorites';
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const handleToggleFavorite = useCallback((ref: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(ref)) next.delete(ref);
+      else next.add(ref);
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(next)));
+      return next;
+    });
+  }, []);
 
   // Load all products once on mount
   useEffect(() => {
@@ -411,6 +450,9 @@ const ImbretexCatalog = () => {
   // Full client-side filter
   const filtered = useMemo(() => {
     let result = allProducts;
+    if (showFavoritesOnly) {
+      result = result.filter((p) => favorites.has(p.reference));
+    }
     if (categoryFilter) {
       result = result.filter((p) => getProductCategory(p) === categoryFilter);
     }
@@ -428,7 +470,7 @@ const ImbretexCatalog = () => {
       });
     }
     return result;
-  }, [allProducts, searchTerm, brandFilter, categoryFilter]);
+  }, [allProducts, searchTerm, brandFilter, categoryFilter, showFavoritesOnly, favorites]);
 
   // Client-side pagination
   const totalFiltered = filtered.length;
@@ -439,7 +481,7 @@ const ImbretexCatalog = () => {
   }, [filtered, page]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [searchTerm, brandFilter, categoryFilter]);
+  useEffect(() => { setPage(1); }, [searchTerm, brandFilter, categoryFilter, showFavoritesOnly]);
 
   // Selection
   const handleToggleSelect = useCallback((ref: string) => {
@@ -582,13 +624,26 @@ const ImbretexCatalog = () => {
           display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center',
         }}>
           <button
-            onClick={() => setCategoryFilter('')}
+            onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); if (!showFavoritesOnly) setCategoryFilter(''); }}
             style={{
               padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              border: !categoryFilter ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
-              background: !categoryFilter ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
-              color: !categoryFilter ? '#60a5fa' : 'rgba(255,255,255,0.5)',
+              display: 'flex', alignItems: 'center', gap: '5px',
+              border: showFavoritesOnly ? '1.5px solid rgba(250,204,21,0.5)' : '1px solid rgba(255,255,255,0.1)',
+              background: showFavoritesOnly ? 'rgba(250,204,21,0.12)' : 'rgba(255,255,255,0.04)',
+              color: showFavoritesOnly ? '#facc15' : 'rgba(255,255,255,0.5)',
+            }}
+          >
+            <HiStar size={14} /> Favoris ({favorites.size})
+          </button>
+          <button
+            onClick={() => { setCategoryFilter(''); setShowFavoritesOnly(false); }}
+            style={{
+              padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              border: !categoryFilter && !showFavoritesOnly ? '1.5px solid rgba(47,111,237,0.5)' : '1px solid rgba(255,255,255,0.1)',
+              background: !categoryFilter && !showFavoritesOnly ? 'rgba(47,111,237,0.15)' : 'rgba(255,255,255,0.04)',
+              color: !categoryFilter && !showFavoritesOnly ? '#60a5fa' : 'rgba(255,255,255,0.5)',
             }}
           >
             Tous ({totalProducts})
@@ -695,6 +750,8 @@ const ImbretexCatalog = () => {
               onView={handleViewProduct}
               selected={selectedRefs.has(product.reference)}
               onToggleSelect={handleToggleSelect}
+              isFavorite={favorites.has(product.reference)}
+              onToggleFavorite={handleToggleFavorite}
             />
           ))}
         </div>
