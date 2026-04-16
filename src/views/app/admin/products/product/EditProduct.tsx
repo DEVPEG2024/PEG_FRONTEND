@@ -16,6 +16,7 @@ import { apiGetChecklists, GetChecklistsResponse } from '@/services/ChecklistSer
 import { Checklist } from '@/@types/checklist';
 import {
   apiGetPegFiles,
+  apiLoadPegFilesAndFiles,
   apiUploadFile,
 } from '@/services/FileServices';
 import reducer, {
@@ -128,13 +129,21 @@ const EditProduct = () => {
     setImagesLoading(true);
     try {
       if (product?.images && product?.images?.length > 0) {
-        const pegFilesLoaded: PegFile[] = await apiGetPegFiles(product.images);
-        setImages(pegFilesLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
+        // Load full file content so watermark and re-upload work correctly
+        const pegFilesLoaded: PegFile[] = await apiLoadPegFilesAndFiles(product.images);
+        setImages(pegFilesLoaded);
       } else {
         setImages([]);
       }
     } catch (err) {
       console.error('Erreur chargement images produit:', err);
+      // Fallback: load metadata only (watermark won't work but display is fine)
+      try {
+        if (product?.images && product.images.length > 0) {
+          const pegFilesLoaded: PegFile[] = await apiGetPegFiles(product.images);
+          setImages(pegFilesLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
+        }
+      } catch { /* ignore */ }
     } finally {
       setImagesLoading(false);
     }

@@ -42,14 +42,51 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
   // Load the product image as HTMLImageElement
   const [productImg, setProductImg] = useState<HTMLImageElement | null>(null)
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    const img = new Image()
-    const src = (file as File & { previewUrl?: string }).previewUrl || URL.createObjectURL(file)
-    img.crossOrigin = 'anonymous'
-    img.onload = () => setProductImg(img)
-    img.src = src
-    return () => { if (!((file as any).previewUrl)) URL.revokeObjectURL(src) }
+    let blobUrl: string | null = null
+    const previewUrl = (file as File & { previewUrl?: string }).previewUrl
+
+    const loadFromUrl = async (url: string) => {
+      try {
+        // Fetch the image as blob to bypass CORS restrictions on canvas
+        const res = await fetch(url, { cache: 'no-cache' })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const blob = await res.blob()
+        blobUrl = URL.createObjectURL(blob)
+        const img = new Image()
+        img.onload = () => setProductImg(img)
+        img.onerror = () => setLoadError('Impossible de décoder l\'image')
+        img.src = blobUrl
+      } catch {
+        // fetch blocked by CORS — fallback: load image normally (preview only, export will re-fetch)
+        setLoadError(
+          'L\'image ne peut pas être modifiée directement (CORS S3). ' +
+          'Ajoutez "int.mypeg.fr" dans les CORS du bucket S3, ou utilisez une image locale.'
+        )
+      }
+    }
+
+    if (file.size > 0) {
+      // File has actual content (new upload or re-uploaded) — use directly
+      blobUrl = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => setProductImg(img)
+      img.src = blobUrl
+    } else if (previewUrl) {
+      loadFromUrl(previewUrl)
+    } else if (file.size > 0) {
+      // Local file with actual content
+      blobUrl = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => setProductImg(img)
+      img.src = blobUrl
+    } else {
+      setLoadError('Image vide — veuillez d\'abord enregistrer le produit')
+    }
+
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl) }
   }, [file])
 
   useEffect(() => {
@@ -177,7 +214,11 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
 
         {/* Preview */}
         <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '10px', marginBottom: '16px', textAlign: 'center' }}>
-          <canvas ref={canvasRef} style={{ maxWidth: '100%', borderRadius: '6px' }} />
+          {loadError ? (
+            <p style={{ color: '#f87171', fontSize: '13px', padding: '40px 0' }}>{loadError}</p>
+          ) : (
+            <canvas ref={canvasRef} style={{ maxWidth: '100%', borderRadius: '6px' }} />
+          )}
         </div>
 
         {/* Controls */}
