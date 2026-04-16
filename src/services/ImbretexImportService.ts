@@ -176,7 +176,12 @@ function extractColors(variants: ImbretexVariant[]): string[] {
 // ─── Image : proxy backend → upload Strapi ───
 
 function fixImageUrl(url: string): string {
-  return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+  // Préprod : les images sont en 404 sur admin.preprod, mais OK sur www.imbretex.fr
+  // Prod : admin.imbretex.fr fonctionne directement, pas besoin de remap
+  if (url.includes('admin.preprod.imbretex-upgrade.hegyd.net')) {
+    return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+  }
+  return url;
 }
 
 function getBestImageUrl(p: ImbretexProduct): string | null {
