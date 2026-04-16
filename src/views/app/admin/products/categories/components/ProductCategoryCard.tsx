@@ -49,7 +49,7 @@ const ProductCategoryCard = ({
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '24px 16px 16px',
+          padding: '28px 20px 20px',
           background: 'rgba(255,255,255,0.02)',
           cursor: 'pointer',
           position: 'relative',
@@ -59,11 +59,11 @@ const ProductCategoryCard = ({
           <img
             src={productCategory.image.url}
             alt={productCategory.name}
-            style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }}
+            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }}
           />
         ) : (
           <div style={{
-            width: '80px', height: '80px', borderRadius: '50%',
+            width: '100px', height: '100px', borderRadius: '50%',
             background: 'rgba(255,255,255,0.06)', border: '2px solid rgba(255,255,255,0.08)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -88,9 +88,9 @@ const ProductCategoryCard = ({
       {/* Name + count */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
-        style={{ padding: '0 16px 12px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
+        style={{ padding: '0 20px 16px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
       >
-        <p style={{ color: '#fff', fontWeight: 700, fontSize: '14px', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+        <p style={{ color: '#fff', fontWeight: 700, fontSize: '16px', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
           {productCategory.name}
         </p>
         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>

@@ -248,7 +248,7 @@ const Categories = () => {
 
       <Loading loading={loading}>
         {orderedCategories.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {orderedCategories.map((cat, index) => (
               <div
                 key={cat.documentId}
