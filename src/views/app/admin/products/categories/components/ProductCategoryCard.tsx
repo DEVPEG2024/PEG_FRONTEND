@@ -1,20 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import { Tooltip } from '@/components/ui';
 import { ProductCategory } from '@/@types/product';
-import { HiPencil, HiTrash, HiPhotograph } from 'react-icons/hi';
+import { HiPencil, HiTrash, HiPhotograph, HiChevronDown, HiPlus } from 'react-icons/hi';
+import { useState } from 'react';
 
 const ProductCategoryCard = ({
   productCategory,
   handleEditProductCategory,
   handleDeleteProductCategory,
   handleActivateProductCategory,
+  handleAddSubcategory,
 }: {
   productCategory: ProductCategory;
   handleEditProductCategory: (productCategory: ProductCategory) => void;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
   handleActivateProductCategory: (productCategory: ProductCategory, active: boolean) => void;
+  handleAddSubcategory?: (parent: ProductCategory) => void;
 }) => {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const subcategories = productCategory.subcategories ?? [];
+  const hasSubcategories = subcategories.length > 0;
 
   return (
     <div
@@ -82,19 +88,103 @@ const ProductCategoryCard = ({
       {/* Name + count */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
-        style={{ padding: '0 16px 16px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
+        style={{ padding: '0 16px 12px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
       >
         <p style={{ color: '#fff', fontWeight: 700, fontSize: '14px', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
           {productCategory.name}
         </p>
-        <span style={{
-          background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-          borderRadius: '100px', padding: '2px 10px',
-          color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-        }}>
-          {productCategory.products.length} produit{productCategory.products.length !== 1 ? 's' : ''}
-        </span>
+        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <span style={{
+            background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+            borderRadius: '100px', padding: '2px 10px',
+            color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+          }}>
+            {productCategory.products.length} produit{productCategory.products.length !== 1 ? 's' : ''}
+          </span>
+          {hasSubcategories && (
+            <span style={{
+              background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: '100px', padding: '2px 10px',
+              color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+            }}>
+              {subcategories.length} sous-cat.
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Subcategories expand */}
+      {hasSubcategories && (
+        <>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+              width: '100%', padding: '6px',
+              background: 'rgba(139,92,246,0.06)',
+              border: 'none', borderTop: '1px solid rgba(255,255,255,0.04)',
+              color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <HiChevronDown size={12} style={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0)',
+              transition: 'transform 0.2s',
+            }} />
+            {expanded ? 'Masquer' : 'Voir'} les sous-catégories
+          </button>
+          {expanded && (
+            <div style={{
+              padding: '8px 12px',
+              background: 'rgba(0,0,0,0.15)',
+              display: 'flex', flexDirection: 'column', gap: '4px',
+            }}>
+              {subcategories.map((sub) => (
+                <div key={sub.documentId} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 10px', borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {sub.image?.url ? (
+                      <img src={sub.image.url} alt={sub.name} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <HiPhotograph size={10} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                      </div>
+                    )}
+                    <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', fontWeight: 500 }}>{sub.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{sub.products?.length ?? 0} prod.</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleEditProductCategory(sub); }}
+                      style={{
+                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.2)',
+                        borderRadius: '5px', padding: '3px 5px', color: '#6b9eff',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      }}
+                    >
+                      <HiPencil size={10} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteProductCategory(sub); }}
+                      style={{
+                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                        borderRadius: '5px', padding: '3px 5px', color: '#f87171',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      }}
+                    >
+                      <HiTrash size={10} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Actions */}
       <div style={{
@@ -124,6 +214,23 @@ const ProductCategoryCard = ({
             </div>
           </div>
         </Tooltip>
+        {handleAddSubcategory && (
+          <button
+            onClick={() => handleAddSubcategory(productCategory)}
+            title="Ajouter une sous-catégorie"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: '8px', padding: '7px 9px',
+              color: '#a78bfa', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.22)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.12)')}
+          >
+            <HiPlus size={13} />
+          </button>
+        )}
         <button
           onClick={() => handleEditProductCategory(productCategory)}
           style={{

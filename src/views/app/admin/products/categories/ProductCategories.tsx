@@ -40,6 +40,7 @@ const Categories = () => {
   const [orderChanged, setOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [addSubParent, setAddSubParent] = useState<ProductCategory | null>(null);
   const draggedIdx = useRef<number | null>(null);
   const draggedOverIdx = useRef<number | null>(null);
   const isSavingOrder = useRef(false);
@@ -54,9 +55,13 @@ const Categories = () => {
 
   useEffect(() => {
     if (isSavingOrder.current) return;
-    setOrderedCategories([...productCategories]);
+    // En recherche : montrer tout. Sinon : uniquement les catégories racines
+    const filtered = searchTerm.trim()
+      ? productCategories
+      : productCategories.filter((c) => !c.parent);
+    setOrderedCategories([...filtered]);
     setOrderChanged(false);
-  }, [productCategories]);
+  }, [productCategories, searchTerm]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -77,7 +82,14 @@ const Categories = () => {
     setIsOpen(false);
     setIsOpenEdit(false);
     setIsOpenDelete(false);
+    setAddSubParent(null);
     dispatch(setProductCategory(undefined));
+  };
+
+  const handleAddSubcategory = (parent: ProductCategory) => {
+    setAddSubParent(parent);
+    dispatch(setProductCategory(undefined));
+    setIsOpen(true);
   };
 
   const handleActivateProductCategory = (cat: ProductCategory, active: boolean) => {
@@ -264,6 +276,7 @@ const Categories = () => {
                   handleEditProductCategory={handleEditProductCategory}
                   handleDeleteProductCategory={handleDeleteProductCategory}
                   handleActivateProductCategory={handleActivateProductCategory}
+                  handleAddSubcategory={handleAddSubcategory}
                 />
               </div>
             ))}
@@ -293,7 +306,7 @@ const Categories = () => {
       </Loading>
 
       {isOpen && (
-        <ModalEditProductCategory mode="add" title={t('cat.addCategory')} isOpen={isOpen} handleCloseModal={handleCloseModal} />
+        <ModalEditProductCategory mode="add" title={addSubParent ? `Nouvelle sous-catégorie de "${addSubParent.name}"` : t('cat.addCategory')} isOpen={isOpen} handleCloseModal={handleCloseModal} parentCategory={addSubParent} />
       )}
       {productCategory && isOpenEdit && (
         <ModalEditProductCategory mode="edit" title={t('cat.editCategory')} isOpen={isOpenEdit} handleCloseModal={handleCloseModal} />

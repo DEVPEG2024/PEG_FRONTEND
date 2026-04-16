@@ -48,6 +48,18 @@ export async function apiCreateProductCategory(data: CreateProductCategoryReques
             products (pagination: {limit: 100}){
                 documentId
             }
+            parent {
+                documentId
+                name
+            }
+            subcategories {
+                documentId
+                name
+                order
+                active
+                image { url documentId }
+                products (pagination: {limit: 100}) { documentId }
+            }
         }
     }
   `,
@@ -79,6 +91,18 @@ export async function apiUpdateProductCategory(productCategory: Partial<ProductC
             order
             products (pagination: {limit: 100}){
                 documentId
+            }
+            parent {
+                documentId
+                name
+            }
+            subcategories {
+                documentId
+                name
+                order
+                active
+                image { url documentId }
+                products (pagination: {limit: 100}) { documentId }
             }
         }
     }
@@ -124,6 +148,18 @@ export async function apiGetProductCategories(data: GetProductCategoriesRequest 
                 order
                 products (pagination: {limit: 100}){
                     documentId
+                }
+                parent {
+                    documentId
+                    name
+                }
+                subcategories {
+                    documentId
+                    name
+                    order
+                    active
+                    image { url documentId }
+                    products (pagination: {limit: 100}) { documentId }
                 }
             }
             pageInfo {

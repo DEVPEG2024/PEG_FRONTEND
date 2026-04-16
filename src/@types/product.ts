@@ -72,6 +72,8 @@ export type ProductCategory = {
   order?: number;
   image?: PegFile;
   products: Product[];
+  parent?: ProductCategory | null;
+  subcategories?: ProductCategory[];
 };
 
 export type ProductForm = {

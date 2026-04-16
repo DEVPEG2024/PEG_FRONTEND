@@ -1,6 +1,6 @@
 import FileUplaodCustom from '@/components/shared/Upload';
 import { Input } from '@/components/ui';
-import { HiX } from 'react-icons/hi';
+import { HiX, HiChevronDown } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PegFile } from '@/@types/pegFile';
@@ -12,27 +12,41 @@ import {
 } from '../store';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
+import { ProductCategory } from '@/@types/product';
 
 function ModalEditProductCategory({
   mode,
   title,
   isOpen,
   handleCloseModal,
+  parentCategory,
 }: {
   mode: string;
   title: string;
   isOpen: boolean;
   handleCloseModal: () => void;
+  parentCategory?: ProductCategory | null;
 }) {
   const { t } = useTranslation();
-  const { productCategory } = useAppSelector(
+  const { productCategory, productCategories } = useAppSelector(
     (state) => state.productCategories.data
   );
   const [name, setName] = useState<string>(productCategory?.name ?? '');
   const [image, setImage] = useState<PegFile | undefined>(undefined);
   const [imageModified, setImageModified] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [selectedParent, setSelectedParent] = useState<string | null>(
+    parentCategory?.documentId ?? productCategory?.parent?.documentId ?? null
+  );
+  const [parentDropdownOpen, setParentDropdownOpen] = useState(false);
   const dispatch = useAppDispatch();
+
+  // Catégories racines disponibles comme parent (exclure la catégorie en cours d'édition)
+  const rootCategories = productCategories.filter(
+    (c) => !c.parent && c.documentId !== productCategory?.documentId
+  );
+
+  const selectedParentObj = rootCategories.find((c) => c.documentId === selectedParent);
 
   useEffect(() => {
     fetchImage();
@@ -65,7 +79,8 @@ function ModalEditProductCategory({
           name,
           products: [],
           image,
-        })
+          parent: selectedParent || undefined,
+        } as any)
       );
     } else {
       dispatch(
@@ -74,6 +89,7 @@ function ModalEditProductCategory({
             documentId: productCategory!.documentId,
             name,
             image,
+            parent: selectedParent || null,
           },
           imageModified,
         })
@@ -115,6 +131,79 @@ function ModalEditProductCategory({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
+          {/* Sélecteur catégorie parente */}
+          <div style={{ position: 'relative' }}>
+            <label style={{
+              display: 'block', color: 'rgba(255,255,255,0.45)', fontSize: '11px',
+              fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px',
+            }}>
+              Catégorie parente (optionnel)
+            </label>
+            <button
+              type="button"
+              onClick={() => setParentDropdownOpen(!parentDropdownOpen)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: '10px', padding: '10px 14px',
+                color: selectedParentObj ? '#fff' : 'rgba(255,255,255,0.35)',
+                fontSize: '13px', fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span>{selectedParentObj?.name ?? 'Aucune (catégorie racine)'}</span>
+              <HiChevronDown size={14} style={{
+                color: 'rgba(255,255,255,0.3)',
+                transform: parentDropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
+                transition: 'transform 0.2s',
+              }} />
+            </button>
+
+            {parentDropdownOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '10px', overflow: 'hidden', zIndex: 100,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)', maxHeight: '200px', overflowY: 'auto',
+              }}>
+                <button
+                  onClick={() => { setSelectedParent(null); setParentDropdownOpen(false); }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px',
+                    background: !selectedParent ? 'rgba(47,111,237,0.1)' : 'transparent',
+                    border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    color: !selectedParent ? '#6b9eff' : 'rgba(255,255,255,0.6)',
+                    fontSize: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    fontWeight: !selectedParent ? 600 : 400,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = !selectedParent ? 'rgba(47,111,237,0.1)' : 'transparent')}
+                >
+                  Aucune (catégorie racine)
+                </button>
+                {rootCategories.map((cat) => (
+                  <button
+                    key={cat.documentId}
+                    onClick={() => { setSelectedParent(cat.documentId); setParentDropdownOpen(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px',
+                      background: selectedParent === cat.documentId ? 'rgba(47,111,237,0.1)' : 'transparent',
+                      border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      color: selectedParent === cat.documentId ? '#6b9eff' : 'rgba(255,255,255,0.6)',
+                      fontSize: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                      fontWeight: selectedParent === cat.documentId ? 600 : 400,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = selectedParent === cat.documentId ? 'rgba(47,111,237,0.1)' : 'transparent')}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <Loading loading={imageLoading}>
             <FileUplaodCustom image={image} setImage={updateImage} />
           </Loading>
