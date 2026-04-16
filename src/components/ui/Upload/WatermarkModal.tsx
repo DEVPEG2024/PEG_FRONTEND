@@ -50,8 +50,11 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
 
     const loadFromUrl = async (url: string) => {
       try {
-        // Fetch the image as blob to bypass CORS restrictions on canvas
-        const res = await fetch(url, { cache: 'no-cache' })
+        // Add cache-buster: the browser caches <img> responses without CORS headers,
+        // so fetch() reuses that cached response and fails. A unique query param
+        // forces a fresh request that includes the Origin header → S3 returns CORS headers.
+        const bustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now()
+        const res = await fetch(bustUrl)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const blob = await res.blob()
         blobUrl = URL.createObjectURL(blob)
@@ -60,10 +63,8 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
         img.onerror = () => setLoadError('Impossible de décoder l\'image')
         img.src = blobUrl
       } catch {
-        // fetch blocked by CORS — fallback: load image normally (preview only, export will re-fetch)
         setLoadError(
-          'L\'image ne peut pas être modifiée directement (CORS S3). ' +
-          'Ajoutez "int.mypeg.fr" dans les CORS du bucket S3, ou utilisez une image locale.'
+          'L\'image ne peut pas être chargée pour modification. Vérifiez les CORS du bucket S3.'
         )
       }
     }
