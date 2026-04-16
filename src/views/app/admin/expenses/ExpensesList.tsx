@@ -219,6 +219,11 @@ const ExpensesList = () => {
                     {exp.supplierName && (
                       <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{exp.supplierName}</span>
                     )}
+                    {exp.project?.name && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(47,111,237,0.08)', border: '1px solid rgba(47,111,237,0.2)', borderRadius: '100px', padding: '1px 8px', color: '#6b9eff', fontSize: '11px', fontWeight: 600 }}>
+                        {exp.project.name}
+                      </span>
+                    )}
                     <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>{dayjs(exp.date).format('DD/MM/YYYY')}</span>
                     {exp.dueDate && (
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Ech. {dayjs(exp.dueDate).format('DD/MM/YYYY')}</span>

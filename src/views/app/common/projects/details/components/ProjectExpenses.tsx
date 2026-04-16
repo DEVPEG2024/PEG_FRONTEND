@@ -230,6 +230,7 @@ const ProjectExpenses = () => {
           onClose={handleClose}
           onSave={handleSave}
           loading={saving}
+          forceProject={project ? { documentId: project.documentId, name: project.name } : null}
         />
       )}
     </Container>

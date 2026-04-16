@@ -1,7 +1,9 @@
-import { useState, useRef } from 'react';
-import { HiX, HiCheck, HiUpload, HiDocumentText } from 'react-icons/hi';
+import { useState, useRef, useEffect } from 'react';
+import { HiX, HiCheck, HiUpload, HiDocumentText, HiSearch } from 'react-icons/hi';
 import { Expense, ExpenseCategory, ExpenseStatus } from '@/@types/expense';
 import { apiUploadFile } from '@/services/FileServices';
+import { apiGetProjects } from '@/services/ProjectServices';
+import { unwrapData } from '@/utils/serviceHelper';
 import dayjs from 'dayjs';
 
 const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
@@ -37,12 +39,48 @@ type Props = {
   onClose: () => void;
   onSave: (data: any) => void;
   loading: boolean;
+  /** Si fourni, le projet est pré-sélectionné et le champ masqué */
+  forceProject?: { documentId: string; name: string } | null;
 };
 
-export default function ModalEditExpense({ open, expense, onClose, onSave, loading }: Props) {
+type ProjectOption = { documentId: string; name: string };
+
+export default function ModalEditExpense({ open, expense, onClose, onSave, loading, forceProject }: Props) {
   const isEdit = !!expense;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Project picker state
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectOption | null>(
+    forceProject ?? expense?.project ?? null
+  );
+  const projectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (forceProject) return; // pas besoin de charger la liste
+    unwrapData(apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }))
+      .then(({ projects_connection }) => {
+        setProjects(
+          (projects_connection?.nodes ?? []).map((p: any) => ({ documentId: p.documentId, name: p.name }))
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (projectRef.current && !projectRef.current.contains(e.target as Node)) setProjectDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(projectSearch.toLowerCase())
+  );
 
   const [form, setForm] = useState({
     label: expense?.label ?? '',
@@ -88,7 +126,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
     if (!form.label.trim() || form.amount <= 0) return;
     const payload: any = {
       ...form,
-      project: null,
+      project: selectedProject ? { documentId: selectedProject.documentId, name: selectedProject.name } : null,
     };
     if (isEdit) payload.documentId = expense!.documentId;
     onSave(payload);
@@ -162,7 +200,51 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
               </div>
             </div>
 
-            {/* Row 3: Dates */}
+            {/* Row 3: Projet (masqué si forceProject) */}
+            {!forceProject && (
+              <div style={{ marginBottom: '16px' }} ref={projectRef}>
+                <label style={labelStyle}>Projet lié</label>
+                <div style={{ position: 'relative' }}>
+                  {selectedProject ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', ...inputStyle, cursor: 'pointer' }} onClick={() => setProjectDropdownOpen((v) => !v)}>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedProject.name}</span>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedProject(null); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', padding: '2px 6px' }}>Retirer</button>
+                    </div>
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <HiSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }} />
+                      <input
+                        style={{ ...inputStyle, paddingLeft: '33px' }}
+                        value={projectSearch}
+                        onChange={(e) => { setProjectSearch(e.target.value); setProjectDropdownOpen(true); }}
+                        onFocus={() => setProjectDropdownOpen(true)}
+                        placeholder="Rechercher un projet..."
+                      />
+                    </div>
+                  )}
+                  {projectDropdownOpen && !selectedProject && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px', background: '#1a2d47', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', maxHeight: '180px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                      {filteredProjects.length === 0 ? (
+                        <div style={{ padding: '10px 14px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>Aucun projet trouvé</div>
+                      ) : (
+                        filteredProjects.slice(0, 20).map((p) => (
+                          <button key={p.documentId} type="button"
+                            onClick={() => { setSelectedProject(p); setProjectDropdownOpen(false); setProjectSearch(''); }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {p.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Row 4: Dates */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={labelStyle}>Date</label>
