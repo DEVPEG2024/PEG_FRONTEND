@@ -313,7 +313,8 @@ export default function DashboardAdmin() {
   const atRiskProjects = useMemo(() => { const now = new Date(); return projects.filter((p: any) => { const end = safeDate(p?.endDate); if (!end) return false; const s = (p?.state ?? '').toString().toLowerCase(); return end.getTime() < now.getTime() && !(s.includes('done') || s.includes('closed') || s.includes('term') || s.includes('livr')) }).length }, [projects])
   const avgDeliveryDays = useMemo(() => { const p2 = projects.map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) })).filter((x: any) => x.s && x.e); if (!p2.length) return 0; return Math.round(p2.reduce((a: number, x: any) => a + Math.max(0, (x.e.getTime() - x.s.getTime()) / 86400000), 0) / p2.length) }, [projects])
   const totalCosts = useMemo(() => transactions.reduce((a: number, x: any) => a + (Number(x?.amount) || 0), 0), [transactions])
-  const margeBrute = Math.max(0, invoiceTotal - totalCosts); const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
+  const totalProducerCosts = useMemo(() => projects.reduce((a: number, p: any) => a + Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0), 0), [projects])
+  const margeBrute = Math.max(0, invoiceTotal - totalCosts - totalProducerCosts); const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
   const openTickets = useMemo(() => tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length, [tickets])
 
   const revenue6m = useMemo(() => {
@@ -323,6 +324,8 @@ export default function DashboardAdmin() {
     // Ajouter les projets sans facture au CA du mois correspondant
     for (const p of projects) { if (Array.isArray(p?.invoices) && p.invoices.length > 0) continue; const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = Number(p?.paidPrice) || 0; if (paidPrice) by.get(k)!.paid += paidPrice }
     for (const tx of transactions) { const d = safeDate(tx?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += (Number(tx?.amount) || 0) }
+    // Ajouter les coûts producteur par mois
+    for (const p of projects) { const cost = Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0); if (!cost) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += cost }
     return months.map(k => { const b = by.get(k)!; return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid } })
   }, [invoices, transactions, projects])
   const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
