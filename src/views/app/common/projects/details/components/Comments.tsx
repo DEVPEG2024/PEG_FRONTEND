@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Container from '@/components/shared/Container';
-import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX } from 'react-icons/hi';
+import { HiOutlineSearch, HiPaperAirplane, HiPhotograph, HiX, HiPhone } from 'react-icons/hi';
 import { Comment } from '@/@types/project';
 import DetailsRight from './DetailsRight';
 import {
@@ -307,6 +307,34 @@ const Comments = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* WhatsApp button — client only */}
+              {!isAdmin && (
+                <a
+                  href={`https://wa.me/33659252823?text=${encodeURIComponent(`Bonjour, je vous contacte au sujet du projet "${project?.name ?? ''}"`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '5px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(37,211,102,0.12)',
+                    border: '1px solid rgba(37,211,102,0.25)',
+                    color: '#25d366',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                  title="Nous contacter sur WhatsApp"
+                >
+                  <HiPhone size={13} />
+                  WhatsApp
+                </a>
+              )}
               {/* Search toggle */}
               <button
                 onClick={() => { setSearchOpen(!searchOpen); setSearchTerm(''); }}
