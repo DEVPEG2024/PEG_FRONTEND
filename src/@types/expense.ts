@@ -10,6 +10,11 @@ export type ExpenseStatus =
   | 'paid'      // Payée
   | 'overdue';  // En retard
 
+export type RecurrenceInterval =
+  | 'monthly'    // Mensuel
+  | 'quarterly'  // Trimestriel
+  | 'yearly';    // Annuel
+
 export type Expense = {
   documentId: string;
   label: string;
@@ -25,6 +30,9 @@ export type Expense = {
   supplierName: string;
   project?: { documentId: string; name: string } | null;
   receipt?: { documentId: string; url: string; name: string } | null;
+  recurring: boolean;
+  recurrenceInterval: RecurrenceInterval | null;
+  recurrenceEndDate: string | null;
   createdAt: string;
   updatedAt: string;
 }

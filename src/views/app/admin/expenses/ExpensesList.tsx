@@ -11,7 +11,9 @@ import reducer, {
   useAppSelector,
   useAppDispatch,
 } from './store';
-import { Expense, ExpenseCategory } from '@/@types/expense';
+import { Expense, ExpenseCategory, RecurrenceInterval } from '@/@types/expense';
+import { apiCreateExpense } from '@/services/ExpenseServices';
+import { unwrapData } from '@/utils/serviceHelper';
 import ModalEditExpense from './ModalEditExpense';
 import dayjs from 'dayjs';
 import {
@@ -74,9 +76,75 @@ const ExpensesList = () => {
   const [activeTab, setActiveTab] = useState('all');
   const { expenses, total, loading, selectedExpense, editDialog } = useAppSelector((state) => state.expenses.data);
 
+  // Génère les occurrences manquantes pour les dépenses récurrentes
+  const generateRecurringOccurrences = async (allExpenses: Expense[]) => {
+    const today = dayjs();
+    const recurring = allExpenses.filter((e) => e.recurring && e.recurrenceInterval && e.date);
+    let created = 0;
+
+    for (const exp of recurring) {
+      const interval = exp.recurrenceInterval as RecurrenceInterval;
+      const endDate = exp.recurrenceEndDate ? dayjs(exp.recurrenceEndDate) : null;
+      const addUnit = interval === 'monthly' ? 'month' : interval === 'quarterly' ? 'quarter' : 'year';
+
+      // Trouver toutes les dates existantes pour ce label+fournisseur+montant (même "série")
+      const siblings = allExpenses.filter(
+        (s) => s.label === exp.label && s.supplierName === exp.supplierName && s.amount === exp.amount
+      );
+      const existingDates = new Set(siblings.map((s) => dayjs(s.date).format('YYYY-MM')));
+
+      // Générer les dates suivantes à partir de la date d'origine
+      let nextDate = dayjs(exp.date).add(1, addUnit);
+      while (nextDate.isBefore(today) || nextDate.isSame(today, 'month')) {
+        if (endDate && nextDate.isAfter(endDate)) break;
+        const key = nextDate.format('YYYY-MM');
+        if (!existingDates.has(key)) {
+          try {
+            await unwrapData(apiCreateExpense({
+              label: exp.label,
+              description: exp.description,
+              amount: exp.amount,
+              vatAmount: exp.vatAmount,
+              totalAmount: exp.totalAmount,
+              category: exp.category,
+              status: 'pending',
+              date: nextDate.format('YYYY-MM-DD'),
+              dueDate: nextDate.add(30, 'day').format('YYYY-MM-DD'),
+              paidDate: '',
+              supplierName: exp.supplierName,
+              project: exp.project ?? null,
+              receipt: null,
+              recurring: true,
+              recurrenceInterval: exp.recurrenceInterval,
+              recurrenceEndDate: exp.recurrenceEndDate,
+            } as any));
+            created++;
+          } catch (err) {
+            console.error('[Recurring] Erreur création occurrence:', err);
+          }
+        }
+        nextDate = nextDate.add(1, addUnit);
+      }
+    }
+
+    if (created > 0) {
+      // Re-fetch pour afficher les nouvelles occurrences
+      dispatch(getExpenses({ pagination: { page: currentPage, pageSize }, searchTerm }));
+    }
+  };
+
   useEffect(() => {
     dispatch(getExpenses({ pagination: { page: currentPage, pageSize }, searchTerm }));
   }, [currentPage, searchTerm]);
+
+  // Générer les occurrences récurrentes après le premier chargement
+  const [recurringChecked, setRecurringChecked] = useState(false);
+  useEffect(() => {
+    if (!loading && expenses.length > 0 && !recurringChecked) {
+      setRecurringChecked(true);
+      generateRecurringOccurrences(expenses);
+    }
+  }, [loading, expenses.length]);
 
   const filtered = expenses.filter((e) => activeTab === 'all' || e.status === activeTab);
   const tabCount = (key: string) => key === 'all' ? expenses.length : expenses.filter((e) => e.status === key).length;
@@ -207,6 +275,11 @@ const ExpensesList = () => {
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{exp.label}</span>
                     <span style={{ background: cat.bg, border: `1px solid ${cat.border}`, borderRadius: '100px', padding: '1px 8px', color: cat.color, fontSize: '11px', fontWeight: 700 }}>{cat.label}</span>
                     <span style={{ background: status.bg, border: `1px solid ${status.border}`, borderRadius: '100px', padding: '1px 8px', color: status.color, fontSize: '11px', fontWeight: 700 }}>{status.label}</span>
+                    {exp.recurring && (
+                      <span style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '100px', padding: '1px 8px', color: '#a78bfa', fontSize: '10px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        ↻ {exp.recurrenceInterval === 'monthly' ? 'Mensuel' : exp.recurrenceInterval === 'quarterly' ? 'Trimestriel' : 'Annuel'}
+                      </span>
+                    )}
                     {exp.receipt && (
                       <a href={resolveUrl(exp.receipt.url)} target="_blank" rel="noreferrer" title="Voir justificatif"
                         style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', textDecoration: 'none' }}

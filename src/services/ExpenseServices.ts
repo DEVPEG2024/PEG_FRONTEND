@@ -8,7 +8,7 @@ import { AxiosResponse } from 'axios';
 // NOTE: 'receipt' (media) n'est PAS dans ALLOWED — les médias se lient via REST, pas GraphQL
 function cleanExpenseInput(raw: Record<string, unknown>): Record<string, unknown> {
   const clean: Record<string, unknown> = {};
-  const ALLOWED = ['label', 'description', 'amount', 'vatAmount', 'totalAmount', 'category', 'status', 'date', 'dueDate', 'paidDate', 'supplierName', 'project'];
+  const ALLOWED = ['label', 'description', 'amount', 'vatAmount', 'totalAmount', 'category', 'status', 'date', 'dueDate', 'paidDate', 'supplierName', 'project', 'recurring', 'recurrenceInterval', 'recurrenceEndDate'];
   for (const key of ALLOWED) {
     if (!(key in raw)) continue;
     const val = raw[key];
@@ -63,6 +63,9 @@ const EXPENSE_FIELDS = `
     url
     name
   }
+  recurring
+  recurrenceInterval
+  recurrenceEndDate
   createdAt
   updatedAt
 `;

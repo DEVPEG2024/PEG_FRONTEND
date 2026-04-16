@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { HiX, HiCheck, HiUpload, HiDocumentText, HiSearch } from 'react-icons/hi';
-import { Expense, ExpenseCategory, ExpenseStatus } from '@/@types/expense';
+import { Expense, ExpenseCategory, ExpenseStatus, RecurrenceInterval } from '@/@types/expense';
 import { apiUploadFile } from '@/services/FileServices';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -95,6 +95,9 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
     paidDate: expense?.paidDate ?? '',
     supplierName: expense?.supplierName ?? '',
     receipt: expense?.receipt ?? null as { documentId: string; url: string; name: string } | null,
+    recurring: expense?.recurring ?? false,
+    recurrenceInterval: expense?.recurrenceInterval ?? 'monthly' as RecurrenceInterval,
+    recurrenceEndDate: expense?.recurrenceEndDate ?? '',
   });
 
   const [vatEnabled, setVatEnabled] = useState((expense?.vatAmount ?? 0) > 0);
@@ -127,6 +130,9 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
     const payload: any = {
       ...form,
       project: selectedProject ? { documentId: selectedProject.documentId, name: selectedProject.name } : null,
+      recurring: form.recurring,
+      recurrenceInterval: form.recurring ? form.recurrenceInterval : null,
+      recurrenceEndDate: form.recurring ? form.recurrenceEndDate : null,
     };
     if (isEdit) payload.documentId = expense!.documentId;
     onSave(payload);
@@ -297,6 +303,37 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
             <div style={{ marginBottom: '20px' }}>
               <label style={labelStyle}>Description / notes</label>
               <textarea style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Notes libres..." />
+            </div>
+
+            {/* Récurrence */}
+            <div style={{ marginBottom: '20px', background: form.recurring ? 'rgba(47,111,237,0.06)' : 'transparent', border: form.recurring ? '1px solid rgba(47,111,237,0.15)' : '1px solid transparent', borderRadius: '14px', padding: form.recurring ? '16px' : '0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: form.recurring ? '14px' : '0' }}>
+                <label style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input type="checkbox" checked={form.recurring} onChange={(e) => setForm({ ...form, recurring: e.target.checked })} style={{ accentColor: '#3b82f6' }} />
+                  Dépense récurrente
+                </label>
+                {form.recurring && (
+                  <span style={{ background: 'rgba(47,111,237,0.15)', borderRadius: '100px', padding: '2px 8px', color: '#6b9eff', fontSize: '10px', fontWeight: 700 }}>
+                    Auto
+                  </span>
+                )}
+              </div>
+              {form.recurring && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div>
+                    <label style={labelStyle}>Fréquence</label>
+                    <select style={selectStyle} value={form.recurrenceInterval} onChange={(e) => setForm({ ...form, recurrenceInterval: e.target.value as RecurrenceInterval })}>
+                      <option value="monthly">Mensuel</option>
+                      <option value="quarterly">Trimestriel</option>
+                      <option value="yearly">Annuel</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Fin de récurrence</label>
+                    <input type="date" style={inputStyle} value={form.recurrenceEndDate ? dayjs(form.recurrenceEndDate).format('YYYY-MM-DD') : ''} onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Justificatif */}
