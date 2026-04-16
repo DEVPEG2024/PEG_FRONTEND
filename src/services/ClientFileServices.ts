@@ -91,14 +91,9 @@ export const apiDeleteClientFile = (documentId: string) => {
   })
 }
 
-// Upload un fichier vers S3 via Strapi upload plugin
+// Upload un fichier vers S3 — utilise le presigned URL pour les gros fichiers
+import { apiUploadFile as apiUploadFileMain } from './FileServices'
 export const apiUploadFile = (file: File) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return ApiService.fetchData<any>({
-    url: API_BASE_URL + '/upload-single',
-    method: 'post',
-    data: formData,
-    headers: { 'Content-Type': undefined as any },
-  })
+  // Wrap pour retourner le même format { data: ... } attendu par ClientFilesPanel
+  return apiUploadFileMain(file).then((data) => ({ data }))
 }

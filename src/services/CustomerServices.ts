@@ -1,6 +1,6 @@
 // src/services/CustomerServices.ts
 import ApiService from './ApiService'
-import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_GRAPHQL_URL } from '@/configs/api.config'
 import { ApiResponse, PageInfo } from '@/utils/serviceHelper'
 import { Customer } from '@/@types/customer'
 import { AxiosResponse } from 'axios'
@@ -134,17 +134,8 @@ export const apiUpdateCustomerByDocumentId = async (documentId: string, data: an
   })
 }
 
-// UPLOAD (Strapi)
+// UPLOAD (Strapi) — utilise le presigned URL pour les gros fichiers
+import { apiUploadFile as apiUploadFileMain } from './FileServices'
 export const apiUploadFile = (file: File) => {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  return ApiService.fetchData({
-    url: API_BASE_URL + '/upload-single',
-    method: 'post',
-    data: formData,
-    headers: {
-      'Content-Type': undefined as any,
-    },
-  })
+  return apiUploadFileMain(file).then((data) => ({ data }))
 }

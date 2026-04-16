@@ -22,9 +22,16 @@ import { PegFile } from '@/@types/pegFile';
     return response.data
 }*/
 
-export async function apiUploadFile(file: File): Promise<PegFile> {
-    const formData = new FormData();
+// Seuil au-delà duquel on utilise l'upload direct S3 (presigned URL)
+// pour éviter le timeout Heroku de 30s
+const DIRECT_S3_THRESHOLD = 5 * 1024 * 1024; // 5 Mo
 
+export async function apiUploadFile(file: File): Promise<PegFile> {
+    if (file.size > DIRECT_S3_THRESHOLD) {
+        return apiUploadFileDirect(file);
+    }
+
+    const formData = new FormData();
     formData.append("file", file);
 
     const response = await ApiService.fetchData<PegFile | PegFile[]>({
@@ -32,13 +39,46 @@ export async function apiUploadFile(file: File): Promise<PegFile> {
         method: 'post',
         data: formData,
         headers: {
-            // Supprimer le Content-Type par défaut (application/json) pour que
-            // le navigateur définisse automatiquement multipart/form-data avec le boundary
             'Content-Type': undefined,
         },
     })
 
     return Array.isArray(response.data) ? response.data[0] : response.data
+}
+
+/**
+ * Upload direct vers S3 via presigned URL (contourne le timeout Heroku)
+ * 1. Demande une URL signée à Strapi
+ * 2. Envoie le fichier directement à S3
+ * 3. Enregistre le fichier dans la BDD Strapi
+ */
+async function apiUploadFileDirect(file: File): Promise<PegFile> {
+    // Step 1: get presigned URL
+    const presignRes = await ApiService.fetchData<{ presignedUrl: string; s3Key: string }>({
+        url: API_BASE_URL + "/upload-single/presigned-url",
+        method: 'post',
+        data: { fileName: file.name, contentType: file.type },
+    });
+    const { presignedUrl, s3Key } = presignRes.data;
+
+    // Step 2: upload directly to S3 (raw fetch — pas Axios pour éviter les headers auth)
+    const s3Response = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+    });
+    if (!s3Response.ok) {
+        throw new Error(`Upload S3 échoué: ${s3Response.status} ${s3Response.statusText}`);
+    }
+
+    // Step 3: register file in Strapi DB
+    const registerRes = await ApiService.fetchData<PegFile>({
+        url: API_BASE_URL + "/upload-single/register",
+        method: 'post',
+        data: { s3Key, fileName: file.name, contentType: file.type, size: file.size },
+    });
+
+    return registerRes.data;
 }
 
 export async function apiGetFile(documentId: string): Promise<PegFile[]> {
