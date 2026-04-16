@@ -9,7 +9,8 @@ import { Product, PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 import { useState } from 'react';
-import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck } from 'react-icons/hi';
+import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch } from 'react-icons/hi';
+import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
 
 const STEP_LABELS = ['Infos', 'Prix', 'Options', 'BAT & Ref'];
@@ -126,6 +127,7 @@ const ProductForm = (props: ProductFormProps) => {
   } = props;
 
   const [batFile, setBatFile] = useState<PegFile | null>(null);
+  const [watermarkTarget, setWatermarkTarget] = useState<{ file: File; index: number } | null>(null);
   const totalSteps = STEP_LABELS.length;
 
   const {
@@ -166,6 +168,21 @@ const ProductForm = (props: ProductFormProps) => {
       }
     }
     return valid;
+  };
+
+  const handleWatermarkApply = (watermarkedFile: File) => {
+    if (!watermarkTarget) return;
+    const updated = [...images];
+    const original = updated[watermarkTarget.index];
+    // Replace the file but keep the PegFile metadata — marks it as changed (no documentId on new files)
+    updated[watermarkTarget.index] = {
+      ...original,
+      file: watermarkedFile,
+      name: watermarkedFile.name,
+      url: URL.createObjectURL(watermarkedFile),
+    } as PegFile;
+    setImages(updated);
+    setWatermarkTarget(null);
   };
 
   const cardStyle: React.CSSProperties = {
@@ -266,6 +283,21 @@ const ProductForm = (props: ProductFormProps) => {
                     file.previewUrl = pf.url;
                     return file;
                   })}
+                  renderFileActions={(file, index) => (
+                    <button
+                      type="button"
+                      title="Ajouter un logo"
+                      onClick={(e) => { e.stopPropagation(); setWatermarkTarget({ file, index }); }}
+                      style={{
+                        background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
+                        borderRadius: '6px', padding: '4px 6px', cursor: 'pointer',
+                        color: '#6fa3f5', display: 'flex', alignItems: 'center',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <HiOutlineColorSwatch size={13} />
+                    </button>
+                  )}
                 />
               </Loading>
             </div>
@@ -315,6 +347,13 @@ const ProductForm = (props: ProductFormProps) => {
           </div>
         </div>
       </FormContainer>
+      {watermarkTarget && (
+        <WatermarkModal
+          file={watermarkTarget.file}
+          onApply={handleWatermarkApply}
+          onClose={() => setWatermarkTarget(null)}
+        />
+      )}
     </form>
   );
 };

@@ -27,6 +27,7 @@ export interface UploadProps extends CommonProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     field?: any
     clickable?: boolean
+    renderFileActions?: (file: File, index: number) => ReactNode
 }
 
 const filesToArray = (files: File[]) =>
@@ -53,6 +54,7 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
         className,
         field,
         clickable = false,
+        renderFileActions,
         ...rest
     } = props
 
@@ -226,10 +228,13 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
                 <div className={classNames('upload-file-list', fileListClass)}>
                     {files.map((file, index) => (
                         <FileItem key={file.name + index} file={file} clickable={clickable} className={fileItemClass}>
-                            <CloseButton
-                                className="upload-file-remove"
-                                onClick={() => removeFile(index)}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {renderFileActions?.(file, index)}
+                                <CloseButton
+                                    className="upload-file-remove"
+                                    onClick={() => removeFile(index)}
+                                />
+                            </div>
                         </FileItem>
                     ))}
                 </div>
