@@ -48,41 +48,23 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
     let blobUrl: string | null = null
     const previewUrl = (file as File & { previewUrl?: string }).previewUrl
 
-    const loadFromUrl = async (url: string) => {
-      try {
-        // Add cache-buster: the browser caches <img> responses without CORS headers,
-        // so fetch() reuses that cached response and fails. A unique query param
-        // forces a fresh request that includes the Origin header → S3 returns CORS headers.
-        const bustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now()
-        const res = await fetch(bustUrl)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const blob = await res.blob()
-        blobUrl = URL.createObjectURL(blob)
-        const img = new Image()
-        img.onload = () => setProductImg(img)
-        img.onerror = () => setLoadError('Impossible de décoder l\'image')
-        img.src = blobUrl
-      } catch {
-        setLoadError(
-          'L\'image ne peut pas être chargée pour modification. Vérifiez les CORS du bucket S3.'
-        )
-      }
-    }
-
     if (file.size > 0) {
-      // File has actual content (new upload or re-uploaded) — use directly
+      // File has actual content — use directly (local uploads, already fetched files)
       blobUrl = URL.createObjectURL(file)
       const img = new Image()
       img.onload = () => setProductImg(img)
       img.src = blobUrl
     } else if (previewUrl) {
-      loadFromUrl(previewUrl)
-    } else if (file.size > 0) {
-      // Local file with actual content
-      blobUrl = URL.createObjectURL(file)
+      // S3 image: use <img crossOrigin="anonymous"> with cache-buster.
+      // The cache-buster forces a fresh request so the browser sends the Origin header
+      // and S3 returns CORS headers (without it, browser reuses a cached non-CORS response).
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => setProductImg(img)
-      img.src = blobUrl
+      img.onerror = () => setLoadError(
+        'Impossible de charger l\'image pour modification. Vérifiez les CORS du bucket S3.'
+      )
+      img.src = previewUrl + (previewUrl.includes('?') ? '&' : '?') + '_w=' + Date.now()
     } else {
       setLoadError('Image vide — veuillez d\'abord enregistrer le produit')
     }
