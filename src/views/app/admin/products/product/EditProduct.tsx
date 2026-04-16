@@ -279,9 +279,15 @@ const EditProduct = () => {
 
       const newImages: PegFile[] = [];
       for (const image of images) {
-        if (image.id) {
+        if (image.id && image.documentId) {
+          // Existing image already on server — keep as-is
           newImages.push(image);
         } else {
+          // New or watermarked image — upload to Strapi
+          if (!image.file || image.file.size === 0) {
+            toast.error('Image vide, impossible d\'uploader: ' + image.name);
+            continue;
+          }
           const imageUploaded: PegFile = await apiUploadFile(image.file);
           newImages.push(imageUploaded);
         }

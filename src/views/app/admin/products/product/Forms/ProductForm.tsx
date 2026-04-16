@@ -10,6 +10,7 @@ import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 import { useState } from 'react';
 import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch } from 'react-icons/hi';
+import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
 
@@ -173,16 +174,15 @@ const ProductForm = (props: ProductFormProps) => {
   const handleWatermarkApply = (watermarkedFile: File) => {
     if (!watermarkTarget) return;
     const updated = [...images];
-    const original = updated[watermarkTarget.index];
-    // Replace the file but keep the PegFile metadata — marks it as changed (no documentId on new files)
+    // Clear id/documentId so the watermarked file gets re-uploaded during save
     updated[watermarkTarget.index] = {
-      ...original,
       file: watermarkedFile,
       name: watermarkedFile.name,
       url: URL.createObjectURL(watermarkedFile),
     } as PegFile;
     setImages(updated);
     setWatermarkTarget(null);
+    toast.success(`Logo appliqué sur ${watermarkedFile.name} (${Math.round(watermarkedFile.size / 1024)} Ko) — pensez à enregistrer`);
   };
 
   const cardStyle: React.CSSProperties = {
