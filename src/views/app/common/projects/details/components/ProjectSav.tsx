@@ -994,7 +994,7 @@ const ProjectSav = () => {
                   color: '#fff', fontSize: '15px', fontWeight: 800,
                   cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   letterSpacing: '0.03em',
-                  boxShadow: '0 4px 16px rgba(251,146,60,0.3)',
+                  animation: 'savPulse 2s ease-in-out infinite',
                   transition: 'transform 0.2s ease, filter 0.2s ease',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
