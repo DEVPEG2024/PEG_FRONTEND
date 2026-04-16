@@ -20,9 +20,11 @@ import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.consta
 import { updateCurrentProject, useAppSelector } from '../store';
 import ProgressionBar from '../../lists/components/ProgressionBar';
 import { MdPersonAdd } from 'react-icons/md';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetProducers, GetProducersResponse } from '@/services/ProducerServices';
+import { apiGetExpenses } from '@/services/ExpenseServices';
+import { Expense } from '@/@types/expense';
 import { Producer } from '@/@types/producer';
 import { toast } from 'react-toastify';
 
@@ -111,6 +113,18 @@ const DetailsRight = () => {
   );
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]);
+
+  // Fetch project expenses (admin only)
+  const [projectExpenses, setProjectExpenses] = useState<Expense[]>([]);
+  useEffect(() => {
+    if (!isAdmin || !project?.documentId) return;
+    unwrapData(apiGetExpenses({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }))
+      .then(({ expenses_connection }) => {
+        setProjectExpenses(expenses_connection.nodes.filter((e: Expense) => e.project?.documentId === project.documentId));
+      })
+      .catch(() => {});
+  }, [isAdmin, project?.documentId]);
+  const totalExpenses = useMemo(() => projectExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0), [projectExpenses]);
 
   // Inline edit paidPrice / producerPaidPrice
   const [editingField, setEditingField] = useState<'paidPrice' | 'producerPaidPrice' | null>(null);
@@ -365,12 +379,19 @@ const DetailsRight = () => {
               color={(project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80'}
             />
 
+            {totalExpenses > 0 && (
+              <>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
+                <FinanceRow label="Dépenses" value={`-${fmt(totalExpenses)} €`} color="#f87171" />
+              </>
+            )}
+
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
 
             <FinanceRow
               label="Marge"
-              value={`${fmt((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0))} €`}
-              color={(project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) >= 0 ? '#4ade80' : '#f87171'}
+              value={`${fmt((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)} €`}
+              color={(project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses >= 0 ? '#4ade80' : '#f87171'}
               bold
             />
           </div>

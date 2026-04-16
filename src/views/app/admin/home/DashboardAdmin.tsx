@@ -304,6 +304,19 @@ export default function DashboardAdmin() {
   useEffect(() => { const up = () => { if (lastUpdated) setLastUpdatedText(dayjs(lastUpdated).fromNow()) }; up(); const iv = setInterval(up, 30000); return () => clearInterval(iv) }, [lastUpdated])
 
   const projects = gql?.projects_connection?.nodes ?? []; const invoices = gql?.invoices_connection?.nodes ?? []; const tickets = gql?.tickets_connection?.nodes ?? []; const orderItems = gql?.orderItems_connection?.nodes ?? []; const transactions = gql?.transactions_connection?.nodes ?? []
+
+  // Fetch expenses for margin calculations
+  const [allExpenses, setAllExpenses] = useState<any[]>([])
+  useEffect(() => {
+    import('@/services/ExpenseServices').then(({ apiGetExpenses }) => {
+      import('@/utils/serviceHelper').then(({ unwrapData }) => {
+        unwrapData(apiGetExpenses({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }))
+          .then(({ expenses_connection }) => setAllExpenses(expenses_connection?.nodes ?? []))
+          .catch(() => {})
+      })
+    })
+  }, [refreshTick])
+  const totalExpensesGlobal = useMemo(() => allExpenses.reduce((a: number, e: any) => a + (Number(e?.totalAmount) || 0), 0), [allExpenses])
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
   const invoiceTotal = useMemo(() => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0) + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.price) || 0)), 0), [invoices, projects])
@@ -314,7 +327,7 @@ export default function DashboardAdmin() {
   const avgDeliveryDays = useMemo(() => { const p2 = projects.map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) })).filter((x: any) => x.s && x.e); if (!p2.length) return 0; return Math.round(p2.reduce((a: number, x: any) => a + Math.max(0, (x.e.getTime() - x.s.getTime()) / 86400000), 0) / p2.length) }, [projects])
   const totalCosts = useMemo(() => transactions.reduce((a: number, x: any) => a + (Number(x?.amount) || 0), 0), [transactions])
   const totalProducerCosts = useMemo(() => projects.reduce((a: number, p: any) => a + Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0), 0), [projects])
-  const margeBrute = Math.max(0, invoiceTotal - totalCosts - totalProducerCosts); const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
+  const margeBrute = Math.max(0, invoiceTotal - totalCosts - totalProducerCosts - totalExpensesGlobal); const margePct = invoiceTotal > 0 ? Math.round((margeBrute / invoiceTotal) * 100) : 0
   const TAX_RATE = 0.15; const beneficeNet = margeBrute * (1 - TAX_RATE); const impotEstime = margeBrute * TAX_RATE
   const openTickets = useMemo(() => tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length, [tickets])
 
@@ -327,8 +340,10 @@ export default function DashboardAdmin() {
     for (const tx of transactions) { const d = safeDate(tx?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += (Number(tx?.amount) || 0) }
     // Ajouter les coûts producteur par mois
     for (const p of projects) { const cost = Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0); if (!cost) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += cost }
+    // Ajouter les dépenses par mois
+    for (const exp of allExpenses) { const d = safeDate(exp?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += (Number(exp?.totalAmount) || 0) }
     return months.map(k => { const b = by.get(k)!; return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid } })
-  }, [invoices, transactions, projects])
+  }, [invoices, transactions, projects, allExpenses])
   const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
   const paidLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].paid : 0; const paidThisMonth = revenue6m.length >= 1 ? revenue6m[revenue6m.length - 1].paid : 0
 
