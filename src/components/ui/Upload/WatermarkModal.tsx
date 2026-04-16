@@ -174,27 +174,39 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
     reader.readAsDataURL(f)
   }
 
+  const [applyError, setApplyError] = useState<string | null>(null)
+
   const handleApply = async () => {
     if (!productImg || !logoImg) return
     setApplying(true)
+    setApplyError(null)
 
-    const canvas = document.createElement('canvas')
-    canvas.width = productImg.naturalWidth
-    canvas.height = productImg.naturalHeight
-    const ctx = canvas.getContext('2d')!
-    ctx.drawImage(productImg, 0, 0)
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = productImg.naturalWidth
+      canvas.height = productImg.naturalHeight
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(productImg, 0, 0)
 
-    const { x, y, w, h } = getLogoRect(canvas.width, canvas.height)
+      const { x, y, w, h } = getLogoRect(canvas.width, canvas.height)
 
-    ctx.globalAlpha = opacity / 100
-    ctx.drawImage(logoImg, x, y, w, h)
-    ctx.globalAlpha = 1
+      ctx.globalAlpha = opacity / 100
+      ctx.drawImage(logoImg, x, y, w, h)
+      ctx.globalAlpha = 1
 
-    canvas.toBlob((blob) => {
-      if (!blob) { setApplying(false); return }
-      const watermarked = new File([blob], file.name, { type: file.type || 'image/png' })
-      onApply(watermarked)
-    }, file.type || 'image/png', 0.92)
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setApplying(false)
+          setApplyError('Erreur lors de la génération de l\'image. Réessayez.')
+          return
+        }
+        const watermarked = new File([blob], file.name, { type: file.type || 'image/png' })
+        onApply(watermarked)
+      }, file.type || 'image/png', 0.92)
+    } catch {
+      setApplying(false)
+      setApplyError('Impossible d\'exporter l\'image (CORS). Essayez avec une image uploadée localement.')
+    }
   }
 
   const overlayStyle: React.CSSProperties = {
@@ -276,6 +288,11 @@ export default function WatermarkModal({ file, onApply, onClose }: WatermarkModa
               style={{ width: '100%', marginTop: '6px', accentColor: '#2f6fed' }} />
           </div>
         </div>
+
+        {/* Error */}
+        {applyError && (
+          <p style={{ color: '#f87171', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>{applyError}</p>
+        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
