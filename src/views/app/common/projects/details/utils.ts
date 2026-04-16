@@ -7,5 +7,6 @@ export const labelList = [
   'BAT',
   'Devis',
   'Factures',
+  'Dépenses',
   'SAV',
 ];
