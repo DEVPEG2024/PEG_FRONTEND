@@ -57,8 +57,14 @@ const ProductsList = () => {
   const onDeleted = async () => {
     if (productToDelete) {
       dispatch(deleteProduct(productToDelete.documentId));
-      const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
-      apiDeleteFiles(pegFilesToDelete.map((f) => f.id));
+      try {
+        if (productToDelete.images?.length > 0) {
+          const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
+          apiDeleteFiles(pegFilesToDelete.map((f) => f.id));
+        }
+      } catch {
+        // Images introuvables ou déjà supprimées — on continue
+      }
     }
     dispatch(setModalDeleteProductClose());
   };
