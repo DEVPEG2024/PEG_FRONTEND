@@ -696,21 +696,22 @@ const Comments = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '10px',
-              padding: '14px 24px',
-              borderRadius: '14px',
+              gap: '6px',
+              padding: '7px 16px',
+              borderRadius: '8px',
               background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
               border: 'none',
               color: '#fff',
               cursor: 'pointer',
               textDecoration: 'none',
-              fontSize: '14px',
-              fontWeight: 700,
+              fontSize: '11px',
+              fontWeight: 600,
               fontFamily: 'Inter, sans-serif',
               letterSpacing: '0.02em',
               animation: 'whatsappPulse 2s ease-in-out infinite',
               transition: 'transform 0.2s ease, filter 0.2s ease',
-              marginTop: '-8px',
+              marginTop: '-4px',
+              alignSelf: 'flex-start',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.03)';
@@ -722,8 +723,8 @@ const Comments = () => {
             }}
             title="Nous contacter sur WhatsApp"
           >
-            <FaWhatsapp size={20} />
-            Nous contacter sur WhatsApp
+            <FaWhatsapp size={14} />
+            WhatsApp
           </a>
         )}
 
