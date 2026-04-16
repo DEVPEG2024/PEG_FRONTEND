@@ -9,7 +9,7 @@ import { Product, PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 import { useState } from 'react';
-import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch } from 'react-icons/hi';
+import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch, HiReply } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -129,6 +129,8 @@ const ProductForm = (props: ProductFormProps) => {
 
   const [batFile, setBatFile] = useState<PegFile | null>(null);
   const [watermarkTarget, setWatermarkTarget] = useState<{ file: File; index: number } | null>(null);
+  // Store originals before watermark so user can undo
+  const [originals, setOriginals] = useState<Map<string, PegFile>>(new Map());
   const totalSteps = STEP_LABELS.length;
 
   const {
@@ -174,15 +176,36 @@ const ProductForm = (props: ProductFormProps) => {
   const handleWatermarkApply = (watermarkedFile: File) => {
     if (!watermarkTarget) return;
     const updated = [...images];
+    const original = updated[watermarkTarget.index];
+    // Save original before overwriting (keyed by image name)
+    const key = original.name || watermarkTarget.index.toString();
+    if (!originals.has(key)) {
+      setOriginals(new Map(originals).set(key, { ...original }));
+    }
     // Clear id/documentId so the watermarked file gets re-uploaded during save
     updated[watermarkTarget.index] = {
       file: watermarkedFile,
       name: watermarkedFile.name,
       url: URL.createObjectURL(watermarkedFile),
-    } as PegFile;
+      _watermarked: true,
+      _originalKey: key,
+    } as PegFile & { _watermarked: boolean; _originalKey: string };
     setImages(updated);
     setWatermarkTarget(null);
     toast.success(`Logo appliqué sur ${watermarkedFile.name} (${Math.round(watermarkedFile.size / 1024)} Ko) — pensez à enregistrer`);
+  };
+
+  const handleWatermarkUndo = (index: number) => {
+    const image = images[index] as PegFile & { _originalKey?: string };
+    const key = image._originalKey;
+    if (!key || !originals.has(key)) return;
+    const updated = [...images];
+    updated[index] = originals.get(key)!;
+    const newOriginals = new Map(originals);
+    newOriginals.delete(key);
+    setOriginals(newOriginals);
+    setImages(updated);
+    toast.info('Logo retiré — image originale restaurée');
   };
 
   const cardStyle: React.CSSProperties = {
@@ -283,21 +306,41 @@ const ProductForm = (props: ProductFormProps) => {
                     file.previewUrl = pf.url;
                     return file;
                   })}
-                  renderFileActions={(file, index) => (
-                    <button
-                      type="button"
-                      title="Ajouter un logo"
-                      onClick={(e) => { e.stopPropagation(); setWatermarkTarget({ file, index }); }}
-                      style={{
-                        background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
-                        borderRadius: '6px', padding: '4px 6px', cursor: 'pointer',
-                        color: '#6fa3f5', display: 'flex', alignItems: 'center',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      <HiOutlineColorSwatch size={13} />
-                    </button>
-                  )}
+                  renderFileActions={(file, index) => {
+                    const img = images[index] as PegFile & { _watermarked?: boolean };
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          title="Ajouter un logo"
+                          onClick={(e) => { e.stopPropagation(); setWatermarkTarget({ file, index }); }}
+                          style={{
+                            background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
+                            borderRadius: '6px', padding: '4px 6px', cursor: 'pointer',
+                            color: '#6fa3f5', display: 'flex', alignItems: 'center',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <HiOutlineColorSwatch size={13} />
+                        </button>
+                        {img?._watermarked && (
+                          <button
+                            type="button"
+                            title="Retirer le logo"
+                            onClick={(e) => { e.stopPropagation(); handleWatermarkUndo(index); }}
+                            style={{
+                              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+                              borderRadius: '6px', padding: '4px 6px', cursor: 'pointer',
+                              color: '#f87171', display: 'flex', alignItems: 'center',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <HiReply size={13} />
+                          </button>
+                        )}
+                      </>
+                    );
+                  }}
                 />
               </Loading>
             </div>
