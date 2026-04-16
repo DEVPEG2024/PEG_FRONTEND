@@ -369,8 +369,8 @@ const DetailsRight = () => {
 
             <FinanceRow
               label="Marge"
-              value={`${fmt((project.price ?? 0) - (project.producerPrice ?? 0))} €`}
-              color={(project.price ?? 0) - (project.producerPrice ?? 0) >= 0 ? '#4ade80' : '#f87171'}
+              value={`${fmt((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0))} €`}
+              color={(project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) >= 0 ? '#4ade80' : '#f87171'}
               bold
             />
           </div>

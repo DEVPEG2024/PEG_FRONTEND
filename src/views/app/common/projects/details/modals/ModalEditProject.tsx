@@ -192,7 +192,9 @@ function ModalEditProject() {
   const filteredProducers = producers.filter((p) => p.label.toLowerCase().includes(searchProducer.toLowerCase()));
   const price = formData.price as number || 0;
   const producerPrice = formData.producerPrice as number || 0;
+  const producerPaidPrice = formData.producerPaidPrice as number || 0;
   const paidPrice = formData.paidPrice as number || 0;
+  const effectiveProducerCost = Math.max(producerPrice, producerPaidPrice);
 
   return (
     <div style={{
@@ -330,7 +332,7 @@ function ModalEditProject() {
               <div style={{ marginTop: '16px', padding: '14px', borderRadius: '12px', background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>Marge PEG</span>
-                  <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{(price - producerPrice).toFixed(2)} EUR</span>
+                  <span style={{ color: (price - effectiveProducerCost) >= 0 ? '#4ade80' : '#f87171', fontSize: '13px', fontWeight: 700 }}>{(price - effectiveProducerCost).toFixed(2)} EUR</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>Reste a payer (client)</span>
