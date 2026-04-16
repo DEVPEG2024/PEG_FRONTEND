@@ -191,6 +191,19 @@ export async function apiGetProductCategoryById(documentId: string): Promise<Axi
         productCategory(documentId: $documentId) {
             documentId
             name
+            active
+            order
+            image { url documentId }
+            products (pagination: {limit: 100}) { documentId }
+            parent { documentId name }
+            subcategories {
+                documentId
+                name
+                active
+                order
+                image { url documentId }
+                products (pagination: {limit: 100}) { documentId }
+            }
         }
     }
   `,
