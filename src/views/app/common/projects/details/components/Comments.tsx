@@ -729,7 +729,9 @@ const Comments = () => {
         )}
 
         {/* ── Right sidebar ── */}
-        <DetailsRight />
+        <div style={{ gridColumn: '2 / 3', gridRow: '1 / -1', alignSelf: 'start' }}>
+          <DetailsRight />
+        </div>
       </div>
     </Container>
   );
