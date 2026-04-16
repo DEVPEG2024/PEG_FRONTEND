@@ -8,9 +8,10 @@ import reducer, {
 } from './store';
 import { useEffect, useState } from 'react';
 import { isEmpty } from 'lodash';
-import { useParams } from 'react-router-dom';
-import { Product } from '@/@types/product';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Product, ProductCategory } from '@/@types/product';
 import CustomerProductCard from '../products/lists/CustomerProductCard';
+import { HiPhotograph } from 'react-icons/hi';
 
 injectReducer('catalogue', reducer);
 
@@ -33,9 +34,42 @@ const SkeletonCard = () => (
   </div>
 );
 
+const SubcategoryCard = ({ sub }: { sub: ProductCategory }) => {
+  const navigate = useNavigate();
+  return (
+    <div
+      onClick={() => navigate(`/customer/catalogue/categories/${sub.documentId}`)}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)'; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)'; }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '10px 16px', borderRadius: '12px',
+        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+        cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      }}
+    >
+      {sub.image?.url ? (
+        <img src={sub.image.url} alt={sub.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <HiPhotograph size={16} style={{ color: 'rgba(255,255,255,0.2)' }} />
+        </div>
+      )}
+      <div>
+        <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600 }}>{sub.name}</p>
+        <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+          {sub.products?.length ?? 0} produit{(sub.products?.length ?? 0) !== 1 ? 's' : ''} →
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const CustomerProductsOfCategory = () => {
   const { documentId } =
     useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { products, productCategory, loading, total } = useAppSelector(
     (state) => state.catalogue.data
@@ -84,6 +118,20 @@ const CustomerProductsOfCategory = () => {
           </p>
         )}
       </div>
+
+      {/* Sous-catégories */}
+      {!loading && productCategory?.subcategories && productCategory.subcategories.filter((s) => s.active !== false).length > 0 && (
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>
+            Sous-catégories
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {productCategory.subcategories.filter((s) => s.active !== false).map((sub) => (
+              <SubcategoryCard key={sub.documentId} sub={sub} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Skeleton */}
       {loading && (
