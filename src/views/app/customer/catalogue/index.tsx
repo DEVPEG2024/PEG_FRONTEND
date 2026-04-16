@@ -69,7 +69,7 @@ const Categories = () => {
 
   // Filter out inactive categories for clients
   const activeCategories = useMemo(
-    () => productCategories.filter((c) => c.active !== false),
+    () => productCategories.filter((c) => c.active !== false && !c.parent?.documentId),
     [productCategories]
   );
 
