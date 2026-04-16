@@ -43,7 +43,7 @@ function ModalEditProductCategory({
 
   // Catégories racines disponibles comme parent (exclure la catégorie en cours d'édition)
   const rootCategories = productCategories.filter(
-    (c) => !c.parent && c.documentId !== productCategory?.documentId
+    (c) => !c.parent?.documentId && c.documentId !== productCategory?.documentId
   );
 
   const selectedParentObj = rootCategories.find((c) => c.documentId === selectedParent);

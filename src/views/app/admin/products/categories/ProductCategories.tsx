@@ -58,7 +58,7 @@ const Categories = () => {
     // En recherche : montrer tout. Sinon : uniquement les catégories racines
     const filtered = searchTerm.trim()
       ? productCategories
-      : productCategories.filter((c) => !c.parent);
+      : productCategories.filter((c) => !c.parent?.documentId);
     setOrderedCategories([...filtered]);
     setOrderChanged(false);
   }, [productCategories, searchTerm]);
