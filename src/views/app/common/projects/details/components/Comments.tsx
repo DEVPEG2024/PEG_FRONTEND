@@ -128,7 +128,7 @@ const Comments = () => {
   const determineVisibleComments = (comments: Comment[], user: User): Comment[] => {
     if (hasRole(user, [SUPER_ADMIN, ADMIN])) return comments;
     return comments.filter(
-      ({ visibility }) => visibility === 'all' || visibility === user.role.name
+      ({ visibility }) => visibility === 'all' || visibility === user.role?.name
     );
   };
 
@@ -184,9 +184,9 @@ const Comments = () => {
     }
 
     const commentVisibility =
-      user.role.name === 'customer'
+      user.role?.name === 'customer'
         ? 'customer'
-        : user.role.name === 'producer'
+        : user.role?.name === 'producer'
           ? 'producer'
           : visibility;
 

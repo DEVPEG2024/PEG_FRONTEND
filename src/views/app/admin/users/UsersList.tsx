@@ -41,8 +41,8 @@ const UsersList = () => {
   }, [currentPage, searchTerm]);
 
   const isUserMissingInfos = (user: User) =>
-    (user.role.name === 'producer' && !user.producer) ||
-    (user.role.name === 'customer' && !user.customer)
+    (user.role?.name === 'producer' && !user.producer) ||
+    (user.role?.name === 'customer' && !user.customer)
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>

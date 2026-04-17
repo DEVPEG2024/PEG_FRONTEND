@@ -113,9 +113,9 @@ const DashboardProducer = () => {
     }
   }, [user]);
 
-  const projectsDone = producer?.projects.filter((p) => p.state === 'fulfilled').length ?? 0;
-  const projectsInProgress = producer?.projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length ?? 0;
-  const activeProjects = producer?.projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled') ?? [];
+  const projectsDone = producer?.projects?.filter((p) => p.state === 'fulfilled').length ?? 0;
+  const projectsInProgress = producer?.projects?.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length ?? 0;
+  const activeProjects = producer?.projects?.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled') ?? [];
 
   return (
     producer && (
