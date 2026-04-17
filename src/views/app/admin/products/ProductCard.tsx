@@ -3,7 +3,7 @@ import { Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
-import { toTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC, fmtNum, arePricesHidden } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
 
 const ProductCard = memo(
@@ -22,7 +22,7 @@ const ProductCard = memo(
     const cardRef = useRef<HTMLDivElement>(null);
     const imageUrl = product.images[0]?.url;
     const initial = (product.name || '?').charAt(0).toUpperCase();
-    const price = getProductBasePrice(product).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const price = arePricesHidden() ? '•••••' : fmtNum(getProductBasePrice(product));
 
     const handleMouseEnter = () => {
       if (cardRef.current) {
@@ -123,7 +123,7 @@ const ProductCard = memo(
                 {price} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>€ HT</span>
               </span>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-                {toTTC(getProductBasePrice(product)).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                {fmtTTC(toTTC(getProductBasePrice(product)))}
               </span>
             </div>
             {product.productRef && (

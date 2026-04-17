@@ -4,7 +4,7 @@ import {
   getTotalPriceForCartItem,
   isProductPackPricing,
 } from '@/utils/productHelpers';
-import { toTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { CartItem } from '@/@types/cart';
 
@@ -45,10 +45,10 @@ export const useColumns = (
         return (
           <div>
             <p className="font-semibold">
-              {(isPackPricing ? total : ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+              {fmtHT(isPackPricing ? total : ht)}
             </p>
             <p className="text-xs text-gray-400">
-              {isPackPricing ? `Pack ${totalQuantity}` : `${toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC`}
+              {isPackPricing ? `Pack ${totalQuantity}` : fmtTTC(toTTC(ht))}
             </p>
           </div>
         );
@@ -87,8 +87,8 @@ export const useColumns = (
         );
         return (
           <div className="flex flex-col" key={row.original.id}>
-            <span className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
-            <span className="text-xs text-gray-400">{toTTC(ht).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
+            <span className="font-semibold">{fmtHT(ht)}</span>
+            <span className="text-xs text-gray-400">{fmtTTC(toTTC(ht))}</span>
           </div>
         );
       },

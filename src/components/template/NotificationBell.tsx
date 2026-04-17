@@ -17,6 +17,7 @@ import { HiBell } from 'react-icons/hi';
 import { HiOutlineTrash, HiOutlineCheck, HiOutlineCheckCircle } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import useNotifications from '@/utils/hooks/useNotifications';
+import { fmtPrice } from '@/utils/priceHelpers';
 
 const EVENT_ICONS: Record<string, string> = {
   new_order: '🛒',
@@ -63,7 +64,7 @@ function getMetadataPreview(notif: { eventType: string; metadata?: Record<string
   switch (notif.eventType) {
     case 'payment_received':
     case 'new_order':
-      if (meta.amount) return `${notif.message} — ${Number(meta.amount).toLocaleString('fr-FR')} €`;
+      if (meta.amount) return `${notif.message} — ${fmtPrice(Number(meta.amount))}`;
       return notif.message;
     case 'project_status_change':
       if (meta.newState) {

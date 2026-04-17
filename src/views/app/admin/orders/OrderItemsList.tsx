@@ -1,5 +1,6 @@
 import { Container, EmptyState } from '@/components/shared';
 import { useEffect, useState } from 'react';
+import { fmtPrice } from '@/utils/priceHelpers';
 import { injectReducer, useAppDispatch, RootState } from '@/store';
 import reducer, {
   getOrderItems,
@@ -324,7 +325,7 @@ const OrderItemsList = () => {
 
                   {/* Price */}
                   <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700, flexShrink: 0 }}>
-                    {(order.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    {fmtPrice(order.price ?? 0)}
                   </span>
 
                   {/* Project badge */}

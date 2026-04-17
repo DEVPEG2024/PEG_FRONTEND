@@ -2,7 +2,7 @@ import { Card } from '@/components/ui'
 import { InvoiceStat } from '../store/dashboardSuperAdminSlice'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { toHT } from '@/utils/priceHelpers'
+import { toHT, fmtPrice, fmtHT, fmtTTC } from '@/utils/priceHelpers'
 
 const paymentStateColor: Record<string, string> = {
   paid: 'bg-green-100 text-green-700',
@@ -50,28 +50,28 @@ const InvoicesSummary = ({ invoices }: InvoicesSummaryProps) => {
         <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
           <p className="text-xs text-gray-400 mb-1">Total TTC</p>
           <p className="text-base font-bold text-gray-800 dark:text-white">
-            {totalRevenue.toLocaleString('fr-FR')} €
+            {fmtPrice(totalRevenue)}
           </p>
           <p className="text-[10px] text-gray-400">
-            {toHT(totalRevenue).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} € HT
+            {fmtHT(toHT(totalRevenue))}
           </p>
         </div>
         <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
           <p className="text-xs text-green-500 mb-1">Encaissé TTC</p>
           <p className="text-base font-bold text-green-600">
-            {paidRevenue.toLocaleString('fr-FR')} €
+            {fmtPrice(paidRevenue)}
           </p>
           <p className="text-[10px] text-green-400">
-            {toHT(paidRevenue).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} € HT
+            {fmtHT(toHT(paidRevenue))}
           </p>
         </div>
         <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
           <p className="text-xs text-yellow-500 mb-1">En attente TTC</p>
           <p className="text-base font-bold text-yellow-600">
-            {pendingRevenue.toLocaleString('fr-FR')} €
+            {fmtPrice(pendingRevenue)}
           </p>
           <p className="text-[10px] text-yellow-400">
-            {toHT(pendingRevenue).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} € HT
+            {fmtHT(toHT(pendingRevenue))}
           </p>
         </div>
       </div>
@@ -100,10 +100,10 @@ const InvoicesSummary = ({ invoices }: InvoicesSummaryProps) => {
               </span>
               <div className="text-right">
                 <span className="text-sm font-semibold text-gray-800 dark:text-white">
-                  {invoice.totalAmount?.toLocaleString('fr-FR')} € TTC
+                  {fmtTTC(invoice.totalAmount ?? 0)}
                 </span>
                 <p className="text-[10px] text-gray-400">
-                  {toHT(invoice.totalAmount ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} € HT
+                  {fmtHT(toHT(invoice.totalAmount ?? 0))}
                 </p>
               </div>
             </div>

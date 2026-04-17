@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { fmtNum, arePricesHidden } from '@/utils/priceHelpers';
 import { HiX, HiCheck, HiUpload, HiDocumentText, HiSearch } from 'react-icons/hi';
 import { Expense, ExpenseCategory, ExpenseStatus, RecurrenceInterval } from '@/@types/expense';
 import { apiUploadFile } from '@/services/FileServices';
@@ -284,18 +285,18 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
             <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '14px', padding: '16px 20px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>HT</span>
-                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{form.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{arePricesHidden() ? '•••••' : `${fmtNum(form.amount)} EUR`}</span>
               </div>
               {vatEnabled && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>TVA (20%)</span>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{form.vatAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{arePricesHidden() ? '•••••' : `${fmtNum(form.vatAmount)} EUR`}</span>
                 </div>
               )}
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '15px', color: '#fff', fontWeight: 600 }}>Total TTC</span>
-                <span style={{ fontSize: '15px', color: '#f87171', fontWeight: 700 }}>{form.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</span>
+                <span style={{ fontSize: '15px', color: '#f87171', fontWeight: 700 }}>{arePricesHidden() ? '•••••' : `${fmtNum(form.totalAmount)} EUR`}</span>
               </div>
             </div>
 

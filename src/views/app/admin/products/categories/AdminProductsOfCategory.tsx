@@ -1,5 +1,6 @@
 import { injectReducer, useAppDispatch } from '@/store';
 import { getProductBasePrice } from '@/utils/productHelpers';
+import { fmtPrice } from '@/utils/priceHelpers';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { isEmpty } from 'lodash';
@@ -74,7 +75,7 @@ const AdminProductsOfCategory = () => {
                   <div className="flex flex-col justify-between">
                     <p className="text-lg font-bold">{product.name}</p>
                     <p className="text-lg font-bold text-white">
-                      {getProductBasePrice(product).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      {fmtPrice(getProductBasePrice(product))}
                     </p>
                   </div>
                 </div>

@@ -15,6 +15,7 @@ import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
+import { fmtPrice } from '@/utils/priceHelpers';
 
 const formatLastSeen = (dateStr: string) => {
   const d = dayjs(dateStr);
@@ -224,14 +225,14 @@ const ProjectItem = ({
                   borderRadius: '100px', padding: '2px 9px',
                   color: '#6b9eff', fontSize: '11px', fontWeight: 600,
                 }}>
-                  {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  {fmtPrice(project.price ?? 0)}
                 </span>
                 <span style={{
                   background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
                   borderRadius: '100px', padding: '2px 9px',
                   color: '#a78bfa', fontSize: '11px', fontWeight: 600,
                 }}>
-                  Prod. {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  Prod. {fmtPrice(project.producerPrice ?? 0)}
                 </span>
               </>
             )}
@@ -241,7 +242,7 @@ const ProjectItem = ({
                 borderRadius: '100px', padding: '2px 9px',
                 color: '#a78bfa', fontSize: '11px', fontWeight: 600,
               }}>
-                {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                {fmtPrice(project.producerPrice ?? 0)}
               </span>
             )}
             {hasRole(user, [CUSTOMER]) && (
@@ -250,7 +251,7 @@ const ProjectItem = ({
                 borderRadius: '100px', padding: '2px 9px',
                 color: '#6b9eff', fontSize: '11px', fontWeight: 600,
               }}>
-                {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                {fmtPrice(project.price ?? 0)}
               </span>
             )}
           </div>

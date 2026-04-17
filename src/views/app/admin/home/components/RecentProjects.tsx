@@ -2,6 +2,7 @@ import { Card } from '@/components/ui'
 import { ProjectStat } from '../store/dashboardSuperAdminSlice'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { fmtPrice } from '@/utils/priceHelpers'
 
 const statusColorData: Record<string, string> = {
   pending: 'bg-blue-100 text-blue-700',
@@ -83,7 +84,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
                 </td>
                 <td className="py-3 text-right font-medium text-gray-800 dark:text-gray-200">
                   {project.price != null
-                    ? `${project.price.toLocaleString('fr-FR')} €`
+                    ? fmtPrice(project.price)
                     : '—'}
                 </td>
               </tr>

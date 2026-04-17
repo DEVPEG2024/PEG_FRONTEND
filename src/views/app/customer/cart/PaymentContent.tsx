@@ -13,7 +13,7 @@ import { TOKEN_TYPE } from '@/constants/api.constant';
 import { FormAnswer } from '@/@types/formAnswer';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { unwrapData } from '@/utils/serviceHelper';
-import { TVA_RATE } from '@/utils/priceHelpers';
+import { TVA_RATE, fmtPrice } from '@/utils/priceHelpers';
 import { apiCreateOrderItem } from '@/services/OrderItemServices';
 import { OrderItem } from '@/@types/orderItem';
 import { User } from '@/@types/user';
@@ -228,7 +228,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
                 </span>
               </div>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, flexShrink: 0, marginLeft: '8px' }}>
-                {total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                {fmtPrice(total)}
               </span>
             </div>
           );
@@ -240,19 +240,19 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Sous-total HT</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
-            {subtotalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            {fmtPrice(subtotalHT)}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Livraison HT</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
-            {SHIPPING_HT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            {fmtPrice(SHIPPING_HT)}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>TVA (20%)</span>
           <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 500 }}>
-            {tva.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            {fmtPrice(tva)}
           </span>
         </div>
       </div>
@@ -275,8 +275,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         <span style={{
           color: '#6b9eff', fontWeight: 800, fontSize: '18px', letterSpacing: '-0.02em',
         }}>
-          {totalPriceWithVAT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          <span style={{ fontSize: '14px', fontWeight: 600, marginLeft: '2px' }}>€</span>
+          {fmtPrice(totalPriceWithVAT)}
         </span>
       </div>
 

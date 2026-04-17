@@ -3,6 +3,7 @@ import { HiBan, HiPencil, HiPrinter, HiUserCircle } from 'react-icons/hi';
 import { Invoice } from '@/@types/invoice';
 import dayjs from 'dayjs';
 import { stateData } from './constants';
+import { fmtPrice } from '@/utils/priceHelpers';
 
 export const InvoicesListColumns = (
   handleEditInvoice: (invoice: Invoice) => void,
@@ -70,7 +71,7 @@ export const InvoicesListColumns = (
       cell: ({ row }: { row: { original: Invoice } }) => {
         return (
           <Tag>
-            <p className="text-sm">{row.original.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</p>
+            <p className="text-sm">{fmtPrice(row.original.totalAmount)}</p>
           </Tag>
         );
       },

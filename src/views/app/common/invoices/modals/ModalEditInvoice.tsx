@@ -6,7 +6,7 @@ import { HiX, HiCheck } from 'react-icons/hi';
 import { HiOutlineCalendar } from 'react-icons/hi';
 import { paymentModeData, paymentStateData, stateData } from '../constants';
 import { Invoice } from '@/@types/invoice';
-import { TVA_RATE } from '@/utils/priceHelpers';
+import { TVA_RATE, fmtPrice } from '@/utils/priceHelpers';
 
 export const VAT_AMOUNT = 20;
 
@@ -313,7 +313,7 @@ function ModalEditInvoice({
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>Sous-total</span>
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-                  {formData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  {fmtPrice(formData.amount)}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -321,14 +321,14 @@ function ModalEditInvoice({
                   TVA ({vatEnabled ? VAT_AMOUNT : 0}%)
                 </span>
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-                  {formData.vatAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  {fmtPrice(formData.vatAmount)}
                 </span>
               </div>
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '12px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '16px', color: '#ffffff', fontWeight: 600 }}>Total</span>
                 <span style={{ fontSize: '16px', color: '#60a5fa', fontWeight: 700 }}>
-                  {formData.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  {fmtPrice(formData.totalAmount)}
                 </span>
               </div>
             </div>

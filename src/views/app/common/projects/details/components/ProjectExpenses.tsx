@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import { HiPencil, HiTrash, HiPlus, HiDocumentText, HiExternalLink } from 'react-icons/hi';
 import { HiOutlineBanknotes } from 'react-icons/hi2';
 import { GoTasklist } from 'react-icons/go';
+import { fmtPrice, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 
 const CAT_CFG: Record<ExpenseCategory, { label: string; color: string; bg: string; border: string }> = {
   supplier:      { label: 'Fournisseur',    color: '#6b9eff', bg: 'rgba(107,158,255,0.12)', border: 'rgba(107,158,255,0.3)' },
@@ -25,8 +26,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   paid:    { label: 'Payée',     color: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.3)' },
   overdue: { label: 'En retard', color: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)' },
 };
-
-const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const resolveUrl = (url?: string) => {
   if (!url) return '';
@@ -140,10 +139,10 @@ const ProjectExpenses = () => {
               </h3>
               <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                 <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  Total : <strong style={{ color: '#f87171' }}>-{fmt(totalExpenses)} EUR</strong>
+                  Total : <strong style={{ color: '#f87171' }}>-{fmtPrice(totalExpenses)}</strong>
                 </span>
                 <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  Marge réelle : <strong style={{ color: margin >= 0 ? '#4ade80' : '#f87171' }}>{fmt(margin)} EUR</strong>
+                  Marge réelle : <strong style={{ color: margin >= 0 ? '#4ade80' : '#f87171' }}>{fmtPrice(margin)}</strong>
                 </span>
               </div>
             </div>
@@ -201,10 +200,10 @@ const ProjectExpenses = () => {
                           borderRadius: '100px', padding: '3px 10px',
                           color: '#f87171', fontSize: '12px', fontWeight: 700,
                         }}>
-                          -{fmt(exp.totalAmount)} EUR TTC
+                          -{fmtTTC(exp.totalAmount)}
                         </span>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
-                          {fmt(exp.amount)} EUR HT
+                          {fmtHT(exp.amount)}
                         </span>
                       </div>
                       <button style={iconBtn()} onClick={() => handleOpenEdit(exp)}>

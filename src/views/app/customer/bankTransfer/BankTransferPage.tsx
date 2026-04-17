@@ -4,6 +4,7 @@ import { Container } from '@/components/shared'
 import ApiService from '@/services/ApiService'
 import { API_GRAPHQL_URL, EXPRESS_BACKEND_URL } from '@/configs/api.config'
 import { HiArrowLeft, HiCheckCircle, HiClipboardCopy, HiClipboardCheck } from 'react-icons/hi'
+import { fmtPrice, fmtHT, fmtTTC } from '@/utils/priceHelpers'
 import { Invoice } from '@/@types/invoice'
 
 const IBAN = 'FR76 1679 8000 0100 0178 1163 397'
@@ -131,10 +132,10 @@ const BankTransferPage = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Montant à payer</p>
-                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{invoice.totalAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>TTC</span></p>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{invoice.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</p>
+                  <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{fmtTTC(invoice.totalAmount)}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{fmtHT(invoice.amount)}</p>
                   {invoice.vatAmount > 0 && (
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>TVA {invoice.vatAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>TVA {fmtPrice(invoice.vatAmount)}</p>
                   )}
                 </div>
               </div>

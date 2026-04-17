@@ -14,21 +14,10 @@ import { Transaction } from '@/@types/transaction'
 import { paymentAddTypes, paymentRemoveTypes, paymentTypes } from './constants'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
+import { fmtEur, fmtPrice } from '@/utils/priceHelpers'
 dayjs.locale('fr')
 
 injectReducer('transactions', reducer)
-
-function eur(n: number) {
-  try {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: 0,
-    }).format(n)
-  } catch {
-    return `${Math.round(n)} €`
-  }
-}
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -205,7 +194,7 @@ const TransactionsList = () => {
                 Solde disponible
               </div>
               <div className="text-5xl font-extrabold tracking-tight text-white tabular-nums">
-                {eur(amount)}
+                {fmtEur(amount)}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span className="text-sm text-white/55">
@@ -213,7 +202,7 @@ const TransactionsList = () => {
                 </span>
                 {currentMonthIncome > 0 && (
                   <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white">
-                    +{eur(currentMonthIncome)} ce mois
+                    +{fmtEur(currentMonthIncome)} ce mois
                   </span>
                 )}
               </div>
@@ -250,7 +239,7 @@ const TransactionsList = () => {
             [
               {
                 label: 'Total encaissé',
-                value: eur(totalReceived),
+                value: fmtEur(totalReceived),
                 color: 'text-emerald-400',
                 glow: 'from-emerald-500/12 to-emerald-500/0',
                 ring: 'ring-1 ring-emerald-400/20',
@@ -259,7 +248,7 @@ const TransactionsList = () => {
               },
               {
                 label: 'Total retraits',
-                value: eur(totalWithdrawn),
+                value: fmtEur(totalWithdrawn),
                 color: 'text-rose-400',
                 glow: 'from-rose-500/12 to-rose-500/0',
                 ring: 'ring-1 ring-rose-400/20',
@@ -277,7 +266,7 @@ const TransactionsList = () => {
               },
               {
                 label: 'Ce mois-ci',
-                value: eur(currentMonthIncome),
+                value: fmtEur(currentMonthIncome),
                 color: 'text-amber-300',
                 glow: 'from-amber-500/12 to-amber-500/0',
                 ring: 'ring-1 ring-amber-400/20',
@@ -383,7 +372,7 @@ const TransactionsList = () => {
                             }`}
                           >
                             {isAdd ? '+' : '−'}
-                            {tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                            {fmtPrice(tx.amount)}
                           </div>
                           <div className="text-[10px] text-white/35">
                             {dayjs(tx.date).format('DD/MM/YY')}
@@ -416,7 +405,7 @@ const TransactionsList = () => {
                           {item.label}
                         </span>
                         <span className="ml-2 flex-shrink-0 text-xs text-white/45">
-                          {eur(item.total)}
+                          {fmtEur(item.total)}
                         </span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
@@ -469,19 +458,19 @@ const TransactionsList = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-white/55">Encaissé</span>
                   <span className="font-semibold text-emerald-400">
-                    +{eur(totalReceived)}
+                    +{fmtEur(totalReceived)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-white/55">Retraits</span>
                   <span className="font-semibold text-rose-400">
-                    −{eur(totalWithdrawn)}
+                    −{fmtEur(totalWithdrawn)}
                   </span>
                 </div>
                 <div className="my-2 border-t border-white/10" />
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-white">Solde net</span>
-                  <span className="font-extrabold text-white">{eur(amount)}</span>
+                  <span className="font-extrabold text-white">{fmtEur(amount)}</span>
                 </div>
               </div>
             </div>

@@ -17,6 +17,7 @@ import { ChecklistItem } from '@/@types/checklist';
 import { getTotalPriceForCartItem } from '@/utils/productHelpers';
 import { useParams } from 'react-router-dom';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
+import { fmtPrice } from '@/utils/priceHelpers';
 import { HiCheck, HiClock } from 'react-icons/hi';
 import { MdChecklist } from 'react-icons/md';
 
@@ -66,7 +67,7 @@ const ShowOrderItem = () => {
                     {orderItem.product.name}
                   </h1>
                   <p className="text-2xl font-semibold">
-                    {getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    {fmtPrice(getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections))}
                   </p>
                 </div>
 

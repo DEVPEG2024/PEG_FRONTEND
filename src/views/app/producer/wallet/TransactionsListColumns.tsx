@@ -4,6 +4,7 @@ import { paymentTypes } from './constants';
 import { Transaction } from '@/@types/transaction';
 import { useNavigate } from 'react-router-dom';
 import { AiOutlineProject } from 'react-icons/ai';
+import { fmtPrice } from '@/utils/priceHelpers';
 
 export const TransactionsListColumns = () => {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ export const TransactionsListColumns = () => {
           <Tag className={paymentWay === 'add' ? 'bg-green-500' : 'bg-red-500'}>
             <p className="text-sm text-white">
               {paymentWay === 'add' ? '+' : '-'}{' '}
-              {row.original.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+              {fmtPrice(row.original.amount)}
             </p>
           </Tag>
         );

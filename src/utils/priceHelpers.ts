@@ -41,3 +41,10 @@ export const fmtHT = (ht: number): string =>
 /** Format price as "XX,XX € TTC" */
 export const fmtTTC = (ttc: number): string =>
   arePricesHidden() ? HIDDEN_PLACEHOLDER : `${fmtNum(ttc)} € TTC`
+
+/** Format as currency with 0 decimals (replaces inline eur/Intl.NumberFormat) */
+export const fmtEur = (n: number): string => {
+  if (arePricesHidden()) return HIDDEN_PLACEHOLDER
+  try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) }
+  catch { return `${Math.round(n)} €` }
+}

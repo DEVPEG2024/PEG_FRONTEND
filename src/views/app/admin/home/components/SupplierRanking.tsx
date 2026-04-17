@@ -1,4 +1,5 @@
 import React from 'react'
+import { fmtEur } from '@/utils/priceHelpers'
 
 type Row = { name: string; projects: number; revenue: number }
 
@@ -6,14 +7,6 @@ type Props = {
   title?: string
   subtitle?: string
   rows: Row[]
-}
-
-function eur(n: number) {
-  try {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
-  } catch {
-    return `${Math.round(n)} €`
-  }
 }
 
 export default function SupplierRanking({ title = 'Top producteurs', subtitle, rows }: Props) {
@@ -41,7 +34,7 @@ export default function SupplierRanking({ title = 'Top producteurs', subtitle, r
                   <div className="text-[11px] text-white/55 mt-1">{r.projects} projet(s)</div>
                 </div>
 
-                <div className="text-xs text-white/70 tabular-nums">{eur(r.revenue)}</div>
+                <div className="text-xs text-white/70 tabular-nums">{fmtEur(r.revenue)}</div>
               </div>
             </div>
           ))}

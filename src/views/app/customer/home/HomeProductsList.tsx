@@ -1,6 +1,6 @@
 import { Product } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
-import { toTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { HiPhotograph } from 'react-icons/hi';
 
@@ -87,10 +87,10 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
                   boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
                   display: 'inline-block',
                 }}>
-                  {priceHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+                  {fmtHT(priceHT)}
                 </span>
                 <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
-                  {priceTTC.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                  {fmtTTC(priceTTC)}
                 </span>
               </div>
             </div>

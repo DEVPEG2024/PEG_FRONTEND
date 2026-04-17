@@ -25,7 +25,7 @@ const ModalPrintInvoice = lazy(() => import('@/views/app/common/invoices/modals/
 import { stateData } from '@/views/app/common/invoices/constants';
 import { toast } from 'react-toastify';
 import { apiUploadFile } from '@/services/FileServices';
-import { TVA_RATE } from '@/utils/priceHelpers';
+import { TVA_RATE, fmtTTC, fmtHT } from '@/utils/priceHelpers';
 import { apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
 
 const Invoices = () => {
@@ -225,10 +225,10 @@ const Invoices = () => {
                           borderRadius: '100px', padding: '3px 10px',
                           color: '#6b9eff', fontSize: '12px', fontWeight: 700,
                         }}>
-                          {invoice.totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                          {fmtTTC(invoice.totalAmount)}
                         </span>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
-                          {invoice.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+                          {fmtHT(invoice.amount)}
                         </span>
                       </div>
 

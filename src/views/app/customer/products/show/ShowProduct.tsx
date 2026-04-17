@@ -28,7 +28,7 @@ import Container from '@/components/shared/Container';
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price } from '@/utils/productHelpers';
-import { toTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import { FormAnswer } from '@/@types/formAnswer';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
@@ -407,14 +407,14 @@ const ShowProduct = () => {
                 <div style={{ display: 'inline-flex', flexDirection: 'column', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                     <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-                      {unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {fmtHT(unitPrice)}
                     </span>
                     <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                      € HT {isPackPricing ? '/ pack' : '/ pièce'}
+                      {isPackPricing ? '/ pack' : '/ pièce'}
                     </span>
                   </div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
-                    {toTTC(unitPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                    {fmtTTC(toTTC(unitPrice))}
                   </span>
                   {isPackPricing && amountSelected > 0 && (
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: '4px' }}>
@@ -439,7 +439,7 @@ const ShowProduct = () => {
                       -{savingsPercent}% vs catalogue
                     </span>
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
-                      {product.catalogPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+                      {fmtHT(product.catalogPrice)}
                     </span>
                   </div>
                 )}
@@ -491,10 +491,10 @@ const ShowProduct = () => {
                             )}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                               <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
-                                {tier.price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+                                {fmtHT(tier.price)}
                               </span>
                               <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
-                                {toTTC(tier.price).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                                {fmtTTC(toTTC(tier.price))}
                               </span>
                             </div>
                           </div>
@@ -545,16 +545,16 @@ const ShowProduct = () => {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
-                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{(product.pricePerM2 || 0).toFixed(2)} € HT/m²</span>
+                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtNum(product.pricePerM2 || 0)} € HT/m²</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix unitaire</span>
-                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{m2Data.pricePerUnit.toFixed(2)} € HT</span>
+                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtHT(m2Data.pricePerUnit)}</span>
                         </div>
                         {m2Quantity > 1 && (
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>× {m2Quantity} exemplaire{m2Quantity > 1 ? 's' : ''}</span>
-                            <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{m2Data.total.toFixed(2)} € HT</span>
+                            <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{fmtHT(m2Data.total)}</span>
                           </div>
                         )}
                       </div>
@@ -585,16 +585,16 @@ const ShowProduct = () => {
                         <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
                         {' '}pièce{amountSelected > 1 ? 's' : ''}
                         {' × '}
-                        <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
+                        <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{fmtHT(unitPrice)}</span>
                       </>
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>
-                      {totalPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€ HT</span>
+                      {fmtHT(totalPrice)}
                     </div>
                     <div style={{ fontSize: '12px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
-                      {toTTC(totalPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                      {fmtTTC(toTTC(totalPrice))}
                     </div>
                   </div>
                 </div>
@@ -755,10 +755,10 @@ const ShowProduct = () => {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: '24px', color: '#fff', letterSpacing: '-0.02em' }}>
-                  {totalPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' }}>€ HT</span>
+                  {fmtHT(totalPrice)}
                 </div>
                 <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
-                  {toTTC(totalPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC
+                  {fmtTTC(toTTC(totalPrice))}
                 </div>
               </div>
             </div>
@@ -786,7 +786,7 @@ const ShowProduct = () => {
                   transition: 'all 0.2s',
                 }}
               >
-                Ajouter au panier — {toTTC(totalPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC <HiShoppingCart size={16} />
+                Ajouter au panier — {fmtTTC(toTTC(totalPrice))} <HiShoppingCart size={16} />
               </button>
             </div>
           </div>

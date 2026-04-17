@@ -14,6 +14,7 @@ import {
 import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
 import reducer, { getLeads, createLead, updateLead, deleteLead, optimisticUpdateStage } from './store'
 import type { Lead, LeadStage, LeadPriority, LeadSource } from '@/@types/lead'
+import { fmtEur } from '@/utils/priceHelpers'
 
 injectReducer('leads', reducer)
 
@@ -50,8 +51,6 @@ const SOURCES: { key: LeadSource; label: string }[] = [
 const getStage    = (k: LeadStage)    => STAGES.find(s => s.key === k)!
 const getPriority = (k: LeadPriority) => PRIORITIES.find(p => p.key === k)!
 const getSource   = (k: LeadSource)   => SOURCES.find(s => s.key === k)!
-
-const eur = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
 // ─── Empty lead ────────────────────────────────────────────────────────────────
 const emptyLead = (): Omit<Lead, 'documentId' | 'createdAt'> => ({
@@ -130,7 +129,7 @@ function LeadCard({ lead, index, onClick }: { lead: Lead; index: number; onClick
 
                     {/* Value + probability */}
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{eur(lead.value)}</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{fmtEur(lead.value)}</span>
                         <div className="flex items-center gap-1">
                             <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                 <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${lead.probability}%` }} />
@@ -172,7 +171,7 @@ function KanbanColumn({ stage, leads, onLeadClick }: {
                     <span className={`text-xs font-bold ${stage.color} uppercase tracking-wide`}>{stage.label}</span>
                     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full bg-white/60 dark:bg-black/20 ${stage.color}`}>{leads.length}</span>
                 </div>
-                {total > 0 && <span className="text-[10px] font-semibold text-gray-400">{eur(total)}</span>}
+                {total > 0 && <span className="text-[10px] font-semibold text-gray-400">{fmtEur(total)}</span>}
             </div>
 
             {/* Droppable zone */}
@@ -223,7 +222,7 @@ function ListRow({ lead, onClick }: { lead: Lead; onClick: (l: Lead) => void }) 
                 </span>
             </td>
             <td className="px-4 py-3">
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{eur(lead.value)}</span>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{fmtEur(lead.value)}</span>
             </td>
             <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -548,7 +547,7 @@ function ImportPreviewModal({ rows, duplicates, onConfirm, onClose }: {
                                                     {getStage(row.stage).label}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-2 font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">{eur(row.value)}</td>
+                                            <td className="px-4 py-2 font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">{fmtEur(row.value)}</td>
                                             <td className="px-4 py-2">
                                                 <span className={`text-xs font-semibold ${getPriority(row.priority).color}`}>{getPriority(row.priority).label}</span>
                                             </td>
@@ -811,7 +810,7 @@ const LeadsPage = () => {
                 <div className="flex items-center justify-between mb-5">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Leads & Prospection</h1>
-                        <p className="text-sm text-gray-400 mt-0.5">{leads.length} leads · {eur(leads.reduce((s, l) => s + l.value, 0))} en valeur totale</p>
+                        <p className="text-sm text-gray-400 mt-0.5">{leads.length} leads · {fmtEur(leads.reduce((s, l) => s + l.value, 0))} en valeur totale</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Import */}
@@ -864,7 +863,7 @@ const LeadsPage = () => {
 
                 {/* KPIs */}
                 <div className="grid grid-cols-4 gap-4 mb-5">
-                    <KpiCard label="Pipeline pondéré" value={eur(kpis.pipeline)} sub="valeur × probabilité" icon={<HiOutlineCurrencyEuro className="w-5 h-5 text-blue-600" />} accent="bg-blue-500" />
+                    <KpiCard label="Pipeline pondéré" value={fmtEur(kpis.pipeline)} sub="valeur × probabilité" icon={<HiOutlineCurrencyEuro className="w-5 h-5 text-blue-600" />} accent="bg-blue-500" />
                     <KpiCard label="Total leads" value={String(kpis.total)} sub={`${kpis.won} gagnés`} icon={<HiOutlineUser className="w-5 h-5 text-purple-600" />} accent="bg-purple-500" />
                     <KpiCard label="Taux de conversion" value={`${kpis.conversion}%`} sub="leads gagnés / closés" icon={<HiOutlineOfficeBuilding className="w-5 h-5 text-emerald-600" />} accent="bg-emerald-500" />
                     <KpiCard label="Actions en retard" value={String(kpis.overdue)} sub={kpis.overdue > 0 ? 'À traiter rapidement' : 'Tout est à jour ✓'} icon={<HiOutlineCalendar className="w-5 h-5 text-orange-600" />} accent={kpis.overdue > 0 ? 'bg-red-500' : 'bg-orange-500'} />

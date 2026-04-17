@@ -27,6 +27,7 @@ import { apiGetExpenses } from '@/services/ExpenseServices';
 import { Expense } from '@/@types/expense';
 import { Producer } from '@/@types/producer';
 import { toast } from 'react-toastify';
+import { fmtPrice } from '@/utils/priceHelpers';
 
 /* ── Shared styles ── */
 
@@ -218,8 +219,6 @@ const DetailsRight = () => {
   const timelinePercent = totalDays > 0 ? Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100))) : 100;
   const isOverdue = daysRemaining < 0;
 
-  const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   const renderEditableAmount = (field: 'paidPrice' | 'producerPaidPrice', color: string) => {
     if (editingField === field) {
       return (
@@ -347,42 +346,42 @@ const DetailsRight = () => {
         <div style={miniCard}>
           <p style={sectionLabel}>Finances</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <FinanceRow label="Prix total" value={`${fmt(project.price ?? 0)} €`} color="#6b9eff" />
+            <FinanceRow label="Prix total" value={fmtPrice(project.price ?? 0)} color="#6b9eff" />
             {renderEditableAmount('paidPrice', '#4ade80') || (
               <FinanceRow
                 label="Payé par client"
-                value={`${fmt(project.paidPrice ?? 0)} €`}
+                value={fmtPrice(project.paidPrice ?? 0)}
                 color="#4ade80"
                 onClick={isAdmin ? () => startEditField('paidPrice') : undefined}
               />
             )}
             <FinanceRow
               label="Reste dû client"
-              value={`${fmt((project.price ?? 0) - (project.paidPrice ?? 0))} €`}
+              value={fmtPrice((project.price ?? 0) - (project.paidPrice ?? 0))}
               color={(project.price ?? 0) - (project.paidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80'}
             />
 
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
 
-            <FinanceRow label="Commission prod." value={`${fmt(project.producerPrice ?? 0)} €`} color="#a78bfa" />
+            <FinanceRow label="Commission prod." value={fmtPrice(project.producerPrice ?? 0)} color="#a78bfa" />
             {renderEditableAmount('producerPaidPrice', '#4ade80') || (
               <FinanceRow
                 label="Payé au prod."
-                value={`${fmt(project.producerPaidPrice ?? 0)} €`}
+                value={fmtPrice(project.producerPaidPrice ?? 0)}
                 color="#4ade80"
                 onClick={isAdmin ? () => startEditField('producerPaidPrice') : undefined}
               />
             )}
             <FinanceRow
               label="Reste dû prod."
-              value={`${fmt((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0))} €`}
+              value={fmtPrice((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0))}
               color={(project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80'}
             />
 
             {totalExpenses > 0 && (
               <>
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
-                <FinanceRow label="Dépenses" value={`-${fmt(totalExpenses)} €`} color="#f87171" />
+                <FinanceRow label="Dépenses" value={`-${fmtPrice(totalExpenses)}`} color="#f87171" />
               </>
             )}
 
@@ -390,7 +389,7 @@ const DetailsRight = () => {
 
             <FinanceRow
               label="Marge"
-              value={`${fmt((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)} €`}
+              value={fmtPrice((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)}
               color={(project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses >= 0 ? '#4ade80' : '#f87171'}
               bold
             />

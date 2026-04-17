@@ -5,7 +5,7 @@ import { SizeAndColorSelection } from '@/@types/product';
 import { User } from '@/@types/user';
 import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
-import { toTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 
 export const useColumns = (
   handleShowOrderItem: (order: OrderItem) => void,
@@ -82,8 +82,8 @@ export const useColumns = (
             className="flex flex-col"
             key={row.original.documentId}
           >
-            <span className="font-semibold">{ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
-            <span className="text-xs text-gray-400">{ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
+            <span className="font-semibold">{fmtHT(ht)}</span>
+            <span className="text-xs text-gray-400">{fmtTTC(ttc)}</span>
           </div>
         );
       },

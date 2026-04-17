@@ -22,6 +22,7 @@ import { Project } from '@/@types/project';
 import ModalNewProject from './modals/ModalNewProject';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { fmtPrice, fmtEur } from '@/utils/priceHelpers';
 import {
   apiGetProjects,
   apiGetCustomerProjects,
@@ -220,7 +221,7 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
                       </div>
                       <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '8px' }}>{project.customer?.name ?? '—'}{project.producer?.name && <span style={{ color: 'rgba(255,255,255,0.25)' }}> · {project.producer.name}</span>}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}><div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '100px' }} /></div><span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600 }}>{progress}%</span></div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}><MdAccessTime size={10} />{dayjs(project.endDate).format('DD/MM')}{duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}</span>{isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{project.price?.toFixed(0)} €</span>}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}><MdAccessTime size={10} />{dayjs(project.endDate).format('DD/MM')}{duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}</span>{isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{fmtEur(project.price ?? 0)}</span>}</div>
                     </div>
                   )
                 })}
@@ -679,13 +680,13 @@ const ProjectsList = () => {
                       {/* Prix (SuperAdmin) */}
                       {isSuperAdmin && (
                         <td style={{ padding: '12px 14px', color: '#6b9eff', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {project.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                          {fmtPrice(project.price ?? 0)}
                         </td>
                       )}
                       {/* Commission (Producer) */}
                       {hasRole(user, [PRODUCER]) && (
                         <td style={{ padding: '12px 14px', color: '#a78bfa', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                          {project.producerPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                          {fmtPrice(project.producerPrice ?? 0)}
                         </td>
                       )}
                     </tr>

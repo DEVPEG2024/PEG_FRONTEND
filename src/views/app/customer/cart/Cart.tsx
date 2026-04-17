@@ -5,6 +5,7 @@ import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { apiGetProducts } from '@/services/ProductServices';
 import { getTotalPriceForCartItem, getProductPriceForSizeAndColors, isProductPackPricing } from '@/utils/productHelpers';
+import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdShoppingCart, MdOutlineShoppingBag, MdLocationOn } from 'react-icons/md';
@@ -158,7 +159,7 @@ function CartItemCard({
         }}>
           {isPackPricing
             ? `Pack de ${totalQuantity} unite${totalQuantity > 1 ? 's' : ''}`
-            : `${unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / unite`}
+            : `${fmtPrice(unitPrice)} / unite`}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
           {item.sizeAndColors.map((s) => (
@@ -182,10 +183,8 @@ function CartItemCard({
             color: '#fff', fontWeight: 800, fontSize: '16px', margin: '0 0 2px 0',
             letterSpacing: '-0.02em',
           }}>
-            {totalItem.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginLeft: '2px' }}>€</span>
+            {fmtHT(totalItem)}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: 0, fontWeight: 500 }}>HT</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <button onClick={onEdit} title="Modifier" style={{
@@ -430,7 +429,7 @@ function Cart() {
           <span style={{
             color: 'rgba(255,255,255,0.3)', fontSize: '13px', fontWeight: 500,
           }}>
-            Total : {totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT
+            Total : {fmtHT(totalHT)}
           </span>
         </div>
       </div>
@@ -677,7 +676,7 @@ function Cart() {
                       borderRadius: '8px', padding: '4px 10px',
                       color: '#6b9eff', fontSize: '12px', fontWeight: 700,
                     }}>
-                      {(product.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      {fmtPrice(product.price ?? 0)}
                     </span>
                     <span style={{
                       color: '#6b9eff', fontSize: '11px', fontWeight: 600,
