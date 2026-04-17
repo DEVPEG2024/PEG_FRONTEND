@@ -3,6 +3,7 @@ import { toast } from 'react-toastify'
 import {
   apiGetClientFiles,
   apiGetSharedClientFiles,
+  apiGetCustomerVisibleFiles,
   apiCreateClientFile,
   apiUpdateClientFile,
   apiDeleteClientFile,
@@ -15,7 +16,6 @@ import {
   HiOutlineTrash,
   HiOutlineDownload,
   HiOutlineEye,
-  HiOutlinePencil,
   HiOutlineFolder,
   HiOutlinePhotograph,
   HiOutlineDocumentText,
@@ -23,8 +23,6 @@ import {
   HiOutlineClipboardList,
   HiOutlinePaperClip,
   HiOutlineX,
-  HiOutlineCheck,
-  HiOutlineShieldCheck,
   HiOutlineShieldExclamation,
 } from 'react-icons/hi'
 
@@ -70,17 +68,23 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
   const [uploadName, setUploadName] = useState('')
   const [uploadCategory, setUploadCategory] = useState<string>('autre')
   const [uploadShared, setUploadShared] = useState(true)
+  const [uploadVisibleToCustomer, setUploadVisibleToCustomer] = useState(false)
   const [uploadNotes, setUploadNotes] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
 
-  const canWrite = mode === 'admin' || mode === 'customer'
+  const canWrite = mode === 'admin'
 
   const fetchFiles = async () => {
     try {
       setLoading(true)
-      const res = mode === 'producer'
-        ? await apiGetSharedClientFiles(customerDocumentId)
-        : await apiGetClientFiles(customerDocumentId)
+      let res
+      if (mode === 'customer') {
+        res = await apiGetCustomerVisibleFiles(customerDocumentId)
+      } else if (mode === 'producer') {
+        res = await apiGetSharedClientFiles(customerDocumentId)
+      } else {
+        res = await apiGetClientFiles(customerDocumentId)
+      }
       const data = (res as any)?.data?.data ?? []
       setFiles(Array.isArray(data) ? data : [])
     } catch {
@@ -98,6 +102,7 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
     setUploadName('')
     setUploadCategory('autre')
     setUploadShared(true)
+    setUploadVisibleToCustomer(false)
     setUploadNotes('')
     setUploadFile(null)
     setShowUpload(false)
@@ -128,6 +133,7 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
         name: uploadName.trim(),
         category: uploadCategory,
         shared: uploadShared,
+        visibleToCustomer: uploadVisibleToCustomer,
         notes: uploadNotes.trim(),
         customer: customerDocumentId,
         fileId,
@@ -161,6 +167,16 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
       await apiUpdateClientFile(cf.documentId, { shared: !cf.shared })
       setFiles(prev => prev.map(f => f.documentId === cf.documentId ? { ...f, shared: !f.shared } : f))
       toast.success(cf.shared ? 'Fichier masqué aux producteurs' : 'Fichier partagé avec les producteurs')
+    } catch {
+      toast.error('Erreur lors de la mise à jour')
+    }
+  }
+
+  const handleToggleVisibleToCustomer = async (cf: ClientFile) => {
+    try {
+      await apiUpdateClientFile(cf.documentId, { visibleToCustomer: !cf.visibleToCustomer })
+      setFiles(prev => prev.map(f => f.documentId === cf.documentId ? { ...f, visibleToCustomer: !f.visibleToCustomer } : f))
+      toast.success(cf.visibleToCustomer ? 'Fichier masqué au client' : 'Fichier visible par le client')
     } catch {
       toast.error('Erreur lors de la mise à jour')
     }
@@ -282,20 +298,22 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
             className="w-full bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-cyan-500/40 transition"
           />
 
-          {/* Shared toggle + Submit */}
-          <div className="flex items-center justify-between">
+          {/* Visibility toggles + Submit */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
             {mode === 'admin' && (
-              <button
-                onClick={() => setUploadShared(!uploadShared)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition ${
-                  uploadShared
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                    : 'bg-white/[0.03] border-white/10 text-white/40'
-                }`}
-              >
-                {uploadShared ? <HiOutlineShieldCheck className="w-3.5 h-3.5" /> : <HiOutlineShieldExclamation className="w-3.5 h-3.5" />}
-                {uploadShared ? 'Partagé avec les producteurs' : 'Privé (admin uniquement)'}
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setUploadVisibleToCustomer(!uploadVisibleToCustomer)}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition ${
+                    uploadVisibleToCustomer
+                      ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                      : 'bg-white/[0.03] border-white/10 text-white/40'
+                  }`}
+                >
+                  {uploadVisibleToCustomer ? <HiOutlineEye className="w-3.5 h-3.5" /> : <HiOutlineShieldExclamation className="w-3.5 h-3.5" />}
+                  {uploadVisibleToCustomer ? 'Visible par le client' : 'Masqué au client'}
+                </button>
+              </div>
             )}
 
             <button
@@ -389,18 +407,18 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
                           </div>
                         </div>
 
-                        {/* Shared badge (admin only) */}
+                        {/* Visible to customer toggle (admin only) */}
                         {mode === 'admin' && (
                           <button
-                            onClick={() => handleToggleShared(cf)}
-                            title={cf.shared ? 'Partagé — cliquer pour rendre privé' : 'Privé — cliquer pour partager'}
+                            onClick={() => handleToggleVisibleToCustomer(cf)}
+                            title={cf.visibleToCustomer ? 'Visible par le client — cliquer pour masquer' : 'Masqué au client — cliquer pour rendre visible'}
                             className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border transition ${
-                              cf.shared
-                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                              cf.visibleToCustomer
+                                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20'
                                 : 'bg-white/[0.03] border-white/10 text-white/30 hover:text-white/50'
                             }`}
                           >
-                            {cf.shared ? 'Partagé' : 'Privé'}
+                            {cf.visibleToCustomer ? '👁 Client' : 'Masqué'}
                           </button>
                         )}
 

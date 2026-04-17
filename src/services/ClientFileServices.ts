@@ -14,6 +14,7 @@ export type ClientFile = {
     ext: string
   }
   shared: boolean
+  visibleToCustomer: boolean
   notes?: string
   customer?: { documentId: string; name: string }
   createdAt: string
@@ -28,10 +29,18 @@ export const apiGetClientFiles = (customerDocumentId: string) => {
   })
 }
 
-// GET — fichiers partagés d'un client (pour les producteurs)
+// GET — fichiers visibles par le client (filtre visibleToCustomer)
+export const apiGetCustomerVisibleFiles = (customerDocumentId: string) => {
+  return ApiService.fetchData<{ data: ClientFile[] }>({
+    url: `/client-files?filters[customer][documentId][$eq]=${customerDocumentId}&filters[visibleToCustomer][$eq]=true&populate=*&sort=category:asc,name:asc`,
+    method: 'get',
+  })
+}
+
+// GET — tous les fichiers d'un client (pour les producteurs — accès complet)
 export const apiGetSharedClientFiles = (customerDocumentId: string) => {
   return ApiService.fetchData<{ data: ClientFile[] }>({
-    url: `/client-files?filters[customer][documentId][$eq]=${customerDocumentId}&filters[shared][$eq]=true&populate=*&sort=category:asc,name:asc`,
+    url: `/client-files?filters[customer][documentId][$eq]=${customerDocumentId}&populate=*&sort=category:asc,name:asc`,
     method: 'get',
   })
 }
@@ -41,6 +50,7 @@ export const apiCreateClientFile = (data: {
   name: string
   category: string
   shared: boolean
+  visibleToCustomer?: boolean
   notes?: string
   customer: string // documentId
   fileId: number // ID du fichier uploadé via /upload-single
@@ -53,6 +63,7 @@ export const apiCreateClientFile = (data: {
         name: data.name,
         category: data.category,
         shared: data.shared,
+        visibleToCustomer: data.visibleToCustomer ?? false,
         notes: data.notes || '',
         customer: data.customer,
         file: data.fileId,
@@ -66,6 +77,7 @@ export const apiUpdateClientFile = (documentId: string, data: Partial<{
   name: string
   category: string
   shared: boolean
+  visibleToCustomer: boolean
   notes: string
   fileId: number
 }>) => {
@@ -73,6 +85,7 @@ export const apiUpdateClientFile = (documentId: string, data: Partial<{
   if (data.name !== undefined) payload.name = data.name
   if (data.category !== undefined) payload.category = data.category
   if (data.shared !== undefined) payload.shared = data.shared
+  if (data.visibleToCustomer !== undefined) payload.visibleToCustomer = data.visibleToCustomer
   if (data.notes !== undefined) payload.notes = data.notes
   if (data.fileId !== undefined) payload.file = data.fileId
 
