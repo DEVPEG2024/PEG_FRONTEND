@@ -5,7 +5,7 @@ import { useAppSelector } from '@/store'
 import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
 import { env } from '@/configs/env.config'
-import { toHT } from '@/utils/priceHelpers'
+import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
@@ -27,7 +27,7 @@ dayjs.extend(isoWeek); dayjs.extend(relativeTime); dayjs.locale('fr')
 /*  UTILS                                         */
 /* ═══════════════════════════════════════════════ */
 function safeDate(s?: string) { if (!s) return null; const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d }
-function eur(n: number) { try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) } catch { return `${Math.round(n)} €` } }
+function eur(n: number) { if (arePricesHidden()) return '•••••'; try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) } catch { return `${Math.round(n)} €` } }
 function monthKey(d: Date) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
 function monthLabel(key: string) { const m = Number(key.split('-')[1]) - 1; return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m] ?? key }
 
@@ -47,6 +47,7 @@ function AnimatedSection({ children, className = '' }: { children: React.ReactNo
 function AnimatedValue({ value, format }: { value: number; format?: (n: number) => string }) {
   const [display, setDisplay] = useState(0); const prevRef = useRef(0); const formatter = format ?? String
   useEffect(() => { const start = prevRef.current; const end = value; const dur = 800; const t0 = performance.now(); const tick = (now: number) => { const p = Math.min((now - t0) / dur, 1); setDisplay(start + (end - start) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick) }; requestAnimationFrame(tick); prevRef.current = end }, [value])
+  if (arePricesHidden()) return <>{'•••••'}</>
   return <>{formatter(Math.round(display))}</>
 }
 
@@ -272,6 +273,13 @@ export default function DashboardAdmin() {
   const navigate = useNavigate()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const { user } = useAppSelector((state) => state.auth.user)
+
+  const [hidePrices, setHidePrices] = useState(arePricesHidden)
+  useEffect(() => {
+    const onToggle = () => setHidePrices(arePricesHidden())
+    window.addEventListener('peg:pricesToggled', onToggle)
+    return () => window.removeEventListener('peg:pricesToggled', onToggle)
+  }, [])
 
   const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
   const prefDocIdRef = useRef<string | null>(null);
@@ -499,6 +507,7 @@ export default function DashboardAdmin() {
             </div>
             <div className="absolute right-4 md:right-5 top-4 md:top-5 flex items-center gap-2">
               {lastUpdatedText && <span className="text-[10px] text-white/30 hidden md:inline">Mis à jour {lastUpdatedText}</span>}
+              <button onClick={() => togglePricesHidden()} title={hidePrices ? 'Afficher les prix' : 'Masquer les prix'} className={`backdrop-blur-md border px-3 py-1.5 rounded-xl transition text-xs flex items-center gap-1.5 ${hidePrices ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-white/10 border-white/15 text-white/80 hover:bg-white/15'}`}>{hidePrices ? <HiOutlineEyeOff className="w-3.5 h-3.5" /> : <HiOutlineEye className="w-3.5 h-3.5" />}<span className="hidden md:inline">{hidePrices ? 'Prix masqués' : 'Prix'}</span></button>
               <button onClick={() => setRefreshTick(t => t + 1)} className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-3 py-1.5 rounded-xl hover:bg-white/15 transition text-xs"><HiOutlineRefresh className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /></button>
               <button onClick={onPickBanner} className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-3 py-1.5 rounded-xl hover:bg-white/15 transition text-xs"><HiOutlinePhotograph className="w-3.5 h-3.5" /></button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => onBannerFile(e.target.files?.[0])} />
