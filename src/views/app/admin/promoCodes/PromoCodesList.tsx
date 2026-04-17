@@ -102,8 +102,8 @@ function PromoCodesList() {
         discountType: form.discountType,
         discountValue: parseFloat(form.discountValue),
         active: form.active,
-        validFrom: form.validFrom || null,
-        validUntil: form.validUntil || null,
+        validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
+        validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
         minOrderAmount: form.minOrderAmount ? parseFloat(form.minOrderAmount) : null,
       };
       if (editingId) {
