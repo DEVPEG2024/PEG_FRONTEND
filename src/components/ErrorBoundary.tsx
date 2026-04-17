@@ -63,10 +63,10 @@ class ErrorBoundary extends Component<Props, State> {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={this.handleRetry}
+                onClick={() => { window.location.href = '/admin/dashboard' }}
                 className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/15 transition text-sm"
               >
-                Réessayer
+                Retour au dashboard
               </button>
               <button
                 onClick={() => window.location.reload()}

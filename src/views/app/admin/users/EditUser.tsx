@@ -78,7 +78,7 @@ const EditUser = () => {
     email: user?.email || '',
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
-    role: user?.role.documentId || '',
+    role: user?.role?.documentId || '',
     username: user?.username || '',
     customer: user?.customer?.documentId || '',
     producer: user?.producer?.documentId || '',
