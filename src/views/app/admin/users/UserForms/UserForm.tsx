@@ -52,6 +52,7 @@ const UserForm = (props: UserFormProps) => {
   const {
     control,
     handleSubmit,
+    trigger,
     formState: { errors, isSubmitting },
     watch,
     setValue,
@@ -60,10 +61,29 @@ const UserForm = (props: UserFormProps) => {
     defaultValues: initialData,
   });
 
+  const STEP_FIELDS: (keyof UserFormModel)[][] = [
+    ['lastName', 'firstName', 'email', 'username'],
+    ['role'],
+  ];
+
+  const handleNext = async () => {
+    const valid = await trigger(STEP_FIELDS[currentStep]);
+    if (valid) setCurrentStep((s) => s + 1);
+  };
+
   const onSubmit = async (values: UserFormModel) => {
     const formData = cloneDeep(values);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     onFormSubmit(formData);
+  };
+
+  const onError = () => {
+    // Find the first step with an error and navigate to it
+    for (let i = 0; i < STEP_FIELDS.length; i++) {
+      if (STEP_FIELDS[i].some((f) => errors[f])) {
+        setCurrentStep(i);
+        break;
+      }
+    }
   };
 
   return (
@@ -83,7 +103,13 @@ const UserForm = (props: UserFormProps) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>
         {STEP_LABELS.map((label, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button type="button" onClick={() => setCurrentStep(i)} style={{
+            <button type="button" onClick={async () => {
+              if (i > currentStep) {
+                const valid = await trigger(STEP_FIELDS[currentStep]);
+                if (!valid) return;
+              }
+              setCurrentStep(i);
+            }} style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: i === currentStep ? '7px 16px' : '7px 12px',
               borderRadius: '100px', border: 'none', cursor: 'pointer',
@@ -108,7 +134,7 @@ const UserForm = (props: UserFormProps) => {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onError)}>
         <FormContainer>
           {/* Card container */}
           <div style={{
@@ -168,7 +194,7 @@ const UserForm = (props: UserFormProps) => {
               {currentStep < totalSteps - 1 ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep((s) => s + 1)}
+                  onClick={handleNext}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '10px 22px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
