@@ -15,6 +15,7 @@ import {
 import { MdDragIndicator } from 'react-icons/md';
 
 const STORAGE_KEY = 'peg_nav_order_v2';
+const LABELS_KEY = 'peg_nav_labels';
 
 function getStoredOrder(items: NavigationTree[]): NavigationTree[] {
   try {
@@ -35,6 +36,25 @@ function saveOrder(items: NavigationTree[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map((i) => i.key)));
 }
 
+function getStoredLabels(): Record<string, string> {
+  try {
+    const stored = localStorage.getItem(LABELS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLabel(key: string, label: string) {
+  const labels = getStoredLabels();
+  if (label) {
+    labels[key] = label;
+  } else {
+    delete labels[key];
+  }
+  localStorage.setItem(LABELS_KEY, JSON.stringify(labels));
+}
+
 function hasAuthority(authority: string[], userAuthority: string[]): boolean {
   if (!authority || authority.length === 0) return true;
   return authority.some((a) => userAuthority.includes(a));
@@ -52,6 +72,35 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
   const [items, setItems] = useState<NavigationTree[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [customLabels, setCustomLabels] = useState<Record<string, string>>(getStoredLabels);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const isAdmin = userAuthority.includes('admin') || userAuthority.includes('super_admin');
+
+  const getLabel = (nav: NavigationTree) => customLabels[nav.key] || nav.title;
+
+  const startEditing = (key: string, currentLabel: string) => {
+    if (!isAdmin) return;
+    setEditingKey(key);
+    setEditValue(currentLabel);
+  };
+
+  const commitEdit = (key: string, originalTitle: string) => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== originalTitle) {
+      saveLabel(key, trimmed);
+      setCustomLabels((prev) => ({ ...prev, [key]: trimmed }));
+    } else if (!trimmed || trimmed === originalTitle) {
+      saveLabel(key, '');
+      setCustomLabels((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+    setEditingKey(null);
+  };
 
   useEffect(() => {
     const filtered = navigationTree.filter((item) =>
@@ -156,17 +205,50 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
 
         {/* Label */}
         {!collapsed && (
-          <span style={{
-            color: active ? '#fff' : 'rgba(255,255,255,0.82)',
-            fontSize: '14.5px',
-            fontWeight: active ? 700 : 500,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            flex: 1,
-          }}>
-            {nav.title}
-          </span>
+          editingKey === nav.key ? (
+            <input
+              autoFocus
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={() => commitEdit(nav.key, nav.title)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitEdit(nav.key, nav.title);
+                if (e.key === 'Escape') setEditingKey(null);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(107,158,255,0.5)',
+                borderRadius: '6px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 500,
+                padding: '2px 6px',
+                outline: 'none',
+                flex: 1,
+                minWidth: 0,
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                color: active ? '#fff' : 'rgba(255,255,255,0.82)',
+                fontSize: '14.5px',
+                fontWeight: active ? 700 : 500,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                flex: 1,
+                cursor: isAdmin ? 'text' : 'pointer',
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                startEditing(nav.key, getLabel(nav));
+              }}
+            >
+              {getLabel(nav)}
+            </span>
+          )
         )}
       </div>
     );
@@ -243,15 +325,48 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
           {/* Label */}
           {!collapsed && (
             <>
-              <span style={{
-                color: active ? '#fff' : 'rgba(255,255,255,0.82)',
-                fontSize: '14.5px',
-                fontWeight: active ? 700 : 500,
-                flex: 1,
-                whiteSpace: 'nowrap',
-              }}>
-                {groupLabel}
-              </span>
+              {editingKey === nav.key ? (
+                <input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={() => commitEdit(nav.key, groupLabel)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitEdit(nav.key, groupLabel);
+                    if (e.key === 'Escape') setEditingKey(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(107,158,255,0.5)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    padding: '2px 6px',
+                    outline: 'none',
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                />
+              ) : (
+                <span
+                  style={{
+                    color: active ? '#fff' : 'rgba(255,255,255,0.82)',
+                    fontSize: '14.5px',
+                    fontWeight: active ? 700 : 500,
+                    flex: 1,
+                    whiteSpace: 'nowrap',
+                    cursor: isAdmin ? 'text' : 'pointer',
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    startEditing(nav.key, customLabels[nav.key] || groupLabel);
+                  }}
+                >
+                  {customLabels[nav.key] || groupLabel}
+                </span>
+              )}
               <span style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
                 {isOpen ? <HiChevronDown size={13} /> : <HiChevronRight size={13} />}
               </span>
