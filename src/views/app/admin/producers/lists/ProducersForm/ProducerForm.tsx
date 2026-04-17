@@ -137,7 +137,7 @@ const ProducerForm = (props: ProducerFormProps) => {
                   background: i < currentStep ? '#22c55e' : i === currentStep ? '#2f6fed' : 'rgba(255,255,255,0.08)',
                   color: '#fff', transition: 'all 0.25s',
                 }}>
-                  {i < currentStep ? <HiCheck size={12} /> : i + 1}
+                  {i < currentStep ? <HiCheck size={12} /> : <span>{i + 1}</span>}
                 </div>
                 <span style={{
                   fontSize: '12px', fontWeight: 600,

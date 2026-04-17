@@ -32,7 +32,7 @@ const StepIndicator = ({ current, total, labels }: { current: number; total: num
             background: i < current ? '#22c55e' : i === current ? '#2f6fed' : 'rgba(255,255,255,0.08)',
             color: '#fff',
           }}>
-            {i < current ? <HiCheck size={12} /> : i + 1}
+            {i < current ? <HiCheck size={12} /> : <span>{i + 1}</span>}
           </div>
           {i === current && <span style={{ fontSize: '11px', fontWeight: 600, color: '#6fa3f5' }}>{labels[i]}</span>}
         </div>

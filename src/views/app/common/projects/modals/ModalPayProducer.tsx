@@ -111,7 +111,7 @@ function ModalPayProducer({
                   background: i < step ? '#22c55e' : i === step ? '#2f6fed' : 'rgba(255,255,255,0.08)',
                   color: '#fff',
                 }}>
-                  {i < step ? <HiCheck size={12} /> : i + 1}
+                  {i < step ? <HiCheck size={12} /> : <span>{i + 1}</span>}
                 </div>
                 {i === step && <span style={{ fontSize: '11px', fontWeight: 600, color: '#6fa3f5' }}>{label}</span>}
               </div>
