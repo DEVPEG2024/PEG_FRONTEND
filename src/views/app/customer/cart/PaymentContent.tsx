@@ -22,8 +22,10 @@ import {
   removeFromCartItemOfOrderItem,
 } from '@/store/slices/base/cartSlice';
 import { useNavigate } from 'react-router-dom';
-import { HiShieldCheck } from 'react-icons/hi';
+import { HiShieldCheck, HiTag, HiX, HiCheck } from 'react-icons/hi';
 import { MdLocationOn } from 'react-icons/md';
+import { apiValidatePromoCode } from '@/services/PromoCodeServices';
+import { PromoCodeValidation } from '@/@types/promoCode';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
@@ -33,15 +35,44 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  // Promo code state
+  const [promoInput, setPromoInput] = useState('');
+  const [promoValidation, setPromoValidation] = useState<PromoCodeValidation | null>(null);
+  const [appliedCode, setAppliedCode] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+
   const SHIPPING_HT = 9.90;
 
   const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
     return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
   }, 0);
 
-  const totalPrice: number = Math.round((subtotalHT + SHIPPING_HT) * 100) / 100;
+  const discountAmount = (promoValidation?.valid && promoValidation.discountAmount) || 0;
+  const discountedSubtotalHT = Math.round((subtotalHT - discountAmount) * 100) / 100;
+
+  const totalPrice: number = Math.round((discountedSubtotalHT + SHIPPING_HT) * 100) / 100;
   const totalPriceWithVAT: number = Math.round(totalPrice * (1 + TVA_RATE) * 100) / 100;
   const tva = Math.round((totalPriceWithVAT - totalPrice) * 100) / 100;
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setIsValidating(true);
+    try {
+      const result = await apiValidatePromoCode(code, subtotalHT);
+      setPromoValidation(result);
+      if (result.valid) setAppliedCode(code);
+    } catch {
+      setPromoValidation({ valid: false, reason: 'Erreur de validation' });
+    }
+    setIsValidating(false);
+  };
+
+  const handleRemovePromo = () => {
+    setPromoValidation(null);
+    setAppliedCode('');
+    setPromoInput('');
+  };
 
   const createFormAnswer = async (
     item: CartItem
@@ -125,6 +156,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       userLastName: user.lastName,
       userEmail: user.email,
       shippingAddress: shipping,
+      promoCode: promoValidation?.valid ? appliedCode : undefined,
     };
   };
 
@@ -235,6 +267,87 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         })}
       </div>
 
+      {/* Promo code section */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.04)',
+        padding: '10px 12px', marginBottom: '10px',
+      }}>
+        {promoValidation?.valid ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HiCheck size={14} style={{ color: '#4ade80' }} />
+              <span style={{ color: '#4ade80', fontSize: '12px', fontWeight: 600 }}>
+                {appliedCode}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+                {promoValidation.discountType === 'percentage'
+                  ? `-${promoValidation.discountValue}%`
+                  : `-${fmtPrice(promoValidation.discountValue!)}`}
+              </span>
+            </div>
+            <button type="button" onClick={handleRemovePromo} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
+              color: 'rgba(255,255,255,0.3)', display: 'flex',
+            }}>
+              <HiX size={14} />
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+              <HiTag size={12} style={{ color: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Code promo
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                value={promoInput}
+                onChange={(e) => {
+                  setPromoInput(e.target.value.toUpperCase());
+                  if (promoValidation && !promoValidation.valid) setPromoValidation(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                placeholder="Entrez votre code"
+                style={{
+                  flex: 1, padding: '7px 10px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: promoValidation && !promoValidation.valid
+                    ? '1px solid rgba(239,68,68,0.4)'
+                    : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px', color: '#fff', fontSize: '12px',
+                  fontFamily: 'Inter, sans-serif', outline: 'none',
+                  letterSpacing: '0.05em', fontWeight: 600,
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleApplyPromo}
+                disabled={isValidating || !promoInput.trim()}
+                style={{
+                  padding: '7px 14px',
+                  background: !promoInput.trim() ? 'rgba(255,255,255,0.04)' : 'rgba(47,111,237,0.15)',
+                  border: '1px solid rgba(47,111,237,0.2)',
+                  borderRadius: '8px', color: '#6b9eff', fontSize: '11px',
+                  fontWeight: 700, cursor: !promoInput.trim() ? 'default' : 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isValidating ? '...' : 'Appliquer'}
+              </button>
+            </div>
+            {promoValidation && !promoValidation.valid && (
+              <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0', fontWeight: 500 }}>
+                {promoValidation.reason}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Totals */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -243,6 +356,14 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
             {fmtPrice(subtotalHT)}
           </span>
         </div>
+        {discountAmount > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 500 }}>Remise ({appliedCode})</span>
+            <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '13px' }}>
+              -{fmtPrice(discountAmount)}
+            </span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Livraison HT</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>

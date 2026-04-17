@@ -27,4 +27,5 @@ export type Checkout = {
   userLastName: string;
   userEmail: string;
   shippingAddress?: ShippingAddress;
+  promoCode?: string;
 }
