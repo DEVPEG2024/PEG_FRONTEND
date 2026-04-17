@@ -136,8 +136,10 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
       toast.success('Fichier ajouté !')
       resetUploadForm()
       fetchFiles()
-    } catch (err) {
-      toast.error("Erreur lors de l'ajout du fichier")
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || ''
+      toast.error(msg ? `Erreur upload : ${msg}` : "Erreur lors de l'ajout du fichier")
+      console.error('[ClientFiles] Upload error:', err?.response?.status, err?.response?.data)
     } finally {
       setUploading(false)
     }

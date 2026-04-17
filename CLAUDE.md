@@ -287,6 +287,44 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 🧑‍💼 Gestion des clients — Wizard (mise à jour 14/04/2026)
+
+### Architecture
+- **Création ET édition** se font via un **wizard modal 3 étapes** directement depuis la liste des clients
+- Plus de navigation vers une page séparée (`/admin/customers/edit/:id`) — tout reste en modal inline, comme les tickets
+- Les routes `/admin/customers/add` et `/admin/customers/edit/:documentId` redirigent vers la liste
+
+### Wizard : 3 étapes
+
+| Step | Titre | Champs |
+|------|-------|--------|
+| 0 | Identité du client | Nom*, email, téléphone, logo (upload) |
+| 1 | Informations entreprise | Catégorie, adresse, CP, ville, pays, TVA, SIRET (si France), site web, paiement différé, accès catalogue |
+| 2 | Confirmation | Résumé complet avec badges — bouton "Créer" (vert) ou "Enregistrer" (bleu) selon le mode |
+
+### Mode édition
+- Le bouton crayon sur une carte client ouvre le wizard **pré-rempli** avec les données existantes
+- Le logo existant est affiché en preview (résolu via `resolveUrl`)
+- La catégorie client est chargée dynamiquement via `apiGetCustomerCategories()`
+
+### Pattern technique
+- **Pas de React Hook Form** — état géré avec `useState` (comme le wizard tickets)
+- **Pas de librairie stepper** — `StepDot` custom avec dots animés (vert = fait, bleu = courant, gris = à venir)
+- **Redux** : utilise `createCustomer` et `updateCustomer` du slice existant
+- **Validation** : nom obligatoire (step 0), reste optionnel
+
+### Fichiers clés
+- `src/views/app/admin/customers/lists/CustomerWizard.tsx` — wizard création + édition
+- `src/views/app/admin/customers/lists/CustomersList.tsx` — liste + ouverture wizard
+- `src/views/app/admin/customers/store/customersSlice.ts` — Redux CRUD
+
+### Fichiers legacy (conservés mais plus utilisés par la liste)
+- `src/views/app/admin/customers/lists/EditCustomer.tsx` — ancien formulaire page séparée
+- `src/views/app/admin/customers/lists/CustomersForm/` — ancien formulaire React Hook Form
+- `src/views/app/admin/customers/lists/QuickAddCustomerWizard.tsx` — ancien wizard création seule (remplacé par `CustomerWizard`)
+
+---
+
 ## 🐛 Problèmes connus (au 14/03/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification

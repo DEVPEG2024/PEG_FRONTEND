@@ -4,9 +4,10 @@ import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
 
 import reducer, { getCustomers, deleteCustomer } from '../store'
 import { Customer } from '@/@types/customer'
-import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiUsers, HiMail, HiLocationMarker } from 'react-icons/hi'
+import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiUsers, HiMail, HiLocationMarker, HiOutlineFolder, HiX } from 'react-icons/hi'
 import { env } from '@/configs/env.config'
 import CustomerWizard from './CustomerWizard'
+import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel'
 
 const resolveUrl = (url: string) => url?.startsWith('http') ? url : (env?.API_ENDPOINT_URL ?? '') + url
 
@@ -34,6 +35,7 @@ const CustomersList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [wizardOpen, setWizardOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [filesCustomer, setFilesCustomer] = useState<any>(null)
 
   const customers: Customer[] = useAppSelector((state: any) => state.customers?.customers ?? [])
   const total: number = useAppSelector((state: any) => state.customers?.total ?? 0)
@@ -118,6 +120,7 @@ const CustomersList = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <Btn onClick={() => setFilesCustomer(c)} icon={<HiOutlineFolder size={14} />} hoverBg="rgba(6,182,212,0.12)" hoverColor="#22d3ee" hoverBorder="rgba(6,182,212,0.3)" title="Fichiers" />
                   <Btn onClick={() => { setEditingCustomer(c); setWizardOpen(true); }} icon={<HiPencil size={14} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
                   <Btn onClick={() => dispatch(deleteCustomer(String(docId)))} icon={<HiTrash size={14} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" />
                 </div>
@@ -127,6 +130,51 @@ const CustomersList = () => {
         </div>
       )}
       <CustomerWizard open={wizardOpen} customer={editingCustomer} onClose={() => { setWizardOpen(false); setEditingCustomer(null); dispatch(getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })); }} />
+
+      {/* Files modal */}
+      {filesCustomer && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease',
+        }} onClick={() => setFilesCustomer(null)}>
+          <div style={{
+            width: '680px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+            background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
+            borderRadius: '20px', padding: '32px', position: 'relative',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
+            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {filesCustomer?.logo?.url ? (
+                  <img src={resolveUrl(filesCustomer.logo.url)} alt="" style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.12)' }} />
+                ) : (
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: avatarColor(filesCustomer?.name ?? '?'), border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '13px' }}>{initials(filesCustomer?.name ?? '?')}</span>
+                  </div>
+                )}
+                <div>
+                  <p style={{ color: '#fff', fontSize: '15px', fontWeight: 700, margin: 0 }}>{filesCustomer?.name}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: 0 }}>Fichiers du client</p>
+                </div>
+              </div>
+              <button onClick={() => setFilesCustomer(null)} style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px', width: '32px', height: '32px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+              }}><HiX size={16} /></button>
+            </div>
+            <ClientFilesPanel customerDocumentId={filesCustomer?.documentId ?? filesCustomer?.id} mode="admin" />
+          </div>
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          `}</style>
+        </div>
+      )}
     </Container>
   )
 }
