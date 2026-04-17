@@ -1,11 +1,9 @@
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { FormContainer } from '@/components/ui/Form';
 import UserFields from './UserFields';
 import cloneDeep from 'lodash/cloneDeep';
 import { AiOutlineSave } from 'react-icons/ai';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiOutlineUserCircle } from 'react-icons/hi';
-import * as Yup from 'yup';
 import { t } from 'i18next';
 import { Options, UserFormModel } from '../EditUser';
 import { Container } from '@/components/shared';
@@ -25,16 +23,6 @@ type UserFormProps = {
   roles: Options[];
 };
 
-const validationSchema = Yup.object().shape({
-  username: Yup.string().required(t('cust.error.username')),
-  lastName: Yup.string().required(t('cust.error.lastName')),
-  firstName: Yup.string().required(t('cust.error.firstName')),
-  email: Yup.string()
-    .email(t('cust.error.invalidEmail'))
-    .required(t('cust.error.email')),
-  role: Yup.string().required(t('cust.error.role')),
-});
-
 const UserForm = (props: UserFormProps) => {
   const {
     onEdition,
@@ -51,40 +39,79 @@ const UserForm = (props: UserFormProps) => {
 
   const {
     control,
-    handleSubmit,
-    trigger,
+    getValues,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
     watch,
     setValue,
   } = useForm<UserFormModel>({
-    resolver: yupResolver(validationSchema) as any,
     defaultValues: initialData,
-    mode: 'onChange',
   });
 
-  const STEP_FIELDS: (keyof UserFormModel)[][] = [
-    ['lastName', 'firstName', 'email', 'username'],
-    ['role'],
-  ];
+  const validateStep = (step: number): boolean => {
+    const values = getValues();
+    let valid = true;
 
-  const handleNext = async () => {
-    const valid = await trigger(STEP_FIELDS[currentStep]);
-    if (valid) setCurrentStep((s) => s + 1);
-  };
-
-  const onSubmit = async (values: UserFormModel) => {
-    const formData = cloneDeep(values);
-    onFormSubmit(formData);
-  };
-
-  const onError = () => {
-    // Find the first step with an error and navigate to it
-    for (let i = 0; i < STEP_FIELDS.length; i++) {
-      if (STEP_FIELDS[i].some((f) => errors[f])) {
-        setCurrentStep(i);
-        break;
+    if (step === 0) {
+      if (!values.lastName?.trim()) {
+        setError('lastName', { message: t('cust.error.lastName') });
+        valid = false;
+      } else {
+        clearErrors('lastName');
+      }
+      if (!values.firstName?.trim()) {
+        setError('firstName', { message: t('cust.error.firstName') });
+        valid = false;
+      } else {
+        clearErrors('firstName');
+      }
+      if (!values.email?.trim()) {
+        setError('email', { message: t('cust.error.email') });
+        valid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+        setError('email', { message: t('cust.error.invalidEmail') });
+        valid = false;
+      } else {
+        clearErrors('email');
+      }
+      if (!values.username?.trim()) {
+        setError('username', { message: t('cust.error.username') });
+        valid = false;
+      } else {
+        clearErrors('username');
       }
     }
+
+    if (step === 1) {
+      if (!values.role) {
+        setError('role', { message: t('cust.error.role') });
+        valid = false;
+      } else {
+        clearErrors('role');
+      }
+    }
+
+    return valid;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((s) => s + 1);
+    }
+  };
+
+  const onSubmit = () => {
+    if (!validateStep(0)) {
+      setCurrentStep(0);
+      return;
+    }
+    if (!validateStep(1)) {
+      setCurrentStep(1);
+      return;
+    }
+    const formData = cloneDeep(getValues());
+    onFormSubmit(formData);
   };
 
   return (
@@ -104,10 +131,9 @@ const UserForm = (props: UserFormProps) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>
         {STEP_LABELS.map((label, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button type="button" onClick={async () => {
+            <button type="button" onClick={() => {
               if (i > currentStep) {
-                const valid = await trigger(STEP_FIELDS[currentStep]);
-                if (!valid) return;
+                if (!validateStep(currentStep)) return;
               }
               setCurrentStep(i);
             }} style={{
@@ -135,99 +161,98 @@ const UserForm = (props: UserFormProps) => {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit, onError)}>
-        <FormContainer>
-          {/* Card container */}
-          <div style={{
-            background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-            border: '1.5px solid rgba(255,255,255,0.07)',
-            borderRadius: '16px',
-            padding: '24px 28px',
-          }}>
-            <UserFields
-              onEdition={onEdition}
-              errors={errors}
-              customers={customers}
-              producers={producers}
-              roles={roles}
-              control={control}
-              watch={watch}
-              setValue={setValue}
-              currentStep={currentStep}
-            />
-          </div>
+      <FormContainer>
+        {/* Card container */}
+        <div style={{
+          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+          border: '1.5px solid rgba(255,255,255,0.07)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+        }}>
+          <UserFields
+            onEdition={onEdition}
+            errors={errors}
+            customers={customers}
+            producers={producers}
+            roles={roles}
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            currentStep={currentStep}
+          />
+        </div>
 
-          {/* Footer with step navigation */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', gap: '10px',
-            padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '16px',
-          }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Footer with step navigation */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', gap: '10px',
+          padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '16px',
+        }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => onDiscard?.()}
+              style={{
+                padding: '10px 20px', background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
+                color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {t('cancel')}
+            </button>
+            {currentStep > 0 && (
               <button
                 type="button"
-                onClick={() => onDiscard?.()}
+                onClick={() => setCurrentStep((s) => s - 1)}
                 style={{
-                  padding: '10px 20px', background: 'rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '10px 18px', background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
                   color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 }}
               >
-                {t('cancel')}
+                <HiArrowLeft size={14} /> Retour
               </button>
-              {currentStep > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep((s) => s - 1)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '10px 18px', background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
-                    color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600,
-                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  <HiArrowLeft size={14} /> Retour
-                </button>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {currentStep < totalSteps - 1 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '10px 22px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-                    border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px',
-                    fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(47,111,237,0.35)', fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  Suivant <HiArrowRight size={14} />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '7px',
-                    padding: '10px 22px',
-                    background: isSubmitting ? 'rgba(34,197,94,0.4)' : 'linear-gradient(90deg, #22c55e, #16a34a)',
-                    border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px',
-                    fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(34,197,94,0.35)',
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  <AiOutlineSave size={15} />
-                  {isSubmitting ? 'Enregistrement...' : t('save')}
-                </button>
-              )}
-            </div>
+            )}
           </div>
-        </FormContainer>
-      </form>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {currentStep < totalSteps - 1 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '10px 22px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                  border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px',
+                  fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(47,111,237,0.35)', fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Suivant <HiArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={isSubmitting}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  padding: '10px 22px',
+                  background: isSubmitting ? 'rgba(34,197,94,0.4)' : 'linear-gradient(90deg, #22c55e, #16a34a)',
+                  border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px',
+                  fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(34,197,94,0.35)',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <AiOutlineSave size={15} />
+                {isSubmitting ? 'Enregistrement...' : t('save')}
+              </button>
+            )}
+          </div>
+        </div>
+      </FormContainer>
     </Container>
   );
 };
