@@ -59,6 +59,7 @@ const UserForm = (props: UserFormProps) => {
   } = useForm<UserFormModel>({
     resolver: yupResolver(validationSchema) as any,
     defaultValues: initialData,
+    mode: 'onTouched',
   });
 
   const STEP_FIELDS: (keyof UserFormModel)[][] = [
