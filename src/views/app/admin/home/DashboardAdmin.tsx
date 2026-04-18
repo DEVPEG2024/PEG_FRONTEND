@@ -322,10 +322,17 @@ export default function DashboardAdmin() {
       const body = (res as any)?.data
       const gqlErrors = body?.errors
       const gqlData = body?.data
+      // --- DEBUG PROD (à retirer après diagnostic) ---
+      console.log('[Dashboard] HTTP status:', (res as any)?.status)
+      console.log('[Dashboard] gqlData keys:', gqlData ? Object.keys(gqlData) : 'NULL')
+      console.log('[Dashboard] projects:', gqlData?.projects_connection?.nodes?.length ?? 0, '| invoices:', gqlData?.invoices_connection?.nodes?.length ?? 0)
+      if (gqlData?.invoices_connection?.nodes?.[0]) console.log('[Dashboard] 1ère facture:', JSON.stringify(gqlData.invoices_connection.nodes[0]))
+      if (gqlData?.projects_connection?.nodes?.[0]) console.log('[Dashboard] 1er projet:', { name: gqlData.projects_connection.nodes[0].name, price: gqlData.projects_connection.nodes[0].price, invoicesCount: gqlData.projects_connection.nodes[0].invoices?.length })
+      // --- FIN DEBUG ---
       if (gqlErrors?.length) console.warn('[Dashboard] GraphQL errors:', gqlErrors.map((e: any) => e.message))
       if (!gqlData || (!gqlData.projects_connection && !gqlData.invoices_connection)) throw new Error(gqlErrors?.[0]?.message ?? 'Réponse vide')
       setGql(gqlData); setLastUpdated(new Date())
-    } catch (e: any) { setError(e?.message ?? 'Erreur') } finally { setLoading(false) }
+    } catch (e: any) { console.error('[Dashboard] FETCH ERROR:', e); setError(e?.message ?? 'Erreur') } finally { setLoading(false) }
   }
   useEffect(() => { fetchDashboard() }, [refreshTick])
   useEffect(() => { const fn = () => { if (document.visibilityState === 'visible') setRefreshTick(t => t + 1) }; document.addEventListener('visibilitychange', fn); return () => document.removeEventListener('visibilitychange', fn) }, [])
