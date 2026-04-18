@@ -331,9 +331,67 @@ Le bucket d'images autorise ces origines :
 
 ---
 
-## 🐛 Problèmes connus (au 14/03/2026)
+## 🔒 Terminologie & composants protégés (ajout 18/04/2026)
+
+### Règle absolue
+**NE JAMAIS modifier les libellés métier, la bannière admin, les notes du dashboard, ou les clés i18n sans demande EXPLICITE de Nova.**
+
+### Fichiers de référence
+- `GLOSSARY.md` — glossaire terminologique officiel (source de vérité)
+- `PROTECTED_COMPONENTS.md` — cartographie des composants protégés
+- `AUDIT_TERMINOLOGIE.md` — rapport d'audit des dérives terminologiques
+
+### Composants protégés (marqueur en tête de fichier)
+- `src/views/app/admin/home/DashboardAdmin.tsx` — bannière, pense-bête, widgets
+- `src/services/AdminPreferenceService.ts` — API prefs admin (todos, bannière)
+- `src/views/app/admin/banners/` — gestion bannières (liste, modals)
+
+### Renommage menu latéral — SUPPRIMÉ
+- La fonctionnalité double-clic pour renommer les items du menu (localStorage `peg_nav_labels`) a été **supprimée** le 18/04/2026
+- Cause : dérives terminologiques (ex: "bouches d'aération" au lieu de "Ventes add.")
+- Le localStorage legacy est nettoyé au mount (`clearLegacyLabels()` dans `CustomVerticalMenu.tsx`)
+- **NE JAMAIS réimplémenter cette fonctionnalité** sans validation Nova
+
+### Tests de non-régression
+- `src/__tests__/terminology-guard.test.ts` — 39 tests (glossaire, marqueurs, i18n, statuts, synonymes interdits)
+- Lancer : `npx jest src/__tests__/terminology-guard.test.ts`
+
+---
+
+## 📊 Dashboard admin — Calcul du CA (mise à jour 18/04/2026)
+
+### Source de vérité : `project.price`
+- **CA = somme(`project.price`) + ventes additionnelles**
+- **NE JAMAIS baser le CA sur `invoices_connection`** — cette collection retourne 0 en prod (permissions Strapi non configurées pour l'API GraphQL publique)
+- Encaissé = somme(`project.paidPrice`)
+- Reste à encaisser = CA - Encaissé
+
+### Ventes additionnelles — requête séparée
+- Chargées via `apiGetProjectsAdditionalSales()` (requête GraphQL isolée dans `DashboardSuperAdminService.ts`)
+- Si le champ `additionalSales` n'existe pas côté Strapi prod → le catch ignore silencieusement, le dashboard fonctionne sans
+- **NE JAMAIS remettre `additionalSales` dans la requête principale** — ça fait échouer toute la requête si le champ manque
+
+### Extraction GraphQL — règles
+- Toujours vérifier `body.data` (pas `body` comme fallback)
+- Logger les erreurs GraphQL (`body.errors`) au lieu de les ignorer
+- Vérifier que `projects_connection` ou `invoices_connection` existe dans la réponse avant d'accepter les données
+
+### Animation KPIs Finances
+- Les sections Finances et Opérations utilisent `<AnimatedSection immediate>` (`animate="visible"` au lieu de `whileInView`)
+- **NE JAMAIS remettre `whileInView`** sur ces sections — la bannière peut les pousser hors du viewport initial et les KPIs restent invisibles à cause de `once: true`
+
+### Fichiers clés
+- `src/views/app/admin/home/DashboardAdmin.tsx` — composant principal (PROTÉGÉ)
+- `src/services/DashboardSuperAdminService.ts` — requête GraphQL principale + requête additionalSales séparée
+- `src/services/AdminPreferenceService.ts` — prefs admin (PROTÉGÉ)
+
+---
+
+## 🐛 Problèmes connus (au 18/04/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification
+- **Strapi prod REST endpoints retournent 500** — tous les endpoints `/api/*` retournent `InternalServerError`. Le GraphQL fonctionne. À investiguer côté Heroku.
+- **`invoices_connection` retourne 0 en prod** — les factures existent (visibles dans les projets) mais ne sont pas retournées par la query GraphQL. Probablement un problème de permissions Strapi. Le dashboard utilise `project.price` comme contournement.
 
 ---
 
@@ -373,5 +431,4 @@ Lis et applique systématiquement les fichiers dans `.claude/skills/` :
 - `.claude/skills/backend-strapi.md` → pour tout travail sur peg_strapi
 - `.claude/skills/frontend.md` → pour tout travail sur PEG_FRONTEND
 - `.claude/skills/devops-deploiement.md` → avant chaque déploiement
-```
 
