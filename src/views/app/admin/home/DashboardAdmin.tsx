@@ -8,7 +8,7 @@ import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAppSelector } from '@/store'
-import { apiGetDashboardSuperAdminInformations } from '@/services/DashboardSuperAdminService'
+import { apiGetDashboardSuperAdminInformations, apiGetProjectsAdditionalSales } from '@/services/DashboardSuperAdminService'
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
 import { env } from '@/configs/env.config'
 import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
@@ -315,7 +315,18 @@ export default function DashboardAdmin() {
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(loadLayout)
   const [hiddenWidgets, setHiddenWidgets] = useState<WidgetId[]>(loadHidden)
 
-  const fetchDashboard = async () => { try { setLoading(true); setError(null); const res = await apiGetDashboardSuperAdminInformations(); const data = (res as any)?.data?.data ?? (res as any)?.data ?? null; if (!data) throw new Error('Réponse vide'); setGql(data); setLastUpdated(new Date()) } catch (e: any) { setError(e?.message ?? 'Erreur') } finally { setLoading(false) } }
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true); setError(null)
+      const res = await apiGetDashboardSuperAdminInformations()
+      const body = (res as any)?.data
+      const gqlErrors = body?.errors
+      const gqlData = body?.data
+      if (gqlErrors?.length) console.warn('[Dashboard] GraphQL errors:', gqlErrors.map((e: any) => e.message))
+      if (!gqlData || (!gqlData.projects_connection && !gqlData.invoices_connection)) throw new Error(gqlErrors?.[0]?.message ?? 'Réponse vide')
+      setGql(gqlData); setLastUpdated(new Date())
+    } catch (e: any) { setError(e?.message ?? 'Erreur') } finally { setLoading(false) }
+  }
   useEffect(() => { fetchDashboard() }, [refreshTick])
   useEffect(() => { const fn = () => { if (document.visibilityState === 'visible') setRefreshTick(t => t + 1) }; document.addEventListener('visibilitychange', fn); return () => document.removeEventListener('visibilitychange', fn) }, [])
   useEffect(() => { const up = () => { if (lastUpdated) setLastUpdatedText(dayjs(lastUpdated).fromNow()) }; up(); const iv = setInterval(up, 30000); return () => clearInterval(iv) }, [lastUpdated])
@@ -335,15 +346,22 @@ export default function DashboardAdmin() {
   }, [refreshTick])
   const totalExpensesGlobal = useMemo(() => allExpenses.reduce((a: number, e: any) => a + (Number(e?.totalAmount) || 0), 0), [allExpenses])
 
-  // Ventes additionnelles — agrégées depuis les projets
-  const allAdditionalSales = useMemo(() => {
-    const sales: { label: string; amount: number; date: string; note?: string; projectName: string; projectId: string }[] = []
-    for (const p of projects) {
-      if (!Array.isArray(p?.additionalSales)) continue
-      for (const s of p.additionalSales) sales.push({ ...s, projectName: p.name ?? '—', projectId: p.documentId })
-    }
-    return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [projects])
+  // Ventes additionnelles — requête séparée (isolée pour ne pas bloquer le dashboard si le champ n'existe pas encore côté Strapi)
+  const [additionalSalesData, setAdditionalSalesData] = useState<any[]>([])
+  useEffect(() => {
+    apiGetProjectsAdditionalSales()
+      .then(res => {
+        const nodes = res?.data?.data?.projects_connection?.nodes ?? []
+        const sales: any[] = []
+        for (const p of nodes) {
+          if (!Array.isArray(p?.additionalSales)) continue
+          for (const s of p.additionalSales) sales.push({ ...s, projectName: p.name ?? '—', projectId: p.documentId })
+        }
+        setAdditionalSalesData(sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+      })
+      .catch(() => { /* champ pas encore déployé côté Strapi — pas grave, on ignore */ })
+  }, [refreshTick])
+  const allAdditionalSales = additionalSalesData
   const totalAdditionalSales = useMemo(() => allAdditionalSales.reduce((a, s) => a + (Number(s.amount) || 0), 0), [allAdditionalSales])
 
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0

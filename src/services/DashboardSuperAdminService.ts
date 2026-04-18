@@ -68,7 +68,6 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
           producer {
             name
           }
-          additionalSales
           invoices(pagination: { limit: 1 }) {
             documentId
           }
@@ -159,6 +158,26 @@ export async function apiGetDashboardSuperAdminInformations(): Promise<
       transactions_connection: { nodes: any[]; pageInfo: { total: number } }
     }>
   >({
+    url: API_GRAPHQL_URL,
+    method: 'post',
+    data: { query },
+  })
+}
+
+// Separate query for additionalSales — isolated so it doesn't break the main dashboard if the field doesn't exist yet
+export async function apiGetProjectsAdditionalSales(): Promise<AxiosResponse<ApiResponse<{ projects_connection: { nodes: { documentId: string; name: string; additionalSales: any }[] } }>>> {
+  const query = `
+    query DashboardAdditionalSales {
+      projects_connection(pagination: { limit: 500 }) {
+        nodes {
+          documentId
+          name
+          additionalSales
+        }
+      }
+    }
+  `
+  return ApiService.fetchData<ApiResponse<{ projects_connection: { nodes: { documentId: string; name: string; additionalSales: any }[] } }>>({
     url: API_GRAPHQL_URL,
     method: 'post',
     data: { query },
