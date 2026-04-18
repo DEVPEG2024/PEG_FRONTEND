@@ -126,6 +126,7 @@ const DetailsRight = () => {
       .catch(() => {});
   }, [isAdmin, project?.documentId]);
   const totalExpenses = useMemo(() => projectExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0), [projectExpenses]);
+  const totalAdditionalSales = useMemo(() => (project?.additionalSales ?? []).reduce((s: number, e: any) => s + (Number(e?.amount) || 0), 0), [project?.additionalSales]);
 
   // Inline edit paidPrice / producerPaidPrice
   const [editingField, setEditingField] = useState<'paidPrice' | 'producerPaidPrice' | null>(null);
@@ -385,12 +386,19 @@ const DetailsRight = () => {
               </>
             )}
 
+            {totalAdditionalSales > 0 && (
+              <>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
+                <FinanceRow label="Ventes add." value={`+${fmtPrice(totalAdditionalSales)}`} color="#22d3ee" />
+              </>
+            )}
+
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
 
             <FinanceRow
               label="Marge"
-              value={fmtPrice((project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)}
-              color={(project.price ?? 0) - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses >= 0 ? '#4ade80' : '#f87171'}
+              value={fmtPrice((project.price ?? 0) + totalAdditionalSales - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)}
+              color={(project.price ?? 0) + totalAdditionalSales - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses >= 0 ? '#4ade80' : '#f87171'}
               bold
             />
           </div>

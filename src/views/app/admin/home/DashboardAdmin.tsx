@@ -218,7 +218,7 @@ function CalendarContent() {
 
 const LAYOUT_KEY = 'peg:dashboardLayout'
 
-type WidgetId = 'chart-ca' | 'chart-tickets' | 'pipeline' | 'orders' | 'todo' | 'calendar' | 'alerts' | 'deadlines' | 'top-clients' | 'top-producers' | 'activity'
+type WidgetId = 'chart-ca' | 'chart-tickets' | 'pipeline' | 'orders' | 'todo' | 'calendar' | 'alerts' | 'deadlines' | 'top-clients' | 'top-producers' | 'activity' | 'additional-sales'
 
 interface WidgetDef {
   id: WidgetId
@@ -241,9 +241,10 @@ const WIDGET_DEFS: WidgetDef[] = [
   { id: 'top-clients', label: 'Top clients', glow: 'emerald', accentGradient: 'from-emerald-500 to-teal-500', span: 1 },
   { id: 'top-producers', label: 'Top producteurs', glow: 'violet', accentGradient: 'from-violet-500 to-purple-500', span: 1 },
   { id: 'activity', label: 'Activité récente', glow: 'sky', accentGradient: 'from-sky-500 to-blue-500', span: 1 },
+  { id: 'additional-sales', label: 'Ventes add.', glow: 'emerald', accentGradient: 'from-emerald-500 to-cyan-500', span: 1 },
 ]
 
-const ALL_WIDGET_IDS: WidgetId[] = ['chart-ca', 'chart-tickets', 'pipeline', 'orders', 'todo', 'calendar', 'alerts', 'deadlines', 'top-clients', 'top-producers', 'activity']
+const ALL_WIDGET_IDS: WidgetId[] = ['chart-ca', 'chart-tickets', 'pipeline', 'orders', 'todo', 'calendar', 'alerts', 'deadlines', 'top-clients', 'top-producers', 'activity', 'additional-sales']
 const HIDDEN_KEY = 'peg:dashboardHidden'
 
 function loadLayout(): WidgetId[] {
@@ -326,9 +327,21 @@ export default function DashboardAdmin() {
     })
   }, [refreshTick])
   const totalExpensesGlobal = useMemo(() => allExpenses.reduce((a: number, e: any) => a + (Number(e?.totalAmount) || 0), 0), [allExpenses])
+
+  // Ventes additionnelles — agrégées depuis les projets
+  const allAdditionalSales = useMemo(() => {
+    const sales: { label: string; amount: number; date: string; note?: string; projectName: string; projectId: string }[] = []
+    for (const p of projects) {
+      if (!Array.isArray(p?.additionalSales)) continue
+      for (const s of p.additionalSales) sales.push({ ...s, projectName: p.name ?? '—', projectId: p.documentId })
+    }
+    return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [projects])
+  const totalAdditionalSales = useMemo(() => allAdditionalSales.reduce((a, s) => a + (Number(s.amount) || 0), 0), [allAdditionalSales])
+
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
-  const invoiceTotal = useMemo(() => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0) + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.price) || 0)), 0), [invoices, projects])
+  const invoiceTotal = useMemo(() => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0) + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.price) || 0)), 0) + totalAdditionalSales, [invoices, projects, totalAdditionalSales])
   const invoicePaid = useMemo(() => { const fi = invoices.reduce((a: number, x: any) => { const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return a + ((ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')) ? (Number(x?.totalAmount) || 0) : 0) }, 0); return fi + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.paidPrice) || 0)), 0) }, [invoices, projects])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
@@ -351,8 +364,10 @@ export default function DashboardAdmin() {
     for (const p of projects) { const cost = Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0); if (!cost) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += cost }
     // Ajouter les dépenses par mois
     for (const exp of allExpenses) { const d = safeDate(exp?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) { by.get(k)!.costs += (Number(exp?.totalAmount) || 0); by.get(k)!.depenses += (Number(exp?.totalAmount) || 0) } }
+    // Ajouter les ventes additionnelles au CA par mois
+    for (const s of allAdditionalSales) { const d = safeDate(s.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.ca += (Number(s.amount) || 0) }
     return months.map(k => { const b = by.get(k)!; return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid, depenses: b.depenses } })
-  }, [invoices, transactions, projects, allExpenses])
+  }, [invoices, transactions, projects, allExpenses, allAdditionalSales])
   const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
   const paidLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].paid : 0; const paidThisMonth = revenue6m.length >= 1 ? revenue6m[revenue6m.length - 1].paid : 0
 
@@ -486,6 +501,7 @@ export default function DashboardAdmin() {
       case 'top-clients': return <><SectionHeader title="Top clients" subtitle="Par CA facturé" right={<button onClick={() => navigate('/admin/customers/list')} className="text-[11px] text-emerald-400/60 hover:text-emerald-300 transition">Voir tous →</button>} /><div className="space-y-3">{topClients.map((c, i) => <div key={i} className="flex items-center gap-3"><MedalBadge rank={i + 1} color="emerald" /><div className="flex-1 min-w-0"><div className="text-sm text-white/75 truncate">{c.name}</div></div><div className="text-sm font-semibold text-emerald-400/80 shrink-0">{eur(c.revenue)}</div></div>)}</div></>
       case 'top-producers': return <><SectionHeader title="Top producteurs" subtitle="Par projets" right={<button onClick={() => navigate('/admin/producers/list')} className="text-[11px] text-violet-400/60 hover:text-violet-300 transition">Voir tous →</button>} /><div className="space-y-3">{topProducers.map((p, i) => <div key={i} className="flex items-center gap-3"><MedalBadge rank={i + 1} color="violet" /><div className="flex-1 min-w-0"><div className="text-sm text-white/75 truncate">{p.name}</div><div className="text-[10px] text-white/30">{p.projects} projet(s)</div></div><div className="text-sm font-semibold text-violet-400/80 shrink-0">{p.revenue ? eur(p.revenue) : '—'}</div></div>)}</div></>
       case 'activity': return <><SectionHeader title="Activité récente" subtitle="Projets & factures" /><ActivityFeed items={activity} /></>
+      case 'additional-sales': return <><SectionHeader title="Ventes additionnelles" subtitle={`${allAdditionalSales.length} vente(s) · ${eur(totalAdditionalSales)}`} />{allAdditionalSales.length === 0 ? <div className="text-center py-6"><EmptyClipboard /><div className="text-xs text-white/25">Aucune vente additionnelle</div></div> : <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">{allAdditionalSales.slice(0, 15).map((s, i) => <div key={i} className="flex items-start justify-between gap-3 py-1.5"><div className="min-w-0"><div className="text-sm text-white/75 truncate">{s.label}</div><div className="text-[11px] text-white/35 truncate">{s.projectName} · {dayjs(s.date).format('DD/MM/YY')}</div></div><span className="text-sm font-bold text-emerald-400/80 shrink-0">{eur(s.amount)}</span></div>)}</div>}</>
       default: return null
     }
   }
