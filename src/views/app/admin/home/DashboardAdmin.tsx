@@ -43,7 +43,8 @@ function monthLabel(key: string) { const m = Number(key.split('-')[1]) - 1; retu
 const fadeInUp = { hidden: { opacity: 0, y: 18 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } }) }
 const staggerContainer = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
 
-function AnimatedSection({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function AnimatedSection({ children, className = '', immediate = false }: { children: React.ReactNode; className?: string; immediate?: boolean }) {
+  if (immediate) return <motion.div initial="hidden" animate="visible" variants={staggerContainer} className={className}>{children}</motion.div>
   return <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={staggerContainer} className={className}>{children}</motion.div>
 }
 
@@ -549,14 +550,14 @@ export default function DashboardAdmin() {
               </div>
             } />
             {!dataReady ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={i} />)}</div> : (<>
-              <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <AnimatedSection immediate className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <motion.div variants={fadeInUp} custom={0} className="md:col-span-2 lg:col-span-2">
                   <GlassCard onClick={() => navigate('/admin/invoices')} glow="cyan" className="h-full"><div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-90" /><div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none"><Sparkline data={caSparkData} color="#22d3ee" height={96} /></div><div className="relative p-5 md:p-6"><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-widest text-cyan-400/60 flex items-center gap-2"><HiOutlineLightningBolt className="w-3.5 h-3.5" />CA total TTC</div><div className="mt-2 text-3xl md:text-4xl font-black text-white tracking-tight"><AnimatedValue value={invoiceTotal} format={eur} /></div><div className="text-sm text-white/40 mt-0.5">{eur(toHT(invoiceTotal))} HT</div><div className="flex items-center gap-3 mt-2"><DeltaBadge current={invoiceTotal} previous={caLastMonth} />{caLastMonth > 0 && <span className="text-xs text-white/35">vs mois préc.</span>}</div></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-500/25 shrink-0 text-cyan-400"><HiOutlineCurrencyEuro className="w-6 h-6" /></div></div></div></GlassCard>
                 </motion.div>
                 <motion.div variants={fadeInUp} custom={1}><KPI title="Encaissé TTC" value={eur(invoicePaid)} subtitle={`${eur(toHT(invoicePaid))} HT`} icon={<HiOutlineCheckCircle className="w-5 h-5" />} variant="success" onClick={() => navigate('/admin/invoices')} delta={<DeltaBadge current={paidThisMonth} previous={paidLastMonth} />} /></motion.div>
                 <motion.div variants={fadeInUp} custom={2}><KPI title="Reste à encaisser" value={eur(invoicePending)} subtitle={`${eur(toHT(invoicePending))} HT`} icon={<HiOutlineClock className="w-5 h-5" />} variant={invoicePending > 0 ? 'warning' : 'success'} onClick={() => navigate('/admin/invoices')} /></motion.div>
               </AnimatedSection>
-              <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+              <AnimatedSection immediate className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
                 <motion.div variants={fadeInUp} custom={0}>
                   <GlassCard glow={margePct >= 30 ? 'emerald' : margePct >= 15 ? 'amber' : 'rose'} className="h-full"><div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${vc[margePct >= 30 ? 'success' : margePct >= 15 ? 'warning' : 'danger'].gradient} opacity-80`} /><div className="relative p-5"><div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Marge brute</div><div className="flex items-center gap-3 mt-2"><ProgressRing pct={margePct} color={margePct >= 30 ? '#34d399' : margePct >= 15 ? '#fbbf24' : '#fb7185'} /><div><div className="text-2xl font-black text-white">{margePct}%</div><div className="text-xs text-white/45">{eur(margeBrute)} TTC</div><div className="text-[10px] text-white/30">{eur(toHT(margeBrute))} HT</div></div></div></div></GlassCard>
                 </motion.div>
@@ -575,7 +576,7 @@ export default function DashboardAdmin() {
 
           {/* OPERATIONS KPI (fixed) */}
           {dataReady && (
-            <AnimatedSection className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <AnimatedSection immediate className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               <motion.div variants={fadeInUp} custom={0}><KPI title="Projets" value={String(projectsTotal)} icon={<HiOutlineCube className="w-5 h-5" />} onClick={() => navigate('/common/projects')} /></motion.div>
               <motion.div variants={fadeInUp} custom={1}><KPI title="Projets à risque" value={String(atRiskProjects)} icon={<HiOutlineExclamation className="w-5 h-5" />} variant={atRiskProjects > 0 ? 'danger' : 'default'} onClick={() => navigate('/common/projects')} /></motion.div>
               <motion.div variants={fadeInUp} custom={2}><KPI title="Commandes" value={String(orderItemsTotal)} icon={<HiOutlineShoppingCart className="w-5 h-5" />} onClick={() => navigate('/admin/order-items')} /></motion.div>
