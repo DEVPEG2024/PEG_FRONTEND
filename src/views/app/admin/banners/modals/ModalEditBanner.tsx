@@ -1,3 +1,9 @@
+/**
+ * COMPOSANT PROTEGE — NE PAS MODIFIER SANS DEMANDE EXPLICITE DE NOVA
+ * Modal edition de banniere
+ * Derniere validation : 2026-04-18
+ * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
+ */
 import { Input, Select, Switcher } from '@/components/ui';
 import { HiX } from 'react-icons/hi';
 import { t } from 'i18next';

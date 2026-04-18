@@ -1,3 +1,9 @@
+/**
+ * COMPOSANT PROTEGE — NE PAS MODIFIER SANS DEMANDE EXPLICITE DE NOVA
+ * Gestion des bannieres (liste, creation, edition)
+ * Derniere validation : 2026-04-18
+ * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
+ */
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useState } from 'react';
 import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiPhotograph } from 'react-icons/hi';

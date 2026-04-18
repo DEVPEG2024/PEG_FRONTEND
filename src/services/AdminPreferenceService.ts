@@ -1,3 +1,9 @@
+/**
+ * COMPOSANT PROTEGE — NE PAS MODIFIER SANS DEMANDE EXPLICITE DE NOVA
+ * Service API pour les preferences admin (todos, banniere, layout widgets)
+ * Derniere validation : 2026-04-18
+ * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
+ */
 import BaseService from './BaseService'
 import { API_GRAPHQL_URL } from '@/configs/api.config'
 import { env } from '@/configs/env.config'
