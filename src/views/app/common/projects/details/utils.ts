@@ -8,5 +8,6 @@ export const labelList = [
   'Devis',
   'Factures',
   'Dépenses',
+  'Ventes add.',
   'SAV',
 ];

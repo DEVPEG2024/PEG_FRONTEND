@@ -25,6 +25,7 @@ const QuickFilterTab = () => {
     if (tab === 'Devis') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Dépenses') return hasRole(user, [SUPER_ADMIN, ADMIN]);
+    if (tab === 'Ventes add.') return hasRole(user, [SUPER_ADMIN, ADMIN]);
     if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
     if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;

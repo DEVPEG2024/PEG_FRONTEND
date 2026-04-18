@@ -43,6 +43,7 @@
     "immer": "^10.1.1",
     "lodash": "^4.17.21",
     "npm": "^10.8.3",
+    "playwright": "^1.59.1",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.0.1",
     "react": "^18.2.0",

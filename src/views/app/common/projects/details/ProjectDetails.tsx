@@ -11,6 +11,7 @@ import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
 import ProjectSav from './components/ProjectSav';
 import ProjectExpenses from './components/ProjectExpenses';
+import AdditionalSales from './components/AdditionalSales';
 import DeliveryWizard from './components/DeliveryWizard';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
@@ -114,6 +115,7 @@ const ProjectDetails = () => {
             {selectedTab === 'Devis' && <Devis />}
             {selectedTab === 'Factures' && <Invoices />}
             {selectedTab === 'Dépenses' && isAdmin && <ProjectExpenses />}
+            {selectedTab === 'Ventes add.' && isAdmin && <AdditionalSales />}
             {selectedTab === 'SAV' && <ProjectSav />}
           </Container>
           {/* Delivery wizard for producers */}

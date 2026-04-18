@@ -4,6 +4,12 @@
 
 ---
 
+## 🤖 Autonomie
+
+**Tout ce que tu es en mesure de faire tout seul sans intervention de l'utilisateur, tu le fais obligatoirement.** Ne pose pas de question si tu peux résoudre le problème toi-même. Agis, corrige, implémente, et ne demande confirmation que pour les actions irréversibles ou ambiguës.
+
+---
+
 ## 📁 Architecture du projet
 
 Le projet PEG est composé de **deux repositories** :

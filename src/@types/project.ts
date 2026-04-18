@@ -32,6 +32,15 @@ export type Project = {
   checklistItems: ChecklistItem[];
   savTickets?: SavTicket[];
   adminNotes?: string;
+  additionalSales?: AdditionalSale[];
+}
+
+export type AdditionalSale = {
+  id: string;
+  label: string;
+  amount: number;
+  date: string;
+  note?: string;
 }
 
 export type Task = {

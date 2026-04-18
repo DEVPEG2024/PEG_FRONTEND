@@ -122,6 +122,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
             startDate
             state
             adminNotes
+            additionalSales
             tasks (pagination: {limit: 100}){
                 documentId
                 name
@@ -147,6 +148,7 @@ export async function apiUpdateProject(project: Partial<Project>): Promise<Axios
   delete cleanData.checklistItems;
   delete cleanData.customerImages;
   delete cleanData.savTickets;
+  delete cleanData.additionalSales;
 
   const variables = {
     documentId,
@@ -413,6 +415,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             startDate
             state
             adminNotes
+            additionalSales
             tasks (pagination: {limit: 100}){
                 documentId
                 name
@@ -923,6 +926,42 @@ export async function apiUpdateProjectChecklistItems(documentId: string, checkli
     }
   `,
   variables = { documentId, data: { checklistItems } }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// get project additionalSales only (separate query)
+export async function apiGetProjectAdditionalSales(documentId: string): Promise<AxiosResponse<ApiResponse<{project: { documentId: string; additionalSales: import('@/@types/project').AdditionalSale[] }}>>> {
+    const query = `
+    query GetProjectAdditionalSales($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId
+            additionalSales
+        }
+    }
+  `,
+  variables = { documentId }
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
+// update project additionalSales only (separate mutation)
+export async function apiUpdateProjectAdditionalSales(documentId: string, additionalSales: import('@/@types/project').AdditionalSale[]): Promise<AxiosResponse<ApiResponse<{updateProject: { documentId: string; additionalSales: import('@/@types/project').AdditionalSale[] }}>>> {
+    const query = `
+    mutation UpdateProjectAdditionalSales($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId
+            additionalSales
+        }
+    }
+  `,
+  variables = { documentId, data: { additionalSales } }
     return ApiService.fetchData({
         url: API_GRAPHQL_URL,
         method: 'post',
