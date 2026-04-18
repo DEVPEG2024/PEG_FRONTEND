@@ -373,7 +373,7 @@ export default function DashboardAdmin() {
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
-  const invoiceTotal = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales, [projects, totalAdditionalSales])
+  const invoiceTotal = useMemo(() => { const t = projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales; console.log('[Dashboard] CA calculé:', t, '| projects.length:', projects.length, '| addSales:', totalAdditionalSales); return t }, [projects, totalAdditionalSales])
   const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.paidPrice) || 0), 0), [projects])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
