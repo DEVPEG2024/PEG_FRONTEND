@@ -373,8 +373,26 @@ export default function DashboardAdmin() {
 
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
-  const invoiceTotal = useMemo(() => invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0) + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.price) || 0)), 0) + totalAdditionalSales, [invoices, projects, totalAdditionalSales])
-  const invoicePaid = useMemo(() => { const fi = invoices.reduce((a: number, x: any) => { const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return a + ((ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')) ? (Number(x?.totalAmount) || 0) : 0) }, 0); return fi + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.paidPrice) || 0)), 0) }, [invoices, projects])
+  // Si invoices_connection est vide, on compte les prix projets même s'ils ont des factures liées
+  // (évite CA=0 quand les factures existent en BDD mais ne sont pas retournées par la query)
+  const hasInvoiceData = invoices.length > 0
+  const invoiceTotal = useMemo(() => {
+    if (hasInvoiceData) {
+      // Mode normal : CA = montants factures + prix projets sans facture + ventes add.
+      return invoices.reduce((a: number, x: any) => a + (Number(x?.totalAmount) || 0), 0)
+        + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.price) || 0)), 0)
+        + totalAdditionalSales
+    }
+    // Fallback : pas de données factures → CA = tous les prix projets + ventes add.
+    return projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales
+  }, [invoices, projects, totalAdditionalSales, hasInvoiceData])
+  const invoicePaid = useMemo(() => {
+    if (hasInvoiceData) {
+      const fi = invoices.reduce((a: number, x: any) => { const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return a + ((ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')) ? (Number(x?.totalAmount) || 0) : 0) }, 0)
+      return fi + projects.reduce((a: number, p: any) => a + (Array.isArray(p?.invoices) && p.invoices.length > 0 ? 0 : (Number(p?.paidPrice) || 0)), 0)
+    }
+    return projects.reduce((a: number, p: any) => a + (Number(p?.paidPrice) || 0), 0)
+  }, [invoices, projects, hasInvoiceData])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
   const atRiskProjects = useMemo(() => { const now = new Date(); return projects.filter((p: any) => { const end = safeDate(p?.endDate); if (!end) return false; const s = (p?.state ?? '').toString().toLowerCase(); return end.getTime() < now.getTime() && !(s.includes('done') || s.includes('closed') || s.includes('term') || s.includes('livr')) }).length }, [projects])
@@ -388,9 +406,11 @@ export default function DashboardAdmin() {
   const revenue6m = useMemo(() => {
     const now = new Date(); const months: string[] = []; for (let i = 5; i >= 0; i--) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
     const by = new Map<string, { ca: number; costs: number; paid: number; depenses: number }>(); months.forEach(k => by.set(k, { ca: 0, costs: 0, paid: 0, depenses: 0 }))
-    for (const inv of invoices) { const d = safeDate(inv?.date); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; const e = by.get(k)!; e.ca += (Number(inv?.totalAmount) || 0); const ps = (inv?.paymentState ?? '').toString().toLowerCase(); const st = (inv?.state ?? '').toString().toLowerCase(); if (ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')) e.paid += (Number(inv?.totalAmount) || 0) }
-    // Ajouter les projets sans facture au CA du mois correspondant
-    for (const p of projects) { if (Array.isArray(p?.invoices) && p.invoices.length > 0) continue; const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = Number(p?.paidPrice) || 0; if (paidPrice) by.get(k)!.paid += paidPrice }
+    if (hasInvoiceData) {
+      for (const inv of invoices) { const d = safeDate(inv?.date); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; const e = by.get(k)!; e.ca += (Number(inv?.totalAmount) || 0); const ps = (inv?.paymentState ?? '').toString().toLowerCase(); const st = (inv?.state ?? '').toString().toLowerCase(); if (ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye' || st.includes('paid')) e.paid += (Number(inv?.totalAmount) || 0) }
+    }
+    // Ajouter les projets au CA du mois — si invoices dispo, exclure les projets avec facture
+    for (const p of projects) { if (hasInvoiceData && Array.isArray(p?.invoices) && p.invoices.length > 0) continue; const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = Number(p?.paidPrice) || 0; if (paidPrice) by.get(k)!.paid += paidPrice }
     for (const tx of transactions) { const d = safeDate(tx?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += (Number(tx?.amount) || 0) }
     // Ajouter les coûts producteur par mois
     for (const p of projects) { const cost = Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0); if (!cost) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += cost }
@@ -405,7 +425,7 @@ export default function DashboardAdmin() {
 
   const pipeline = useMemo(() => { const m = new Map<string, number>(); for (const p of projects) m.set((p?.state ?? 'unknown').toString(), (m.get((p?.state ?? 'unknown').toString()) ?? 0) + 1); return Array.from(m.entries()).map(([l, v]) => ({ label: l, value: v })).sort((a, b) => b.value - a.value).slice(0, 8) }, [projects])
   const topProducers = useMemo(() => { const m = new Map<string, { projects: number; revenue: number }>(); for (const p of projects) { const n = p?.producer?.name ?? '—'; const c = m.get(n) ?? { projects: 0, revenue: 0 }; m.set(n, { projects: c.projects + 1, revenue: c.revenue + (Number(p?.price) || 0) }) }; return Array.from(m.entries()).map(([n, v]) => ({ name: n, ...v })).sort((a, b) => b.projects - a.projects || b.revenue - a.revenue).slice(0, 6) }, [projects])
-  const topClients = useMemo(() => { const m = new Map<string, number>(); for (const inv of invoices) { const n = inv?.customer?.name ?? '—'; m.set(n, (m.get(n) ?? 0) + (Number(inv?.totalAmount) || 0)) }; for (const p of projects) { if (Array.isArray(p?.invoices) && p.invoices.length > 0) continue; const n = p?.customer?.name ?? '—'; m.set(n, (m.get(n) ?? 0) + (Number(p?.price) || 0)) }; return Array.from(m.entries()).map(([n, r]) => ({ name: n, revenue: r })).sort((a, b) => b.revenue - a.revenue).slice(0, 6) }, [invoices, projects])
+  const topClients = useMemo(() => { const m = new Map<string, number>(); if (hasInvoiceData) { for (const inv of invoices) { const n = inv?.customer?.name ?? '—'; m.set(n, (m.get(n) ?? 0) + (Number(inv?.totalAmount) || 0)) } }; for (const p of projects) { if (hasInvoiceData && Array.isArray(p?.invoices) && p.invoices.length > 0) continue; const n = p?.customer?.name ?? '—'; m.set(n, (m.get(n) ?? 0) + (Number(p?.price) || 0)) }; return Array.from(m.entries()).map(([n, r]) => ({ name: n, revenue: r })).sort((a, b) => b.revenue - a.revenue).slice(0, 6) }, [invoices, projects, hasInvoiceData])
   const activity = useMemo(() => {
     const items: { ts: number; left: string; right: string; sub?: string; type?: 'invoice' | 'project' }[] = []
     for (const inv of invoices.slice(0, 20)) { const d = safeDate(inv?.date); if (d) items.push({ ts: d.getTime(), left: `${inv?.customer?.name ?? 'Client'} — ${inv?.name ?? 'Facture'}`, right: eur(Number(inv?.totalAmount) || 0), sub: dayjs(d).fromNow(), type: 'invoice' }) }
