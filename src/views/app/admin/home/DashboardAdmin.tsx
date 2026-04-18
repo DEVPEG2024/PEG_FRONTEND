@@ -322,16 +322,10 @@ export default function DashboardAdmin() {
       const body = (res as any)?.data
       const gqlErrors = body?.errors
       const gqlData = body?.data
-      // --- DEBUG PROD (à retirer après diagnostic) ---
-      console.log('[Dashboard] HTTP status:', (res as any)?.status)
-      console.log('[Dashboard] gqlData keys:', gqlData ? Object.keys(gqlData) : 'NULL')
-      console.log('[Dashboard] projects:', gqlData?.projects_connection?.nodes?.length ?? 0, '| invoices:', gqlData?.invoices_connection?.nodes?.length ?? 0)
-      if (gqlData?.projects_connection?.nodes) console.log('[Dashboard] TOUS les prix projets:', gqlData.projects_connection.nodes.map((p: any) => ({ name: p.name, price: p.price, paidPrice: p.paidPrice })))
-      // --- FIN DEBUG ---
       if (gqlErrors?.length) console.warn('[Dashboard] GraphQL errors:', gqlErrors.map((e: any) => e.message))
       if (!gqlData || (!gqlData.projects_connection && !gqlData.invoices_connection)) throw new Error(gqlErrors?.[0]?.message ?? 'Réponse vide')
       setGql(gqlData); setLastUpdated(new Date())
-    } catch (e: any) { console.error('[Dashboard] FETCH ERROR:', e); setError(e?.message ?? 'Erreur') } finally { setLoading(false) }
+    } catch (e: any) { setError(e?.message ?? 'Erreur') } finally { setLoading(false) }
   }
   useEffect(() => { fetchDashboard() }, [refreshTick])
   useEffect(() => { const fn = () => { if (document.visibilityState === 'visible') setRefreshTick(t => t + 1) }; document.addEventListener('visibilitychange', fn); return () => document.removeEventListener('visibilitychange', fn) }, [])
@@ -373,7 +367,8 @@ export default function DashboardAdmin() {
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
-  const invoiceTotal = useMemo(() => { const t = projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales; console.log('[Dashboard] CA calculé:', t, '| projects.length:', projects.length, '| addSales:', totalAdditionalSales); return t }, [projects, totalAdditionalSales])
+  // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
+  const invoiceTotal = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales, [projects, totalAdditionalSales])
   const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.paidPrice) || 0), 0), [projects])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
