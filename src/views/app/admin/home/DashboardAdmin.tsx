@@ -1,3 +1,9 @@
+/**
+ * COMPOSANT PROTEGE — NE PAS MODIFIER SANS DEMANDE EXPLICITE DE NOVA
+ * Contient : banniere admin (hero), pense-bete (TodoListWidget), layout widgets
+ * Derniere validation : 2026-04-18
+ * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
+ */
 import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
@@ -542,7 +548,7 @@ export default function DashboardAdmin() {
                 </button>
               </div>
             } />
-            {!dataReady ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={i} />)}</div> : (
+            {!dataReady ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={i} />)}</div> : (<>
               <AnimatedSection className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <motion.div variants={fadeInUp} custom={0} className="md:col-span-2 lg:col-span-2">
                   <GlassCard onClick={() => navigate('/admin/invoices')} glow="cyan" className="h-full"><div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-90" /><div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none"><Sparkline data={caSparkData} color="#22d3ee" height={96} /></div><div className="relative p-5 md:p-6"><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-widest text-cyan-400/60 flex items-center gap-2"><HiOutlineLightningBolt className="w-3.5 h-3.5" />CA total TTC</div><div className="mt-2 text-3xl md:text-4xl font-black text-white tracking-tight"><AnimatedValue value={invoiceTotal} format={eur} /></div><div className="text-sm text-white/40 mt-0.5">{eur(toHT(invoiceTotal))} HT</div><div className="flex items-center gap-3 mt-2"><DeltaBadge current={invoiceTotal} previous={caLastMonth} />{caLastMonth > 0 && <span className="text-xs text-white/35">vs mois préc.</span>}</div></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-500/25 shrink-0 text-cyan-400"><HiOutlineCurrencyEuro className="w-6 h-6" /></div></div></div></GlassCard>
@@ -564,7 +570,7 @@ export default function DashboardAdmin() {
                   <GlassCard glow="rose" className="h-full"><div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-400 to-orange-500 opacity-80" /><div className="relative p-5"><div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Dépenses totales</div><div className="mt-2"><div className="text-2xl font-black text-rose-400">{eur(totalExpensesGlobal)}</div><div className="text-xs text-white/45 mt-1">{eur(toHT(totalExpensesGlobal))} HT</div></div></div></GlassCard>
                 </motion.div>
               </AnimatedSection>
-            )}
+            </>)}
           </div>
 
           {/* OPERATIONS KPI (fixed) */}
