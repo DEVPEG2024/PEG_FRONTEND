@@ -346,62 +346,74 @@ const DetailsRight = () => {
       {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
         <div style={miniCard}>
           <p style={sectionLabel}>Finances</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <FinanceRow label="Prix total" value={fmtPrice(project.price ?? 0)} color="#6b9eff" />
-            {renderEditableAmount('paidPrice', '#4ade80') || (
-              <FinanceRow
-                label="Payé par client"
-                value={fmtPrice(project.paidPrice ?? 0)}
-                color="#4ade80"
-                onClick={isAdmin ? () => startEditField('paidPrice') : undefined}
-              />
-            )}
-            <FinanceRow
-              label="Reste dû client"
-              value={fmtPrice((project.price ?? 0) - (project.paidPrice ?? 0))}
-              color={(project.price ?? 0) - (project.paidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80'}
-            />
+          {(() => {
+            const projectPrice = project.price ?? 0;
+            const paidPrice = project.paidPrice ?? 0;
+            const totalToInvoice = projectPrice + totalAdditionalSales;
+            const remainingClient = totalToInvoice - paidPrice;
+            const producerPrice = project.producerPrice ?? 0;
+            const producerPaidPrice = project.producerPaidPrice ?? 0;
+            const remainingProducer = producerPrice - producerPaidPrice;
+            const margin = totalToInvoice - Math.max(producerPrice, producerPaidPrice) - totalExpenses;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <FinanceRow label="Prix projet" value={fmtPrice(projectPrice)} color="#6b9eff" />
+                {totalAdditionalSales > 0 && (
+                  <FinanceRow label="Ventes add." value={`+${fmtPrice(totalAdditionalSales)}`} color="#22d3ee" />
+                )}
+                {totalAdditionalSales > 0 && (
+                  <FinanceRow label="Total à facturer" value={fmtPrice(totalToInvoice)} color="#6b9eff" bold />
+                )}
+                {renderEditableAmount('paidPrice', '#4ade80') || (
+                  <FinanceRow
+                    label="Payé par client"
+                    value={fmtPrice(paidPrice)}
+                    color="#4ade80"
+                    onClick={isAdmin ? () => startEditField('paidPrice') : undefined}
+                  />
+                )}
+                <FinanceRow
+                  label="Reste dû client"
+                  value={fmtPrice(remainingClient)}
+                  color={remainingClient > 0 ? '#fbbf24' : '#4ade80'}
+                  bold
+                />
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
-
-            <FinanceRow label="Commission prod." value={fmtPrice(project.producerPrice ?? 0)} color="#a78bfa" />
-            {renderEditableAmount('producerPaidPrice', '#4ade80') || (
-              <FinanceRow
-                label="Payé au prod."
-                value={fmtPrice(project.producerPaidPrice ?? 0)}
-                color="#4ade80"
-                onClick={isAdmin ? () => startEditField('producerPaidPrice') : undefined}
-              />
-            )}
-            <FinanceRow
-              label="Reste dû prod."
-              value={fmtPrice((project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0))}
-              color={(project.producerPrice ?? 0) - (project.producerPaidPrice ?? 0) > 0 ? '#fbbf24' : '#4ade80'}
-            />
-
-            {totalExpenses > 0 && (
-              <>
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
-                <FinanceRow label="Dépenses" value={`-${fmtPrice(totalExpenses)}`} color="#f87171" />
-              </>
-            )}
 
-            {totalAdditionalSales > 0 && (
-              <>
+                <FinanceRow label="Commission prod." value={fmtPrice(producerPrice)} color="#a78bfa" />
+                {renderEditableAmount('producerPaidPrice', '#4ade80') || (
+                  <FinanceRow
+                    label="Payé au prod."
+                    value={fmtPrice(producerPaidPrice)}
+                    color="#4ade80"
+                    onClick={isAdmin ? () => startEditField('producerPaidPrice') : undefined}
+                  />
+                )}
+                <FinanceRow
+                  label="Reste dû prod."
+                  value={fmtPrice(remainingProducer)}
+                  color={remainingProducer > 0 ? '#fbbf24' : '#4ade80'}
+                />
+
+                {totalExpenses > 0 && (
+                  <>
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
+                    <FinanceRow label="Dépenses" value={`-${fmtPrice(totalExpenses)}`} color="#f87171" />
+                  </>
+                )}
+
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
-                <FinanceRow label="Ventes add." value={`+${fmtPrice(totalAdditionalSales)}`} color="#22d3ee" />
-              </>
-            )}
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '6px 0' }} />
-
-            <FinanceRow
-              label="Marge"
-              value={fmtPrice((project.price ?? 0) + totalAdditionalSales - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses)}
-              color={(project.price ?? 0) + totalAdditionalSales - Math.max(project.producerPrice ?? 0, project.producerPaidPrice ?? 0) - totalExpenses >= 0 ? '#4ade80' : '#f87171'}
-              bold
-            />
-          </div>
+                <FinanceRow
+                  label="Marge"
+                  value={fmtPrice(margin)}
+                  color={margin >= 0 ? '#4ade80' : '#f87171'}
+                  bold
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
 
