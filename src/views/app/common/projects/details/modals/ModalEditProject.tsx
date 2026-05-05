@@ -429,11 +429,11 @@ function ModalEditProject() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <span style={labelStyle}>Date de debut</span>
-                <input type="date" value={formData.startDate ? dayjs(formData.startDate).format('YYYY-MM-DD') : ''} onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? dayjs(e.target.value).toDate() : new Date() })} style={inputStyle} />
+                <input className="peg-date-input" type="date" value={formData.startDate ? dayjs(formData.startDate).format('YYYY-MM-DD') : ''} onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? dayjs(e.target.value).toDate() : new Date() })} style={inputStyle} />
               </div>
               <div>
                 <span style={labelStyle}>Date de fin</span>
-                <input type="date" value={formData.endDate ? dayjs(formData.endDate).format('YYYY-MM-DD') : ''} onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? dayjs(e.target.value).toDate() : null })} style={inputStyle} />
+                <input className="peg-date-input" type="date" value={formData.endDate ? dayjs(formData.endDate).format('YYYY-MM-DD') : ''} onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? dayjs(e.target.value).toDate() : null })} style={inputStyle} />
               </div>
             </div>
 
@@ -528,6 +528,12 @@ function ModalEditProject() {
         <style>{`
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          .peg-date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(1.4);
+            opacity: 0.85;
+            cursor: pointer;
+          }
+          .peg-date-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
         `}</style>
       </div>
     </div>

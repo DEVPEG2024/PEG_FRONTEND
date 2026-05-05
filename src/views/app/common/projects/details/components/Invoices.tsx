@@ -112,40 +112,50 @@ const Invoices = () => {
   };
 
   const handleUploadInvoice = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      toast.error('Seuls les fichiers PDF sont acceptés');
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const pdfs = files.filter((f) => f.type === 'application/pdf');
+    const skipped = files.length - pdfs.length;
+    if (skipped > 0) {
+      toast.error(`${skipped} fichier(s) ignoré(s) — PDF uniquement`);
+    }
+    if (pdfs.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     setUploading(true);
-    try {
-      const uploadedFile = await apiUploadFile(file);
-      const invoice: Omit<Invoice, 'documentId'> = {
-        customer: project.customer,
-        orderItems: [],
-        amount: project.price || 0,
-        vatAmount: (project.price || 0) * TVA_RATE,
-        totalAmount: (project.price || 0) * (1 + TVA_RATE),
-        name: file.name.replace(/\.pdf$/i, ''),
-        date: dayjs().toDate(),
-        dueDate: dayjs().add(30, 'day').toDate(),
-        state: 'pending',
-        paymentMethod: 'transfer',
-        paymentAmount: 0,
-        paymentReference: '',
-        paymentState: 'pending',
-        paymentDate: new Date(0),
-        file: uploadedFile.id as any,
-      };
-      await dispatch(addInvoice({ invoice, project }));
-      toast.success('Facture téléversée avec succès');
-    } catch {
-      toast.error('Erreur lors du téléversement de la facture');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    let success = 0;
+    let failed = 0;
+    for (const file of pdfs) {
+      try {
+        const uploadedFile = await apiUploadFile(file);
+        const invoice: Omit<Invoice, 'documentId'> = {
+          customer: project.customer,
+          orderItems: [],
+          amount: project.price || 0,
+          vatAmount: (project.price || 0) * TVA_RATE,
+          totalAmount: (project.price || 0) * (1 + TVA_RATE),
+          name: file.name.replace(/\.pdf$/i, ''),
+          date: dayjs().toDate(),
+          dueDate: dayjs().add(30, 'day').toDate(),
+          state: 'pending',
+          paymentMethod: 'transfer',
+          paymentAmount: 0,
+          paymentReference: '',
+          paymentState: 'pending',
+          paymentDate: new Date(0),
+          file: uploadedFile.id as any,
+        };
+        await dispatch(addInvoice({ invoice, project }));
+        success++;
+      } catch {
+        failed++;
+      }
     }
+    if (success > 0) toast.success(`${success} facture${success > 1 ? 's' : ''} téléversée${success > 1 ? 's' : ''}`);
+    if (failed > 0) toast.error(`${failed} facture(s) en erreur`);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const iconBtn = (danger = false): React.CSSProperties => ({
@@ -176,6 +186,7 @@ const Invoices = () => {
                     ref={fileInputRef}
                     type="file"
                     accept="application/pdf"
+                    multiple
                     style={{ display: 'none' }}
                     onChange={handleUploadInvoice}
                   />

@@ -29,23 +29,33 @@ const Devis = () => {
   const devisList: PegFile[] = project?.devis || [];
 
   const handleUploadDevis = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      toast.error('Seuls les fichiers PDF sont acceptés');
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const pdfs = files.filter((f) => f.type === 'application/pdf');
+    const skipped = files.length - pdfs.length;
+    if (skipped > 0) {
+      toast.error(`${skipped} fichier(s) ignoré(s) — PDF uniquement`);
+    }
+    if (pdfs.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     setUploading(true);
-    try {
-      const uploadedFile = await apiUploadFile(file);
-      await dispatch(addDevis({ file: uploadedFile, project }));
-      toast.success('Devis téléversé avec succès');
-    } catch {
-      toast.error('Erreur lors du téléversement du devis');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+    let success = 0;
+    let failed = 0;
+    for (const file of pdfs) {
+      try {
+        const uploadedFile = await apiUploadFile(file);
+        await dispatch(addDevis({ file: uploadedFile, project }));
+        success++;
+      } catch {
+        failed++;
+      }
     }
+    if (success > 0) toast.success(`${success} devis téléversé${success > 1 ? 's' : ''}`);
+    if (failed > 0) toast.error(`${failed} devis en erreur`);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleDeleteDevis = (devisFile: PegFile) => {
@@ -76,6 +86,7 @@ const Devis = () => {
                 ref={fileInputRef}
                 type="file"
                 accept="application/pdf"
+                multiple
                 style={{ display: 'none' }}
                 onChange={handleUploadDevis}
               />
