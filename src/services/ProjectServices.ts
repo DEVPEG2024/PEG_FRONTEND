@@ -494,6 +494,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 producerPaidPrice
                 startDate
                 state
+                additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
                     state
@@ -587,6 +588,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 }
                 startDate
                 state
+                additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
                     state
@@ -675,6 +677,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 producerPrice
                 startDate
                 state
+                additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
                     state

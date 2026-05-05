@@ -43,11 +43,17 @@ const Devis = () => {
     setUploading(true);
     let success = 0;
     let failed = 0;
+    let currentProject = project;
     for (const file of pdfs) {
       try {
         const uploadedFile = await apiUploadFile(file);
-        await dispatch(addDevis({ file: uploadedFile, project }));
-        success++;
+        const result = await dispatch(addDevis({ file: uploadedFile, project: currentProject }));
+        if (addDevis.fulfilled.match(result)) {
+          currentProject = result.payload;
+          success++;
+        } else {
+          failed++;
+        }
       } catch {
         failed++;
       }

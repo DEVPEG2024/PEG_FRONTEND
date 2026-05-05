@@ -126,15 +126,16 @@ const Invoices = () => {
     setUploading(true);
     let success = 0;
     let failed = 0;
+    let currentProject = project;
     for (const file of pdfs) {
       try {
         const uploadedFile = await apiUploadFile(file);
         const invoice: Omit<Invoice, 'documentId'> = {
-          customer: project.customer,
+          customer: currentProject.customer,
           orderItems: [],
-          amount: project.price || 0,
-          vatAmount: (project.price || 0) * TVA_RATE,
-          totalAmount: (project.price || 0) * (1 + TVA_RATE),
+          amount: currentProject.price || 0,
+          vatAmount: (currentProject.price || 0) * TVA_RATE,
+          totalAmount: (currentProject.price || 0) * (1 + TVA_RATE),
           name: file.name.replace(/\.pdf$/i, ''),
           date: dayjs().toDate(),
           dueDate: dayjs().add(30, 'day').toDate(),
@@ -146,8 +147,13 @@ const Invoices = () => {
           paymentDate: new Date(0),
           file: uploadedFile.id as any,
         };
-        await dispatch(addInvoice({ invoice, project }));
-        success++;
+        const result = await dispatch(addInvoice({ invoice, project: currentProject }));
+        if (addInvoice.fulfilled.match(result)) {
+          currentProject = result.payload;
+          success++;
+        } else {
+          failed++;
+        }
       } catch {
         failed++;
       }

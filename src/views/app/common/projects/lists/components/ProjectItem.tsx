@@ -217,44 +217,63 @@ const ProjectItem = ({
           </div>
 
           {/* Prix */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-            {isSuperAdmin && (
-              <>
-                <span style={{
-                  background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                  borderRadius: '100px', padding: '2px 9px',
-                  color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-                }}>
-                  {fmtPrice(project.price ?? 0)}
-                </span>
-                <span style={{
-                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
-                  borderRadius: '100px', padding: '2px 9px',
-                  color: '#a78bfa', fontSize: '11px', fontWeight: 600,
-                }}>
-                  Prod. {fmtPrice(project.producerPrice ?? 0)}
-                </span>
-              </>
-            )}
-            {hasRole(user, [PRODUCER]) && (
-              <span style={{
-                background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
-                borderRadius: '100px', padding: '2px 9px',
-                color: '#a78bfa', fontSize: '11px', fontWeight: 600,
-              }}>
-                {fmtPrice(project.producerPrice ?? 0)}
-              </span>
-            )}
-            {hasRole(user, [CUSTOMER]) && (
-              <span style={{
-                background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                borderRadius: '100px', padding: '2px 9px',
-                color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-              }}>
-                {fmtPrice(project.price ?? 0)}
-              </span>
-            )}
-          </div>
+          {(() => {
+            const totalAdditionalSales = (project.additionalSales ?? []).reduce(
+              (s: number, e: any) => s + (Number(e?.amount) || 0),
+              0
+            );
+            const totalCA = (project.price ?? 0) + totalAdditionalSales;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                {isSuperAdmin && (
+                  <>
+                    <span
+                      title={totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined}
+                      style={{
+                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                        borderRadius: '100px', padding: '2px 9px',
+                        color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      }}
+                    >
+                      {fmtPrice(totalCA)}
+                      {totalAdditionalSales > 0 && (
+                        <span style={{ color: '#22d3ee', fontSize: '10px', fontWeight: 700 }}>+VA</span>
+                      )}
+                    </span>
+                    <span style={{
+                      background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                      borderRadius: '100px', padding: '2px 9px',
+                      color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+                    }}>
+                      Prod. {fmtPrice(project.producerPrice ?? 0)}
+                    </span>
+                  </>
+                )}
+                {hasRole(user, [PRODUCER]) && (
+                  <span style={{
+                    background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                    borderRadius: '100px', padding: '2px 9px',
+                    color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+                  }}>
+                    {fmtPrice(project.producerPrice ?? 0)}
+                  </span>
+                )}
+                {hasRole(user, [CUSTOMER]) && (
+                  <span
+                    title={totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined}
+                    style={{
+                      background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                      borderRadius: '100px', padding: '2px 9px',
+                      color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                    }}
+                  >
+                    {fmtPrice(totalCA)}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
       </div>
