@@ -7,7 +7,11 @@ import type { ImbretexProduct, ImbretexVariant } from '@/@types/imbretex';
 import { apiCreateProduct } from './ProductServices';
 import { apiGetSizes, apiCreateSize } from './SizeServices';
 import { apiGetColors, apiCreateColor } from './ColorServices';
-import { apiGetProductCategories, apiCreateProductCategory } from './ProductCategoryServices';
+import { resolveColorHex } from '@/utils/colorResolver';
+import {
+  apiGetProductCategories,
+  apiCreateProductCategory,
+} from './ProductCategoryServices';
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
 import { apiUploadFile } from './FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -24,17 +28,23 @@ let cats: Map<string, string> | null = null;
 let szs: Map<string, string> | null = null;
 let cols: Map<string, string> | null = null;
 
-export function resetImportCaches() { cats = null; szs = null; cols = null; }
+export function resetImportCaches() {
+  cats = null;
+  szs = null;
+  cols = null;
+}
 
 async function getCategories(): Promise<Map<string, string>> {
   if (cats) return cats;
   cats = new Map();
   try {
-    const r = await unwrapData(apiGetProductCategories()) as any;
+    const r = (await unwrapData(apiGetProductCategories())) as any;
     for (const c of r.productCategories_connection.nodes) {
       cats.set(c.name.toUpperCase().trim(), c.documentId);
     }
-  } catch (e) { console.error('[Import] Erreur chargement catégories:', e); }
+  } catch (e) {
+    console.error('[Import] Erreur chargement catégories:', e);
+  }
   console.log('[Import] Catégories PEG:', Array.from(cats.keys()));
   return cats;
 }
@@ -43,11 +53,13 @@ async function getSizes(): Promise<Map<string, string>> {
   if (szs) return szs;
   szs = new Map();
   try {
-    const r = await unwrapData(apiGetSizes()) as any;
+    const r = (await unwrapData(apiGetSizes())) as any;
     for (const s of r.sizes_connection.nodes) {
       szs.set(s.name.toUpperCase().trim(), s.documentId);
     }
-  } catch (e) { console.error('[Import] Erreur chargement tailles:', e); }
+  } catch (e) {
+    console.error('[Import] Erreur chargement tailles:', e);
+  }
   console.log('[Import] Tailles PEG:', Array.from(szs.keys()));
   return szs;
 }
@@ -56,11 +68,13 @@ async function getColors(): Promise<Map<string, string>> {
   if (cols) return cols;
   cols = new Map();
   try {
-    const r = await unwrapData(apiGetColors()) as any;
+    const r = (await unwrapData(apiGetColors())) as any;
     for (const c of r.colors_connection.nodes) {
       cols.set(c.name.toUpperCase().trim(), c.documentId);
     }
-  } catch (e) { console.error('[Import] Erreur chargement couleurs:', e); }
+  } catch (e) {
+    console.error('[Import] Erreur chargement couleurs:', e);
+  }
   console.log('[Import] Couleurs PEG:', Array.from(cols.keys()));
   return cols;
 }
@@ -68,11 +82,11 @@ async function getColors(): Promise<Map<string, string>> {
 // ─── Mapping catégories Imbretex → PEG ───
 
 const CATEGORY_MAP: Record<string, string> = {
-  'CASQUETTE': 'CASQUETTE',
-  'BONNET': 'VÊTEMENT PERSONNALISÉ',
+  CASQUETTE: 'CASQUETTE',
+  BONNET: 'VÊTEMENT PERSONNALISÉ',
   'ACCESSOIRES HIVER': 'ACCESSOIRES HIVER',
-  'BIO': 'VÊTEMENT PERSONNALISÉ',
-  'RECYCLÉ': 'VÊTEMENT PERSONNALISÉ',
+  BIO: 'VÊTEMENT PERSONNALISÉ',
+  RECYCLÉ: 'VÊTEMENT PERSONNALISÉ',
   'FIN DE SERIE': 'VÊTEMENT PERSONNALISÉ',
 };
 
@@ -87,7 +101,10 @@ function findInCache(name: string, cache: Map<string, string>): string | null {
   return null;
 }
 
-async function matchOrCreateCategory(imbretexCategory: string, cache: Map<string, string>): Promise<string | null> {
+async function matchOrCreateCategory(
+  imbretexCategory: string,
+  cache: Map<string, string>
+): Promise<string | null> {
   if (!imbretexCategory) return null;
   const k = imbretexCategory.toUpperCase().trim();
   // D'abord le mapping explicite
@@ -98,40 +115,69 @@ async function matchOrCreateCategory(imbretexCategory: string, cache: Map<string
   if (found) return found;
   // Créer la catégorie
   try {
-    const r = await unwrapData(apiCreateProductCategory({ name: imbretexCategory, active: true, products: [] } as any));
+    const r = await unwrapData(
+      apiCreateProductCategory({
+        name: imbretexCategory,
+        active: true,
+        products: [],
+      } as any)
+    );
     const docId = (r as any).createProductCategory.documentId;
     cache.set(k, docId);
     console.log(`[Import] Catégorie créée: "${imbretexCategory}" → ${docId}`);
     return docId;
-  } catch (e) { console.warn(`[Import] Impossible de créer la catégorie "${imbretexCategory}":`, e); }
+  } catch (e) {
+    console.warn(
+      `[Import] Impossible de créer la catégorie "${imbretexCategory}":`,
+      e
+    );
+  }
   return null;
 }
 
-async function matchOrCreateColor(name: string, cache: Map<string, string>): Promise<string | null> {
+async function matchOrCreateColor(
+  name: string,
+  cache: Map<string, string>
+): Promise<string | null> {
   const found = findInCache(name, cache);
   if (found) return found;
   // Créer la couleur
   try {
-    const r = await unwrapData(apiCreateColor({ name, value: '#000000', description: '' } as any));
+    const r = await unwrapData(
+      apiCreateColor({
+        name,
+        value: resolveColorHex(name, ''),
+        description: '',
+      } as any)
+    );
     const docId = (r as any).createColor.documentId;
     cache.set(name.toUpperCase().trim(), docId);
     console.log(`[Import] Couleur créée: "${name}" → ${docId}`);
     return docId;
-  } catch (e) { console.warn(`[Import] Impossible de créer la couleur "${name}":`, e); }
+  } catch (e) {
+    console.warn(`[Import] Impossible de créer la couleur "${name}":`, e);
+  }
   return null;
 }
 
-async function matchOrCreateSize(name: string, cache: Map<string, string>): Promise<string | null> {
+async function matchOrCreateSize(
+  name: string,
+  cache: Map<string, string>
+): Promise<string | null> {
   const found = findInCache(name, cache);
   if (found) return found;
   // Créer la taille
   try {
-    const r = await unwrapData(apiCreateSize({ name, value: name, description: '' } as any));
+    const r = await unwrapData(
+      apiCreateSize({ name, value: name, description: '' } as any)
+    );
     const docId = (r as any).createSize.documentId;
     cache.set(name.toUpperCase().trim(), docId);
     console.log(`[Import] Taille créée: "${name}" → ${docId}`);
     return docId;
-  } catch (e) { console.warn(`[Import] Impossible de créer la taille "${name}":`, e); }
+  } catch (e) {
+    console.warn(`[Import] Impossible de créer la taille "${name}":`, e);
+  }
   return null;
 }
 
@@ -179,14 +225,19 @@ function fixImageUrl(url: string): string {
   // Préprod : les images sont en 404 sur admin.preprod, mais OK sur www.imbretex.fr
   // Prod : admin.imbretex.fr fonctionne directement, pas besoin de remap
   if (url.includes('admin.preprod.imbretex-upgrade.hegyd.net')) {
-    return url.replace('admin.preprod.imbretex-upgrade.hegyd.net', 'www.imbretex.fr');
+    return url.replace(
+      'admin.preprod.imbretex-upgrade.hegyd.net',
+      'www.imbretex.fr'
+    );
   }
   return url;
 }
 
 function getBestImageUrl(p: ImbretexProduct): string | null {
-  if (Array.isArray(p.images) && p.images.length > 0) return fixImageUrl(p.images[0].url);
-  if (!Array.isArray(p.images) && p.images?.url) return fixImageUrl(p.images.url);
+  if (Array.isArray(p.images) && p.images.length > 0)
+    return fixImageUrl(p.images[0].url);
+  if (!Array.isArray(p.images) && p.images?.url)
+    return fixImageUrl(p.images.url);
   for (const v of p.variants) {
     if (v.images?.length > 0) return fixImageUrl(v.images[0].url);
   }
@@ -208,7 +259,9 @@ async function fetchImageViaProxy(imageUrl: string): Promise<File | null> {
   }
 }
 
-async function uploadImbretexImage(product: ImbretexProduct): Promise<number | null> {
+async function uploadImbretexImage(
+  product: ImbretexProduct
+): Promise<number | null> {
   const url = getBestImageUrl(product);
   if (!url) return null;
   const file = await fetchImageViaProxy(url);
@@ -216,7 +269,9 @@ async function uploadImbretexImage(product: ImbretexProduct): Promise<number | n
   try {
     const pegFile = await apiUploadFile(file);
     const numericId = Number(pegFile.id);
-    console.log(`[Import] Image uploadée: id=${numericId}, docId=${pegFile.documentId}`);
+    console.log(
+      `[Import] Image uploadée: id=${numericId}, docId=${pegFile.documentId}`
+    );
     return numericId || null;
   } catch (err) {
     console.warn('[Import] Erreur upload Strapi:', err);
@@ -226,33 +281,53 @@ async function uploadImbretexImage(product: ImbretexProduct): Promise<number | n
 
 // ─── Import principal ───
 
-export type ImportResult = { success: boolean; reference: string; error?: string };
+export type ImportResult = {
+  success: boolean;
+  reference: string;
+  error?: string;
+};
 
-export async function importImbretexProduct(product: ImbretexProduct): Promise<ImportResult> {
+export async function importImbretexProduct(
+  product: ImbretexProduct
+): Promise<ImportResult> {
   const ref = product.reference;
   const mv = product.variants[0];
   if (!mv) return { success: false, reference: ref, error: 'Pas de variante' };
 
   try {
     // Charger les données PEG (une seule fois)
-    const [catMap, sizeMap, colorMap] = await Promise.all([getCategories(), getSizes(), getColors()]);
+    const [catMap, sizeMap, colorMap] = await Promise.all([
+      getCategories(),
+      getSizes(),
+      getColors(),
+    ]);
 
     // Catégorie (match ou création auto)
     const catName = getCategory(product);
     const catId = catName ? await matchOrCreateCategory(catName, catMap) : null;
-    console.log(`[Import] ${ref} catégorie: "${catName}" → ${catId || 'aucun match'}`);
+    console.log(
+      `[Import] ${ref} catégorie: "${catName}" → ${catId || 'aucun match'}`
+    );
 
     // Tailles (match ou création auto)
     const sizeNames = extractSizes(product.variants);
-    const sizeResults = await Promise.all(sizeNames.map(n => matchOrCreateSize(n, sizeMap)));
+    const sizeResults = await Promise.all(
+      sizeNames.map((n) => matchOrCreateSize(n, sizeMap))
+    );
     const sizeIds = [...new Set(sizeResults.filter(Boolean))] as string[];
-    console.log(`[Import] ${ref} tailles: [${sizeNames}] → ${sizeIds.length} matchées/créées`);
+    console.log(
+      `[Import] ${ref} tailles: [${sizeNames}] → ${sizeIds.length} matchées/créées`
+    );
 
     // Couleurs (match ou création auto)
     const colorNames = extractColors(product.variants);
-    const colorResults = await Promise.all(colorNames.map(n => matchOrCreateColor(n, colorMap)));
+    const colorResults = await Promise.all(
+      colorNames.map((n) => matchOrCreateColor(n, colorMap))
+    );
     const colorIds = [...new Set(colorResults.filter(Boolean))] as string[];
-    console.log(`[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées/créées`);
+    console.log(
+      `[Import] ${ref} couleurs: [${colorNames}] → ${colorIds.length} matchées/créées`
+    );
 
     // Image
     const imageDocId = await uploadImbretexImage(product);
@@ -265,7 +340,9 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
       if (Array.isArray(pd.products) && pd.products.length > 0) {
         price = parseFloat(pd.products[0].price) || 0;
       }
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
     console.log(`[Import] ${ref} prix: ${price}€`);
 
     // Étape 1 : création du produit (sans relations many-to-many)
@@ -293,7 +370,11 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
 
     const createdDocId = (response as any).data?.createProduct?.documentId;
     if (!createdDocId) {
-      return { success: false, reference: ref, error: 'Pas de documentId retourné' };
+      return {
+        success: false,
+        reference: ref,
+        error: 'Pas de documentId retourné',
+      };
     }
 
     // Étape 2 : mise à jour relations + productRef via REST API Strapi
@@ -310,14 +391,25 @@ export async function importImbretexProduct(product: ImbretexProduct): Promise<I
         `${API_BASE_URL}/products/${createdDocId}?status=published&populate[0]=sizes&populate[1]=colors`,
         { data: restData }
       );
-      console.log(`[Import] ${ref} REST RÉPONSE:`, JSON.stringify(restResult.data));
+      console.log(
+        `[Import] ${ref} REST RÉPONSE:`,
+        JSON.stringify(restResult.data)
+      );
     } catch (restErr: any) {
-      console.error(`[Import] ${ref} REST ERREUR:`, restErr?.response?.status, JSON.stringify(restErr?.response?.data));
+      console.error(
+        `[Import] ${ref} REST ERREUR:`,
+        restErr?.response?.status,
+        JSON.stringify(restErr?.response?.data)
+      );
     }
 
     return { success: true, reference: ref };
   } catch (err: any) {
     console.error(`[Import] ${ref} ERREUR:`, err);
-    return { success: false, reference: ref, error: err?.message || String(err) };
+    return {
+      success: false,
+      reference: ref,
+      error: err?.message || String(err),
+    };
   }
 }

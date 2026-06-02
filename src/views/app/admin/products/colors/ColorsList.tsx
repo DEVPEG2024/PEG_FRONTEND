@@ -27,6 +27,7 @@ import {
 import { IoColorPaletteOutline } from 'react-icons/io5';
 import { toast } from 'react-toastify';
 import { unwrapData } from '@/utils/serviceHelper';
+import { resolveColorHex } from '@/utils/colorResolver';
 import {
   apiGetProductCategories,
   GetProductCategoriesResponse,
@@ -1415,7 +1416,10 @@ const ColorsList = () => {
                               gap: 8,
                             }}
                           >
-                            <Swatch hex={row.value} size={16} />
+                            <Swatch
+                              hex={resolveColorHex(row.name, row.value)}
+                              size={16}
+                            />
                             {row.name}
                             {ids.size > 1 && (
                               <span
@@ -1635,7 +1639,10 @@ const ColorsList = () => {
                             'rgba(255,255,255,0.1)')
                         }
                       >
-                        <Swatch hex={color.value} size={18} />
+                        <Swatch
+                          hex={resolveColorHex(color.name, color.value)}
+                          size={18}
+                        />
                         <span
                           style={{
                             color: '#fff',
