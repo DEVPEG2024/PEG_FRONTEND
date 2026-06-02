@@ -18,7 +18,14 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { OrderItem } from '@/@types/orderItem';
 import { apiGetPendingOrderItemsLinkedToProduct } from '@/services/OrderItemServices';
-import { apiGetAllProductsForExport, apiCreateProduct } from '@/services/ProductServices';
+import { apiGetAllProductsForExport, apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
+import { apiGetProductCategories } from '@/services/ProductCategoryServices';
+import { apiGetCustomerCategories } from '@/services/CustomerCategoryServices';
+import { apiGetSizes } from '@/services/SizeServices';
+import { apiGetColors } from '@/services/ColorServices';
+import { apiGetCustomers } from '@/services/CustomerServices';
+import { apiGetForms } from '@/services/FormServices';
+import { apiGetChecklists } from '@/services/ChecklistServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
@@ -164,21 +171,83 @@ const ProductsList = () => {
       }
 
       const headers = parseCsvLine(lines[0]);
-      const nomIdx = headers.findIndex(h => h.trim().toLowerCase() === 'nom');
-      const descIdx = headers.findIndex(h => h.trim().toLowerCase() === 'description');
-      const prixIdx = headers.findIndex(h => h.trim().toLowerCase() === 'prix');
-      const paliersIdx = headers.findIndex(h => h.trim().toLowerCase() === 'paliers de prix');
-      const actifIdx = headers.findIndex(h => h.trim().toLowerCase() === 'actif');
-      const catalogueIdx = headers.findIndex(h => h.trim().toLowerCase() === 'en catalogue');
-      const refIdx = headers.findIndex(h => h.trim().toLowerCase() === 'référence');
-      const batIdx = headers.findIndex(h => h.trim().toLowerCase() === 'requiert bat');
+      // Recherche une colonne par l'un de ses libellés possibles (insensible à la casse)
+      const idxOf = (...names: string[]) =>
+        headers.findIndex(h => names.includes(h.trim().toLowerCase()));
+
+      const nomIdx = idxOf('nom');
+      const descIdx = idxOf('description');
+      const prixIdx = idxOf('prix');
+      const paliersIdx = idxOf('paliers de prix');
+      const actifIdx = idxOf('actif');
+      const catalogueIdx = idxOf('en catalogue');
+      const refIdx = idxOf('référence', 'reference');
+      const batIdx = idxOf('requiert bat');
+      const catProdIdx = idxOf('catégorie produit', 'categorie produit', 'catégorie', 'categorie');
+      const catClientIdx = idxOf('catégories clients', 'categories clients', 'catégorie client', 'categorie client', 'catégories client');
+      const clientsIdx = idxOf('clients', 'client(s)', 'client');
+      const taillesIdx = idxOf('tailles', 'taille');
+      const couleursIdx = idxOf('couleurs', 'couleur');
+      const formIdx = idxOf('formulaire');
+      const checklistIdx = idxOf('checklist');
 
       if (nomIdx === -1) {
         toast.error('Colonne "Nom" introuvable dans le CSV');
         return;
       }
 
+      // Tables de correspondance nom → documentId pour résoudre les relations,
+      // et liste des produits existants pour décider create vs update (anti-doublon).
+      const norm = (s?: string) => (s || '').trim().toLowerCase();
+      const splitNames = (cell?: string) =>
+        (cell || '').split(',').map(n => n.trim()).filter(Boolean);
+      const buildMap = (nodes: { documentId: string; name: string }[]) => {
+        const m = new Map<string, string>();
+        nodes.forEach(n => { if (n?.name) m.set(norm(n.name), n.documentId); });
+        return m;
+      };
+
+      let existingByName = new Map<string, string>();
+      let pcMap = new Map<string, string>();
+      let ccMap = new Map<string, string>();
+      let custMap = new Map<string, string>();
+      let szMap = new Map<string, string>();
+      let clrMap = new Map<string, string>();
+      let formMap = new Map<string, string>();
+      let chkMap = new Map<string, string>();
+
+      try {
+        const [existing, pc, cc, sz, clr, cust, frm] = await Promise.all([
+          unwrapData(apiGetAllProductsForExport()),
+          unwrapData(apiGetProductCategories({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+          unwrapData(apiGetCustomerCategories({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+          unwrapData(apiGetSizes({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+          unwrapData(apiGetColors({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+          unwrapData(apiGetCustomers({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+          unwrapData(apiGetForms({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+        ]);
+        existingByName = buildMap((existing as any).products || []);
+        pcMap = buildMap((pc as any).productCategories_connection?.nodes || []);
+        ccMap = buildMap((cc as any).customerCategories_connection?.nodes || []);
+        szMap = buildMap((sz as any).sizes_connection?.nodes || []);
+        clrMap = buildMap((clr as any).colors_connection?.nodes || []);
+        custMap = buildMap((cust as any).customers_connection?.nodes || []);
+        formMap = buildMap((frm as any).forms_connection?.nodes || []);
+      } catch {
+        toast.error('Impossible de charger les références (catégories, tailles…). Import annulé.');
+        return;
+      }
+
+      // Checklist : champ Strapi optionnel/gaté — on charge sans bloquer l'import s'il est absent
+      try {
+        const chk = await unwrapData(apiGetChecklists({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }));
+        chkMap = buildMap((chk as any).checklists_connection?.nodes || []);
+      } catch {
+        chkMap = new Map();
+      }
+
       let created = 0;
+      let updated = 0;
       let errors = 0;
 
       for (let i = 1; i < lines.length; i++) {
@@ -186,37 +255,85 @@ const ProductsList = () => {
         const name = cols[nomIdx]?.trim();
         if (!name) continue;
 
-        const priceTiers: { minQuantity: number; price: number }[] = [];
+        const productData: Record<string, unknown> = { name };
+
+        // --- Champs scalaires (omis si la colonne est absente pour ne pas écraser en update) ---
+        if (descIdx !== -1) {
+          const v = (cols[descIdx] || '').trim();
+          if (v) productData.description = v;
+        }
+        if (prixIdx !== -1 && cols[prixIdx]?.trim()) {
+          productData.price = parseFloat(cols[prixIdx]);
+        }
         if (paliersIdx !== -1 && cols[paliersIdx]) {
-          const parts = cols[paliersIdx].split('|').map(s => s.trim());
-          for (const part of parts) {
+          const priceTiers: { minQuantity: number; price: number }[] = [];
+          for (const part of cols[paliersIdx].split('|').map(s => s.trim())) {
             const match = part.match(/^(\d+)\+:\s*([\d.]+)/);
-            if (match) {
-              priceTiers.push({ minQuantity: parseInt(match[1]), price: parseFloat(match[2]) });
-            }
+            if (match) priceTiers.push({ minQuantity: parseInt(match[1]), price: parseFloat(match[2]) });
           }
+          if (priceTiers.length) productData.priceTiers = priceTiers;
+        }
+        if (actifIdx !== -1) productData.active = norm(cols[actifIdx]) === 'oui';
+        if (catalogueIdx !== -1) productData.inCatalogue = norm(cols[catalogueIdx]) === 'oui';
+        if (refIdx !== -1) {
+          const v = (cols[refIdx] || '').trim();
+          if (v) productData.productRef = v;
+        }
+        if (batIdx !== -1) productData.requiresBat = norm(cols[batIdx]) === 'oui';
+
+        // --- Relations (résolues par nom ; omises si vides pour ne pas écraser en update) ---
+        if (catProdIdx !== -1) {
+          const id = pcMap.get(norm(cols[catProdIdx]));
+          if (id) productData.productCategory = id;
+        }
+        if (catClientIdx !== -1) {
+          const ids = splitNames(cols[catClientIdx]).map(n => ccMap.get(norm(n))).filter(Boolean);
+          if (ids.length) productData.customerCategories = ids;
+        }
+        if (clientsIdx !== -1) {
+          const ids = splitNames(cols[clientsIdx]).map(n => custMap.get(norm(n))).filter(Boolean);
+          if (ids.length) productData.customers = ids;
+        }
+        if (taillesIdx !== -1) {
+          const ids = splitNames(cols[taillesIdx]).map(n => szMap.get(norm(n))).filter(Boolean);
+          if (ids.length) productData.sizes = ids;
+        }
+        if (couleursIdx !== -1) {
+          const ids = splitNames(cols[couleursIdx]).map(n => clrMap.get(norm(n))).filter(Boolean);
+          if (ids.length) productData.colors = ids;
+        }
+        if (formIdx !== -1) {
+          const id = formMap.get(norm(cols[formIdx]));
+          if (id) productData.form = id;
+        }
+        if (checklistIdx !== -1) {
+          const id = chkMap.get(norm(cols[checklistIdx]));
+          if (id) productData.checklist = id;
         }
 
-        const productData: Record<string, unknown> = {
-          name,
-          description: descIdx !== -1 ? (cols[descIdx] || '') : '',
-          price: prixIdx !== -1 && cols[prixIdx] ? parseFloat(cols[prixIdx]) : undefined,
-          priceTiers,
-          active: actifIdx !== -1 ? cols[actifIdx]?.trim().toLowerCase() === 'oui' : true,
-          inCatalogue: catalogueIdx !== -1 ? cols[catalogueIdx]?.trim().toLowerCase() === 'oui' : false,
-          productRef: refIdx !== -1 ? (cols[refIdx] || '') : '',
-          requiresBat: batIdx !== -1 ? cols[batIdx]?.trim().toLowerCase() === 'oui' : false,
-        };
-
+        const existingId = existingByName.get(norm(name));
         try {
-          await unwrapData(apiCreateProduct(productData as any));
-          created++;
+          if (existingId) {
+            // Produit du même nom déjà présent → mise à jour (évite le doublon)
+            await unwrapData(apiUpdateProduct({ documentId: existingId, ...productData } as any));
+            updated++;
+          } else {
+            const res: any = await unwrapData(apiCreateProduct(productData as any));
+            // Mémorise l'id pour éviter un doublon si le nom réapparaît plus bas dans le fichier
+            const newId = res?.createProduct?.documentId;
+            if (newId) existingByName.set(norm(name), newId);
+            created++;
+          }
         } catch {
           errors++;
         }
       }
 
-      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''}${errors > 0 ? ` (${errors} erreur${errors > 1 ? 's' : ''})` : ''}`);
+      const summary: string[] = [];
+      if (created) summary.push(`${created} créé${created > 1 ? 's' : ''}`);
+      if (updated) summary.push(`${updated} mis à jour`);
+      if (errors) summary.push(`${errors} erreur${errors > 1 ? 's' : ''}`);
+      toast.success(`Import terminé — ${summary.join(', ') || 'aucune ligne'}`);
       dispatch(getProducts({ pagination: { page: currentPage, pageSize }, searchTerm }));
     } catch {
       toast.error("Erreur lors de l'import");
@@ -243,7 +360,8 @@ const ProductsList = () => {
       const headers = [
         'Nom', 'Description', 'Prix', 'Paliers de prix',
         'Actif', 'En catalogue', 'Référence', 'Requiert BAT',
-        'Catégorie', 'Tailles', 'Couleurs', 'Catégories clients', 'Images',
+        'Catégorie produit', 'Catégories clients', 'Clients',
+        'Tailles', 'Couleurs', 'Formulaire', 'Checklist', 'Images',
       ];
 
       const rows = allProducts.map((p) => [
@@ -260,9 +378,12 @@ const ProductsList = () => {
         escapeCsv(p.productRef || ''),
         p.requiresBat ? 'Oui' : 'Non',
         escapeCsv(p.productCategory?.name || ''),
+        escapeCsv((p.customerCategories || []).map((cc) => cc.name).join(', ')),
+        escapeCsv((p.customers || []).map((c) => c.name).join(', ')),
         escapeCsv((p.sizes || []).map((s) => s.name).join(', ')),
         escapeCsv((p.colors || []).map((c) => c.name).join(', ')),
-        escapeCsv((p.customerCategories || []).map((cc) => cc.name).join(', ')),
+        escapeCsv(p.form?.name || ''),
+        escapeCsv(p.checklist?.name || ''),
         escapeCsv((p.images || []).map((img) => img.url).join(', ')),
       ]);
 

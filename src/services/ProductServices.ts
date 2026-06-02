@@ -290,6 +290,7 @@ export async function apiGetAllProductsForExport(): Promise<AxiosResponse<ApiRes
             inCatalogue
             # productRef                           — activer après déploiement Strapi
             # requiresBat                          — activer après déploiement Strapi
+            # checklist { name }                   — activer après config Strapi
             sizes {
                 name
                 value
@@ -302,6 +303,12 @@ export async function apiGetAllProductsForExport(): Promise<AxiosResponse<ApiRes
                 name
             }
             customerCategories {
+                name
+            }
+            customers {
+                name
+            }
+            form {
                 name
             }
             images {
