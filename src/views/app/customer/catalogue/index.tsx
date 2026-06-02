@@ -137,7 +137,7 @@ const Categories = () => {
       {loading ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))',
           gap: '20px',
         }}>
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
