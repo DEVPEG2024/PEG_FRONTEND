@@ -10,6 +10,7 @@ import { isEmpty } from 'lodash';
 import CustomerProductCard from './CustomerProductCard';
 import { User } from '@/@types/user';
 import { HiSearch } from 'react-icons/hi';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('customerProducts', reducer);
 
@@ -64,6 +65,9 @@ const CustomerProducts = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Bannière */}
+      <CatalogueBanner bannerName="Bannière offres" />
+
       {/* Header */}
       <div style={{
         display: 'flex',

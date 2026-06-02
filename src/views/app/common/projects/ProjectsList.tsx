@@ -30,6 +30,7 @@ import {
   GetProjectsResponse,
 } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('projects', reducer);
 
@@ -392,6 +393,11 @@ const ProjectsList = () => {
 
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Bannière */}
+      <div style={{ paddingTop: '24px' }}>
+        <CatalogueBanner bannerName="Bannière projets" />
+      </div>
+
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',

@@ -11,10 +11,8 @@ import { apiGetBanners, apiCreateBanner, apiUpdateBanner } from '@/services/Bann
 import { apiUploadFile } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
-// Nom sentinelle de la bannière dédiée à la page catalogue (partagée par tous)
-const BANNER_NAME = 'Bannière catalogue';
-
 const CatalogueBanner = ({
+  bannerName = 'Bannière catalogue',
   title,
   subtitle,
   ctaLabel,
@@ -23,6 +21,7 @@ const CatalogueBanner = ({
   minHeight = '130px',
   maxHeight = '260px',
 }: {
+  bannerName?: string;
   title?: string;
   subtitle?: string;
   ctaLabel?: string;
@@ -42,10 +41,10 @@ const CatalogueBanner = ({
   const loadBanner = async () => {
     try {
       const { banners_connection } = await unwrapData(
-        apiGetBanners({ pagination: { page: 1, pageSize: 1000 }, searchTerm: BANNER_NAME })
+        apiGetBanners({ pagination: { page: 1, pageSize: 1000 }, searchTerm: bannerName })
       );
       const banner = (banners_connection?.nodes || []).find(
-        (b: Banner) => b.name?.trim().toLowerCase() === BANNER_NAME.toLowerCase()
+        (b: Banner) => b.name?.trim().toLowerCase() === bannerName.toLowerCase()
       );
       if (banner) {
         setBannerDocId(banner.documentId);
@@ -58,7 +57,8 @@ const CatalogueBanner = ({
 
   useEffect(() => {
     loadBanner();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bannerName]);
 
   const onPick = () => fileRef.current?.click();
 
@@ -80,9 +80,9 @@ const CatalogueBanner = ({
     try {
       const uploaded = await apiUploadFile(file);
       if (bannerDocId) {
-        await unwrapData(apiUpdateBanner({ documentId: bannerDocId, image: uploaded.id as any, name: BANNER_NAME, active: true } as any));
+        await unwrapData(apiUpdateBanner({ documentId: bannerDocId, image: uploaded.id as any, name: bannerName, active: true } as any));
       } else {
-        await unwrapData(apiCreateBanner({ name: BANNER_NAME, image: uploaded.id as any, active: true } as any));
+        await unwrapData(apiCreateBanner({ name: bannerName, image: uploaded.id as any, active: true } as any));
       }
       await loadBanner();
       toast.success('Bannière mise à jour');

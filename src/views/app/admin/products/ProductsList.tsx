@@ -33,6 +33,7 @@ import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
 import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('products', reducer);
 
@@ -411,6 +412,11 @@ const ProductsList = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
+
+      {/* Bannière */}
+      <div style={{ paddingTop: '24px' }}>
+        <CatalogueBanner bannerName="Bannière offres" />
+      </div>
 
       {/* Header */}
       <div style={{
