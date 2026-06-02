@@ -331,6 +331,32 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
+
+### Modèle de données
+- Une **taille** et une **couleur** sont rattachées à **plusieurs catégories produit** via la relation `manyToMany` **`productCategories`** (Strapi).
+- L'ancien champ `productCategory` (relation `oneToOne` historique) est **conservé** pour compatibilité mais n'est plus utilisé en écriture. Une migration bootstrap (`src/index.ts` du Strapi) recopie `productCategory` → `productCategories` de façon idempotente et non destructive.
+- En GraphQL Strapi v5, la relation se passe en **tableau de `documentId`** dans l'input (comme `customerCategories`).
+
+### ⚠️ Ordre de déploiement obligatoire
+1. **Backend d'abord** : déployer `peg_strapi` (intégration → vérifier le build) → le bootstrap crée la table de jointure et migre les données existantes.
+2. **Frontend ensuite** : les queries (`SizeServices.ts`, `ColorServices.ts`) lisent et filtrent désormais sur `productCategories`. Si on déploie le front avant le back, le filtre catégorie renvoie vide.
+
+### Comportement UI (admin `Tailles` / `Couleurs`)
+- **Une seule entité par nom** : si on crée « M » (ou « Rouge ») et qu'elle existe déjà, on **ajoute les catégories sélectionnées** à l'entité existante au lieu de dupliquer (fusion par nom, insensible à la casse).
+- **Création rapide** : sélecteur de catégories **multi** + saisie (tailles séparées par virgules / couleur unique avec hex).
+- **Édition** : multi-select de catégories → c'est aussi le moyen de « dupliquer vers » d'autres catégories.
+- **Puce taille/couleur** : le crayon ouvre l'édition ; la croix **retire de la catégorie courante uniquement** (sans supprimer ailleurs). La suppression définitive est dans le modal d'édition.
+- Badge `⛓ N` sur une puce = entité partagée par N catégories.
+- Tailles triées en **ordre naturel** (XS<S<M<L<XL<XXL<3XL, puis numérique). Couleurs : hex **validé + normalisé** (`#RGB` → `#RRGGBB`).
+
+### Fichiers clés
+- Backend : `peg_strapi/src/api/{size,color}/content-types/.../schema.json` + migration dans `peg_strapi/src/index.ts`
+- Front : `src/@types/product.ts`, `src/services/{SizeServices,ColorServices}.ts`, `src/views/app/admin/products/sizes/SizesList.tsx`, `.../colors/ColorsList.tsx`
+- Code mort supprimé : anciens `modals/Modal{Size,Color}*` et `{Size,Color}Columns.tsx` (la liste utilise un dialog inline).
+
+---
+
 ## 🔒 Terminologie & composants protégés (ajout 18/04/2026)
 
 ### Règle absolue

@@ -45,7 +45,10 @@ export type Size = {
   name: string;
   value: string;
   description: string;
-  productCategory: ProductCategory;
+  /** @deprecated catégorie unique historique — conservée pour compatibilité. Utiliser `productCategories`. */
+  productCategory?: ProductCategory | null;
+  /** Catégories produit auxquelles cette taille est rattachée (relation multiple). */
+  productCategories?: ProductCategory[];
 };
 
 export type Color = {
@@ -53,7 +56,10 @@ export type Color = {
   name: string;
   value: string;
   description: string;
-  productCategory: ProductCategory;
+  /** @deprecated catégorie unique historique — conservée pour compatibilité. Utiliser `productCategories`. */
+  productCategory?: ProductCategory | null;
+  /** Catégories produit auxquelles cette couleur est rattachée (relation multiple). */
+  productCategories?: ProductCategory[];
 };
 
 export type SizeAndColorSelection = {

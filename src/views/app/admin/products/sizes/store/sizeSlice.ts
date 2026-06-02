@@ -11,6 +11,7 @@ import {
   DeleteSizeResponse,
   GetSizesRequest,
   GetSizesResponse,
+  UpdateSizeRequest,
 } from '@/services/SizeServices';
 
 export const SLICE_NAME = 'sizes';
@@ -55,7 +56,7 @@ export const deleteSize = createAsyncThunk(
 
 export const updateSize = createAsyncThunk(
   SLICE_NAME + '/updateSize',
-  async (data: Partial<Size>): Promise<Size> => {
+  async (data: UpdateSizeRequest): Promise<Size> => {
     const { updateSize }: { updateSize: Size } = await unwrapData(
       apiUpdateSize(data)
     );

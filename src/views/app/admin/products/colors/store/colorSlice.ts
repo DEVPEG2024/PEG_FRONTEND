@@ -11,6 +11,7 @@ import {
   DeleteColorResponse,
   GetColorsRequest,
   GetColorsResponse,
+  UpdateColorRequest,
 } from '@/services/ColorServices';
 
 export const SLICE_NAME = 'colors';
@@ -54,7 +55,7 @@ export const deleteColor = createAsyncThunk(
 
 export const updateColor = createAsyncThunk(
   SLICE_NAME + '/updateColor',
-  async (data: Partial<Color>): Promise<Color> => {
+  async (data: UpdateColorRequest): Promise<Color> => {
     const { updateColor }: { updateColor: Color } = await unwrapData(
       apiUpdateColor(data)
     );
