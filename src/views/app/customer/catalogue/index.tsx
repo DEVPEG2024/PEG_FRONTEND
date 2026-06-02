@@ -79,63 +79,7 @@ const Categories = () => {
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Bannière */}
-      <CatalogueBanner title="Catalogue" />
-
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-        marginBottom: '32px',
-        flexWrap: 'wrap',
-      }}>
-        <div>
-          <h3 style={{ margin: 0, color: '#fff', fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Catalogue
-          </h3>
-          {!loading && activeCategories.length > 0 && (
-            <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.45)', fontSize: '14px', fontWeight: 500 }}>
-              {activeCategories.length} catégorie{activeCategories.length > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', minWidth: '260px', maxWidth: '400px', flex: 1 }}>
-          <HiSearch
-            size={18}
-            style={{
-              position: 'absolute',
-              left: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'rgba(255,255,255,0.55)',
-              pointerEvents: 'none',
-            }}
-          />
-          <input
-            value={searchTerm}
-            onChange={handleSearch}
-            placeholder="Rechercher une catégorie…"
-            style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '999px',
-              padding: '12px 18px 12px 44px',
-              color: '#fff',
-              fontSize: '14px',
-              fontFamily: 'Inter, sans-serif',
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.15s',
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-          />
-        </div>
-      </div>
+      <CatalogueBanner />
 
       {/* Grid */}
       {loading ? (
