@@ -129,8 +129,9 @@ const SizesList = () => {
   // Vue : tableau croisé (par défaut) ou cartes par catégorie
   const [view, setView] = useState<ViewMode>('matrix');
 
-  // Cellules en cours de sauvegarde (matrice) — clés `${sizeId}:${catId}`
-  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
+  // Brouillon matrice — modifications locales non enregistrées. Clé `${nameLower}:${catId}` → coché voulu.
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [matrixSaving, setMatrixSaving] = useState(false);
 
   // Quick-add state
   const [quickInput, setQuickInput] = useState('');
@@ -241,48 +242,79 @@ const SizesList = () => {
     sizes.map((s) => s.name.trim().toLowerCase())
   );
 
-  // Toggle d'une cellule de la matrice (par NOM) — rattache/détache et sauvegarde aussitôt.
-  // Ajout → sur la 1ʳᵉ entité du nom. Retrait → sur toutes les entités du nom qui ont la catégorie.
-  const toggleNameRow = async (row: MatrixRow, catId: string) => {
-    const has = row.catIds.has(catId);
+  // État coché affiché d'une cellule (brouillon local prioritaire sur la donnée serveur)
+  const cellChecked = (row: MatrixRow, catId: string): boolean => {
     const key = `${row.name.toLowerCase()}:${catId}`;
-    setSavingCells((prev) => new Set(prev).add(key));
+    return key in pending ? pending[key] : row.catIds.has(catId);
+  };
+
+  // Clic = bascule LOCALE instantanée (aucune requête, aucun recalcul des lignes)
+  const toggleCellLocal = (row: MatrixRow, catId: string) => {
+    const key = `${row.name.toLowerCase()}:${catId}`;
+    const original = row.catIds.has(catId);
+    const next = !cellChecked(row, catId);
+    setPending((prev) => {
+      const n = { ...prev };
+      if (next === original) delete n[key];
+      else n[key] = next;
+      return n;
+    });
+  };
+
+  const pendingCount = Object.keys(pending).length;
+  const handleDiscardMatrix = () => setPending({});
+
+  // Enregistre tout le brouillon d'un coup
+  const handleSaveMatrix = async () => {
+    const affected = new Set(Object.keys(pending).map((k) => k.split(':')[0]));
+    if (affected.size === 0) return;
+    setMatrixSaving(true);
     try {
-      const apply = async (e: Size, next: string[]) => {
-        const r = await dispatch(
-          updateSize({
-            documentId: e.documentId,
-            name: e.name,
-            value: e.value || e.name,
-            description: e.description || '',
-            productCategories: next,
-          })
+      let errors = 0;
+      for (const row of matrixRows) {
+        const nameKey = row.name.toLowerCase();
+        if (!affected.has(nameKey)) continue;
+        const desired = new Set<string>();
+        productCategories.forEach((cat) => {
+          if (cellChecked(row, cat.value)) desired.add(cat.value);
+        });
+        const toRemove = [...row.catIds].filter((id) => !desired.has(id));
+        const toAdd = [...desired].filter((id) => !row.catIds.has(id));
+        const entityCats = row.entities.map((e) => ({
+          e,
+          before: new Set(sizeCategories(e).map((c) => c.documentId)),
+          cats: new Set(sizeCategories(e).map((c) => c.documentId)),
+        }));
+        toRemove.forEach((id) =>
+          entityCats.forEach((ec) => ec.cats.delete(id))
         );
-        if (r.meta.requestStatus !== 'fulfilled')
-          toast.error('Échec de la sauvegarde');
-      };
-      if (has) {
-        const targets = row.entities.filter((e) =>
-          sizeCategories(e).some((c) => c.documentId === catId)
-        );
-        for (const e of targets) {
-          await apply(
-            e,
-            sizeCategories(e)
-              .map((c) => c.documentId)
-              .filter((id) => id !== catId)
+        if (toAdd.length && entityCats[0])
+          toAdd.forEach((id) => entityCats[0].cats.add(id));
+        for (const ec of entityCats) {
+          const changed =
+            ec.before.size !== ec.cats.size ||
+            [...ec.cats].some((id) => !ec.before.has(id));
+          if (!changed) continue;
+          const r = await dispatch(
+            updateSize({
+              documentId: ec.e.documentId,
+              name: ec.e.name,
+              value: ec.e.value || ec.e.name,
+              description: ec.e.description || '',
+              productCategories: [...ec.cats],
+            })
           );
+          if (r.meta.requestStatus !== 'fulfilled') errors++;
         }
-      } else {
-        const e = row.entities[0];
-        await apply(e, [...sizeCategories(e).map((c) => c.documentId), catId]);
       }
+      if (errors)
+        toast.error(
+          `${errors} erreur${errors > 1 ? 's' : ''} lors de l'enregistrement`
+        );
+      else toast.success('Modifications enregistrées');
+      setPending({});
     } finally {
-      setSavingCells((prev) => {
-        const n = new Set(prev);
-        n.delete(key);
-        return n;
-      });
+      setMatrixSaving(false);
     }
   };
 
@@ -980,9 +1012,9 @@ const SizesList = () => {
                           )}
                         </td>
                         {productCategories.map((cat) => {
-                          const checked = ids.has(cat.value);
-                          const key = `${row.name.toLowerCase()}:${cat.value}`;
-                          const busy = savingCells.has(key);
+                          const checked = cellChecked(row, cat.value);
+                          const dirty =
+                            `${row.name.toLowerCase()}:${cat.value}` in pending;
                           return (
                             <td
                               key={cat.value}
@@ -994,8 +1026,7 @@ const SizesList = () => {
                               }}
                             >
                               <button
-                                onClick={() => toggleNameRow(row, cat.value)}
-                                disabled={busy}
+                                onClick={() => toggleCellLocal(row, cat.value)}
                                 title={
                                   checked
                                     ? `Retirer de ${cat.label}`
@@ -1005,25 +1036,27 @@ const SizesList = () => {
                                   width: '24px',
                                   height: '24px',
                                   borderRadius: '7px',
-                                  cursor: busy ? 'wait' : 'pointer',
+                                  cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   background: checked
                                     ? 'linear-gradient(135deg, #2f6fed, #1f4bb6)'
                                     : 'rgba(255,255,255,0.05)',
-                                  border: `1.5px solid ${checked ? 'rgba(47,111,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                                  border: `1.5px solid ${dirty ? '#fbbf24' : checked ? 'rgba(47,111,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                                  boxShadow: dirty
+                                    ? '0 0 0 2px rgba(251,191,36,0.25)'
+                                    : 'none',
                                   color: '#fff',
-                                  opacity: busy ? 0.5 : 1,
                                   transition: 'all 0.12s',
                                 }}
                                 onMouseEnter={(e) => {
-                                  if (!busy && !checked)
+                                  if (!checked && !dirty)
                                     e.currentTarget.style.borderColor =
                                       'rgba(47,111,237,0.6)';
                                 }}
                                 onMouseLeave={(e) => {
-                                  if (!busy && !checked)
+                                  if (!checked && !dirty)
                                     e.currentTarget.style.borderColor =
                                       'rgba(255,255,255,0.15)';
                                 }}
@@ -1317,6 +1350,73 @@ const SizesList = () => {
             ))}
           </div>
         ))}
+
+      {/* ── Barre flottante d'enregistrement (brouillon matrice) ── */}
+      {view === 'matrix' && pendingCount > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9998,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
+            border: '1.5px solid rgba(47,111,237,0.4)',
+            borderRadius: '14px',
+            padding: '12px 16px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+            {pendingCount} modification{pendingCount > 1 ? 's' : ''} non
+            enregistrée{pendingCount > 1 ? 's' : ''}
+          </span>
+          <button
+            onClick={handleDiscardMatrix}
+            disabled={matrixSaving}
+            style={{
+              padding: '8px 14px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '9px',
+              color: 'rgba(255,255,255,0.6)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSaveMatrix}
+            disabled={matrixSaving}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 18px',
+              background: matrixSaving
+                ? 'rgba(47,111,237,0.5)'
+                : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+              border: 'none',
+              borderRadius: '9px',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: matrixSaving ? 'not-allowed' : 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+            }}
+          >
+            <HiCheck size={15} />
+            {matrixSaving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+      )}
 
       {/* ── Modal modification ── */}
       <style>{`
