@@ -7,6 +7,7 @@ import reducer, {
   useAppSelector,
 } from './store';
 import { HiSearch } from 'react-icons/hi';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('catalogue', reducer);
 
@@ -77,6 +78,9 @@ const Categories = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Bannière */}
+      <CatalogueBanner title="Catalogue" />
+
       {/* Header */}
       <div style={{
         display: 'flex',

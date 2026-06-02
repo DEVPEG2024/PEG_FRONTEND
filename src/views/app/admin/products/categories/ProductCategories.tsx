@@ -17,6 +17,7 @@ import reducer, {
 import { injectReducer } from '@/store';
 import { ProductCategory } from '@/@types/product';
 import { useTranslation } from 'react-i18next';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('productCategories', reducer);
 
@@ -155,6 +156,11 @@ const Categories = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
+
+      {/* Bannière */}
+      <div style={{ paddingTop: '24px' }}>
+        <CatalogueBanner title="Catégories" />
+      </div>
 
       {/* Header */}
       <div style={{
