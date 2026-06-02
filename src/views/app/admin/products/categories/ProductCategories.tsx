@@ -154,7 +154,7 @@ const Categories = () => {
   };
 
   return (
-    <Container style={{ fontFamily: 'Inter, sans-serif' }}>
+    <Container style={{ fontFamily: 'Inter, sans-serif', background: '#f7f9fc', borderRadius: '24px', padding: '8px 24px 24px', minHeight: 'calc(100vh - 120px)' }}>
 
       {/* Header */}
       <div style={{
@@ -162,12 +162,12 @@ const Categories = () => {
         gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <p style={{ color: '#2563eb', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Produits
           </p>
-          <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+          <h2 style={{ color: '#0b1f3a', fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
             Catégories{' '}
-            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
+            <span style={{ color: '#94a3b8', fontSize: '18px', fontWeight: 500 }}>({total})</span>
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -222,9 +222,9 @@ const Categories = () => {
 
       {/* Recherche */}
       <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
-        <HiOutlineSearch size={15} style={{
-          position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-          color: 'rgba(255,255,255,0.55)', pointerEvents: 'none',
+        <HiOutlineSearch size={16} style={{
+          position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
+          color: '#2563eb', pointerEvents: 'none',
         }} />
         <input
           type="text"
@@ -233,16 +233,17 @@ const Categories = () => {
           onChange={(e) => handleSearch(e.target.value)}
           style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            borderRadius: '10px',
-            padding: '10px 14px 10px 36px',
-            color: '#fff', fontSize: '13px',
+            background: '#ffffff',
+            border: '1px solid #e6e9f0',
+            borderRadius: '999px',
+            padding: '12px 16px 12px 44px',
+            color: '#0b1f3a', fontSize: '14px',
             fontFamily: 'Inter, sans-serif', outline: 'none',
             boxSizing: 'border-box',
+            boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
           }}
-          onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-          onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
+          onFocus={(e) => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)'; }}
+          onBlur={(e) => { e.target.style.borderColor = '#e6e9f0'; e.target.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }}
         />
       </div>
 
@@ -266,7 +267,7 @@ const Categories = () => {
                 {/* Drag handle indicator */}
                 <div style={{
                   position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)',
-                  zIndex: 10, color: 'rgba(255,255,255,0.25)', pointerEvents: 'none',
+                  zIndex: 10, color: '#c0c8d6', pointerEvents: 'none',
                   display: 'flex', alignItems: 'center',
                 }}>
                   <MdDragIndicator size={16} />
@@ -283,12 +284,12 @@ const Categories = () => {
           </div>
         ) : (
           <div style={{
-            background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-            borderRadius: '16px', padding: '64px 24px', textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: '#ffffff',
+            borderRadius: '20px', padding: '64px 24px', textAlign: 'center',
+            border: '1px solid #eaedf3',
           }}>
-            <HiPhotograph size={52} style={{ color: 'rgba(255,255,255,0.1)', margin: '0 auto 14px', display: 'block' }} />
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', fontWeight: 600 }}>Aucune catégorie</p>
+            <HiPhotograph size={52} style={{ color: '#cbd5e1', margin: '0 auto 14px', display: 'block' }} />
+            <p style={{ color: '#475569', fontSize: '15px', fontWeight: 600 }}>Aucune catégorie</p>
           </div>
         )}
         <div style={{

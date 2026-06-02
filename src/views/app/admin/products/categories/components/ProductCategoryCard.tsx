@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Tooltip } from '@/components/ui';
 import { ProductCategory } from '@/@types/product';
-import { HiPencil, HiTrash, HiPhotograph, HiChevronDown, HiPlus } from 'react-icons/hi';
+import { HiPencil, HiTrash, HiChevronDown, HiPlus } from 'react-icons/hi';
 import { useState } from 'react';
+import { pickCategoryIcon } from '@/utils/categoryIcon';
 
 const ProductCategoryCard = ({
   productCategory,
@@ -21,90 +22,85 @@ const ProductCategoryCard = ({
   const [expanded, setExpanded] = useState(false);
   const subcategories = productCategory.subcategories ?? [];
   const hasSubcategories = subcategories.length > 0;
+  const active = productCategory.active !== false;
+  const Icon = pickCategoryIcon(productCategory.name);
 
   return (
     <div
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 32px rgba(0,0,0,0.45)';
+        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 16px 32px rgba(37,99,235,0.14)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(37,99,235,0.45)';
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = '#eaedf3';
       }}
       style={{
-        background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-        borderRadius: '16px',
-        border: '1.5px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        background: '#ffffff',
+        borderRadius: '20px',
+        border: '1px solid #eaedf3',
+        boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
         overflow: 'hidden',
         fontFamily: 'Inter, sans-serif',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* Image + status */}
+      {/* Icône + statut */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '24px 20px 16px',
-          background: 'rgba(255,255,255,0.02)',
+          padding: '32px 20px 12px',
           cursor: 'pointer',
           position: 'relative',
         }}
       >
-        {productCategory.image?.url ? (
-          <img
-            src={productCategory.image.url}
-            alt={productCategory.name}
-            style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }}
-          />
-        ) : (
-          <div style={{
-            width: '80px', height: '80px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)', border: '2px solid rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <HiPhotograph size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />
-          </div>
-        )}
+        <div style={{
+          width: '88px', height: '88px', borderRadius: '20px',
+          background: '#eef4ff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={48} color="#2563eb" strokeWidth={1.6} />
+        </div>
 
         <div style={{
-          position: 'absolute', top: '8px', right: '8px',
-          background: productCategory.active !== false ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)',
-          border: `1px solid ${productCategory.active !== false ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.3)'}`,
+          position: 'absolute', top: '12px', right: '12px',
+          background: active ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.10)',
+          border: `1px solid ${active ? 'rgba(34,197,94,0.30)' : 'rgba(239,68,68,0.25)'}`,
           borderRadius: '100px', padding: '2px 8px',
-          color: productCategory.active !== false ? '#4ade80' : '#fca5a5',
+          color: active ? '#16a34a' : '#dc2626',
           fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
           textTransform: 'uppercase',
         }}>
-          {productCategory.active !== false ? 'Actif' : 'Inactif'}
+          {active ? 'Actif' : 'Inactif'}
         </div>
       </div>
 
-      {/* Name + badges */}
+      {/* Nom + badges */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
         style={{ padding: '0 16px 14px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
       >
-        <p style={{ color: '#fff', fontWeight: 700, fontSize: '14px', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+        <p style={{ color: '#0b1f3a', fontWeight: 700, fontSize: '16px', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
           {productCategory.name}
         </p>
         <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <span style={{
-            background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+            background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.20)',
             borderRadius: '100px', padding: '2px 8px',
-            color: '#6b9eff', fontSize: '10px', fontWeight: 600,
+            color: '#2563eb', fontSize: '10px', fontWeight: 600,
           }}>
             {productCategory.products.length} produit{productCategory.products.length !== 1 ? 's' : ''}
           </span>
           {hasSubcategories && (
             <span style={{
-              background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+              background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)',
               borderRadius: '100px', padding: '2px 8px',
-              color: '#a78bfa', fontSize: '10px', fontWeight: 600,
+              color: '#7c3aed', fontSize: '10px', fontWeight: 600,
             }}>
               {subcategories.length} sous-cat.
             </span>
@@ -112,17 +108,17 @@ const ProductCategoryCard = ({
         </div>
       </div>
 
-      {/* Subcategories expand */}
+      {/* Sous-catégories */}
       {hasSubcategories && (
         <>
           <button
             onClick={() => setExpanded(!expanded)}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              width: '100%', padding: '5px',
-              background: 'rgba(139,92,246,0.06)',
-              border: 'none', borderTop: '1px solid rgba(255,255,255,0.04)',
-              color: '#a78bfa', fontSize: '10px', fontWeight: 600,
+              width: '100%', padding: '6px',
+              background: '#faf5ff',
+              border: 'none', borderTop: '1px solid #eef0f4',
+              color: '#7c3aed', fontSize: '10px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -135,81 +131,79 @@ const ProductCategoryCard = ({
           {expanded && (
             <div style={{
               padding: '6px 10px',
-              background: 'rgba(0,0,0,0.15)',
-              display: 'flex', flexDirection: 'column', gap: '3px',
+              background: '#f8fafc',
+              display: 'flex', flexDirection: 'column', gap: '4px',
             }}>
-              {subcategories.map((sub) => (
-                <div key={sub.documentId} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '5px 8px', borderRadius: '6px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-                    {sub.image?.url ? (
-                      <img src={sub.image.url} alt={sub.name} style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <HiPhotograph size={8} style={{ color: 'rgba(255,255,255,0.2)' }} />
+              {subcategories.map((sub) => {
+                const SubIcon = pickCategoryIcon(sub.name);
+                return (
+                  <div key={sub.documentId} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '5px 8px', borderRadius: '8px',
+                    background: '#ffffff',
+                    border: '1px solid #eef0f4',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: '#eef4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <SubIcon size={12} color="#2563eb" strokeWidth={1.8} />
                       </div>
-                    )}
-                    <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '10px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
+                      <span style={{ color: '#475569', fontSize: '11px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditProductCategory(sub); }}
+                        style={{
+                          background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.20)',
+                          borderRadius: '4px', padding: '2px 4px', color: '#2563eb',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <HiPencil size={9} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteProductCategory(sub); }}
+                        style={{
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+                          borderRadius: '4px', padding: '2px 4px', color: '#dc2626',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <HiTrash size={9} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleEditProductCategory(sub); }}
-                      style={{
-                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.2)',
-                        borderRadius: '4px', padding: '2px 4px', color: '#6b9eff',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      }}
-                    >
-                      <HiPencil size={9} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteProductCategory(sub); }}
-                      style={{
-                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-                        borderRadius: '4px', padding: '2px 4px', color: '#f87171',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      }}
-                    >
-                      <HiTrash size={9} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
       )}
 
-      {/* Actions — 2 rows for clarity */}
+      {/* Actions */}
       <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        padding: '8px 12px',
+        borderTop: '1px solid #eef0f4',
+        padding: '10px 12px',
         display: 'flex', flexDirection: 'column', gap: '6px',
       }}>
-        {/* Row 1: toggle + add subcategory */}
+        {/* Ligne 1 : activation + ajout sous-catégorie */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Tooltip title={productCategory.active !== false ? 'Désactiver' : 'Activer'}>
+          <Tooltip title={active ? 'Désactiver' : 'Activer'}>
             <div
               style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => handleActivateProductCategory(productCategory, productCategory.active === false)}
+              onClick={() => handleActivateProductCategory(productCategory, !active)}
             >
               <div style={{
                 width: '32px', height: '18px', borderRadius: '100px',
-                background: productCategory.active !== false ? '#2f6fed' : 'rgba(255,255,255,0.12)',
+                background: active ? '#2563eb' : '#cbd5e1',
                 position: 'relative', transition: 'background 0.2s',
-                boxShadow: productCategory.active !== false ? '0 0 8px rgba(47,111,237,0.45)' : 'none',
                 flexShrink: 0,
               }}>
                 <div style={{
                   position: 'absolute', top: '2px',
-                  left: productCategory.active !== false ? '16px' : '2px',
+                  left: active ? '16px' : '2px',
                   width: '14px', height: '14px', borderRadius: '50%',
                   background: '#fff', transition: 'left 0.2s',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 }} />
               </div>
             </div>
@@ -220,33 +214,33 @@ const ProductCategoryCard = ({
               title="Ajouter une sous-catégorie"
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
-                background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
-                borderRadius: '6px', padding: '4px 8px',
-                color: '#a78bfa', fontSize: '10px', fontWeight: 600,
+                background: '#faf5ff', border: '1px solid rgba(139,92,246,0.25)',
+                borderRadius: '8px', padding: '4px 8px',
+                color: '#7c3aed', fontSize: '10px', fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.22)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.12)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.14)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#faf5ff')}
             >
               <HiPlus size={11} /> Sous-cat.
             </button>
           )}
         </div>
-        {/* Row 2: edit + delete */}
+        {/* Ligne 2 : modifier + supprimer */}
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
             onClick={() => handleEditProductCategory(productCategory)}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-              borderRadius: '8px', padding: '6px',
-              color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+              background: 'rgba(37,99,235,0.10)', border: '1px solid rgba(37,99,235,0.22)',
+              borderRadius: '10px', padding: '7px',
+              color: '#2563eb', fontSize: '11px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(47,111,237,0.22)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(47,111,237,0.12)')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.18)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.10)')}
           >
             <HiPencil size={12} /> Modifier
           </button>
@@ -254,13 +248,13 @@ const ProductCategoryCard = ({
             onClick={() => handleDeleteProductCategory(productCategory)}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-              borderRadius: '8px', padding: '6px 10px',
-              color: '#f87171', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+              borderRadius: '10px', padding: '7px 11px',
+              color: '#dc2626', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.16)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
           >
             <HiTrash size={12} />
           </button>
