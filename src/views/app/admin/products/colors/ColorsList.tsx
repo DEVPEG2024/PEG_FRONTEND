@@ -400,36 +400,46 @@ const ColorsList = () => {
   const handleDiscardMatrix = () => setPending({});
 
   const handleSaveMatrix = async () => {
-    const affected = new Set(Object.keys(pending).map((k) => k.split(':')[0]));
-    if (affected.size === 0) return;
+    const entries = Object.entries(pending);
+    if (entries.length === 0) return;
+    // Regroupe les changements par nom de couleur (clé = `${nameLower}:${catId}`, catId sans ':')
+    const changesByName = new Map<
+      string,
+      { catId: string; desired: boolean }[]
+    >();
+    for (const [key, desired] of entries) {
+      const i = key.lastIndexOf(':');
+      const name = key.slice(0, i);
+      const catId = key.slice(i + 1);
+      if (!changesByName.has(name)) changesByName.set(name, []);
+      changesByName.get(name)!.push({ catId, desired });
+    }
+    const byName = new Map(matrixRows.map((r) => [r.name.toLowerCase(), r]));
     setMatrixSaving(true);
     try {
       let errors = 0;
-      for (const row of matrixRows) {
-        const nameKey = row.name.toLowerCase();
-        if (!affected.has(nameKey)) continue;
-        const desired = new Set<string>();
-        productCategories.forEach((cat) => {
-          if (cellChecked(row, cat.value)) desired.add(cat.value);
-        });
-        const toRemove = [...row.catIds].filter((id) => !desired.has(id));
-        const toAdd = [...desired].filter((id) => !row.catIds.has(id));
-        const entityCats = row.entities.map((e) => ({
+      let lastError = '';
+      let saved = 0;
+      for (const [name, changes] of changesByName) {
+        const row = byName.get(name);
+        if (!row) continue;
+        const ecs = row.entities.map((e) => ({
           e,
           before: new Set(colorCategories(e).map((c) => c.documentId)),
           cats: new Set(colorCategories(e).map((c) => c.documentId)),
         }));
-        toRemove.forEach((id) =>
-          entityCats.forEach((ec) => ec.cats.delete(id))
-        );
-        if (toAdd.length && entityCats[0])
-          toAdd.forEach((id) => entityCats[0].cats.add(id));
-        for (const ec of entityCats) {
+        for (const { catId, desired } of changes) {
+          const present = ecs.some((ec) => ec.cats.has(catId));
+          if (desired && !present) ecs[0]?.cats.add(catId);
+          else if (!desired && present)
+            ecs.forEach((ec) => ec.cats.delete(catId));
+        }
+        for (const ec of ecs) {
           const changed =
             ec.before.size !== ec.cats.size ||
             [...ec.cats].some((id) => !ec.before.has(id));
           if (!changed) continue;
-          const r = await dispatch(
+          const r: any = await dispatch(
             updateColor({
               documentId: ec.e.documentId,
               name: ec.e.name,
@@ -438,14 +448,19 @@ const ColorsList = () => {
               productCategories: [...ec.cats],
             })
           );
-          if (r.meta.requestStatus !== 'fulfilled') errors++;
+          if (r.meta.requestStatus === 'fulfilled') saved++;
+          else {
+            errors++;
+            lastError = r.error?.message || 'erreur inconnue';
+          }
         }
       }
       if (errors)
-        toast.error(
-          `${errors} erreur${errors > 1 ? 's' : ''} lors de l'enregistrement`
+        toast.error(`Échec enregistrement (${errors}) : ${lastError}`);
+      else
+        toast.success(
+          `${saved} couleur${saved > 1 ? 's' : ''} mise${saved > 1 ? 's' : ''} à jour`
         );
-      else toast.success('Modifications enregistrées');
       setPending({});
     } finally {
       setMatrixSaving(false);
