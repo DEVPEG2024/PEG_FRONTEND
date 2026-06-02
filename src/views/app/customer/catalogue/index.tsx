@@ -22,11 +22,11 @@ const options: Option[] = [
 
 const SkeletonCard = () => (
   <div style={{
-    borderRadius: '18px',
+    borderRadius: '20px',
     overflow: 'hidden',
-    height: '220px',
-    background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+    height: '230px',
+    background: '#eef1f6',
+    border: '1px solid #eaedf3',
     animation: 'pulse 1.5s ease-in-out infinite',
   }} />
 );
@@ -76,37 +76,43 @@ const Categories = () => {
   const showPagination = total > pageSize;
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div style={{
+      fontFamily: 'Inter, sans-serif',
+      background: '#f7f9fc',
+      borderRadius: '24px',
+      padding: '32px',
+      minHeight: 'calc(100vh - 120px)',
+    }}>
       {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        marginBottom: '24px',
+        marginBottom: '32px',
         flexWrap: 'wrap',
       }}>
         <div>
-          <h3 style={{ margin: 0, color: '#fff', fontSize: '20px', fontWeight: 700 }}>
+          <h3 style={{ margin: 0, color: '#0b1f3a', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em' }}>
             Catalogue
           </h3>
           {!loading && activeCategories.length > 0 && (
-            <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
+            <p style={{ margin: '6px 0 0', color: '#2563eb', fontSize: '15px', fontWeight: 500 }}>
               {activeCategories.length} catégorie{activeCategories.length > 1 ? 's' : ''}
             </p>
           )}
         </div>
 
         {/* Search */}
-        <div style={{ position: 'relative', minWidth: '240px', maxWidth: '360px', flex: 1 }}>
+        <div style={{ position: 'relative', minWidth: '260px', maxWidth: '400px', flex: 1 }}>
           <HiSearch
-            size={16}
+            size={18}
             style={{
               position: 'absolute',
-              left: '12px',
+              left: '18px',
               top: '50%',
               transform: 'translateY(-50%)',
-              color: 'rgba(255,255,255,0.55)',
+              color: '#2563eb',
               pointerEvents: 'none',
             }}
           />
@@ -116,19 +122,20 @@ const Categories = () => {
             placeholder="Rechercher une catégorie…"
             style={{
               width: '100%',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
-              padding: '9px 14px 9px 36px',
-              color: '#fff',
-              fontSize: '13px',
+              background: '#ffffff',
+              border: '1px solid #e6e9f0',
+              borderRadius: '999px',
+              padding: '13px 18px 13px 46px',
+              color: '#0b1f3a',
+              fontSize: '14px',
               fontFamily: 'Inter, sans-serif',
               outline: 'none',
               boxSizing: 'border-box',
-              transition: 'border-color 0.15s',
+              boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
             }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+            onFocus={(e) => { e.target.style.borderColor = 'rgba(37,99,235,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)'; }}
+            onBlur={(e) => { e.target.style.borderColor = '#e6e9f0'; e.target.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)'; }}
           />
         </div>
       </div>
@@ -156,19 +163,19 @@ const Categories = () => {
             width: '72px',
             height: '72px',
             borderRadius: '20px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: '#eef2f8',
+            border: '1px solid #e6e9f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <HiSearch size={28} style={{ color: 'rgba(255,255,255,0.2)' }} />
+            <HiSearch size={28} style={{ color: '#93a3bd' }} />
           </div>
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '16px', fontWeight: 600, margin: 0 }}>
+            <p style={{ color: '#0b1f3a', fontSize: '16px', fontWeight: 600, margin: 0 }}>
               {searchTerm ? 'Aucun résultat' : 'Aucune catégorie'}
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '6px 0 0' }}>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '6px 0 0' }}>
               {searchTerm
                 ? `Aucune catégorie ne correspond à « ${searchTerm} »`
                 : 'Les catégories apparaîtront ici'}

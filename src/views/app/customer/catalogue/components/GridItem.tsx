@@ -1,34 +1,61 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCategory } from '@/@types/product';
+import { IconType } from 'react-icons';
+import {
+  TbShirt,
+  TbJacket,
+  TbRoadSign,
+  TbMug,
+  TbFileText,
+  TbVectorBezier2,
+  TbBallFootball,
+  TbCamera,
+  TbCategory2,
+  TbArrowRight,
+} from 'react-icons/tb';
+
+// Normalise un libellé : minuscules + suppression des accents
+const normalize = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Choisit une icône en fonction de mots-clés présents dans le nom de la catégorie
+const pickIcon = (name: string): IconType => {
+  const n = normalize(name);
+  const has = (...keys: string[]) => keys.some((k) => n.includes(k));
+
+  if (has('haute visibilite', 'haute-visibilite', 'gilet', 'securite', 'fluo', 'hi-vis', 'hivis')) return TbJacket;
+  if (has('vetement', 't-shirt', 'tshirt', 'tee-shirt', 'textile', 'polo', 'sweat', 'casquette', 'pull', 'veste')) return TbShirt;
+  if (has('signaletique', 'plv', 'panneau', 'enseigne', 'banderole', 'kakemono', 'oriflamme', 'signal', 'affichage')) return TbRoadSign;
+  if (has('objet', 'goodies', 'mug', 'tasse', 'cadeau', 'gourde', 'gobelet', 'tote')) return TbMug;
+  if (has('print', 'impression', 'imprime', 'papier', 'flyer', 'brochure', 'depliant', 'carte', 'affiche', 'sticker', 'autocollant')) return TbFileText;
+  if (has('conception', 'graphique', 'graphisme', 'design', 'logo', 'creation', 'crea', 'identite')) return TbVectorBezier2;
+  if (has('football', 'foot', 'sport', 'ballon', 'maillot', 'club')) return TbBallFootball;
+  if (has('photo', 'video', 'camera', 'film', 'audiovisuel', 'drone')) return TbCamera;
+  return TbCategory2;
+};
 
 const GridItem = ({ data }: { data: ProductCategory }) => {
-  const { name, image, products } = data;
+  const { name } = data;
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const Icon = pickIcon(name);
 
   const handleMouseEnter = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = 'translateY(-6px) scale(1.02)';
-      cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.12)';
-    }
-    if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1.08)';
+      cardRef.current.style.transform = 'translateY(-4px)';
+      cardRef.current.style.boxShadow = '0 16px 32px rgba(37,99,235,0.14)';
+      cardRef.current.style.borderColor = 'rgba(37,99,235,0.45)';
     }
   };
 
   const handleMouseLeave = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = 'translateY(0) scale(1)';
-      cardRef.current.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08)';
-    }
-    if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1)';
+      cardRef.current.style.transform = 'translateY(0)';
+      cardRef.current.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)';
+      cardRef.current.style.borderColor = '#eaedf3';
     }
   };
-
-  const count = products?.length ?? 0;
 
   return (
     <div
@@ -37,112 +64,40 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
-        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: '20px',
+        padding: '40px 20px 32px',
+        minHeight: '230px',
         borderRadius: '20px',
-        overflow: 'hidden',
         cursor: 'pointer',
-        height: '230px',
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        background: '#ffffff',
+        border: '1px solid #eaedf3',
+        boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
         fontFamily: 'Inter, sans-serif',
-        flexShrink: 0,
       }}
     >
-      {/* Image plein cadre */}
-      {image?.url ? (
-        <img
-          ref={imgRef}
-          src={image.url}
-          alt={name}
-          style={{
-            position: 'absolute',
-            inset: '-1px',
-            width: 'calc(100% + 2px)',
-            height: 'calc(100% + 2px)',
-            objectFit: 'cover',
-            display: 'block',
-            transition: 'transform 0.5s ease',
-          }}
-        />
-      ) : (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <span style={{
-            fontSize: '64px',
-            fontWeight: 800,
-            color: 'rgba(47,111,237,0.25)',
-            letterSpacing: '-0.04em',
-            userSelect: 'none',
-          }}>
-            {name.charAt(0).toUpperCase()}
-          </span>
-        </div>
-      )}
+      {/* Icône de catégorie */}
+      <Icon size={64} color="#2563eb" strokeWidth={1.6} />
 
-      {/* Dégradé bleu en bas pour lisibilité du titre */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(to top, rgba(8,18,38,0.95) 0%, rgba(8,18,38,0.6) 35%, transparent 65%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Badge nombre de produits */}
-      {count > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '14px',
-          right: '14px',
-          background: 'rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          borderRadius: '100px',
-          padding: '4px 12px',
-          color: 'rgba(255,255,255,0.9)',
-          fontSize: '11px',
-          fontWeight: 600,
-          letterSpacing: '0.02em',
-        }}>
-          {count} produit{count > 1 ? 's' : ''}
-        </div>
-      )}
-
-      {/* Titre en bas */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: '16px 18px',
+      {/* Nom */}
+      <p style={{
+        color: '#0b1f3a',
+        fontWeight: 700,
+        fontSize: '18px',
+        letterSpacing: '-0.01em',
+        margin: 0,
+        lineHeight: 1.25,
       }}>
-        <p style={{
-          color: '#fff',
-          fontWeight: 700,
-          fontSize: '15px',
-          letterSpacing: '-0.01em',
-          margin: 0,
-          lineHeight: 1.3,
-          textShadow: '0 1px 6px rgba(0,0,0,0.5)',
-        }}>
-          {name}
-        </p>
-        <p style={{
-          color: 'rgba(255,255,255,0.5)',
-          fontSize: '12px',
-          margin: '4px 0 0',
-          fontWeight: 500,
-        }}>
-          Voir les produits →
-        </p>
-      </div>
+        {name}
+      </p>
+
+      {/* Flèche */}
+      <TbArrowRight size={22} color="#2563eb" strokeWidth={2} />
     </div>
   );
 };
