@@ -2,27 +2,44 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCategory } from '@/@types/product';
 import { TbArrowRight } from 'react-icons/tb';
-import { pickCategoryIcon } from '@/utils/categoryIcon';
+import { pickCategoryIcon, pickCategoryColor } from '@/utils/categoryIcon';
+
+// Convertit un hex (#rrggbb) en rgba avec alpha
+const rgba = (hex: string, a: number) => {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+};
 
 const GridItem = ({ data }: { data: ProductCategory }) => {
   const { name } = data;
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const Icon = pickCategoryIcon(name);
+  const color = pickCategoryColor(name);
 
   const handleMouseEnter = () => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(-4px)';
-      cardRef.current.style.boxShadow = '0 16px 32px rgba(37,99,235,0.14)';
-      cardRef.current.style.borderColor = 'rgba(37,99,235,0.45)';
+      cardRef.current.style.borderColor = rgba(color, 0.5);
+    }
+    if (glowRef.current) {
+      glowRef.current.style.opacity = '1';
+      glowRef.current.style.boxShadow = `0 0 24px 3px ${rgba(color, 0.8)}`;
     }
   };
 
   const handleMouseLeave = () => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(0)';
-      cardRef.current.style.boxShadow = '0 1px 2px rgba(16,24,40,0.04)';
-      cardRef.current.style.borderColor = '#eaedf3';
+      cardRef.current.style.borderColor = 'rgba(255,255,255,0.07)';
+    }
+    if (glowRef.current) {
+      glowRef.current.style.opacity = '0.85';
+      glowRef.current.style.boxShadow = `0 0 14px 1px ${rgba(color, 0.6)}`;
     }
   };
 
@@ -33,40 +50,90 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        gap: '20px',
-        padding: '40px 20px 32px',
+        gap: '18px',
+        padding: '38px 20px 30px',
         minHeight: '230px',
-        borderRadius: '20px',
+        borderRadius: '18px',
         cursor: 'pointer',
-        background: '#ffffff',
-        border: '1px solid #eaedf3',
-        boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg, #131c2b 0%, #0c1320 100%)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+        transition: 'transform 0.25s ease, border-color 0.25s ease',
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* Icône de catégorie */}
-      <Icon size={64} color="#2563eb" strokeWidth={1.6} />
+      {/* Halo coloré diffus en haut */}
+      <div style={{
+        position: 'absolute',
+        top: '-40px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '140px',
+        height: '120px',
+        background: `radial-gradient(circle, ${rgba(color, 0.18)} 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Icône néon */}
+      <Icon
+        size={56}
+        color={color}
+        strokeWidth={1.6}
+        style={{ filter: `drop-shadow(0 0 8px ${rgba(color, 0.55)})`, zIndex: 1 }}
+      />
 
       {/* Nom */}
       <p style={{
-        color: '#0b1f3a',
-        fontWeight: 700,
-        fontSize: '18px',
+        color: '#eaf0f7',
+        fontWeight: 600,
+        fontSize: '16px',
         letterSpacing: '-0.01em',
         margin: 0,
-        lineHeight: 1.25,
+        lineHeight: 1.3,
+        zIndex: 1,
       }}>
         {name}
       </p>
 
-      {/* Flèche */}
-      <TbArrowRight size={22} color="#2563eb" strokeWidth={2} />
+      {/* Bouton flèche */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '46px',
+        height: '30px',
+        borderRadius: '999px',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        zIndex: 1,
+      }}>
+        <TbArrowRight size={18} color="#eaf0f7" strokeWidth={2} />
+      </div>
+
+      {/* Liseré lumineux en bas (couleur de la catégorie) */}
+      <div
+        ref={glowRef}
+        style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '18%',
+          right: '18%',
+          height: '2px',
+          borderRadius: '999px',
+          background: color,
+          opacity: 0.85,
+          boxShadow: `0 0 14px 1px ${rgba(color, 0.6)}`,
+          transition: 'opacity 0.25s ease, box-shadow 0.25s ease',
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   );
 };

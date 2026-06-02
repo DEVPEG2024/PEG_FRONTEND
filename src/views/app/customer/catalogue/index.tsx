@@ -22,11 +22,11 @@ const options: Option[] = [
 
 const SkeletonCard = () => (
   <div style={{
-    borderRadius: '20px',
+    borderRadius: '18px',
     overflow: 'hidden',
     height: '230px',
-    background: '#eef1f6',
-    border: '1px solid #eaedf3',
+    background: 'linear-gradient(160deg, #131c2b 0%, #0c1320 100%)',
+    border: '1px solid rgba(255,255,255,0.07)',
     animation: 'pulse 1.5s ease-in-out infinite',
   }} />
 );
