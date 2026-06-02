@@ -3,16 +3,10 @@ import { Tooltip } from '@/components/ui';
 import { ProductCategory } from '@/@types/product';
 import { HiPencil, HiTrash, HiChevronDown, HiPlus } from 'react-icons/hi';
 import { useState } from 'react';
-import { pickCategoryIcon, pickCategoryColor } from '@/utils/categoryIcon';
+import { pickCategoryIcon } from '@/utils/categoryIcon';
 
-// Convertit un hex (#rrggbb) en rgba avec alpha
-const rgba = (hex: string, a: number) => {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${a})`;
-};
+const GOLD = '#d4af37';
+const GOLD_TITLE = '#ecd9a8';
 
 const ProductCategoryCard = ({
   productCategory,
@@ -33,24 +27,22 @@ const ProductCategoryCard = ({
   const hasSubcategories = subcategories.length > 0;
   const active = productCategory.active !== false;
   const Icon = pickCategoryIcon(productCategory.name);
-  const color = pickCategoryColor(productCategory.name);
 
   return (
     <div
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = rgba(color, 0.5);
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.45)';
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)';
       }}
       style={{
-        position: 'relative',
-        background: 'linear-gradient(160deg, #131c2b 0%, #0c1320 100%)',
-        borderRadius: '18px',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+        background: 'linear-gradient(160deg, #131720 0%, #0c0d10 100%)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 10px 28px rgba(0,0,0,0.5)',
         overflow: 'hidden',
         fontFamily: 'Inter, sans-serif',
         transition: 'transform 0.25s ease, border-color 0.25s ease',
@@ -58,39 +50,50 @@ const ProductCategoryCard = ({
         flexDirection: 'column',
       }}
     >
-      {/* Halo coloré diffus en haut */}
-      <div style={{
-        position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)',
-        width: '160px', height: '120px',
-        background: `radial-gradient(circle, ${rgba(color, 0.16)} 0%, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-
-      {/* Icône néon + statut */}
+      {/* Photo (ou fond + icône si absente) */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '30px 20px 14px',
-          cursor: 'pointer',
-          position: 'relative',
+          position: 'relative', height: '140px', cursor: 'pointer', overflow: 'hidden',
         }}
       >
-        <Icon
-          size={52}
-          color={color}
-          strokeWidth={1.6}
-          style={{ filter: `drop-shadow(0 0 8px ${rgba(color, 0.55)})` }}
-        />
+        {productCategory.image?.url ? (
+          <img
+            src={productCategory.image.url}
+            alt={productCategory.name}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(circle at 50% 35%, #1c2433 0%, #0c0d10 78%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icon size={42} color={GOLD} strokeWidth={1.6} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.6))' }} />
+          </div>
+        )}
 
+        {/* Dégradé bas */}
         <div style={{
-          position: 'absolute', top: '12px', right: '12px',
-          background: active ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)',
-          border: `1px solid ${active ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.3)'}`,
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.25) 45%, transparent 75%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Icône dorée en bas-gauche si photo présente */}
+        {productCategory.image?.url && (
+          <Icon size={22} color={GOLD} strokeWidth={1.7} style={{ position: 'absolute', left: '12px', bottom: '10px', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.7))' }} />
+        )}
+
+        {/* Statut */}
+        <div style={{
+          position: 'absolute', top: '10px', right: '10px',
+          background: active ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.15)',
+          border: `1px solid ${active ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.35)'}`,
           borderRadius: '100px', padding: '2px 8px',
           color: active ? '#4ade80' : '#fca5a5',
           fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
-          textTransform: 'uppercase',
+          textTransform: 'uppercase', backdropFilter: 'blur(6px)',
         }}>
           {active ? 'Actif' : 'Inactif'}
         </div>
@@ -99,9 +102,9 @@ const ProductCategoryCard = ({
       {/* Nom + badges */}
       <div
         onClick={() => navigate(`/admin/products/categories/${productCategory.documentId}`)}
-        style={{ padding: '0 16px 14px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
+        style={{ padding: '12px 16px 12px', textAlign: 'center', flex: 1, cursor: 'pointer' }}
       >
-        <p style={{ color: '#eaf0f7', fontWeight: 600, fontSize: '15px', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+        <p style={{ color: GOLD_TITLE, fontWeight: 700, fontSize: '14px', margin: '0 0 8px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>
           {productCategory.name}
         </p>
         <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -147,12 +150,11 @@ const ProductCategoryCard = ({
           {expanded && (
             <div style={{
               padding: '6px 10px',
-              background: 'rgba(0,0,0,0.2)',
+              background: 'rgba(0,0,0,0.25)',
               display: 'flex', flexDirection: 'column', gap: '4px',
             }}>
               {subcategories.map((sub) => {
                 const SubIcon = pickCategoryIcon(sub.name);
-                const subColor = pickCategoryColor(sub.name);
                 return (
                   <div key={sub.documentId} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -161,7 +163,11 @@ const ProductCategoryCard = ({
                     border: '1px solid rgba(255,255,255,0.05)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-                      <SubIcon size={16} color={subColor} strokeWidth={1.8} style={{ flexShrink: 0, filter: `drop-shadow(0 0 5px ${rgba(subColor, 0.5)})` }} />
+                      {sub.image?.url ? (
+                        <img src={sub.image.url} alt={sub.name} style={{ width: '22px', height: '22px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <SubIcon size={16} color={GOLD} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                      )}
                       <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
@@ -249,14 +255,14 @@ const ProductCategoryCard = ({
             onClick={() => handleEditProductCategory(productCategory)}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+              background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)',
               borderRadius: '8px', padding: '6px',
-              color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+              color: GOLD_TITLE, fontSize: '11px', fontWeight: 600,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(47,111,237,0.22)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(47,111,237,0.12)')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.22)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.12)')}
           >
             <HiPencil size={12} /> Modifier
           </button>
@@ -276,15 +282,6 @@ const ProductCategoryCard = ({
           </button>
         </div>
       </div>
-
-      {/* Liseré lumineux en bas (couleur de la catégorie) */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: '18%', right: '18%',
-        height: '2px', borderRadius: '999px',
-        background: color, opacity: 0.85,
-        boxShadow: `0 0 14px 1px ${rgba(color, 0.6)}`,
-        pointerEvents: 'none',
-      }} />
     </div>
   );
 };

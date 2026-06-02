@@ -2,45 +2,35 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCategory } from '@/@types/product';
 import { TbArrowRight } from 'react-icons/tb';
-import { pickCategoryIcon, pickCategoryColor } from '@/utils/categoryIcon';
+import { pickCategoryIcon, pickCategoryTagline } from '@/utils/categoryIcon';
 
-// Convertit un hex (#rrggbb) en rgba avec alpha
-const rgba = (hex: string, a: number) => {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${a})`;
-};
+// Palette dorée
+const GOLD = '#d4af37';
+const GOLD_TITLE = '#ecd9a8';
+const GOLD_MUTED = 'rgba(212,175,55,0.75)';
 
 const GridItem = ({ data }: { data: ProductCategory }) => {
-  const { name } = data;
+  const { name, image } = data;
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const Icon = pickCategoryIcon(name);
-  const color = pickCategoryColor(name);
+  const tagline = pickCategoryTagline(name);
 
   const handleMouseEnter = () => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(-4px)';
-      cardRef.current.style.borderColor = rgba(color, 0.5);
+      cardRef.current.style.borderColor = 'rgba(212,175,55,0.5)';
     }
-    if (glowRef.current) {
-      glowRef.current.style.opacity = '1';
-      glowRef.current.style.boxShadow = `0 0 24px 3px ${rgba(color, 0.8)}`;
-    }
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1.06)';
   };
 
   const handleMouseLeave = () => {
     if (cardRef.current) {
       cardRef.current.style.transform = 'translateY(0)';
-      cardRef.current.style.borderColor = 'rgba(255,255,255,0.07)';
+      cardRef.current.style.borderColor = 'rgba(255,255,255,0.08)';
     }
-    if (glowRef.current) {
-      glowRef.current.style.opacity = '0.85';
-      glowRef.current.style.boxShadow = `0 0 14px 1px ${rgba(color, 0.6)}`;
-    }
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1)';
   };
 
   return (
@@ -51,89 +41,95 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       onMouseLeave={handleMouseLeave}
       style={{
         position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        gap: '18px',
-        padding: '38px 20px 30px',
-        minHeight: '230px',
-        borderRadius: '18px',
-        cursor: 'pointer',
+        borderRadius: '14px',
         overflow: 'hidden',
-        background: 'linear-gradient(160deg, #131c2b 0%, #0c1320 100%)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
-        transition: 'transform 0.25s ease, border-color 0.25s ease',
+        cursor: 'pointer',
+        aspectRatio: '3 / 4',
+        background: '#0c0d10',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+        transition: 'transform 0.3s ease, border-color 0.3s ease',
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* Halo coloré diffus en haut */}
+      {/* Photo de fond (ou fond dégradé si absente) */}
+      {image?.url ? (
+        <img
+          ref={imgRef}
+          src={image.url}
+          alt={name}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            transition: 'transform 0.5s ease',
+          }}
+        />
+      ) : (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(circle at 50% 30%, #1c2433 0%, #0c0d10 75%)',
+        }} />
+      )}
+
+      {/* Dégradé sombre pour la lisibilité */}
       <div style={{
-        position: 'absolute',
-        top: '-40px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '140px',
-        height: '120px',
-        background: `radial-gradient(circle, ${rgba(color, 0.18)} 0%, transparent 70%)`,
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.85) 22%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.1) 78%, rgba(0,0,0,0.25) 100%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Icône néon */}
-      <Icon
-        size={56}
-        color={color}
-        strokeWidth={1.6}
-        style={{ filter: `drop-shadow(0 0 8px ${rgba(color, 0.55)})`, zIndex: 1 }}
-      />
-
-      {/* Nom */}
-      <p style={{
-        color: '#eaf0f7',
-        fontWeight: 600,
-        fontSize: '16px',
-        letterSpacing: '-0.01em',
-        margin: 0,
-        lineHeight: 1.3,
-        zIndex: 1,
-      }}>
-        {name}
-      </p>
-
-      {/* Bouton flèche */}
+      {/* Contenu en bas */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '46px',
-        height: '30px',
-        borderRadius: '999px',
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        zIndex: 1,
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        padding: '0 22px 22px',
+        display: 'flex', flexDirection: 'column', gap: '12px',
       }}>
-        <TbArrowRight size={18} color="#eaf0f7" strokeWidth={2} />
-      </div>
+        {/* Icône dorée */}
+        <Icon size={30} color={GOLD} strokeWidth={1.6} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.6))' }} />
 
-      {/* Liseré lumineux en bas (couleur de la catégorie) */}
-      <div
-        ref={glowRef}
-        style={{
-          position: 'absolute',
-          bottom: '0',
-          left: '18%',
-          right: '18%',
-          height: '2px',
-          borderRadius: '999px',
-          background: color,
-          opacity: 0.85,
-          boxShadow: `0 0 14px 1px ${rgba(color, 0.6)}`,
-          transition: 'opacity 0.25s ease, box-shadow 0.25s ease',
-          pointerEvents: 'none',
-        }}
-      />
+        {/* Titre */}
+        <p style={{
+          color: GOLD_TITLE,
+          fontWeight: 700,
+          fontSize: '17px',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          margin: 0,
+          lineHeight: 1.2,
+          textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+        }}>
+          {name}
+        </p>
+
+        {/* Slogan */}
+        {tagline && (
+          <p style={{
+            color: GOLD_MUTED,
+            fontSize: '12.5px',
+            fontWeight: 400,
+            margin: 0,
+            lineHeight: 1.35,
+          }}>
+            {tagline}
+          </p>
+        )}
+
+        {/* Bouton flèche doré */}
+        <div style={{
+          marginTop: '4px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '36px', height: '36px',
+          borderRadius: '50%',
+          border: `1.5px solid ${GOLD}`,
+          background: 'rgba(212,175,55,0.08)',
+        }}>
+          <TbArrowRight size={18} color={GOLD} strokeWidth={2} />
+        </div>
+      </div>
     </div>
   );
 };

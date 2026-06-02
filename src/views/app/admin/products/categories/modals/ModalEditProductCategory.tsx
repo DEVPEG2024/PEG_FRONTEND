@@ -204,6 +204,19 @@ function ModalEditProductCategory({
             )}
           </div>
 
+          <label style={{
+            display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px',
+            fontWeight: 600, marginBottom: '6px', fontFamily: 'Inter, sans-serif',
+          }}>
+            Photo de la catégorie
+          </label>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '0 0 8px',
+            lineHeight: 1.4, fontFamily: 'Inter, sans-serif',
+          }}>
+            Format conseillé : <strong style={{ color: 'rgba(255,255,255,0.6)' }}>portrait 3:4</strong> (ex. 900 × 1200 px), JPG ou PNG.
+            La photo est recadrée automatiquement pour remplir la carte.
+          </p>
           <Loading loading={imageLoading}>
             <FileUplaodCustom image={image} setImage={updateImage} />
           </Loading>

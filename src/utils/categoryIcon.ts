@@ -60,8 +60,24 @@ const COLORS: Record<CategoryKind, string> = {
   default: '#3b82f6',      // bleu
 };
 
+// Slogan par défaut par type de catégorie
+const TAGLINES: Record<CategoryKind, string> = {
+  vetement: 'Qualité premium, à votre image',
+  signaletique: 'Impact visuel, résultat garanti',
+  objet: 'Utile, durable et mémorable',
+  print: "Haute qualité d'impression",
+  conception: 'Créativité et expertise sur mesure',
+  visibilite: 'Sécurité, confort et conformité',
+  football: 'Passion & performance',
+  photo: "Capturez l'essentiel, racontez votre histoire",
+  default: '',
+};
+
 // Choisit une icône en fonction de mots-clés présents dans le nom de la catégorie
 export const pickCategoryIcon = (name: string): IconType => ICONS[detectKind(name)];
 
 // Choisit une couleur néon en fonction de mots-clés présents dans le nom de la catégorie
 export const pickCategoryColor = (name: string): string => COLORS[detectKind(name)];
+
+// Slogan court associé au type de catégorie (vide si non reconnu)
+export const pickCategoryTagline = (name: string): string => TAGLINES[detectKind(name)];
