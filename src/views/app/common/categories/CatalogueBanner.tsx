@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { HiOutlinePhotograph } from 'react-icons/hi';
+import { TbArrowRight } from 'react-icons/tb';
 import { Banner } from '@/@types/banner';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
@@ -13,7 +14,23 @@ import { unwrapData } from '@/utils/serviceHelper';
 // Nom sentinelle de la bannière dédiée à la page catalogue (partagée par tous)
 const BANNER_NAME = 'Bannière catalogue';
 
-const CatalogueBanner = ({ title, subtitle }: { title?: string; subtitle?: string }) => {
+const CatalogueBanner = ({
+  title,
+  subtitle,
+  ctaLabel,
+  scrollTargetId,
+  aspect = '5 / 1',
+  minHeight = '130px',
+  maxHeight = '260px',
+}: {
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  scrollTargetId?: string;
+  aspect?: string;
+  minHeight?: string;
+  maxHeight?: string;
+}) => {
   const user = useSelector((state: any) => state.auth?.user?.user) as User | undefined;
   const isAdmin = !!user && hasRole(user, [ADMIN, SUPER_ADMIN]);
 
@@ -44,6 +61,12 @@ const CatalogueBanner = ({ title, subtitle }: { title?: string; subtitle?: strin
   }, []);
 
   const onPick = () => fileRef.current?.click();
+
+  const onCta = () => {
+    if (scrollTargetId) {
+      document.getElementById(scrollTargetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,9 +101,9 @@ const CatalogueBanner = ({ title, subtitle }: { title?: string; subtitle?: strin
     <div style={{
       position: 'relative',
       width: '100%',
-      aspectRatio: '5 / 1',
-      minHeight: '130px',
-      maxHeight: '260px',
+      aspectRatio: aspect,
+      minHeight,
+      maxHeight,
       borderRadius: '16px',
       overflow: 'hidden',
       marginBottom: '24px',
@@ -110,17 +133,17 @@ const CatalogueBanner = ({ title, subtitle }: { title?: string; subtitle?: strin
         </div>
       )}
 
-      {/* Dégradé + titre */}
-      {imageUrl && (title || subtitle) && (
+      {/* Dégradé + titre / sous-titre / bouton */}
+      {imageUrl && (title || subtitle || ctaLabel) && (
         <>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.25) 45%, transparent 75%)',
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 45%, transparent 75%)',
             pointerEvents: 'none',
           }} />
           <div style={{
-            position: 'absolute', left: '28px', top: '50%', transform: 'translateY(-50%)',
-            zIndex: 1,
+            position: 'absolute', left: '32px', bottom: '28px',
+            zIndex: 1, maxWidth: '60%',
           }}>
             {title && (
               <h2 style={{ margin: 0, color: '#fff', fontSize: '26px', fontWeight: 800, letterSpacing: '-0.02em', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
@@ -128,9 +151,27 @@ const CatalogueBanner = ({ title, subtitle }: { title?: string; subtitle?: strin
               </h2>
             )}
             {subtitle && (
-              <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.85)', fontSize: '14px', fontWeight: 500, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
+              <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: 400, lineHeight: 1.4, textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
                 {subtitle}
               </p>
+            )}
+            {ctaLabel && (
+              <button
+                onClick={onCta}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '10px',
+                  background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.5)',
+                  borderRadius: '12px', padding: '11px 20px',
+                  color: '#fff', fontSize: '14px', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  backdropFilter: 'blur(6px)', transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.3)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.18)')}
+              >
+                {ctaLabel}
+                <TbArrowRight size={16} color="#a78bfa" strokeWidth={2} />
+              </button>
             )}
           </div>
         </>

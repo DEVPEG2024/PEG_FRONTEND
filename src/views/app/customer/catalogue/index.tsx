@@ -23,10 +23,10 @@ const options: Option[] = [
 
 const SkeletonCard = () => (
   <div style={{
-    borderRadius: '18px',
+    borderRadius: '16px',
     overflow: 'hidden',
-    height: '230px',
-    background: 'linear-gradient(160deg, #131c2b 0%, #0c1320 100%)',
+    aspectRatio: '3 / 2',
+    background: 'linear-gradient(160deg, #1a1530 0%, #0c0d10 100%)',
     border: '1px solid rgba(255,255,255,0.07)',
     animation: 'pulse 1.5s ease-in-out infinite',
   }} />
@@ -79,16 +79,23 @@ const Categories = () => {
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Bannière */}
-      <CatalogueBanner />
+      <CatalogueBanner
+        subtitle="Des solutions créatives et sur-mesure pour sublimer votre marque et marquer les esprits."
+        ctaLabel="Découvrir nos services"
+        scrollTargetId="catalogue-grid"
+        aspect="3.4 / 1"
+        minHeight="220px"
+        maxHeight="380px"
+      />
 
       {/* Grid */}
       {loading ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))',
           gap: '20px',
         }}>
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : activeCategories.length === 0 ? (
         <div style={{
