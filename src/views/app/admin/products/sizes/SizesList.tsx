@@ -19,6 +19,8 @@ import {
   HiPlus,
   HiLightningBolt,
   HiOutlineLink,
+  HiOutlineViewGrid,
+  HiOutlineTable,
 } from 'react-icons/hi';
 import { MdStraighten } from 'react-icons/md';
 import { toast } from 'react-toastify';
@@ -32,6 +34,7 @@ import {
 injectReducer('sizes', reducer);
 
 type Option = { value: string; label: string };
+type ViewMode = 'matrix' | 'cards';
 
 const TEMPLATES = [
   {
@@ -123,6 +126,12 @@ const SizesList = () => {
   // Search
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Vue : tableau croisé (par défaut) ou cartes par catégorie
+  const [view, setView] = useState<ViewMode>('matrix');
+
+  // Cellules en cours de sauvegarde (matrice) — clés `${sizeId}:${catId}`
+  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
+
   // Quick-add state
   const [quickInput, setQuickInput] = useState('');
   const [quickCategories, setQuickCategories] = useState<Option[]>([]);
@@ -162,8 +171,9 @@ const SizesList = () => {
     );
   };
 
-  // Grouped display — une taille apparaît sous CHACUNE de ses catégories
   const search = searchTerm.toLowerCase();
+
+  // ── Données vue CARTES — une taille apparaît sous chacune de ses catégories ──
   const grouped = sizes
     .filter(
       (s) =>
@@ -185,8 +195,6 @@ const SizesList = () => {
       }
       return acc;
     }, {});
-
-  // Tri : catégories par nom (Sans catégorie en dernier), tailles par tri naturel
   const groups = Object.values(grouped)
     .map((g) => ({ ...g, sizes: [...g.sizes].sort(compareSizes) }))
     .sort((a, b) => {
@@ -194,6 +202,11 @@ const SizesList = () => {
       if (!b.category) return -1;
       return a.category.name.localeCompare(b.category.name);
     });
+
+  // ── Données vue MATRICE — lignes = tailles uniques, colonnes = catégories ──
+  const matrixSizes = sizes
+    .filter((s) => s.name.toLowerCase().includes(search))
+    .sort(compareSizes);
 
   // Parse quick input into trimmed names
   const parsedSizes = quickInput
@@ -205,6 +218,36 @@ const SizesList = () => {
   const existingNamesSet = new Set(
     sizes.map((s) => s.name.trim().toLowerCase())
   );
+
+  // Toggle d'une cellule de la matrice — rattache/détache et sauvegarde aussitôt
+  const toggleCell = async (size: Size, catId: string) => {
+    const current = sizeCategories(size).map((c) => c.documentId);
+    const has = current.includes(catId);
+    const next = has
+      ? current.filter((id) => id !== catId)
+      : [...current, catId];
+    const key = `${size.documentId}:${catId}`;
+    setSavingCells((prev) => new Set(prev).add(key));
+    try {
+      const r = await dispatch(
+        updateSize({
+          documentId: size.documentId,
+          name: size.name,
+          value: size.value || size.name,
+          description: size.description || '',
+          productCategories: next,
+        })
+      );
+      if (r.meta.requestStatus !== 'fulfilled')
+        toast.error('Échec de la sauvegarde');
+    } finally {
+      setSavingCells((prev) => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+    }
+  };
 
   // Quick add handler — crée la taille ou ajoute les catégories sélectionnées si elle existe déjà
   const handleQuickAdd = async () => {
@@ -379,6 +422,76 @@ const SizesList = () => {
     }
   };
 
+  // ── Styles matrice ──
+  const thBase: React.CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    background: '#16263d',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    padding: '12px 10px',
+    borderBottom: '1px solid rgba(255,255,255,0.1)',
+    whiteSpace: 'nowrap',
+  };
+  const firstColStyle: React.CSSProperties = {
+    position: 'sticky',
+    left: 0,
+    zIndex: 1,
+    background: 'linear-gradient(160deg, #16263d 0%, #14233a 100%)',
+    color: '#fff',
+    fontWeight: 600,
+    fontSize: '13px',
+    padding: '10px 14px',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    borderRight: '1px solid rgba(255,255,255,0.08)',
+    whiteSpace: 'nowrap',
+    textAlign: 'left',
+  };
+
+  const renderToggle = () => (
+    <div
+      style={{
+        display: 'inline-flex',
+        borderRadius: '10px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.12)',
+      }}
+    >
+      {(
+        [
+          ['matrix', 'Tableau croisé', <HiOutlineTable size={14} key="t" />],
+          ['cards', 'Cartes', <HiOutlineViewGrid size={14} key="c" />],
+        ] as const
+      ).map(([mode, label, icon]) => (
+        <button
+          key={mode}
+          onClick={() => setView(mode as ViewMode)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            fontSize: '12px',
+            fontWeight: 700,
+            fontFamily: 'Inter, sans-serif',
+            border: 'none',
+            cursor: 'pointer',
+            background:
+              view === mode ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.04)',
+            color: view === mode ? '#7eb3ff' : 'rgba(255,255,255,0.5)',
+          }}
+        >
+          {icon}
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Header ── */}
@@ -427,6 +540,7 @@ const SizesList = () => {
             </span>
           </h2>
         </div>
+        {renderToggle()}
       </div>
 
       {/* ── Zone création rapide ── */}
@@ -518,7 +632,6 @@ const SizesList = () => {
             flexWrap: 'wrap',
           }}
         >
-          {/* Catégories (multi) */}
           <div style={{ minWidth: '260px', flex: '0 0 260px' }}>
             <Select
               isMulti
@@ -531,8 +644,6 @@ const SizesList = () => {
               }
             />
           </div>
-
-          {/* Saisie */}
           <div style={{ flex: 1, position: 'relative', minWidth: '200px' }}>
             <input
               ref={quickInputRef}
@@ -555,8 +666,6 @@ const SizesList = () => {
               }}
             />
           </div>
-
-          {/* Bouton créer */}
           <button
             onClick={handleQuickAdd}
             disabled={quickSaving}
@@ -584,7 +693,6 @@ const SizesList = () => {
           </button>
         </div>
 
-        {/* Preview des tailles parsées */}
         {parsedSizes.length > 0 && (
           <div
             style={{
@@ -637,19 +745,6 @@ const SizesList = () => {
                 </span>
               );
             })}
-            {[...existingNamesSet].some((n) =>
-              parsedSizes.map((p) => p.toLowerCase()).includes(n)
-            ) && (
-              <span
-                style={{
-                  color: 'rgba(147,197,253,0.7)',
-                  fontSize: '11px',
-                  marginLeft: '4px',
-                }}
-              >
-                (⛓ = taille existante, rattachée aux catégories)
-              </span>
-            )}
           </div>
         )}
       </div>
@@ -658,7 +753,7 @@ const SizesList = () => {
       <div
         style={{
           position: 'relative',
-          marginBottom: '28px',
+          marginBottom: '20px',
           maxWidth: '400px',
         }}
       >
@@ -699,275 +794,495 @@ const SizesList = () => {
         />
       </div>
 
-      {/* ── Liste par catégorie ── */}
-      {loading ? (
-        <div
-          style={{
-            color: 'rgba(255,255,255,0.55)',
-            textAlign: 'center',
-            padding: '64px',
-          }}
-        >
-          Chargement…
-        </div>
-      ) : groups.length === 0 ? (
-        <div
-          style={{
-            background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-            borderRadius: '16px',
-            padding: '64px 24px',
-            textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          <MdStraighten
-            size={48}
-            style={{
-              color: 'rgba(255,255,255,0.1)',
-              margin: '0 auto 14px',
-              display: 'block',
-            }}
-          />
-          <p
+      {/* ════════════ VUE MATRICE ════════════ */}
+      {view === 'matrix' &&
+        (loading ? (
+          <div
             style={{
               color: 'rgba(255,255,255,0.55)',
-              fontSize: '15px',
-              fontWeight: 600,
+              textAlign: 'center',
+              padding: '64px',
             }}
           >
-            Aucune taille — crée-en une ci-dessus
-          </p>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            paddingBottom: '40px',
-          }}
-        >
-          {groups.map(({ category, sizes: catSizes }) => (
-            <div
-              key={category?.documentId || '__none__'}
+            Chargement…
+          </div>
+        ) : productCategories.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '48px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            Crée d'abord des catégories produit pour pouvoir rattacher les
+            tailles.
+          </div>
+        ) : matrixSizes.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '48px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            Aucune taille — crée-en une ci-dessus.
+          </div>
+        ) : (
+          <div style={{ marginBottom: '40px' }}>
+            <p
               style={{
-                background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                color: 'rgba(255,255,255,0.4)',
+                fontSize: '12px',
+                marginBottom: '10px',
+              }}
+            >
+              Coche une case pour rattacher la taille à la catégorie ·
+              sauvegarde automatique
+            </p>
+            <div
+              style={{
+                overflowX: 'auto',
+                borderRadius: '16px',
                 border: '1.5px solid rgba(255,255,255,0.08)',
-                borderRadius: '18px',
-                padding: '20px 24px',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
               }}
             >
-              <div
+              <table
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '16px',
+                  borderCollapse: 'separate',
+                  borderSpacing: 0,
+                  width: '100%',
+                  background:
+                    'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        ...thBase,
+                        ...firstColStyle,
+                        top: 0,
+                        zIndex: 3,
+                        color: 'rgba(255,255,255,0.6)',
+                        textTransform: 'uppercase',
+                        fontSize: '11px',
+                      }}
+                    >
+                      Taille
+                    </th>
+                    {productCategories.map((cat) => (
+                      <th
+                        key={cat.value}
+                        style={{
+                          ...thBase,
+                          textAlign: 'center',
+                          minWidth: '92px',
+                        }}
+                      >
+                        {cat.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixSizes.map((size, ri) => {
+                    const ids = new Set(
+                      sizeCategories(size).map((c) => c.documentId)
+                    );
+                    return (
+                      <tr
+                        key={size.documentId}
+                        style={{
+                          background:
+                            ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                        }}
+                      >
+                        <td
+                          style={{
+                            ...firstColStyle,
+                            background: ri % 2 ? '#15233a' : '#16263d',
+                          }}
+                        >
+                          {size.name}
+                          {size.description && (
+                            <span
+                              style={{
+                                color: 'rgba(255,255,255,0.3)',
+                                fontSize: '11px',
+                                marginLeft: 6,
+                              }}
+                            >
+                              {size.description}
+                            </span>
+                          )}
+                          {ids.size > 1 && (
+                            <span
+                              title={`Partagée par ${ids.size} catégories`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                color: '#93c5fd',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                background: 'rgba(96,165,250,0.12)',
+                                borderRadius: '100px',
+                                padding: '1px 6px',
+                                marginLeft: 8,
+                              }}
+                            >
+                              <HiOutlineLink size={10} />
+                              {ids.size}
+                            </span>
+                          )}
+                        </td>
+                        {productCategories.map((cat) => {
+                          const checked = ids.has(cat.value);
+                          const key = `${size.documentId}:${cat.value}`;
+                          const busy = savingCells.has(key);
+                          return (
+                            <td
+                              key={cat.value}
+                              style={{
+                                textAlign: 'center',
+                                padding: '8px 10px',
+                                borderBottom:
+                                  '1px solid rgba(255,255,255,0.05)',
+                              }}
+                            >
+                              <button
+                                onClick={() => toggleCell(size, cat.value)}
+                                disabled={busy}
+                                title={
+                                  checked
+                                    ? `Retirer de ${cat.label}`
+                                    : `Rattacher à ${cat.label}`
+                                }
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '7px',
+                                  cursor: busy ? 'wait' : 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: checked
+                                    ? 'linear-gradient(135deg, #2f6fed, #1f4bb6)'
+                                    : 'rgba(255,255,255,0.05)',
+                                  border: `1.5px solid ${checked ? 'rgba(47,111,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                                  color: '#fff',
+                                  opacity: busy ? 0.5 : 1,
+                                  transition: 'all 0.12s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!busy && !checked)
+                                    e.currentTarget.style.borderColor =
+                                      'rgba(47,111,237,0.6)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!busy && !checked)
+                                    e.currentTarget.style.borderColor =
+                                      'rgba(255,255,255,0.15)';
+                                }}
+                              >
+                                {checked && <HiCheck size={15} />}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+      {/* ════════════ VUE CARTES ════════════ */}
+      {view === 'cards' &&
+        (loading ? (
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.55)',
+              textAlign: 'center',
+              padding: '64px',
+            }}
+          >
+            Chargement…
+          </div>
+        ) : groups.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '64px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+            <MdStraighten
+              size={48}
+              style={{
+                color: 'rgba(255,255,255,0.1)',
+                margin: '0 auto 14px',
+                display: 'block',
+              }}
+            />
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: '15px',
+                fontWeight: 600,
+              }}
+            >
+              Aucune taille — crée-en une ci-dessus
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              paddingBottom: '40px',
+            }}
+          >
+            {groups.map(({ category, sizes: catSizes }) => (
+              <div
+                key={category?.documentId || '__none__'}
+                style={{
+                  background:
+                    'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.08)',
+                  borderRadius: '18px',
+                  padding: '20px 24px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
                 }}
               >
                 <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px',
+                  }}
                 >
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '9px',
-                      background: 'rgba(47,111,237,0.15)',
-                      border: '1px solid rgba(47,111,237,0.3)',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: '10px',
                     }}
                   >
-                    <MdStraighten size={16} style={{ color: '#6b9eff' }} />
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        color: '#fff',
-                        fontWeight: 700,
-                        fontSize: '15px',
-                        margin: 0,
-                      }}
-                    >
-                      {category?.name || 'Sans catégorie'}
-                    </p>
-                    <p
-                      style={{
-                        color: 'rgba(255,255,255,0.55)',
-                        fontSize: '12px',
-                        margin: 0,
-                      }}
-                    >
-                      {catSizes.length} taille{catSizes.length > 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-                {category && (
-                  <button
-                    onClick={() => handleDeleteCategory(category)}
-                    title="Supprimer la catégorie"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(248,113,113,0.08)',
-                      border: '1px solid rgba(248,113,113,0.2)',
-                      borderRadius: '8px',
-                      padding: '6px 12px',
-                      color: 'rgba(248,113,113,0.7)',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background =
-                        'rgba(248,113,113,0.15)';
-                      e.currentTarget.style.color = '#f87171';
-                      e.currentTarget.style.borderColor =
-                        'rgba(248,113,113,0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background =
-                        'rgba(248,113,113,0.08)';
-                      e.currentTarget.style.color = 'rgba(248,113,113,0.7)';
-                      e.currentTarget.style.borderColor =
-                        'rgba(248,113,113,0.2)';
-                    }}
-                  >
-                    <HiTrash size={13} />
-                    Supprimer la catégorie
-                  </button>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {catSizes.map((size) => {
-                  const catCount = sizeCategories(size).length;
-                  return (
                     <div
-                      key={size.documentId}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '9px',
+                        background: 'rgba(47,111,237,0.15)',
+                        border: '1px solid rgba(47,111,237,0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MdStraighten size={16} style={{ color: '#6b9eff' }} />
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '15px',
+                          margin: 0,
+                        }}
+                      >
+                        {category?.name || 'Sans catégorie'}
+                      </p>
+                      <p
+                        style={{
+                          color: 'rgba(255,255,255,0.55)',
+                          fontSize: '12px',
+                          margin: 0,
+                        }}
+                      >
+                        {catSizes.length} taille{catSizes.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  {category && (
+                    <button
+                      onClick={() => handleDeleteCategory(category)}
+                      title="Supprimer la catégorie"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '100px',
+                        background: 'rgba(248,113,113,0.08)',
+                        border: '1px solid rgba(248,113,113,0.2)',
+                        borderRadius: '8px',
                         padding: '6px 12px',
+                        color: 'rgba(248,113,113,0.7)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.borderColor =
-                          'rgba(255,255,255,0.22)')
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.borderColor =
-                          'rgba(255,255,255,0.1)')
-                      }
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background =
+                          'rgba(248,113,113,0.15)';
+                        e.currentTarget.style.color = '#f87171';
+                        e.currentTarget.style.borderColor =
+                          'rgba(248,113,113,0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          'rgba(248,113,113,0.08)';
+                        e.currentTarget.style.color = 'rgba(248,113,113,0.7)';
+                        e.currentTarget.style.borderColor =
+                          'rgba(248,113,113,0.2)';
+                      }}
                     >
-                      <span
+                      <HiTrash size={13} />
+                      Supprimer la catégorie
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {catSizes.map((size) => {
+                    const catCount = sizeCategories(size).length;
+                    return (
+                      <div
+                        key={size.documentId}
                         style={{
-                          color: '#fff',
-                          fontWeight: 600,
-                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '100px',
+                          padding: '6px 12px',
                         }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            'rgba(255,255,255,0.22)')
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            'rgba(255,255,255,0.1)')
+                        }
                       >
-                        {size.name}
-                      </span>
-                      {size.description && (
                         <span
                           style={{
+                            color: '#fff',
+                            fontWeight: 600,
+                            fontSize: '13px',
+                          }}
+                        >
+                          {size.name}
+                        </span>
+                        {size.description && (
+                          <span
+                            style={{
+                              color: 'rgba(255,255,255,0.35)',
+                              fontSize: '11px',
+                            }}
+                          >
+                            · {size.description}
+                          </span>
+                        )}
+                        {catCount > 1 && (
+                          <span
+                            title={`Partagée par ${catCount} catégories`}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              color: '#93c5fd',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              background: 'rgba(96,165,250,0.12)',
+                              borderRadius: '100px',
+                              padding: '1px 6px',
+                            }}
+                          >
+                            <HiOutlineLink size={10} />
+                            {catCount}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => openEdit(size)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
                             color: 'rgba(255,255,255,0.35)',
-                            fontSize: '11px',
-                          }}
-                        >
-                          · {size.description}
-                        </span>
-                      )}
-                      {catCount > 1 && (
-                        <span
-                          title={`Partagée par ${catCount} catégories`}
-                          style={{
-                            display: 'inline-flex',
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '2px',
-                            color: '#93c5fd',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            background: 'rgba(96,165,250,0.12)',
-                            borderRadius: '100px',
-                            padding: '1px 6px',
+                            padding: '0 2px',
                           }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = '#6b9eff')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color =
+                              'rgba(255,255,255,0.35)')
+                          }
+                          title="Modifier / gérer les catégories"
                         >
-                          <HiOutlineLink size={10} />
-                          {catCount}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => openEdit(size)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.35)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0 2px',
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = '#6b9eff')
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            'rgba(255,255,255,0.35)')
-                        }
-                        title="Modifier / gérer les catégories"
-                      >
-                        <HiPencil size={12} />
-                      </button>
-                      <button
-                        onClick={() =>
-                          category
-                            ? handleRemoveFromCategory(
-                                size,
-                                category.documentId
-                              )
-                            : handleDelete(size)
-                        }
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.55)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0 2px',
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = '#f87171')
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            'rgba(255,255,255,0.55)')
-                        }
-                        title={
-                          category ? 'Retirer de cette catégorie' : 'Supprimer'
-                        }
-                      >
-                        <HiX size={13} />
-                      </button>
-                    </div>
-                  );
-                })}
+                          <HiPencil size={12} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            category
+                              ? handleRemoveFromCategory(
+                                  size,
+                                  category.documentId
+                                )
+                              : handleDelete(size)
+                          }
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.55)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 2px',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = '#f87171')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color =
+                              'rgba(255,255,255,0.55)')
+                          }
+                          title={
+                            category
+                              ? 'Retirer de cette catégorie'
+                              : 'Supprimer'
+                          }
+                        >
+                          <HiX size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        ))}
 
-      {/* ── Modal modification (premium overlay) ── */}
+      {/* ── Modal modification ── */}
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }

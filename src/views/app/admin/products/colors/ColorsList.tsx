@@ -21,6 +21,8 @@ import {
   HiChevronDown,
   HiChevronUp,
   HiOutlineLink,
+  HiOutlineViewGrid,
+  HiOutlineTable,
 } from 'react-icons/hi';
 import { IoColorPaletteOutline } from 'react-icons/io5';
 import { toast } from 'react-toastify';
@@ -34,6 +36,7 @@ injectReducer('colors', reducer);
 
 type Option = { value: string; label: string };
 type TemplateColor = { name: string; hex: string };
+type ViewMode = 'matrix' | 'cards';
 
 // Validation / normalisation des codes hex (#RGB → #RRGGBB)
 const normalizeHex = (input: string): string => {
@@ -258,6 +261,8 @@ const ColorsList = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [productCategories, setProductCategories] = useState<Option[]>([]);
+  const [view, setView] = useState<ViewMode>('matrix');
+  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
 
   // Quick-add state
   const [quickName, setQuickName] = useState('');
@@ -306,8 +311,9 @@ const ColorsList = () => {
     );
   };
 
-  // Groupement — une couleur apparaît sous CHACUNE de ses catégories
   const search = searchTerm.toLowerCase();
+
+  // ── Données vue CARTES ──
   const grouped = colors
     .filter(
       (c) =>
@@ -331,12 +337,16 @@ const ColorsList = () => {
       }
       return acc;
     }, {});
-
   const groups = Object.values(grouped).sort((a, b) => {
     if (!a.category) return 1;
     if (!b.category) return -1;
     return a.category.name.localeCompare(b.category.name);
   });
+
+  // ── Données vue MATRICE ──
+  const matrixColors = colors
+    .filter((c) => c.name.toLowerCase().includes(search))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Nom déjà existant (toutes catégories) → fusion plutôt que doublon
   const existingNamesSet = new Set(
@@ -345,7 +355,37 @@ const ColorsList = () => {
   const isExistingName =
     quickName.trim() && existingNamesSet.has(quickName.trim().toLowerCase());
 
-  // Quick-add une couleur — crée ou rattache aux catégories sélectionnées si elle existe déjà
+  // Toggle cellule matrice
+  const toggleCell = async (color: Color, catId: string) => {
+    const current = colorCategories(color).map((c) => c.documentId);
+    const has = current.includes(catId);
+    const next = has
+      ? current.filter((id) => id !== catId)
+      : [...current, catId];
+    const key = `${color.documentId}:${catId}`;
+    setSavingCells((prev) => new Set(prev).add(key));
+    try {
+      const r = await dispatch(
+        updateColor({
+          documentId: color.documentId,
+          name: color.name,
+          value: color.value,
+          description: color.description || '',
+          productCategories: next,
+        })
+      );
+      if (r.meta.requestStatus !== 'fulfilled')
+        toast.error('Échec de la sauvegarde');
+    } finally {
+      setSavingCells((prev) => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+    }
+  };
+
+  // Quick-add une couleur
   const handleQuickAdd = async () => {
     if (quickCategories.length === 0) {
       toast.error('Sélectionne au moins une catégorie');
@@ -409,7 +449,7 @@ const ColorsList = () => {
     if (e.key === 'Enter') handleQuickAdd();
   };
 
-  // Template batch add — crée ou rattache chaque couleur du template aux catégories sélectionnées
+  // Template batch add
   const handleAddTemplate = async (tplIdx: number) => {
     if (quickCategories.length === 0) {
       toast.error("Sélectionne au moins une catégorie d'abord");
@@ -552,6 +592,75 @@ const ColorsList = () => {
     }
   };
 
+  // ── Styles matrice ──
+  const thBase: React.CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    background: '#16263d',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    padding: '12px 10px',
+    borderBottom: '1px solid rgba(255,255,255,0.1)',
+    whiteSpace: 'nowrap',
+  };
+  const firstColStyle: React.CSSProperties = {
+    position: 'sticky',
+    left: 0,
+    zIndex: 1,
+    color: '#fff',
+    fontWeight: 600,
+    fontSize: '13px',
+    padding: '10px 14px',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    borderRight: '1px solid rgba(255,255,255,0.08)',
+    whiteSpace: 'nowrap',
+    textAlign: 'left',
+  };
+
+  const renderToggle = () => (
+    <div
+      style={{
+        display: 'inline-flex',
+        borderRadius: '10px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.12)',
+      }}
+    >
+      {(
+        [
+          ['matrix', 'Tableau croisé', <HiOutlineTable size={14} key="t" />],
+          ['cards', 'Cartes', <HiOutlineViewGrid size={14} key="c" />],
+        ] as const
+      ).map(([mode, label, icon]) => (
+        <button
+          key={mode}
+          onClick={() => setView(mode as ViewMode)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            fontSize: '12px',
+            fontWeight: 700,
+            fontFamily: 'Inter, sans-serif',
+            border: 'none',
+            cursor: 'pointer',
+            background:
+              view === mode ? 'rgba(47,111,237,0.2)' : 'rgba(255,255,255,0.04)',
+            color: view === mode ? '#7eb3ff' : 'rgba(255,255,255,0.5)',
+          }}
+        >
+          {icon}
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Header ── */}
@@ -600,6 +709,7 @@ const ColorsList = () => {
             </span>
           </h2>
         </div>
+        {renderToggle()}
       </div>
 
       {/* ── Zone création rapide ── */}
@@ -823,7 +933,6 @@ const ColorsList = () => {
             flexWrap: 'wrap',
           }}
         >
-          {/* Catégories (multi) */}
           <div style={{ minWidth: '220px', flex: '0 0 220px' }}>
             <label style={labelStyle}>Catégorie(s)</label>
             <Select
@@ -838,11 +947,9 @@ const ColorsList = () => {
             />
           </div>
 
-          {/* Sélecteur couleur compact */}
           <div style={{ flexShrink: 0 }}>
             <label style={labelStyle}>Couleur</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Swatch cliquable */}
               <div
                 style={{
                   position: 'relative',
@@ -879,7 +986,6 @@ const ColorsList = () => {
                   }}
                 />
               </div>
-              {/* Toggle palette */}
               <button
                 onClick={() => setShowPalette(!showPalette)}
                 style={{
@@ -910,7 +1016,6 @@ const ColorsList = () => {
             </div>
           </div>
 
-          {/* Hex input */}
           <div style={{ width: '110px', flexShrink: 0 }}>
             <label style={labelStyle}>Hex</label>
             <input
@@ -939,7 +1044,6 @@ const ColorsList = () => {
             />
           </div>
 
-          {/* Nom */}
           <div style={{ flex: 1, minWidth: '160px' }}>
             <label
               style={{
@@ -990,7 +1094,6 @@ const ColorsList = () => {
             />
           </div>
 
-          {/* Bouton */}
           <div style={{ flexShrink: 0, paddingBottom: '0px' }}>
             <label style={{ ...labelStyle, opacity: 0 }}>_</label>
             <button
@@ -1082,7 +1185,7 @@ const ColorsList = () => {
       <div
         style={{
           position: 'relative',
-          marginBottom: '28px',
+          marginBottom: '20px',
           maxWidth: '400px',
         }}
       >
@@ -1123,247 +1226,462 @@ const ColorsList = () => {
         />
       </div>
 
-      {/* ── Liste par catégorie ── */}
-      {loading ? (
-        <div
-          style={{
-            color: 'rgba(255,255,255,0.55)',
-            textAlign: 'center',
-            padding: '64px',
-          }}
-        >
-          Chargement…
-        </div>
-      ) : groups.length === 0 ? (
-        <div
-          style={{
-            background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-            borderRadius: '16px',
-            padding: '64px 24px',
-            textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          <IoColorPaletteOutline
-            size={48}
-            style={{
-              color: 'rgba(255,255,255,0.1)',
-              margin: '0 auto 14px',
-              display: 'block',
-            }}
-          />
-          <p
+      {/* ════════════ VUE MATRICE ════════════ */}
+      {view === 'matrix' &&
+        (loading ? (
+          <div
             style={{
               color: 'rgba(255,255,255,0.55)',
-              fontSize: '15px',
-              fontWeight: 600,
+              textAlign: 'center',
+              padding: '64px',
             }}
           >
-            Aucune couleur — crée-en une ci-dessus
-          </p>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            paddingBottom: '40px',
-          }}
-        >
-          {groups.map(({ category, colors: catColors }) => (
-            <div
-              key={category?.documentId || '__none__'}
+            Chargement…
+          </div>
+        ) : productCategories.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '48px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            Crée d'abord des catégories produit pour pouvoir rattacher les
+            couleurs.
+          </div>
+        ) : matrixColors.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '48px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            Aucune couleur — crée-en une ci-dessus.
+          </div>
+        ) : (
+          <div style={{ marginBottom: '40px' }}>
+            <p
               style={{
-                background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                color: 'rgba(255,255,255,0.4)',
+                fontSize: '12px',
+                marginBottom: '10px',
+              }}
+            >
+              Coche une case pour rattacher la couleur à la catégorie ·
+              sauvegarde automatique
+            </p>
+            <div
+              style={{
+                overflowX: 'auto',
+                borderRadius: '16px',
                 border: '1.5px solid rgba(255,255,255,0.08)',
-                borderRadius: '18px',
-                padding: '20px 24px',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
               }}
             >
-              <div
+              <table
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '16px',
+                  borderCollapse: 'separate',
+                  borderSpacing: 0,
+                  width: '100%',
+                  background:
+                    'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        ...thBase,
+                        ...firstColStyle,
+                        top: 0,
+                        zIndex: 3,
+                        background: '#16263d',
+                        color: 'rgba(255,255,255,0.6)',
+                        textTransform: 'uppercase',
+                        fontSize: '11px',
+                      }}
+                    >
+                      Couleur
+                    </th>
+                    {productCategories.map((cat) => (
+                      <th
+                        key={cat.value}
+                        style={{
+                          ...thBase,
+                          textAlign: 'center',
+                          minWidth: '92px',
+                        }}
+                      >
+                        {cat.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixColors.map((color, ri) => {
+                    const ids = new Set(
+                      colorCategories(color).map((c) => c.documentId)
+                    );
+                    return (
+                      <tr
+                        key={color.documentId}
+                        style={{
+                          background:
+                            ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                        }}
+                      >
+                        <td
+                          style={{
+                            ...firstColStyle,
+                            background: ri % 2 ? '#15233a' : '#16263d',
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
+                          >
+                            <Swatch hex={color.value} size={16} />
+                            {color.name}
+                            {ids.size > 1 && (
+                              <span
+                                title={`Partagée par ${ids.size} catégories`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                  color: '#93c5fd',
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  background: 'rgba(96,165,250,0.12)',
+                                  borderRadius: '100px',
+                                  padding: '1px 6px',
+                                }}
+                              >
+                                <HiOutlineLink size={10} />
+                                {ids.size}
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        {productCategories.map((cat) => {
+                          const checked = ids.has(cat.value);
+                          const key = `${color.documentId}:${cat.value}`;
+                          const busy = savingCells.has(key);
+                          return (
+                            <td
+                              key={cat.value}
+                              style={{
+                                textAlign: 'center',
+                                padding: '8px 10px',
+                                borderBottom:
+                                  '1px solid rgba(255,255,255,0.05)',
+                              }}
+                            >
+                              <button
+                                onClick={() => toggleCell(color, cat.value)}
+                                disabled={busy}
+                                title={
+                                  checked
+                                    ? `Retirer de ${cat.label}`
+                                    : `Rattacher à ${cat.label}`
+                                }
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '7px',
+                                  cursor: busy ? 'wait' : 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: checked
+                                    ? 'linear-gradient(135deg, #2f6fed, #1f4bb6)'
+                                    : 'rgba(255,255,255,0.05)',
+                                  border: `1.5px solid ${checked ? 'rgba(47,111,237,0.7)' : 'rgba(255,255,255,0.15)'}`,
+                                  color: '#fff',
+                                  opacity: busy ? 0.5 : 1,
+                                  transition: 'all 0.12s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!busy && !checked)
+                                    e.currentTarget.style.borderColor =
+                                      'rgba(47,111,237,0.6)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!busy && !checked)
+                                    e.currentTarget.style.borderColor =
+                                      'rgba(255,255,255,0.15)';
+                                }}
+                              >
+                                {checked && <HiCheck size={15} />}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+      {/* ════════════ VUE CARTES ════════════ */}
+      {view === 'cards' &&
+        (loading ? (
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.55)',
+              textAlign: 'center',
+              padding: '64px',
+            }}
+          >
+            Chargement…
+          </div>
+        ) : groups.length === 0 ? (
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+              borderRadius: '16px',
+              padding: '64px 24px',
+              textAlign: 'center',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+            <IoColorPaletteOutline
+              size={48}
+              style={{
+                color: 'rgba(255,255,255,0.1)',
+                margin: '0 auto 14px',
+                display: 'block',
+              }}
+            />
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: '15px',
+                fontWeight: 600,
+              }}
+            >
+              Aucune couleur — crée-en une ci-dessus
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              paddingBottom: '40px',
+            }}
+          >
+            {groups.map(({ category, colors: catColors }) => (
+              <div
+                key={category?.documentId || '__none__'}
+                style={{
+                  background:
+                    'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.08)',
+                  borderRadius: '18px',
+                  padding: '20px 24px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
                 }}
               >
                 <div
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '9px',
-                    background: 'rgba(47,111,237,0.15)',
-                    border: '1px solid rgba(47,111,237,0.3)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    gap: '10px',
+                    marginBottom: '16px',
                   }}
                 >
-                  <IoColorPaletteOutline
-                    size={16}
-                    style={{ color: '#6b9eff' }}
-                  />
-                </div>
-                <div>
-                  <p
+                  <div
                     style={{
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: '15px',
-                      margin: 0,
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '9px',
+                      background: 'rgba(47,111,237,0.15)',
+                      border: '1px solid rgba(47,111,237,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    {category?.name || 'Sans catégorie'}
-                  </p>
-                  <p
-                    style={{
-                      color: 'rgba(255,255,255,0.55)',
-                      fontSize: '12px',
-                      margin: 0,
-                    }}
-                  >
-                    {catColors.length} couleur{catColors.length > 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {catColors.map((color) => {
-                  const catCount = colorCategories(color).length;
-                  return (
-                    <div
-                      key={color.documentId}
+                    <IoColorPaletteOutline
+                      size={16}
+                      style={{ color: '#6b9eff' }}
+                    />
+                  </div>
+                  <div>
+                    <p
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '100px',
-                        padding: '5px 10px 5px 7px',
+                        color: '#fff',
+                        fontWeight: 700,
+                        fontSize: '15px',
+                        margin: 0,
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.borderColor =
-                          'rgba(255,255,255,0.22)')
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.borderColor =
-                          'rgba(255,255,255,0.1)')
-                      }
                     >
-                      <Swatch hex={color.value} size={18} />
-                      <span
+                      {category?.name || 'Sans catégorie'}
+                    </p>
+                    <p
+                      style={{
+                        color: 'rgba(255,255,255,0.55)',
+                        fontSize: '12px',
+                        margin: 0,
+                      }}
+                    >
+                      {catColors.length} couleur
+                      {catColors.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {catColors.map((color) => {
+                    const catCount = colorCategories(color).length;
+                    return (
+                      <div
+                        key={color.documentId}
                         style={{
-                          color: '#fff',
-                          fontWeight: 600,
-                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '100px',
+                          padding: '5px 10px 5px 7px',
                         }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            'rgba(255,255,255,0.22)')
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.borderColor =
+                            'rgba(255,255,255,0.1)')
+                        }
                       >
-                        {color.name}
-                      </span>
-                      {color.description && (
+                        <Swatch hex={color.value} size={18} />
                         <span
                           style={{
-                            color: 'rgba(255,255,255,0.35)',
-                            fontSize: '11px',
+                            color: '#fff',
+                            fontWeight: 600,
+                            fontSize: '13px',
                           }}
                         >
-                          · {color.description}
+                          {color.name}
                         </span>
-                      )}
-                      <span
-                        style={{
-                          color: 'rgba(255,255,255,0.25)',
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {color.value}
-                      </span>
-                      {catCount > 1 && (
+                        {color.description && (
+                          <span
+                            style={{
+                              color: 'rgba(255,255,255,0.35)',
+                              fontSize: '11px',
+                            }}
+                          >
+                            · {color.description}
+                          </span>
+                        )}
                         <span
-                          title={`Partagée par ${catCount} catégories`}
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '2px',
-                            color: '#93c5fd',
+                            color: 'rgba(255,255,255,0.25)',
                             fontSize: '10px',
-                            fontWeight: 700,
-                            background: 'rgba(96,165,250,0.12)',
-                            borderRadius: '100px',
-                            padding: '1px 6px',
+                            fontFamily: 'monospace',
                           }}
                         >
-                          <HiOutlineLink size={10} />
-                          {catCount}
+                          {color.value}
                         </span>
-                      )}
-                      <button
-                        onClick={() => openEdit(color)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.35)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0 2px',
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = '#6b9eff')
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            'rgba(255,255,255,0.35)')
-                        }
-                        title="Modifier / gérer les catégories"
-                      >
-                        <HiPencil size={12} />
-                      </button>
-                      <button
-                        onClick={() =>
-                          category
-                            ? handleRemoveFromCategory(
-                                color,
-                                category.documentId
-                              )
-                            : handleDelete(color)
-                        }
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.55)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0 2px',
-                        }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = '#f87171')
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color =
-                            'rgba(255,255,255,0.55)')
-                        }
-                        title={
-                          category ? 'Retirer de cette catégorie' : 'Supprimer'
-                        }
-                      >
-                        <HiX size={13} />
-                      </button>
-                    </div>
-                  );
-                })}
+                        {catCount > 1 && (
+                          <span
+                            title={`Partagée par ${catCount} catégories`}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              color: '#93c5fd',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              background: 'rgba(96,165,250,0.12)',
+                              borderRadius: '100px',
+                              padding: '1px 6px',
+                            }}
+                          >
+                            <HiOutlineLink size={10} />
+                            {catCount}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => openEdit(color)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.35)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 2px',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = '#6b9eff')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color =
+                              'rgba(255,255,255,0.35)')
+                          }
+                          title="Modifier / gérer les catégories"
+                        >
+                          <HiPencil size={12} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            category
+                              ? handleRemoveFromCategory(
+                                  color,
+                                  category.documentId
+                                )
+                              : handleDelete(color)
+                          }
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.55)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 2px',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = '#f87171')
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color =
+                              'rgba(255,255,255,0.55)')
+                          }
+                          title={
+                            category
+                              ? 'Retirer de cette catégorie'
+                              : 'Supprimer'
+                          }
+                        >
+                          <HiX size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        ))}
 
-      {/* ── Modal modification (premium overlay) ── */}
+      {/* ── Modal modification ── */}
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
@@ -1438,7 +1756,6 @@ const ColorsList = () => {
             <div
               style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
             >
-              {/* Nom */}
               <div>
                 <label
                   style={{
@@ -1490,7 +1807,6 @@ const ColorsList = () => {
                 />
               </div>
 
-              {/* Couleur */}
               <div>
                 <label
                   style={{
@@ -1621,7 +1937,6 @@ const ColorsList = () => {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
                 <label style={labelStyle}>Description</label>
                 <input
@@ -1638,7 +1953,6 @@ const ColorsList = () => {
                 />
               </div>
 
-              {/* Catégories */}
               <div>
                 <label style={labelStyle}>Catégories</label>
                 <Select
