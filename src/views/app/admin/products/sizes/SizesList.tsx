@@ -203,10 +203,32 @@ const SizesList = () => {
       return a.category.name.localeCompare(b.category.name);
     });
 
-  // ── Données vue MATRICE — lignes = tailles uniques, colonnes = catégories ──
-  const matrixSizes = sizes
-    .filter((s) => s.name.toLowerCase().includes(search))
-    .sort(compareSizes);
+  // ── Données vue MATRICE — UNE ligne par NOM de taille (regroupe les doublons historiques) ──
+  type MatrixRow = {
+    name: string;
+    description: string;
+    entities: Size[];
+    catIds: Set<string>;
+  };
+  const matrixRows: MatrixRow[] = Object.values(
+    sizes
+      .filter((s) => s.name.toLowerCase().includes(search))
+      .reduce<Record<string, MatrixRow>>((acc, s) => {
+        const k = s.name.trim().toLowerCase();
+        if (!acc[k])
+          acc[k] = {
+            name: s.name,
+            description: s.description || '',
+            entities: [],
+            catIds: new Set(),
+          };
+        acc[k].entities.push(s);
+        sizeCategories(s).forEach((c) => acc[k].catIds.add(c.documentId));
+        return acc;
+      }, {})
+  ).sort((a, b) =>
+    compareSizes({ name: a.name } as Size, { name: b.name } as Size)
+  );
 
   // Parse quick input into trimmed names
   const parsedSizes = quickInput
@@ -219,27 +241,42 @@ const SizesList = () => {
     sizes.map((s) => s.name.trim().toLowerCase())
   );
 
-  // Toggle d'une cellule de la matrice — rattache/détache et sauvegarde aussitôt
-  const toggleCell = async (size: Size, catId: string) => {
-    const current = sizeCategories(size).map((c) => c.documentId);
-    const has = current.includes(catId);
-    const next = has
-      ? current.filter((id) => id !== catId)
-      : [...current, catId];
-    const key = `${size.documentId}:${catId}`;
+  // Toggle d'une cellule de la matrice (par NOM) — rattache/détache et sauvegarde aussitôt.
+  // Ajout → sur la 1ʳᵉ entité du nom. Retrait → sur toutes les entités du nom qui ont la catégorie.
+  const toggleNameRow = async (row: MatrixRow, catId: string) => {
+    const has = row.catIds.has(catId);
+    const key = `${row.name.toLowerCase()}:${catId}`;
     setSavingCells((prev) => new Set(prev).add(key));
     try {
-      const r = await dispatch(
-        updateSize({
-          documentId: size.documentId,
-          name: size.name,
-          value: size.value || size.name,
-          description: size.description || '',
-          productCategories: next,
-        })
-      );
-      if (r.meta.requestStatus !== 'fulfilled')
-        toast.error('Échec de la sauvegarde');
+      const apply = async (e: Size, next: string[]) => {
+        const r = await dispatch(
+          updateSize({
+            documentId: e.documentId,
+            name: e.name,
+            value: e.value || e.name,
+            description: e.description || '',
+            productCategories: next,
+          })
+        );
+        if (r.meta.requestStatus !== 'fulfilled')
+          toast.error('Échec de la sauvegarde');
+      };
+      if (has) {
+        const targets = row.entities.filter((e) =>
+          sizeCategories(e).some((c) => c.documentId === catId)
+        );
+        for (const e of targets) {
+          await apply(
+            e,
+            sizeCategories(e)
+              .map((c) => c.documentId)
+              .filter((id) => id !== catId)
+          );
+        }
+      } else {
+        const e = row.entities[0];
+        await apply(e, [...sizeCategories(e).map((c) => c.documentId), catId]);
+      }
     } finally {
       setSavingCells((prev) => {
         const n = new Set(prev);
@@ -820,7 +857,7 @@ const SizesList = () => {
             Crée d'abord des catégories produit pour pouvoir rattacher les
             tailles.
           </div>
-        ) : matrixSizes.length === 0 ? (
+        ) : matrixRows.length === 0 ? (
           <div
             style={{
               background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
@@ -847,7 +884,8 @@ const SizesList = () => {
             </p>
             <div
               style={{
-                overflowX: 'auto',
+                overflow: 'auto',
+                maxHeight: 'calc(100vh - 180px)',
                 borderRadius: '16px',
                 border: '1.5px solid rgba(255,255,255,0.08)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
@@ -892,13 +930,11 @@ const SizesList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {matrixSizes.map((size, ri) => {
-                    const ids = new Set(
-                      sizeCategories(size).map((c) => c.documentId)
-                    );
+                  {matrixRows.map((row, ri) => {
+                    const ids = row.catIds;
                     return (
                       <tr
-                        key={size.documentId}
+                        key={row.name}
                         style={{
                           background:
                             ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
@@ -910,8 +946,8 @@ const SizesList = () => {
                             background: ri % 2 ? '#15233a' : '#16263d',
                           }}
                         >
-                          {size.name}
-                          {size.description && (
+                          {row.name}
+                          {row.description && (
                             <span
                               style={{
                                 color: 'rgba(255,255,255,0.3)',
@@ -919,12 +955,12 @@ const SizesList = () => {
                                 marginLeft: 6,
                               }}
                             >
-                              {size.description}
+                              {row.description}
                             </span>
                           )}
                           {ids.size > 1 && (
                             <span
-                              title={`Partagée par ${ids.size} catégories`}
+                              title={`Présente dans ${ids.size} catégories`}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -945,7 +981,7 @@ const SizesList = () => {
                         </td>
                         {productCategories.map((cat) => {
                           const checked = ids.has(cat.value);
-                          const key = `${size.documentId}:${cat.value}`;
+                          const key = `${row.name.toLowerCase()}:${cat.value}`;
                           const busy = savingCells.has(key);
                           return (
                             <td
@@ -958,7 +994,7 @@ const SizesList = () => {
                               }}
                             >
                               <button
-                                onClick={() => toggleCell(size, cat.value)}
+                                onClick={() => toggleNameRow(row, cat.value)}
                                 disabled={busy}
                                 title={
                                   checked

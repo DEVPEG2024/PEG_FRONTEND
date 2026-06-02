@@ -343,10 +343,30 @@ const ColorsList = () => {
     return a.category.name.localeCompare(b.category.name);
   });
 
-  // ── Données vue MATRICE ──
-  const matrixColors = colors
-    .filter((c) => c.name.toLowerCase().includes(search))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // ── Données vue MATRICE — UNE ligne par NOM de couleur (regroupe les doublons historiques) ──
+  type MatrixRow = {
+    name: string;
+    value: string;
+    entities: Color[];
+    catIds: Set<string>;
+  };
+  const matrixRows: MatrixRow[] = Object.values(
+    colors
+      .filter((c) => c.name.toLowerCase().includes(search))
+      .reduce<Record<string, MatrixRow>>((acc, c) => {
+        const k = c.name.trim().toLowerCase();
+        if (!acc[k])
+          acc[k] = {
+            name: c.name,
+            value: c.value,
+            entities: [],
+            catIds: new Set(),
+          };
+        acc[k].entities.push(c);
+        colorCategories(c).forEach((cat) => acc[k].catIds.add(cat.documentId));
+        return acc;
+      }, {})
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   // Nom déjà existant (toutes catégories) → fusion plutôt que doublon
   const existingNamesSet = new Set(
@@ -355,27 +375,41 @@ const ColorsList = () => {
   const isExistingName =
     quickName.trim() && existingNamesSet.has(quickName.trim().toLowerCase());
 
-  // Toggle cellule matrice
-  const toggleCell = async (color: Color, catId: string) => {
-    const current = colorCategories(color).map((c) => c.documentId);
-    const has = current.includes(catId);
-    const next = has
-      ? current.filter((id) => id !== catId)
-      : [...current, catId];
-    const key = `${color.documentId}:${catId}`;
+  // Toggle cellule matrice (par NOM). Ajout → 1ʳᵉ entité ; retrait → toutes les entités du nom.
+  const toggleNameRow = async (row: MatrixRow, catId: string) => {
+    const has = row.catIds.has(catId);
+    const key = `${row.name.toLowerCase()}:${catId}`;
     setSavingCells((prev) => new Set(prev).add(key));
     try {
-      const r = await dispatch(
-        updateColor({
-          documentId: color.documentId,
-          name: color.name,
-          value: color.value,
-          description: color.description || '',
-          productCategories: next,
-        })
-      );
-      if (r.meta.requestStatus !== 'fulfilled')
-        toast.error('Échec de la sauvegarde');
+      const apply = async (e: Color, next: string[]) => {
+        const r = await dispatch(
+          updateColor({
+            documentId: e.documentId,
+            name: e.name,
+            value: e.value,
+            description: e.description || '',
+            productCategories: next,
+          })
+        );
+        if (r.meta.requestStatus !== 'fulfilled')
+          toast.error('Échec de la sauvegarde');
+      };
+      if (has) {
+        const targets = row.entities.filter((e) =>
+          colorCategories(e).some((c) => c.documentId === catId)
+        );
+        for (const e of targets) {
+          await apply(
+            e,
+            colorCategories(e)
+              .map((c) => c.documentId)
+              .filter((id) => id !== catId)
+          );
+        }
+      } else {
+        const e = row.entities[0];
+        await apply(e, [...colorCategories(e).map((c) => c.documentId), catId]);
+      }
     } finally {
       setSavingCells((prev) => {
         const n = new Set(prev);
@@ -1252,7 +1286,7 @@ const ColorsList = () => {
             Crée d'abord des catégories produit pour pouvoir rattacher les
             couleurs.
           </div>
-        ) : matrixColors.length === 0 ? (
+        ) : matrixRows.length === 0 ? (
           <div
             style={{
               background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
@@ -1279,7 +1313,8 @@ const ColorsList = () => {
             </p>
             <div
               style={{
-                overflowX: 'auto',
+                overflow: 'auto',
+                maxHeight: 'calc(100vh - 180px)',
                 borderRadius: '16px',
                 border: '1.5px solid rgba(255,255,255,0.08)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
@@ -1325,13 +1360,11 @@ const ColorsList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {matrixColors.map((color, ri) => {
-                    const ids = new Set(
-                      colorCategories(color).map((c) => c.documentId)
-                    );
+                  {matrixRows.map((row, ri) => {
+                    const ids = row.catIds;
                     return (
                       <tr
-                        key={color.documentId}
+                        key={row.name}
                         style={{
                           background:
                             ri % 2 ? 'rgba(255,255,255,0.015)' : 'transparent',
@@ -1350,11 +1383,11 @@ const ColorsList = () => {
                               gap: 8,
                             }}
                           >
-                            <Swatch hex={color.value} size={16} />
-                            {color.name}
+                            <Swatch hex={row.value} size={16} />
+                            {row.name}
                             {ids.size > 1 && (
                               <span
-                                title={`Partagée par ${ids.size} catégories`}
+                                title={`Présente dans ${ids.size} catégories`}
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1375,7 +1408,7 @@ const ColorsList = () => {
                         </td>
                         {productCategories.map((cat) => {
                           const checked = ids.has(cat.value);
-                          const key = `${color.documentId}:${cat.value}`;
+                          const key = `${row.name.toLowerCase()}:${cat.value}`;
                           const busy = savingCells.has(key);
                           return (
                             <td
@@ -1388,7 +1421,7 @@ const ColorsList = () => {
                               }}
                             >
                               <button
-                                onClick={() => toggleCell(color, cat.value)}
+                                onClick={() => toggleNameRow(row, cat.value)}
                                 disabled={busy}
                                 title={
                                   checked
