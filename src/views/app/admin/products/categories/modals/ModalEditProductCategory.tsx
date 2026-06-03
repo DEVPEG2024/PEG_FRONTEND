@@ -8,8 +8,10 @@ import { useAppDispatch } from '@/store';
 import {
   createProductCategory,
   updateProductCategory,
+  getProductCategories,
   useAppSelector,
 } from '../store';
+import { toast } from 'react-toastify';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { Loading } from '@/components/shared';
 import { ProductCategory } from '@/@types/product';
@@ -72,30 +74,48 @@ function ModalEditProductCategory({
     setImageModified(true);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async () => {
-    if (mode === 'add') {
-      dispatch(
-        createProductCategory({
-          name,
-          products: [],
-          image,
-          parent: selectedParent || undefined,
-        } as any)
-      );
-    } else {
-      dispatch(
-        updateProductCategory({
-          productCategory: {
-            documentId: productCategory!.documentId,
-            name,
-            image,
-            parent: selectedParent || null,
-          },
-          imageModified,
-        })
-      );
+    if (!name.trim()) {
+      toast.error('Le nom de la catégorie est requis');
+      return;
     }
-    handleCloseModal();
+    setSaving(true);
+    try {
+      if (mode === 'add') {
+        await dispatch(
+          createProductCategory({
+            name,
+            products: [],
+            image,
+            parent: selectedParent || undefined,
+          } as any)
+        ).unwrap();
+      } else {
+        await dispatch(
+          updateProductCategory({
+            productCategory: {
+              documentId: productCategory!.documentId,
+              name,
+              image,
+              parent: selectedParent || null,
+            },
+            imageModified,
+          })
+        ).unwrap();
+      }
+      // Recharge la liste pour que les sous-catégories apparaissent sous leur parent
+      await dispatch(
+        getProductCategories({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })
+      );
+      toast.success(mode === 'add' ? 'Catégorie créée' : 'Catégorie enregistrée');
+      handleCloseModal();
+    } catch (e) {
+      toast.error("Échec de l'enregistrement de la catégorie");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -229,12 +249,13 @@ function ModalEditProductCategory({
             color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600,
             cursor: 'pointer', fontFamily: 'Inter, sans-serif',
           }}>{t('cancel')}</button>
-          <button onClick={handleSubmit} style={{
+          <button onClick={handleSubmit} disabled={saving} style={{
             padding: '12px 28px', borderRadius: '12px', border: 'none', color: '#fff',
-            fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+            fontSize: '14px', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif',
             background: 'linear-gradient(90deg, #2f6fed, #1d4ed8)',
             boxShadow: '0 4px 20px rgba(47,111,237,0.4)',
-          }}>{t('save')}</button>
+            opacity: saving ? 0.7 : 1,
+          }}>{saving ? 'Enregistrement…' : t('save')}</button>
         </div>
 
         <style>{`
