@@ -13,7 +13,6 @@ import { toast } from 'react-toastify';
 import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash, TbRefresh } from 'react-icons/tb';
 import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote } from '@/services/QuoteServices';
-import { apiCreateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const fmtDate = (d?: string | null) => {
@@ -266,11 +265,26 @@ const QuotesList = () => {
     } catch { toast.error("Échec de l'envoi"); } finally { setBusyId(null); }
   };
 
-  // Validation : paiement immédiat si le client n'a PAS le paiement différé
+  // Validation : paiement immédiat si le client n'a PAS le paiement différé,
+  // sinon validation différée côté backend (projet + facture en attente)
   const handleValidate = async (q: Quote) => {
     const deferred = !!user?.customer?.deferredPayment;
     if (deferred) {
-      await finalizeAcceptance(q);
+      setBusyId(q.documentId);
+      try {
+        const res = await fetch(API_BASE_URL + '/checkout/quote-deferred', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
+          body: JSON.stringify({ quoteDocumentId: q.documentId }),
+        });
+        if (!res.ok) throw new Error('deferred');
+        toast.success('Devis validé — projet créé');
+        await load();
+      } catch {
+        toast.error('Échec de la validation');
+      } finally {
+        setBusyId(null);
+      }
     } else {
       await startQuotePayment(q);
     }
@@ -294,38 +308,6 @@ const QuotesList = () => {
       toast.error('Impossible de démarrer le paiement');
       setBusyId(null);
     }
-  };
-
-  // Crée le projet + marque le devis validé (après paiement, ou directement si paiement différé)
-  const finalizeAcceptance = async (q: Quote) => {
-    if (q.status === 'accepted') return;
-    setBusyId(q.documentId);
-    try {
-      // 1) Crée le projet (devis validé → projet en cours)
-      const now = new Date();
-      const end = q.desiredDeadline ? new Date(q.desiredDeadline) : new Date(now.getTime() + 30 * 86400000);
-      const { createProject }: any = await unwrapData(apiCreateProject({
-        name: q.title || `Projet — ${q.projectType || 'Devis'}`,
-        description: q.description || '',
-        startDate: now,
-        endDate: end,
-        state: 'pending',
-        priority: 'medium',
-        price: q.proposalAmount || 0,
-        producerPrice: 0,
-        paidPrice: 0,
-        producerPaidPrice: 0,
-        poolable: false,
-        customer: q.customer?.documentId ? { documentId: q.customer.documentId } : null,
-      } as any));
-      // 2) Marque le devis comme validé + lie le projet
-      await unwrapData(apiUpdateQuote(q.documentId, {
-        status: 'accepted', validatedAt: now.toISOString(),
-        project: createProject?.documentId,
-      }));
-      toast.success('Devis validé — projet créé');
-      await load();
-    } catch { toast.error('Échec de la validation'); } finally { setBusyId(null); }
   };
 
   const handleReopen = async (q: Quote) => {
