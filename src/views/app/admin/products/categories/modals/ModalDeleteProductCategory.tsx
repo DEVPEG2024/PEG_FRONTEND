@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useAppDispatch } from '@/store';
 import { useTranslation } from 'react-i18next';
-import { deleteProductCategory, useAppSelector } from '../store';
+import { deleteProductCategory, getProductCategories, useAppSelector } from '../store';
 import { HiX, HiExclamation } from 'react-icons/hi';
+import { toast } from 'react-toastify';
 
 const fadeSlideKeyframes = `
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -22,10 +24,23 @@ function ModalDeleteProductCategory({
     (state) => state.productCategories.data
   );
   const dispatch = useAppDispatch();
+  const [deleting, setDeleting] = useState(false);
 
   const onDialogOk = async () => {
-    dispatch(deleteProductCategory(productCategory!.documentId));
-    handleCloseModal();
+    setDeleting(true);
+    try {
+      await dispatch(deleteProductCategory(productCategory!.documentId)).unwrap();
+      // Recharge la liste pour retirer la (sous-)catégorie de son parent
+      await dispatch(
+        getProductCategories({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })
+      );
+      toast.success('Catégorie supprimée');
+      handleCloseModal();
+    } catch (e) {
+      toast.error('Échec de la suppression de la catégorie');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -141,6 +156,7 @@ function ModalDeleteProductCategory({
             </button>
             <button
               onClick={onDialogOk}
+              disabled={deleting}
               style={{
                 background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
                 border: 'none',
@@ -149,7 +165,8 @@ function ModalDeleteProductCategory({
                 color: '#fff',
                 fontSize: '14px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: deleting ? 'wait' : 'pointer',
+                opacity: deleting ? 0.7 : 1,
                 boxShadow: '0 4px 16px rgba(220,38,38,0.4)',
                 transition: 'all 0.15s',
               }}
@@ -162,7 +179,7 @@ function ModalDeleteProductCategory({
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              {t('delete')}
+              {deleting ? 'Suppression…' : t('delete')}
             </button>
           </div>
         </div>
