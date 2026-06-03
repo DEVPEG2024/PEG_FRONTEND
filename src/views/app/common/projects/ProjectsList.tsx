@@ -534,7 +534,7 @@ const ProjectsList = () => {
 
       {/* Bannière */}
       <div style={{ paddingBottom: '24px' }}>
-        <CatalogueBanner bannerName="Bannière projets" />
+        <CatalogueBanner bannerName="Bannière projets" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
       </div>
 
       {/* Content */}

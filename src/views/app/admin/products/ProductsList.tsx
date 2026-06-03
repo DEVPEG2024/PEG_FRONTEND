@@ -517,7 +517,7 @@ const ProductsList = () => {
 
       {/* Bannière */}
       <div style={{ marginBottom: '24px' }}>
-        <CatalogueBanner bannerName="Bannière offres" />
+        <CatalogueBanner bannerName="Bannière offres" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
       </div>
 
       <Loading loading={loading} type="cover">
