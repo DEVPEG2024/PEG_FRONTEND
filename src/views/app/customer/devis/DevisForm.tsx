@@ -45,20 +45,20 @@ const DevisForm = () => {
   const user = useAppSelector((state) => state.auth.user.user) as User | undefined;
   const ci = user?.customer?.companyInformations;
 
-  const [company, setCompany] = useState(user?.customer?.name ?? '');
-  const [contact, setContact] = useState(`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
-  const [email, setEmail] = useState(user?.email ?? ci?.email ?? '');
-  const [phone, setPhone] = useState(ci?.phoneNumber ?? '');
+  // Le devis est automatiquement rattaché au profil connecté (non modifiable)
+  const company = user?.customer?.name ?? '';
+  const contact = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+  const email = user?.email ?? ci?.email ?? '';
+  const phone = ci?.phoneNumber ?? '';
+
   const [projectType, setProjectType] = useState(PROJECT_TYPES[0]);
   const [quantity, setQuantity] = useState('');
-  const [budget, setBudget] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleSubmit = async () => {
-    if (!company.trim()) { toast.error('Le nom de la société est requis'); return; }
     if (!description.trim()) { toast.error('Merci de décrire votre projet'); return; }
     setSending(true);
     try {
@@ -71,13 +71,13 @@ const DevisForm = () => {
       ].filter((l) => l !== null).join('\n');
 
       await apiCreateLead({
-        company: company.trim(),
-        contact: contact.trim() || null,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
+        company: company || contact || 'Client',
+        contact: contact || null,
+        email: email || null,
+        phone: phone || null,
         source: 'site_web',
         stage: 'nouveau',
-        value: parseFloat(budget) || 0,
+        value: 0,
         probability: 0,
         priority: 'normale',
         notes,
@@ -151,26 +151,22 @@ const DevisForm = () => {
         border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px', padding: '24px',
         display: 'flex', flexDirection: 'column', gap: '16px',
       }}>
-        {/* Coordonnées */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div>
-            <label style={labelStyle}>Société *</label>
-            <input style={inputStyle} value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Nom de l'entreprise" />
-          </div>
-          <div>
-            <label style={labelStyle}>Contact</label>
-            <input style={inputStyle} value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Prénom Nom" />
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@societe.com" />
-          </div>
-          <div>
-            <label style={labelStyle}>Téléphone</label>
-            <input style={inputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+33 6 00 00 00 00" />
-          </div>
+        {/* Demande rattachée automatiquement au profil connecté */}
+        <div style={{
+          background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+          borderRadius: '10px', padding: '12px 14px',
+        }}>
+          <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+            Demande pour
+          </p>
+          <p style={{ margin: '4px 0 0', color: '#fff', fontSize: '14px', fontWeight: 700 }}>
+            {company || contact || 'Votre profil'}
+          </p>
+          {(contact || email) && (
+            <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+              {[contact, email].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
 
         {/* Projet */}
@@ -186,15 +182,9 @@ const DevisForm = () => {
             <input style={inputStyle} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="ex. 100 pièces" />
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div>
-            <label style={labelStyle}>Budget estimé (€ HT)</label>
-            <input style={inputStyle} type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="ex. 2000" />
-          </div>
-          <div>
-            <label style={labelStyle}>Délai souhaité</label>
-            <input style={inputStyle} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-          </div>
+        <div>
+          <label style={labelStyle}>Délai souhaité</label>
+          <input style={inputStyle} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </div>
 
         <div>
