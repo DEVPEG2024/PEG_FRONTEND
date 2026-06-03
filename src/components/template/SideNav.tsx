@@ -39,7 +39,7 @@ const QuoteCard = () => (
             <p style={{ margin: '4px 0 14px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.4 }}>
                 Notre équipe vous accompagne.
             </p>
-            <Link to="/support" style={{ textDecoration: 'none' }}>
+            <Link to="/customer/devis" style={{ textDecoration: 'none' }}>
                 <button style={{
                     width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
@@ -147,11 +147,16 @@ const SideNav = () => {
                     {sideNavCollapse ? (
                         menuContent
                     ) : (
-                        <div className="side-nav-content">
-                            <ScrollBar autoHide direction={direction}>
-                                {menuContent}
-                                {customer && <QuoteCard />}
-                            </ScrollBar>
+                        <div
+                            className="side-nav-content"
+                            style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                        >
+                            <div style={{ flex: 1, minHeight: 0 }}>
+                                <ScrollBar autoHide direction={direction}>
+                                    {menuContent}
+                                </ScrollBar>
+                            </div>
+                            {customer && <QuoteCard />}
                         </div>
                     )}
                 </div>

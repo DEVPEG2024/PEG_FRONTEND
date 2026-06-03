@@ -267,6 +267,12 @@ const protectedCustomersRoutes = [
     component: lazy(() => import("@/views/app/customer/cart/Cart")),
   },
   {
+    key: "customer.devis",
+    path: "/customer/devis",
+    component: lazy(() => import("@/views/app/customer/devis/DevisForm")),
+    authority: [CUSTOMER],
+  },
+  {
     key: "customer.invoices",
     path: "/customer/invoices",
     component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),
