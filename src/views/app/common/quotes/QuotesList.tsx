@@ -239,16 +239,15 @@ const QuotesList = () => {
     const paid = params.get('paid');
     if (!paid || loading) return;
     if (paidHandledRef.current === paid) return;
-    const q = quotes.find((x) => x.documentId === paid);
-    if (!q) return;
     paidHandledRef.current = paid;
-    if (q.status === 'proposed') {
-      finalizeAcceptance(q).finally(() => navigate('/common/quotes', { replace: true }));
-    } else {
-      navigate('/common/quotes', { replace: true });
-    }
+    // Le projet est créé de façon fiable par le webhook Stripe (côté backend).
+    // On affiche le succès et on rafraîchit le temps que le webhook traite.
+    toast.success('Paiement reçu — votre projet est en cours de création.');
+    navigate('/common/quotes', { replace: true });
+    setTimeout(() => load(), 3000);
+    setTimeout(() => load(), 7000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, quotes, loading]);
+  }, [params, loading]);
 
   const pendingCount = useMemo(
     () => quotes.filter((q) => (isAdmin ? q.status === 'requested' : q.status === 'proposed')).length,
