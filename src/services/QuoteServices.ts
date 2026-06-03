@@ -116,3 +116,17 @@ export async function apiUpdateQuote(
         data: { query, variables: { documentId, data } },
     })
 }
+
+export async function apiDeleteQuote(
+    documentId: string
+): Promise<AxiosResponse<ApiResponse<{ deleteQuote: { documentId: string } }>>> {
+    const query = `
+    mutation DeleteQuote($documentId: ID!) {
+        deleteQuote(documentId: $documentId) { documentId }
+    }`
+    return ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { documentId } },
+    })
+}

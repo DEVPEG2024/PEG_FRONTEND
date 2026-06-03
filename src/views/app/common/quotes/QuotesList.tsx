@@ -5,9 +5,9 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { toast } from 'react-toastify';
-import { TbSparkles, TbSend, TbCheck, TbX, TbClock } from 'react-icons/tb';
+import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash } from 'react-icons/tb';
 import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
-import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote } from '@/services/QuoteServices';
+import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote } from '@/services/QuoteServices';
 import { apiCreateProject } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
@@ -41,11 +41,12 @@ const StatusBadge = ({ status }: { status: Quote['status'] }) => {
   );
 };
 
-function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject }: {
+function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDelete }: {
   quote: Quote; isAdmin: boolean; busy: boolean;
   onPropose: (amount: number, message: string) => void;
   onValidate: () => void;
   onReject: () => void;
+  onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
@@ -63,7 +64,26 @@ function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject }: {
             {' · '}{fmtDate(quote.createdAt)}
           </p>
         </div>
-        <StatusBadge status={quote.status} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <StatusBadge status={quote.status} />
+          {isAdmin && (
+            <button
+              onClick={onDelete}
+              disabled={busy}
+              title="Supprimer le devis"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '28px', height: '28px', borderRadius: '8px',
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                color: '#f87171', cursor: busy ? 'wait' : 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+            >
+              <TbTrash size={15} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Détails de la demande */}
@@ -232,6 +252,16 @@ const QuotesList = () => {
     } catch { toast.error('Échec de la validation'); } finally { setBusyId(null); }
   };
 
+  const handleDelete = async (q: Quote) => {
+    if (!window.confirm(`Supprimer définitivement ce devis ${q.customer?.name ? `de ${q.customer.name}` : ''} ?`)) return;
+    setBusyId(q.documentId);
+    try {
+      await unwrapData(apiDeleteQuote(q.documentId));
+      toast.success('Devis supprimé');
+      setQuotes((prev) => prev.filter((x) => x.documentId !== q.documentId));
+    } catch { toast.error('Échec de la suppression'); } finally { setBusyId(null); }
+  };
+
   const handleReject = async (q: Quote) => {
     setBusyId(q.documentId);
     try {
@@ -280,6 +310,7 @@ const QuotesList = () => {
               onPropose={(a, m) => handlePropose(q, a, m)}
               onValidate={() => handleValidate(q)}
               onReject={() => handleReject(q)}
+              onDelete={() => handleDelete(q)}
             />
           ))}
         </div>
