@@ -68,6 +68,8 @@ const DashboardCustomer = () => {
   const { user }: { user: User } = useSelector(
     (state: RootState) => state.auth.user!
   );
+  // "Mes offres personnalisées" est réservé aux clients Premium
+  const isPremium = !!user?.customer?.premium;
 
   useEffect(() => {
     if (user.customer?.documentId) {
@@ -370,7 +372,8 @@ const DashboardCustomer = () => {
               </div>
             )}
 
-            {/* Personalized offers */}
+            {/* Personalized offers — Premium uniquement */}
+            {isPremium && (
             <div>
               {/* Section header */}
               <div style={{ marginBottom: '20px' }}>
@@ -434,6 +437,7 @@ const DashboardCustomer = () => {
                 )}
               </div>
             </div>
+            )}
           </div>
         </Container>
       </Suspense>
