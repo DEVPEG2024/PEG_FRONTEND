@@ -12,6 +12,7 @@ import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { MdDragIndicator } from 'react-icons/md';
 import { useAppSelector } from '@/store';
 import { apiGetQuotes, apiGetCustomerQuotes } from '@/services/QuoteServices';
+import { apiGetPremiumCustomers } from '@/services/PremiumServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const STORAGE_KEY = 'peg_nav_order_v2';
@@ -73,6 +74,7 @@ const CustomVerticalMenu = ({
   const user = useAppSelector((state) => state.auth.user.user);
   const customerDocumentId = user?.customer?.documentId;
   const [quoteCount, setQuoteCount] = useState(0);
+  const [premiumCount, setPremiumCount] = useState(0);
 
   // Nettoyer les anciens labels custom au mount
   useEffect(() => {
@@ -111,6 +113,27 @@ const CustomVerticalMenu = ({
       clearInterval(id);
     };
   }, [isAdmin, customerDocumentId]);
+
+  // Compteur de clients Premium non traités (admin) → badge sur l'onglet "Premium"
+  useEffect(() => {
+    if (!isAdmin) return;
+    let stopped = false;
+    const fetchPremium = async () => {
+      try {
+        const list = await apiGetPremiumCustomers();
+        if (stopped) return;
+        setPremiumCount(list.filter((c) => !c.premiumProcessed).length);
+      } catch {
+        // silencieux
+      }
+    };
+    fetchPremium();
+    const id = setInterval(fetchPremium, 60000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [isAdmin]);
 
   // "Mes offres" (offres personnalisées) est réservé aux clients Premium (abonnement).
   // Les clients Standard (inscription autonome) ne le voient pas.
@@ -174,7 +197,11 @@ const CustomVerticalMenu = ({
     if (!hasAuthority(nav.authority, userAuthority)) return null;
     const active = isActive(nav.path);
     const isHovered = hoveredKey === nav.key;
-    const showBadge = nav.path === '/common/quotes' && quoteCount > 0;
+    const isPremiumNav = nav.path === '/admin/premium';
+    const badgeCount = nav.path === '/common/quotes' ? quoteCount : isPremiumNav ? premiumCount : 0;
+    const showBadge = badgeCount > 0;
+    const badgeColor = isPremiumNav ? '#eab308' : '#8b5cf6';
+    const badgeGlow = isPremiumNav ? 'rgba(234,179,8,0.6)' : 'rgba(139,92,246,0.6)';
 
     return (
       <div
@@ -239,7 +266,7 @@ const CustomVerticalMenu = ({
                 height: '15px',
                 padding: '0 3px',
                 borderRadius: '8px',
-                background: '#8b5cf6',
+                background: badgeColor,
                 color: '#fff',
                 fontSize: '9px',
                 fontWeight: 800,
@@ -249,7 +276,7 @@ const CustomVerticalMenu = ({
                 boxSizing: 'border-box',
               }}
             >
-              {quoteCount > 99 ? '99+' : quoteCount}
+              {badgeCount > 99 ? '99+' : badgeCount}
             </span>
           )}
         </span>
@@ -280,17 +307,17 @@ const CustomVerticalMenu = ({
               height: '20px',
               padding: '0 6px',
               borderRadius: '10px',
-              background: '#8b5cf6',
+              background: badgeColor,
               color: '#fff',
               fontSize: '11px',
               fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 10px rgba(139,92,246,0.6)',
+              boxShadow: `0 0 10px ${badgeGlow}`,
             }}
           >
-            {quoteCount > 99 ? '99+' : quoteCount}
+            {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         )}
       </div>
