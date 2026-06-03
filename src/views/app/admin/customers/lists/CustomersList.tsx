@@ -1,77 +1,279 @@
-import { Container, EmptyState } from '@/components/shared'
-import { useEffect, useState } from 'react'
-import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
+import { Container, EmptyState } from '@/components/shared';
+import { useEffect, useState } from 'react';
+import { injectReducer, useAppDispatch, useAppSelector } from '@/store';
 
-import reducer, { getCustomers, deleteCustomer } from '../store'
-import { Customer } from '@/@types/customer'
-import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiUsers, HiMail, HiLocationMarker, HiOutlineFolder, HiX } from 'react-icons/hi'
-import { env } from '@/configs/env.config'
-import CustomerWizard from './CustomerWizard'
-import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel'
+import reducer, {
+  getCustomers,
+  deleteCustomer,
+  updateCustomer,
+} from '../store';
+import { Customer } from '@/@types/customer';
+import {
+  HiOutlineSearch,
+  HiPlus,
+  HiPencil,
+  HiTrash,
+  HiUsers,
+  HiMail,
+  HiLocationMarker,
+  HiOutlineFolder,
+  HiX,
+  HiStar,
+  HiOutlineStar,
+} from 'react-icons/hi';
+import { toast } from 'react-toastify';
+import { env } from '@/configs/env.config';
+import CustomerWizard from './CustomerWizard';
+import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 
-const resolveUrl = (url: string) => url?.startsWith('http') ? url : (env?.API_ENDPOINT_URL ?? '') + url
+const resolveUrl = (url: string) =>
+  url?.startsWith('http') ? url : (env?.API_ENDPOINT_URL ?? '') + url;
 
-injectReducer('customers', reducer)
+injectReducer('customers', reducer);
 
 const AVATAR_COLORS = [
-  'rgba(47,111,237,0.3)', 'rgba(168,85,247,0.3)', 'rgba(34,197,94,0.25)',
-  'rgba(234,179,8,0.25)', 'rgba(239,68,68,0.25)', 'rgba(20,184,166,0.25)',
-]
-const avatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
-const initials = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+  'rgba(47,111,237,0.3)',
+  'rgba(168,85,247,0.3)',
+  'rgba(34,197,94,0.25)',
+  'rgba(234,179,8,0.25)',
+  'rgba(239,68,68,0.25)',
+  'rgba(20,184,166,0.25)',
+];
+const avatarColor = (name: string) =>
+  AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
 
-const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
-  <button title={title} onClick={onClick}
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
-    onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
-    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-  >{icon}</button>
-)
+const Btn = ({
+  onClick,
+  icon,
+  hoverBg,
+  hoverColor,
+  hoverBorder,
+  title,
+}: any) => (
+  <button
+    title={title}
+    onClick={onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      borderRadius: '8px',
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      cursor: 'pointer',
+      color: 'rgba(255,255,255,0.5)',
+      transition: 'all 0.15s',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = hoverBg;
+      e.currentTarget.style.color = hoverColor;
+      e.currentTarget.style.borderColor = hoverBorder;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+      e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+    }}
+  >
+    {icon}
+  </button>
+);
 
 const CustomersList = () => {
-  const dispatch = useAppDispatch()
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(50)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [wizardOpen, setWizardOpen] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<any>(null)
-  const [filesCustomer, setFilesCustomer] = useState<any>(null)
+  const dispatch = useAppDispatch();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [filesCustomer, setFilesCustomer] = useState<any>(null);
 
-  const customers: Customer[] = useAppSelector((state: any) => state.customers?.customers ?? [])
-  const total: number = useAppSelector((state: any) => state.customers?.total ?? 0)
-  const loading: boolean = useAppSelector((state: any) => state.customers?.loading ?? false)
+  const customers: Customer[] = useAppSelector(
+    (state: any) => state.customers?.customers ?? []
+  );
+  const total: number = useAppSelector(
+    (state: any) => state.customers?.total ?? 0
+  );
+  const loading: boolean = useAppSelector(
+    (state: any) => state.customers?.loading ?? false
+  );
+
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm }))
-  }, [dispatch, currentPage, pageSize, searchTerm])
+    dispatch(
+      getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })
+    );
+  }, [dispatch, currentPage, pageSize, searchTerm]);
+
+  // Bascule rapide Premium / Standard depuis la liste (étoile)
+  const togglePremium = async (c: any) => {
+    const docId = String(c?.documentId ?? c?.id);
+    const next = !c?.premium;
+    setTogglingId(docId);
+    try {
+      const r: any = await dispatch(
+        updateCustomer({ id: docId, data: { premium: next } })
+      );
+      if (r?.error) toast.error('Échec de la mise à jour');
+      else {
+        toast.success(
+          next
+            ? `"${c?.name}" passé en Premium`
+            : `"${c?.name}" repassé en Standard`
+        );
+        dispatch(
+          getCustomers({
+            pagination: { page: currentPage, pageSize },
+            searchTerm,
+          })
+        );
+      }
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '16px',
+          paddingTop: '28px',
+          paddingBottom: '24px',
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Gestion</p>
-          <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            Clients <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.55)',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+            }}
+          >
+            Gestion
+          </p>
+          <h2
+            style={{
+              color: '#fff',
+              fontSize: '22px',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              margin: 0,
+            }}
+          >
+            Clients{' '}
+            <span
+              style={{
+                color: 'rgba(255,255,255,0.25)',
+                fontSize: '16px',
+                fontWeight: 500,
+              }}
+            >
+              ({total})
+            </span>
           </h2>
         </div>
-        <button onClick={() => { setEditingCustomer(null); setWizardOpen(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
+        <button
+          onClick={() => {
+            setEditingCustomer(null);
+            setWizardOpen(true);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '10px 18px',
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(47,111,237,0.4)',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
           <HiPlus size={16} /> Nouveau client
         </button>
       </div>
 
-      <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
-        <HiOutlineSearch size={15} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)', pointerEvents: 'none' }} />
-        <input type="text" placeholder="Rechercher un client…" value={searchTerm}
-          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }}
-          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '10px 14px 10px 36px', color: '#fff', fontSize: '13px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-          onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
-          onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)' }}
+      <div
+        style={{
+          position: 'relative',
+          marginBottom: '24px',
+          maxWidth: '400px',
+        }}
+      >
+        <HiOutlineSearch
+          size={15}
+          style={{
+            position: 'absolute',
+            left: '13px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'rgba(255,255,255,0.55)',
+            pointerEvents: 'none',
+          }}
+        />
+        <input
+          type="text"
+          placeholder="Rechercher un client…"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          style={{
+            width: '100%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            borderRadius: '10px',
+            padding: '10px 14px 10px 36px',
+            color: '#fff',
+            fontSize: '13px',
+            fontFamily: 'Inter, sans-serif',
+            outline: 'none',
+            boxSizing: 'border-box',
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = 'rgba(47,111,237,0.5)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = 'rgba(255,255,255,0.09)';
+          }}
         />
       </div>
 
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', height: '68px', border: '1px solid rgba(255,255,255,0.06)' }} />)}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '14px',
+                height: '68px',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            />
+          ))}
         </div>
       ) : customers.length === 0 ? (
         <EmptyState
@@ -80,94 +282,410 @@ const CustomersList = () => {
           icon={<HiUsers size={48} />}
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '40px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            paddingBottom: '40px',
+          }}
+        >
           {customers.map((c: any) => {
-            const name: string = c?.name ?? '?'
-            const docId = c?.documentId ?? c?.id
+            const name: string = c?.name ?? '?';
+            const docId = c?.documentId ?? c?.id;
             return (
-              <div key={docId}
-                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+              <div
+                key={docId}
+                style={{
+                  background:
+                    'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.07)',
+                  borderRadius: '14px',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')
+                }
               >
                 {c?.logo?.url ? (
-                  <img src={resolveUrl(c.logo.url)} alt={name} style={{ width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.12)', flexShrink: 0 }} />
+                  <img
+                    src={resolveUrl(c.logo.url)}
+                    alt={name}
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      objectFit: 'cover',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      flexShrink: 0,
+                    }}
+                  />
                 ) : (
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: avatarColor(name), border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{initials(name)}</span>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: avatarColor(name),
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#fff',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                      }}
+                    >
+                      {initials(name)}
+                    </span>
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{name}</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#fff',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                      }}
+                    >
+                      {name}
+                    </span>
+                    {c?.premium && (
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          background: 'rgba(234,179,8,0.12)',
+                          border: '1px solid rgba(234,179,8,0.35)',
+                          borderRadius: '100px',
+                          padding: '1px 8px',
+                          color: '#eab308',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        <HiStar size={10} /> Premium
+                      </span>
+                    )}
                     {c?.customerCategory?.name && (
-                      <span style={{ background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#6b9eff', fontSize: '11px', fontWeight: 600 }}>{c.customerCategory.name}</span>
+                      <span
+                        style={{
+                          background: 'rgba(47,111,237,0.12)',
+                          border: '1px solid rgba(47,111,237,0.25)',
+                          borderRadius: '100px',
+                          padding: '1px 8px',
+                          color: '#6b9eff',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c.customerCategory.name}
+                      </span>
                     )}
                     {c?.deferredPayment && (
-                      <span style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#c084fc', fontSize: '11px', fontWeight: 600 }}>Paiement différé</span>
+                      <span
+                        style={{
+                          background: 'rgba(168,85,247,0.12)',
+                          border: '1px solid rgba(168,85,247,0.25)',
+                          borderRadius: '100px',
+                          padding: '1px 8px',
+                          color: '#c084fc',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Paiement différé
+                      </span>
                     )}
                     {c?.catalogAccess === false && (
-                      <span style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '100px', padding: '1px 8px', color: '#f87171', fontSize: '11px', fontWeight: 600 }}>Sans catalogue</span>
+                      <span
+                        style={{
+                          background: 'rgba(239,68,68,0.12)',
+                          border: '1px solid rgba(239,68,68,0.25)',
+                          borderRadius: '100px',
+                          padding: '1px 8px',
+                          color: '#f87171',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Sans catalogue
+                      </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <div
+                    style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}
+                  >
                     {c?.companyInformations?.email && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.38)', fontSize: '12px' }}><HiMail size={12} />{c.companyInformations.email}</span>
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: 'rgba(255,255,255,0.38)',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <HiMail size={12} />
+                        {c.companyInformations.email}
+                      </span>
                     )}
                     {c?.companyInformations?.city && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.38)', fontSize: '12px' }}><HiLocationMarker size={12} />{c.companyInformations.city}</span>
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: 'rgba(255,255,255,0.38)',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <HiLocationMarker size={12} />
+                        {c.companyInformations.city}
+                      </span>
                     )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                  <Btn onClick={() => setFilesCustomer(c)} icon={<HiOutlineFolder size={14} />} hoverBg="rgba(6,182,212,0.12)" hoverColor="#22d3ee" hoverBorder="rgba(6,182,212,0.3)" title="Fichiers" />
-                  <Btn onClick={() => { setEditingCustomer(c); setWizardOpen(true); }} icon={<HiPencil size={14} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
-                  <Btn onClick={() => dispatch(deleteCustomer(String(docId)))} icon={<HiTrash size={14} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" />
+                  <button
+                    title={
+                      c?.premium
+                        ? 'Client Premium — cliquer pour repasser Standard'
+                        : 'Client Standard — cliquer pour passer Premium'
+                    }
+                    onClick={() => togglePremium(c)}
+                    disabled={togglingId === String(c?.documentId ?? c?.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: c?.premium
+                        ? 'rgba(234,179,8,0.15)'
+                        : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${c?.premium ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      cursor: 'pointer',
+                      color: c?.premium ? '#eab308' : 'rgba(255,255,255,0.4)',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!c?.premium) {
+                        e.currentTarget.style.color = '#eab308';
+                        e.currentTarget.style.borderColor =
+                          'rgba(234,179,8,0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!c?.premium) {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                        e.currentTarget.style.borderColor =
+                          'rgba(255,255,255,0.1)';
+                      }
+                    }}
+                  >
+                    {c?.premium ? (
+                      <HiStar size={16} />
+                    ) : (
+                      <HiOutlineStar size={16} />
+                    )}
+                  </button>
+                  <Btn
+                    onClick={() => setFilesCustomer(c)}
+                    icon={<HiOutlineFolder size={14} />}
+                    hoverBg="rgba(6,182,212,0.12)"
+                    hoverColor="#22d3ee"
+                    hoverBorder="rgba(6,182,212,0.3)"
+                    title="Fichiers"
+                  />
+                  <Btn
+                    onClick={() => {
+                      setEditingCustomer(c);
+                      setWizardOpen(true);
+                    }}
+                    icon={<HiPencil size={14} />}
+                    hoverBg="rgba(47,111,237,0.15)"
+                    hoverColor="#6b9eff"
+                    hoverBorder="rgba(47,111,237,0.4)"
+                    title="Modifier"
+                  />
+                  <Btn
+                    onClick={() => dispatch(deleteCustomer(String(docId)))}
+                    icon={<HiTrash size={14} />}
+                    hoverBg="rgba(239,68,68,0.12)"
+                    hoverColor="#f87171"
+                    hoverBorder="rgba(239,68,68,0.3)"
+                    title="Supprimer"
+                  />
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
-      <CustomerWizard open={wizardOpen} customer={editingCustomer} onClose={() => { setWizardOpen(false); setEditingCustomer(null); dispatch(getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })); }} />
+      <CustomerWizard
+        open={wizardOpen}
+        customer={editingCustomer}
+        onClose={() => {
+          setWizardOpen(false);
+          setEditingCustomer(null);
+          dispatch(
+            getCustomers({
+              pagination: { page: currentPage, pageSize },
+              searchTerm,
+            })
+          );
+        }}
+      />
 
       {/* Files modal */}
       {filesCustomer && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'fadeIn 0.2s ease',
-        }} onClick={() => setFilesCustomer(null)}>
-          <div style={{
-            width: '680px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
-            background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-            borderRadius: '20px', padding: '32px', position: 'relative',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
-            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'fadeIn 0.2s ease',
+          }}
+          onClick={() => setFilesCustomer(null)}
+        >
+          <div
+            style={{
+              width: '680px',
+              maxWidth: '95vw',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
+              borderRadius: '20px',
+              padding: '32px',
+              position: 'relative',
+              boxShadow:
+                '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
+              animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '20px',
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+              >
                 {filesCustomer?.logo?.url ? (
-                  <img src={resolveUrl(filesCustomer.logo.url)} alt="" style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.12)' }} />
+                  <img
+                    src={resolveUrl(filesCustomer.logo.url)}
+                    alt=""
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      objectFit: 'cover',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  />
                 ) : (
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: avatarColor(filesCustomer?.name ?? '?'), border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '13px' }}>{initials(filesCustomer?.name ?? '?')}</span>
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      background: avatarColor(filesCustomer?.name ?? '?'),
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#fff',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                      }}
+                    >
+                      {initials(filesCustomer?.name ?? '?')}
+                    </span>
                   </div>
                 )}
                 <div>
-                  <p style={{ color: '#fff', fontSize: '15px', fontWeight: 700, margin: 0 }}>{filesCustomer?.name}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: 0 }}>Fichiers du client</p>
+                  <p
+                    style={{
+                      color: '#fff',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      margin: 0,
+                    }}
+                  >
+                    {filesCustomer?.name}
+                  </p>
+                  <p
+                    style={{
+                      color: 'rgba(255,255,255,0.35)',
+                      fontSize: '11px',
+                      margin: 0,
+                    }}
+                  >
+                    Fichiers du client
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setFilesCustomer(null)} style={{
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px', width: '32px', height: '32px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
-              }}><HiX size={16} /></button>
+              <button
+                onClick={() => setFilesCustomer(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                <HiX size={16} />
+              </button>
             </div>
-            <ClientFilesPanel customerDocumentId={filesCustomer?.documentId ?? filesCustomer?.id} mode="admin" />
+            <ClientFilesPanel
+              customerDocumentId={
+                filesCustomer?.documentId ?? filesCustomer?.id
+              }
+              mode="admin"
+            />
           </div>
           <style>{`
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -176,7 +694,7 @@ const CustomersList = () => {
         </div>
       )}
     </Container>
-  )
-}
+  );
+};
 
-export default CustomersList
+export default CustomersList;
