@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom'
 import { TbSparkles, TbArrowRight } from 'react-icons/tb'
 
 const QuoteCard = () => (
-    <div style={{ padding: '12px 16px 140px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ padding: '12px 16px 240px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
             background: 'linear-gradient(160deg, rgba(139,92,246,0.12) 0%, rgba(255,255,255,0.03) 100%)',
             border: '1px solid rgba(139,92,246,0.25)',
