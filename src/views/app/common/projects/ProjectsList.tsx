@@ -393,15 +393,10 @@ const ProjectsList = () => {
 
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Bannière */}
-      <div style={{ paddingTop: '24px' }}>
-        <CatalogueBanner bannerName="Bannière projets" />
-      </div>
-
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: '16px', paddingTop: '28px', paddingBottom: '24px', flexWrap: 'wrap',
+        gap: '16px', paddingTop: '24px', paddingBottom: '24px', flexWrap: 'wrap',
       }}>
         <div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
@@ -535,6 +530,11 @@ const ProjectsList = () => {
             </button>
           );
         })}
+      </div>
+
+      {/* Bannière */}
+      <div style={{ paddingBottom: '24px' }}>
+        <CatalogueBanner bannerName="Bannière projets" />
       </div>
 
       {/* Content */}

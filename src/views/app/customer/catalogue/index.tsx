@@ -80,9 +80,6 @@ const Categories = () => {
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Bannière */}
       <CatalogueBanner
-        subtitle="Des solutions créatives et sur-mesure pour sublimer votre marque et marquer les esprits."
-        ctaLabel="Découvrir nos services"
-        scrollTargetId="catalogue-grid"
         aspect="3.4 / 1"
         minHeight="220px"
         maxHeight="380px"

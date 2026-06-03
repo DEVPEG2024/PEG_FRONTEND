@@ -65,9 +65,6 @@ const CustomerProducts = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Bannière */}
-      <CatalogueBanner bannerName="Bannière offres" />
-
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -122,6 +119,11 @@ const CustomerProducts = () => {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
           />
         </div>
+      </div>
+
+      {/* Bannière */}
+      <div style={{ marginBottom: '24px' }}>
+        <CatalogueBanner bannerName="Bannière offres" />
       </div>
 
       {/* Grid */}

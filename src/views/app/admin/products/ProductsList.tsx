@@ -413,11 +413,6 @@ const ProductsList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
 
-      {/* Bannière */}
-      <div style={{ paddingTop: '24px' }}>
-        <CatalogueBanner bannerName="Bannière offres" />
-      </div>
-
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
@@ -518,6 +513,11 @@ const ProductsList = () => {
           onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
           onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
         />
+      </div>
+
+      {/* Bannière */}
+      <div style={{ marginBottom: '24px' }}>
+        <CatalogueBanner bannerName="Bannière offres" />
       </div>
 
       <Loading loading={loading} type="cover">
