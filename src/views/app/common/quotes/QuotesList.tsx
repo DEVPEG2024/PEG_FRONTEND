@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { env } from '@/configs/env.config';
+import { API_BASE_URL } from '@/configs/api.config';
+import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Container } from '@/components/shared';
 import { RootState, useAppSelector } from '@/store';
 import { User } from '@/@types/user';
@@ -41,8 +46,8 @@ const StatusBadge = ({ status }: { status: Quote['status'] }) => {
   );
 };
 
-function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDelete, onReopen }: {
-  quote: Quote; isAdmin: boolean; busy: boolean;
+function QuoteCard({ quote, isAdmin, busy, validateLabel = 'Valider le devis', onPropose, onValidate, onReject, onDelete, onReopen }: {
+  quote: Quote; isAdmin: boolean; busy: boolean; validateLabel?: string;
   onPropose: (amount: number, message: string) => void;
   onValidate: () => void;
   onReject: () => void;
@@ -145,7 +150,7 @@ function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDe
       {!isAdmin && quote.status === 'proposed' && (
         <div style={{ display: 'flex', gap: '8px' }}>
           <button disabled={busy} onClick={onValidate} style={{ ...btnSuccess, flex: 1, opacity: busy ? 0.6 : 1 }}>
-            <TbCheck size={16} /> {busy ? 'Validation…' : 'Valider le devis'}
+            <TbCheck size={16} /> {busy ? 'Traitement…' : validateLabel}
           </button>
           <button disabled={busy} onClick={onReject} style={btnDanger}>
             <TbX size={16} /> Refuser
@@ -197,10 +202,15 @@ const btnGhost: React.CSSProperties = { ...btnPrimary, background: 'rgba(255,255
 
 const QuotesList = () => {
   const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
+  const { token } = useAppSelector((state: RootState) => state.auth.session);
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const paidHandledRef = useRef<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -217,6 +227,28 @@ const QuotesList = () => {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  // Retour de paiement Stripe : finalise (crée le projet) si payé, ou notifie l'annulation
+  useEffect(() => {
+    const canceled = params.get('canceled');
+    if (canceled) {
+      toast.info('Paiement annulé — devis non validé');
+      navigate('/common/quotes', { replace: true });
+      return;
+    }
+    const paid = params.get('paid');
+    if (!paid || loading) return;
+    if (paidHandledRef.current === paid) return;
+    const q = quotes.find((x) => x.documentId === paid);
+    if (!q) return;
+    paidHandledRef.current = paid;
+    if (q.status === 'proposed') {
+      finalizeAcceptance(q).finally(() => navigate('/common/quotes', { replace: true }));
+    } else {
+      navigate('/common/quotes', { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, quotes, loading]);
 
   const pendingCount = useMemo(
     () => quotes.filter((q) => (isAdmin ? q.status === 'requested' : q.status === 'proposed')).length,
@@ -235,7 +267,39 @@ const QuotesList = () => {
     } catch { toast.error("Échec de l'envoi"); } finally { setBusyId(null); }
   };
 
+  // Validation : paiement immédiat si le client n'a PAS le paiement différé
   const handleValidate = async (q: Quote) => {
+    const deferred = !!user?.customer?.deferredPayment;
+    if (deferred) {
+      await finalizeAcceptance(q);
+    } else {
+      await startQuotePayment(q);
+    }
+  };
+
+  // Redirige vers Stripe pour payer le montant du devis
+  const startQuotePayment = async (q: Quote) => {
+    setBusyId(q.documentId);
+    try {
+      const res = await fetch(API_BASE_URL + '/checkout/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
+        body: JSON.stringify({ quoteDocumentId: q.documentId }),
+      });
+      if (!res.ok) throw new Error('session');
+      const { id } = await res.json();
+      const stripe = await stripePromise;
+      if (!stripe || !id) throw new Error('stripe');
+      await stripe.redirectToCheckout({ sessionId: id });
+    } catch {
+      toast.error('Impossible de démarrer le paiement');
+      setBusyId(null);
+    }
+  };
+
+  // Crée le projet + marque le devis validé (après paiement, ou directement si paiement différé)
+  const finalizeAcceptance = async (q: Quote) => {
+    if (q.status === 'accepted') return;
     setBusyId(q.documentId);
     try {
       // 1) Crée le projet (devis validé → projet en cours)
@@ -330,6 +394,7 @@ const QuotesList = () => {
               quote={q}
               isAdmin={isAdmin}
               busy={busyId === q.documentId}
+              validateLabel={user?.customer?.deferredPayment ? 'Valider le devis' : 'Payer et valider'}
               onPropose={(a, m) => handlePropose(q, a, m)}
               onValidate={() => handleValidate(q)}
               onReject={() => handleReject(q)}
