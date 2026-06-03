@@ -243,17 +243,42 @@ function Cart() {
 
   const shippingRef = useRef<HTMLDivElement>(null);
   const [shippingOpen, setShippingOpen] = useState(false);
+  const companyInfos = user?.customer?.companyInformations;
   const [shipping, setShipping] = useState<ShippingAddress>({
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
-    company: '',
-    address: '',
+    company: user?.customer?.name ?? '',
+    address: companyInfos?.address ?? '',
     addressLine2: '',
-    zipCode: '',
-    city: '',
-    country: 'France',
-    phone: '',
+    zipCode: companyInfos?.zipCode ?? '',
+    city: companyInfos?.city ?? '',
+    country: companyInfos?.country || 'France',
+    phone: companyInfos?.phoneNumber ?? '',
   });
+  // Préremplissage depuis l'adresse de l'entreprise du client (si chargée après le montage),
+  // sans écraser une saisie manuelle déjà commencée.
+  const addressPrefilled = useRef(false);
+  useEffect(() => {
+    const ci = user?.customer?.companyInformations;
+    if (!ci || addressPrefilled.current) return;
+    setShipping((p) => {
+      if (p.address || p.zipCode || p.city) {
+        addressPrefilled.current = true;
+        return p;
+      }
+      if (!ci.address && !ci.zipCode && !ci.city) return p;
+      addressPrefilled.current = true;
+      return {
+        ...p,
+        company: p.company || user?.customer?.name || '',
+        address: ci.address || '',
+        zipCode: ci.zipCode || '',
+        city: ci.city || '',
+        country: ci.country || p.country || 'France',
+        phone: p.phone || ci.phoneNumber || '',
+      };
+    });
+  }, [user?.customer?.documentId]);
   const setField = (key: keyof ShippingAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setShipping((p) => ({ ...p, [key]: e.target.value }));
   const hasAddress = !!(shipping.address && shipping.city && shipping.zipCode);
