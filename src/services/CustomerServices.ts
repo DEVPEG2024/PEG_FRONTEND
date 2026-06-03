@@ -1,19 +1,19 @@
 // src/services/CustomerServices.ts
-import ApiService from './ApiService'
-import { API_GRAPHQL_URL } from '@/configs/api.config'
-import { ApiResponse, PageInfo } from '@/utils/serviceHelper'
-import { Customer } from '@/@types/customer'
-import { AxiosResponse } from 'axios'
+import ApiService from './ApiService';
+import { API_GRAPHQL_URL } from '@/configs/api.config';
+import { ApiResponse, PageInfo } from '@/utils/serviceHelper';
+import { Customer } from '@/@types/customer';
+import { AxiosResponse } from 'axios';
 
 export type GetCustomersRequest = {
-  pagination?: { page: number; pageSize: number }
-  searchTerm?: string
-}
+  pagination?: { page: number; pageSize: number };
+  searchTerm?: string;
+};
 
 export type GetCustomersResponse = {
-  nodes: Customer[]
-  pageInfo: PageInfo
-}
+  nodes: Customer[];
+  pageInfo: PageInfo;
+};
 
 /**
  * IMPORTANT:
@@ -25,36 +25,43 @@ export type GetCustomersResponse = {
 
 // Helpers
 const buildCustomersListQuery = (params: GetCustomersRequest) => {
-  const page = params.pagination?.page ?? 1
-  const pageSize = params.pagination?.pageSize ?? 10
-  const searchTerm = (params.searchTerm ?? '').trim()
+  const page = params.pagination?.page ?? 1;
+  const pageSize = params.pagination?.pageSize ?? 10;
+  const searchTerm = (params.searchTerm ?? '').trim();
 
-  const query = new URLSearchParams()
-  query.set('pagination[page]', String(page))
-  query.set('pagination[pageSize]', String(pageSize))
-  query.set('sort[0]', 'createdAt:desc')
+  const query = new URLSearchParams();
+  query.set('pagination[page]', String(page));
+  query.set('pagination[pageSize]', String(pageSize));
+  query.set('sort[0]', 'createdAt:desc');
 
   if (searchTerm) {
-    query.set('filters[name][$containsi]', searchTerm)
+    query.set('filters[name][$containsi]', searchTerm);
   }
 
   // Robust Strapi populate
-  query.set('populate', '*')
+  query.set('populate', '*');
 
-  return query.toString()
-}
+  return query.toString();
+};
 
 const buildByDocumentIdQuery = (documentId: string) => {
-  const query = new URLSearchParams()
-  query.set('filters[documentId][$eq]', documentId)
-  query.set('pagination[page]', '1')
-  query.set('pagination[pageSize]', '1')
-  query.set('populate', '*')
-  return query.toString()
-}
+  const query = new URLSearchParams();
+  query.set('filters[documentId][$eq]', documentId);
+  query.set('pagination[page]', '1');
+  query.set('pagination[pageSize]', '1');
+  query.set('populate', '*');
+  return query.toString();
+};
 
 // GET list (GraphQL) — pour les selects/dropdowns
-export async function apiGetCustomers(data: { pagination?: { page: number; pageSize: number }; searchTerm?: string } = { pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }): Promise<AxiosResponse<ApiResponse<{ customers_connection: GetCustomersResponse }>>> {
+export async function apiGetCustomers(
+  data: {
+    pagination?: { page: number; pageSize: number };
+    searchTerm?: string;
+  } = { pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }
+): Promise<
+  AxiosResponse<ApiResponse<{ customers_connection: GetCustomersResponse }>>
+> {
   const query = `
     query GetCustomers($searchTerm: String, $pagination: PaginationArg) {
       customers_connection(filters: { name: { containsi: $searchTerm } }, pagination: $pagination) {
@@ -70,51 +77,107 @@ export async function apiGetCustomers(data: { pagination?: { page: number; pageS
         }
       }
     }
-  `
-  return ApiService.fetchData<ApiResponse<{ customers_connection: GetCustomersResponse }>>({
+  `;
+  return ApiService.fetchData<
+    ApiResponse<{ customers_connection: GetCustomersResponse }>
+  >({
     url: API_GRAPHQL_URL,
     method: 'post',
-    data: { query, variables: { searchTerm: data.searchTerm ?? '', pagination: data.pagination ?? { page: 1, pageSize: 1000 } } },
-  })
+    data: {
+      query,
+      variables: {
+        searchTerm: data.searchTerm ?? '',
+        pagination: data.pagination ?? { page: 1, pageSize: 1000 },
+      },
+    },
+  });
+}
+
+// GET les infos société d'UN client (adresse) via GraphQL — fiable en prod (le REST peut renvoyer 500)
+export type CustomerCompanyInfo = {
+  documentId: string;
+  name: string;
+  companyInformations?: {
+    address?: string;
+    zipCode?: string;
+    city?: string;
+    country?: string;
+    phoneNumber?: string;
+  } | null;
+};
+
+export async function apiGetCustomerCompanyInfo(
+  documentId: string
+): Promise<
+  AxiosResponse<
+    ApiResponse<{ customers_connection: { nodes: CustomerCompanyInfo[] } }>
+  >
+> {
+  const query = `
+    query GetCustomerCompanyInfo($documentId: ID!) {
+      customers_connection(filters: { documentId: { eq: $documentId } }, pagination: { page: 1, pageSize: 1 }) {
+        nodes {
+          documentId
+          name
+          companyInformations {
+            address
+            zipCode
+            city
+            country
+            phoneNumber
+          }
+        }
+      }
+    }
+  `;
+  return ApiService.fetchData<
+    ApiResponse<{ customers_connection: { nodes: CustomerCompanyInfo[] } }>
+  >({
+    url: API_GRAPHQL_URL,
+    method: 'post',
+    data: { query, variables: { documentId } },
+  });
 }
 
 // GET list (REST) — pour la liste paginée admin
 export const apiGetCustomersRest = (params: GetCustomersRequest) => {
-  const qs = buildCustomersListQuery(params)
+  const qs = buildCustomersListQuery(params);
   return ApiService.fetchData({
     url: `/customers?${qs}`,
     method: 'get',
-  })
-}
+  });
+};
 
 // GET one by documentId (robuste avec ton routing /edit/:documentId)
 export const apiGetCustomerForEditByDocumentId = (documentId: string) => {
-  const qs = buildByDocumentIdQuery(documentId)
+  const qs = buildByDocumentIdQuery(documentId);
   return ApiService.fetchData({
     url: `/customers?${qs}`,
     method: 'get',
-  })
-}
+  });
+};
 
 // Resolve documentId -> numeric id
-export const apiResolveCustomerIdFromDocumentId = async (documentId: string): Promise<number> => {
-  const res: any = await apiGetCustomerForEditByDocumentId(documentId)
-  const arr = res?.data?.data ?? res?.data ?? []
-  const first = Array.isArray(arr) ? arr[0] : null
-  const id = first?.id
+export const apiResolveCustomerIdFromDocumentId = async (
+  documentId: string
+): Promise<number> => {
+  const res: any = await apiGetCustomerForEditByDocumentId(documentId);
+  const arr = res?.data?.data ?? res?.data ?? [];
+  const first = Array.isArray(arr) ? arr[0] : null;
+  const id = first?.id;
   if (!id) {
-    throw new Error(`Customer not found for documentId=${documentId}`)
+    throw new Error(`Customer not found for documentId=${documentId}`);
   }
-  return id
-}
+  return id;
+};
 
 // DELETE by documentId (Strapi v5 uses documentId directly)
 export const apiDeleteCustomerByDocumentId = async (documentId: string) => {
   return ApiService.fetchData({
     url: `/customers/${documentId}`,
     method: 'delete',
-  })
-}
+  });
+};
 
 // CREATE
 export const apiCreateCustomer = (data: any) => {
@@ -122,20 +185,23 @@ export const apiCreateCustomer = (data: any) => {
     url: `/customers`,
     method: 'post',
     data: { data },
-  })
-}
+  });
+};
 
 // UPDATE by documentId (Strapi v5 uses documentId directly)
-export const apiUpdateCustomerByDocumentId = async (documentId: string, data: any) => {
+export const apiUpdateCustomerByDocumentId = async (
+  documentId: string,
+  data: any
+) => {
   return ApiService.fetchData({
     url: `/customers/${documentId}`,
     method: 'put',
     data: { data },
-  })
-}
+  });
+};
 
 // UPLOAD (Strapi) — utilise le presigned URL pour les gros fichiers
-import { apiUploadFile as apiUploadFileMain } from './FileServices'
+import { apiUploadFile as apiUploadFileMain } from './FileServices';
 export const apiUploadFile = (file: File) => {
-  return apiUploadFileMain(file).then((data) => ({ data }))
-}
+  return apiUploadFileMain(file).then((data) => ({ data }));
+};

@@ -4,12 +4,28 @@ import { Container } from '@/components/shared';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
 import { apiGetProducts } from '@/services/ProductServices';
-import { getTotalPriceForCartItem, getProductPriceForSizeAndColors, isProductPackPricing } from '@/utils/productHelpers';
+import { apiGetCustomerCompanyInfo } from '@/services/CustomerServices';
+import {
+  getTotalPriceForCartItem,
+  getProductPriceForSizeAndColors,
+  isProductPackPricing,
+} from '@/utils/productHelpers';
 import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdShoppingCart, MdOutlineShoppingBag, MdLocationOn } from 'react-icons/md';
-import { HiOutlinePencil, HiOutlineTrash, HiPlus, HiChevronDown, HiChevronUp, HiCheck } from 'react-icons/hi';
+import {
+  MdShoppingCart,
+  MdOutlineShoppingBag,
+  MdLocationOn,
+} from 'react-icons/md';
+import {
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiPlus,
+  HiChevronDown,
+  HiChevronUp,
+  HiCheck,
+} from 'react-icons/hi';
 import { ShippingAddress } from '@/@types/checkout';
 import { User } from '@/@types/user';
 import PaymentContent from './PaymentContent';
@@ -40,53 +56,88 @@ const labelStyle: React.CSSProperties = {
 };
 
 /* ── Stepper ── */
-function StepIndicator({ step, hasAddress }: { step: number; hasAddress: boolean }) {
+function StepIndicator({
+  step,
+  hasAddress,
+}: {
+  step: number;
+  hasAddress: boolean;
+}) {
   const steps = [
     { label: 'Panier', icon: <MdShoppingCart size={14} /> },
     { label: 'Livraison', icon: <MdLocationOn size={14} /> },
     { label: 'Paiement', icon: <HiCheck size={14} /> },
   ];
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: '0', marginBottom: '28px',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0',
+        marginBottom: '28px',
+      }}
+    >
       {steps.map((s, i) => {
         const done = i < step || (i === 1 && hasAddress && step >= 1);
         const active = i === step;
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '6px 14px', borderRadius: '100px',
-              background: active
-                ? 'rgba(47,111,237,0.12)'
-                : done
-                  ? 'rgba(52,211,153,0.08)'
-                  : 'rgba(255,255,255,0.02)',
-              border: `1px solid ${active ? 'rgba(47,111,237,0.3)' : done ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.3s ease',
-            }}>
-              <span style={{
-                color: active ? '#6b9eff' : done ? '#34d399' : 'rgba(255,255,255,0.25)',
-                display: 'flex', alignItems: 'center',
-              }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '100px',
+                background: active
+                  ? 'rgba(47,111,237,0.12)'
+                  : done
+                    ? 'rgba(52,211,153,0.08)'
+                    : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${active ? 'rgba(47,111,237,0.3)' : done ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <span
+                style={{
+                  color: active
+                    ? '#6b9eff'
+                    : done
+                      ? '#34d399'
+                      : 'rgba(255,255,255,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 {done && !active ? <HiCheck size={14} /> : s.icon}
               </span>
-              <span style={{
-                fontSize: '11px', fontWeight: 600,
-                color: active ? '#6b9eff' : done ? '#34d399' : 'rgba(255,255,255,0.3)',
-                letterSpacing: '0.02em',
-              }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: active
+                    ? '#6b9eff'
+                    : done
+                      ? '#34d399'
+                      : 'rgba(255,255,255,0.3)',
+                  letterSpacing: '0.02em',
+                }}
+              >
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div style={{
-                width: '32px', height: '1px',
-                background: done ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.06)',
-                transition: 'background 0.3s ease',
-              }} />
+              <div
+                style={{
+                  width: '32px',
+                  height: '1px',
+                  background: done
+                    ? 'rgba(52,211,153,0.3)'
+                    : 'rgba(255,255,255,0.06)',
+                  transition: 'background 0.3s ease',
+                }}
+              />
             )}
           </div>
         );
@@ -97,23 +148,38 @@ function StepIndicator({ step, hasAddress }: { step: number; hasAddress: boolean
 
 /* ── Cart item card ── */
 function CartItemCard({
-  item, index, onEdit, onDelete,
+  item,
+  index,
+  onEdit,
+  onDelete,
 }: {
-  item: CartItem; index: number;
-  onEdit: () => void; onDelete: () => void;
+  item: CartItem;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const unitPrice = getProductPriceForSizeAndColors(item.product, item.sizeAndColors);
+  const unitPrice = getProductPriceForSizeAndColors(
+    item.product,
+    item.sizeAndColors
+  );
   const totalItem = getTotalPriceForCartItem(item.product, item.sizeAndColors);
   const isPackPricing = isProductPackPricing(item.product);
-  const totalQuantity = item.sizeAndColors.reduce((sum, s) => sum + s.quantity, 0);
+  const totalQuantity = item.sizeAndColors.reduce(
+    (sum, s) => sum + s.quantity,
+    0
+  );
 
   return (
     <div
       style={{
-        background: 'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
+        background:
+          'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
         border: '1.5px solid rgba(255,255,255,0.06)',
-        borderRadius: '18px', padding: '18px 20px',
-        display: 'flex', gap: '16px', alignItems: 'center',
+        borderRadius: '18px',
+        padding: '18px 20px',
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
         backdropFilter: 'blur(10px)',
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         position: 'relative',
@@ -130,96 +196,166 @@ function CartItemCard({
       }}
     >
       {/* Image */}
-      <div style={{
-        width: '80px', height: '80px', flexShrink: 0,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-        borderRadius: '14px',
-        border: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      }}>
+      <div
+        style={{
+          width: '80px',
+          height: '80px',
+          flexShrink: 0,
+          background:
+            'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+          borderRadius: '14px',
+          border: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
+      >
         {item.product.images?.[0]?.url ? (
-          <img src={item.product.images[0].url} alt={item.product.name}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
+          <img
+            src={item.product.images[0].url}
+            alt={item.product.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              padding: '6px',
+            }}
+          />
         ) : (
-          <MdOutlineShoppingBag size={28} style={{ color: 'rgba(255,255,255,0.1)' }} />
+          <MdOutlineShoppingBag
+            size={28}
+            style={{ color: 'rgba(255,255,255,0.1)' }}
+          />
         )}
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{
-          color: '#fff', fontWeight: 700, fontSize: '14px', margin: '0 0 4px 0',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          letterSpacing: '-0.01em',
-        }}>
+        <p
+          style={{
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '14px',
+            margin: '0 0 4px 0',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            letterSpacing: '-0.01em',
+          }}
+        >
           {item.product.name}
         </p>
-        <p style={{
-          color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '0 0 8px 0',
-        }}>
+        <p
+          style={{
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: '11px',
+            margin: '0 0 8px 0',
+          }}
+        >
           {isPackPricing
             ? `Pack de ${totalQuantity} unite${totalQuantity > 1 ? 's' : ''}`
             : `${fmtPrice(unitPrice)} / unite`}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
           {item.sizeAndColors.map((s) => (
-            <span key={s.size.value + (s.color?.value ?? '')} style={{
-              background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-              border: '1px solid rgba(47,111,237,0.2)',
-              borderRadius: '8px', padding: '3px 9px',
-              color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-            }}>
+            <span
+              key={s.size.value + (s.color?.value ?? '')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                border: '1px solid rgba(47,111,237,0.2)',
+                borderRadius: '8px',
+                padding: '3px 9px',
+                color: '#6b9eff',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+            >
               {s.size.value !== 'DEFAULT' ? s.size.name : 'Qte'}
-              {s.color?.value && s.color.value !== 'DEFAULT' ? ` · ${s.color.name}` : ''} : {s.quantity}
+              {s.color?.value && s.color.value !== 'DEFAULT'
+                ? ` · ${s.color.name}`
+                : ''}{' '}
+              : {s.quantity}
             </span>
           ))}
         </div>
       </div>
 
       {/* Price + Actions (stacked on mobile) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          flexShrink: 0,
+        }}
+      >
         <div style={{ textAlign: 'right', minWidth: '80px' }}>
-          <p style={{
-            color: '#fff', fontWeight: 800, fontSize: '16px', margin: '0 0 2px 0',
-            letterSpacing: '-0.02em',
-          }}>
+          <p
+            style={{
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '16px',
+              margin: '0 0 2px 0',
+              letterSpacing: '-0.02em',
+            }}
+          >
             {fmtHT(totalItem)}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <button onClick={onEdit} title="Modifier" style={{
-            width: '34px', height: '34px', borderRadius: '10px',
-            background: 'rgba(107,158,255,0.06)', border: '1px solid rgba(107,158,255,0.15)',
-            cursor: 'pointer', color: '#6b9eff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(107,158,255,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(107,158,255,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(107,158,255,0.06)';
-            e.currentTarget.style.borderColor = 'rgba(107,158,255,0.15)';
-          }}
+          <button
+            onClick={onEdit}
+            title="Modifier"
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '10px',
+              background: 'rgba(107,158,255,0.06)',
+              border: '1px solid rgba(107,158,255,0.15)',
+              cursor: 'pointer',
+              color: '#6b9eff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(107,158,255,0.12)';
+              e.currentTarget.style.borderColor = 'rgba(107,158,255,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(107,158,255,0.06)';
+              e.currentTarget.style.borderColor = 'rgba(107,158,255,0.15)';
+            }}
           >
             <HiOutlinePencil size={14} />
           </button>
-          <button onClick={onDelete} title="Supprimer" style={{
-            width: '34px', height: '34px', borderRadius: '10px',
-            background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)',
-            cursor: 'pointer', color: '#f87171',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
-            e.currentTarget.style.borderColor = 'rgba(248,113,113,0.15)';
-          }}
+          <button
+            onClick={onDelete}
+            title="Supprimer"
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '10px',
+              background: 'rgba(248,113,113,0.06)',
+              border: '1px solid rgba(248,113,113,0.15)',
+              cursor: 'pointer',
+              color: '#f87171',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
+              e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
+              e.currentTarget.style.borderColor = 'rgba(248,113,113,0.15)';
+            }}
           >
             <HiOutlineTrash size={14} />
           </button>
@@ -231,8 +367,12 @@ function CartItemCard({
 
 /* ── Main Cart ── */
 function Cart() {
-  const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
-  const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
+  const { documentId } = useAppSelector(
+    (state: RootState) => state.auth.user.user
+  );
+  const { user }: { user: User } = useAppSelector(
+    (state: RootState) => state.auth.user
+  );
   const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -255,44 +395,63 @@ function Cart() {
     country: companyInfos?.country || 'France',
     phone: companyInfos?.phoneNumber ?? '',
   });
-  // Préremplissage depuis l'adresse de l'entreprise du client (si chargée après le montage),
-  // sans écraser une saisie manuelle déjà commencée.
+  // Préremplissage de l'adresse de livraison depuis le profil du client.
+  // L'objet `user.customer.companyInformations` n'est PAS chargé au login → on récupère
+  // l'adresse via GraphQL (fiable en prod). On n'écrase jamais une saisie manuelle.
   const addressPrefilled = useRef(false);
   useEffect(() => {
-    const ci = user?.customer?.companyInformations;
-    if (!ci || addressPrefilled.current) return;
-    setShipping((p) => {
-      if (p.address || p.zipCode || p.city) {
+    const custId = user?.customer?.documentId;
+    if (!custId || addressPrefilled.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiGetCustomerCompanyInfo(custId);
+        const node = res.data?.data?.customers_connection?.nodes?.[0];
+        const ci = node?.companyInformations;
+        if (cancelled || addressPrefilled.current || !ci) return;
+        if (!ci.address && !ci.zipCode && !ci.city && !ci.phoneNumber) return;
+        setShipping((p) => {
+          // ne pas écraser une saisie manuelle déjà commencée
+          if (p.address || p.zipCode || p.city) return p;
+          return {
+            ...p,
+            company: p.company || node?.name || '',
+            address: ci.address || '',
+            zipCode: ci.zipCode || '',
+            city: ci.city || '',
+            country: ci.country || p.country || 'France',
+            phone: p.phone || ci.phoneNumber || '',
+          };
+        });
         addressPrefilled.current = true;
-        return p;
+      } catch {
+        // silencieux — le client peut saisir l'adresse manuellement
       }
-      if (!ci.address && !ci.zipCode && !ci.city) return p;
-      addressPrefilled.current = true;
-      return {
-        ...p,
-        company: p.company || user?.customer?.name || '',
-        address: ci.address || '',
-        zipCode: ci.zipCode || '',
-        city: ci.city || '',
-        country: ci.country || p.country || 'France',
-        phone: p.phone || ci.phoneNumber || '',
-      };
-    });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.customer?.documentId]);
-  const setField = (key: keyof ShippingAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setShipping((p) => ({ ...p, [key]: e.target.value }));
+  const setField =
+    (key: keyof ShippingAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setShipping((p) => ({ ...p, [key]: e.target.value }));
   const hasAddress = !!(shipping.address && shipping.city && shipping.zipCode);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
-        const res = await apiGetProducts({ pagination: { page: 1, pageSize: 100 }, searchTerm: '' });
-        const all: Product[] = (res.data?.data?.products_connection?.nodes ?? []).filter(
-          (p: Product) => p.active && p.inCatalogue
-        );
+        const res = await apiGetProducts({
+          pagination: { page: 1, pageSize: 100 },
+          searchTerm: '',
+        });
+        const all: Product[] = (
+          res.data?.data?.products_connection?.nodes ?? []
+        ).filter((p: Product) => p.active && p.inCatalogue);
         const cartIds = new Set(cart.map((c) => c.product.documentId));
         setSuggestions(all.filter((p) => !cartIds.has(p.documentId)));
-      } catch (err) { console.error('Failed to fetch suggestions:', err); }
+      } catch (err) {
+        console.error('Failed to fetch suggestions:', err);
+      }
     };
     fetchSuggestions();
   }, [cart.length]);
@@ -341,12 +500,17 @@ function Cart() {
   const scrollToShipping = () => {
     setShippingOpen(true);
     setTimeout(() => {
-      shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      shippingRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
     }, 100);
   };
 
-  const totalHT = cart.reduce((sum, item) =>
-    sum + getTotalPriceForCartItem(item.product, item.sizeAndColors), 0
+  const totalHT = cart.reduce(
+    (sum, item) =>
+      sum + getTotalPriceForCartItem(item.product, item.sizeAndColors),
+    0
   );
 
   /* ── Animation keyframes ── */
@@ -374,44 +538,81 @@ function Cart() {
     return (
       <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
         {styleTag}
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', minHeight: '60vh', gap: '20px',
-          animation: 'cartFadeIn 0.4s ease-out',
-        }}>
-          <div style={{
-            width: '100px', height: '100px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(47,111,237,0.08), rgba(47,111,237,0.02))',
-            border: '2px solid rgba(47,111,237,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <MdShoppingCart size={40} style={{ color: 'rgba(107,158,255,0.3)' }} />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '60vh',
+            gap: '20px',
+            animation: 'cartFadeIn 0.4s ease-out',
+          }}
+        >
+          <div
+            style={{
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              background:
+                'linear-gradient(135deg, rgba(47,111,237,0.08), rgba(47,111,237,0.02))',
+              border: '2px solid rgba(47,111,237,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MdShoppingCart
+              size={40}
+              style={{ color: 'rgba(107,158,255,0.3)' }}
+            />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '17px', fontWeight: 700, margin: '0 0 6px 0' }}>
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '17px',
+                fontWeight: 700,
+                margin: '0 0 6px 0',
+              }}
+            >
               Votre panier est vide
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', margin: 0 }}>
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.25)',
+                fontSize: '13px',
+                margin: 0,
+              }}
+            >
               Parcourez notre catalogue pour trouver vos produits
             </p>
           </div>
           <button
             onClick={() => navigate('/customer/products')}
             style={{
-              marginTop: '4px', background: 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 100%)',
-              border: 'none', borderRadius: '12px', padding: '12px 28px',
-              color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+              marginTop: '4px',
+              background: 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 100%)',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 28px',
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
               fontFamily: 'Inter, sans-serif',
               boxShadow: '0 4px 20px rgba(47,111,237,0.35)',
               transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 24px rgba(47,111,237,0.45)';
+              e.currentTarget.style.boxShadow =
+                '0 6px 24px rgba(47,111,237,0.45)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(47,111,237,0.35)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 20px rgba(47,111,237,0.35)';
             }}
           >
             Voir le catalogue
@@ -427,33 +628,81 @@ function Cart() {
 
       {/* Header */}
       <div style={{ paddingTop: '32px', paddingBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, rgba(47,111,237,0.15), rgba(47,111,237,0.05))',
-            border: '1px solid rgba(47,111,237,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '6px',
+          }}
+        >
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background:
+                'linear-gradient(135deg, rgba(47,111,237,0.15), rgba(47,111,237,0.05))',
+              border: '1px solid rgba(47,111,237,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <MdShoppingCart size={16} style={{ color: '#6b9eff' }} />
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              margin: 0,
+            }}
+          >
             Votre commande
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-          <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, letterSpacing: '-0.025em', margin: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <h2
+            style={{
+              color: '#fff',
+              fontSize: '24px',
+              fontWeight: 800,
+              letterSpacing: '-0.025em',
+              margin: 0,
+            }}
+          >
             Panier{' '}
-            <span style={{
-              color: 'rgba(107,158,255,0.6)', fontSize: '16px', fontWeight: 500,
-              background: 'rgba(47,111,237,0.08)', borderRadius: '100px',
-              padding: '2px 10px', marginLeft: '4px',
-            }}>
+            <span
+              style={{
+                color: 'rgba(107,158,255,0.6)',
+                fontSize: '16px',
+                fontWeight: 500,
+                background: 'rgba(47,111,237,0.08)',
+                borderRadius: '100px',
+                padding: '2px 10px',
+                marginLeft: '4px',
+              }}
+            >
               {cart.length} article{cart.length > 1 ? 's' : ''}
             </span>
           </h2>
-          <span style={{
-            color: 'rgba(255,255,255,0.3)', fontSize: '13px', fontWeight: 500,
-          }}>
+          <span
+            style={{
+              color: 'rgba(255,255,255,0.3)',
+              fontSize: '13px',
+              fontWeight: 500,
+            }}
+          >
             Total : {fmtHT(totalHT)}
           </span>
         </div>
@@ -463,8 +712,15 @@ function Cart() {
       <StepIndicator step={shippingOpen ? 1 : 0} hasAddress={hasAddress} />
 
       {/* Main layout — responsive */}
-      <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
-
+      <div
+        className="cart-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 380px',
+          gap: '24px',
+          alignItems: 'start',
+        }}
+      >
         {/* Left column: cart items + shipping */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {cart.map((item, index) => (
@@ -481,10 +737,18 @@ function Cart() {
           <button
             onClick={() => navigate('/customer/products')}
             style={{
-              background: 'rgba(255,255,255,0.01)', border: '2px dashed rgba(255,255,255,0.07)',
-              borderRadius: '18px', padding: '16px',
-              color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 600,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              background: 'rgba(255,255,255,0.01)',
+              border: '2px dashed rgba(255,255,255,0.07)',
+              borderRadius: '18px',
+              padding: '16px',
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
               fontFamily: 'Inter, sans-serif',
               transition: 'all 0.2s ease',
             }}
@@ -504,24 +768,56 @@ function Cart() {
 
           {/* Shipping address */}
           <div ref={shippingRef} style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <MdLocationOn size={16} style={{ color: hasAddress ? 'rgba(52,211,153,0.7)' : 'rgba(251,191,36,0.7)' }} />
-              <p style={{
-                color: hasAddress ? 'rgba(255,255,255,0.4)' : 'rgba(251,191,36,0.8)',
-                fontSize: '11px', fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0,
-              }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '10px',
+              }}
+            >
+              <MdLocationOn
+                size={16}
+                style={{
+                  color: hasAddress
+                    ? 'rgba(52,211,153,0.7)'
+                    : 'rgba(251,191,36,0.7)',
+                }}
+              />
+              <p
+                style={{
+                  color: hasAddress
+                    ? 'rgba(255,255,255,0.4)'
+                    : 'rgba(251,191,36,0.8)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  margin: 0,
+                }}
+              >
                 Adresse de livraison {!hasAddress && '— requise'}
               </p>
               {hasAddress && (
-                <span style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  color: '#34d399', fontSize: '10px', fontWeight: 600,
-                }}>
-                  <span style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    background: '#34d399', boxShadow: '0 0 8px rgba(52,211,153,0.5)',
-                  }} />
+                <span
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: '#34d399',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: '#34d399',
+                      boxShadow: '0 0 8px rgba(52,211,153,0.5)',
+                    }}
+                  />
                   Renseignee
                 </span>
               )}
@@ -535,177 +831,387 @@ function Cart() {
                   ? 'linear-gradient(135deg, rgba(47,111,237,0.12) 0%, rgba(31,75,182,0.06) 100%)'
                   : 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(251,191,36,0.02) 100%)',
                 border: `2px solid ${hasAddress ? 'rgba(47,111,237,0.35)' : 'rgba(251,191,36,0.35)'}`,
-                borderRadius: '16px', padding: '16px 20px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                boxShadow: hasAddress ? '0 0 0 4px rgba(47,111,237,0.06)' : 'none',
-                animation: hasAddress ? 'none' : 'shippingPulse 2s ease-in-out infinite',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
+                boxShadow: hasAddress
+                  ? '0 0 0 4px rgba(47,111,237,0.06)'
+                  : 'none',
+                animation: hasAddress
+                  ? 'none'
+                  : 'shippingPulse 2s ease-in-out infinite',
                 transition: 'all 0.2s ease',
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.9)', fontSize: '13px', fontWeight: 600 }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '10px',
-                  background: hasAddress ? 'rgba(47,111,237,0.12)' : 'rgba(251,191,36,0.08)',
-                  border: `1px solid ${hasAddress ? 'rgba(47,111,237,0.2)' : 'rgba(251,191,36,0.2)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <MdLocationOn size={18} style={{ color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.8)' }} />
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.9)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              >
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: hasAddress
+                      ? 'rgba(47,111,237,0.12)'
+                      : 'rgba(251,191,36,0.08)',
+                    border: `1px solid ${hasAddress ? 'rgba(47,111,237,0.2)' : 'rgba(251,191,36,0.2)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <MdLocationOn
+                    size={18}
+                    style={{
+                      color: hasAddress ? '#6b9eff' : 'rgba(251,191,36,0.8)',
+                    }}
+                  />
                 </div>
                 <div style={{ textAlign: 'left' }}>
                   {hasAddress ? (
                     <>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{shipping.address}</div>
-                      <div style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{shipping.zipCode} {shipping.city}, {shipping.country}</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: '#fff',
+                        }}
+                      >
+                        {shipping.address}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: 'rgba(255,255,255,0.4)',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {shipping.zipCode} {shipping.city}, {shipping.country}
+                      </div>
                     </>
                   ) : (
                     <div>Renseignez votre adresse pour commander</div>
                   )}
                 </div>
               </span>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.04)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {shippingOpen ? <HiChevronUp size={14} color="rgba(255,255,255,0.4)" /> : <HiChevronDown size={14} color="rgba(255,255,255,0.4)" />}
+              <div
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {shippingOpen ? (
+                  <HiChevronUp size={14} color="rgba(255,255,255,0.4)" />
+                ) : (
+                  <HiChevronDown size={14} color="rgba(255,255,255,0.4)" />
+                )}
               </div>
             </button>
 
             {shippingOpen && (
-              <div style={{
-                marginTop: '8px',
-                background: 'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
-                border: '1.5px solid rgba(255,255,255,0.06)',
-                borderRadius: '18px', padding: '22px',
-                display: 'flex', flexDirection: 'column', gap: '14px',
-                backdropFilter: 'blur(10px)',
-                animation: 'cartFadeIn 0.2s ease-out',
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div
+                style={{
+                  marginTop: '8px',
+                  background:
+                    'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.06)',
+                  borderRadius: '18px',
+                  padding: '22px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  backdropFilter: 'blur(10px)',
+                  animation: 'cartFadeIn 0.2s ease-out',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '14px',
+                  }}
+                >
                   <div>
                     <label style={labelStyle}>Prenom</label>
-                    <input style={inputStyle} placeholder="Jean" value={shipping.firstName} onChange={setField('firstName')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Jean"
+                      value={shipping.firstName}
+                      onChange={setField('firstName')}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Nom</label>
-                    <input style={inputStyle} placeholder="Dupont" value={shipping.lastName} onChange={setField('lastName')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Dupont"
+                      value={shipping.lastName}
+                      onChange={setField('lastName')}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Entreprise</label>
-                    <input style={inputStyle} placeholder="Societe (optionnel)" value={shipping.company ?? ''} onChange={setField('company')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Societe (optionnel)"
+                      value={shipping.company ?? ''}
+                      onChange={setField('company')}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Telephone</label>
-                    <input style={inputStyle} placeholder="+33 6 00 00 00 00" value={shipping.phone ?? ''} onChange={setField('phone')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="+33 6 00 00 00 00"
+                      value={shipping.phone ?? ''}
+                      onChange={setField('phone')}
+                    />
                   </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Adresse</label>
-                  <input style={inputStyle} placeholder="12 rue de la Paix" value={shipping.address} onChange={setField('address')} />
+                  <input
+                    style={inputStyle}
+                    placeholder="12 rue de la Paix"
+                    value={shipping.address}
+                    onChange={setField('address')}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Complement</label>
-                  <input style={inputStyle} placeholder="Batiment, etage... (optionnel)" value={shipping.addressLine2 ?? ''} onChange={setField('addressLine2')} />
+                  <input
+                    style={inputStyle}
+                    placeholder="Batiment, etage... (optionnel)"
+                    value={shipping.addressLine2 ?? ''}
+                    onChange={setField('addressLine2')}
+                  />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '14px',
+                  }}
+                >
                   <div>
                     <label style={labelStyle}>Code postal</label>
-                    <input style={inputStyle} placeholder="75001" value={shipping.zipCode} onChange={setField('zipCode')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="75001"
+                      value={shipping.zipCode}
+                      onChange={setField('zipCode')}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Ville</label>
-                    <input style={inputStyle} placeholder="Paris" value={shipping.city} onChange={setField('city')} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Paris"
+                      value={shipping.city}
+                      onChange={setField('city')}
+                    />
                   </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Pays</label>
-                  <input style={inputStyle} placeholder="France" value={shipping.country} onChange={setField('country')} />
+                  <input
+                    style={inputStyle}
+                    placeholder="France"
+                    value={shipping.country}
+                    onChange={setField('country')}
+                  />
                 </div>
               </div>
             )}
           </div>
-
         </div>
 
         {/* Payment sidebar — sticky */}
-        <div className="cart-sidebar" style={{ position: 'sticky', top: '20px' }}>
-          <PaymentContent cart={cart} shipping={shipping} hasAddress={hasAddress} onMissingAddress={scrollToShipping} />
+        <div
+          className="cart-sidebar"
+          style={{ position: 'sticky', top: '20px' }}
+        >
+          <PaymentContent
+            cart={cart}
+            shipping={shipping}
+            hasAddress={hasAddress}
+            onMissingAddress={scrollToShipping}
+          />
         </div>
       </div>
 
       {/* Suggestions carousel — full width, outside grid */}
       {suggestions.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '16px',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                height: '1px',
+                background:
+                  'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)',
+              }}
+            />
+            <span
+              style={{
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}
+            >
               Completez votre commande
             </span>
-            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06))' }} />
+            <div
+              style={{
+                flex: 1,
+                height: '1px',
+                background:
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.06))',
+              }}
+            />
           </div>
 
           <div
             ref={scrollRef}
-            onMouseEnter={() => { isPausedRef.current = true; }}
-            onMouseLeave={() => { isPausedRef.current = false; }}
+            onMouseEnter={() => {
+              isPausedRef.current = true;
+            }}
+            onMouseLeave={() => {
+              isPausedRef.current = false;
+            }}
             style={{
-              display: 'flex', gap: '14px',
-              overflowX: 'hidden', scrollbarWidth: 'none',
+              display: 'flex',
+              gap: '14px',
+              overflowX: 'hidden',
+              scrollbarWidth: 'none',
             }}
           >
             {[...suggestions, ...suggestions].map((product, idx) => (
               <div
                 key={`${product.documentId}-${idx}`}
-                onClick={() => navigate('/customer/product/' + product.documentId)}
+                onClick={() =>
+                  navigate('/customer/product/' + product.documentId)
+                }
                 style={{
-                  flexShrink: 0, width: '260px',
-                  background: 'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
-                  border: '1.5px solid rgba(255,255,255,0.06)', borderRadius: '16px',
-                  overflow: 'hidden', cursor: 'pointer',
+                  flexShrink: 0,
+                  width: '260px',
+                  background:
+                    'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.06)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
                   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(47,111,237,0.3)';
-                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                  e.currentTarget.style.boxShadow =
+                    '0 4px 20px rgba(0,0,0,0.3)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <div style={{
-                  height: '180px',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                }}>
+                <div
+                  style={{
+                    height: '180px',
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  }}
+                >
                   {product.images?.[0]?.url ? (
-                    <img src={product.images[0].url} alt={product.name}
-                      style={{ maxWidth: '100%', maxHeight: '160px', objectFit: 'contain', padding: '10px' }} />
+                    <img
+                      src={product.images[0].url}
+                      alt={product.name}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '160px',
+                        objectFit: 'contain',
+                        padding: '10px',
+                      }}
+                    />
                   ) : (
-                    <MdOutlineShoppingBag size={36} style={{ color: 'rgba(255,255,255,0.08)' }} />
+                    <MdOutlineShoppingBag
+                      size={36}
+                      style={{ color: 'rgba(255,255,255,0.08)' }}
+                    />
                   )}
                 </div>
                 <div style={{ padding: '14px 16px' }}>
-                  <p style={{
-                    color: '#fff', fontWeight: 600, fontSize: '13px', margin: '0 0 8px 0',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
+                  <p
+                    style={{
+                      color: '#fff',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      margin: '0 0 8px 0',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {product.name}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-                      border: '1px solid rgba(47,111,237,0.2)',
-                      borderRadius: '8px', padding: '4px 10px',
-                      color: '#6b9eff', fontSize: '12px', fontWeight: 700,
-                    }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span
+                      style={{
+                        background:
+                          'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                        border: '1px solid rgba(47,111,237,0.2)',
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        color: '#6b9eff',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                      }}
+                    >
                       {fmtPrice(product.price ?? 0)}
                     </span>
-                    <span style={{
-                      color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-                    }}>
+                    <span
+                      style={{
+                        color: '#6b9eff',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
                       Voir →
                     </span>
                   </div>
