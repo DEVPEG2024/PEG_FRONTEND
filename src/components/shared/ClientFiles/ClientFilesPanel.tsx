@@ -72,7 +72,7 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
   const [uploadNotes, setUploadNotes] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
 
-  const canWrite = mode === 'admin'
+  const canWrite = mode === 'admin' || mode === 'customer'
 
   const fetchFiles = async () => {
     try {
@@ -129,11 +129,13 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
       }
 
       // 2. Create client-file entry
+      // Un client qui dépose son propre fichier doit le revoir : on force visibleToCustomer
+      // (le toggle de visibilité est réservé à l'admin, cf. plus bas)
       await apiCreateClientFile({
         name: uploadName.trim(),
         category: uploadCategory,
         shared: uploadShared,
-        visibleToCustomer: uploadVisibleToCustomer,
+        visibleToCustomer: mode === 'customer' ? true : uploadVisibleToCustomer,
         notes: uploadNotes.trim(),
         customer: customerDocumentId,
         fileId,
