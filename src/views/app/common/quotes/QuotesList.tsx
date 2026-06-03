@@ -13,6 +13,8 @@ import { toast } from 'react-toastify';
 import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash, TbRefresh } from 'react-icons/tb';
 import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote } from '@/services/QuoteServices';
+import { apiCreateProject } from '@/services/ProjectServices';
+import { apiCreateInvoice, apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const fmtDate = (d?: string | null) => {
@@ -205,7 +207,6 @@ const QuotesList = () => {
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -266,31 +267,73 @@ const QuotesList = () => {
   };
 
   // Validation : paiement immédiat si le client n'a PAS le paiement différé,
-  // sinon validation différée côté backend (projet + facture en attente)
+  // sinon validation différée en GraphQL (projet + facture en attente)
   const handleValidate = async (q: Quote) => {
     const deferred = !!user?.customer?.deferredPayment;
     if (deferred) {
-      setBusyId(q.documentId);
-      try {
-        const res = await fetch(API_BASE_URL + '/checkout/quote-deferred', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
-          body: JSON.stringify({ quoteDocumentId: q.documentId }),
-        });
-        if (!res.ok) throw new Error('deferred');
-        toast.success('Devis validé — projet créé');
-        await load();
-      } catch {
-        toast.error('Échec de la validation');
-      } finally {
-        setBusyId(null);
-      }
+      await finalizeDeferred(q);
     } else {
       await startQuotePayment(q);
     }
   };
 
-  // Redirige vers Stripe pour payer le montant du devis
+  // Paiement différé : crée le projet + une facture en attente (tout en GraphQL)
+  const finalizeDeferred = async (q: Quote) => {
+    if (q.status === 'accepted') return;
+    setBusyId(q.documentId);
+    try {
+      const now = new Date();
+      const end = q.desiredDeadline ? new Date(q.desiredDeadline) : new Date(now.getTime() + 30 * 86400000);
+      const amountHT = q.proposalAmount || 0;
+
+      const { createProject }: any = await unwrapData(apiCreateProject({
+        name: q.title || `Projet — ${q.projectType || 'Devis'}`,
+        description: q.description || '',
+        startDate: now,
+        endDate: end,
+        state: 'pending',
+        priority: 'medium',
+        price: amountHT,
+        producerPrice: 0,
+        paidPrice: 0,
+        producerPaidPrice: 0,
+        poolable: false,
+        customer: q.customer?.documentId ? { documentId: q.customer.documentId } : null,
+      } as any));
+
+      // Facture en attente liée au projet
+      try {
+        const totalTTC = Math.round(amountHT * 1.2 * 100) / 100;
+        const name = await apiGetNextInvoiceNumber();
+        await unwrapData(apiCreateInvoice({
+          name,
+          customer: q.customer?.documentId ? { documentId: q.customer.documentId } : undefined,
+          project: createProject?.documentId,
+          amount: amountHT,
+          vatAmount: Math.round((totalTTC - amountHT) * 100) / 100,
+          totalAmount: totalTTC,
+          date: now,
+          dueDate: end,
+          state: 'pending',
+          paymentMethod: 'transfer',
+          paymentState: 'pending',
+          paymentAmount: 0,
+        } as any));
+      } catch { /* facture non bloquante */ }
+
+      await unwrapData(apiUpdateQuote(q.documentId, {
+        status: 'accepted', validatedAt: now.toISOString(), project: createProject?.documentId,
+      }));
+      toast.success('Devis validé — projet créé');
+      await load();
+    } catch {
+      toast.error('Échec de la validation');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Paiement immédiat : redirige vers Stripe (Stripe.js chargé à la demande)
   const startQuotePayment = async (q: Quote) => {
     setBusyId(q.documentId);
     try {
@@ -301,7 +344,7 @@ const QuotesList = () => {
       });
       if (!res.ok) throw new Error('session');
       const { id } = await res.json();
-      const stripe = await stripePromise;
+      const stripe = await loadStripe(env?.STRIPE_PUBLIC_KEY as string);
       if (!stripe || !id) throw new Error('stripe');
       await stripe.redirectToCheckout({ sessionId: id });
     } catch {
