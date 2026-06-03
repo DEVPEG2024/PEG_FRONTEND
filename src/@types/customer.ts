@@ -1,14 +1,14 @@
-import { Banner } from "./banner";
-import { Product } from "./product";
-import { PegFile } from "./pegFile";
+import { Banner } from './banner';
+import { Product } from './product';
+import { PegFile } from './pegFile';
 
 export type CustomerCategory = {
   documentId: string;
   name: string;
   banner?: Banner;
-  products: Product[],
+  products: Product[];
   customers: Customer[];
-}
+};
 
 export type CompanyInformations = {
   email: string;
@@ -20,7 +20,7 @@ export type CompanyInformations = {
   zipCode: string;
   country: string;
   website: string;
-}
+};
 
 export type Customer = {
   documentId: string;
@@ -31,4 +31,6 @@ export type Customer = {
   logo?: PegFile;
   deferredPayment: boolean;
   catalogAccess: boolean;
-}
+  /** Client Premium (abonnement) → accès aux offres personnalisées ("Mes offres"). Standard sinon. */
+  premium?: boolean;
+};
