@@ -6,6 +6,9 @@ import {
   apiGetPremiumCustomers,
   apiSetPremiumProcessed,
   PremiumCustomer,
+  PREMIUM_MIN_MONTHS,
+  premiumCancellableFrom,
+  canCancelPremium,
 } from '@/services/PremiumServices';
 
 const GOLD = '#eab308';
@@ -106,6 +109,17 @@ const PremiumAdminList = () => {
             {ci?.phoneNumber && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><TbPhone size={12} /> {ci.phoneNumber}</span>}
             {ci?.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><TbMapPin size={12} /> {ci.city}</span>}
             {c.premiumSince && <span>Depuis le {formatSince(c.premiumSince)}</span>}
+            {c.premiumSince && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                color: canCancelPremium(c.premiumSince) ? '#4ade80' : GOLD, fontWeight: 600,
+              }}>
+                <TbCrown size={12} />
+                {canCancelPremium(c.premiumSince)
+                  ? `Engagement ${PREMIUM_MIN_MONTHS} mois atteint`
+                  : `Engagement jusqu'au ${formatSince(premiumCancellableFrom(c.premiumSince)?.toISOString())}`}
+              </span>
+            )}
           </div>
         </div>
 
