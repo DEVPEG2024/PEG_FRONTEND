@@ -21,6 +21,7 @@ import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
 import { FaPenNib } from 'react-icons/fa';
 import { BsCalendar3 } from 'react-icons/bs';
+import { TbFileInvoice } from 'react-icons/tb';
 
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -29,6 +30,7 @@ const navigationIcon: NavigationIcons = {
     home: <RiHomeSmile2Line />,
     categories: <HiOutlineViewGrid />,
     products: <GoPeople />,
+    quotes: <TbFileInvoice />,
     orders: <HiOutlineClipboardList />,
     customers: <FiUsers />,
     settings: <HiOutlineCog />,

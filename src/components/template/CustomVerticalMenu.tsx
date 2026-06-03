@@ -13,6 +13,9 @@ import {
   HiChevronRight,
 } from 'react-icons/hi';
 import { MdDragIndicator } from 'react-icons/md';
+import { useAppSelector } from '@/store';
+import { apiGetQuotes, apiGetCustomerQuotes } from '@/services/QuoteServices';
+import { unwrapData } from '@/utils/serviceHelper';
 
 const STORAGE_KEY = 'peg_nav_order_v2';
 // Renommage supprimé — les labels sont figés (cf. GLOSSARY.md)
@@ -59,9 +62,35 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const isAdmin = userAuthority.includes('admin') || userAuthority.includes('super_admin');
+  const user = useAppSelector((state) => state.auth.user.user);
+  const customerDocumentId = user?.customer?.documentId;
+  const [quoteCount, setQuoteCount] = useState(0);
 
   // Nettoyer les anciens labels custom au mount
   useEffect(() => { clearLegacyLabels() }, []);
+
+  // Compteur de devis en attente (admin : demandes reçues ; client : propositions à valider)
+  useEffect(() => {
+    let stopped = false;
+    const fetchCount = async () => {
+      try {
+        const res = isAdmin
+          ? await unwrapData(apiGetQuotes({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' }))
+          : customerDocumentId
+            ? await unwrapData(apiGetCustomerQuotes(customerDocumentId))
+            : null;
+        if (!res || stopped) return;
+        const nodes = (res as any).quotes_connection?.nodes || [];
+        const pending = nodes.filter((q: any) => (isAdmin ? q.status === 'requested' : q.status === 'proposed')).length;
+        if (!stopped) setQuoteCount(pending);
+      } catch {
+        // silencieux (collection devis pas encore déployée / permissions)
+      }
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 60000);
+    return () => { stopped = true; clearInterval(id); };
+  }, [isAdmin, customerDocumentId]);
 
   useEffect(() => {
     const filtered = navigationTree.filter((item) =>
@@ -114,6 +143,7 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
     if (!hasAuthority(nav.authority, userAuthority)) return null;
     const active = isActive(nav.path);
     const isHovered = hoveredKey === nav.key;
+    const showBadge = nav.path === '/common/quotes' && quoteCount > 0;
 
     return (
       <div
@@ -160,8 +190,16 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
         )}
 
         {/* Icon */}
-        <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.65)', flexShrink: 0 }}>
+        <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.65)', flexShrink: 0, position: 'relative' }}>
           {renderIcon(nav.icon)}
+          {collapsed && showBadge && (
+            <span style={{
+              position: 'absolute', top: '-4px', right: '-6px',
+              minWidth: '15px', height: '15px', padding: '0 3px', borderRadius: '8px',
+              background: '#8b5cf6', color: '#fff', fontSize: '9px', fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box',
+            }}>{quoteCount > 99 ? '99+' : quoteCount}</span>
+          )}
         </span>
 
         {/* Label */}
@@ -179,6 +217,16 @@ const CustomVerticalMenu = ({ navigationTree, userAuthority, collapsed }: Props)
             >
               {nav.title}
             </span>
+        )}
+
+        {/* Badge compteur (déplié) */}
+        {!collapsed && showBadge && (
+          <span style={{
+            flexShrink: 0, minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '10px',
+            background: '#8b5cf6', color: '#fff', fontSize: '11px', fontWeight: 800,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 10px rgba(139,92,246,0.6)',
+          }}>{quoteCount > 99 ? '99+' : quoteCount}</span>
         )}
       </div>
     );

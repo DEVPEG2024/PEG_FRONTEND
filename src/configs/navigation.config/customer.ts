@@ -36,6 +36,16 @@ const navigationCustomer: NavigationTree[] = [
     authority: [CUSTOMER],
     subMenu: [],
   },
+  {
+    key: "customer.quotes",
+    path: "/common/quotes",
+    title: "Devis",
+    translateKey: "nav.devis",
+    icon: "quotes",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [CUSTOMER],
+    subMenu: [],
+  },
 
   {
     key: "customer.catalogue",

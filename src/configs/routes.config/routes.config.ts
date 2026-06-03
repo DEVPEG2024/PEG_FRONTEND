@@ -273,6 +273,12 @@ const protectedCustomersRoutes = [
     authority: [CUSTOMER],
   },
   {
+    key: "common.quotes",
+    path: "/common/quotes",
+    component: lazy(() => import("@/views/app/common/quotes/QuotesList")),
+    authority: [CUSTOMER, ADMIN, SUPER_ADMIN],
+  },
+  {
     key: "customer.invoices",
     path: "/customer/invoices",
     component: lazy(() => import("@/views/app/common/invoices/InvoicesList")),

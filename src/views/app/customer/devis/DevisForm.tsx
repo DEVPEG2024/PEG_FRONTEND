@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/store';
 import { toast } from 'react-toastify';
 import { TbSparkles, TbArrowLeft, TbCheck } from 'react-icons/tb';
-import { apiCreateLead } from '@/services/LeadServices';
+import { apiCreateQuote } from '@/services/QuoteServices';
+import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 
 const PURPLE = '#8b5cf6';
@@ -62,28 +63,18 @@ const DevisForm = () => {
     if (!description.trim()) { toast.error('Merci de décrire votre projet'); return; }
     setSending(true);
     try {
-      const notes = [
-        `Type de projet : ${projectType}`,
-        quantity.trim() ? `Quantité estimée : ${quantity.trim()}` : null,
-        deadline ? `Délai souhaité : ${deadline}` : null,
-        '',
-        description.trim(),
-      ].filter((l) => l !== null).join('\n');
-
-      await apiCreateLead({
-        company: company || contact || 'Client',
-        contact: contact || null,
-        email: email || null,
-        phone: phone || null,
-        source: 'site_web',
-        stage: 'nouveau',
-        value: 0,
-        probability: 0,
-        priority: 'normale',
-        notes,
-        nextAction: 'Demande de devis (catalogue)',
-        nextActionDate: deadline || null,
-      });
+      await unwrapData(apiCreateQuote({
+        title: `${company || contact || 'Client'} — ${projectType}`,
+        status: 'requested',
+        projectType,
+        quantity: quantity.trim() || undefined,
+        description: description.trim(),
+        desiredDeadline: deadline || null,
+        requestedByName: contact || null,
+        requestedByEmail: email || null,
+        requestedByPhone: phone || null,
+        customer: user?.customer?.documentId || null,
+      }));
       setDone(true);
       toast.success('Votre demande de devis a bien été envoyée');
     } catch (e) {
