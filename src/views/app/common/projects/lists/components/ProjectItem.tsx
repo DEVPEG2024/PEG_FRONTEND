@@ -119,7 +119,11 @@ const ProjectItem = ({
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
           />
         ) : (
-          <MdOutlineImage size={48} style={{ color: 'rgba(255,255,255,0.1)' }} />
+          <img
+            src="/img/others/project-default.svg"
+            alt={project.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: '8px' }}
+          />
         )}
       </div>
 
