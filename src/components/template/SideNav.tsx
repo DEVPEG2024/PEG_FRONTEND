@@ -15,6 +15,48 @@ import CustomVerticalMenu from '@/components/template/CustomVerticalMenu'
 import useResponsive from '@/utils/hooks/useResponsive'
 import { useAppSelector } from '@/store'
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { TbSparkles, TbArrowRight } from 'react-icons/tb'
+
+const QuoteCard = () => (
+    <div style={{ padding: '12px 16px 20px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+            background: 'linear-gradient(160deg, rgba(139,92,246,0.12) 0%, rgba(255,255,255,0.03) 100%)',
+            border: '1px solid rgba(139,92,246,0.25)',
+            borderRadius: '16px',
+            padding: '16px',
+        }}>
+            <div style={{
+                width: '34px', height: '34px', borderRadius: '10px',
+                background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.35)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px',
+            }}>
+                <TbSparkles size={18} color="#a78bfa" />
+            </div>
+            <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 700, lineHeight: 1.3 }}>
+                Besoin d'un projet sur-mesure ?
+            </p>
+            <p style={{ margin: '4px 0 14px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.4 }}>
+                Notre équipe vous accompagne.
+            </p>
+            <Link to="/support" style={{ textDecoration: 'none' }}>
+                <button style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '10px', padding: '9px 12px',
+                    color: '#fff', fontSize: '12.5px', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'background 0.15s',
+                }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(139,92,246,0.2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                >
+                    Demander un devis
+                    <TbArrowRight size={15} color="#a78bfa" strokeWidth={2} />
+                </button>
+            </Link>
+        </div>
+    </div>
+)
 
 const sideNavStyle = {
     width: SIDE_NAV_WIDTH,
@@ -105,11 +147,14 @@ const SideNav = () => {
                     {sideNavCollapse ? (
                         menuContent
                     ) : (
-                        <div className="side-nav-content">
-                            <ScrollBar autoHide direction={direction}>
-                                {menuContent}
-                            </ScrollBar>
-                        </div>
+                        <>
+                            <div className="side-nav-content">
+                                <ScrollBar autoHide direction={direction}>
+                                    {menuContent}
+                                </ScrollBar>
+                            </div>
+                            {customer && <QuoteCard />}
+                        </>
                     )}
                 </div>
             )}
