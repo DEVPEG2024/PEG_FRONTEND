@@ -147,14 +147,12 @@ const SideNav = () => {
                     {sideNavCollapse ? (
                         menuContent
                     ) : (
-                        <>
-                            <div className="side-nav-content">
-                                <ScrollBar autoHide direction={direction}>
-                                    {menuContent}
-                                </ScrollBar>
-                            </div>
-                            {customer && <QuoteCard />}
-                        </>
+                        <div className="side-nav-content">
+                            <ScrollBar autoHide direction={direction}>
+                                {menuContent}
+                                {customer && <QuoteCard />}
+                            </ScrollBar>
+                        </div>
                     )}
                 </div>
             )}
