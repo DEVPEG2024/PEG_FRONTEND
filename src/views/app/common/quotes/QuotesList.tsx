@@ -5,7 +5,7 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { toast } from 'react-toastify';
-import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash } from 'react-icons/tb';
+import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash, TbRefresh } from 'react-icons/tb';
 import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote } from '@/services/QuoteServices';
 import { apiCreateProject } from '@/services/ProjectServices';
@@ -41,12 +41,13 @@ const StatusBadge = ({ status }: { status: Quote['status'] }) => {
   );
 };
 
-function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDelete }: {
+function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDelete, onReopen }: {
   quote: Quote; isAdmin: boolean; busy: boolean;
   onPropose: (amount: number, message: string) => void;
   onValidate: () => void;
   onReject: () => void;
   onDelete: () => void;
+  onReopen: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
@@ -157,6 +158,18 @@ function QuoteCard({ quote, isAdmin, busy, onPropose, onValidate, onReject, onDe
           <TbCheck size={16} /> Validé — projet créé
         </p>
       )}
+      {quote.status === 'rejected' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+          <p style={{ color: '#f87171', fontSize: '13px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <TbX size={16} /> Devis refusé{!isAdmin ? '' : ' par le client'}
+          </p>
+          {isAdmin && (
+            <button disabled={busy} onClick={onReopen} style={{ ...btnGhost, padding: '7px 12px' }}>
+              <TbRefresh size={15} /> {busy ? '…' : 'Rouvrir'}
+            </button>
+          )}
+        </div>
+      )}
       {!isAdmin && quote.status === 'requested' && (
         <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
           <TbClock size={15} /> En attente de la proposition de l'équipe
@@ -252,6 +265,16 @@ const QuotesList = () => {
     } catch { toast.error('Échec de la validation'); } finally { setBusyId(null); }
   };
 
+  const handleReopen = async (q: Quote) => {
+    setBusyId(q.documentId);
+    try {
+      // Rouvre : si une proposition existe → 'proposed' (le client peut re-décider), sinon 'requested'
+      await unwrapData(apiUpdateQuote(q.documentId, { status: q.proposalAmount ? 'proposed' : 'requested' }));
+      toast.success('Devis rouvert');
+      await load();
+    } catch { toast.error('Échec de la réouverture'); } finally { setBusyId(null); }
+  };
+
   const handleDelete = async (q: Quote) => {
     if (!window.confirm(`Supprimer définitivement ce devis ${q.customer?.name ? `de ${q.customer.name}` : ''} ?`)) return;
     setBusyId(q.documentId);
@@ -311,6 +334,7 @@ const QuotesList = () => {
               onValidate={() => handleValidate(q)}
               onReject={() => handleReject(q)}
               onDelete={() => handleDelete(q)}
+              onReopen={() => handleReopen(q)}
             />
           ))}
         </div>
