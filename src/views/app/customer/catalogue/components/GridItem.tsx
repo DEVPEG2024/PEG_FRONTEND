@@ -1,12 +1,10 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCategory } from '@/@types/product';
-import { TbArrowRight } from 'react-icons/tb';
 import { pickCategoryIcon, pickCategoryTagline } from '@/utils/categoryIcon';
 
 // Accent violet
 const PURPLE = '#8b5cf6';
-const PURPLE_TEXT = '#a78bfa';
 
 const GridItem = ({ data }: { data: ProductCategory }) => {
   const { name, image } = data;
@@ -110,20 +108,6 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
             {tagline}
           </p>
         )}
-
-        {/* Lien "Voir les produits" */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '28px', height: '28px', borderRadius: '50%',
-            border: `1.5px solid ${PURPLE}`, background: 'rgba(139,92,246,0.1)',
-          }}>
-            <TbArrowRight size={15} color={PURPLE_TEXT} strokeWidth={2} />
-          </div>
-          <span style={{ color: PURPLE_TEXT, fontSize: '13px', fontWeight: 600 }}>
-            Voir les produits
-          </span>
-        </div>
       </div>
     </div>
   );
