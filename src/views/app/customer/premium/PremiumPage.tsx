@@ -10,6 +10,9 @@ import {
   apiStartPremiumCheckout,
   apiCancelPremium,
   PREMIUM_PRICE_HT,
+  PREMIUM_MIN_MONTHS,
+  canCancelPremium,
+  premiumCancellableFrom,
 } from '@/services/PremiumServices';
 
 const GOLD = '#eab308';
@@ -32,6 +35,11 @@ const PremiumPage = () => {
   const paidHandledRef = useRef<string | null>(null);
 
   const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
+  const premiumSince = user?.customer?.premiumSince;
+  const cancellable = canCancelPremium(premiumSince);
+  const cancelFromDate = premiumCancellableFrom(premiumSince);
+  const fmtDate = (d?: Date | null) =>
+    d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
 
   // Retour de paiement Stripe : l'activation premium est faite par le webhook (asynchrone)
   useEffect(() => {
@@ -67,6 +75,10 @@ const PremiumPage = () => {
 
   const handleCancel = async () => {
     if (!customerDocumentId) return;
+    if (!cancellable) {
+      toast.info(`Engagement de ${PREMIUM_MIN_MONTHS} mois : résiliation possible à partir du ${fmtDate(cancelFromDate)}.`);
+      return;
+    }
     if (!confirm('Résilier votre abonnement Premium ? Il restera actif jusqu’à la fin de la période en cours.')) return;
     setBusy(true);
     try {
@@ -142,11 +154,17 @@ const PremiumPage = () => {
               }}>
                 <TbCheck size={20} /> Abonnement Premium actif
               </div>
-              <button onClick={handleCancel} disabled={busy} style={{
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.45)', fontSize: '12.5px' }}>
+                {cancellable
+                  ? `Engagement de ${PREMIUM_MIN_MONTHS} mois atteint — résiliable à tout moment.`
+                  : `Engagement de ${PREMIUM_MIN_MONTHS} mois — résiliable à partir du ${fmtDate(cancelFromDate)}.`}
+              </p>
+              <button onClick={handleCancel} disabled={busy || !cancellable} title={!cancellable ? `Résiliable à partir du ${fmtDate(cancelFromDate)}` : undefined} style={{
                 alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
                 padding: '10px 18px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
-                cursor: busy ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif',
+                cursor: busy ? 'wait' : (cancellable ? 'pointer' : 'not-allowed'),
+                opacity: cancellable ? 1 : 0.5, fontFamily: 'Inter, sans-serif',
               }}>
                 Résilier l’abonnement
               </button>
@@ -157,7 +175,7 @@ const PremiumPage = () => {
                 <span style={{ color: '#fff', fontSize: '28px', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> HT / mois</span>
                 <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                  soit {priceTTC} € TTC / mois · sans engagement, résiliable à tout moment
+                  soit {priceTTC} € TTC / mois · engagement {PREMIUM_MIN_MONTHS} mois minimum
                 </p>
               </div>
               <button onClick={handleSubscribe} disabled={busy} style={{

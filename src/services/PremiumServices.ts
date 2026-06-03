@@ -7,6 +7,26 @@ import { TOKEN_TYPE } from '@/constants/api.constant';
 // Tarif Premium (HT mensuel) — doit rester aligné avec PREMIUM_PRICE_HT côté backend.
 export const PREMIUM_PRICE_HT = 250;
 
+// Engagement minimum de l'abonnement Premium (en mois) — aligné avec le backend.
+export const PREMIUM_MIN_MONTHS = 6;
+
+// Date à partir de laquelle la résiliation est possible (fin de l'engagement)
+export function premiumCancellableFrom(premiumSince?: string | null): Date | null {
+  if (!premiumSince) return null;
+  const since = new Date(premiumSince);
+  if (isNaN(since.getTime())) return null;
+  const d = new Date(since);
+  d.setMonth(d.getMonth() + PREMIUM_MIN_MONTHS);
+  return d;
+}
+
+// True si l'engagement de 6 mois est écoulé (résiliation possible)
+export function canCancelPremium(premiumSince?: string | null): boolean {
+  const from = premiumCancellableFrom(premiumSince);
+  if (!from) return false;
+  return Date.now() >= from.getTime();
+}
+
 export type PremiumCustomer = {
   documentId: string;
   name: string;
