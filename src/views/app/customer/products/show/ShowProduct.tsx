@@ -471,6 +471,8 @@ const ShowProduct = () => {
                       const savings = i > 0
                         ? Math.round(((baseCostPerUnit - tierCostPerUnit) / baseCostPerUnit) * 100)
                         : null;
+                      // Prix du palier remisé -15% si client Premium
+                      const tierDisplayHT = applyPremiumDiscount(tier.price, user?.customer);
                       return (
                         <div
                           key={i}
@@ -493,10 +495,10 @@ const ShowProduct = () => {
                             )}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                               <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
-                                {fmtHT(tier.price)}
+                                {fmtHT(tierDisplayHT)}
                               </span>
                               <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
-                                {fmtTTC(toTTC(tier.price))}
+                                {fmtTTC(toTTC(tierDisplayHT))}
                               </span>
                             </div>
                           </div>
