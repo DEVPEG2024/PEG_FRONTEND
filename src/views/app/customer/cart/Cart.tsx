@@ -9,6 +9,7 @@ import {
   getTotalPriceForCartItem,
   getProductPriceForSizeAndColors,
   isProductPackPricing,
+  applyPremiumDiscount,
 } from '@/utils/productHelpers';
 import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
 import { useEffect, useRef, useState } from 'react';
@@ -158,11 +159,12 @@ function CartItemCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const unitPrice = getProductPriceForSizeAndColors(
-    item.product,
-    item.sizeAndColors
+  const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
+  const unitPrice = applyPremiumDiscount(
+    getProductPriceForSizeAndColors(item.product, item.sizeAndColors),
+    customer
   );
-  const totalItem = getTotalPriceForCartItem(item.product, item.sizeAndColors);
+  const totalItem = applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer);
   const isPackPricing = isProductPackPricing(item.product);
   const totalQuantity = item.sizeAndColors.reduce(
     (sum, s) => sum + s.quantity,
@@ -509,7 +511,7 @@ function Cart() {
 
   const totalHT = cart.reduce(
     (sum, item) =>
-      sum + getTotalPriceForCartItem(item.product, item.sizeAndColors),
+      sum + applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), user?.customer),
     0
   );
 

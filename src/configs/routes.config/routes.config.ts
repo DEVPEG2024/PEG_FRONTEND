@@ -20,6 +20,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/calendar/CalendarPage")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // premium
+  {
+    key: "admin.premium",
+    path: "/admin/premium",
+    component: lazy(() => import("@/views/app/admin/premium/PremiumAdminList")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   // customers
   {
     key: "admin.customers.list",
@@ -270,6 +277,12 @@ const protectedCustomersRoutes = [
     key: "customer.devis",
     path: "/customer/devis",
     component: lazy(() => import("@/views/app/customer/devis/DevisForm")),
+    authority: [CUSTOMER],
+  },
+  {
+    key: "customer.premium",
+    path: "/customer/premium",
+    component: lazy(() => import("@/views/app/customer/premium/PremiumPage")),
     authority: [CUSTOMER],
   },
   {

@@ -27,7 +27,7 @@ import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price, applyPremiumDiscount } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import { FormAnswer } from '@/@types/formAnswer';
@@ -96,14 +96,16 @@ const ShowProduct = () => {
   const isPackPricing = product ? isProductPackPricing(product) : false;
   const isM2Pricing = product ? isProductM2Pricing(product) : false;
   const tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
-  const unitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
+  const rawUnitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
+  // Remise automatique -15% pour les clients Premium (catalogue standard)
+  const unitPrice = applyPremiumDiscount(rawUnitPrice, user?.customer);
 
   // m² pricing calculation
   const m2Data = isM2Pricing && product ? getM2Price(product, m2Width / 100, m2Height / 100, m2Quantity) : null;
 
   // Total price based on mode
   const totalPrice = isM2Pricing && m2Data
-    ? m2Data.total
+    ? applyPremiumDiscount(m2Data.total, user?.customer)
     : isPackPricing ? unitPrice : amountSelected * unitPrice;
 
   useEffect(() => {
@@ -291,7 +293,7 @@ const ShowProduct = () => {
     </Container>
   );
 
-  const basePrice = getProductBasePrice(product);
+  const basePrice = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
   const savingsPercent = getCatalogSavingsPercent(product, amountSelected > 0 ? amountSelected : 1);
   const hasTiers = product.priceTiers?.length > 1;
   const activeTierIndex = hasTiers

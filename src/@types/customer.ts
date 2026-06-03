@@ -33,4 +33,8 @@ export type Customer = {
   catalogAccess: boolean;
   /** Client Premium (abonnement) → accès aux offres personnalisées ("Mes offres"). Standard sinon. */
   premium?: boolean;
+  /** Premium traité côté admin = offres personnalisées préparées. */
+  premiumProcessed?: boolean;
+  /** Date de passage en Premium (ISO). */
+  premiumSince?: string;
 };

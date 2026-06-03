@@ -16,7 +16,47 @@ import useResponsive from '@/utils/hooks/useResponsive'
 import { useAppSelector } from '@/store'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { TbSparkles, TbArrowRight } from 'react-icons/tb'
+import { TbSparkles, TbArrowRight, TbCrown } from 'react-icons/tb'
+
+const PremiumCard = () => (
+    <div style={{ padding: '12px 16px 0', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{
+            background: 'linear-gradient(160deg, rgba(234,179,8,0.14) 0%, rgba(255,255,255,0.03) 100%)',
+            border: '1px solid rgba(234,179,8,0.3)',
+            borderRadius: '16px',
+            padding: '16px',
+        }}>
+            <div style={{
+                width: '34px', height: '34px', borderRadius: '10px',
+                background: 'rgba(234,179,8,0.18)', border: '1px solid rgba(234,179,8,0.35)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px',
+            }}>
+                <TbCrown size={18} color="#eab308" />
+            </div>
+            <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 700, lineHeight: 1.3 }}>
+                Passez en Premium
+            </p>
+            <p style={{ margin: '4px 0 14px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.4 }}>
+                -15% sur le catalogue + vos offres personnalisées.
+            </p>
+            <Link to="/customer/premium" style={{ textDecoration: 'none' }}>
+                <button style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    background: 'rgba(234,179,8,0.16)', border: '1px solid rgba(234,179,8,0.3)',
+                    borderRadius: '10px', padding: '9px 12px',
+                    color: '#fde68a', fontSize: '12.5px', fontWeight: 700,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'background 0.15s',
+                }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(234,179,8,0.28)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(234,179,8,0.16)')}
+                >
+                    Passer en Premium
+                    <TbArrowRight size={15} color="#eab308" strokeWidth={2} />
+                </button>
+            </Link>
+        </div>
+    </div>
+)
 
 const QuoteCard = () => (
     <div style={{ padding: '12px 16px 240px', fontFamily: 'Inter, sans-serif' }}>
@@ -156,6 +196,7 @@ const SideNav = () => {
                                     {menuContent}
                                 </ScrollBar>
                             </div>
+                            {customer && !customer.premium && <PremiumCard />}
                             {customer && <QuoteCard />}
                         </div>
                     )}

@@ -1,17 +1,19 @@
 import { Product } from '@/@types/product';
-import { getProductBasePrice } from '@/utils/productHelpers';
+import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { HiPhotograph } from 'react-icons/hi';
+import { RootState, useAppSelector } from '@/store';
 
 const HomeProductsList = ({ products }: { products: Product[] }) => {
   const navigate = useNavigate();
+  const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
 
   return (
     <>
       {products.map((product) => {
         const imageUrl = product.images?.[0]?.url;
-        const priceHT = getProductBasePrice(product);
+        const priceHT = applyPremiumDiscount(getProductBasePrice(product), customer);
         const priceTTC = toTTC(priceHT);
         return (
           <div

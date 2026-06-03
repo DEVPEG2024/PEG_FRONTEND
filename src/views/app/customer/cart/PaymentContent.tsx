@@ -2,6 +2,7 @@ import { CartItem } from '@/@types/cart';
 import {
   getProductPriceForSizeAndColors,
   getTotalPriceForCartItem,
+  applyPremiumDiscount,
 } from '@/utils/productHelpers';
 import { Checkout, ShippingAddress } from '@/@types/checkout';
 import { useState } from 'react';
@@ -35,6 +36,9 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  // Remise automatique -15% pour les clients Premium (catalogue standard)
+  const premiumPrice = (p: number) => applyPremiumDiscount(p, user?.customer);
+
   // Promo code state
   const [promoInput, setPromoInput] = useState('');
   const [promoValidation, setPromoValidation] = useState<PromoCodeValidation | null>(null);
@@ -44,7 +48,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const SHIPPING_HT = 9.90;
 
   const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
-    return total + getTotalPriceForCartItem(item.product, item.sizeAndColors);
+    return total + premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors));
   }, 0);
 
   const discountAmount = (promoValidation?.valid && promoValidation.discountAmount) || 0;
@@ -95,7 +99,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
           product: item.product,
           sizeAndColorSelections: item.sizeAndColors,
           formAnswer,
-          price: getTotalPriceForCartItem(item.product, item.sizeAndColors),
+          price: premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors)),
           state: 'pending',
           customer: user.customer!,
         },
@@ -142,7 +146,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
         documentId: orderItem.documentId,
         productName: orderItem.product.name,
-        productPrice: Math.trunc(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections) * 100 * (1 + TVA_RATE)),
+        productPrice: Math.trunc(premiumPrice(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections)) * 100 * (1 + TVA_RATE)),
         productQuantity: orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
@@ -239,7 +243,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         padding: '10px 12px', marginBottom: '10px',
       }}>
         {cart.map((item, i) => {
-          const total = getTotalPriceForCartItem(item.product, item.sizeAndColors);
+          const total = premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors));
           const qty = item.sizeAndColors.reduce((s, sc) => s + sc.quantity, 0);
           return (
             <div key={item.id} style={{

@@ -102,6 +102,18 @@ const navigationAdmin: NavigationTree[] = [
     ],
   },
 
+  // --- Premium ---
+  {
+    key: "admin.premium",
+    path: "/admin/premium",
+    title: "Premium",
+    translateKey: "nav.premium",
+    icon: "premium",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [],
+  },
+
   // --- Producteurs ---
   {
     key: "admin.producers",

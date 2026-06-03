@@ -1,4 +1,20 @@
 import { Product, SizeAndColorSelection } from '@/@types/product';
+import { Customer } from '@/@types/customer';
+
+/**
+ * Remise automatique des clients Premium sur le catalogue standard (-15 %).
+ * Source unique de vérité côté front.
+ */
+export const PREMIUM_DISCOUNT_RATE = 0.15;
+
+export function getPremiumMultiplier(customer?: Customer | null): number {
+  return customer?.premium ? 1 - PREMIUM_DISCOUNT_RATE : 1;
+}
+
+/** Applique la remise Premium (-15 %) à un prix si le client est Premium. Arrondi au centime. */
+export function applyPremiumDiscount(price: number, customer?: Customer | null): number {
+  return Math.round(price * getPremiumMultiplier(customer) * 100) / 100;
+}
 
 /**
  * Get the effective price for a product.

@@ -331,6 +331,47 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 👑 Premium — Abonnement client (ajout 03/06/2026)
+
+### Concept
+- Un client a un statut **`premium`** (booléen Strapi). Premium = accès aux **offres personnalisées** (« Mes offres ») + **−15 % automatique sur le catalogue standard**. Standard = catalogue seul, prix plein.
+- **Tarif : 250 € HT / mois** (abonnement Stripe `mode: subscription`, intervalle `month`). Source unique de vérité : `PREMIUM_PRICE_HT` (côté back **et** front — garder aligné).
+- ⚠️ Une migration bootstrap (`premium_defaults` dans `peg_strapi/src/index.ts`) a passé **tous les clients existants en `premium=true`** ; seuls les **nouveaux comptes** sont `false`. La carte d'upgrade ne s'affiche donc que pour les nouveaux comptes standard.
+
+### Parcours client (paiement)
+1. Carte **« Passer en Premium »** dans le menu latéral (`SideNav.tsx`), au-dessus de la carte devis, **affichée uniquement si `customer && !customer.premium`**.
+2. Page `/customer/premium` (`PremiumPage.tsx`) → bouton → `POST /api/checkout/premium` → `loadStripe` **à la demande** → `redirectToCheckout`.
+3. Retour : `?paid=<customerDocumentId>` (succès) / `?canceled=1`. **L'activation `premium=true` est faite par le webhook** (asynchrone), pas au retour client.
+4. Résiliation : `POST /api/checkout/premium/cancel` → `cancel_at_period_end` ; la rétrogradation vient du webhook en fin de période.
+
+### Webhook Stripe (`checkout.ts` → `stripeWebhook`)
+- `checkout.session.completed` avec `metadata.type === 'premium'` → `premium=true`, `premiumProcessed=false`, `premiumSince=now`, stocke `stripeCustomerId` / `stripeSubscriptionId`. Notifie les admins (« Nouveau client Premium ») + le client. Idempotent.
+- `customer.subscription.deleted` **et** `invoice.payment_failed` → `downgradePremiumBySubscription()` repasse le client en `premium=false`.
+- **⚠️ Activer ces 3 événements sur le webhook Stripe** (dashboard) — sinon pas de rétrogradation.
+
+### Remise −15 % catalogue
+- Helper `applyPremiumDiscount(price, customer)` + `getPremiumMultiplier()` dans `src/utils/productHelpers.ts` (`PREMIUM_DISCOUNT_RATE = 0.15`).
+- Appliquée à l'**affichage** : `CustomerProductCard.tsx`, `ShowProduct.tsx`, `HomeProductsList.tsx`, `Cart.tsx`.
+- Appliquée au **prix facturé** : `PaymentContent.tsx` (le champ `orderItem.price`). **C'est le point critique** : le backend `recalculateFromDB` recalcule le montant Stripe à partir de `oi.price` en BDD — donc la remise doit être figée à la création de l'order-item.
+- Non appliquée à `ShowOrderItem.tsx` / `CartColumns.tsx` (vues commande/legacy : la remise serait basée sur le spectateur, pas sur le client de la commande).
+
+### Suivi admin — onglet « Premium »
+- Nav `admin.premium` → `/admin/premium` (`PremiumAdminList.tsx`), icône `premium` (`TbCrown`).
+- Liste les clients `premium=true` via **GraphQL** (`customers_connection`, `PremiumServices.ts`), séparés en **« Nouveaux — à traiter »** (`premiumProcessed=false`) et **« Traités »**.
+- « Traité » = offres personnalisées préparées par l'admin → bouton bascule `premiumProcessed` (`apiSetPremiumProcessed`, mutation GraphQL `updateCustomer`).
+
+### Champs Strapi ajoutés (`customer/schema.json`)
+`premiumProcessed` (bool), `premiumSince` (datetime), `stripeCustomerId` (string), `stripeSubscriptionId` (string).
+
+### Ordre de déploiement
+**Backend d'abord** (colonnes + endpoints), puis configurer les événements webhook Stripe, puis frontend. Déployer le front avant le back ferait échouer `/checkout/premium`.
+
+### Fichiers clés
+- Back : `peg_strapi/src/api/checkout/controllers/checkout.ts` + `routes/checkout.ts`, `customer/content-types/customer/schema.json`
+- Front : `src/services/PremiumServices.ts`, `src/views/app/customer/premium/PremiumPage.tsx`, `src/views/app/admin/premium/PremiumAdminList.tsx`, `src/components/template/SideNav.tsx`, `src/utils/productHelpers.ts`
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

@@ -1,9 +1,10 @@
 import { useRef } from 'react';
-import { getProductBasePrice, getCatalogSavingsPercent } from '@/utils/productHelpers';
+import { getProductBasePrice, getCatalogSavingsPercent, applyPremiumDiscount } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
 import { HiArrowRight } from 'react-icons/hi';
+import { RootState, useAppSelector } from '@/store';
 
 const getShortSentence = (desc: string): string => {
   const text = desc.replace(/<[^>]*>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -19,9 +20,13 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
+  const isPremium = !!customer?.premium;
+
   const imageUrl = product.images[0]?.url;
   const shortDesc = product.description ? getShortSentence(product.description) : null;
-  const priceHT = getProductBasePrice(product);
+  const fullPriceHT = getProductBasePrice(product);
+  const priceHT = applyPremiumDiscount(fullPriceHT, customer);
   const priceTTC = toTTC(priceHT);
   const savingsPercent = getCatalogSavingsPercent(product);
   const initial = product.name.charAt(0).toUpperCase();
@@ -276,6 +281,11 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             {savingsPercent && product.catalogPrice && (
               <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 500, whiteSpace: 'nowrap', textDecoration: 'line-through' }}>
                 {fmtHT(product.catalogPrice)}
+              </span>
+            )}
+            {isPremium && (
+              <span style={{ fontSize: '10px', color: '#eab308', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                ⭐ -15% Premium
               </span>
             )}
           </div>
