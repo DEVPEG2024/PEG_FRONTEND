@@ -10,7 +10,8 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import dayjs from 'dayjs';
-import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiCash, HiTrendingUp, HiSparkles } from 'react-icons/hi';
+import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck } from 'react-icons/hi';
+import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
 import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
 
@@ -111,34 +112,69 @@ const HeroArt = () => (
   </svg>
 )
 
-/* ── Area chart SVG (dépenses par mois) ── */
-const SpendingChart = ({ data }: { data: number[] }) => {
-  const max = Math.max(...data, 1)
-  const W = 720, H = 200, padL = 8, padR = 8, padT = 10, padB = 28
-  const innerW = W - padL - padR, innerH = H - padT - padB
+/* ── Cadre + area chart SVG (dépenses par mois) — axes toujours visibles ── */
+const niceMax = (m: number): number => {
+  if (m <= 0) return 3000
+  const pow = Math.pow(10, Math.floor(Math.log10(m)))
+  const n = m / pow
+  const step = n <= 1 ? 1 : n <= 1.5 ? 1.5 : n <= 2 ? 2 : n <= 3 ? 3 : n <= 5 ? 5 : 10
+  return step * pow
+}
+const SpendingChart = ({ data, empty }: { data: number[]; empty?: boolean }) => {
+  const max = empty ? 3000 : niceMax(Math.max(...data))
+  const ticks = [max, (max * 2) / 3, max / 3, 0]
+  const W = 720, H = 200, padT = 8, padB = 8
+  const innerH = H - padT - padB
   const pts = data.map((v, i) => {
-    const x = padL + (innerW * i) / (data.length - 1)
+    const x = (W * i) / (data.length - 1)
     const y = padT + innerH - (innerH * v) / max
     return [x, y] as const
   })
   const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
-  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${padT + innerH} L${pts[0][0].toFixed(1)},${padT + innerH} Z`
+  const area = `${line} L${W},${padT + innerH} L0,${padT + innerH} Z`
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="220" preserveAspectRatio="none" role="img">
-      <defs>
-        <linearGradient id="spendG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#6b9eff" stopOpacity="0.35" />
-          <stop offset="1" stopColor="#6b9eff" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill="url(#spendG)" />
-      <path d={line} fill="none" stroke="#6b9eff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {pts.map((p, i) => data[i] > 0 && <circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#6b9eff" />)}
-      {MONTHS.map((m, i) => {
-        const x = padL + (innerW * i) / (MONTHS.length - 1)
-        return <text key={m} x={x} y={H - 8} fill="rgba(255,255,255,0.4)" fontSize="11" textAnchor="middle" fontFamily="Inter, sans-serif">{m}</text>
-      })}
-    </svg>
+    <div style={{ display: 'flex', gap: '12px' }}>
+      {/* Y axis */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '200px', paddingBottom: '22px', flexShrink: 0 }}>
+        {ticks.map((t) => <span key={t} style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'right', lineHeight: 1 }}>{Math.round(t)} €</span>)}
+      </div>
+      {/* Plot */}
+      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200" preserveAspectRatio="none" role="img" style={{ display: 'block' }}>
+          <defs>
+            <linearGradient id="spendG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#6b9eff" stopOpacity="0.35" />
+              <stop offset="1" stopColor="#6b9eff" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* gridlines */}
+          {ticks.map((t) => {
+            const y = padT + innerH - (innerH * t) / max
+            return <line key={t} x1="0" y1={y} x2={W} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          })}
+          {!empty && <>
+            <path d={area} fill="url(#spendG)" />
+            <path d={line} fill="none" stroke="#6b9eff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            {pts.map((p, i) => data[i] > 0 && <circle key={i} cx={p[0]} cy={p[1]} r="3.5" fill="#6b9eff" />)}
+          </>}
+        </svg>
+        {/* empty overlay */}
+        {empty && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none' }}>
+            <svg width="40" height="26" viewBox="0 0 40 26" fill="none" style={{ marginBottom: '12px' }} aria-hidden>
+              <path d="M2 22 L13 12 L20 17 L30 5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M24 5 H30 V11" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 6px' }}>Aucune donnée pour le moment</p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>Vos dépenses apparaîtront ici.</p>
+          </div>
+        )}
+        {/* X axis */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+          {MONTHS.map((m) => <span key={m} style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{m}</span>)}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -244,7 +280,7 @@ const InvoicesList = () => {
           label="En attente" value={fmtEur(stats.pending)} hint="Factures à régler" />
         <KpiCard icon={<HiCheckCircle size={24} />} iconBg="rgba(52,211,153,0.12)" iconBorder="rgba(52,211,153,0.28)" iconColor="#34d399"
           label="Payées" value={fmtEur(stats.paid)} hint="Factures réglées" />
-        <KpiCard icon={<HiCash size={24} />} iconBg="rgba(107,158,255,0.12)" iconBorder="rgba(107,158,255,0.28)" iconColor="#6b9eff"
+        <KpiCard icon={<FaPiggyBank size={22} />} iconBg="rgba(107,158,255,0.12)" iconBorder="rgba(107,158,255,0.28)" iconColor="#6b9eff"
           label="Économies Premium" value={fmtEur(stats.premiumSavings)} hint="Grâce à vos avantages" />
       </div>
 
@@ -368,10 +404,28 @@ const InvoicesList = () => {
         {/* Activité financière */}
         <Panel title="Activité financière" action={<a onClick={(e) => { e.preventDefault(); setActiveTab('all') }} href="#" style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Voir tout</a>}>
           {activity.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '36px 16px' }}>
-              <HiTrendingUp size={34} style={{ color: 'rgba(255,255,255,0.3)', marginBottom: '14px' }} />
-              <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 6px' }}>Aucune activité financière récente</p>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>Vos activités liées aux factures et paiements apparaîtront ici.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px 8px' }}>
+              {/* colonne d'icônes déco */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
+                {[
+                  { c: '#34d399', bg: 'rgba(52,211,153,0.12)', Icon: HiDocumentReport },
+                  { c: '#a99bff', bg: 'rgba(139,125,255,0.12)', Icon: HiDocumentText },
+                  { c: '#6b9eff', bg: 'rgba(107,158,255,0.12)', Icon: HiDocumentDuplicate },
+                  { c: '#6b9eff', bg: 'rgba(107,158,255,0.12)', Icon: HiClipboardCheck },
+                ].map((it, i) => (
+                  <div key={i} style={{ width: '34px', height: '34px', borderRadius: '10px', background: it.bg, border: `1px solid ${it.c}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: it.c }}>
+                    <it.Icon size={16} />
+                  </div>
+                ))}
+              </div>
+              {/* empty state centré */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <svg width="40" height="22" viewBox="0 0 40 22" fill="none" style={{ marginBottom: '14px' }} aria-hidden>
+                  <path d="M1 11 H10 L14 3 L20 19 L25 11 H39" stroke="rgba(255,255,255,0.35)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 6px' }}>Aucune activité financière récente</p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>Vos activités liées aux factures et paiements apparaîtront ici.</p>
+              </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -404,15 +458,7 @@ const InvoicesList = () => {
             {years.map((y) => <option key={y} value={y} style={{ background: '#16263d' }}>Année {y}</option>)}
           </select>
         }>
-          {hasSpending ? (
-            <SpendingChart data={spending} />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '220px' }}>
-              <HiTrendingUp size={32} style={{ color: 'rgba(255,255,255,0.25)', marginBottom: '12px' }} />
-              <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '0 0 6px' }}>Aucune donnée pour le moment</p>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>Vos dépenses apparaîtront ici.</p>
-            </div>
-          )}
+          <SpendingChart data={spending} empty={!hasSpending} />
         </Panel>
 
         {/* Avantages Premium */}
@@ -426,12 +472,6 @@ const InvoicesList = () => {
                 <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 500 }}>{perk}</span>
               </div>
             ))}
-            {!isAdmin && !isPremium && (
-              <button onClick={() => navigate('/customer/premium')}
-                style={{ marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px', borderRadius: '11px', background: 'linear-gradient(135deg, #6d5dfc, #5a47e0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
-                <HiSparkles size={15} /> Passer en Premium
-              </button>
-            )}
           </div>
           {/* diamant déco */}
           <svg width="150" height="150" viewBox="0 0 100 100" style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.9, pointerEvents: 'none' }} aria-hidden>
