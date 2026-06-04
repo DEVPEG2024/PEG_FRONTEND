@@ -404,7 +404,7 @@ export default function ClientFilesPanel({ customerDocumentId, mode }: Props) {
                           <div className="flex items-center gap-2 text-[10px] text-white/30">
                             <span>{cf.file?.ext?.replace('.', '').toUpperCase()}</span>
                             <span>·</span>
-                            <span>{formatSize(cf.file?.size ?? 0)}</span>
+                            <span>{formatSize((cf.file?.size ?? 0) * 1024)}</span>
                             {cf.notes && <><span>·</span><span className="truncate">{cf.notes}</span></>}
                           </div>
                         </div>

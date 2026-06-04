@@ -53,6 +53,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
 }
 
+// Strapi stocke la taille des médias en kilo-octets (KB) — on convertit en octets.
+function clientFileBytes(file: ClientFile['file']): number {
+  return (file?.size ?? 0) * 1024
+}
+
 function formatGo(bytes: number): string {
   const go = bytes / (1024 * 1024 * 1024)
   if (go === 0) return '0'
@@ -159,7 +164,7 @@ const MyFiles = () => {
   /* ---------- Derived stats ---------- */
 
   const stats = useMemo(() => {
-    const totalBytes = files.reduce((s, f) => s + (f.file?.size ?? 0), 0)
+    const totalBytes = files.reduce((s, f) => s + clientFileBytes(f.file), 0)
     const shared = files.filter((f) => f.shared).length
     const sorted = [...files].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -363,7 +368,7 @@ const MyFiles = () => {
                       <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '2px' }}>
                         <span>{f.file?.ext?.replace('.', '').toUpperCase()}</span><span>·</span>
-                        <span>{formatSize(f.file?.size ?? 0)}</span><span>·</span>
+                        <span>{formatSize(clientFileBytes(f.file))}</span><span>·</span>
                         <span>{timeAgo(f.createdAt)}</span>
                       </div>
                     </div>
