@@ -35,9 +35,9 @@ const ProjectListContent = ({
       await Promise.all(
         projects.map((p) =>
           fetch(`${PEG_BACKEND_URL}/projects/view/${p.documentId}`)
-            .then((r) => r.json())
+            .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
-              if (data.views?.length > 0) {
+              if (data?.views?.length > 0) {
                 map[p.documentId] = data.views[0].last_seen;
               }
             })

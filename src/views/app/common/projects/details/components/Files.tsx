@@ -80,7 +80,10 @@ const Files = () => {
   useEffect(() => {
     if (!isCustomer || !project?.documentId) return;
     fetch(`${PEG_BACKEND_URL}/projects/files/ownership/${project.documentId}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (data.files) {
           const mine = data.files

@@ -95,6 +95,9 @@ export async function apiGetPremiumCustomers(): Promise<PremiumCustomer[]> {
     method: 'post',
     data: { query },
   });
+  if (res?.data?.errors?.length) {
+    console.error('[Premium] Erreurs GraphQL apiGetPremiumCustomers:', res.data.errors);
+  }
   return res?.data?.data?.customers_connection?.nodes ?? [];
 }
 

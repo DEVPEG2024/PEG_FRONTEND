@@ -6,6 +6,7 @@ export type Role = {
   documentId: string;
   name: string;
   description?: string;
+  type?: string;
 };
 
 export type User = {

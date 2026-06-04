@@ -29,10 +29,13 @@ import { apiValidatePromoCode } from '@/services/PromoCodeServices';
 import { PromoCodeValidation } from '@/@types/promoCode';
 import { toast } from 'react-toastify';
 
+// loadStripe doit être appelé une seule fois (hors composant) — sinon Stripe.js
+// est réinstancié à chaque render.
+const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
+
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const { token } = useAppSelector((state) => state.auth.session);
-  const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();

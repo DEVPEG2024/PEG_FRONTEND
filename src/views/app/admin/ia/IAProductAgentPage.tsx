@@ -54,10 +54,11 @@ const IAProductAgentPage = () => {
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  // Fetch all option lists + suggestions on mount
+  // Fetch all option lists on mount (les suggestions sont déclenchées une fois
+  // les catégories chargées, depuis fetchAllOptions — sinon elles partiraient avec
+  // une liste de catégories vide à cause du render initial)
   useEffect(() => {
     fetchAllOptions();
-    fetchSuggestions();
   }, []);
 
   const fetchAllOptions = async () => {
@@ -77,7 +78,10 @@ const IAProductAgentPage = () => {
       setCustomerCategories(custCatList.map((c: CustomerCategory) => ({ value: c.documentId, label: c.name })));
 
       const prodCatList = (prodCatRes as any).productCategories_connection?.nodes || [];
-      setProductCategories(prodCatList.map((c: ProductCategory) => ({ value: c.documentId, label: c.name })));
+      const prodCatOptions = prodCatList.map((c: ProductCategory) => ({ value: c.documentId, label: c.name }));
+      setProductCategories(prodCatOptions);
+      // Déclenche les suggestions avec les catégories fraîchement chargées
+      fetchSuggestions(prodCatOptions.map((c: Options) => c.label));
 
       const formsList = (formsRes as any).forms_connection?.nodes || [];
       setForms(formsList.map((f: Form) => ({ value: f.documentId, label: f.name })));
@@ -89,10 +93,10 @@ const IAProductAgentPage = () => {
     }
   };
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = async (labels?: string[]) => {
     setLoadingSuggestions(true);
     try {
-      const categoryLabels = productCategories.map((c) => c.label);
+      const categoryLabels = labels ?? productCategories.map((c) => c.label);
       const res = await apiGetProductSuggestions(categoryLabels);
       if (res.data?.suggestions) setSuggestions(res.data.suggestions);
     } catch {

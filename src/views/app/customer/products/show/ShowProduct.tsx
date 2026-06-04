@@ -800,7 +800,7 @@ const ShowProduct = () => {
 
       {/* ── Section BAT ──────────────────────────────────────────────────── */}
       {product.requiresBat && product.batFile?.url && (() => {
-        const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | null) ?? null;
+        const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | 'pending' | null) ?? null;
         return (
           <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>
             {/* Header */}

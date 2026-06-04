@@ -66,7 +66,10 @@ const ProjectDetails = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.documentId }),
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .catch((err) => console.error('[ProjectView] POST error:', err));
   }, [documentId, user?.documentId]);
 
@@ -75,7 +78,10 @@ const ProjectDetails = () => {
     if (!isAdmin || !documentId) return;
     const fetchView = () => {
       fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
         .then((data) => {
           if (data.views?.length > 0) {
             setCustomerLastSeen(data.views[0].last_seen);
