@@ -335,3 +335,173 @@ export function countRisks(scheduled: ScheduledProject[]): RiskCounts {
     { late: 0, tight: 0, ok: 0, total: 0 }
   );
 }
+
+// ---------------------------------------------------------------------------
+// Score de santé /100 (100 = très confortable, bas = à risque)
+// ---------------------------------------------------------------------------
+
+export function riskScore(sp: ScheduledProject): number {
+  return Math.max(2, Math.min(98, Math.round(50 + sp.margin * 10)));
+}
+
+// ---------------------------------------------------------------------------
+// Semaine courante (lun→dim) + numéro de semaine ISO
+// ---------------------------------------------------------------------------
+
+export function currentWeekDays(today = new Date()): Date[] {
+  const d = atMidnight(today);
+  const dow = d.getDay(); // 0=dim … 6=sam
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = addDays(d, mondayOffset);
+  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+}
+
+export function isoWeekNumber(d = new Date()): number {
+  const date = atMidnight(d);
+  date.setDate(date.getDate() + 4 - (date.getDay() || 7));
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+// ---------------------------------------------------------------------------
+// Matrice ressources : producteurs (lignes) × projets répartis (board)
+// ---------------------------------------------------------------------------
+
+export type ResourceBlock = {
+  kind: 'project' | 'available';
+  project?: ScheduledProject;
+  days: number;
+  risk?: RiskLevel;
+};
+
+export type ResourceRow = {
+  producerId: string;
+  producerName: string;
+  totalDays: number;
+  capacityDays: number;
+  ratioPct: number;
+  overloaded: boolean;
+  blocks: ResourceBlock[];
+};
+
+export function buildResourceMatrix(
+  scheduled: ScheduledProject[],
+  producerLoads: ProducerLoad[]
+): ResourceRow[] {
+  const byProducer = new Map<string, ScheduledProject[]>();
+  for (const sp of scheduled) {
+    const id = sp.project.producer?.documentId ?? '__unassigned__';
+    const arr = byProducer.get(id);
+    if (arr) arr.push(sp);
+    else byProducer.set(id, [sp]);
+  }
+
+  return producerLoads.map((pl) => {
+    const projs = (byProducer.get(pl.producerId) ?? []).slice().sort((a, b) => b.urgency - a.urgency);
+    const blocks: ResourceBlock[] = projs.map((sp) => ({
+      kind: 'project',
+      project: sp,
+      days: sp.workload.days,
+      risk: sp.risk,
+    }));
+    const free = Math.round((pl.capacityDays - pl.totalDays) * 10) / 10;
+    if (free > 0.1) blocks.push({ kind: 'available', days: free });
+    return {
+      producerId: pl.producerId,
+      producerName: pl.producerName,
+      totalDays: pl.totalDays,
+      capacityDays: pl.capacityDays,
+      ratioPct: pl.capacityDays > 0 ? Math.round((pl.totalDays / pl.capacityDays) * 100) : 0,
+      overloaded: pl.overloaded,
+      blocks,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Charge prévisionnelle par semaine (load % vs capacité)
+// ---------------------------------------------------------------------------
+
+export type ForecastPoint = { label: string; loadPct: number };
+
+export function buildForecast(
+  scheduled: ScheduledProject[],
+  producerCount: number,
+  weeks = 6,
+  today = new Date()
+): ForecastPoint[] {
+  const weeklyCapacity = Math.max(1, producerCount) * 5; // 1 j-homme / jour ouvré
+  const startWeek = isoWeekNumber(today);
+  const monday = currentWeekDays(today)[0];
+
+  const points: ForecastPoint[] = [];
+  for (let w = 0; w < weeks; w++) {
+    const from = addDays(monday, w * 7);
+    const to = addDays(from, 7);
+    let load = 0;
+    for (const sp of scheduled) {
+      const end = new Date(sp.project.endDate);
+      if (end >= from && end < to) load += sp.workload.days;
+    }
+    points.push({
+      label: `Sem. ${startWeek + w}`,
+      loadPct: Math.round((load / weeklyCapacity) * 100),
+    });
+  }
+  return points;
+}
+
+// ---------------------------------------------------------------------------
+// Actions recommandées (heuristiques déterministes à partir du moteur)
+// ---------------------------------------------------------------------------
+
+export type RecommendedAction = {
+  icon: 'reassign' | 'shift' | 'accept';
+  title: string;
+  detail: string;
+  badge: string;
+  tone: RiskLevel;
+};
+
+export function recommendActions(
+  scheduled: ScheduledProject[],
+  producerLoads: ProducerLoad[]
+): RecommendedAction[] {
+  const actions: RecommendedAction[] = [];
+  const real = producerLoads.filter((p) => p.producerId !== '__unassigned__');
+  const overloaded = real.filter((p) => p.overloaded);
+  const underloaded = real
+    .filter((p) => !p.overloaded)
+    .sort((a, b) => a.totalDays / a.capacityDays - b.totalDays / b.capacityDays);
+
+  for (const ov of overloaded.slice(0, 2)) {
+    const projs = scheduled
+      .filter((s) => s.project.producer?.documentId === ov.producerId)
+      .sort((a, b) => b.workload.days - a.workload.days);
+    const heavy = projs[0];
+    const target = underloaded[0];
+    if (heavy && target) {
+      const pct = Math.round((heavy.workload.days / Math.max(1, ov.capacityDays)) * 100);
+      actions.push({
+        icon: 'reassign',
+        tone: 'late',
+        title: `Réaffecter « ${heavy.project.name} » de ${ov.producerName} vers ${target.producerName}`,
+        detail: `Libère ${heavy.workload.days} j et réduit le risque de retard`,
+        badge: `+${pct}% capacité`,
+      });
+    }
+  }
+
+  for (const t of scheduled.filter((s) => s.risk === 'tight').slice(0, 2 - actions.length + 1)) {
+    if (actions.length >= 3) break;
+    actions.push({
+      icon: 'shift',
+      tone: 'tight',
+      title: `Décaler « ${t.project.name} » de 1 jour`,
+      detail: 'Évite une surcharge ponctuelle',
+      badge: 'marge +1 j',
+    });
+  }
+
+  return actions.slice(0, 4);
+}

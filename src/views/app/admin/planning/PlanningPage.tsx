@@ -1,73 +1,69 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers, TbWand, TbHistory, TbCalendarPlus } from 'react-icons/tb';
+import {
+  TbCalendarStats, TbRefresh, TbWand, TbHistory, TbCalendarPlus,
+  TbAlertTriangle, TbShieldCheck, TbActivity, TbGauge, TbClockExclamation, TbSparkles,
+} from 'react-icons/tb';
 import { useAppSelector } from '@/store';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Project } from '@/@types/project';
 import {
-  analyzeProjects,
-  buildWeekPlan,
-  computeProducerLoads,
-  countRisks,
-  ScheduledProject,
-  ProducerLoad,
+  analyzeProjects, buildWeekPlan, computeProducerLoads, countRisks,
+  buildResourceMatrix, buildForecast, recommendActions, currentWeekDays, isoWeekNumber,
+  ScheduledProject, ProducerLoad, ResourceRow,
 } from '@/utils/planning/scheduler';
 import { buildSnapshot } from '@/services/PlanningAIService';
 import { loadManualOverrides, loadProducerCapacities, CapacityConfig } from '@/services/PlanningService';
 import { downloadPlanningIcs } from '@/utils/planning/exportIcs';
-import { PLANNING_ACCENT, rgba } from './theme';
-import PlanningKpis from './components/PlanningKpis';
-import AiSummary from './components/AiSummary';
-import PriorityList from './components/PriorityList';
-import WeekSchedule from './components/WeekSchedule';
-import ProducerLoadList from './components/ProducerLoadList';
-import EstimateEditorModal from './components/EstimateEditorModal';
-import SimulationDrawer from './components/SimulationDrawer';
+import { PLANNING_ACCENT, RISK_COLOR, rgba } from './theme';
+import KpiCard from './components/KpiCard';
+import ResourceBoard from './components/ResourceBoard';
+import ForecastChart from './components/ForecastChart';
+import AiActions from './components/AiActions';
+import AtRiskList from './components/AtRiskList';
 import CapacityEditorModal from './components/CapacityEditorModal';
+import SimulationDrawer from './components/SimulationDrawer';
 import RunHistoryDrawer from './components/RunHistoryDrawer';
 
 const HORIZON_WEEKS = 2;
-
-const sectionTitle = (icon: JSX.Element, label: string, hint?: string) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-    {icon}
-    <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, margin: 0 }}>{label}</h3>
-    {hint && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>· {hint}</span>}
-  </div>
-);
 
 const panel: React.CSSProperties = {
   background: 'linear-gradient(160deg, rgba(18,22,34,0.6), rgba(11,14,21,0.6))',
   border: '1px solid rgba(255,255,255,0.06)',
   borderRadius: '16px',
   padding: '18px',
-  marginBottom: '20px',
 };
 
 const headerBtn = (disabled: boolean, accent = false): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
+  display: 'inline-flex', alignItems: 'center', gap: '6px',
   background: accent ? rgba(PLANNING_ACCENT, 0.16) : 'rgba(255,255,255,0.05)',
   border: `1px solid ${accent ? rgba(PLANNING_ACCENT, 0.4) : 'rgba(255,255,255,0.12)'}`,
-  borderRadius: '10px',
-  padding: '8px 14px',
+  borderRadius: '10px', padding: '8px 13px',
   color: accent ? '#c7d2fe' : 'rgba(255,255,255,0.7)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: disabled ? 'default' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
+  fontSize: '12px', fontWeight: 600,
+  cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1,
   fontFamily: 'Inter, sans-serif',
 });
 
+const sectionTitle = (icon: JSX.Element, label: string, right?: JSX.Element) => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#fff', fontSize: '14px', fontWeight: 700 }}>
+      {icon} {label}
+    </span>
+    {right}
+  </div>
+);
+
 const PlanningPage = () => {
+  const navigate = useNavigate();
   const userId = useAppSelector((state) => state.auth.user.user?.documentId || '');
   const [projects, setProjects] = useState<Project[]>([]);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [capacities, setCapacities] = useState<Record<string, CapacityConfig>>({});
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<ScheduledProject | null>(null);
+  const [view, setView] = useState<'week' | 'month'>('week');
   const [editingCapacity, setEditingCapacity] = useState<ProducerLoad | null>(null);
   const [showSim, setShowSim] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -75,7 +71,6 @@ const PlanningPage = () => {
   const load = async () => {
     setLoading(true);
     try {
-      // Projets (Strapi, source de vérité) + overrides/capacités (backend Planning, tolérant)
       const [res, manualOverrides, caps] = await Promise.all([
         unwrapData(apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
         loadManualOverrides(),
@@ -91,124 +86,124 @@ const PlanningPage = () => {
     }
   };
 
-  const refreshOverrides = async () => setOverrides(await loadManualOverrides());
   const refreshCapacities = async () => setCapacities(await loadProducerCapacities());
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const { scheduled, counts, weekPlan, producerLoads, snapshot } = useMemo(() => {
+  const data = useMemo(() => {
     const scheduled = analyzeProjects(projects, new Date(), overrides);
     const counts = countRisks(scheduled);
-    const weekPlan = buildWeekPlan(scheduled, HORIZON_WEEKS);
     const producerLoads = computeProducerLoads(scheduled, HORIZON_WEEKS, capacities);
     const snapshot = buildSnapshot(scheduled, producerLoads, counts);
-    return { scheduled, counts, weekPlan, producerLoads, snapshot };
-  }, [projects, overrides, capacities]);
+
+    const weekDays = currentWeekDays();
+    const days = view === 'week' ? weekDays : [...weekDays, ...weekDays.map((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; })];
+    const matrix = buildResourceMatrix(scheduled, producerLoads);
+
+    const realRows = producerLoads.filter((p) => p.producerId !== '__unassigned__');
+    const chargeMoyenne = realRows.length ? Math.round(realRows.reduce((s, p) => s + (p.capacityDays ? (p.totalDays / p.capacityDays) * 100 : 0), 0) / realRows.length) : 0;
+    const totalCapacity = realRows.reduce((s, p) => s + p.capacityDays, 0);
+    const usedCapacity = realRows.reduce((s, p) => s + Math.min(p.totalDays, p.capacityDays), 0);
+    const freeDays = Math.round((realRows.reduce((s, p) => s + Math.max(0, p.capacityDays - p.totalDays), 0)) * 10) / 10;
+    const freePct = totalCapacity ? Math.round(((totalCapacity - usedCapacity) / totalCapacity) * 100) : 0;
+
+    const forecast = buildForecast(scheduled, realRows.length || 1, 6);
+    const actions = recommendActions(scheduled, producerLoads);
+
+    // séries sparkline (réelles) : risque par jour sur l'horizon
+    const plan = buildWeekPlan(scheduled, HORIZON_WEEKS);
+    const series = {
+      late: plan.map((d) => d.items.filter((i) => i.risk === 'late').length),
+      tight: plan.map((d) => d.items.filter((i) => i.risk === 'tight').length),
+      ok: plan.map((d) => d.items.filter((i) => i.risk === 'ok').length),
+      load: forecast.map((f) => f.loadPct),
+    };
+
+    return { scheduled, counts, snapshot, days, matrix, chargeMoyenne, freeDays, freePct, forecast, actions, series };
+  }, [projects, overrides, capacities, view]);
+
+  const weekDays = data.days;
+  const weekLabel = useMemo(() => {
+    const first = weekDays[0];
+    const last = weekDays[6] ?? weekDays[weekDays.length - 1];
+    const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
+    return `Semaine ${isoWeekNumber(first)} (${fmt(first)} – ${fmt(last)} ${first.getFullYear()})`;
+  }, [weekDays]);
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '1080px', margin: '0 auto', padding: '24px 20px 48px' }}>
-      {/* En-tête */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '24px' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '1240px', margin: '0 auto', padding: '24px 20px 48px' }}>
+      {/* ---- En-tête ---- */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginBottom: '22px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: rgba(PLANNING_ACCENT, 0.16),
-              border: `1px solid ${rgba(PLANNING_ACCENT, 0.35)}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <TbCalendarStats size={22} color={PLANNING_ACCENT} />
+          <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: rgba(PLANNING_ACCENT, 0.16), border: `1px solid ${rgba(PLANNING_ACCENT, 0.35)}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <TbCalendarStats size={23} color={PLANNING_ACCENT} />
           </div>
           <div>
-            <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Planificateur de charge
-            </h2>
-            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '2px 0 0' }}>
-              {counts.total} projet(s) en cours · planning suggéré sur {HORIZON_WEEKS} semaines
-            </p>
+            <h2 style={{ color: '#fff', fontSize: '23px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Planificateur de charge</h2>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '2px 0 0' }}>Vue planning • {weekLabel}</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setShowSim(true)}
-            disabled={loading || counts.total === 0}
-            style={headerBtn(loading || counts.total === 0, true)}
-          >
-            <TbWand size={14} /> Simuler
-          </button>
-          <button
-            onClick={() => downloadPlanningIcs(scheduled)}
-            disabled={loading || counts.total === 0}
-            title="Exporter les deadlines (.ics) — Google Calendar, Apple, Outlook"
-            style={headerBtn(loading || counts.total === 0)}
-          >
-            <TbCalendarPlus size={14} /> Export .ics
-          </button>
-          <button
-            onClick={() => setShowHistory(true)}
-            disabled={loading}
-            style={headerBtn(loading)}
-          >
-            <TbHistory size={14} /> Historique
-          </button>
-          <button onClick={load} disabled={loading} style={headerBtn(loading)}>
-            <TbRefresh size={14} /> Actualiser
-          </button>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Toggle Semaine / Mois */}
+          <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '3px' }}>
+            {(['week', 'month'] as const).map((v) => (
+              <button key={v} onClick={() => setView(v)} style={{
+                border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                background: view === v ? PLANNING_ACCENT : 'transparent',
+                color: view === v ? '#fff' : 'rgba(255,255,255,0.55)',
+              }}>{v === 'week' ? 'Semaine' : 'Mois'}</button>
+            ))}
+          </div>
+          <button onClick={() => downloadPlanningIcs(data.scheduled)} disabled={loading || data.counts.total === 0} title="Exporter (.ics) — Google Calendar / Apple / Outlook" style={headerBtn(loading || data.counts.total === 0)}><TbCalendarPlus size={14} /> Export</button>
+          <button onClick={() => setShowSim(true)} disabled={loading || data.counts.total === 0} style={headerBtn(loading || data.counts.total === 0, true)}><TbWand size={14} /> Simuler</button>
+          <button onClick={() => setShowHistory(true)} disabled={loading} style={headerBtn(loading)}><TbHistory size={14} /> Historique</button>
+          <button onClick={load} disabled={loading} style={headerBtn(loading)}><TbRefresh size={14} /></button>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center', padding: '60px' }}>
-          Analyse des commandes en cours…
-        </div>
-      ) : counts.total === 0 ? (
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center', padding: '60px' }}>
-          Aucun projet en cours à planifier pour le moment.
-        </div>
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center', padding: '60px' }}>Analyse des commandes en cours…</div>
+      ) : data.counts.total === 0 ? (
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center', padding: '60px' }}>Aucun projet en cours à planifier pour le moment.</div>
       ) : (
         <>
-          <PlanningKpis counts={counts} />
-          <AiSummary snapshot={snapshot} />
-
-          <div style={panel}>
-            {sectionTitle(<TbCalendarTime size={16} color={PLANNING_ACCENT} />, 'Planning suggéré', `${HORIZON_WEEKS} semaines · jours ouvrés`)}
-            <WeekSchedule plan={weekPlan} />
+          {/* ---- KPIs ---- */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            <KpiCard icon={<TbClockExclamation size={16} />} label="Projets en retard" value={String(data.counts.late)} color={RISK_COLOR.late} caption="deadline dépassée au rythme estimé" series={data.series.late} />
+            <KpiCard icon={<TbAlertTriangle size={16} />} label="À risque" value={String(data.counts.tight)} color={RISK_COLOR.tight} caption="marge < 2 jours ouvrés" series={data.series.tight} />
+            <KpiCard icon={<TbShieldCheck size={16} />} label="Sous contrôle" value={String(data.counts.ok)} color={RISK_COLOR.ok} caption="marge confortable" series={data.series.ok} />
+            <KpiCard icon={<TbActivity size={16} />} label="Charge moyenne" value={`${data.chargeMoyenne}%`} color={PLANNING_ACCENT} caption="capacité producteurs utilisée" series={data.series.load} />
+            <KpiCard icon={<TbGauge size={16} />} label="Capacité disponible" value={`${data.freeDays} j`} color="#22d3ee" caption={`sur ${HORIZON_WEEKS} semaines`} donutPct={data.freePct} />
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)',
-              gap: '20px',
-              alignItems: 'start',
+          {/* ---- Board producteurs × jours ---- */}
+          <ResourceBoard
+            rows={data.matrix}
+            days={weekDays}
+            onEditCapacity={(row) => {
+              const pl = data.matrix.find((r) => r.producerId === row.producerId);
+              if (pl) setEditingCapacity({ producerId: pl.producerId, producerName: pl.producerName, totalDays: pl.totalDays, capacityDays: pl.capacityDays, projectCount: 0, overloaded: pl.overloaded, hasCustomCapacity: !!capacities[pl.producerId] });
             }}
-          >
+            onProjectClick={(id) => navigate(`/common/projects/details/${id}`)}
+          />
+
+          {/* ---- Bas : prévisionnel | actions IA | à risque ---- */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
             <div style={panel}>
-              {sectionTitle(<TbListCheck size={16} color={PLANNING_ACCENT} />, 'File de priorité', 'tri par urgence')}
-              <PriorityList items={scheduled} onEdit={setEditing} />
+              {sectionTitle(<TbActivity size={16} color={PLANNING_ACCENT} />, 'Charge prévisionnelle')}
+              <ForecastChart points={data.forecast} />
             </div>
             <div style={panel}>
-              {sectionTitle(<TbUsers size={16} color={PLANNING_ACCENT} />, 'Charge par producteur', `sur ${HORIZON_WEEKS} sem.`)}
-              <ProducerLoadList loads={producerLoads} onEdit={setEditingCapacity} />
+              {sectionTitle(<TbSparkles size={16} color={PLANNING_ACCENT} />, "Actions recommandées par l'IA")}
+              <AiActions actions={data.actions} />
+            </div>
+            <div style={panel}>
+              {sectionTitle(<TbAlertTriangle size={16} color={RISK_COLOR.tight} />, 'Projets à risque', <button onClick={() => navigate('/common/projects')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c7d2fe', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>Voir tout ›</button>)}
+              <AtRiskList items={data.scheduled} onClick={(id) => navigate(`/common/projects/details/${id}`)} />
             </div>
           </div>
         </>
-      )}
-
-      {editing && (
-        <EstimateEditorModal
-          item={editing}
-          updatedBy={userId}
-          onClose={() => setEditing(null)}
-          onSaved={refreshOverrides}
-        />
       )}
 
       {editingCapacity && (
@@ -220,20 +215,8 @@ const PlanningPage = () => {
           onSaved={refreshCapacities}
         />
       )}
-
-      {showSim && (
-        <SimulationDrawer projects={projects} overrides={overrides} onClose={() => setShowSim(false)} />
-      )}
-
-      {showHistory && (
-        <RunHistoryDrawer
-          counts={counts}
-          snapshot={snapshot}
-          horizonWeeks={HORIZON_WEEKS}
-          generatedBy={userId}
-          onClose={() => setShowHistory(false)}
-        />
-      )}
+      {showSim && <SimulationDrawer projects={projects} overrides={overrides} onClose={() => setShowSim(false)} />}
+      {showHistory && <RunHistoryDrawer counts={data.counts} snapshot={data.snapshot} horizonWeeks={HORIZON_WEEKS} generatedBy={userId} onClose={() => setShowHistory(false)} />}
     </div>
   );
 };
