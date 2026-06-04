@@ -43,6 +43,10 @@ const CapacityEditorModal = ({ producerId, producerName, current, onClose, onSav
       toast.error('Capacité/jour invalide');
       return;
     }
+    if ([1, 2, 3, 4, 5].every((d) => offDays.includes(d))) {
+      toast.error('Au moins un jour ouvré (Lun→Ven) doit rester travaillé');
+      return;
+    }
     setBusy(true);
     try {
       await apiSetProducerCapacity(producerId, {

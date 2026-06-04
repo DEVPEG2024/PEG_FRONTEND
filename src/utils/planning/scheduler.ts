@@ -554,15 +554,22 @@ export function buildTimeline(
 
     const windowDates: Date[] = [];
     const cur = new Date(begin);
-    while (cur <= end && windowDates.length < 365) {
+    let guard = 0;
+    while (cur <= end && guard < 366) {
       if (isAvailable(cur, cap)) windowDates.push(new Date(cur));
       cur.setDate(cur.getDate() + 1);
+      guard++;
     }
-    // En retard / aucun jour dispo → on entasse sur le prochain jour disponible
+    // En retard / aucun jour dispo → prochain jour disponible (BORNÉ pour éviter
+    // toute boucle infinie si le producteur n'a aucune dispo configurée).
     if (windowDates.length === 0) {
       const c = new Date(start0);
-      while (!isAvailable(c, cap)) c.setDate(c.getDate() + 1);
-      windowDates.push(c);
+      let g = 0;
+      while (!isAvailable(c, cap) && g < 30) {
+        c.setDate(c.getDate() + 1);
+        g++;
+      }
+      windowDates.push(c); // fallback garanti même si aucune dispo trouvée
     }
 
     const alloc = spreadEvenly(effortBlocks, windowDates.length);
