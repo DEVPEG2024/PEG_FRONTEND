@@ -59,11 +59,13 @@ function clientFileBytes(file: ClientFile['file']): number {
   return (file?.size ?? 0) * 1024
 }
 
-function formatGo(bytes: number): string {
-  const go = bytes / (1024 * 1024 * 1024)
-  if (go === 0) return '0'
-  if (go < 0.01) return go.toFixed(3)
-  return go.toFixed(2)
+// Affichage adaptatif Ko/Mo/Go — évite d'arrondir quelques Mo à « 0 Go »
+function formatStorage(bytes: number): string {
+  if (!bytes || bytes <= 0) return '0 o'
+  const KB = 1024, MB = KB * 1024, GB = MB * 1024
+  if (bytes < MB) return `${Math.round(bytes / KB)} Ko`
+  if (bytes < GB) return `${(bytes / MB).toFixed(1).replace('.', ',')} Mo`
+  return `${(bytes / GB).toFixed(2).replace('.', ',')} Go`
 }
 
 function timeAgo(iso?: string): string {
@@ -304,11 +306,11 @@ const MyFiles = () => {
             <Donut pct={stats.usedPct} />
             <div className="mt-4 text-center">
               <p className="text-base font-bold text-white">
-                {formatGo(stats.totalBytes)} Go{' '}
+                {formatStorage(stats.totalBytes)}{' '}
                 <span className="text-white/30 font-medium">/ 10 Go</span>
               </p>
               <p className="text-[11px] text-white/35 mt-0.5">
-                Espace disponible : {formatGo(STORAGE_LIMIT_BYTES - stats.totalBytes)} Go
+                Espace disponible : {formatStorage(STORAGE_LIMIT_BYTES - stats.totalBytes)}
               </p>
             </div>
           </div>
@@ -337,7 +339,7 @@ const MyFiles = () => {
           color="#60a5fa"
           bg="rgba(96,165,250,0.12)"
           label="Taille utilisée"
-          value={loading ? '—' : `${formatGo(stats.totalBytes)} Go`}
+          value={loading ? '—' : formatStorage(stats.totalBytes)}
           sub="Sur 10 Go"
         />
         <StatCard
@@ -715,7 +717,7 @@ const Donut = ({ pct }: { pct: number }) => {
         </defs>
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold text-white">{Math.round(pct)}%</span>
+        <span className="text-2xl font-bold text-white">{pct > 0 && pct < 1 ? '<1' : Math.round(pct)}%</span>
       </div>
     </div>
   )
