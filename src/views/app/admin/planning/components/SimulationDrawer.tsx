@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TbX, TbPlus, TbTrash, TbArrowRight, TbWand } from 'react-icons/tb';
+import { TbX, TbPlus, TbTrash, TbArrowRight, TbWand, TbSparkles } from 'react-icons/tb';
 import { Project } from '@/@types/project';
 import {
   analyzeProjects,
@@ -8,7 +8,7 @@ import {
   SimChange,
   RiskLevel,
 } from '@/utils/planning/scheduler';
-import { CapacityConfig } from '@/services/PlanningService';
+import { apiSimulateNarrative } from '@/services/PlanningAIService';
 import { RISK_COLOR, RISK_LABEL, PLANNING_ACCENT, rgba } from '../theme';
 
 type Props = {
@@ -33,6 +33,8 @@ const SimulationDrawer = ({ projects, overrides, onClose }: Props) => {
   const [selProject, setSelProject] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
   const [newDays, setNewDays] = useState('');
+  const [aiNarrative, setAiNarrative] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Baseline (état actuel)
   const before = useMemo(() => {
@@ -76,6 +78,22 @@ const SimulationDrawer = ({ projects, overrides, onClose }: Props) => {
     setSelProject('');
     setNewEndDate('');
     setNewDays('');
+    setAiNarrative(null); // l'avis IA n'est plus à jour
+  };
+
+  const removeChange = (id: string) => {
+    setChanges((prev) => prev.filter((x) => x.projectDocumentId !== id));
+    setAiNarrative(null);
+  };
+
+  const askAI = async () => {
+    setAiLoading(true);
+    try {
+      const n = await apiSimulateNarrative({ before: before.counts, after: after.counts, transitions });
+      setAiNarrative(n ?? 'Avis IA indisponible (backend non déployé ?). Le diff ci-dessus reste fiable.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const nameOf = (id: string) => activeProjects.find((s) => s.project.documentId === id)?.project.name ?? id;
@@ -179,7 +197,7 @@ const SimulationDrawer = ({ projects, overrides, onClose }: Props) => {
                   {c.newEndDate && <> · deadline → {c.newEndDate}</>}
                   {c.newDays != null && <> · durée → {c.newDays} j</>}
                 </span>
-                <button onClick={() => setChanges((prev) => prev.filter((x) => x.projectDocumentId !== c.projectDocumentId))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+                <button onClick={() => removeChange(c.projectDocumentId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
                   <TbTrash size={14} />
                 </button>
               </div>
@@ -219,6 +237,38 @@ const SimulationDrawer = ({ projects, overrides, onClose }: Props) => {
             </div>
           )}
         </div>
+
+        {/* Avis IA sur la simulation */}
+        {changes.length > 0 && (
+          <div style={{ marginTop: '12px' }}>
+            <button
+              onClick={askAI}
+              disabled={aiLoading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: rgba(PLANNING_ACCENT, 0.16),
+                border: `1px solid ${rgba(PLANNING_ACCENT, 0.4)}`,
+                borderRadius: '10px',
+                padding: '8px 14px',
+                color: '#c7d2fe',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: aiLoading ? 'default' : 'pointer',
+                opacity: aiLoading ? 0.6 : 1,
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <TbSparkles size={14} /> {aiLoading ? 'Analyse…' : "Demander l'avis de l'IA"}
+            </button>
+            {aiNarrative && (
+              <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
+                {aiNarrative}
+              </div>
+            )}
+          </div>
+        )}
 
         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '14px' }}>
           💡 Simulation locale uniquement — aucune deadline n'est modifiée. Pour appliquer, ajuste les projets réels.

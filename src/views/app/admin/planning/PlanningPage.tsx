@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers, TbWand, TbHistory } from 'react-icons/tb';
+import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers, TbWand, TbHistory, TbCalendarPlus } from 'react-icons/tb';
 import { useAppSelector } from '@/store';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -15,6 +15,7 @@ import {
 } from '@/utils/planning/scheduler';
 import { buildSnapshot } from '@/services/PlanningAIService';
 import { loadManualOverrides, loadProducerCapacities, CapacityConfig } from '@/services/PlanningService';
+import { downloadPlanningIcs } from '@/utils/planning/exportIcs';
 import { PLANNING_ACCENT, rgba } from './theme';
 import PlanningKpis from './components/PlanningKpis';
 import AiSummary from './components/AiSummary';
@@ -141,6 +142,14 @@ const PlanningPage = () => {
             style={headerBtn(loading || counts.total === 0, true)}
           >
             <TbWand size={14} /> Simuler
+          </button>
+          <button
+            onClick={() => downloadPlanningIcs(scheduled)}
+            disabled={loading || counts.total === 0}
+            title="Exporter les deadlines (.ics) — Google Calendar, Apple, Outlook"
+            style={headerBtn(loading || counts.total === 0)}
+          >
+            <TbCalendarPlus size={14} /> Export .ics
           </button>
           <button
             onClick={() => setShowHistory(true)}

@@ -5,6 +5,8 @@ import {
   RiskCounts,
 } from '@/utils/planning/scheduler';
 
+const BASE = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+
 /**
  * Couche IA explicative du planificateur (Niveau 3).
  *
@@ -137,19 +139,61 @@ function buildPrompt(s: PlanningSnapshot): string {
 }
 
 /**
- * Résumé via LLM, avec repli déterministe. Ne lève jamais : renvoie toujours
- * une chaîne exploitable.
+ * Résumé via LLM, avec chaîne de repli : endpoint IA dédié (Groq, prompt
+ * planning) → chatbot générique → résumé local déterministe. Ne lève jamais.
+ * `runId` (optionnel) active le cache serveur sur le snapshot du run.
  */
-export async function apiPlanningSummary(s: PlanningSnapshot): Promise<string> {
+export async function apiPlanningSummary(s: PlanningSnapshot, runId?: number): Promise<string> {
+  // 1. Endpoint IA dédié au planning (prompt spécialisé + cache par run)
+  try {
+    const res = await fetch(`${BASE}/planning/ai/summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot: s, runId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.summary && data.summary.trim().length > 0) return data.summary.trim();
+    }
+  } catch {
+    // continue vers le fallback suivant
+  }
+
+  // 2. Chatbot générique existant
   try {
     const messages: Message[] = [{ role: 'user', content: buildPrompt(s) }];
     const res = await apiTestChat(messages);
     const reply = res?.data?.reply;
-    if (reply && reply.trim().length > 0) {
-      return reply.trim();
+    if (reply && reply.trim().length > 0) return reply.trim();
+  } catch {
+    // continue vers le fallback local
+  }
+
+  // 3. Résumé local déterministe (toujours disponible)
+  return localSummary(s);
+}
+
+/**
+ * Narratif IA d'une simulation (impact avant/après). Renvoie null si l'IA est
+ * indisponible — l'appelant garde alors son diff déterministe.
+ */
+export async function apiSimulateNarrative(payload: {
+  before: RiskCounts;
+  after: RiskCounts;
+  transitions: { name: string; from: string; to: string }[];
+}): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE}/planning/ai/simulate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.narrative && data.narrative.trim().length > 0) return data.narrative.trim();
     }
   } catch {
-    // silencieux : on retombe sur le résumé local
+    // indisponible
   }
-  return localSummary(s);
+  return null;
 }
