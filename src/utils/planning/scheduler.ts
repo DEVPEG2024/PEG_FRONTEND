@@ -207,23 +207,53 @@ export type ProducerLoad = {
   producerName: string;
   /** Charge cumulée (jours-homme) des projets actifs assignés */
   totalDays: number;
-  /** Capacité de l'horizon (jours ouvrés disponibles) */
+  /** Capacité de l'horizon (jours-homme disponibles) */
   capacityDays: number;
   /** Nombre de projets assignés */
   projectCount: number;
   overloaded: boolean;
+  /** true si la capacité vient d'une config admin (vs valeur par défaut) */
+  hasCustomCapacity: boolean;
 };
 
+/** Capacité configurée d'un producteur (issue du backend Planning). */
+export type CapacityConfig = {
+  dailyCapacityDays: number;
+  weeklyOffDays?: number[];
+  unavailableDates?: string[];
+};
+
+function isoDay(d: Date): string {
+  const c = atMidnight(d);
+  const m = `${c.getMonth() + 1}`.padStart(2, '0');
+  const day = `${c.getDate()}`.padStart(2, '0');
+  return `${c.getFullYear()}-${m}-${day}`;
+}
+
 /**
- * Agrège la charge par producteur sur l'horizon. La capacité = nombre de jours
- * ouvrés de l'horizon (un producteur ne peut pas faire plus d'1 jour-homme par
- * jour ouvré). Surcharge si charge cumulée > capacité.
+ * Capacité d'un producteur sur l'horizon, en jours-homme :
+ *   (jours ouvrés de l'horizon − jours off hebdo − congés ponctuels) × capacité/jour.
+ * Sans config → 1 jour-homme par jour ouvré de l'horizon.
+ */
+function capacityForHorizon(cap: CapacityConfig | undefined, horizonDays: Date[]): number {
+  if (!cap) return horizonDays.length;
+  const off = new Set(cap.weeklyOffDays ?? []);
+  const unavailable = new Set(cap.unavailableDates ?? []);
+  const usable = horizonDays.filter((d) => !off.has(d.getDay()) && !unavailable.has(isoDay(d)));
+  return Math.round(usable.length * cap.dailyCapacityDays * 10) / 10;
+}
+
+/**
+ * Agrège la charge par producteur sur l'horizon. Surcharge si charge cumulée >
+ * capacité. Les capacités configurées (admin) sont prises en compte si fournies.
  */
 export function computeProducerLoads(
   scheduled: ScheduledProject[],
-  weeks = 2
+  weeks = 2,
+  capacities: Record<string, CapacityConfig> = {},
+  today = new Date()
 ): ProducerLoad[] {
-  const capacityDays = weeks * 5;
+  const horizonDays = nextBusinessDays(weeks * 5, today);
   const byProducer = new Map<string, ProducerLoad>();
 
   for (const sp of scheduled) {
@@ -237,6 +267,8 @@ export function computeProducerLoads(
       existing.projectCount += 1;
       existing.overloaded = existing.totalDays > existing.capacityDays;
     } else {
+      const cap = capacities[id];
+      const capacityDays = capacityForHorizon(cap, horizonDays);
       byProducer.set(id, {
         producerId: id,
         producerName: name,
@@ -244,11 +276,47 @@ export function computeProducerLoads(
         capacityDays,
         projectCount: 1,
         overloaded: sp.workload.days > capacityDays,
+        hasCustomCapacity: !!cap,
       });
     }
   }
 
   return Array.from(byProducer.values()).sort((a, b) => b.totalDays - a.totalDays);
+}
+
+// ---------------------------------------------------------------------------
+// Simulation « et si… » (100 % client, déterministe)
+// ---------------------------------------------------------------------------
+
+export type SimChange = {
+  projectDocumentId: string;
+  /** Nouvelle deadline (ISO) — décale la date de fin */
+  newEndDate?: string;
+  /** Nouvelle durée estimée (jours-homme) */
+  newDays?: number;
+};
+
+/**
+ * Applique une liste de changements à une COPIE des projets et renvoie les
+ * projets simulés + les overrides de durée induits (à fusionner avec les
+ * overrides existants avant `analyzeProjects`). N'altère jamais les originaux.
+ */
+export function applySimChanges(
+  projects: Project[],
+  changes: SimChange[]
+): { projects: Project[]; overrides: Record<string, number> } {
+  const byId = new Map(changes.map((c) => [c.projectDocumentId, c]));
+  const overrides: Record<string, number> = {};
+
+  const simProjects = projects.map((p) => {
+    const change = byId.get(p.documentId);
+    if (!change) return p;
+    if (change.newDays != null && change.newDays > 0) overrides[p.documentId] = change.newDays;
+    if (change.newEndDate) return { ...p, endDate: new Date(change.newEndDate) };
+    return p;
+  });
+
+  return { projects: simProjects, overrides };
 }
 
 // ---------------------------------------------------------------------------

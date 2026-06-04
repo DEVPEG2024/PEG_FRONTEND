@@ -131,3 +131,31 @@ export async function loadManualOverrides(): Promise<Record<string, number>> {
     return {};
   }
 }
+
+/** Forme de capacité consommée par le moteur (computeProducerLoads). */
+export type CapacityConfig = {
+  dailyCapacityDays: number;
+  weeklyOffDays?: number[];
+  unavailableDates?: string[];
+};
+
+/**
+ * Charge les capacités producteurs et renvoie une map producerDocumentId → config.
+ * Tolérant : map vide si le backend est indisponible.
+ */
+export async function loadProducerCapacities(): Promise<Record<string, CapacityConfig>> {
+  try {
+    const capacities = await apiGetProducerCapacities();
+    const map: Record<string, CapacityConfig> = {};
+    for (const c of capacities) {
+      map[c.producer_document_id] = {
+        dailyCapacityDays: c.daily_capacity_days,
+        weeklyOffDays: c.weekly_off_days,
+        unavailableDates: (c.unavailable_dates || []).map((d) => String(d).slice(0, 10)),
+      };
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}

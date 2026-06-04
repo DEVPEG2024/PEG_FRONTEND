@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers } from 'react-icons/tb';
+import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers, TbWand, TbHistory } from 'react-icons/tb';
 import { useAppSelector } from '@/store';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -11,9 +11,10 @@ import {
   computeProducerLoads,
   countRisks,
   ScheduledProject,
+  ProducerLoad,
 } from '@/utils/planning/scheduler';
 import { buildSnapshot } from '@/services/PlanningAIService';
-import { loadManualOverrides } from '@/services/PlanningService';
+import { loadManualOverrides, loadProducerCapacities, CapacityConfig } from '@/services/PlanningService';
 import { PLANNING_ACCENT, rgba } from './theme';
 import PlanningKpis from './components/PlanningKpis';
 import AiSummary from './components/AiSummary';
@@ -21,6 +22,9 @@ import PriorityList from './components/PriorityList';
 import WeekSchedule from './components/WeekSchedule';
 import ProducerLoadList from './components/ProducerLoadList';
 import EstimateEditorModal from './components/EstimateEditorModal';
+import SimulationDrawer from './components/SimulationDrawer';
+import CapacityEditorModal from './components/CapacityEditorModal';
+import RunHistoryDrawer from './components/RunHistoryDrawer';
 
 const HORIZON_WEEKS = 2;
 
@@ -40,23 +44,45 @@ const panel: React.CSSProperties = {
   marginBottom: '20px',
 };
 
+const headerBtn = (disabled: boolean, accent = false): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  background: accent ? rgba(PLANNING_ACCENT, 0.16) : 'rgba(255,255,255,0.05)',
+  border: `1px solid ${accent ? rgba(PLANNING_ACCENT, 0.4) : 'rgba(255,255,255,0.12)'}`,
+  borderRadius: '10px',
+  padding: '8px 14px',
+  color: accent ? '#c7d2fe' : 'rgba(255,255,255,0.7)',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: disabled ? 'default' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+  fontFamily: 'Inter, sans-serif',
+});
+
 const PlanningPage = () => {
   const userId = useAppSelector((state) => state.auth.user.user?.documentId || '');
   const [projects, setProjects] = useState<Project[]>([]);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [capacities, setCapacities] = useState<Record<string, CapacityConfig>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<ScheduledProject | null>(null);
+  const [editingCapacity, setEditingCapacity] = useState<ProducerLoad | null>(null);
+  const [showSim, setShowSim] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      // Projets (Strapi, source de vérité) + overrides manuels (backend Planning, tolérant)
-      const [res, manualOverrides] = await Promise.all([
+      // Projets (Strapi, source de vérité) + overrides/capacités (backend Planning, tolérant)
+      const [res, manualOverrides, caps] = await Promise.all([
         unwrapData(apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
         loadManualOverrides(),
+        loadProducerCapacities(),
       ]);
       setProjects(res.projects_connection.nodes || []);
       setOverrides(manualOverrides);
+      setCapacities(caps);
     } catch {
       toast.error('Erreur lors du chargement des projets');
     } finally {
@@ -65,6 +91,7 @@ const PlanningPage = () => {
   };
 
   const refreshOverrides = async () => setOverrides(await loadManualOverrides());
+  const refreshCapacities = async () => setCapacities(await loadProducerCapacities());
 
   useEffect(() => {
     load();
@@ -74,10 +101,10 @@ const PlanningPage = () => {
     const scheduled = analyzeProjects(projects, new Date(), overrides);
     const counts = countRisks(scheduled);
     const weekPlan = buildWeekPlan(scheduled, HORIZON_WEEKS);
-    const producerLoads = computeProducerLoads(scheduled, HORIZON_WEEKS);
+    const producerLoads = computeProducerLoads(scheduled, HORIZON_WEEKS, capacities);
     const snapshot = buildSnapshot(scheduled, producerLoads, counts);
     return { scheduled, counts, weekPlan, producerLoads, snapshot };
-  }, [projects, overrides]);
+  }, [projects, overrides, capacities]);
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '1080px', margin: '0 auto', padding: '24px 20px 48px' }}>
@@ -107,26 +134,25 @@ const PlanningPage = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '10px',
-            padding: '8px 14px',
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: loading ? 'default' : 'pointer',
-            fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          <TbRefresh size={14} /> Actualiser
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowSim(true)}
+            disabled={loading || counts.total === 0}
+            style={headerBtn(loading || counts.total === 0, true)}
+          >
+            <TbWand size={14} /> Simuler
+          </button>
+          <button
+            onClick={() => setShowHistory(true)}
+            disabled={loading}
+            style={headerBtn(loading)}
+          >
+            <TbHistory size={14} /> Historique
+          </button>
+          <button onClick={load} disabled={loading} style={headerBtn(loading)}>
+            <TbRefresh size={14} /> Actualiser
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -161,7 +187,7 @@ const PlanningPage = () => {
             </div>
             <div style={panel}>
               {sectionTitle(<TbUsers size={16} color={PLANNING_ACCENT} />, 'Charge par producteur', `sur ${HORIZON_WEEKS} sem.`)}
-              <ProducerLoadList loads={producerLoads} />
+              <ProducerLoadList loads={producerLoads} onEdit={setEditingCapacity} />
             </div>
           </div>
         </>
@@ -173,6 +199,30 @@ const PlanningPage = () => {
           updatedBy={userId}
           onClose={() => setEditing(null)}
           onSaved={refreshOverrides}
+        />
+      )}
+
+      {editingCapacity && (
+        <CapacityEditorModal
+          producerId={editingCapacity.producerId}
+          producerName={editingCapacity.producerName}
+          current={capacities[editingCapacity.producerId]}
+          onClose={() => setEditingCapacity(null)}
+          onSaved={refreshCapacities}
+        />
+      )}
+
+      {showSim && (
+        <SimulationDrawer projects={projects} overrides={overrides} onClose={() => setShowSim(false)} />
+      )}
+
+      {showHistory && (
+        <RunHistoryDrawer
+          counts={counts}
+          snapshot={snapshot}
+          horizonWeeks={HORIZON_WEEKS}
+          generatedBy={userId}
+          onClose={() => setShowHistory(false)}
         />
       )}
     </div>

@@ -1,10 +1,14 @@
-import { TbAlertTriangle } from 'react-icons/tb';
+import { TbAlertTriangle, TbPencil } from 'react-icons/tb';
 import { ProducerLoad } from '@/utils/planning/scheduler';
 import { rgba } from '../theme';
 
-type Props = { loads: ProducerLoad[] };
+type Props = {
+  loads: ProducerLoad[];
+  /** si fourni, affiche un crayon pour éditer la capacité du producteur */
+  onEdit?: (load: ProducerLoad) => void;
+};
 
-const ProducerLoadList = ({ loads }: Props) => {
+const ProducerLoadList = ({ loads, onEdit }: Props) => {
   if (loads.length === 0) {
     return (
       <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', padding: '20px', textAlign: 'center' }}>
@@ -27,8 +31,30 @@ const ProducerLoadList = ({ loads }: Props) => {
                 {p.producerName}
                 <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>· {p.projectCount} projet(s)</span>
               </span>
-              <span style={{ color, fontSize: '12px', fontWeight: 700 }}>
-                {p.totalDays} / {p.capacityDays} j
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color, fontSize: '12px', fontWeight: 700 }}>
+                  {p.totalDays} / {p.capacityDays} j{p.hasCustomCapacity ? '' : ' *'}
+                </span>
+                {onEdit && p.producerId !== '__unassigned__' && (
+                  <button
+                    title="Éditer la capacité"
+                    onClick={() => onEdit(p)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '7px',
+                      background: p.hasCustomCapacity ? rgba('#6366f1', 0.18) : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${p.hasCustomCapacity ? rgba('#6366f1', 0.4) : 'rgba(255,255,255,0.12)'}`,
+                      color: p.hasCustomCapacity ? '#c7d2fe' : 'rgba(255,255,255,0.5)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <TbPencil size={12} />
+                  </button>
+                )}
               </span>
             </div>
             <div style={{ height: '8px', borderRadius: '100px', background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
