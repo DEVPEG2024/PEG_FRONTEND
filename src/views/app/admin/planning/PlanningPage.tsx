@@ -27,6 +27,7 @@ import AtRiskList from './components/AtRiskList';
 import CapacityEditorModal from './components/CapacityEditorModal';
 import SimulationDrawer from './components/SimulationDrawer';
 import RunHistoryDrawer from './components/RunHistoryDrawer';
+import DayDetailDrawer from './components/DayDetailDrawer';
 
 const HORIZON_WEEKS = 2;
 
@@ -68,6 +69,7 @@ const PlanningPage = () => {
   const [editingCapacity, setEditingCapacity] = useState<{ producerId: string; producerName: string } | null>(null);
   const [showSim, setShowSim] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -133,7 +135,9 @@ const PlanningPage = () => {
       load: forecast.map((f) => f.loadPct),
     };
 
-    return { scheduled, counts, snapshot, days, timeline, chargeMoyenne, freeLabel, freePct, forecast, actions, series };
+    const projectsById = Object.fromEntries(projects.map((p) => [p.documentId, p]));
+
+    return { scheduled, counts, snapshot, days, timeline, chargeMoyenne, freeLabel, freePct, forecast, actions, series, projectsById };
   }, [projects, overrides, capacities, view]);
 
   const weekDays = data.days;
@@ -198,11 +202,13 @@ const PlanningPage = () => {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '13px', height: '13px', borderRadius: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }} /> libre</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '13px', height: '13px', borderRadius: '3px', background: '#6366f1', boxShadow: `0 0 0 1.5px ${RISK_COLOR.late}` }} /> au-delà de la capacité ({HOURS_PER_DAY}h/j)</span>
             <span style={{ color: 'rgba(255,255,255,0.4)' }}>· 🌱 libre · 😌 tranquille · ⚡ chargé · 🔥 surchargé</span>
+            <span style={{ color: '#c7d2fe', fontWeight: 600 }}>👉 clique un jour pour voir les tâches à faire</span>
           </div>
           <ResourceBoard
             rows={data.timeline}
             days={weekDays}
             onEditCapacity={(row) => setEditingCapacity({ producerId: row.producerId, producerName: row.producerName })}
+            onDayClick={(d) => setSelectedDay(d)}
           />
 
           {/* ---- Bas : prévisionnel | actions IA | à risque ---- */}
@@ -234,6 +240,15 @@ const PlanningPage = () => {
       )}
       {showSim && <SimulationDrawer projects={projects} overrides={overrides} onClose={() => setShowSim(false)} />}
       {showHistory && <RunHistoryDrawer counts={data.counts} snapshot={data.snapshot} horizonWeeks={HORIZON_WEEKS} generatedBy={userId} onClose={() => setShowHistory(false)} />}
+      {selectedDay && (
+        <DayDetailDrawer
+          date={selectedDay}
+          rows={data.timeline}
+          projectsById={data.projectsById}
+          onClose={() => setSelectedDay(null)}
+          onProjectClick={(id) => navigate(`/common/projects/details/${id}`)}
+        />
+      )}
     </div>
   );
 };

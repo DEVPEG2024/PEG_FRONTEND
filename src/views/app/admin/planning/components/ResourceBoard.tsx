@@ -7,6 +7,7 @@ type Props = {
   rows: TimelineRow[];
   days: Date[];
   onEditCapacity?: (row: TimelineRow) => void;
+  onDayClick?: (date: Date) => void;
 };
 
 const ROW_H = 74;
@@ -33,7 +34,7 @@ function rowTotals(row: TimelineRow, days: Date[]) {
 }
 
 /** Une journée = une grille de petits carrés de 30 min. */
-const DayCell = ({ row, day }: { row: TimelineRow; day: Date }) => {
+const DayCell = ({ row, day, onClick }: { row: TimelineRow; day: Date; onClick?: () => void }) => {
   const today = isToday(day);
   const base: React.CSSProperties = {
     borderLeft: '1px solid rgba(255,255,255,0.03)',
@@ -45,10 +46,11 @@ const DayCell = ({ row, day }: { row: TimelineRow; day: Date }) => {
     justifyContent: 'center',
     height: '100%',
     boxSizing: 'border-box',
+    cursor: onClick ? 'pointer' : 'default',
   };
 
   if (isWeekend(day)) {
-    return <div style={{ ...base, alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '15px' }} title="Week-end">😴</div>;
+    return <div onClick={onClick} style={{ ...base, alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '15px' }} title="Week-end">😴</div>;
   }
 
   const cap = row.dailyCapacityBlocks;
@@ -63,7 +65,7 @@ const DayCell = ({ row, day }: { row: TimelineRow; day: Date }) => {
   const title = details.map((d) => `${d.name} — ${formatBlocks(d.blocks)}`).join('\n');
 
   return (
-    <div style={base} title={used ? title : undefined}>
+    <div onClick={onClick} style={base} title={used ? title : undefined}>
       <div style={{ fontSize: '11px', fontWeight: 700, color: used === 0 ? 'rgba(255,255,255,0.25)' : overloaded ? RISK_COLOR.late : 'rgba(255,255,255,0.75)' }}>
         {used === 0 ? 'libre' : overloaded ? `${formatBlocks(used)} 🔥` : formatBlocks(used)}
       </div>
@@ -79,7 +81,7 @@ const DayCell = ({ row, day }: { row: TimelineRow; day: Date }) => {
   );
 };
 
-const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
+const ResourceBoard = ({ rows, days, onEditCapacity, onDayClick }: Props) => {
   const [search, setSearch] = useState('');
   const filtered = rows
     .filter((r) => r.producerName.toLowerCase().includes(search.toLowerCase()))
@@ -145,7 +147,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
               const today = isToday(d);
               const we = isWeekend(d);
               return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)', color: today ? '#a5b4fc' : we ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: today ? 800 : 600, textTransform: 'capitalize', background: today ? rgba(PLANNING_ACCENT, 0.08) : 'transparent' }}>
+                <div key={i} onClick={onDayClick ? () => onDayClick(d) : undefined} title="Voir le détail du jour" style={{ cursor: onDayClick ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)', color: today ? '#a5b4fc' : we ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: today ? 800 : 600, textTransform: 'capitalize', background: today ? rgba(PLANNING_ACCENT, 0.08) : 'transparent' }}>
                   {today && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: PLANNING_ACCENT }} />}
                   {d.toLocaleDateString('fr-FR', { weekday: 'short' })} {d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                 </div>
@@ -156,7 +158,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
           {filtered.map((row) => (
             <div key={row.producerId} style={{ height: ROW_H, boxSizing: 'border-box', display: 'grid', gridTemplateColumns: gridCols, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
               {days.map((day, i) => (
-                <DayCell key={i} row={row} day={day} />
+                <DayCell key={i} row={row} day={day} onClick={onDayClick ? () => onDayClick(day) : undefined} />
               ))}
             </div>
           ))}

@@ -497,7 +497,10 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
                 additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
+                    name
                     state
+                    priority
+                    endDate
                 }
                 checklistItems
             }
@@ -591,7 +594,10 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
+                    name
                     state
+                    priority
+                    endDate
                 }
                 checklistItems
             }
@@ -680,7 +686,10 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 additionalSales
                 tasks (pagination: {limit: 100}){
                     documentId
+                    name
                     state
+                    priority
+                    endDate
                 }
                 checklistItems
             }
@@ -768,7 +777,10 @@ export async function apiGetPoolProjects(data: GetPoolProjectsRequest = {paginat
                 state
                 tasks (pagination: {limit: 100}){
                     documentId
+                    name
                     state
+                    priority
+                    endDate
                 }
                 checklistItems
             }
