@@ -520,11 +520,74 @@ export type TimelineRow = {
  * par jour, issue de l'étalement uniforme de chaque projet sur ses jours
  * disponibles jusqu'à la deadline.
  */
+/** Heures/jour en mode Flash (journées intensives). */
+export const FLASH_HOURS_PER_DAY = 16;
+const FLASH_CAP_BLOCKS = FLASH_HOURS_PER_DAY * BLOCKS_PER_HOUR; // 32
+
+/**
+ * Mode FLASH : au lieu d'étaler, on COMPACTE le travail au plus tôt, en
+ * journées de 16h. Pour chaque producteur, on remplit les jours ouvrés
+ * consécutifs (dès aujourd'hui) à 16h/jour, projet par projet (deadline la plus
+ * proche d'abord), jusqu'à épuisement → le travail finit le plus tôt possible.
+ */
+function buildFlashTimeline(
+  scheduled: ScheduledProject[],
+  capacities: Record<string, CapacityConfig>,
+  today: Date
+): TimelineRow[] {
+  const start0 = atMidnight(today);
+  const byProducer = new Map<string, ScheduledProject[]>();
+  for (const sp of scheduled) {
+    const id = sp.project.producer?.documentId ?? '__unassigned__';
+    const arr = byProducer.get(id);
+    if (arr) arr.push(sp);
+    else byProducer.set(id, [sp]);
+  }
+
+  const rows: TimelineRow[] = [];
+  byProducer.forEach((group, id) => {
+    const cap = capacities[id];
+    const name = group[0].project.producer?.name ?? 'Non assigné';
+    const row: TimelineRow = { producerId: id, producerName: name, dailyCapacityBlocks: FLASH_CAP_BLOCKS, byDay: {} };
+
+    const items = group
+      .map((sp) => ({ sp, remaining: Math.max(1, Math.round(sp.workload.days * BLOCKS_PER_EFFORT_DAY)) }))
+      .sort((a, b) => new Date(a.sp.project.endDate).getTime() - new Date(b.sp.project.endDate).getTime() || b.sp.urgency - a.sp.urgency);
+
+    const cur = new Date(start0);
+    let guard = 0;
+    while (items.some((it) => it.remaining > 0) && guard < 800) {
+      let dg = 0;
+      while (!isAvailable(cur, cap) && dg < 30) { cur.setDate(cur.getDate() + 1); dg++; }
+      const k = dateKey(cur);
+      let dayCap = FLASH_CAP_BLOCKS;
+      for (const it of items) {
+        if (dayCap <= 0) break;
+        if (it.remaining <= 0) continue;
+        const take = Math.min(it.remaining, dayCap);
+        const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, capacityBlocks: FLASH_CAP_BLOCKS, details: [] });
+        day.blocks += take;
+        day.details.push({ documentId: it.sp.project.documentId, name: it.sp.project.name, risk: it.sp.risk, blocks: take });
+        it.remaining -= take;
+        dayCap -= take;
+      }
+      cur.setDate(cur.getDate() + 1);
+      guard++;
+    }
+    rows.push(row);
+  });
+
+  return rows;
+}
+
 export function buildTimeline(
   scheduled: ScheduledProject[],
   capacities: Record<string, CapacityConfig> = {},
-  today = new Date()
+  today = new Date(),
+  opts: { flash?: boolean } = {}
 ): TimelineRow[] {
+  if (opts.flash) return buildFlashTimeline(scheduled, capacities, today);
+
   const rows = new Map<string, TimelineRow>();
   const start0 = atMidnight(today);
 

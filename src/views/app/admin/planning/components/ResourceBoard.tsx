@@ -61,7 +61,10 @@ const DayCell = ({ row, day, onClick }: { row: TimelineRow; day: Date; onClick?:
   for (const d of details) for (let i = 0; i < d.blocks; i++) tiles.push({ color: projectColor(d.documentId), name: d.name });
   const used = tiles.length;
   const overloaded = used > cap;
-  const emptyCount = Math.max(0, cap - used);
+  const dense = cap > 16; // mode flash (16h) → carrés plus petits
+  const sz = dense ? 8 : 13;
+  const gap = dense ? 2 : 3;
+  const emptyCount = Math.min(Math.max(0, cap - used), dense ? 16 : cap);
   const title = details.map((d) => `${d.name} — ${formatBlocks(d.blocks)}`).join('\n');
 
   return (
@@ -69,12 +72,12 @@ const DayCell = ({ row, day, onClick }: { row: TimelineRow; day: Date; onClick?:
       <div style={{ fontSize: '11px', fontWeight: 700, color: used === 0 ? 'rgba(255,255,255,0.25)' : overloaded ? RISK_COLOR.late : 'rgba(255,255,255,0.75)' }}>
         {used === 0 ? 'libre' : overloaded ? `${formatBlocks(used)} 🔥` : formatBlocks(used)}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${gap}px` }}>
         {tiles.map((t, i) => (
-          <div key={i} title={t.name} style={{ width: '13px', height: '13px', borderRadius: '3px', background: t.color, boxShadow: i >= cap ? `0 0 0 1.5px ${RISK_COLOR.late}` : 'none' }} />
+          <div key={i} title={t.name} style={{ width: `${sz}px`, height: `${sz}px`, borderRadius: '3px', background: t.color, boxShadow: i >= cap ? `0 0 0 1.5px ${RISK_COLOR.late}` : 'none' }} />
         ))}
         {Array.from({ length: emptyCount }).map((_, i) => (
-          <div key={`e${i}`} style={{ width: '13px', height: '13px', borderRadius: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
+          <div key={`e${i}`} style={{ width: `${sz}px`, height: `${sz}px`, borderRadius: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
         ))}
       </div>
     </div>

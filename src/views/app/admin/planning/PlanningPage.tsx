@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  TbCalendarStats, TbRefresh, TbWand, TbHistory, TbCalendarPlus,
+  TbCalendarStats, TbRefresh, TbWand, TbHistory, TbCalendarPlus, TbBolt,
   TbAlertTriangle, TbShieldCheck, TbActivity, TbGauge, TbClockExclamation, TbSparkles,
 } from 'react-icons/tb';
 import { useAppSelector } from '@/store';
@@ -66,6 +66,7 @@ const PlanningPage = () => {
   const [capacities, setCapacities] = useState<Record<string, CapacityConfig>>({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'week' | 'month' | 'deadline'>('deadline');
+  const [flash, setFlash] = useState(false);
   const [editingCapacity, setEditingCapacity] = useState<{ producerId: string; producerName: string } | null>(null);
   const [showSim, setShowSim] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -115,8 +116,8 @@ const PlanningPage = () => {
     }
     const days = Array.from({ length: span }, (_, i) => addD(i));
 
-    // Étalement temporel (blocs de 30 min) — source du board
-    const timeline = buildTimeline(scheduled, capacities);
+    // Étalement temporel (blocs de 30 min) — source du board. Flash = compaction 16h/j.
+    const timeline = buildTimeline(scheduled, capacities, new Date(), { flash });
 
     // KPIs charge/capacité sur l'horizon (en blocs de 30 min), hors "Non assigné"
     const horizon = nextBusinessDays(HORIZON_WEEKS * 5);
@@ -151,7 +152,7 @@ const PlanningPage = () => {
     const projectsById = Object.fromEntries(projects.map((p) => [p.documentId, p]));
 
     return { scheduled, counts, snapshot, days, timeline, chargeMoyenne, freeLabel, freePct, forecast, actions, series, projectsById };
-  }, [projects, overrides, capacities, view]);
+  }, [projects, overrides, capacities, view, flash]);
 
   const weekDays = data.days;
   const weekLabel = useMemo(() => {
@@ -188,6 +189,24 @@ const PlanningPage = () => {
               }}>{v === 'week' ? 'Semaine' : v === 'month' ? 'Mois' : 'Échéances'}</button>
             ))}
           </div>
+          <button
+            onClick={() => setFlash((f) => !f)}
+            disabled={loading || data.counts.total === 0}
+            title="Flash : compacte le travail au plus tôt en journées de 16h"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              background: flash ? 'linear-gradient(90deg, #f59e0b, #f97316)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${flash ? 'rgba(245,158,11,0.6)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: '10px', padding: '8px 13px',
+              color: flash ? '#1a1505' : 'rgba(255,255,255,0.7)',
+              fontSize: '12px', fontWeight: 700,
+              cursor: loading || data.counts.total === 0 ? 'default' : 'pointer',
+              opacity: loading || data.counts.total === 0 ? 0.5 : 1,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <TbBolt size={14} /> Flash
+          </button>
           <button onClick={() => downloadPlanningIcs(data.scheduled)} disabled={loading || data.counts.total === 0} title="Exporter (.ics) — Google Calendar / Apple / Outlook" style={headerBtn(loading || data.counts.total === 0)}><TbCalendarPlus size={14} /> Export</button>
           <button onClick={() => setShowSim(true)} disabled={loading || data.counts.total === 0} style={headerBtn(loading || data.counts.total === 0, true)}><TbWand size={14} /> Simuler</button>
           <button onClick={() => setShowHistory(true)} disabled={loading} style={headerBtn(loading)}><TbHistory size={14} /> Historique</button>
@@ -219,6 +238,11 @@ const PlanningPage = () => {
             <span style={{ color: 'rgba(255,255,255,0.4)' }}>· 🌱 libre · 😌 tranquille · ⚡ chargé · 🔥 surchargé</span>
             <span style={{ color: '#c7d2fe', fontWeight: 600 }}>👉 clique un jour pour voir les tâches à faire</span>
           </div>
+          {flash && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: rgba('#f59e0b', 0.12), border: `1px solid ${rgba('#f59e0b', 0.35)}`, borderRadius: '10px', padding: '8px 12px', marginBottom: '10px', color: '#fcd34d', fontSize: '12.5px', fontWeight: 600 }}>
+              ⚡ Mode Flash actif — travail compacté au plus tôt en journées de 16h (au lieu de l'étalement à 4h/jour jusqu'à la deadline).
+            </div>
+          )}
           <ResourceBoard
             rows={data.timeline}
             days={weekDays}
