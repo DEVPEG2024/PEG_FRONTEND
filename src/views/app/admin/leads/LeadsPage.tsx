@@ -48,9 +48,9 @@ const SOURCES: { key: LeadSource; label: string }[] = [
     { key: 'autre',      label: 'Autre' },
 ]
 
-const getStage    = (k: LeadStage)    => STAGES.find(s => s.key === k)!
-const getPriority = (k: LeadPriority) => PRIORITIES.find(p => p.key === k)!
-const getSource   = (k: LeadSource)   => SOURCES.find(s => s.key === k)!
+const getStage    = (k: LeadStage)    => STAGES.find(s => s.key === k)    ?? STAGES[0]
+const getPriority = (k: LeadPriority) => PRIORITIES.find(p => p.key === k) ?? PRIORITIES[1]
+const getSource   = (k: LeadSource)   => SOURCES.find(s => s.key === k)    ?? SOURCES[SOURCES.length - 1]
 
 // ─── Empty lead ────────────────────────────────────────────────────────────────
 const emptyLead = (): Omit<Lead, 'documentId' | 'createdAt'> => ({
