@@ -21,20 +21,12 @@ import {
   apiGetCustomerCategories,
   GetCustomerCategoriesResponse,
 } from '@/services/CustomerCategoryServices';
-import { PegFile } from '@/@types/pegFile';
-import { Banner } from '@/@types/banner';
+import { UploadImage } from '@/@types/pegFile';
+import { BannerForm } from '@/@types/banner';
 
 type Option = {
   value: string;
   label: string;
-};
-
-export type BannerFormModel = {
-  documentId?: string;
-  name: string;
-  customer: string | null;
-  customerCategory: string | null;
-  active: boolean;
 };
 
 const labelStyle: React.CSSProperties = {
@@ -44,11 +36,11 @@ const labelStyle: React.CSSProperties = {
 
 function ModalNewBanner() {
   const { newBannerDialog } = useAppSelector((state) => state.banners.data);
-  const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const dispatch = useAppDispatch();
-  const [formData, setFormData] = useState<BannerFormModel>({
+  const [formData, setFormData] = useState<BannerForm>({
     name: '',
     customer: '',
     customerCategory: '',
@@ -90,7 +82,7 @@ function ModalNewBanner() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    const bannerToCreate: Omit<Banner, 'documentId'> = {
+    const bannerToCreate: BannerForm = {
       ...formData,
       customer: formData.customer !== '' ? formData.customer : null,
       customerCategory:

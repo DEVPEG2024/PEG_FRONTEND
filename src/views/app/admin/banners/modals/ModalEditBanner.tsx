@@ -25,10 +25,9 @@ import {
   GetCustomerCategoriesResponse,
 } from '@/services/CustomerCategoryServices';
 import { unwrapData } from '@/utils/serviceHelper';
-import { BannerFormModel } from './ModalNewBanner';
-import { PegFile } from '@/@types/pegFile';
+import { PegFile, UploadImage } from '@/@types/pegFile';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
-import { Banner } from '@/@types/banner';
+import { BannerForm } from '@/@types/banner';
 import { Loading } from '@/components/shared';
 
 type Option = {
@@ -48,10 +47,10 @@ function ModalEditBanner() {
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const [imageModified, setImageModified] = useState<boolean>(false);
-  const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-  const [formData, setFormData] = useState<BannerFormModel>({
+  const [formData, setFormData] = useState<BannerForm>({
     documentId: selectedBanner?.documentId || '',
     name: selectedBanner?.name || '',
     customer: selectedBanner?.customer?.documentId || '',
@@ -100,8 +99,10 @@ function ModalEditBanner() {
     setImageLoading(true);
     try {
       if (selectedBanner?.image) {
+        // selectedBanner provient de l'API (lecture) : image est un PegFile peuplé
+        const serverImage = selectedBanner.image as PegFile;
         const imageLoaded: PegFile = (
-          await apiLoadPegFilesAndFiles([selectedBanner.image])
+          await apiLoadPegFilesAndFiles([serverImage])
         )[0];
 
         setImage(imageLoaded);
@@ -115,7 +116,7 @@ function ModalEditBanner() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    const bannerToUpdate: Banner = {
+    const bannerToUpdate: BannerForm = {
       ...formData,
       customer: formData.customer !== '' ? formData.customer : null,
       customerCategory:
@@ -137,7 +138,7 @@ function ModalEditBanner() {
     dispatch(setSelectedBanner(null));
   };
 
-  const updateImage = (image: { file: File; name: string }) => {
+  const updateImage = (image: UploadImage | undefined) => {
     setImage(image);
     setImageModified(true);
   };

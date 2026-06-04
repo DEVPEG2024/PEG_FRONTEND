@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Product } from '@/@types/product';
+import { Product, ProductRequest } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import {
   apiGetProducts,
@@ -8,6 +8,7 @@ import {
   GetProductsRequest,
   GetProductsResponse,
   apiCreateProduct,
+  CreateProductRequest,
   DeleteProductResponse,
   apiGetProductForEditById,
 } from '@/services/ProductServices';
@@ -60,20 +61,25 @@ export const getProductById = createAsyncThunk(
 export const duplicateProduct = createAsyncThunk(
   SLICE_NAME + '/duplicateProduct',
   async (product: Product, thunkAPI) => {
+    // Le reducer produits est injecté dynamiquement sous `products.data` —
+    // on type localement la portion d'état consultée.
+    const state = thunkAPI.getState() as {
+      products: { data: { products: Product[] } };
+    };
     thunkAPI.dispatch(
       setIndexProductToDuplicate(
-        thunkAPI
-          .getState()
-          .products.data.products.findIndex(
-            (p: Product) => p.documentId === product.documentId
-          ) + 1
+        state.products.data.products.findIndex(
+          (p: Product) => p.documentId === product.documentId
+        ) + 1
       )
     );
     const { product: productToDuplicate }: { product: Product } =
       await unwrapData(apiGetProductForEditById(product.documentId));
     const { documentId, images, ...duplicatedProduct } = productToDuplicate;
     const imagesLoaded: PegFile[] = await apiGetPegFiles(images);
-    const newProduct: Product = {
+    // Les relations sont envoyées au backend sous forme de `documentId` (string),
+    // d'où le type `ProductRequest` plutôt que `Product`.
+    const newProduct: Omit<ProductRequest, 'documentId'> = {
       ...duplicatedProduct,
       images: imagesLoaded.map(({ id }) => id),
       sizes: duplicatedProduct.sizes.map(({ documentId }) => documentId),
@@ -88,7 +94,9 @@ export const duplicateProduct = createAsyncThunk(
       ),
     };
     const { createProduct }: { createProduct: Product } = await unwrapData(
-      apiCreateProduct(newProduct)
+      // Le mutateur GraphQL attend des `documentId` pour les relations ;
+      // `ProductRequest` reflète cette forme côté écriture.
+      apiCreateProduct(newProduct as unknown as CreateProductRequest)
     );
     return createProduct;
   }
@@ -136,7 +144,8 @@ const productSlice = createSlice({
   initialState,
   reducers: {
     setProductToEdit: (state, action) => {
-      state.productToEdit = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productToEdit = action.payload as any;
     },
     setIndexProductToDuplicate: (state, action) => {
       state.indexProductToDuplicate = action.payload;
@@ -154,7 +163,8 @@ const productSlice = createSlice({
     });
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload?.nodes ?? [];
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = (action.payload?.nodes ?? []) as any;
       state.total = action.payload?.pageInfo?.total ?? 0;
     });
     builder.addCase(getProducts.rejected, (state) => {
@@ -165,9 +175,10 @@ const productSlice = createSlice({
     });
     builder.addCase(deleteProduct.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = state.products.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = (state.products as unknown as Product[]).filter(
         (product) => product.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteProduct.rejected, (state) => {
@@ -178,12 +189,15 @@ const productSlice = createSlice({
     });
     builder.addCase(updateProduct.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = state.products.map((product) => {
-        if (product.documentId === action.payload.documentId) {
-          return action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = (state.products as unknown as Product[]).map(
+        (product) => {
+          if (product.documentId === action.payload.documentId) {
+            return action.payload;
+          }
+          return product;
         }
-        return product;
-      });
+      ) as any;
     });
     builder.addCase(updateProduct.rejected, (state) => {
       state.loading = false;
@@ -193,7 +207,12 @@ const productSlice = createSlice({
     });
     builder.addCase(duplicateProduct.fulfilled, (state, action) => {
       state.loading = false;
-      state.products.splice(state.indexProductToDuplicate, 0, action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products.splice(
+        state.indexProductToDuplicate,
+        0,
+        action.payload as any
+      );
       state.total += 1;
     });
     builder.addCase(duplicateProduct.rejected, (state) => {
@@ -205,7 +224,8 @@ const productSlice = createSlice({
     });
     builder.addCase(getProductById.fulfilled, (state, action) => {
       state.loading = false;
-      state.productToEdit = action.payload.product;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productToEdit = action.payload.product as any;
     });
     builder.addCase(getProductById.rejected, (state) => {
       state.loading = false;

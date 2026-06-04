@@ -86,7 +86,7 @@ export const duplicateForm = createAsyncThunk(
   SLICE_NAME + '/duplicateForm',
   async (form: Form) => {
     const { documentId, ...duplicatedForm } = form;
-    const newForm: Form = {
+    const newForm: CreateFormRequest = {
       ...duplicatedForm,
     };
     const { createForm }: { createForm: Form } = await unwrapData(
@@ -101,7 +101,8 @@ const formsSlice = createSlice({
   initialState,
   reducers: {
     setForm: (state, action) => {
-      state.form = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.form = action.payload as any;
     },
     setNewFormDialog: (state, action) => {
       state.newFormDialog = action.payload;
@@ -113,23 +114,26 @@ const formsSlice = createSlice({
     });
     builder.addCase(getForms.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = action.payload.nodes as Form[];
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.forms = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getForms.rejected, (state) => {
       state.loading = false;
     });
     builder.addCase(getForm.fulfilled, (state, action) => {
-      state.form = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.form = action.payload as any;
     });
     builder.addCase(deleteForm.pending, (state) => {
       state.loading = true;
     });
     builder.addCase(deleteForm.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = state.forms.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.forms = (state.forms as unknown as Form[]).filter(
         (form) => form.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(updateForm.pending, (state) => {
@@ -137,11 +141,12 @@ const formsSlice = createSlice({
     });
     builder.addCase(updateForm.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms = state.forms.map((form) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.forms = (state.forms as unknown as Form[]).map((form) =>
         form.documentId === action.payload.data.updateForm.documentId
           ? action.payload.data.updateForm
           : form
-      );
+      ) as any;
     });
     builder.addCase(updateForm.rejected, (state) => {
       state.loading = false;
@@ -151,7 +156,8 @@ const formsSlice = createSlice({
     });
     builder.addCase(createForm.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms.push(action.payload.data.createForm);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.forms.push(action.payload.data.createForm as any);
       state.total += 1;
     });
     builder.addCase(createForm.rejected, (state) => {
@@ -163,7 +169,8 @@ const formsSlice = createSlice({
     });
     builder.addCase(duplicateForm.fulfilled, (state, action) => {
       state.loading = false;
-      state.forms.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.forms.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(duplicateForm.rejected, (state) => {

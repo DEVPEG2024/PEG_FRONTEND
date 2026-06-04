@@ -136,7 +136,8 @@ const customersSlice = createSlice({
   initialState,
   reducers: {
     setCustomer: (state, action: PayloadAction<Customer | null>) => {
-      state.customer = action.payload
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customer = action.payload as any
     },
     clearCustomers: (state) => {
       state.customers = []

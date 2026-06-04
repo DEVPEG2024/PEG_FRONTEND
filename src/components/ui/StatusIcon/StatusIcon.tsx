@@ -36,6 +36,10 @@ const ICONS: Record<
         color: 'text-red-400',
         icon: <HiXCircle />,
     },
+    black: {
+        color: 'text-gray-900',
+        icon: <HiInformationCircle />,
+    },
 }
 
 const StatusIcon = (props: StatusIconProps) => {

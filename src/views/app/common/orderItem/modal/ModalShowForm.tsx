@@ -107,7 +107,7 @@ function ModalShowForm({
             <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>Chargement...</div>}>
               <ShowForm
                 onSubmit={() => {}}
-                fields={formAnswer.form.fields}
+                fields={formAnswer.form.fields ?? ''}
                 formAnswer={formAnswer}
                 readOnly={true}
               />

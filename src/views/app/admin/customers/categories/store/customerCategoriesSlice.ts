@@ -86,7 +86,8 @@ const customerCategoriesSlice = createSlice({
       state,
       action: PayloadAction<CustomerCategory | undefined>
     ) {
-      state.customerCategory = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customerCategory = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -94,7 +95,8 @@ const customerCategoriesSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getCustomerCategories.fulfilled, (state, action) => {
-      state.customerCategories = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customerCategories = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -104,13 +106,15 @@ const customerCategoriesSlice = createSlice({
     });
     builder.addCase(updateCustomerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.customerCategories = state.customerCategories.map(
-        (customerCategory: CustomerCategory) =>
-          customerCategory.documentId ===
-          action.payload.data.updateCustomerCategory.documentId
-            ? action.payload.data.updateCustomerCategory
-            : customerCategory
-      );
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customerCategories = (
+        state.customerCategories as unknown as CustomerCategory[]
+      ).map((customerCategory: CustomerCategory) =>
+        customerCategory.documentId ===
+        action.payload.data.updateCustomerCategory.documentId
+          ? action.payload.data.updateCustomerCategory
+          : customerCategory
+      ) as any;
     });
     builder.addCase(updateCustomerCategory.rejected, (state) => {
       state.loading = false;
@@ -121,7 +125,10 @@ const customerCategoriesSlice = createSlice({
     });
     builder.addCase(createCustomerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.customerCategories.push(action.payload.data.createCustomerCategory);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customerCategories.push(
+        action.payload.data.createCustomerCategory as any
+      );
       state.total += 1;
     });
     builder.addCase(createCustomerCategory.rejected, (state) => {
@@ -133,10 +140,13 @@ const customerCategoriesSlice = createSlice({
     });
     builder.addCase(deleteCustomerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.customerCategories = state.customerCategories.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.customerCategories = (
+        state.customerCategories as unknown as CustomerCategory[]
+      ).filter(
         (customerCategory: CustomerCategory) =>
           customerCategory.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
   },

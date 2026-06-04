@@ -71,9 +71,10 @@ const dashboardCustomerSlice = createSlice({
       getDashboardCustomerInformations.fulfilled,
       (state, action) => {
         state.loading = false;
-        state.customer = action.payload.customer;
-        state.products = action.payload.products;
-        state.projects = action.payload.projects;
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.customer = action.payload.customer as any;
+        state.products = action.payload.products as any;
+        state.projects = action.payload.projects as any;
       }
     );
     builder.addCase(getDashboardCustomerInformations.rejected, (state) => {

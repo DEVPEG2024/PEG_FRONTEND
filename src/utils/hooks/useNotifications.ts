@@ -79,7 +79,8 @@ export default function useNotifications() {
   const lastUnreadRef = useRef<number | null>(null);
 
   const user = useAppSelector((state: RootState) => state.auth.user.user);
-  const userId = user?.documentId || user?.id || user?._id || null;
+  const rawUserId = user?.documentId || user?.id || user?._id || null;
+  const userId = rawUserId != null ? String(rawUserId) : null;
 
   const loadNotifications = useCallback(async (page = 1, limit = 20) => {
     if (!userId) return;

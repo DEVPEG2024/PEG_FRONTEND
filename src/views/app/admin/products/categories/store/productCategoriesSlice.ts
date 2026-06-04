@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Product, ProductCategory } from '@/@types/product';
-import { PegFile } from '@/@types/pegFile';
+import { PegFile, UploadImage } from '@/@types/pegFile';
 
 import { ApiResponse, unwrapData } from '@/utils/serviceHelper';
 import {
@@ -71,7 +71,8 @@ export const createProductCategory = createAsyncThunk(
     }: { createProductCategory: ProductCategory } = await unwrapData(
       apiCreateProductCategory({
         ...data,
-        image: imageUploaded?.id ?? undefined,
+        // Le backend GraphQL attend l'`id` du média (string), pas l'objet PegFile.
+        image: (imageUploaded?.id ?? undefined) as unknown as PegFile | undefined,
       })
     );
     return createProductCategory;
@@ -79,7 +80,12 @@ export const createProductCategory = createAsyncThunk(
 );
 
 export type UpdateProductCategory = {
-  productCategory: Partial<ProductCategory>;
+  // `image` est ici l'image d'upload locale (UploadImage), convertie en id
+  // média avant l'appel GraphQL ; `parent` est envoyé comme documentId (string).
+  productCategory: Omit<Partial<ProductCategory>, 'image' | 'parent'> & {
+    image?: UploadImage;
+    parent?: string | null;
+  };
   imageModified: boolean;
 };
 
@@ -87,16 +93,18 @@ export const updateProductCategory = createAsyncThunk(
   SLICE_NAME + '/updateProductCategory',
   async (data: UpdateProductCategory): Promise<ProductCategory> => {
     let imageUploaded: PegFile | undefined = undefined;
-    if (data.imageModified && data.productCategory.image) {
+    if (data.imageModified && data.productCategory.image?.file) {
       imageUploaded = await apiUploadFile(data.productCategory.image.file);
     }
     const {
       updateProductCategory,
     }: { updateProductCategory: ProductCategory } = await unwrapData(
+      // Le backend GraphQL attend les relations (`parent`, `image`) sous forme
+      // d'identifiants (string/id) et non d'objets ; on caste le payload écrit.
       apiUpdateProductCategory({
         ...data.productCategory,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
-      })
+      } as unknown as Partial<ProductCategory>)
     );
     return updateProductCategory;
   }
@@ -144,7 +152,8 @@ const productCategoriesSlice = createSlice({
       state,
       action: PayloadAction<ProductCategory | undefined>
     ) {
-      state.productCategory = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategory = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -153,7 +162,8 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(getProductCategories.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategories = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategories = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getProductCategories.rejected, (state) => {
@@ -164,7 +174,8 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(createProductCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategories.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategories.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createProductCategory.rejected, (state) => {
@@ -175,10 +186,13 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(deleteProductCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategories = state.productCategories.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategories = (
+        state.productCategories as unknown as ProductCategory[]
+      ).filter(
         (productCategory) =>
           productCategory.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteProductCategory.rejected, (state) => {
@@ -191,7 +205,8 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(getProductsByCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = action.payload.nodes as any;
     });
     builder.addCase(getProductsByCategory.rejected, (state) => {
       state.loading = false;
@@ -203,7 +218,8 @@ const productCategoriesSlice = createSlice({
     });
     builder.addCase(getProductCategoryById.fulfilled, (state, action) => {
       state.loading = false;
-      state.productCategory = action.payload.productCategory;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategory = action.payload.productCategory as any;
     });
     builder.addCase(getProductCategoryById.rejected, (state) => {
       state.loading = false;
@@ -211,12 +227,14 @@ const productCategoriesSlice = createSlice({
 
     // UPDATE PRODUCT CATEGORY (pas de loading global pour ne pas bloquer la page lors de la sauvegarde d'ordre)
     builder.addCase(updateProductCategory.fulfilled, (state, action) => {
-      state.productCategories = state.productCategories.map(
-        (productCategory) =>
-          productCategory.documentId === action.payload.documentId
-            ? action.payload
-            : productCategory
-      );
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.productCategories = (
+        state.productCategories as unknown as ProductCategory[]
+      ).map((productCategory) =>
+        productCategory.documentId === action.payload.documentId
+          ? action.payload
+          : productCategory
+      ) as any;
     });
   },
 });

@@ -82,7 +82,8 @@ const orderSlice = createSlice({
     });
     builder.addCase(getOrderItems.fulfilled, (state, action) => {
       state.loading = false;
-      state.orderItems = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.orderItems = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.pageCount = action.payload.pageInfo.pageCount;
     });
@@ -95,11 +96,14 @@ const orderSlice = createSlice({
     });
     builder.addCase(updateOrderItem.fulfilled, (state, action) => {
       state.loading = false;
-      state.orderItems = state.orderItems.map((orderItem) =>
-        orderItem.documentId === action.payload.data.updateOrderItem.documentId
-          ? action.payload.data.updateOrderItem
-          : orderItem
-      );
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.orderItems = (state.orderItems as unknown as OrderItem[]).map(
+        (orderItem) =>
+          orderItem.documentId ===
+          action.payload.data.updateOrderItem.documentId
+            ? action.payload.data.updateOrderItem
+            : orderItem
+      ) as any;
     });
     builder.addCase(updateOrderItem.rejected, (state) => {
       state.loading = false;
@@ -111,9 +115,10 @@ const orderSlice = createSlice({
     });
     builder.addCase(deleteOrderItem.fulfilled, (state, action) => {
       state.loading = false;
-      state.orderItems = state.orderItems.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.orderItems = (state.orderItems as unknown as OrderItem[]).filter(
         (orderItem) => orderItem.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteOrderItem.rejected, (state) => {

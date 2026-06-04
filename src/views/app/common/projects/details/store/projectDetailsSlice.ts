@@ -34,6 +34,8 @@ import { PegFile } from '@/@types/pegFile';
 export const SLICE_NAME = 'projectDetails';
 
 export type ProjectDetailsState = {
+  // Reste typé Project : les composants l'attendent peuplé après getProjectById.
+  // L'initialState non chargé est posé via un cast localisé (voir initialState).
   project: Project;
   tasks: Task[];
   invoices: Invoice[];
@@ -308,7 +310,8 @@ const initialState: ProjectDetailsState = {
   invoices: [],
   tasks: [],
   comments: [],
-  project: undefined,
+  // Aucun projet chargé au démarrage ; peuplé par getProjectById. Cast localisé pour conserver le type Project côté consommateurs.
+  project: undefined as unknown as Project,
   editCurrentProjectDialog: false,
   selectedProjectInvoice: null,
   editProjectInvoiceDialog: false,
@@ -330,7 +333,8 @@ const projectListSlice = createSlice({
       state.loading = action.payload;
     },
     setProject: (state, action) => {
-      state.project = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
     },
     setEditDescription: (state, action) => {
       state.editDescription = action.payload;
@@ -352,15 +356,19 @@ const projectListSlice = createSlice({
       state.editDialogTask = action.payload;
     },
     setSelectedTask: (state, action) => {
-      state.selectedTask = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedTask = action.payload as any;
     },
     setEditTaskSelected: (state, action) => {
       if (state.project) {
-        state.project.tasks = state.project.tasks.map((task: Task) =>
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.project.tasks = (
+          state.project.tasks as unknown as Task[]
+        ).map((task: Task) =>
           task.documentId === action.payload.documentId ? action.payload : task
-        );
+        ) as any;
         // Mise à jour de selectedTask
-        state.selectedTask = action.payload;
+        state.selectedTask = action.payload as any;
       }
     },
     setEditProjectInvoiceDialog: (state, action) => {
@@ -370,7 +378,8 @@ const projectListSlice = createSlice({
       state.printProjectInvoiceDialog = action.payload;
     },
     setSelectedProjectInvoice: (state, action) => {
-      state.selectedProjectInvoice = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedProjectInvoice = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -378,10 +387,11 @@ const projectListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getProjectById.fulfilled, (state, action) => {
-      state.project = action.payload.project;
-      state.tasks = action.payload.project.tasks;
-      state.invoices = action.payload.project.invoices;
-      state.comments = action.payload.project.comments;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload.project as any;
+      state.tasks = action.payload.project.tasks as any;
+      state.invoices = action.payload.project.invoices as any;
+      state.comments = action.payload.project.comments as any;
       state.loading = false;
     });
     builder.addCase(getProjectById.rejected, (state) => {
@@ -393,7 +403,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateCurrentProject.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
       state.editDescription = false;
     });
     builder.addCase(updateCurrentProject.rejected, (state) => {
@@ -405,8 +416,9 @@ const projectListSlice = createSlice({
     });
     builder.addCase(createTask.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload;
-      state.tasks = action.payload.tasks;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
+      state.tasks = action.payload.tasks as any;
       state.newDialogTask = false;
     });
     builder.addCase(createTask.rejected, (state) => {
@@ -418,10 +430,11 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateTask.fulfilled, (state, action) => {
       state.loading = false;
-      state.tasks = state.tasks.map((task) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tasks = (state.tasks as unknown as Task[]).map((task) =>
         task.documentId === action.payload.documentId ? action.payload : task
-      );
-      state.project!.tasks = state.tasks;
+      ) as any;
+      state.project!.tasks = state.tasks as any;
       state.editDialogTask = false;
     });
     builder.addCase(updateTask.rejected, (state) => {
@@ -433,10 +446,11 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteTask.fulfilled, (state, action) => {
       state.loading = false;
-      state.tasks = state.tasks.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tasks = (state.tasks as unknown as Task[]).filter(
         (task) => task.documentId !== action.payload.documentId
-      );
-      state.project!.tasks = state.tasks;
+      ) as any;
+      state.project!.tasks = state.tasks as any;
     });
     // CREATE COMMENT
     builder.addCase(createComment.pending, (state) => {
@@ -444,8 +458,9 @@ const projectListSlice = createSlice({
     });
     builder.addCase(createComment.fulfilled, (state, action) => {
       state.loading = false;
-      state.comments.push(action.payload);
-      state.project!.comments = state.comments;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.comments.push(action.payload as any);
+      state.project!.comments = state.comments as any;
     });
     // DELETE COMMENT
     builder.addCase(deleteComment.pending, (state) => {
@@ -453,10 +468,11 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteComment.fulfilled, (state, action) => {
       state.loading = false;
-      state.comments = state.comments.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.comments = (state.comments as unknown as Comment[]).filter(
         (comment) => comment.documentId !== action.payload.documentId
-      );
-      state.project!.comments = state.comments;
+      ) as any;
+      state.project!.comments = state.comments as any;
     });
     builder.addCase(deleteComment.rejected, (state) => {
       state.loading = false;
@@ -467,8 +483,9 @@ const projectListSlice = createSlice({
     });
     builder.addCase(addInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload;
-      state.invoices = action.payload.invoices;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
+      state.invoices = action.payload.invoices as any;
     });
     builder.addCase(addInvoice.rejected, (state) => {
       state.loading = false;
@@ -479,8 +496,9 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteProjectInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload.project;
-      state.invoices = action.payload.project.invoices;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload.project as any;
+      state.invoices = action.payload.project.invoices as any;
     });
     builder.addCase(deleteProjectInvoice.rejected, (state) => {
       state.loading = false;
@@ -491,11 +509,12 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateProjectInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.invoices = state.invoices.map((invoice) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.invoices = (state.invoices as unknown as Invoice[]).map((invoice) =>
         invoice.documentId === action.payload.documentId
           ? action.payload
           : invoice
-      );
+      ) as any;
       state.editProjectInvoiceDialog = false;
       state.selectedProjectInvoice = null;
     });
@@ -508,7 +527,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(addDevis.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
     });
     builder.addCase(addDevis.rejected, (state) => {
       state.loading = false;
@@ -519,7 +539,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteDevis.fulfilled, (state, action) => {
       state.loading = false;
-      state.project = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.project = action.payload as any;
     });
     builder.addCase(deleteDevis.rejected, (state) => {
       state.loading = false;

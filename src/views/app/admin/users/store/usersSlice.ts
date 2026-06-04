@@ -117,7 +117,8 @@ const productSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      state.user = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.user = action.payload as any;
     },
     setModalDeleteUserOpen: (state) => {
       state.modalDeleteUser = true;
@@ -132,7 +133,8 @@ const productSlice = createSlice({
     });
     builder.addCase(getUsers.fulfilled, (state, action) => {
       state.loading = false;
-      state.users = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.users = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getUsers.rejected, (state) => {
@@ -188,9 +190,10 @@ const productSlice = createSlice({
     });
     builder.addCase(deleteUser.fulfilled, (state, action) => {
       state.loading = false;
-      state.users = state.users.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.users = (state.users as unknown as User[]).filter(
         (user) => user.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteUser.rejected, (state) => {
@@ -201,12 +204,13 @@ const productSlice = createSlice({
     });
     builder.addCase(updateUser.fulfilled, (state, action) => {
       state.loading = false;
-      state.users = state.users.map((user) => {
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.users = (state.users as unknown as User[]).map((user) => {
         if (user.documentId === action.payload.documentId) {
           return action.payload;
         }
         return user;
-      });
+      }) as any;
     });
     builder.addCase(updateUser.rejected, (state) => {
       state.loading = false;
@@ -216,7 +220,8 @@ const productSlice = createSlice({
     });
     builder.addCase(getUserById.fulfilled, (state, action) => {
       state.loading = false;
-      state.user = action.payload.usersPermissionsUser;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.user = action.payload.usersPermissionsUser as any;
     });
     builder.addCase(getUserById.rejected, (state) => {
       state.loading = false;

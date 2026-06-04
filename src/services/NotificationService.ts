@@ -157,7 +157,7 @@ async function getAdminIds(): Promise<string[]> {
     // jamais notifiés du reste de la session après un échec ponctuel.
     if (ids.length === 0) return [];
     cachedAdminIds = ids;
-    return cachedAdminIds;
+    return ids;
   } catch (error) {
     console.error('[Notifications] Échec récupération des admins:', error);
     return [];

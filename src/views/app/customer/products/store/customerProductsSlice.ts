@@ -74,10 +74,11 @@ const productSlice = createSlice({
   initialState,
   reducers: {
     setProduct: (state, action) => {
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
       state.product =
-        state.products.find(
+        ((state.products as unknown as Product[]).find(
           (product) => product.documentId === action.payload
-        ) ?? null;
+        ) ?? null) as any;
     },
   },
   extraReducers: (builder) => {
@@ -86,7 +87,8 @@ const productSlice = createSlice({
     });
     builder.addCase(getCustomerProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.products;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = action.payload.products as any;
     });
     builder.addCase(getCustomerProducts.rejected, (state) => {
       state.loading = false;

@@ -52,7 +52,8 @@ const transactionListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getOwnTransactions.fulfilled, (state, action) => {
-      state.transactions = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.transactions = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
       state.amount = action.payload.nodes.reduce((acc, transaction) => {

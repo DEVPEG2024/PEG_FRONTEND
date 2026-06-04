@@ -3,7 +3,7 @@ import { Input } from '@/components/ui';
 import { HiX, HiChevronDown } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PegFile } from '@/@types/pegFile';
+import { PegFile, UploadImage } from '@/@types/pegFile';
 import { useAppDispatch } from '@/store';
 import {
   createProductCategory,
@@ -34,7 +34,7 @@ function ModalEditProductCategory({
     (state) => state.productCategories.data
   );
   const [name, setName] = useState<string>(productCategory?.name ?? '');
-  const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [imageModified, setImageModified] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [selectedParent, setSelectedParent] = useState<string | null>(
@@ -69,7 +69,7 @@ function ModalEditProductCategory({
     }
   };
 
-  const updateImage = (image: { file: File; name: string }) => {
+  const updateImage = (image: UploadImage | undefined) => {
     setImage(image);
     setImageModified(true);
   };

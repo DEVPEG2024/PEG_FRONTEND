@@ -12,7 +12,8 @@ export type OrderItem = {
   price: number;
   state: string;
   customer: Customer;
-  project: Project;
+  // Optionnel : à la création depuis le panier, le projet n'existe pas encore (créé après commande)
+  project?: Project;
   batStatus?: 'pending' | 'approved' | 'rejected' | null;
   batComment?: string | null;
 }

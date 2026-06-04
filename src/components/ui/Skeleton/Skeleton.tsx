@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import classNames from 'classnames'
 import type { CommonProps } from '../@types/common'
-import type { ElementType } from 'react'
+import type { CSSProperties, ElementType } from 'react'
 
 export interface SkeletonProps extends CommonProps {
     animation?: boolean
@@ -9,6 +9,7 @@ export interface SkeletonProps extends CommonProps {
     height?: string | number
     variant?: 'block' | 'circle'
     width?: string | number
+    style?: CSSProperties
 }
 
 const Skeleton = forwardRef<ElementType, SkeletonProps>((props, ref) => {

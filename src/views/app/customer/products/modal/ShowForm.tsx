@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Form as FormViewer } from '@formio/react';
+import type { Options as FormioOptions } from '@formio/react/lib/components/Form';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
 import fr from '../../../admin/forms/edit/fr.json';
@@ -74,6 +75,16 @@ function ShowForm({
   const parsedFields = JSON.parse(JSON.stringify(fields));
   const components = Array.isArray(parsedFields) ? parsedFields : parsedFields.components || [];
 
+  // `language` est une option formio.js valide à l'exécution mais absente du
+  // typedef `Options` de @formio/react — on étend donc le type localement.
+  const formOptions: FormioOptions & { language?: string } = {
+    readOnly,
+    language: 'fr',
+    i18n: {
+      fr,
+    },
+  };
+
   return (
     <div className="formio-scope">
       <FormViewer
@@ -83,13 +94,7 @@ function ShowForm({
           components: sanitizeComponents(components),
         }}
         submission={formAnswer?.answer}
-        options={{
-          readOnly,
-          language: 'fr',
-          i18n: {
-            fr,
-          },
-        }}
+        options={formOptions}
         onSubmit={onSubmit}
       />
     </div>

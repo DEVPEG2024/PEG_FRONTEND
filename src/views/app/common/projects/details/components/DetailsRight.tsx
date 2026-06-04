@@ -182,7 +182,8 @@ const DetailsRight = () => {
   };
 
   const changeProducer = (producer: Producer) => {
-    dispatch(updateCurrentProject({ documentId: project.documentId, producer: producer.documentId }));
+    // apiUpdateProject envoie la relation producer telle quelle ; Strapi attend le documentId (string).
+    dispatch(updateCurrentProject({ documentId: project.documentId, producer: producer.documentId as unknown as Producer }));
     toast.success(`Producteur changé : ${producer.name}`);
     setProducerDropdownOpen(false);
   };
@@ -191,7 +192,8 @@ const DetailsRight = () => {
     dispatch(
       updateCurrentProject({
         documentId: project.documentId,
-        producer: user.producer?.documentId ?? '',
+        // Strapi attend le documentId (string) pour la relation producer.
+        producer: (user.producer?.documentId ?? '') as unknown as Producer,
       })
     );
   };

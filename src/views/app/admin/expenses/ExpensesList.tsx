@@ -17,6 +17,7 @@ import { apiCreateExpense } from '@/services/ExpenseServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import ModalEditExpense from './ModalEditExpense';
 import dayjs from 'dayjs';
+import type { ManipulateType } from 'dayjs';
 import {
   HiOutlineSearch,
   HiPencil,
@@ -86,7 +87,11 @@ const ExpensesList = () => {
     for (const exp of recurring) {
       const interval = exp.recurrenceInterval as RecurrenceInterval;
       const endDate = exp.recurrenceEndDate ? dayjs(exp.recurrenceEndDate) : null;
-      const addUnit = interval === 'monthly' ? 'month' : interval === 'quarterly' ? 'quarter' : 'year';
+      // 'quarter' n'est pas un ManipulateType dayjs standard (plugin non chargé)
+      // → on l'exprime en 3 mois pour conserver le comportement attendu.
+      const addAmount = interval === 'quarterly' ? 3 : 1;
+      const addUnit: ManipulateType =
+        interval === 'monthly' ? 'month' : interval === 'quarterly' ? 'month' : 'year';
 
       // Trouver toutes les dates existantes pour ce label+fournisseur+montant (même "série")
       const siblings = allExpenses.filter(
@@ -95,7 +100,7 @@ const ExpensesList = () => {
       const existingDates = new Set(siblings.map((s) => dayjs(s.date).format('YYYY-MM')));
 
       // Générer les dates suivantes à partir de la date d'origine
-      let nextDate = dayjs(exp.date).add(1, addUnit);
+      let nextDate = dayjs(exp.date).add(addAmount, addUnit);
       while (nextDate.isBefore(today) || nextDate.isSame(today, 'month')) {
         if (endDate && nextDate.isAfter(endDate)) break;
         const key = nextDate.format('YYYY-MM');
@@ -124,7 +129,7 @@ const ExpensesList = () => {
             console.error('[Recurring] Erreur création occurrence:', err);
           }
         }
-        nextDate = nextDate.add(1, addUnit);
+        nextDate = nextDate.add(addAmount, addUnit);
       }
     }
 

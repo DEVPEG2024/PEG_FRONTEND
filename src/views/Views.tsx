@@ -1,9 +1,18 @@
 import { Suspense } from 'react';
 import Loading from '@/components/shared/Loading';
-import { protectedRoutes, publicRoutes } from '@/configs/routes.config';
+import {
+  protectedRoutes as protectedRoutesRaw,
+  publicRoutes as publicRoutesRaw,
+} from '@/configs/routes.config';
 import appConfig from '@/configs/app.config';
 import PageContainer from '@/components/template/PageContainer';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import type { Routes as AppRoutes } from '@/@types/routes';
+
+// Les tableaux de routes peuvent comporter (ou non) un champ `meta` selon la
+// route ; on les type explicitement pour exposer `meta?` de façon uniforme.
+const protectedRoutes: AppRoutes = protectedRoutesRaw as AppRoutes;
+const publicRoutes: AppRoutes = publicRoutesRaw as AppRoutes;
 import { useAppSelector } from '@/store';
 import ProtectedRoute from '@/components/route/ProtectedRoute';
 import PublicRoute from '@/components/route/PublicRoute';

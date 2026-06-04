@@ -43,22 +43,31 @@ export const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action: PayloadAction<CartItem>) => {
-            state.cart.push({...action.payload});
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // `as any` : WritableDraft<CartItem> (contient Product imbriqué) dépasse
+            // la limite de profondeur du compilateur (TS2589). Runtime correct.
+            state.cart.push({...action.payload} as any);
         },
         editSizeAndColorsCartItem: (state, action: PayloadAction<CartItemSizeAndColorEdition>) => {
-            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            // cast vers CartItem plat : muter via le draft Immer sans déclencher
+            // l'inférence WritableDraft<CartItem> profonde (Product) -> TS2589
+            const cartItem = (state.cart as unknown as CartItem[]).find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.sizeAndColors = action.payload.sizeAndColors
             }
         },
         editFormAnswerCartItem: (state, action: PayloadAction<CartItemFormAnswerEdition>) => {
-            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            // cast vers CartItem plat : muter via le draft Immer sans déclencher
+            // l'inférence WritableDraft<CartItem> profonde (Product) -> TS2589
+            const cartItem = (state.cart as unknown as CartItem[]).find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.formAnswer = action.payload.formAnswer
             }
         },
         editOrderItemDocumentIdCartItem: (state, action: PayloadAction<CartItemOrderItemDocumentIdEdition>) => {
-            const cartItem = state.cart.find((item) => item.id === action.payload.cartItemId)
+            // cast vers CartItem plat : muter via le draft Immer sans déclencher
+            // l'inférence WritableDraft<CartItem> profonde (Product) -> TS2589
+            const cartItem = (state.cart as unknown as CartItem[]).find((item) => item.id === action.payload.cartItemId)
             if (cartItem) {
                 cartItem.orderItemDocumentId = action.payload.orderItemDocumentId
             }

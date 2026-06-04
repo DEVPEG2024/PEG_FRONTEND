@@ -31,7 +31,8 @@ const OnlineUsersCount = () => {
   const fetchRef = useRef<ReturnType<typeof setInterval>>();
 
   const user = useAppSelector((state: RootState) => state.auth.user.user);
-  const userId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const rawUserId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const userId = rawUserId != null ? String(rawUserId) : null;
   const displayName = user?.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '';
   const avatarUrl = user?.avatar?.url || '';
   const userRole = user?.authority?.[0] || user?.role?.name || '';
@@ -274,7 +275,8 @@ const OnlineUsersCount = () => {
 /** Invisible component — pings the backend so any user appears online */
 export const OnlinePing = () => {
   const user = useAppSelector((state: RootState) => state.auth.user.user);
-  const userId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const rawUserId = user?._id ?? user?.id ?? user?.documentId ?? null;
+  const userId = rawUserId != null ? String(rawUserId) : null;
   const displayName = user?.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || '';
   const avatarUrl = user?.avatar?.url || '';
   const userRole = user?.authority?.[0] || user?.role?.name || '';

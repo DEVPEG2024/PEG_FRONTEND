@@ -6,10 +6,17 @@ const ProductCategoriesListContent = ({
   productCategories,
   handleEditProductCategory,
   handleDeleteProductCategory,
+  handleActivateProductCategory,
+  handleAddSubcategory,
 }: {
   productCategories: ProductCategory[];
   handleEditProductCategory: (productCategory: ProductCategory) => void;
   handleDeleteProductCategory: (productCategory: ProductCategory) => void;
+  handleActivateProductCategory: (
+    productCategory: ProductCategory,
+    active: boolean
+  ) => void;
+  handleAddSubcategory?: (parent: ProductCategory) => void;
 }) => {
   return (
     <div className={classNames('mt-6 h-full flex flex-col')}>
@@ -20,6 +27,8 @@ const ProductCategoriesListContent = ({
             productCategory={productCategory}
             handleDeleteProductCategory={handleDeleteProductCategory}
             handleEditProductCategory={handleEditProductCategory}
+            handleActivateProductCategory={handleActivateProductCategory}
+            handleAddSubcategory={handleAddSubcategory}
           />
         ))}
       </div>

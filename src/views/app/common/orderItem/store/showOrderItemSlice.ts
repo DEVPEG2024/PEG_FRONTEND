@@ -41,7 +41,8 @@ const showOrderItemSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getOrderItemById.fulfilled, (state, action) => {
-      state.orderItem = action.payload.orderItem;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.orderItem = action.payload.orderItem as any;
       state.loading = false;
     });
   },

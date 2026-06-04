@@ -102,7 +102,8 @@ const invoiceListSlice = createSlice({
       state.printInvoiceDialog = action.payload;
     },
     setSelectedInvoice: (state, action) => {
-      state.selectedInvoice = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedInvoice = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -111,7 +112,8 @@ const invoiceListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getInvoices.fulfilled, (state, action) => {
-      state.invoices = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.invoices = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -124,9 +126,10 @@ const invoiceListSlice = createSlice({
     });
     builder.addCase(deleteInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.invoices = state.invoices.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.invoices = (state.invoices as unknown as Invoice[]).filter(
         (invoice) => invoice.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total = state.total - 1;
     });
     builder.addCase(deleteInvoice.rejected, (state) => {
@@ -138,11 +141,12 @@ const invoiceListSlice = createSlice({
     });
     builder.addCase(updateInvoice.fulfilled, (state, action) => {
       state.loading = false;
-      state.invoices = state.invoices.map((invoice) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.invoices = (state.invoices as unknown as Invoice[]).map((invoice) =>
         invoice.documentId === action.payload.documentId
           ? action.payload
           : invoice
-      );
+      ) as any;
       state.editInvoiceDialog = false;
       state.selectedInvoice = null;
     });

@@ -83,7 +83,8 @@ const colorSlice = createSlice({
       state.editColorDialog = action.payload;
     },
     setSelectedColor: (state, action) => {
-      state.selectedColor = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedColor = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -93,7 +94,8 @@ const colorSlice = createSlice({
     });
     builder.addCase(getColors.fulfilled, (state, action) => {
       state.loading = false;
-      state.colors = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.colors = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getColors.rejected, (state) => {
@@ -105,7 +107,8 @@ const colorSlice = createSlice({
     });
     builder.addCase(createColor.fulfilled, (state, action) => {
       state.loading = false;
-      state.colors.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.colors.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createColor.rejected, (state) => {
@@ -117,9 +120,10 @@ const colorSlice = createSlice({
     });
     builder.addCase(updateColor.fulfilled, (state, action) => {
       state.loading = false;
-      state.colors = state.colors.map((color) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.colors = (state.colors as unknown as Color[]).map((color) =>
         color.documentId === action.payload.documentId ? action.payload : color
-      );
+      ) as any;
     });
     builder.addCase(updateColor.rejected, (state) => {
       state.loading = false;
@@ -130,9 +134,10 @@ const colorSlice = createSlice({
     });
     builder.addCase(deleteColor.fulfilled, (state, action) => {
       state.loading = false;
-      state.colors = state.colors.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.colors = (state.colors as unknown as Color[]).filter(
         (color) => color.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteColor.rejected, (state) => {

@@ -18,6 +18,7 @@ import Empty from '@/components/shared/Empty';
 import { GoTasklist } from 'react-icons/go';
 import dayjs from 'dayjs';
 import { Invoice } from '@/@types/invoice';
+import { Customer } from '@/@types/customer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
@@ -78,7 +79,8 @@ const Invoices = () => {
       try {
         const nextNumber = await apiGetNextInvoiceNumber();
         const invoice: Omit<Invoice, 'documentId'> = {
-          customer: project.customer,
+          // Présence du client garantie en amont par verifyGeneration(). apiCreateInvoice ne lit que customer.documentId.
+          customer: project.customer as Customer,
           orderItems: [],
           amount: project.price,
           vatAmount: project.price * TVA_RATE,
@@ -131,7 +133,8 @@ const Invoices = () => {
       try {
         const uploadedFile = await apiUploadFile(file);
         const invoice: Omit<Invoice, 'documentId'> = {
-          customer: currentProject.customer,
+          // apiCreateInvoice ne lit que customer.documentId ; le client peut être absent sur un upload manuel.
+          customer: currentProject.customer as Customer,
           orderItems: [],
           amount: currentProject.price || 0,
           vatAmount: (currentProject.price || 0) * TVA_RATE,

@@ -78,7 +78,8 @@ const producersSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getProducers.fulfilled, (state, action) => {
-      state.producers = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producers = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -88,10 +89,11 @@ const producersSlice = createSlice({
     });
     builder.addCase(deleteProducer.fulfilled, (state, action) => {
       state.loading = false;
-      state.producers = state.producers.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producers = (state.producers as unknown as Producer[]).filter(
         (producer: Producer) =>
           producer.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
 
@@ -110,7 +112,8 @@ const producersSlice = createSlice({
     });
     builder.addCase(getProducerById.fulfilled, (state, action) => {
       state.loading = false;
-      state.producer = action.payload.producer;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producer = action.payload.producer as any;
     });
     builder.addCase(getProducerById.rejected, (state) => {
       state.loading = false;

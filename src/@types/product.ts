@@ -40,6 +40,31 @@ export type Product = {
   minM2?: number;
 };
 
+/**
+ * Forme « requête » d'un produit envoyée au backend GraphQL : les relations
+ * (images, sizes, colors, form, productCategory, customerCategories, customers)
+ * y sont des `documentId` (string) et non des objets complets, car Strapi v5
+ * attend des identifiants en écriture. Voir `productsSlice.duplicateProduct`.
+ */
+export type ProductRequest = Omit<
+  Product,
+  | 'images'
+  | 'sizes'
+  | 'colors'
+  | 'form'
+  | 'productCategory'
+  | 'customerCategories'
+  | 'customers'
+> & {
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  form?: string;
+  productCategory?: string;
+  customerCategories: string[];
+  customers: string[];
+};
+
 export type Size = {
   documentId: string;
   name: string;

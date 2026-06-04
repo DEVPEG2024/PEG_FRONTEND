@@ -17,7 +17,7 @@ import {
 } from '../store/ticketSlice';
 import { Ticket } from '@/@types/ticket';
 import FileUplaodCustom from '@/components/shared/Upload';
-import { PegFile } from '@/@types/pegFile';
+import { PegFile, UploadImage } from '@/@types/pegFile';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 
 export type TicketFormModel = Omit<
@@ -44,7 +44,7 @@ function ModalEditTicket() {
   const { editTicketDialog, selectedTicket } = useAppSelector(
     (state) => state.tickets.data
   );
-  const [image, setImage] = useState<PegFile | undefined>(undefined);
+  const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<TicketFormModel>({
     documentId: selectedTicket?.documentId ?? '',
@@ -74,7 +74,14 @@ function ModalEditTicket() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    await dispatch(updateTicket({ ...formData, image: image?.id ?? null }));
+    // Les relations (user/image) sont envoyées en documentId/id à l'API GraphQL,
+    // alors que Ticket les type en objets User/PegFile → cast frontière du payload.
+    await dispatch(
+      updateTicket({
+        ...formData,
+        image: (image?.id ?? null) as unknown as PegFile,
+      } as unknown as Partial<Ticket>)
+    );
     handleClose();
   };
 

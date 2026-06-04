@@ -34,7 +34,8 @@ const dashboardProducerSlice = createSlice({
       getDashboardProducerInformations.fulfilled,
       (state, action) => {
         state.loading = false;
-        state.producer = action.payload.producer;
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.producer = action.payload.producer as any;
       }
     );
     builder.addCase(getDashboardProducerInformations.rejected, (state) => {

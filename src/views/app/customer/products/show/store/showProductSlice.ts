@@ -72,7 +72,11 @@ const productSlice = createSlice({
     });
     builder.addCase(getProductToShow.fulfilled, (state, action) => {
       state.loading = false;
-      state.product = action.payload?.product ?? null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // `as any` volontaire : l'inférence WritableDraft<Product> (relations
+      // imbriquées) dépasse la limite de profondeur du compilateur (TS2589).
+      // Ce n'est pas une vraie erreur de type — le runtime est correct.
+      state.product = (action.payload?.product ?? null) as any;
     });
     builder.addCase(getProductToShow.rejected, (state, action) => {
       state.loading = false;

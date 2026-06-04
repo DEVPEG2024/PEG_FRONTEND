@@ -2,6 +2,7 @@ import axios from 'axios';
 import { env } from '@/configs/env.config';
 import type {
   ImbretexProductsResponse,
+  ImbretexPriceStock,
   ImbretexPriceStockResponse,
   ImbretexStocksResponse,
   ImbretexPricesResponse,

@@ -142,22 +142,27 @@ const EditUser = () => {
     setRoles(roles);
   };
 
-  const updateOrCreateUser = async (data: User): Promise<User> => {
+  const updateOrCreateUser = async (
+    data: Partial<User>
+  ): Promise<User | { id: number; documentId: string; email: string }> => {
     if (onEdition) {
       const numericId = usersId.find(({ documentId: dId }) => dId === data.documentId)?.id;
       const response: any = await apiUpdateUser(data, String(numericId));
       return response.data;
     }
-    const created = await apiCreateUser(data);
+    const created = await apiCreateUser(data as any);
     return created.data;
   };
 
   const handleFormSubmit = async (values: UserFormModel) => {
-    const data: User = {
+    // Les relations sont envoyées au backend en id numérique (ou documentId
+    // string en fallback) ; le type User attend les objets Role/Customer/Producer
+    // → cast frontière vers Partial<User>.
+    const data: Partial<User> = {
       ...values,
-      role: rolesId.find(({ documentId: dId }) => dId === values.role)?.id ?? values.role,
-      customer: customersId.find(({ documentId: dId }) => dId === values.customer)?.id ?? values.customer,
-      producer: producersId.find(({ documentId: dId }) => dId === values.producer)?.id ?? values.producer,
+      role: (rolesId.find(({ documentId: dId }) => dId === values.role)?.id ?? values.role) as unknown as User['role'],
+      customer: (customersId.find(({ documentId: dId }) => dId === values.customer)?.id ?? values.customer) as unknown as User['customer'],
+      producer: (producersId.find(({ documentId: dId }) => dId === values.producer)?.id ?? values.producer) as unknown as User['producer'],
     };
     if (!onEdition) {
       delete data.documentId;

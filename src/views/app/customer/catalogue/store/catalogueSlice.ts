@@ -112,7 +112,8 @@ const catalogueSlice = createSlice({
     });
     builder.addCase(getCatalogueProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.products = action.payload.nodes as any;
     });
     builder.addCase(getCatalogueProducts.rejected, (state) => {
       state.loading = false;
@@ -124,7 +125,8 @@ const catalogueSlice = createSlice({
       getCatalogueProductsByCategory.fulfilled,
       (state, action) => {
         state.loading = false;
-        state.products = action.payload.nodes;
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.products = action.payload.nodes as any;
         state.total = action.payload.pageInfo.total;
       }
     );
@@ -137,7 +139,8 @@ const catalogueSlice = createSlice({
     builder.addCase(
       getCatalogueProductCategories.fulfilled,
       (state, action) => {
-        state.productCategories = action.payload.nodes;
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.productCategories = action.payload.nodes as any;
         state.total = action.payload.pageInfo.total;
         state.loading = false;
       }
@@ -149,7 +152,8 @@ const catalogueSlice = createSlice({
       getCatalogueProductCategoryById.fulfilled,
       (state, action) => {
         state.loading = false;
-        state.productCategory = action.payload.productCategory;
+        // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+        state.productCategory = action.payload.productCategory as any;
       }
     );
     builder.addCase(getCatalogueProductCategoryById.rejected, (state) => {

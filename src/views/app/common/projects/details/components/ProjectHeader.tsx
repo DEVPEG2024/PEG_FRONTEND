@@ -2,6 +2,7 @@ import QuickFilterTab from './QuickFilterTab';
 import Container from '@/components/shared/Container';
 import AvatarName from '../../lists/components/AvatarName';
 import { Project } from '@/@types/project';
+import { Producer } from '@/@types/producer';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { HiOutlinePencil } from 'react-icons/hi';
 import { MdPersonAdd } from 'react-icons/md';
@@ -51,7 +52,8 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
 
   const assignMeAsProducer = () => {
     if (user.producer?.documentId) {
-      dispatch(updateCurrentProject({ documentId: project.documentId, producer: user.producer.documentId }));
+      // Strapi attend le documentId (string) pour la relation producer ; apiUpdateProject l'envoie tel quel.
+      dispatch(updateCurrentProject({ documentId: project.documentId, producer: user.producer.documentId as unknown as Producer }));
       toast.success('Vous êtes maintenant assigné à ce projet');
     }
   };

@@ -15,7 +15,9 @@ export interface FileItemProps extends CommonProps {
 
 const FileItem = (props: FileItemProps) => {
     const { file, clickable, children } = props
-    const { type, name, size, previewUrl } = file
+    // previewUrl est une propriété custom parfois attachée au File par l'app
+    const { type, name, size } = file
+    const previewUrl = (file as File & { previewUrl?: string }).previewUrl
 
     const renderThumbnail = () => {
         const isImageFile = type.split('/')[0] === 'image'

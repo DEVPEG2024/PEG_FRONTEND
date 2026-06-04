@@ -6,6 +6,7 @@ import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { Project } from '@/@types/project';
+import { PegFile } from '@/@types/pegFile';
 import DetailsRight from './DetailsRight';
 import { Button } from '@/components/ui';
 import OrderItemDetails from './OrderItemDetails';
@@ -147,7 +148,8 @@ const Summary = ({ project }: { project: Project }) => {
       await dispatch(
         updateCurrentProject({
           documentId: project.documentId,
-          images: [pegFile.id] as number[],
+          // L'API attend des IDs de fichiers (number) pour la relation images en écriture GraphQL, pas des PegFile complets.
+          images: [pegFile.id] as unknown as PegFile[],
         })
       ).unwrap();
       await dispatch(getProjectById(project.documentId));

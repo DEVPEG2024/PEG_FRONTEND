@@ -44,6 +44,7 @@ const IAProductAgentPage = () => {
   const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [initialData, setInitialData] = useState<ProductFormModel | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // Logo / marquage
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -358,6 +359,8 @@ const IAProductAgentPage = () => {
           imagesLoading={false}
           currentBatUrl={null}
           initialData={initialData}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
           filterSizesListByProductCategory={(docId) => { updateSizesList(docId); }}
           filterColorsListByProductCategory={(docId) => { updateColorsList(docId); }}
         />
@@ -546,7 +549,7 @@ const IAProductAgentPage = () => {
             </span>
           </div>
           <button
-            onClick={fetchSuggestions}
+            onClick={() => fetchSuggestions()}
             disabled={loadingSuggestions}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',

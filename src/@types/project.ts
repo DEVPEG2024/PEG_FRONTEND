@@ -10,6 +10,8 @@ import { SavTicket } from './sav';
 export type Project = {
   documentId: string;
   name: string;
+  // Titre du projet utilisé au runtime dans les notifications (slice). Optionnel : pas toujours peuplé.
+  title?: string;
   description: string;
   startDate: Date;
   endDate: Date;
@@ -46,6 +48,8 @@ export type AdditionalSale = {
 export type Task = {
   documentId: string;
   name: string;
+  // Titre de tâche utilisé au runtime (notifications + CreateTaskRequest). Optionnel : non systématiquement présent.
+  title?: string;
   description: string;
   state: string;
   priority: string;

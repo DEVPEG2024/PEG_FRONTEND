@@ -73,7 +73,7 @@ function useAuth() {
         dispatch(
             setOwnUser({
                 avatar: undefined,
-                userName: '',
+                username: '',
                 email: '',
                 authority: [],
             })

@@ -17,9 +17,9 @@ export async function getUser(token: string) : Promise<UserWithId>{
     return {...data, authority: [data.role.name]}
 }
 
-export type UserWithId = User & {
-    id: string;
-}
+// User REST (/me) renvoie déjà `id` (number) — `UserWithId` est conservé
+// comme alias historique pour ne pas casser les consommateurs existants.
+export type UserWithId = User
 
 export async function apiGetAllUsers() : Promise<UserWithId[]> {    
     const response = await ApiService.fetchData<UserWithId[]>({

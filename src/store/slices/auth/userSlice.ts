@@ -11,12 +11,14 @@ export type UserState = {
 
 const initialState: UserState = {
     user: {
+        id: 0,
         documentId: '',
         email: '',
         username: '',
         firstName: '',
         lastName: '',
         authority: ['public'],
+        blocked: false,
         role: {
             documentId: '',
             description: 'public',
@@ -46,7 +48,7 @@ export type UpdateUserPassword = {
 
 export const updateUserPassword = createAsyncThunk(
   SLICE_NAME + '/updateUserPassword',
-  async (data: UpdateUserPassword): Promise<User> => {
+  async (data: UpdateUserPassword): Promise<void> => {
     await apiUpdateUserPassword(data.newPassword, data.id);
   }
 );
@@ -55,8 +57,12 @@ const userSlice = createSlice({
     name: `${SLICE_BASE_NAME}/user`,
     initialState,
     reducers: {
-      setOwnUser(state, action: PayloadAction<User>) {
-          state.user = action.payload
+      setOwnUser(state, action: PayloadAction<Partial<User>>) {
+          // Merge (et non remplacement) pour accepter aussi bien un User complet
+          // (sign-in) qu'une réinitialisation partielle (sign-out).
+          // Object.assign mute le draft Immer sans déclencher l'inférence
+          // WritableDraft profonde du spread (relations imbriquées) -> évite TS2589.
+          Object.assign(state.user, action.payload)
       },
     },
     extraReducers: (builder) => {

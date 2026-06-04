@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { Banner } from '@/@types/banner';
+import { Banner, BannerForm } from '@/@types/banner';
 import {
   apiGetBanners,
   apiCreateBanner,
@@ -38,17 +38,23 @@ export const getBanners = createAsyncThunk(
 
 export const createBanner = createAsyncThunk(
   SLICE_NAME + '/createBanner',
-  async (data: CreateBannerRequest, { dispatch }): Promise<Banner> => {
+  async (data: BannerForm, { dispatch }): Promise<Banner> => {
     let imageUploaded: PegFile | undefined = undefined;
-    if (data.image) {
+    // data.image est une UploadImage locale ({ file }) ; seul un fichier
+    // fraîchement choisi possède un File à uploader.
+    if (data.image?.file) {
       imageUploaded = await apiUploadFile(data.image.file);
     }
     // Extract customer documentId before API call (banner.customer is mappedBy in Strapi)
     const customerDocumentId = typeof data.customer === 'string' && data.customer !== '' ? data.customer : null;
 
     const { customer: _customer, ...dataWithoutCustomer } = data;
+    // L'API GraphQL attend l'id du média (string) — pas l'objet PegFile.
     const { createBanner: created }: { createBanner: Banner } = await unwrapData(
-      apiCreateBanner({ ...dataWithoutCustomer, image: imageUploaded?.id ?? null })
+      apiCreateBanner({
+        ...dataWithoutCustomer,
+        image: imageUploaded?.id ?? null,
+      } as unknown as CreateBannerRequest)
     );
 
     // Link customer→banner via REST (relation owned by Customer side)
@@ -73,7 +79,7 @@ export const deleteBanner = createAsyncThunk(
 );
 
 export type UpdateBanner = {
-  banner: Partial<Banner>;
+  banner: BannerForm;
   imageModified: boolean;
 };
 
@@ -81,7 +87,7 @@ export const updateBanner = createAsyncThunk(
   SLICE_NAME + '/updateBanner',
   async (data: UpdateBanner, { dispatch, getState }): Promise<Banner> => {
     let imageUploaded: PegFile | undefined = undefined;
-    if (data.imageModified && data.banner.image) {
+    if (data.imageModified && data.banner.image?.file) {
       imageUploaded = await apiUploadFile(data.banner.image.file);
     }
 
@@ -92,11 +98,12 @@ export const updateBanner = createAsyncThunk(
     const newCustomerDocId = typeof data.banner.customer === 'string' && data.banner.customer !== '' ? data.banner.customer : null;
 
     const { customer: _customerField, ...bannerWithoutCustomer } = data.banner;
+    // L'API GraphQL attend l'id du média (string) — pas l'objet PegFile.
     const { updateBanner: updated }: { updateBanner: Banner } = await unwrapData(
       apiUpdateBanner({
         ...bannerWithoutCustomer,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
-      })
+      } as unknown as Partial<Banner>)
     );
 
     // Update customer→banner relation via REST if customer changed
@@ -136,7 +143,8 @@ const bannerSlice = createSlice({
       state.editBannerDialog = action.payload;
     },
     setSelectedBanner: (state, action) => {
-      state.selectedBanner = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedBanner = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -146,7 +154,8 @@ const bannerSlice = createSlice({
     });
     builder.addCase(getBanners.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.banners = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getBanners.rejected, (state) => {
@@ -158,7 +167,8 @@ const bannerSlice = createSlice({
     });
     builder.addCase(createBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.banners.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createBanner.rejected, (state) => {
@@ -170,11 +180,12 @@ const bannerSlice = createSlice({
     });
     builder.addCase(updateBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = state.banners.map((banner) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.banners = (state.banners as unknown as Banner[]).map((banner) =>
         banner.documentId === action.payload.documentId
           ? action.payload
           : banner
-      );
+      ) as any;
     });
     builder.addCase(updateBanner.rejected, (state) => {
       state.loading = false;
@@ -185,9 +196,10 @@ const bannerSlice = createSlice({
     });
     builder.addCase(deleteBanner.fulfilled, (state, action) => {
       state.loading = false;
-      state.banners = state.banners.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.banners = (state.banners as unknown as Banner[]).filter(
         (banner) => banner.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteBanner.rejected, (state) => {

@@ -144,7 +144,7 @@ function ModalCompleteForm({
             <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>Chargement...</div>}>
               <ShowForm
                 onSubmit={onSubmit}
-                fields={form.fields}
+                fields={form.fields ?? ''}
                 formAnswer={formAnswer}
                 readOnly={false}
               />

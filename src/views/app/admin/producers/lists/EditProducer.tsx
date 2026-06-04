@@ -1,6 +1,5 @@
 import ProducerForm, {
   ProducerFormModel,
-  SetSubmitting,
 } from '@/views/app/admin/producers/lists/ProducersForm';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PRODUCERS_LIST } from '@/constants/navigation.constant';
@@ -80,6 +79,7 @@ const EditProducer = () => {
     priceRange: producer?.priceRange || null,
     volumeDiscountAvailable: producer?.volumeDiscountAvailable ?? false,
     volumeDiscountRate: producer?.volumeDiscountRate ?? null,
+    active: producer?.active ?? true,
   };
 
   useEffect(() => {
@@ -139,8 +139,11 @@ const EditProducer = () => {
         website: data.website,
         zipCode: data.zipCode,
       },
-      producerCategory: data.producerCategory,
+      // La relation est gérée en documentId (string) côté GraphQL Strapi v5,
+      // mais le type Producer attend l'objet ProducerCategory → cast frontière.
+      producerCategory: data.producerCategory as unknown as ProducerCategory,
       name: data.name,
+      active: data.active,
       // Compétences & Spécialités
       productCategories: data.productCategories,
       strengths: data.strengths,
@@ -169,7 +172,7 @@ const EditProducer = () => {
       return updateProducer;
     }
     const { createProducer }: { createProducer: Producer } = await unwrapData(
-      apiCreateProducer(producer)
+      apiCreateProducer({ ...producer, projects: [] })
     );
     return createProducer;
   };

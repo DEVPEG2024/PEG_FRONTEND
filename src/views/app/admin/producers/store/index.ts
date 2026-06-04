@@ -1,5 +1,5 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import reducers, { SLICE_NAME, CustomersState } from './producersSlice';
+import reducers, { SLICE_NAME, ProducersState } from './producersSlice';
 import { useSelector } from 'react-redux';
 
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -12,7 +12,7 @@ const reducer = combineReducers({
 export const useAppSelector: TypedUseSelectorHook<
   RootState & {
     [SLICE_NAME]: {
-      data: CustomersState;
+      data: ProducersState;
     };
   }
 > = useSelector;

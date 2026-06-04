@@ -31,11 +31,14 @@ type Option = {
 
 export type ProjectFormModel = Omit<
   Project,
-  'customer' | 'producer' | 'documentId' | 'images'
+  // Champs non gérés par ce wizard (collections/relations chargées ailleurs) — exclus du modèle de formulaire.
+  'customer' | 'producer' | 'documentId' | 'images' | 'customerImages' | 'devis' | 'checklistItems' | 'endDate'
 > & {
   documentId?: string;
   customer: string | null;
   producer: string | null;
+  // endDate nullable côté formulaire tant qu'aucune date de fin n'est saisie ; figée avant écriture.
+  endDate: Date | null;
 };
 
 const StepIndicator = ({ current, total, labels }: { current: number; total: number; labels: string[] }) => (
@@ -173,7 +176,9 @@ function ModalEditProject() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    await dispatch(updateCurrentProject(formData));
+    // formData (ProjectFormModel) porte volontairement customer/producer en documentId (string) pour l'écriture GraphQL.
+    // Le thunk updateCurrentProject attend Partial<Project> et mappe ces relations côté API (apiUpdateProject).
+    await dispatch(updateCurrentProject(formData as unknown as Partial<Project>));
     handleClose();
   };
 

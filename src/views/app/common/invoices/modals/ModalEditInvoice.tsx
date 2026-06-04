@@ -76,7 +76,9 @@ function ModalEditInvoice({
     if (!formData.name?.trim() || formData.amount <= 0 || !formData.state) {
       return;
     }
-    dispatch(updateInvoice(formData));
+    // formData (InvoiceFormModel) porte volontairement customer/orderItems en documentId (string) pour l'écriture GraphQL.
+    // Le thunk updateInvoice attend Partial<Invoice> et mappe ces relations côté API.
+    dispatch(updateInvoice(formData as unknown as Invoice));
   };
 
   const handleClose = () => {

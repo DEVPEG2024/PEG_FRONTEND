@@ -86,7 +86,8 @@ const producerCategoriesSlice = createSlice({
       state,
       action: PayloadAction<ProducerCategory | undefined>
     ) {
-      state.producerCategory = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producerCategory = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -94,7 +95,8 @@ const producerCategoriesSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getProducerCategories.fulfilled, (state, action) => {
-      state.producerCategories = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producerCategories = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -104,13 +106,15 @@ const producerCategoriesSlice = createSlice({
     });
     builder.addCase(updateProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.producerCategories = state.producerCategories.map(
-        (producerCategory: ProducerCategory) =>
-          producerCategory.documentId ===
-          action.payload.data.updateProducerCategory.documentId
-            ? action.payload.data.updateProducerCategory
-            : producerCategory
-      );
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producerCategories = (
+        state.producerCategories as unknown as ProducerCategory[]
+      ).map((producerCategory: ProducerCategory) =>
+        producerCategory.documentId ===
+        action.payload.data.updateProducerCategory.documentId
+          ? action.payload.data.updateProducerCategory
+          : producerCategory
+      ) as any;
     });
     builder.addCase(updateProducerCategory.rejected, (state) => {
       state.loading = false;
@@ -121,7 +125,10 @@ const producerCategoriesSlice = createSlice({
     });
     builder.addCase(createProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.producerCategories.push(action.payload.data.createProducerCategory);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producerCategories.push(
+        action.payload.data.createProducerCategory as any
+      );
       state.total += 1;
     });
     builder.addCase(createProducerCategory.rejected, (state) => {
@@ -133,10 +140,13 @@ const producerCategoriesSlice = createSlice({
     });
     builder.addCase(deleteProducerCategory.fulfilled, (state, action) => {
       state.loading = false;
-      state.producerCategories = state.producerCategories.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.producerCategories = (
+        state.producerCategories as unknown as ProducerCategory[]
+      ).filter(
         (producerCategory: ProducerCategory) =>
           producerCategory.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
   },

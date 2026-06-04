@@ -15,11 +15,11 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const code = searchParams.get('code') ?? '';
 
+  // DefinePassword (react-hook-form) gère lui-même l'état isSubmitting et
+  // n'appelle onFormSubmit qu'avec les valeurs → signature à un seul argument.
   const onFormSubmit = async (
-    values: UserPasswordFormModel,
-    setSubmitting: (isSubmitting: boolean) => void
+    values: UserPasswordFormModel
   ): Promise<void> => {
-    setSubmitting(true);
     try {
       const resp = await apiResetPassword({
         code,
@@ -27,7 +27,6 @@ const ResetPassword = () => {
         passwordConfirmation: values.confirmNewPassword,
       });
       if (resp.data) {
-        setSubmitting(false);
         setPasswordReset(true);
       }
     } catch (errors) {
@@ -35,7 +34,6 @@ const ResetPassword = () => {
         (errors as AxiosError<{ message: string }>)?.response?.data?.message ||
           (errors as Error).toString()
       );
-      setSubmitting(false);
     }
   };
 

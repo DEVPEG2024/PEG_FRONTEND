@@ -310,7 +310,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                     />
                                     <input
                                         placeholder="Nom du contact"
-                                        value={form.contact}
+                                        value={form.contact ?? ''}
                                         onChange={e => set('contact', e.target.value)}
                                         className="text-sm text-gray-500 bg-transparent border-none outline-none placeholder-gray-400 w-full mt-0.5"
                                     />
@@ -350,7 +350,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineMail className="inline w-3 h-3 mr-1" />Email
                                 </label>
-                                <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                                <input type="email" value={form.email ?? ''} onChange={e => set('email', e.target.value)}
                                     placeholder="email@exemple.fr"
                                     className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
@@ -359,7 +359,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlinePhone className="inline w-3 h-3 mr-1" />Téléphone
                                 </label>
-                                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
+                                <input type="tel" value={form.phone ?? ''} onChange={e => set('phone', e.target.value)}
                                     placeholder="06 XX XX XX XX"
                                     className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
@@ -424,7 +424,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineLightningBolt className="inline w-3 h-3 mr-1" />Prochaine action
                                 </label>
-                                <input value={form.nextAction} onChange={e => set('nextAction', e.target.value)}
+                                <input value={form.nextAction ?? ''} onChange={e => set('nextAction', e.target.value)}
                                     placeholder="Appel de suivi, Envoyer devis…"
                                     className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
@@ -444,7 +444,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Notes</label>
                             <textarea
                                 rows={3}
-                                value={form.notes}
+                                value={form.notes ?? ''}
                                 onChange={e => set('notes', e.target.value)}
                                 placeholder="Contexte, besoins identifiés, historique…"
                                 className="w-full text-sm bg-gray-50 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
@@ -667,7 +667,7 @@ const LeadsPage = () => {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        dispatch(getLeads())
+        dispatch(getLeads({}))
     }, [dispatch])
 
     // KPIs
@@ -683,7 +683,7 @@ const LeadsPage = () => {
     // Filtered leads
     const filtered = useMemo(() => leads.filter(l => {
         const q = search.toLowerCase()
-        const matchSearch = !q || l.company.toLowerCase().includes(q) || l.contact.toLowerCase().includes(q)
+        const matchSearch = !q || l.company.toLowerCase().includes(q) || (l.contact?.toLowerCase().includes(q) ?? false)
         const matchStage = filterStage === 'all' || l.stage === filterStage
         const matchSource = filterSource === 'all' || l.source === filterSource
         return matchSearch && matchStage && matchSource

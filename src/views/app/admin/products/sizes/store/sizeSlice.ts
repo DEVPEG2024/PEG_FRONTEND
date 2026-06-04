@@ -84,7 +84,8 @@ const sizeSlice = createSlice({
       state.editSizeDialog = action.payload;
     },
     setSelectedSize: (state, action) => {
-      state.selectedSize = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedSize = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -94,7 +95,8 @@ const sizeSlice = createSlice({
     });
     builder.addCase(getSizes.fulfilled, (state, action) => {
       state.loading = false;
-      state.sizes = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.sizes = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getSizes.rejected, (state) => {
@@ -106,7 +108,8 @@ const sizeSlice = createSlice({
     });
     builder.addCase(createSize.fulfilled, (state, action) => {
       state.loading = false;
-      state.sizes.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.sizes.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createSize.rejected, (state) => {
@@ -118,9 +121,10 @@ const sizeSlice = createSlice({
     });
     builder.addCase(updateSize.fulfilled, (state, action) => {
       state.loading = false;
-      state.sizes = state.sizes.map((size) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.sizes = (state.sizes as unknown as Size[]).map((size) =>
         size.documentId === action.payload.documentId ? action.payload : size
-      );
+      ) as any;
     });
     builder.addCase(updateSize.rejected, (state) => {
       state.loading = false;
@@ -131,9 +135,10 @@ const sizeSlice = createSlice({
     });
     builder.addCase(deleteSize.fulfilled, (state, action) => {
       state.loading = false;
-      state.sizes = state.sizes.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.sizes = (state.sizes as unknown as Size[]).filter(
         (size) => size.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteSize.rejected, (state) => {

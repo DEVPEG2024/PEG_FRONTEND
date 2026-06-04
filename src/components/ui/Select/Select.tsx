@@ -137,6 +137,7 @@ function _Select<
 
   const selectSize = size || inputGroupSize || formControlSize || controlSize;
 
+  const twWhite = '#ffffff';
   const twColor: Record<string, Record<string, string>> = {
     red: { 500: '#ef4444' },
     gray: {
@@ -146,7 +147,6 @@ function _Select<
       700: '#374151',
       800: '#1f2937',
     },
-    white: '#ffffff',
     indigo: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1' },
     blue: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6' },
     emerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981' },
@@ -222,7 +222,7 @@ function _Select<
         menu: (provided) => ({
           ...provided,
           backgroundColor:
-            mode === 'dark' ? twColor.gray['700'] : twColor.white,
+            mode === 'dark' ? twColor.gray['700'] : twWhite,
           zIndex: 50,
         }),
         option: (provided, state) => ({
@@ -233,11 +233,11 @@ function _Select<
               : twColor.gray['100']
             : mode === 'dark'
               ? twColor.gray['700']
-              : twColor.white,
+              : twWhite,
           color: mode === 'dark' ? twColor.gray['100'] : twColor.gray['800'],
           '&:active': {
             backgroundColor: twColor[themeColor][primaryColorLevel],
-            color: twColor.white,
+            color: twWhite,
           },
         }),
         ...style,

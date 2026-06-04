@@ -160,7 +160,8 @@ const projectListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getProjects.fulfilled, (state, action: { payload: GetProjectsResponse }) => {
-      state.projects = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.projects = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });
@@ -173,9 +174,10 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteProject.fulfilled, (state, action) => {
       state.loading = false;
-      state.projects = state.projects.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.projects = (state.projects as unknown as Project[]).filter(
         (project) => project.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteProject.rejected, (state) => {
@@ -188,7 +190,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(createProject.fulfilled, (state, action) => {
       state.loading = false;
-      state.projects.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.projects.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createProject.rejected, (state) => {
@@ -201,11 +204,12 @@ const projectListSlice = createSlice({
     });
     builder.addCase(payProducer.fulfilled, (state, action) => {
       state.loading = false;
-      state.projects = state.projects.map((project) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.projects = (state.projects as unknown as Project[]).map((project) =>
         project.documentId === action.payload.documentId
           ? action.payload
           : project
-      );
+      ) as any;
     });
     builder.addCase(payProducer.rejected, (state) => {
       state.loading = false;

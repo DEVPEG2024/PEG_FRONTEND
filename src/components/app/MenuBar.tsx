@@ -22,7 +22,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
         selector: menuBarStateSelector,
     })
 
-    if (!editor) {
+    if (!editor || !editorState) {
         return null
     }
 

@@ -11,24 +11,17 @@ import { HiCamera, HiOutlineUser } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import { AiOutlineSave } from 'react-icons/ai';
 
-type UserFormModel = Omit<
-  User,
-  | 'role'
-  | 'customer'
-  | 'producer'
-  | 'authority'
-  | 'id'
-  | 'documentId'
-  | 'blocked'
-  | 'avatar'
->;
+// Champs éditables du profil (sous-ensemble de User effectivement géré par le form)
+type UserFormModel = Pick<User, 'username' | 'email' | 'firstName' | 'lastName'> & {
+  jobTitle?: string;
+};
 
-const validationSchema = Yup.object().shape({
+const validationSchema: Yup.ObjectSchema<UserFormModel> = Yup.object().shape({
   username: Yup.string().required("Nom d'utilisateur requis"),
   firstName: Yup.string().required('Prénom requis'),
   lastName: Yup.string().required('Nom requis'),
   email: Yup.string().email('Email invalide').required('Email requis'),
-  jobTitle: Yup.string(),
+  jobTitle: Yup.string().optional(),
 });
 
 const inputStyle: React.CSSProperties = {

@@ -104,7 +104,7 @@ const DashboardProducer = () => {
 
   useEffect(() => {
     if (user) {
-      apiGetPoolProjects({ user, pagination: { page: 1, pageSize: 1 }, searchTerm: '' })
+      apiGetPoolProjects({ pagination: { page: 1, pageSize: 1 }, searchTerm: '' })
         .then((res: any) => {
           const total = res?.data?.data?.projects_connection?.pageInfo?.total ?? 0;
           setPoolCount(total);

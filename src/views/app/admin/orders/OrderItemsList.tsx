@@ -15,7 +15,7 @@ import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetProductForShowById } from '@/services/ProductServices';
-import { apiCreateProject } from '@/services/ProjectServices';
+import { apiCreateProject, CreateProjectRequest } from '@/services/ProjectServices';
 import { apiUpdateOrderItem } from '@/services/OrderItemServices';
 import { ChecklistItem } from '@/@types/checklist';
 import { Project } from '@/@types/project';
@@ -147,6 +147,8 @@ const OrderItemsList = () => {
       const checklistItems: ChecklistItem[] =
         product?.checklist?.items?.map((label: string) => ({ label, done: false })) ?? [];
       const { createProject }: { createProject: Project } = await unwrapData(
+        // Création minimale : les collections non pertinentes (customerImages, devis) ne sont pas envoyées ;
+        // apiCreateProject ne mappe que les champs fournis vers l'input Strapi.
         apiCreateProject({
           name: `Projet - ${orderItem.product?.name ?? ''}`,
           description: '',
@@ -154,6 +156,7 @@ const OrderItemsList = () => {
           endDate: new Date(),
           state: 'pending',
           customer: orderItem.customer,
+          // null = aucun producteur assigné à la création ; Strapi accepte null pour la relation.
           producer: null,
           priority: 'low',
           price: orderItem.price,
@@ -167,7 +170,7 @@ const OrderItemsList = () => {
           poolable: false,
           orderItem: orderItem,
           checklistItems,
-        })
+        } as unknown as CreateProjectRequest)
       );
       await apiUpdateOrderItem({
         documentId: orderItem.documentId,

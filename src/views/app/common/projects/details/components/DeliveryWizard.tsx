@@ -100,7 +100,8 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
       await dispatch(updateCurrentProject(updateData));
 
       // Send notification to customer
-      const senderId = user?.documentId || user?.id || user?._id;
+      const rawSenderId = user?.documentId || user?.id || user?._id;
+      const senderId = rawSenderId != null ? String(rawSenderId) : undefined;
       if (senderId && project.customer?.documentId) {
         triggerNotification({
           eventType: 'project_status_change',

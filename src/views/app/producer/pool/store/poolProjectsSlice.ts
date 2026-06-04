@@ -50,7 +50,8 @@ const poolProjectListSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(getPoolProjects.fulfilled, (state, action) => {
-      state.projects = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.projects = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
       state.loading = false;
     });

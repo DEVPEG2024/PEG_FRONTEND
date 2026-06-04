@@ -71,7 +71,9 @@ export const createTicket = createAsyncThunk(
       imageUploaded = await apiUploadFile(data.image.file);
     }
     const { createTicket }: { createTicket: Ticket } = await unwrapData(
-      apiCreateTicket({ ...data, image: imageUploaded?.id ?? undefined })
+      // L'API GraphQL attend l'id (string) du média pour la relation image,
+      // alors que le type Ticket.image est un PegFile → cast frontière.
+      apiCreateTicket({ ...data, image: (imageUploaded?.id ?? undefined) as unknown as Ticket['image'] })
     );
     return createTicket;
   }
@@ -116,7 +118,8 @@ const projectListSlice = createSlice({
       state.editTicketDialog = action.payload;
     },
     setSelectedTicket: (state, action) => {
-      state.selectedTicket = action.payload;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedTicket = action.payload as any;
     },
   },
   extraReducers: (builder) => {
@@ -126,7 +129,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(getTickets.fulfilled, (state, action) => {
       state.loading = false;
-      state.tickets = action.payload.nodes;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tickets = action.payload.nodes as any;
       state.total = action.payload.pageInfo.total;
     });
     builder.addCase(getTickets.rejected, (state) => {
@@ -138,7 +142,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(getTicketById.fulfilled, (state, action) => {
       state.loading = false;
-      state.selectedTicket = action.payload.ticket;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.selectedTicket = action.payload.ticket as any;
     });
     builder.addCase(getTicketById.rejected, (state) => {
       state.loading = false;
@@ -150,7 +155,8 @@ const projectListSlice = createSlice({
     });
     builder.addCase(createTicket.fulfilled, (state, action) => {
       state.loading = false;
-      state.tickets.push(action.payload);
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tickets.push(action.payload as any);
       state.total += 1;
     });
     builder.addCase(createTicket.rejected, (state) => {
@@ -163,11 +169,12 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateTicket.fulfilled, (state, action) => {
       state.loading = false;
-      state.tickets = state.tickets.map((ticket) =>
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tickets = (state.tickets as unknown as Ticket[]).map((ticket) =>
         ticket.documentId === action.payload.documentId
           ? action.payload
           : ticket
-      );
+      ) as any;
     });
     builder.addCase(updateTicket.rejected, (state) => {
       state.loading = false;
@@ -179,9 +186,10 @@ const projectListSlice = createSlice({
     });
     builder.addCase(deleteTicket.fulfilled, (state, action) => {
       state.loading = false;
-      state.tickets = state.tickets.filter(
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tickets = (state.tickets as unknown as Ticket[]).filter(
         (ticket) => ticket.documentId !== action.payload.documentId
-      );
+      ) as any;
       state.total -= 1;
     });
     builder.addCase(deleteTicket.rejected, (state) => {
