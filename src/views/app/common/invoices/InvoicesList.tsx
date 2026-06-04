@@ -258,14 +258,19 @@ const InvoicesList = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* ── Hero ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', paddingTop: '24px', marginBottom: '24px' }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={{ color: '#8b7dff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '8px' }}>Finance</p>
-          <h2 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            Factures <span style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '15px', fontWeight: 600, borderRadius: '100px', padding: '3px 11px' }}>{total}</span>
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: 0, maxWidth: '440px' }}>
+      {/* ── Bannière ── */}
+      <div style={{
+        position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
+        padding: '34px 36px', marginTop: '24px', marginBottom: '24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px',
+        background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
+      }}>
+        <div style={{ position: 'relative', zIndex: 2, minWidth: 0, maxWidth: '560px' }}>
+          <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>FINANCE</p>
+          <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+            FACTURES. PAIEMENTS. <span style={{ color: '#a78bfa' }}>SÉRÉNITÉ.</span>
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
             Retrouvez l'ensemble de vos factures, paiements et documents comptables en un seul endroit.
           </p>
         </div>
