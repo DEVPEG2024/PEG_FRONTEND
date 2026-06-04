@@ -1,6 +1,7 @@
 import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import { Role, User } from '@/@types/user'
+import { getTokenUserId } from '@/utils/jwt'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { AxiosResponse } from 'axios'
 import { Customer } from '@/@types/customer'
@@ -14,6 +15,16 @@ export async function getUser(token: string) : Promise<UserWithId>{
         url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer&populate[3]=avatar',
         headers: {'Authorization': `Bearer ${token}`}
     })
+    // Garde-fou identité : le profil renvoyé DOIT correspondre au token utilisé.
+    // Si /users/me renvoie un autre utilisateur que celui porté par le JWT
+    // (proxy/cache/token croisé), on refuse — jamais afficher un mauvais rôle.
+    const tokenUserId = getTokenUserId(token)
+    if (tokenUserId != null && data?.id !== tokenUserId) {
+        throw new Error('IDENTITY_MISMATCH')
+    }
+    if (!data?.role?.name) {
+        throw new Error('ROLE_MISSING')
+    }
     return {...data, authority: [data.role.name]}
 }
 

@@ -29,6 +29,13 @@ const BaseService = axios.create({
 
 BaseService.interceptors.request.use(
     (config) => {
+        // Si l'appelant a fourni un token explicite (ex: getUser() au login),
+        // il fait FOI : on ne l'écrase jamais avec le token de session. Cela
+        // garantit que /users/me part avec le token du compte qui se connecte.
+        if (config.headers?.[REQUEST_HEADER_AUTH_KEY]) {
+            return config
+        }
+
         // Source de vérité = le store Redux (à jour immédiatement après un
         // dispatch). Le localStorage persisté n'est utilisé qu'en repli car son
         // écriture est asynchrone/différée : s'y fier en priorité faisait qu'un

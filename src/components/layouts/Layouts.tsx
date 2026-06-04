@@ -1,7 +1,8 @@
-import { useMemo, Suspense } from 'react'
+import { useEffect, useMemo, Suspense } from 'react'
 import lazy from '@/utils/lazyWithRetry'
 import Loading from '@/components/shared/Loading'
-import { useAppSelector } from '@/store'
+import { signOutSuccess, useAppDispatch, useAppSelector } from '@/store'
+import useAuthBootstrap from '@/utils/hooks/useAuthBootstrap'
 import {
     LAYOUT_TYPE_CLASSIC,
     LAYOUT_TYPE_MODERN,
@@ -29,11 +30,26 @@ const layouts = {
 const Layout = () => {
     const layoutType = useAppSelector((state) => state.theme.layout.type)
     const authority = useAppSelector((state) => state.auth.user.user.authority) as string[]
+    const dispatch = useAppDispatch()
 
     const { authenticated } = useAuth()
+    // Confirme auprès du serveur que le profil en store appartient bien au token
+    // courant. Tant que ce n'est pas confirmé, on ne rend AUCUNE partie de
+    // l'interface authentifiée (ni sidebar, ni contenu) → impossible d'afficher
+    // le rôle d'une autre session (ex: admin pour un client).
+    const { identityConfirmed, failed } = useAuthBootstrap()
 
     useDirection()
     useLocale()
+
+    // Identité impossible à confirmer (token invalide/croisé, /users/me KO) :
+    // on déconnecte plutôt que de risquer d'afficher un mauvais rôle.
+    useEffect(() => {
+        if (authenticated && failed && !identityConfirmed) {
+            dispatch(signOutSuccess())
+            sessionStorage.removeItem('token')
+        }
+    }, [authenticated, failed, identityConfirmed, dispatch])
 
     const AppLayout = useMemo(() => {
         if (authenticated) {
@@ -43,6 +59,15 @@ const Layout = () => {
     }, [layoutType, authenticated])
 
     const isCustomer = authenticated && authority?.includes(CUSTOMER)
+
+    // Coquille authentifiée en attente de confirmation d'identité → plein écran.
+    if (authenticated && !identityConfirmed) {
+        return (
+            <div className="flex flex-auto flex-col h-screen">
+                <Loading loading={true} />
+            </div>
+        )
+    }
 
     return (
         <Suspense
