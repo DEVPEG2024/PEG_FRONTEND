@@ -10,6 +10,30 @@ export const PREMIUM_PRICE_HT = 250;
 // Engagement minimum de l'abonnement Premium (en mois) — aligné avec le backend.
 export const PREMIUM_MIN_MONTHS = 6;
 
+// peg-backend Express (appel direct, pas de credentials) — comme les vues projet.
+const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
+
+// Enregistre la preuve d'acceptation du contrat Premium (trace juridique horodatée côté backend).
+// Best-effort : on ne bloque pas le paiement si la trace échoue, mais on logge.
+export async function apiRecordPremiumContractAcceptance(params: {
+  customerId: string;
+  customerName?: string;
+  email?: string;
+  contractVersion: string;
+}): Promise<boolean> {
+  try {
+    const res = await fetch(PEG_BACKEND_URL + '/premium/contract-accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('[Premium] Échec enregistrement acceptation contrat:', e);
+    return false;
+  }
+}
+
 // Date à partir de laquelle la résiliation est possible (fin de l'engagement)
 export function premiumCancellableFrom(premiumSince?: string | null): Date | null {
   if (!premiumSince) return null;

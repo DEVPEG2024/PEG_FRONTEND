@@ -9,11 +9,18 @@ import { TbArrowLeft, TbCrown, TbCheck, TbDiscount, TbGift } from 'react-icons/t
 import {
   apiStartPremiumCheckout,
   apiCancelPremium,
+  apiRecordPremiumContractAcceptance,
   PREMIUM_PRICE_HT,
   PREMIUM_MIN_MONTHS,
   canCancelPremium,
   premiumCancellableFrom,
 } from '@/services/PremiumServices';
+import {
+  PREMIUM_CONTRACT_TEXT,
+  PREMIUM_CONTRACT_TITLE,
+  PREMIUM_CONTRACT_VERSION,
+  downloadPremiumContract,
+} from './contract';
 
 const GOLD = '#eab308';
 
@@ -32,6 +39,8 @@ const PremiumPage = () => {
   const customerDocumentId = user?.customer?.documentId;
 
   const [busy, setBusy] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [showContract, setShowContract] = useState(false);
   const paidHandledRef = useRef<string | null>(null);
 
   const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
@@ -61,8 +70,19 @@ const PremiumPage = () => {
       toast.error('Profil client introuvable.');
       return;
     }
+    if (!accepted) {
+      toast.info('Veuillez accepter le contrat Premium avant de payer.');
+      return;
+    }
     setBusy(true);
     try {
+      // Trace juridique : on enregistre l'acceptation du contrat AVANT le paiement (best-effort).
+      await apiRecordPremiumContractAcceptance({
+        customerId: customerDocumentId,
+        customerName: user?.customer?.name || `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+        email: user?.email || user?.customer?.companyInformations?.email,
+        contractVersion: PREMIUM_CONTRACT_VERSION,
+      });
       const { id } = await apiStartPremiumCheckout(customerDocumentId, token as string);
       const stripe = await loadStripe(env?.STRIPE_PUBLIC_KEY as string);
       if (!stripe || !id) throw new Error('stripe');
@@ -170,28 +190,116 @@ const PremiumPage = () => {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <span style={{ color: '#fff', fontSize: '28px', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> HT / mois</span>
-                <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                  soit {priceTTC} € TTC / mois · engagement {PREMIUM_MIN_MONTHS} mois minimum
-                </p>
-              </div>
-              <button onClick={handleSubscribe} disabled={busy} style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                background: `linear-gradient(90deg, ${GOLD}, #ca8a04)`, border: 'none', borderRadius: '12px',
-                padding: '14px 24px', color: '#1a1505', fontSize: '15px', fontWeight: 800,
-                cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.7 : 1,
-                fontFamily: 'Inter, sans-serif', boxShadow: `0 6px 20px ${GOLD}55`,
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Acceptation du contrat — obligatoire avant paiement */}
+              <label htmlFor="premium-contract-accept" style={{
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px', padding: '12px 14px', cursor: 'pointer',
               }}>
-                <TbCrown size={18} />
-                {busy ? 'Redirection…' : 'Passer en Premium'}
-              </button>
+                <input
+                  id="premium-contract-accept"
+                  type="checkbox"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                  style={{ marginTop: '2px', width: '16px', height: '16px', accentColor: GOLD, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: 1.5 }}>
+                  J'ai lu et j'accepte le{' '}
+                  <button type="button" onClick={(e) => { e.preventDefault(); setShowContract(true); }} style={{
+                    background: 'none', border: 'none', padding: 0, color: GOLD, fontWeight: 700,
+                    textDecoration: 'underline', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px',
+                  }}>
+                    contrat d'abonnement Premium
+                  </button>
+                  {' '}(v{PREMIUM_CONTRACT_VERSION}).{' '}
+                  <button type="button" onClick={(e) => { e.preventDefault(); downloadPremiumContract(); }} style={{
+                    background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.5)', fontWeight: 600,
+                    textDecoration: 'underline', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12.5px',
+                  }}>
+                    Télécharger
+                  </button>
+                </span>
+              </label>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <span style={{ color: '#fff', fontSize: '28px', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> HT / mois</span>
+                  <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                    soit {priceTTC} € TTC / mois · engagement {PREMIUM_MIN_MONTHS} mois minimum
+                  </p>
+                </div>
+                <button onClick={handleSubscribe} disabled={busy || !accepted} title={!accepted ? 'Acceptez le contrat pour continuer' : undefined} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: `linear-gradient(90deg, ${GOLD}, #ca8a04)`, border: 'none', borderRadius: '12px',
+                  padding: '14px 24px', color: '#1a1505', fontSize: '15px', fontWeight: 800,
+                  cursor: busy ? 'wait' : (accepted ? 'pointer' : 'not-allowed'), opacity: (busy || !accepted) ? 0.55 : 1,
+                  fontFamily: 'Inter, sans-serif', boxShadow: `0 6px 20px ${GOLD}55`,
+                }}>
+                  <TbCrown size={18} />
+                  {busy ? 'Redirection…' : 'Passer en Premium'}
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Modale : contrat complet */}
+      {showContract && (
+        <div
+          onClick={() => setShowContract(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#0d1018', border: '1px solid rgba(234,179,8,0.25)', borderRadius: '16px',
+              maxWidth: '720px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 800 }}>{PREMIUM_CONTRACT_TITLE}</h3>
+              <button onClick={() => setShowContract(false)} style={{
+                background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '22px',
+                cursor: 'pointer', lineHeight: 1, padding: 0,
+              }}>×</button>
+            </div>
+            <div style={{
+              padding: '20px', overflowY: 'auto', whiteSpace: 'pre-wrap',
+              color: 'rgba(255,255,255,0.75)', fontSize: '12.5px', lineHeight: 1.6, fontFamily: 'Inter, sans-serif',
+            }}>
+              {PREMIUM_CONTRACT_TEXT}
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap',
+            }}>
+              <button onClick={downloadPremiumContract} style={{
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
+                padding: '10px 16px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              }}>
+                Télécharger le contrat
+              </button>
+              <button onClick={() => { setAccepted(true); setShowContract(false); }} style={{
+                background: `linear-gradient(90deg, ${GOLD}, #ca8a04)`, border: 'none', borderRadius: '10px',
+                padding: '10px 18px', color: '#1a1505', fontSize: '13px', fontWeight: 800,
+                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              }}>
+                J'accepte le contrat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
