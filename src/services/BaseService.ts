@@ -29,15 +29,18 @@ const BaseService = axios.create({
 
 BaseService.interceptors.request.use(
     (config) => {
-        const rawPersistData = localStorage.getItem(PERSIST_STORE_NAME)
-        const persistData = deepParseJson(rawPersistData)
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let accessToken = (persistData as any).auth.session.token
+        // Source de vérité = le store Redux (à jour immédiatement après un
+        // dispatch). Le localStorage persisté n'est utilisé qu'en repli car son
+        // écriture est asynchrone/différée : s'y fier en priorité faisait qu'un
+        // login client partait avec le token de la session précédente (admin),
+        // donc /users/me renvoyait le mauvais profil → interface admin.
+        let accessToken = store.getState().auth.session.token
 
         if (!accessToken) {
-            const { auth } = store.getState()
-            accessToken = auth.session.token
+            const rawPersistData = localStorage.getItem(PERSIST_STORE_NAME)
+            const persistData = deepParseJson(rawPersistData)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            accessToken = (persistData as any)?.auth?.session?.token
         }
 
         if (accessToken) {

@@ -39,9 +39,15 @@ function useAuth() {
             const resp = await apiSignIn(values)
             if (resp.data) {
                 const { jwt: token } = resp.data
-                const user: User = await getUser(token)
+                // ⚠️ Établir le token de CETTE session AVANT tout appel
+                // authentifié : l'intercepteur BaseService lit le token du store.
+                // Si getUser() partait avant, il utilisait le token persisté de
+                // la session précédente → /users/me renvoyait le mauvais profil
+                // (ex: admin) et le client atterrissait sur l'interface admin.
                 dispatch(signInSuccess(token))
                 sessionStorage.setItem('token', token)
+
+                const user: User = await getUser(token)
                 if (user) {
                     dispatch(setOwnUser(user))
                     const userRole = user.authority[0]
@@ -50,17 +56,25 @@ function useAuth() {
                     } else {
                         navigate("/")
                     }
+                    return {
+                        status: 'success',
+                        message: '',
+                    }
                 }
-                // navigate(
-                //     redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath
-                // )
+                // getUser n'a pas renvoyé d'utilisateur → ne pas laisser une
+                // session à moitié ouverte.
+                dispatch(signOutSuccess())
+                sessionStorage.removeItem('token')
                 return {
-                    status: 'success',
-                    message: '',
+                    status: 'failed',
+                    message: 'Utilisateur introuvable',
                 }
             }
             // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         } catch (errors: any) {
+            // Échec d'authentification : purger toute session partielle.
+            dispatch(signOutSuccess())
+            sessionStorage.removeItem('token')
             return {
                 status: 'failed',
                 message: errors?.response?.data?.message || errors.toString(),
