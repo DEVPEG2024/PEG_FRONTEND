@@ -19,7 +19,6 @@ import { apiCreateProject } from '@/services/ProjectServices';
 import { apiCreateInvoice, apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
-import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 const fmtDate = (d?: string | null) => {
   if (!d) return '—';
@@ -71,7 +70,7 @@ const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: an
 
 /* ── Illustration hero (presse-papiers DEVIS + stylo + bulle + €) ── */
 const HeroArt = () => (
-  <svg width="300" height="170" viewBox="0 0 300 170" fill="none" style={{ flexShrink: 0, maxWidth: '40%', height: 'auto' }} aria-hidden>
+  <svg width="320" height="182" viewBox="0 0 300 170" fill="none" style={{ display: 'block', height: 'auto' }} aria-hidden>
     <defs>
       <linearGradient id="devG" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#6d5dfc" /><stop offset="1" stopColor="#4534c9" />
@@ -578,23 +577,31 @@ const QuotesList = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* ── Bannière (CMS, comme Projets / Offres) ── */}
-      <div style={{ paddingTop: '24px' }}>
-        <CatalogueBanner bannerName="Bannière devis" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
-      </div>
-
-      {/* ── Hero ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', marginBottom: '24px' }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={{ color: '#8b7dff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '8px' }}>Devis</p>
-          <h2 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {isAdmin ? 'Devis' : 'Mes devis'} <span style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '15px', fontWeight: 600, borderRadius: '100px', padding: '3px 11px' }}>{quotes.length}</span>
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: 0, maxWidth: '440px' }}>
+      {/* ── Bannière par défaut (comme Tickets / Fichiers) ── */}
+      <div style={{
+        position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
+        padding: '34px 36px', marginTop: '24px', marginBottom: '22px',
+        background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
+      }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: '560px' }}>
+          <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>DEVIS</p>
+          <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+            DEMANDEZ. COMPAREZ. <span style={{ color: '#a78bfa' }}>VALIDEZ.</span>
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5, maxWidth: '460px' }}>
             Consultez, comparez et suivez vos demandes de devis en toute simplicité.
           </p>
         </div>
-        <HeroArt />
+        {!isAdmin && (
+          <button onClick={() => navigate('/customer/devis')}
+            style={{ position: 'absolute', top: '28px', right: '32px', zIndex: 3, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #6d5dfc, #5a47e0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(109,93,252,0.35)' }}>
+            <TbSend size={16} /> Demander un devis
+          </button>
+        )}
+        <div className="devis-hero-art" style={{ position: 'absolute', right: '36px', bottom: '-8px', zIndex: 1, pointerEvents: 'none', opacity: 0.95 }}>
+          <HeroArt />
+        </div>
+        <style>{`@media (max-width: 1024px){ .devis-hero-art{ display:none; } }`}</style>
       </div>
 
       {/* ── KPI ── */}
