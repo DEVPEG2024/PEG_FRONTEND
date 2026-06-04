@@ -71,11 +71,21 @@ function useAuth() {
     const handleSignOut = () => {
         dispatch(signOutSuccess())
         dispatch(
+            // Réinitialisation COMPLÈTE de l'identité : on purge aussi `role`,
+            // `customer` et `producer`. Sinon le rôle (ex: admin) reste en
+            // localStorage via redux-persist et « fuit » sur la session
+            // suivante → un client pouvait atterrir sur l'interface admin après
+            // un hard refresh.
             setOwnUser({
                 avatar: undefined,
                 username: '',
                 email: '',
+                firstName: '',
+                lastName: '',
                 authority: [],
+                customer: undefined,
+                producer: undefined,
+                role: { documentId: '', description: 'public', name: 'public', type: 'public' },
             })
         )
         sessionStorage.removeItem('token')
