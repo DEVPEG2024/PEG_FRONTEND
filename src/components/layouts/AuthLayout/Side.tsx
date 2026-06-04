@@ -1,4 +1,5 @@
 import { cloneElement } from 'react'
+import { useLocation } from 'react-router-dom'
 import Logo from '@/components/template/Logo'
 import { APP_NAME } from '@/constants/app.constant'
 import type { CommonProps } from '@/@types/common'
@@ -8,6 +9,15 @@ interface SideProps extends CommonProps {
 }
 
 const Side = ({ children, content, ...rest }: SideProps) => {
+    const { pathname } = useLocation()
+
+    // La page de connexion gère son propre layout plein écran (split-screen).
+    if (pathname.startsWith('/sign-in')) {
+        return children
+            ? cloneElement(children as React.ReactElement, { ...rest })
+            : null
+    }
+
     return (
         <div
             style={{

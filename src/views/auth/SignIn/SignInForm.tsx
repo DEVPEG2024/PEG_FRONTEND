@@ -4,8 +4,10 @@ import useAuth from '@/utils/hooks/useAuth';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
+import { toast } from 'react-toastify';
 import type { CommonProps } from '@/@types/common';
-import { HiEye, HiEyeOff } from 'react-icons/hi';
+import { HiEye, HiEyeOff, HiOutlineMail, HiOutlineLockClosed, HiArrowRight } from 'react-icons/hi';
+import { FcGoogle } from 'react-icons/fc';
 
 interface SignInFormProps extends CommonProps {
   disableSubmit?: boolean;
@@ -28,34 +30,54 @@ const validationSchema = Yup.object().shape({
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '10px',
-  padding: '11px 14px',
-  color: '#fff',
+  background: '#fff',
+  border: '1.5px solid #e5e7eb',
+  borderRadius: '12px',
+  padding: '14px 14px 14px 46px',
+  color: '#0f172a',
   fontSize: '14px',
   fontFamily: 'Inter, sans-serif',
   outline: 'none',
-  transition: 'border-color 0.15s',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
   boxSizing: 'border-box',
 };
 
 const labelStyle: React.CSSProperties = {
-  color: 'rgba(255,255,255,0.5)',
-  fontSize: '12px',
+  color: '#334155',
+  fontSize: '13px',
   fontWeight: 600,
-  letterSpacing: '0.04em',
-  marginBottom: '6px',
+  marginBottom: '8px',
   display: 'block',
   fontFamily: 'Inter, sans-serif',
 };
 
 const errorStyle: React.CSSProperties = {
-  color: '#f87171',
-  fontSize: '11px',
-  marginTop: '4px',
+  color: '#dc2626',
+  fontSize: '12px',
+  marginTop: '6px',
   fontFamily: 'Inter, sans-serif',
 };
+
+const iconStyle: React.CSSProperties = {
+  position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)',
+  color: '#94a3b8', pointerEvents: 'none', display: 'flex',
+};
+
+const socialBtn: React.CSSProperties = {
+  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+  height: '48px', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '12px',
+  color: '#0f172a', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+  fontFamily: 'Inter, sans-serif', transition: 'background 0.15s, border-color 0.15s',
+};
+
+const MicrosoftLogo = () => (
+  <svg width="17" height="17" viewBox="0 0 23 23" aria-hidden>
+    <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+    <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
+    <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
+    <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+  </svg>
+);
 
 const SignInForm = (props: SignInFormProps) => {
   const {
@@ -85,17 +107,26 @@ const SignInForm = (props: SignInFormProps) => {
     }
   };
 
+  const focusOn = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = '#6d5dfc';
+    e.target.style.boxShadow = '0 0 0 3px rgba(109,93,252,0.12)';
+  };
+  const focusOff = (e: React.FocusEvent<HTMLInputElement>, hasError?: boolean) => {
+    e.target.style.borderColor = hasError ? '#fca5a5' : '#e5e7eb';
+    e.target.style.boxShadow = 'none';
+  };
+
   return (
     <div className={className} style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Error message */}
       {message && (
         <div style={{
-          background: 'rgba(239,68,68,0.1)',
-          border: '1px solid rgba(239,68,68,0.25)',
-          borderRadius: '10px',
+          background: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '12px',
           padding: '12px 14px',
           marginBottom: '20px',
-          color: '#f87171',
+          color: '#dc2626',
           fontSize: '13px',
         }}>
           {message}
@@ -105,7 +136,7 @@ const SignInForm = (props: SignInFormProps) => {
       <form onSubmit={handleSubmit(async (values) => {
         if (!disableSubmit) await onSignIn(values);
       })}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Email */}
           <div>
@@ -114,18 +145,18 @@ const SignInForm = (props: SignInFormProps) => {
               name="email"
               control={control}
               render={({ field }) => (
-                <input
-                  {...field}
-                  type="email"
-                  autoComplete="off"
-                  placeholder="vous@exemple.com"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.email ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)',
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
-                  onBlur={(e) => { e.target.style.borderColor = errors.email ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={iconStyle}><HiOutlineMail size={18} /></span>
+                  <input
+                    {...field}
+                    type="email"
+                    autoComplete="off"
+                    placeholder="ex: carto@mypeg.fr"
+                    style={{ ...inputStyle, borderColor: errors.email ? '#fca5a5' : '#e5e7eb' }}
+                    onFocus={focusOn}
+                    onBlur={(e) => { focusOff(e, !!errors.email); field.onBlur(); }}
+                  />
+                </div>
               )}
             />
             {errors.email && <p style={errorStyle}>{errors.email.message}</p>}
@@ -139,30 +170,27 @@ const SignInForm = (props: SignInFormProps) => {
               control={control}
               render={({ field }) => (
                 <div style={{ position: 'relative' }}>
+                  <span style={iconStyle}><HiOutlineLockClosed size={18} /></span>
                   <input
                     {...field}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="off"
                     placeholder="••••••••"
-                    style={{
-                      ...inputStyle,
-                      paddingRight: '42px',
-                      borderColor: errors.password ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)',
-                    }}
-                    onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
-                    onBlur={(e) => { e.target.style.borderColor = errors.password ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
+                    style={{ ...inputStyle, paddingRight: '46px', borderColor: errors.password ? '#fca5a5' : '#e5e7eb' }}
+                    onFocus={focusOn}
+                    onBlur={(e) => { focusOff(e, !!errors.password); field.onBlur(); }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     style={{
-                      position: 'absolute', right: '12px', top: '50%',
+                      position: 'absolute', right: '14px', top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',
+                      color: '#94a3b8', padding: 0, display: 'flex',
                     }}
                   >
-                    {showPassword ? <HiEyeOff size={16} /> : <HiEye size={16} />}
+                    {showPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
                   </button>
                 </div>
               )}
@@ -176,31 +204,30 @@ const SignInForm = (props: SignInFormProps) => {
               name="rememberMe"
               control={control}
               render={({ field }) => (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer' }}>
                   <div
                     onClick={() => field.onChange(!field.value)}
                     style={{
-                      width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-                      background: field.value ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${field.value ? 'rgba(47,111,237,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                      width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0,
+                      background: field.value ? 'linear-gradient(135deg, #6d5dfc, #4f3fd1)' : '#fff',
+                      border: `1.5px solid ${field.value ? '#6d5dfc' : '#cbd5e1'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.15s',
-                      cursor: 'pointer',
+                      transition: 'all 0.15s', cursor: 'pointer',
                     }}
                   >
                     {field.value && (
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </div>
-                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Se souvenir de moi</span>
+                  <span style={{ color: '#475569', fontSize: '13.5px', fontWeight: 500 }}>Se souvenir de moi</span>
                 </label>
               )}
             />
             <a
               href={forgotPasswordUrl}
-              style={{ color: '#6b9eff', fontSize: '13px', textDecoration: 'none', fontWeight: 500 }}
+              style={{ color: '#5b4de0', fontSize: '13.5px', textDecoration: 'none', fontWeight: 600 }}
             >
               Mot de passe oublié ?
             </a>
@@ -212,22 +239,54 @@ const SignInForm = (props: SignInFormProps) => {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              background: isSubmitting ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              background: isSubmitting ? '#a5acef' : 'linear-gradient(135deg, #6d5dfc 0%, #4f3fd1 100%)',
               border: 'none',
-              borderRadius: '10px',
-              padding: '13px',
+              borderRadius: '12px',
+              padding: '15px',
               color: '#fff',
-              fontSize: '14px',
+              fontSize: '15px',
               fontWeight: 700,
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              boxShadow: isSubmitting ? 'none' : '0 4px 16px rgba(47,111,237,0.4)',
+              boxShadow: isSubmitting ? 'none' : '0 8px 24px rgba(109,93,252,0.35)',
               transition: 'all 0.15s',
               fontFamily: 'Inter, sans-serif',
-              letterSpacing: '0.01em',
             }}
+            onMouseEnter={(e) => { if (!isSubmitting) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             {isSubmitting ? 'Connexion...' : 'Se connecter'}
+            {!isSubmitting && <HiArrowRight size={18} />}
           </button>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '2px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+            <span style={{ color: '#94a3b8', fontSize: '12.5px', fontWeight: 500 }}>ou continuer avec</span>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+          </div>
+
+          {/* Social */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              type="button"
+              style={socialBtn}
+              onClick={() => toast.info('Connexion via Google bientôt disponible')}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+            >
+              <FcGoogle size={19} /> Google
+            </button>
+            <button
+              type="button"
+              style={socialBtn}
+              onClick={() => toast.info('Connexion via Microsoft bientôt disponible')}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+            >
+              <MicrosoftLogo /> Microsoft
+            </button>
+          </div>
 
         </div>
       </form>
