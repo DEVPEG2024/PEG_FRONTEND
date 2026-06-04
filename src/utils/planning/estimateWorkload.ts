@@ -12,7 +12,7 @@ import { Project } from '@/@types/project';
  * temps DISPONIBLE (utilisé pour la marge dans le scheduler), pas l'effort.
  */
 
-export type WorkloadSource = 'producer' | 'tasks' | 'default';
+export type WorkloadSource = 'manual' | 'producer' | 'tasks' | 'default';
 
 export type WorkloadEstimate = {
   /** Effort estimé en jours ouvrés */
@@ -43,7 +43,16 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-export function estimateWorkload(project: Project): WorkloadEstimate {
+export function estimateWorkload(project: Project, manualDays?: number): WorkloadEstimate {
+  // 0. Override manuel saisi par un admin — priorité absolue (Phase 1)
+  if (manualDays != null && manualDays > 0) {
+    return {
+      days: round1(manualDays),
+      source: 'manual',
+      label: 'durée saisie manuellement par un admin',
+    };
+  }
+
   const weight = priorityWeight(project.priority);
 
   // 1. Signal le plus fiable : délai moyen connu du producteur assigné

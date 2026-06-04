@@ -122,7 +122,8 @@ function urgencyScore(
  */
 export function analyzeProjects(
   projects: Project[],
-  today = new Date()
+  today = new Date(),
+  manualOverrides: Record<string, number> = {}
 ): ScheduledProject[] {
   const scheduled: ScheduledProject[] = [];
 
@@ -130,7 +131,7 @@ export function analyzeProjects(
     if (!ACTIVE_STATES.includes(project.state)) continue;
     if (!project.endDate) continue;
 
-    const workload = estimateWorkload(project);
+    const workload = estimateWorkload(project, manualOverrides[project.documentId]);
     const daysRemaining = businessDaysBetween(today, new Date(project.endDate));
     const margin = Math.round((daysRemaining - workload.days) * 10) / 10;
     const risk = riskLevel(margin);

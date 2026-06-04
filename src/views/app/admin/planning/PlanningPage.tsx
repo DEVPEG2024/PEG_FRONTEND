@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { TbCalendarStats, TbRefresh, TbListCheck, TbCalendarTime, TbUsers } from 'react-icons/tb';
+import { useAppSelector } from '@/store';
 import { apiGetProjects } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { Project } from '@/@types/project';
@@ -9,14 +10,17 @@ import {
   buildWeekPlan,
   computeProducerLoads,
   countRisks,
+  ScheduledProject,
 } from '@/utils/planning/scheduler';
 import { buildSnapshot } from '@/services/PlanningAIService';
+import { loadManualOverrides } from '@/services/PlanningService';
 import { PLANNING_ACCENT, rgba } from './theme';
 import PlanningKpis from './components/PlanningKpis';
 import AiSummary from './components/AiSummary';
 import PriorityList from './components/PriorityList';
 import WeekSchedule from './components/WeekSchedule';
 import ProducerLoadList from './components/ProducerLoadList';
+import EstimateEditorModal from './components/EstimateEditorModal';
 
 const HORIZON_WEEKS = 2;
 
@@ -37,16 +41,22 @@ const panel: React.CSSProperties = {
 };
 
 const PlanningPage = () => {
+  const userId = useAppSelector((state) => state.auth.user.user?.documentId || '');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<ScheduledProject | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await unwrapData(
-        apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })
-      );
+      // Projets (Strapi, source de vérité) + overrides manuels (backend Planning, tolérant)
+      const [res, manualOverrides] = await Promise.all([
+        unwrapData(apiGetProjects({ pagination: { page: 1, pageSize: 1000 }, searchTerm: '' })),
+        loadManualOverrides(),
+      ]);
       setProjects(res.projects_connection.nodes || []);
+      setOverrides(manualOverrides);
     } catch {
       toast.error('Erreur lors du chargement des projets');
     } finally {
@@ -54,18 +64,20 @@ const PlanningPage = () => {
     }
   };
 
+  const refreshOverrides = async () => setOverrides(await loadManualOverrides());
+
   useEffect(() => {
     load();
   }, []);
 
   const { scheduled, counts, weekPlan, producerLoads, snapshot } = useMemo(() => {
-    const scheduled = analyzeProjects(projects);
+    const scheduled = analyzeProjects(projects, new Date(), overrides);
     const counts = countRisks(scheduled);
     const weekPlan = buildWeekPlan(scheduled, HORIZON_WEEKS);
     const producerLoads = computeProducerLoads(scheduled, HORIZON_WEEKS);
     const snapshot = buildSnapshot(scheduled, producerLoads, counts);
     return { scheduled, counts, weekPlan, producerLoads, snapshot };
-  }, [projects]);
+  }, [projects, overrides]);
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '1080px', margin: '0 auto', padding: '24px 20px 48px' }}>
@@ -145,7 +157,7 @@ const PlanningPage = () => {
           >
             <div style={panel}>
               {sectionTitle(<TbListCheck size={16} color={PLANNING_ACCENT} />, 'File de priorité', 'tri par urgence')}
-              <PriorityList items={scheduled} />
+              <PriorityList items={scheduled} onEdit={setEditing} />
             </div>
             <div style={panel}>
               {sectionTitle(<TbUsers size={16} color={PLANNING_ACCENT} />, 'Charge par producteur', `sur ${HORIZON_WEEKS} sem.`)}
@@ -153,6 +165,15 @@ const PlanningPage = () => {
             </div>
           </div>
         </>
+      )}
+
+      {editing && (
+        <EstimateEditorModal
+          item={editing}
+          updatedBy={userId}
+          onClose={() => setEditing(null)}
+          onSaved={refreshOverrides}
+        />
       )}
     </div>
   );

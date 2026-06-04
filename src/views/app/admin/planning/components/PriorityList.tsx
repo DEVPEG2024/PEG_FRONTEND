@@ -1,10 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { TbChevronRight, TbClock, TbUser } from 'react-icons/tb';
+import { TbChevronRight, TbClock, TbUser, TbPencil } from 'react-icons/tb';
 import { ScheduledProject } from '@/utils/planning/scheduler';
 import { priorityTextData } from '@/views/app/common/projects/lists/constants';
 import { RISK_COLOR, RISK_LABEL, rgba, formatEuro } from '../theme';
 
-type Props = { items: ScheduledProject[] };
+type Props = {
+  items: ScheduledProject[];
+  /** si fourni, affiche un crayon pour éditer la durée estimée du projet */
+  onEdit?: (item: ScheduledProject) => void;
+};
 
 function remainingLabel(daysRemaining: number): string {
   if (daysRemaining < 0) return `Deadline +${Math.abs(daysRemaining)} j`;
@@ -12,7 +16,7 @@ function remainingLabel(daysRemaining: number): string {
   return `J-${daysRemaining} ouvrés`;
 }
 
-const PriorityList = ({ items }: Props) => {
+const PriorityList = ({ items, onEdit }: Props) => {
   const navigate = useNavigate();
 
   if (items.length === 0) {
@@ -28,7 +32,7 @@ const PriorityList = ({ items }: Props) => {
       {items.map((sp) => {
         const color = RISK_COLOR[sp.risk];
         return (
-          <button
+          <div
             key={sp.project.documentId}
             onClick={() => navigate(`/common/projects/details/${sp.project.documentId}`)}
             style={{
@@ -38,6 +42,7 @@ const PriorityList = ({ items }: Props) => {
               textAlign: 'left',
               width: '100%',
               cursor: 'pointer',
+              boxSizing: 'border-box',
               fontFamily: 'Inter, sans-serif',
               background: 'linear-gradient(160deg, rgba(22,28,43,0.9), rgba(13,16,24,0.9))',
               border: `1px solid ${rgba(color, 0.28)}`,
@@ -84,8 +89,32 @@ const PriorityList = ({ items }: Props) => {
                 {formatEuro(sp.project.price)}
               </span>
             )}
+            {onEdit && (
+              <button
+                title="Éditer la durée estimée"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(sp);
+                }}
+                style={{
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: sp.workload.source === 'manual' ? rgba('#6366f1', 0.18) : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${sp.workload.source === 'manual' ? rgba('#6366f1', 0.4) : 'rgba(255,255,255,0.12)'}`,
+                  color: sp.workload.source === 'manual' ? '#c7d2fe' : 'rgba(255,255,255,0.5)',
+                  cursor: 'pointer',
+                }}
+              >
+                <TbPencil size={14} />
+              </button>
+            )}
             <TbChevronRight size={16} color="rgba(255,255,255,0.3)" style={{ flexShrink: 0 }} />
-          </button>
+          </div>
         );
       })}
     </div>
