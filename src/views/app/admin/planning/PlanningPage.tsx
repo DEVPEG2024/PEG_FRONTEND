@@ -65,7 +65,7 @@ const PlanningPage = () => {
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [capacities, setCapacities] = useState<Record<string, CapacityConfig>>({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'week' | 'month'>('week');
+  const [view, setView] = useState<'week' | 'month' | 'deadline'>('deadline');
   const [editingCapacity, setEditingCapacity] = useState<{ producerId: string; producerName: string } | null>(null);
   const [showSim, setShowSim] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -99,8 +99,21 @@ const PlanningPage = () => {
     const producerLoads = computeProducerLoads(scheduled, HORIZON_WEEKS, capacities);
     const snapshot = buildSnapshot(scheduled, producerLoads, counts);
 
-    const weekDays = currentWeekDays();
-    const days = view === 'week' ? weekDays : [...weekDays, ...weekDays.map((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; })];
+    // Horizon du board : Semaine (7j), Mois (~5 sem), ou jusqu'à la dernière deadline
+    const weekStart = currentWeekDays()[0];
+    const addD = (n: number) => { const x = new Date(weekStart); x.setDate(x.getDate() + n); return x; };
+    let span = 7;
+    if (view === 'month') span = 35;
+    else if (view === 'deadline') {
+      let maxEnd = weekStart;
+      for (const sp of scheduled) {
+        const e = new Date(sp.project.endDate);
+        if (!isNaN(e.getTime()) && e > maxEnd) maxEnd = e;
+      }
+      const diff = Math.ceil((maxEnd.getTime() - weekStart.getTime()) / 86400000) + 3;
+      span = Math.min(120, Math.max(7, diff));
+    }
+    const days = Array.from({ length: span }, (_, i) => addD(i));
 
     // Étalement temporel (blocs de 30 min) — source du board
     const timeline = buildTimeline(scheduled, capacities);
@@ -143,10 +156,12 @@ const PlanningPage = () => {
   const weekDays = data.days;
   const weekLabel = useMemo(() => {
     const first = weekDays[0];
-    const last = weekDays[6] ?? weekDays[weekDays.length - 1];
-    const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' });
-    return `Semaine ${isoWeekNumber(first)} (${fmt(first)} – ${fmt(last)} ${first.getFullYear()})`;
-  }, [weekDays]);
+    const last = weekDays[weekDays.length - 1];
+    const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    if (view === 'week') return `Semaine ${isoWeekNumber(first)} (${fmt(first)} – ${fmt(last)} ${first.getFullYear()})`;
+    if (view === 'deadline') return `${fmt(first)} → ${fmt(last)} · jusqu'aux échéances`;
+    return `${fmt(first)} → ${fmt(last)} ${first.getFullYear()}`;
+  }, [weekDays, view]);
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '1240px', margin: '0 auto', padding: '24px 20px 48px' }}>
@@ -165,12 +180,12 @@ const PlanningPage = () => {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {/* Toggle Semaine / Mois */}
           <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '3px' }}>
-            {(['week', 'month'] as const).map((v) => (
+            {(['week', 'month', 'deadline'] as const).map((v) => (
               <button key={v} onClick={() => setView(v)} style={{
-                border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                border: 'none', borderRadius: '8px', padding: '6px 13px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 background: view === v ? PLANNING_ACCENT : 'transparent',
                 color: view === v ? '#fff' : 'rgba(255,255,255,0.55)',
-              }}>{v === 'week' ? 'Semaine' : 'Mois'}</button>
+              }}>{v === 'week' ? 'Semaine' : v === 'month' ? 'Mois' : 'Échéances'}</button>
             ))}
           </div>
           <button onClick={() => downloadPlanningIcs(data.scheduled)} disabled={loading || data.counts.total === 0} title="Exporter (.ics) — Google Calendar / Apple / Outlook" style={headerBtn(loading || data.counts.total === 0)}><TbCalendarPlus size={14} /> Export</button>

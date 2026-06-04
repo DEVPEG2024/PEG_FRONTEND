@@ -87,7 +87,8 @@ const ResourceBoard = ({ rows, days, onEditCapacity, onDayClick }: Props) => {
     .filter((r) => r.producerName.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => rowTotals(b, days).pct - rowTotals(a, days).pct);
 
-  const gridCols = `repeat(${days.length}, minmax(124px, 1fr))`;
+  const minW = days.length > 24 ? 80 : days.length > 12 ? 102 : 124;
+  const gridCols = `repeat(${days.length}, minmax(${minW}px, 1fr))`;
 
   return (
     <div style={{ marginBottom: '12px' }}>
