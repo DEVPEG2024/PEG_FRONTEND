@@ -1351,8 +1351,10 @@ const CalendarPage = () => {
                     setEvents((prev) => [...prev, newEvent])
                     scheduleNotification(newEvent)
                 } catch {
-                    // Fallback to local
-                    const newEvent: CalEvent = { id: String(Date.now()), ...data, isSynced: false }
+                    // Fallback to local — id unique anti-collision (pas de '_',
+                    // sinon getOriginalId le tronquerait)
+                    const localId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+                    const newEvent: CalEvent = { id: localId, ...data, isSynced: false }
                     setEvents((prev) => [...prev, newEvent])
                 }
             }
