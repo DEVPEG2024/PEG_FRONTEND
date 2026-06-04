@@ -442,40 +442,6 @@ const ProjectsList = () => {
         </div>
       </div>
 
-      {/* Aperçu — cartes de synthèse par statut */}
-      <div style={{ marginBottom: '24px' }}>
-        <p style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 12px' }}>Aperçu</p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {([
-            { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },
-            { key: 'pending',   label: 'En cours',      sub: 'Projets actifs',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  icon: <HiOutlineClock size={20} /> },
-            { key: 'waiting',   label: 'En attente',    sub: 'En attente de retour',   color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   icon: <MdHourglassEmpty size={20} /> },
-            { key: 'fulfilled', label: 'Terminés',      sub: 'Projets livrés',         color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   icon: <HiOutlineCheckCircle size={20} /> },
-            { key: 'canceled',  label: 'Annulés',       sub: 'Projets annulés',        color: '#f87171', bg: 'rgba(239,68,68,0.15)',   icon: <HiOutlineXCircle size={20} /> },
-          ]).map((card) => (
-            <div key={card.key} style={{
-              flex: '1 1 180px', minWidth: '180px',
-              display: 'flex', alignItems: 'center', gap: '14px',
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '16px', padding: '18px 20px',
-            }}>
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: card.bg, color: card.color,
-              }}>
-                {card.icon}
-              </div>
-              <div>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: '12.5px', fontWeight: 600 }}>{card.label}</p>
-                <p style={{ margin: '2px 0', color: '#fff', fontSize: '26px', fontWeight: 800, lineHeight: 1.1 }}>{statusCounts[card.key] ?? 0}</p>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.35)', fontSize: '11.5px' }}>{card.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {/* Recherche */}
@@ -569,6 +535,40 @@ const ProjectsList = () => {
       {/* Bannière */}
       <div style={{ paddingBottom: '24px' }}>
         <CatalogueBanner bannerName="Bannière projets" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
+      </div>
+
+      {/* Aperçu — cartes de synthèse par statut (sous la bannière) */}
+      <div style={{ marginBottom: '24px' }}>
+        <p style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 12px' }}>Aperçu</p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {([
+            { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },
+            { key: 'pending',   label: 'En cours',      sub: 'Projets actifs',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  icon: <HiOutlineClock size={20} /> },
+            { key: 'waiting',   label: 'En attente',    sub: 'En attente de retour',   color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   icon: <MdHourglassEmpty size={20} /> },
+            { key: 'fulfilled', label: 'Terminés',      sub: 'Projets livrés',         color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   icon: <HiOutlineCheckCircle size={20} /> },
+            { key: 'canceled',  label: 'Annulés',       sub: 'Projets annulés',        color: '#f87171', bg: 'rgba(239,68,68,0.15)',   icon: <HiOutlineXCircle size={20} /> },
+          ]).map((card) => (
+            <div key={card.key} style={{
+              flex: '1 1 180px', minWidth: '180px',
+              display: 'flex', alignItems: 'center', gap: '14px',
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '16px', padding: '18px 20px',
+            }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: card.bg, color: card.color,
+              }}>
+                {card.icon}
+              </div>
+              <div>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: '12.5px', fontWeight: 600 }}>{card.label}</p>
+                <p style={{ margin: '2px 0', color: '#fff', fontSize: '26px', fontWeight: 800, lineHeight: 1.1 }}>{statusCounts[card.key] ?? 0}</p>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.35)', fontSize: '11.5px' }}>{card.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
