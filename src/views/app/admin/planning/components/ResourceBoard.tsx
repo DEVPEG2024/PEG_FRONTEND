@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { TbSearch, TbPlus, TbPencil, TbAlertTriangle } from 'react-icons/tb';
+import { TbSearch, TbPlus, TbPencil } from 'react-icons/tb';
 import { TimelineRow, formatBlocks } from '@/utils/planning/scheduler';
-import { RISK_COLOR, PLANNING_ACCENT, rgba, isToday } from '../theme';
+import { PLANNING_ACCENT, RISK_COLOR, rgba, isToday, projectColor, loadStatus } from '../theme';
 
 type Props = {
   rows: TimelineRow[];
@@ -9,7 +9,7 @@ type Props = {
   onEditCapacity?: (row: TimelineRow) => void;
 };
 
-const ROW_H = 68;
+const ROW_H = 74;
 const HEAD_H = 58;
 
 function dateKey(d: Date): string {
@@ -19,19 +19,11 @@ function isWeekend(d: Date): boolean {
   const x = d.getDay();
   return x === 0 || x === 6;
 }
-function ratioColor(pct: number): string {
-  if (pct > 100) return RISK_COLOR.late;
-  if (pct >= 85) return RISK_COLOR.tight;
-  return RISK_COLOR.ok;
-}
 function initials(name: string): string {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 }
-
-/** Total blocs utilisés vs capacité sur les jours visibles (jours ouvrés). */
 function rowTotals(row: TimelineRow, days: Date[]) {
-  let used = 0;
-  let cap = 0;
+  let used = 0, cap = 0;
   for (const d of days) {
     if (isWeekend(d)) continue;
     used += row.byDay[dateKey(d)]?.blocks ?? 0;
@@ -40,55 +32,48 @@ function rowTotals(row: TimelineRow, days: Date[]) {
   return { used, cap, pct: cap > 0 ? Math.round((used / cap) * 100) : 0 };
 }
 
+/** Une journée = une grille de petits carrés de 30 min (occupés par projet / libres / débordement). */
 const DayCell = ({ row, day }: { row: TimelineRow; day: Date }) => {
   const today = isToday(day);
   const base: React.CSSProperties = {
     borderLeft: '1px solid rgba(255,255,255,0.03)',
-    background: today ? rgba(PLANNING_ACCENT, 0.04) : 'transparent',
-    padding: '10px 8px',
+    background: today ? rgba(PLANNING_ACCENT, 0.05) : 'transparent',
+    padding: '9px 8px',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'center',
     gap: '5px',
+    justifyContent: 'center',
   };
 
   if (isWeekend(day)) {
-    return <div style={{ ...base, alignItems: 'center', color: 'rgba(255,255,255,0.18)', fontSize: '11px' }}>—</div>;
+    return <div style={{ ...base, alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '15px' }} title="Week-end">😴</div>;
   }
 
-  const load = row.byDay[dateKey(day)];
   const cap = row.dailyCapacityBlocks;
-  const used = load?.blocks ?? 0;
+  const load = row.byDay[dateKey(day)];
+  const details = (load?.details ?? []).slice().sort((a, b) => b.blocks - a.blocks);
 
-  if (used === 0) {
-    return (
-      <div style={base}>
-        <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10.5px' }}>—</div>
-        <div style={{ height: '7px', borderRadius: '100px', background: 'rgba(255,255,255,0.05)' }} />
-      </div>
-    );
-  }
-
+  // un carré par bloc de 30 min, couleur = projet
+  const tiles: { color: string; name: string }[] = [];
+  for (const d of details) for (let i = 0; i < d.blocks; i++) tiles.push({ color: projectColor(d.documentId), name: d.name });
+  const used = tiles.length;
   const overloaded = used > cap;
-  const denom = Math.max(used, cap);
-  const title = (load?.details ?? [])
-    .slice()
-    .sort((a, b) => b.blocks - a.blocks)
-    .map((d) => `${d.name} — ${formatBlocks(d.blocks)}`)
-    .join('\n');
-  const headColor = overloaded ? RISK_COLOR.late : ratioColor((used / cap) * 100);
+  const emptyCount = Math.max(0, cap - used);
+
+  const title = details.map((d) => `${d.name} — ${formatBlocks(d.blocks)}`).join('\n');
+  const Tile = (bg: string, ring: boolean, key: number, t?: string) => (
+    <div key={key} title={t} style={{ width: '13px', height: '13px', borderRadius: '3px', background: bg, boxShadow: ring ? `0 0 0 1.5px ${RISK_COLOR.late}` : 'none' }} />
+  );
 
   return (
-    <div style={base} title={title}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
-        <span style={{ color: headColor, fontSize: '11px', fontWeight: 700 }}>
-          {formatBlocks(used)} <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>/ {formatBlocks(cap)}</span>
-        </span>
-        {overloaded && <TbAlertTriangle size={11} color={RISK_COLOR.late} />}
+    <div style={base} title={used ? title : undefined}>
+      <div style={{ fontSize: '11px', fontWeight: 700, color: used === 0 ? 'rgba(255,255,255,0.25)' : overloaded ? RISK_COLOR.late : 'rgba(255,255,255,0.75)' }}>
+        {used === 0 ? 'libre' : overloaded ? `${formatBlocks(used)} 🔥` : formatBlocks(used)}
       </div>
-      <div style={{ display: 'flex', height: '8px', borderRadius: '100px', overflow: 'hidden', background: 'rgba(255,255,255,0.06)', border: overloaded ? `1px solid ${rgba(RISK_COLOR.late, 0.6)}` : 'none' }}>
-        {(load?.details ?? []).map((d, i) => (
-          <div key={i} style={{ width: `${(d.blocks / denom) * 100}%`, background: RISK_COLOR[d.risk], opacity: 0.9 }} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+        {tiles.map((t, i) => Tile(t.color, i >= cap, i, t.name))}
+        {Array.from({ length: emptyCount }).map((_, i) => (
+          <div key={`e${i}`} style={{ width: '13px', height: '13px', borderRadius: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
         ))}
       </div>
     </div>
@@ -102,21 +87,11 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
     .sort((a, b) => rowTotals(b, days).pct - rowTotals(a, days).pct);
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '262px 1fr',
-        background: 'linear-gradient(160deg, rgba(18,22,34,0.6), rgba(11,14,21,0.6))',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        marginBottom: '20px',
-      }}
-    >
+    <div style={{ display: 'grid', gridTemplateColumns: '262px 1fr', background: 'linear-gradient(160deg, rgba(18,22,34,0.6), rgba(11,14,21,0.6))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', marginBottom: '12px' }}>
       {/* ---- Colonne gauche : producteurs ---- */}
       <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ height: HEAD_H, padding: '0 16px', display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700 }}>Producteurs</span>
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700 }}>👷 Producteurs</span>
         </div>
         <div style={{ padding: '10px 12px 6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '7px 10px' }}>
@@ -127,25 +102,26 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
 
         {filtered.map((row) => {
           const t = rowTotals(row, days);
-          const rc = ratioColor(t.pct);
+          const st = loadStatus(t.pct);
           const projCount = new Set(Object.values(row.byDay).flatMap((d) => d.details.map((x) => x.documentId))).size;
           return (
             <div key={row.producerId} style={{ height: ROW_H, padding: '0 14px', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-              <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, background: rgba(PLANNING_ACCENT, 0.18), border: `1px solid ${rgba(PLANNING_ACCENT, 0.35)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c7d2fe', fontSize: '12px', fontWeight: 700 }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, background: rgba(PLANNING_ACCENT, 0.18), border: `1px solid ${rgba(PLANNING_ACCENT, 0.35)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c7d2fe', fontSize: '12px', fontWeight: 700 }}>
                 {initials(row.producerName)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.producerName}</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{projCount} projet(s) · {formatBlocks(t.used)}/sem.</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: rc, fontSize: '12.5px', fontWeight: 800 }}>
-                  {t.pct > 100 && <TbAlertTriangle size={11} />}
-                  {t.pct}%
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '2px', color: st.color, fontSize: '11px', fontWeight: 600 }}>
+                  <span>{st.emoji} {st.label}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>· {projCount} proj.</span>
                 </div>
               </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ color: st.color, fontSize: '14px', fontWeight: 800 }}>{t.pct}%</div>
+                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{formatBlocks(t.used)}/sem.</div>
+              </div>
               {onEditCapacity && row.producerId !== '__unassigned__' && (
-                <button title="Éditer la capacité" onClick={() => onEditCapacity(row)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
+                <button title="Régler la dispo / capacité" onClick={() => onEditCapacity(row)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
                   <TbPencil size={13} />
                 </button>
               )}
@@ -162,7 +138,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
 
       {/* ---- Colonne droite : board jours ---- */}
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ height: HEAD_H, display: 'grid', gridTemplateColumns: `repeat(${days.length}, minmax(118px, 1fr))`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ height: HEAD_H, display: 'grid', gridTemplateColumns: `repeat(${days.length}, minmax(124px, 1fr))`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           {days.map((d, i) => {
             const today = isToday(d);
             const we = isWeekend(d);
@@ -176,7 +152,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity }: Props) => {
         </div>
 
         {filtered.map((row) => (
-          <div key={row.producerId} style={{ height: ROW_H, display: 'grid', gridTemplateColumns: `repeat(${days.length}, minmax(118px, 1fr))`, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div key={row.producerId} style={{ height: ROW_H, display: 'grid', gridTemplateColumns: `repeat(${days.length}, minmax(124px, 1fr))`, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
             {days.map((day, i) => (
               <DayCell key={i} row={row} day={day} />
             ))}

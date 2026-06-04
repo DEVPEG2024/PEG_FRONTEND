@@ -184,16 +184,20 @@ const PlanningPage = () => {
         <>
           {/* ---- KPIs ---- */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-            <KpiCard icon={<TbClockExclamation size={16} />} label="Projets en retard" value={String(data.counts.late)} color={RISK_COLOR.late} caption="deadline dépassée au rythme estimé" series={data.series.late} />
-            <KpiCard icon={<TbAlertTriangle size={16} />} label="À risque" value={String(data.counts.tight)} color={RISK_COLOR.tight} caption="marge < 2 jours ouvrés" series={data.series.tight} />
-            <KpiCard icon={<TbShieldCheck size={16} />} label="Sous contrôle" value={String(data.counts.ok)} color={RISK_COLOR.ok} caption="marge confortable" series={data.series.ok} />
+            <KpiCard icon={<TbClockExclamation size={16} />} label="🔴 En retard" value={String(data.counts.late)} color={RISK_COLOR.late} caption="deadline déjà dépassée 😬" series={data.series.late} />
+            <KpiCard icon={<TbAlertTriangle size={16} />} label="🟠 Ça passe juste" value={String(data.counts.tight)} color={RISK_COLOR.tight} caption="peu de marge, à surveiller" series={data.series.tight} />
+            <KpiCard icon={<TbShieldCheck size={16} />} label="🟢 Tranquille" value={String(data.counts.ok)} color={RISK_COLOR.ok} caption="large, dans les temps 😎" series={data.series.ok} />
             <KpiCard icon={<TbActivity size={16} />} label="Charge moyenne" value={`${data.chargeMoyenne}%`} color={PLANNING_ACCENT} caption="capacité producteurs utilisée" series={data.series.load} />
             <KpiCard icon={<TbGauge size={16} />} label="Capacité disponible" value={data.freeLabel} color="#22d3ee" caption={`libre sur ${HORIZON_WEEKS} sem. (${HOURS_PER_DAY}h/j)`} donutPct={data.freePct} />
           </div>
 
           {/* ---- Board producteurs × jours (étalement 30 min jusqu'à la deadline) ---- */}
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '8px' }}>
-            Le travail de chaque projet est étalé en tranches de 30 min sur les jours ouvrés jusqu'à sa deadline ({HOURS_PER_DAY}h/jour). Chaque case = charge du jour vs capacité ; survole pour le détail.
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', marginBottom: '10px', fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>
+            <span style={{ color: 'rgba(255,255,255,0.45)' }}>🧩 Chaque carré = <strong style={{ color: '#fff' }}>30 min</strong> :</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '13px', height: '13px', borderRadius: '3px', background: '#6366f1' }} /> occupé (1 couleur = 1 projet)</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '13px', height: '13px', borderRadius: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }} /> libre</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '13px', height: '13px', borderRadius: '3px', background: '#6366f1', boxShadow: `0 0 0 1.5px ${RISK_COLOR.late}` }} /> au-delà de la capacité ({HOURS_PER_DAY}h/j)</span>
+            <span style={{ color: 'rgba(255,255,255,0.4)' }}>· 🌱 libre · 😌 tranquille · ⚡ chargé · 🔥 surchargé</span>
           </div>
           <ResourceBoard
             rows={data.timeline}
