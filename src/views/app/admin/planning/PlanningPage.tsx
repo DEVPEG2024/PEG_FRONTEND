@@ -11,8 +11,9 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { Project } from '@/@types/project';
 import {
   analyzeProjects, buildWeekPlan, computeProducerLoads, countRisks,
-  buildResourceMatrix, buildForecast, recommendActions, currentWeekDays, isoWeekNumber,
-  ScheduledProject, ProducerLoad, ResourceRow,
+  buildTimeline, buildForecast, recommendActions, currentWeekDays, isoWeekNumber,
+  nextBusinessDays, formatBlocks, HOURS_PER_DAY,
+  ScheduledProject, TimelineRow,
 } from '@/utils/planning/scheduler';
 import { buildSnapshot } from '@/services/PlanningAIService';
 import { loadManualOverrides, loadProducerCapacities, CapacityConfig } from '@/services/PlanningService';
@@ -64,7 +65,7 @@ const PlanningPage = () => {
   const [capacities, setCapacities] = useState<Record<string, CapacityConfig>>({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'week' | 'month'>('week');
-  const [editingCapacity, setEditingCapacity] = useState<ProducerLoad | null>(null);
+  const [editingCapacity, setEditingCapacity] = useState<{ producerId: string; producerName: string } | null>(null);
   const [showSim, setShowSim] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -98,15 +99,28 @@ const PlanningPage = () => {
 
     const weekDays = currentWeekDays();
     const days = view === 'week' ? weekDays : [...weekDays, ...weekDays.map((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; })];
-    const matrix = buildResourceMatrix(scheduled, producerLoads);
+
+    // Étalement temporel (blocs de 30 min) — source du board
+    const timeline = buildTimeline(scheduled, capacities);
+
+    // KPIs charge/capacité sur l'horizon (en blocs de 30 min), hors "Non assigné"
+    const horizon = nextBusinessDays(HORIZON_WEEKS * 5);
+    const key = (d: Date) => `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
+    const realTl = timeline.filter((r) => r.producerId !== '__unassigned__');
+    let totUsed = 0, totCap = 0;
+    const ratios: number[] = [];
+    for (const r of realTl) {
+      let u = 0, c = 0;
+      for (const d of horizon) { u += r.byDay[key(d)]?.blocks ?? 0; c += r.dailyCapacityBlocks; }
+      totUsed += u; totCap += c;
+      ratios.push(c ? u / c : 0);
+    }
+    const chargeMoyenne = ratios.length ? Math.round((ratios.reduce((s, x) => s + x, 0) / ratios.length) * 100) : 0;
+    const freeBlocks = Math.max(0, totCap - totUsed);
+    const freeLabel = formatBlocks(freeBlocks);
+    const freePct = totCap ? Math.round(((totCap - totUsed) / totCap) * 100) : 0;
 
     const realRows = producerLoads.filter((p) => p.producerId !== '__unassigned__');
-    const chargeMoyenne = realRows.length ? Math.round(realRows.reduce((s, p) => s + (p.capacityDays ? (p.totalDays / p.capacityDays) * 100 : 0), 0) / realRows.length) : 0;
-    const totalCapacity = realRows.reduce((s, p) => s + p.capacityDays, 0);
-    const usedCapacity = realRows.reduce((s, p) => s + Math.min(p.totalDays, p.capacityDays), 0);
-    const freeDays = Math.round((realRows.reduce((s, p) => s + Math.max(0, p.capacityDays - p.totalDays), 0)) * 10) / 10;
-    const freePct = totalCapacity ? Math.round(((totalCapacity - usedCapacity) / totalCapacity) * 100) : 0;
-
     const forecast = buildForecast(scheduled, realRows.length || 1, 6);
     const actions = recommendActions(scheduled, producerLoads);
 
@@ -119,7 +133,7 @@ const PlanningPage = () => {
       load: forecast.map((f) => f.loadPct),
     };
 
-    return { scheduled, counts, snapshot, days, matrix, chargeMoyenne, freeDays, freePct, forecast, actions, series };
+    return { scheduled, counts, snapshot, days, timeline, chargeMoyenne, freeLabel, freePct, forecast, actions, series };
   }, [projects, overrides, capacities, view]);
 
   const weekDays = data.days;
@@ -174,18 +188,17 @@ const PlanningPage = () => {
             <KpiCard icon={<TbAlertTriangle size={16} />} label="À risque" value={String(data.counts.tight)} color={RISK_COLOR.tight} caption="marge < 2 jours ouvrés" series={data.series.tight} />
             <KpiCard icon={<TbShieldCheck size={16} />} label="Sous contrôle" value={String(data.counts.ok)} color={RISK_COLOR.ok} caption="marge confortable" series={data.series.ok} />
             <KpiCard icon={<TbActivity size={16} />} label="Charge moyenne" value={`${data.chargeMoyenne}%`} color={PLANNING_ACCENT} caption="capacité producteurs utilisée" series={data.series.load} />
-            <KpiCard icon={<TbGauge size={16} />} label="Capacité disponible" value={`${data.freeDays} j`} color="#22d3ee" caption={`sur ${HORIZON_WEEKS} semaines`} donutPct={data.freePct} />
+            <KpiCard icon={<TbGauge size={16} />} label="Capacité disponible" value={data.freeLabel} color="#22d3ee" caption={`libre sur ${HORIZON_WEEKS} sem. (${HOURS_PER_DAY}h/j)`} donutPct={data.freePct} />
           </div>
 
-          {/* ---- Board producteurs × jours ---- */}
+          {/* ---- Board producteurs × jours (étalement 30 min jusqu'à la deadline) ---- */}
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '8px' }}>
+            Le travail de chaque projet est étalé en tranches de 30 min sur les jours ouvrés jusqu'à sa deadline ({HOURS_PER_DAY}h/jour). Chaque case = charge du jour vs capacité ; survole pour le détail.
+          </div>
           <ResourceBoard
-            rows={data.matrix}
+            rows={data.timeline}
             days={weekDays}
-            onEditCapacity={(row) => {
-              const pl = data.matrix.find((r) => r.producerId === row.producerId);
-              if (pl) setEditingCapacity({ producerId: pl.producerId, producerName: pl.producerName, totalDays: pl.totalDays, capacityDays: pl.capacityDays, projectCount: 0, overloaded: pl.overloaded, hasCustomCapacity: !!capacities[pl.producerId] });
-            }}
-            onProjectClick={(id) => navigate(`/common/projects/details/${id}`)}
+            onEditCapacity={(row) => setEditingCapacity({ producerId: row.producerId, producerName: row.producerName })}
           />
 
           {/* ---- Bas : prévisionnel | actions IA | à risque ---- */}

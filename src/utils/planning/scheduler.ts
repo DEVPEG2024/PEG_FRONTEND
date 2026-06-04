@@ -455,6 +455,129 @@ export function buildForecast(
 // Actions recommandées (heuristiques déterministes à partir du moteur)
 // ---------------------------------------------------------------------------
 
+// ===========================================================================
+// ÉTALEMENT TEMPOREL en blocs de 30 min (modèle métier)
+// ---------------------------------------------------------------------------
+// Le travail requis par un projet (en jours d'effort) est converti en blocs de
+// 30 min, puis ÉTALÉ UNIFORMÉMENT sur les jours ouvrés disponibles entre
+// aujourd'hui et la deadline. Chaque jour reçoit ainsi une petite tranche, et
+// la charge d'un producteur un jour donné = somme des tranches de tous ses
+// projets ce jour-là (vs sa capacité quotidienne).
+// ===========================================================================
+
+/** Heures de travail effectif par jour ouvré (1 jour d'effort = HOURS_PER_DAY h). */
+export const HOURS_PER_DAY = 4;
+/** Un bloc = 30 min → 2 blocs/heure. */
+export const BLOCKS_PER_HOUR = 2;
+/** Blocs de 30 min dans un jour d'effort plein. */
+export const BLOCKS_PER_EFFORT_DAY = HOURS_PER_DAY * BLOCKS_PER_HOUR; // 8
+
+/** Formate un nombre de blocs de 30 min en "2h", "1h30", "30min". */
+export function formatBlocks(blocks: number): string {
+  const totalMin = Math.round(blocks) * 30;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${`${m}`.padStart(2, '0')}`;
+}
+
+function dateKey(d: Date): string {
+  const c = atMidnight(d);
+  return `${c.getFullYear()}-${`${c.getMonth() + 1}`.padStart(2, '0')}-${`${c.getDate()}`.padStart(2, '0')}`;
+}
+
+/** Un producteur est-il disponible ce jour (Lun→Ven, hors jours off / congés) ? */
+function isAvailable(date: Date, cap: CapacityConfig | undefined): boolean {
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) return false; // week-ends exclus
+  if (cap?.weeklyOffDays?.includes(dow)) return false;
+  if (cap?.unavailableDates?.includes(dateKey(date))) return false;
+  return true;
+}
+
+/** Répartit `total` blocs sur `n` jours de façon la plus uniforme possible (somme = total). */
+function spreadEvenly(total: number, n: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) {
+    out.push(Math.floor((total * (i + 1)) / n) - Math.floor((total * i) / n));
+  }
+  return out;
+}
+
+export type DayLoadDetail = { documentId: string; name: string; risk: RiskLevel; blocks: number };
+export type ProducerDayLoad = { blocks: number; capacityBlocks: number; details: DayLoadDetail[] };
+
+export type TimelineRow = {
+  producerId: string;
+  producerName: string;
+  dailyCapacityBlocks: number;
+  byDay: Record<string, ProducerDayLoad>;
+};
+
+/**
+ * Construit l'étalement : pour chaque producteur, la charge (en blocs de 30 min)
+ * par jour, issue de l'étalement uniforme de chaque projet sur ses jours
+ * disponibles jusqu'à la deadline.
+ */
+export function buildTimeline(
+  scheduled: ScheduledProject[],
+  capacities: Record<string, CapacityConfig> = {},
+  today = new Date()
+): TimelineRow[] {
+  const rows = new Map<string, TimelineRow>();
+  const start0 = atMidnight(today);
+
+  const getRow = (id: string, name: string): TimelineRow => {
+    let r = rows.get(id);
+    if (!r) {
+      const cap = capacities[id];
+      const dailyCapacityBlocks = Math.max(1, Math.round((cap?.dailyCapacityDays ?? 1) * BLOCKS_PER_EFFORT_DAY));
+      r = { producerId: id, producerName: name, dailyCapacityBlocks, byDay: {} };
+      rows.set(id, r);
+    }
+    return r;
+  };
+
+  for (const sp of scheduled) {
+    const id = sp.project.producer?.documentId ?? '__unassigned__';
+    const name = sp.project.producer?.name ?? 'Non assigné';
+    const row = getRow(id, name);
+    const cap = capacities[id];
+
+    const effortBlocks = Math.max(1, Math.round(sp.workload.days * BLOCKS_PER_EFFORT_DAY));
+
+    // Fenêtre = jours dispo de max(aujourd'hui, début) jusqu'à la deadline
+    const startD = sp.project.startDate ? atMidnight(new Date(sp.project.startDate)) : start0;
+    const begin = startD > start0 ? startD : start0;
+    const end = atMidnight(new Date(sp.project.endDate));
+
+    const windowDates: Date[] = [];
+    const cur = new Date(begin);
+    while (cur <= end && windowDates.length < 365) {
+      if (isAvailable(cur, cap)) windowDates.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    // En retard / aucun jour dispo → on entasse sur le prochain jour disponible
+    if (windowDates.length === 0) {
+      const c = new Date(start0);
+      while (!isAvailable(c, cap)) c.setDate(c.getDate() + 1);
+      windowDates.push(c);
+    }
+
+    const alloc = spreadEvenly(effortBlocks, windowDates.length);
+    windowDates.forEach((d, i) => {
+      if (alloc[i] <= 0) return;
+      const k = dateKey(d);
+      const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, capacityBlocks: row.dailyCapacityBlocks, details: [] });
+      day.blocks += alloc[i];
+      day.details.push({ documentId: sp.project.documentId, name: sp.project.name, risk: sp.risk, blocks: alloc[i] });
+    });
+  }
+
+  return Array.from(rows.values());
+}
+
 export type RecommendedAction = {
   icon: 'reassign' | 'shift' | 'accept';
   title: string;
