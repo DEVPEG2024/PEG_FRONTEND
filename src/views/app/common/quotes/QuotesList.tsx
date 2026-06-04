@@ -19,6 +19,7 @@ import { apiCreateProject } from '@/services/ProjectServices';
 import { apiCreateInvoice, apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
+import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 const fmtDate = (d?: string | null) => {
   if (!d) return '—';
@@ -577,8 +578,13 @@ const QuotesList = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* ── Bannière (CMS, comme Projets / Offres) ── */}
+      <div style={{ paddingTop: '24px' }}>
+        <CatalogueBanner bannerName="Bannière devis" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
+      </div>
+
       {/* ── Hero ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', paddingTop: '24px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', marginBottom: '24px' }}>
         <div style={{ minWidth: 0 }}>
           <p style={{ color: '#8b7dff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '8px' }}>Devis</p>
           <h2 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
