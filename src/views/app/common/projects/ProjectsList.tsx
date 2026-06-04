@@ -539,7 +539,6 @@ const ProjectsList = () => {
 
       {/* Aperçu — cartes de synthèse par statut (sous la bannière) */}
       <div style={{ marginBottom: '24px' }}>
-        <p style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 12px' }}>Aperçu</p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {([
             { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },
