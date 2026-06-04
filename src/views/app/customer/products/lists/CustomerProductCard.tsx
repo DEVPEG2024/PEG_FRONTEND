@@ -25,9 +25,11 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
 
   const imageUrl = product.images[0]?.url;
   const shortDesc = product.description ? getShortSentence(product.description) : null;
-  const fullPriceHT = getProductBasePrice(product);
+  const isM2 = product.pricingMode === 'm2';
+  const fullPriceHT = isM2 ? (product.pricePerM2 || 0) : getProductBasePrice(product);
   const priceHT = applyPremiumDiscount(fullPriceHT, customer);
   const priceTTC = toTTC(priceHT);
+  const unitSuffix = isM2 ? ' /m²' : '';
   const savingsPercent = getCatalogSavingsPercent(product);
   const initial = product.name.charAt(0).toUpperCase();
 
@@ -273,10 +275,10 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
               lineHeight: 1,
               whiteSpace: 'nowrap',
             }}>
-              {fmtHT(priceHT)}
+              {fmtHT(priceHT)}{unitSuffix}
             </span>
             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {fmtTTC(priceTTC)}
+              {fmtTTC(priceTTC)}{unitSuffix}
             </span>
             {savingsPercent && product.catalogPrice && (
               <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 500, whiteSpace: 'nowrap', textDecoration: 'line-through' }}>

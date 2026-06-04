@@ -9,6 +9,7 @@ import {
   getTotalPriceForCartItem,
   getProductPriceForSizeAndColors,
   isProductPackPricing,
+  isProductM2Pricing,
   applyPremiumDiscount,
 } from '@/utils/productHelpers';
 import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
@@ -166,6 +167,7 @@ function CartItemCard({
   );
   const totalItem = applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer);
   const isPackPricing = isProductPackPricing(item.product);
+  const isM2 = isProductM2Pricing(item.product);
   const totalQuantity = item.sizeAndColors.reduce(
     (sum, s) => sum + s.quantity,
     0
@@ -255,32 +257,56 @@ function CartItemCard({
             margin: '0 0 8px 0',
           }}
         >
-          {isPackPricing
+          {isM2
+            ? `${fmtPrice(item.product.pricePerM2 || 0)} / m²`
+            : isPackPricing
             ? `Pack de ${totalQuantity} unite${totalQuantity > 1 ? 's' : ''}`
             : `${fmtPrice(unitPrice)} / unite`}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-          {item.sizeAndColors.map((s) => (
-            <span
-              key={s.size.value + (s.color?.value ?? '')}
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-                border: '1px solid rgba(47,111,237,0.2)',
-                borderRadius: '8px',
-                padding: '3px 9px',
-                color: '#6b9eff',
-                fontSize: '11px',
-                fontWeight: 600,
-              }}
-            >
-              {s.size.value !== 'DEFAULT' ? s.size.name : 'Qte'}
-              {s.color?.value && s.color.value !== 'DEFAULT'
-                ? ` · ${s.color.name}`
-                : ''}{' '}
-              : {s.quantity}
-            </span>
-          ))}
+          {isM2
+            ? item.sizeAndColors.map((s, i) => {
+                const w = s.width || 0;
+                const h = s.height || 0;
+                const area = Math.max(w * h, item.product.minM2 || 0);
+                return (
+                  <span
+                    key={i}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                      border: '1px solid rgba(47,111,237,0.2)',
+                      borderRadius: '8px',
+                      padding: '3px 9px',
+                      color: '#6b9eff',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {Math.round(w * 100)} × {Math.round(h * 100)} cm · {area.toFixed(2)} m² × {s.quantity}
+                  </span>
+                );
+              })
+            : item.sizeAndColors.map((s) => (
+              <span
+                key={s.size.value + (s.color?.value ?? '')}
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                  border: '1px solid rgba(47,111,237,0.2)',
+                  borderRadius: '8px',
+                  padding: '3px 9px',
+                  color: '#6b9eff',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                }}
+              >
+                {s.size.value !== 'DEFAULT' ? s.size.name : 'Qte'}
+                {s.color?.value && s.color.value !== 'DEFAULT'
+                  ? ` · ${s.color.name}`
+                  : ''}{' '}
+                : {s.quantity}
+              </span>
+            ))}
         </div>
       </div>
 

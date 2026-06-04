@@ -14,9 +14,9 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            # pricingMode                         — activer après déploiement Strapi
-            # pricePerM2                          — activer après déploiement Strapi
-            # minM2                               — activer après déploiement Strapi
+            pricingMode
+            pricePerM2
+            minM2
             images {
                 url
             }
@@ -62,9 +62,9 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             name
             price
             priceTiers
-            # pricingMode                         — activer après déploiement Strapi
-            # pricePerM2                          — activer après déploiement Strapi
-            # minM2                               — activer après déploiement Strapi
+            pricingMode
+            pricePerM2
+            minM2
             images {
                 documentId
                 url
@@ -141,6 +141,9 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
                 name
                 price
                 priceTiers
+                pricingMode
+                pricePerM2
+                minM2
                 images {
                     documentId
                     url
@@ -363,9 +366,9 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
                 name
                 price
                 priceTiers
-                # pricingMode                         — activer après déploiement Strapi
-            # pricePerM2                          — activer après déploiement Strapi
-            # minM2                               — activer après déploiement Strapi
+                pricingMode
+            pricePerM2
+            minM2
                 inCatalogue
                 # catalogPrice                         — activer après déploiement Strapi
             }
