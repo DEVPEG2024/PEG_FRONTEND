@@ -27,6 +27,7 @@ import { HiShieldCheck, HiTag, HiX, HiCheck } from 'react-icons/hi';
 import { MdLocationOn } from 'react-icons/md';
 import { apiValidatePromoCode } from '@/services/PromoCodeServices';
 import { PromoCodeValidation } from '@/@types/promoCode';
+import { toast } from 'react-toastify';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void }) {
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
@@ -107,7 +108,10 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
           await unwrapData(apiCreateOrderItem(orderItem));
 
       return orderItemCreated;
-    } catch (error) {}
+    } catch (error) {
+      console.error('[Checkout] Échec création OrderItem:', error);
+      return undefined;
+    }
   };
 
   const createOrdersAndUpdateCartItems = async (): Promise<OrderItem[]> => {
@@ -135,10 +139,29 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   };
 
   const validateCart = async () => {
+    if (!user?.customer) {
+      toast.error('Profil client introuvable. Reconnectez-vous puis réessayez.');
+      return;
+    }
     setSubmitting(true);
-    const orderItems: OrderItem[] = await createOrdersAndUpdateCartItems();
-    await validatePayment(orderItems);
-    setSubmitting(false);
+    try {
+      const orderItems: OrderItem[] = await createOrdersAndUpdateCartItems();
+      if (orderItems.length === 0) {
+        toast.error("La commande n'a pas pu être créée. Veuillez réessayer.");
+        return;
+      }
+      if (orderItems.length < cart.length) {
+        toast.warning(
+          'Certains articles n\'ont pas pu être ajoutés à la commande et ont été ignorés.'
+        );
+      }
+      await validatePayment(orderItems);
+    } catch (error) {
+      console.error('[Checkout] Échec de la validation du panier:', error);
+      toast.error("Le paiement n'a pas pu être finalisé. Aucun montant n'a été débité, réessayez.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const createCheckout = (orderItems: OrderItem[]): Checkout => {
@@ -146,7 +169,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
         documentId: orderItem.documentId,
         productName: orderItem.product.name,
-        productPrice: Math.trunc(premiumPrice(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections)) * 100 * (1 + TVA_RATE)),
+        productPrice: Math.round(premiumPrice(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections)) * (1 + TVA_RATE) * 100),
         productQuantity: orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
@@ -175,7 +198,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const createProjectAndDeferredInvoice = async (
     orderItems: OrderItem[]
   ): Promise<void> => {
-    await fetch(API_BASE_URL + '/checkout/deferred', {
+    const response = await fetch(API_BASE_URL + '/checkout/deferred', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,9 +207,14 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
       body: JSON.stringify(createCheckout(orderItems)),
     });
 
+    if (!response.ok) {
+      throw new Error(`Checkout différé échoué (HTTP ${response.status})`);
+    }
+
     orderItems.map((orderItem: OrderItem) =>
       dispatch(removeFromCartItemOfOrderItem(orderItem.documentId))
     );
+    toast.success('Commande enregistrée — paiement différé.');
     navigate('/common/projects');
   };
 
@@ -194,19 +222,29 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
     orderItems: OrderItem[]
   ): Promise<void> => {
     const response = await fetch(API_BASE_URL + '/checkout/stripe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `${TOKEN_TYPE}${token}`,
-        },
-        body: JSON.stringify(createCheckout(orderItems)),
-      }),
-      { id }: { id: string } = await response.json(),
-      stripe = await stripePromise;
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${TOKEN_TYPE}${token}`,
+      },
+      body: JSON.stringify(createCheckout(orderItems)),
+    });
 
-    if (stripe) {
-      await stripe.redirectToCheckout({ sessionId: id });
+    if (!response.ok) {
+      throw new Error(`Création de session Stripe échouée (HTTP ${response.status})`);
     }
+
+    const { id }: { id?: string } = await response.json();
+    if (!id) {
+      throw new Error('Session Stripe invalide (identifiant manquant).');
+    }
+
+    const stripe = await stripePromise;
+    if (!stripe) {
+      throw new Error('Stripe.js indisponible.');
+    }
+
+    await stripe.redirectToCheckout({ sessionId: id });
   };
 
   const itemCount = cart.reduce((sum, item) =>

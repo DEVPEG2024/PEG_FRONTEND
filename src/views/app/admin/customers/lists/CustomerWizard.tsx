@@ -173,7 +173,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
           nodes.map((c: any) => ({ label: c.name, value: c.documentId }))
         );
       })
-      .catch(() => {});
+      .catch((err) => console.error('[CustomerWizard] Échec chargement catégories:', err));
   }, [open]);
 
   // Populate fields when opening in edit mode

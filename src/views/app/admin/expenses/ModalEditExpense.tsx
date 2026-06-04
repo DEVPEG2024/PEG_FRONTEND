@@ -68,7 +68,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
           (projects_connection?.nodes ?? []).map((p: any) => ({ documentId: p.documentId, name: p.name }))
         );
       })
-      .catch(() => {});
+      .catch((err) => console.error('[ModalEditExpense] Échec chargement projets:', err));
   }, []);
 
   useEffect(() => {

@@ -94,12 +94,12 @@ export async function apiGetFile(documentId: string): Promise<PegFile[]> {
     return (response.data as { data: PegFile[] }).data ?? []
 }
 
-export async function apiGetAllFiles() : Promise<PegFile[]> {    
-    const response = await ApiService.fetchData<PegFile | PegFile[]>({
+export async function apiGetAllFiles() : Promise<PegFile[]> {
+    const response = await ApiService.fetchData<PegFile[]>({
         url: API_BASE_URL + "/upload/files/",
         method: 'get'
     })
-    
+
     return response.data
 }
 

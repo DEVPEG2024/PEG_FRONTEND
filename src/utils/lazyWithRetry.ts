@@ -4,8 +4,9 @@ import { lazy, ComponentType } from 'react'
  * Wrapper around React.lazy that auto-reloads the page once
  * when a dynamic import fails (stale chunk after deploy).
  */
-function lazyWithRetry(
-  importFn: () => Promise<{ default: ComponentType<unknown> }>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithRetry<T extends ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>
 ) {
   return lazy(() =>
     importFn().catch((error: Error) => {

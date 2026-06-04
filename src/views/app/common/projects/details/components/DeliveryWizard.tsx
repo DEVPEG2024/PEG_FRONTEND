@@ -76,7 +76,7 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
         try {
           const uploaded = await apiUploadFile(file);
           if (uploaded) uploadedImages.push(uploaded);
-        } catch {}
+        } catch (err) { console.error('[DeliveryWizard] Échec upload photo:', err); }
       }
 
       // Mark all checklist items as done

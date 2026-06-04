@@ -67,7 +67,6 @@ const ProjectDetails = () => {
       body: JSON.stringify({ userId: user.documentId }),
     })
       .then((r) => r.json())
-      .then((data) => console.log('[ProjectView] POST:', data))
       .catch((err) => console.error('[ProjectView] POST error:', err));
   }, [documentId, user?.documentId]);
 
@@ -78,7 +77,6 @@ const ProjectDetails = () => {
       fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`)
         .then((r) => r.json())
         .then((data) => {
-          console.log('[ProjectView] GET:', data);
           if (data.views?.length > 0) {
             setCustomerLastSeen(data.views[0].last_seen);
           }

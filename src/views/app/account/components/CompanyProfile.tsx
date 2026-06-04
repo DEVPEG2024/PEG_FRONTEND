@@ -91,7 +91,7 @@ const CompanyProfile = () => {
         fetch(`${API_BASE_URL}/auth/customer-categories`)
             .then(r => r.json())
             .then(data => { if (Array.isArray(data)) setCategories(data); })
-            .catch(() => {});
+            .catch((err) => console.error('[CompanyProfile] Échec chargement catégories:', err));
 
         if (user.customer?.documentId) {
             apiGetCustomerForEditByDocumentId(user.customer.documentId)
@@ -119,7 +119,7 @@ const CompanyProfile = () => {
                         });
                     }
                 })
-                .catch(() => {})
+                .catch((err) => console.error('[CompanyProfile] Échec chargement client:', err))
                 .finally(() => setLoading(false));
         } else {
             setLoading(false);

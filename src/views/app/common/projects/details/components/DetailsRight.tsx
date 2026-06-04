@@ -123,7 +123,7 @@ const DetailsRight = () => {
       .then(({ expenses_connection }) => {
         setProjectExpenses(expenses_connection.nodes.filter((e: Expense) => e.project?.documentId === project.documentId));
       })
-      .catch(() => {});
+      .catch((err) => console.error('[DetailsRight] Échec chargement dépenses:', err));
   }, [isAdmin, project?.documentId]);
   const totalExpenses = useMemo(() => projectExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0), [projectExpenses]);
   const totalAdditionalSales = useMemo(() => (project?.additionalSales ?? []).reduce((s: number, e: any) => s + (Number(e?.amount) || 0), 0), [project?.additionalSales]);

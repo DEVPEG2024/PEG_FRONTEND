@@ -68,10 +68,11 @@ const ProductsList = () => {
       try {
         if (productToDelete.images?.length > 0) {
           const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
-          apiDeleteFiles(pegFilesToDelete.map((f) => f.id));
+          await apiDeleteFiles(pegFilesToDelete.map((f) => f.id));
         }
-      } catch {
-        // Images introuvables ou déjà supprimées — on continue
+      } catch (err) {
+        // Images introuvables ou déjà supprimées — on continue, mais on trace
+        console.error('[Products] Échec suppression des images du produit:', err);
       }
     }
     dispatch(setModalDeleteProductClose());

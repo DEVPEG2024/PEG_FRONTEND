@@ -112,10 +112,10 @@ const Profile = () => {
       if (newAvatarFile) {
         const uploaded = await apiUploadFile(newAvatarFile);
         if (!uploaded?.id) throw new Error("Erreur lors de l'upload de la photo");
-        if (avatar) apiDeleteFile(avatar.id).catch(() => {});
+        if (avatar) apiDeleteFile(avatar.id).catch((err) => console.error('[Profile] Échec suppression ancien avatar:', err));
         updatedValues.avatar = Number(uploaded.id);
       } else if (avatarToDelete) {
-        apiDeleteFile(avatarToDelete.id).catch(() => {});
+        apiDeleteFile(avatarToDelete.id).catch((err) => console.error('[Profile] Échec suppression avatar:', err));
         updatedValues.avatar = null;
       }
       await dispatch(updateOwnUser({ user: updatedValues, id: String(user.id) }));

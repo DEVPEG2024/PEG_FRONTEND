@@ -157,7 +157,7 @@ const TicketsList = () => {
       try {
         const up = await apiUploadFile(f);
         if (up?.url) urls.push(ensureAbsoluteUrl(up.url));
-      } catch {}
+      } catch (err) { console.error('[Tickets] Échec upload fichier:', err); }
     }
     return urls;
   };

@@ -297,12 +297,22 @@ export async function apiGetNextInvoiceNumber(): Promise<string> {
         }
     }
     `;
-    const res = await ApiService.fetchData<ApiResponse<{ invoices_connection: { nodes: { name: string }[] } }>>({
+    const res = await ApiService.fetchData<ApiResponse<{ invoices_connection: { nodes: { name: string }[] } }> & { errors?: { message: string }[] }>({
         url: API_GRAPHQL_URL,
         method: 'post',
         data: { query }
     });
-    const nodes = res.data?.data?.invoices_connection?.nodes ?? [];
+    // La séquence FAC-XXXX est partagée PEG/NOVA : ne JAMAIS retomber sur FAC-0001
+    // silencieusement si la requête échoue (risque de collision de numéros).
+    const gqlErrors = res.data?.errors;
+    if (gqlErrors?.length) {
+        console.error('[Invoices] Erreurs GraphQL apiGetNextInvoiceNumber:', gqlErrors);
+        throw new Error('Impossible de récupérer le dernier numéro de facture (erreur GraphQL).');
+    }
+    if (!res.data?.data?.invoices_connection) {
+        throw new Error('Réponse GraphQL invalide pour le numéro de facture.');
+    }
+    const nodes = res.data.data.invoices_connection.nodes ?? [];
     let maxNum = 0;
     for (const node of nodes) {
         const match = node.name?.match(/^FAC-(\d+)$/);

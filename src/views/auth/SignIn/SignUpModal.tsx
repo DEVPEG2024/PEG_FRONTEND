@@ -100,7 +100,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
         fetch(`${API_BASE_URL}/auth/customer-categories`)
             .then((r) => r.json())
             .then((data) => { if (Array.isArray(data)) setCategories(data); })
-            .catch(() => {});
+            .catch((err) => console.error('[SignUp] Échec chargement catégories:', err));
     }, []);
 
     const {
@@ -143,7 +143,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to: values.email, firstName: values.firstName }),
-            }).catch(() => {});
+            }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
             setSuccessMessage('Votre compte a été créé avec succès ! Un email de bienvenue vous a été envoyé. Vous pouvez maintenant vous connecter.');
             reset();
         } catch (err: any) {

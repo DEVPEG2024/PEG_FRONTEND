@@ -1,5 +1,5 @@
 import { LayoutType } from './theme';
-import type { LazyExoticComponent, ReactNode } from 'react';
+import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 
 export interface Meta {
   pageContainerType?: 'default' | 'gutterless' | 'contained';
@@ -13,7 +13,8 @@ export interface Meta {
 export type Route = {
   key: string;
   path: string;
-  component: LazyExoticComponent<<T extends Meta>(props: T) => JSX.Element>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: LazyExoticComponent<ComponentType<any>>;
   authority: string[];
   meta?: Meta;
 };

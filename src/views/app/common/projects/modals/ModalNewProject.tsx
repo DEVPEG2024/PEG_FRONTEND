@@ -93,14 +93,14 @@ function ModalNewProject() {
     try {
       const { customers_connection }: { customers_connection: GetCustomersResponse } = await unwrapData(apiGetCustomers());
       setCustomers((customers_connection.nodes || []).map((c: Customer) => ({ value: c.documentId || '', label: c.name, logo: c.logo?.url })));
-    } catch {}
+    } catch (err) { console.error('[ModalNewProject] Échec chargement clients:', err); }
   };
 
   const fetchProducers = async () => {
     try {
       const { producers_connection }: { producers_connection: GetProducersResponse } = await unwrapData(apiGetProducers());
       setProducers((producers_connection.nodes || []).map((p: Producer) => ({ value: p.documentId || '', label: p.name })));
-    } catch {}
+    } catch (err) { console.error('[ModalNewProject] Échec chargement producteurs:', err); }
   };
 
   const handleRewrite = async () => {

@@ -218,7 +218,6 @@ const ProductForm = (props: ProductFormProps) => {
 
   // Show validation errors — jump to the step that has errors
   const onError = (formErrors: any) => {
-    console.log('[ProductForm] Validation errors:', formErrors);
     if (formErrors.name || formErrors.description) setCurrentStep(0);
     else if (formErrors.priceTiers || formErrors.pricePerM2) setCurrentStep(1);
   };

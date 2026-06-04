@@ -203,7 +203,9 @@ const DocumentsSection = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    apiGetDocuments().then((res) => setDocuments(res.data.documents)).catch(() => {});
+    apiGetDocuments()
+      .then((res) => setDocuments(res.data?.documents ?? []))
+      .catch((err) => console.error('[Chatbot] Échec chargement documents:', err));
   }, []);
 
   const handleFiles = async (files: FileList) => {

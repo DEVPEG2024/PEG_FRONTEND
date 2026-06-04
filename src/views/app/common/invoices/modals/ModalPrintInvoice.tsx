@@ -261,7 +261,7 @@ const ModalPrintInvoice = ({
             reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
-        } catch {}
+        } catch (err) { console.warn('[PrintInvoice] Logo indisponible, PDF généré sans logo:', err); }
 
         if (cancelled) return;
 

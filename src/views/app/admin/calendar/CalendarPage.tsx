@@ -1548,7 +1548,7 @@ const CalendarPage = () => {
                                 documentId: originalId,
                                 startDate: newStart.toISOString(),
                                 endDate: newEnd.toISOString(),
-                            } as any).catch(() => {})
+                            } as any).catch((err) => console.error('[Calendar] Échec mise à jour événement:', err))
                         }
                         return evts
                     })
@@ -1567,7 +1567,7 @@ const CalendarPage = () => {
                             apiUpdateCalendarEvent({
                                 documentId: originalId,
                                 endDate: newEnd.toISOString(),
-                            } as any).catch(() => {})
+                            } as any).catch((err) => console.error('[Calendar] Échec mise à jour événement:', err))
                         }
                         return evts
                     })
@@ -1659,7 +1659,7 @@ const CalendarPage = () => {
                         documentId: originalId,
                         startDate: newStart.toISOString(),
                         endDate: newEnd.toISOString(),
-                    } as any).catch(() => {})
+                    } as any).catch((err) => console.error('[Calendar] Échec mise à jour événement:', err))
                 }
 
                 return { ...evt, start: newStart, end: newEnd }

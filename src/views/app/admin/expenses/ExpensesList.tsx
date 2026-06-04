@@ -136,7 +136,7 @@ const ExpensesList = () => {
 
   useEffect(() => {
     dispatch(getExpenses({ pagination: { page: currentPage, pageSize }, searchTerm }));
-  }, [currentPage, searchTerm]);
+  }, [currentPage, pageSize, searchTerm]);
 
   // Générer les occurrences récurrentes après le premier chargement
   const [recurringChecked, setRecurringChecked] = useState(false);

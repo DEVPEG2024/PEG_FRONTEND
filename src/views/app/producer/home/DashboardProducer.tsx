@@ -109,7 +109,7 @@ const DashboardProducer = () => {
           const total = res?.data?.data?.projects_connection?.pageInfo?.total ?? 0;
           setPoolCount(total);
         })
-        .catch(() => {});
+        .catch((err) => console.error('[DashboardProducer] Échec comptage pool:', err));
     }
   }, [user]);
 

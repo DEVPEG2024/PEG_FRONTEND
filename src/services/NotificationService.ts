@@ -148,11 +148,18 @@ async function getAdminIds(): Promise<string[]> {
         }`
       }
     });
-    cachedAdminIds = (res.data?.data?.usersPermissionsUsers_connection?.nodes || [])
-      .map((n: any) => n.documentId)
-      .filter(Boolean);
+    if (res.data?.errors?.length) {
+      console.error('[Notifications] Erreurs GraphQL getAdminIds:', res.data.errors);
+    }
+    const nodes = res.data?.data?.usersPermissionsUsers_connection?.nodes || [];
+    const ids = nodes.map((n: any) => n.documentId).filter(Boolean);
+    // Ne pas mettre en cache un résultat vide : sinon les admins ne seraient
+    // jamais notifiés du reste de la session après un échec ponctuel.
+    if (ids.length === 0) return [];
+    cachedAdminIds = ids;
     return cachedAdminIds;
-  } catch {
+  } catch (error) {
+    console.error('[Notifications] Échec récupération des admins:', error);
     return [];
   }
 }

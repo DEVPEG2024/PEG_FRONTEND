@@ -201,7 +201,7 @@ const SizesList = () => {
     .sort((a, b) => {
       if (!a.category) return 1;
       if (!b.category) return -1;
-      return a.category.name.localeCompare(b.category.name);
+      return (a.category.name ?? '').localeCompare(b.category.name ?? '');
     });
 
   // ── Données vue MATRICE — UNE ligne par NOM de taille (regroupe les doublons historiques) ──

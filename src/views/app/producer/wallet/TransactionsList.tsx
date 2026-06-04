@@ -93,7 +93,9 @@ const TransactionsList = () => {
         user,
       })
     )
-  }, [])
+    // Re-fetch si l'utilisateur change (reconnexion) ; la référence Redux
+    // auth.user n'est stable que tant que l'auth ne change pas.
+  }, [dispatch, user])
 
   const sorted = useMemo(
     () =>
