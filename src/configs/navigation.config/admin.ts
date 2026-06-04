@@ -38,6 +38,16 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "admin.planning",
+    path: "/admin/planning",
+    title: "Planning",
+    translateKey: "nav.planning",
+    icon: "planning",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [],
+  },
+  {
     key: "admin.quotes",
     path: "/common/quotes",
     title: "Devis",

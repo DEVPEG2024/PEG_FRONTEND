@@ -27,6 +27,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/premium/PremiumAdminList")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // planning (planificateur de charge)
+  {
+    key: "admin.planning",
+    path: "/admin/planning",
+    component: lazy(() => import("@/views/app/admin/planning/PlanningPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   // customers
   {
     key: "admin.customers.list",
