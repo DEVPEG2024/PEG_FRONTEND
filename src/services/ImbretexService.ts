@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { env } from '@/configs/env.config';
 import type {
   ImbretexProductsResponse,
   ImbretexPriceStock,
@@ -9,19 +8,18 @@ import type {
   ImbretexDeletedResponse,
 } from '@/@types/imbretex';
 
-// Axios instance dédié Imbretex (token ≠ Strapi JWT)
+// Les appels Imbretex passent par le PROXY backend PEG (le token Imbretex est
+// détenu côté serveur, jamais exposé dans le bundle front).
+// Dev: backend Express local ; Prod: proxy same-origin /peg-api -> peg-backend.
+const PEG_BACKEND_BASE = import.meta.env.DEV
+  ? 'http://localhost:3000'
+  : '/peg-api';
+
+// baseURL = proxy backend ; le backend ajoute le Bearer token Imbretex.
 const imbretexAxios = axios.create({
-  baseURL: env.IMBRETEX_API_URL,
+  baseURL: `${PEG_BACKEND_BASE}/imbretex/api`,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
-});
-
-imbretexAxios.interceptors.request.use((config) => {
-  const token = env.IMBRETEX_API_TOKEN;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
 });
 
 // ─── Products ───
