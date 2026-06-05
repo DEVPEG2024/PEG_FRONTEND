@@ -158,6 +158,7 @@ const TicketsList = () => {
   const { user }: { user: User } = useRootAppSelector((state: RootState) => state.auth.user);
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]) && !isAdmin;
+  const isProducer = hasRole(user, [PRODUCER]) && !isAdmin && !isCustomer;
 
   const getUserRole = () => isAdmin ? 'admin' : hasRole(user, [CUSTOMER]) ? 'customer' : hasRole(user, [PRODUCER]) ? 'producer' : 'admin';
   const getDisplayName = () => [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Utilisateur';
@@ -725,8 +726,8 @@ const TicketsList = () => {
     </div>
   ) : null;
 
-  /* ═══════════ VUE ADMIN (dashboard gestion) ═══════════ */
-  if (isAdmin) {
+  /* ═══════════ VUE ADMIN / PRODUCTEUR (dashboard gestion) ═══════════ */
+  if (isAdmin || isProducer) {
     const typePalette = ['#8b7dff', '#6b9eff', '#4ade80', '#fbbf24', '#f87171', '#22d3ee'];
     return (
       <Container style={{ fontFamily: 'Inter, sans-serif', paddingBottom: '40px' }}>
