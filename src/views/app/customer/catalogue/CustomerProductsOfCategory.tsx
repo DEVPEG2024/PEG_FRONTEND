@@ -6,12 +6,14 @@ import reducer, {
   getCatalogueProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isEmpty } from 'lodash';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Product } from '@/@types/product';
+import { HiOutlineHome, HiChevronRight, HiArrowLeft, HiArrowRight, HiOutlineViewGrid, HiOutlineCube } from 'react-icons/hi';
 import CustomerProductCard from '../products/lists/CustomerProductCard';
-import GridItem from './components/GridItem';
+import SubCategoryCard from './components/SubCategoryCard';
+import { pickCategoryTagline } from '@/utils/categoryIcon';
 
 injectReducer('catalogue', reducer);
 
@@ -38,12 +40,25 @@ const CustomerProductsOfCategory = () => {
   const { documentId } =
     useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { products, productCategory, loading, total } = useAppSelector(
     (state) => state.catalogue.data
   );
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
   const pageCount = Math.ceil(total / PAGE_SIZE);
+
+  const activeSubs = (productCategory?.subcategories ?? []).filter((s) => s.active !== false);
+  const subProductsTotal = activeSubs.reduce((sum, s) => sum + (s.products?.length ?? 0), 0);
+  const productsCount = total || subProductsTotal || products.length;
+  const heroDescription =
+    pickCategoryTagline(productCategory?.name ?? '') ||
+    (activeSubs.length
+      ? `${activeSubs.slice(0, 4).map((s) => s.name).join(', ')}${activeSubs.length > 4 ? ' et plus encore' : ''}.`
+      : 'Découvrez notre sélection personnalisée, à votre image.');
+
+  const scrollBy = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 260, behavior: 'smooth' });
 
   useEffect(() => {
     if (!productCategory) {
@@ -67,40 +82,107 @@ const CustomerProductsOfCategory = () => {
   }, [documentId]);
 
   return (
-    <div style={{ padding: '0' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{
-          margin: 0,
-          fontSize: '22px',
-          fontWeight: 700,
-          color: '#f0f4ff',
-          letterSpacing: '-0.01em',
-        }}>
-          {productCategory?.name ?? '—'}
-        </h2>
-        {!loading && (
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'rgba(160,185,220,0.7)' }}>
-            {products.length} produit{products.length !== 1 ? 's' : ''}
-          </p>
-        )}
+    <div style={{ padding: '0', fontFamily: 'Inter, sans-serif' }}>
+      {/* Fil d'Ariane */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '13.5px' }}>
+        <HiOutlineHome
+          size={17}
+          style={{ color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+          onClick={() => navigate('/customer/catalogue')}
+        />
+        <HiChevronRight size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
+        <span
+          onClick={() => navigate('/customer/catalogue')}
+          style={{ color: '#a99bff', fontWeight: 600, cursor: 'pointer' }}
+        >
+          Catalogue
+        </span>
+        <HiChevronRight size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
+        <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{productCategory?.name ?? '—'}</span>
       </div>
 
-      {/* Sous-catégories — mêmes cartes que le catalogue */}
-      {!loading && productCategory?.subcategories && productCategory.subcategories.filter((s) => s.active !== false).length > 0 && (
-        <div style={{ marginBottom: '28px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-            Sous-catégories
-          </p>
+      {/* Héro catégorie */}
+      <div style={{
+        position: 'relative', overflow: 'hidden', borderRadius: '20px',
+        border: '1px solid rgba(255,255,255,0.08)', marginBottom: '30px', minHeight: '230px',
+        display: 'flex', alignItems: 'center',
+        background: 'radial-gradient(120% 160% at 78% 8%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.08) 40%, rgba(10,12,22,0.35) 72%), linear-gradient(160deg, #12152a 0%, #0a0c16 100%)',
+      }}>
+        {/* swoosh décoratif */}
+        <svg viewBox="0 0 600 300" preserveAspectRatio="none" aria-hidden style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: '60%', pointerEvents: 'none', opacity: 0.9 }}>
+          <defs>
+            <linearGradient id="catSwoosh" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#8b7dff" stopOpacity="0" /><stop offset="1" stopColor="#8b7dff" stopOpacity="0.7" />
+            </linearGradient>
+          </defs>
+          <path d="M120 320 Q360 -40 640 60" fill="none" stroke="url(#catSwoosh)" strokeWidth="2.5" />
+          <path d="M60 340 Q380 -10 660 120" fill="none" stroke="url(#catSwoosh)" strokeWidth="1.2" opacity="0.5" />
+        </svg>
+
+        {/* image catégorie à droite */}
+        {productCategory?.image?.url && (
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: '20px',
+            position: 'absolute', right: 0, top: 0, bottom: 0, width: '52%',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 32%)',
+            maskImage: 'linear-gradient(to right, transparent 0%, #000 32%)',
           }}>
-            {productCategory.subcategories.filter((s) => s.active !== false).map((sub) => (
-              <GridItem key={sub.documentId} data={sub} />
+            <img src={productCategory.image.url} alt={productCategory.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </div>
+        )}
+
+        {/* contenu */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '40px 44px', maxWidth: '640px' }}>
+          <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 12px' }}>
+            {productCategory?.name ?? '—'}
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', lineHeight: 1.55, margin: '0 0 26px', maxWidth: '480px' }}>
+            {heroDescription}
+          </p>
+
+          {/* chips stats */}
+          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+            {[
+              { icon: <HiOutlineViewGrid size={22} />, value: activeSubs.length, label: 'sous-catégories' },
+              { icon: <HiOutlineCube size={22} />, value: productsCount, label: 'produits disponibles' },
+            ].map((chip) => (
+              <div key={chip.label} style={{ display: 'flex', alignItems: 'center', gap: '13px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '12px 20px 12px 14px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a99bff', flexShrink: 0 }}>
+                  {chip.icon}
+                </div>
+                <div>
+                  <div style={{ color: '#fff', fontSize: '23px', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>{chip.value}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12.5px', marginTop: '4px' }}>{chip.label}</div>
+                </div>
+              </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Sous-catégories — carrousel */}
+      {!loading && activeSubs.length > 0 && (
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>Sous-catégories</h3>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {[{ d: -1, icon: <HiArrowLeft size={17} /> }, { d: 1, icon: <HiArrowRight size={17} /> }].map((b) => (
+                <button key={b.d} onClick={() => scrollBy(b.d)}
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, border-color 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,107,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; }}
+                >
+                  {b.icon}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div ref={scrollRef} className="subcat-scroll" style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '4px' }}>
+            {activeSubs.map((sub) => (
+              <SubCategoryCard key={sub.documentId} data={sub} />
+            ))}
+          </div>
+          <style>{`.subcat-scroll::-webkit-scrollbar{display:none;} .subcat-scroll{scrollbar-width:none;}`}</style>
         </div>
       )}
 
