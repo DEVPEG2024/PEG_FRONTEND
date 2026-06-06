@@ -108,11 +108,11 @@ const CustomerProductsOfCategory = () => {
         display: 'flex', alignItems: 'center',
         background: 'radial-gradient(120% 160% at 78% 8%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.08) 40%, rgba(10,12,22,0.35) 72%), linear-gradient(160deg, #12152a 0%, #0a0c16 100%)',
       }}>
-        {/* bannière produits (fond) */}
+        {/* bannière produits (fond) — toujours la bannière PEG */}
         <img
-          src={productCategory?.image?.url || '/img/illustrations/category-hero.png'}
+          src="/img/illustrations/category-hero.png"
           alt={productCategory?.name ?? 'Catégorie'}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right center', display: 'block' }}
         />
         {/* voile dégradé pour la lisibilité du texte à gauche */}
         <div style={{
