@@ -35,7 +35,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{
-        flex: '0 0 auto', width: '230px', scrollSnapAlign: 'start',
+        flex: '0 0 auto', width: '208px', scrollSnapAlign: 'start',
         position: 'relative', borderRadius: '18px', overflow: 'hidden', cursor: 'pointer',
         background: 'linear-gradient(165deg, #161a2e 0%, #0e1120 100%)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -45,7 +45,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
       }}
     >
       {/* Zone image */}
-      <div style={{ position: 'relative', height: '180px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', height: '150px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {image?.url ? (
           <img
             ref={imgRef}

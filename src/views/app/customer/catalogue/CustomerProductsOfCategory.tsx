@@ -186,8 +186,8 @@ const CustomerProductsOfCategory = () => {
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && isEmpty(products) && (
+      {/* Empty state — masqué si la catégorie possède des sous-catégories */}
+      {!loading && isEmpty(products) && activeSubs.length === 0 && (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
