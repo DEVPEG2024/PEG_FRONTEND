@@ -94,7 +94,9 @@ const DashboardCustomer = () => {
   }, [dispatch, user.customer?.documentId]);
 
   // Récupère les produits du catalogue pour les suggestions
+  // (uniquement si le client a accès au catalogue)
   useEffect(() => {
+    if (!catalogAccess) { setSuggestions([]); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -108,7 +110,7 @@ const DashboardCustomer = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [catalogAccess]);
 
   // Auto-scroll continu du carrousel de suggestions
   useEffect(() => {
@@ -515,7 +517,7 @@ const DashboardCustomer = () => {
             </div>
 
             {/* ── Suggestions (carrousel auto-défilant, comme le panier) ── */}
-            {suggestions.length > 0 && (
+            {catalogAccess && suggestions.length > 0 && (
               <SectionCard style={{ padding: '22px 0 22px 24px' }}>
                 <div style={{ paddingRight: '24px' }}>
                   <SectionHeader
