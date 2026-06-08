@@ -6,11 +6,11 @@ import reducer, {
   getCatalogueProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isEmpty } from 'lodash';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Product } from '@/@types/product';
-import { HiOutlineHome, HiChevronRight, HiArrowLeft, HiArrowRight, HiOutlineViewGrid, HiOutlineCube } from 'react-icons/hi';
+import { HiOutlineHome, HiChevronRight, HiOutlineViewGrid, HiOutlineCube } from 'react-icons/hi';
 import CustomerProductCard from '../products/lists/CustomerProductCard';
 import SubCategoryCard from './components/SubCategoryCard';
 import { pickCategoryTagline } from '@/utils/categoryIcon';
@@ -41,7 +41,6 @@ const CustomerProductsOfCategory = () => {
     useParams<ShowCustomerProductsOfCategoryParams>() as ShowCustomerProductsOfCategoryParams;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const scrollRef = useRef<HTMLDivElement>(null);
   const { products, productCategory, loading, total } = useAppSelector(
     (state) => state.catalogue.data
   );
@@ -58,7 +57,6 @@ const CustomerProductsOfCategory = () => {
       ? `${activeSubs.slice(0, 4).map((s) => s.name).join(', ')}${activeSubs.length > 4 ? ' et plus encore' : ''}.`
       : 'Découvrez notre sélection personnalisée, à votre image.');
 
-  const scrollBy = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
 
   useEffect(() => {
     if (!productCategory) {
@@ -154,24 +152,12 @@ const CustomerProductsOfCategory = () => {
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>Sous-catégories</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {[{ d: -1, icon: <HiArrowLeft size={17} /> }, { d: 1, icon: <HiArrowRight size={17} /> }].map((b) => (
-                <button key={b.d} onClick={() => scrollBy(b.d)}
-                  style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, border-color 0.15s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,107,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; }}
-                >
-                  {b.icon}
-                </button>
-              ))}
-            </div>
           </div>
-          <div ref={scrollRef} className="subcat-scroll" style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
             {activeSubs.map((sub) => (
               <SubCategoryCard key={sub.documentId} data={sub} />
             ))}
           </div>
-          <style>{`.subcat-scroll::-webkit-scrollbar{display:none;} .subcat-scroll{scrollbar-width:none;}`}</style>
         </div>
       )}
 

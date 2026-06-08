@@ -35,7 +35,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{
-        flex: '0 0 auto', width: '270px', scrollSnapAlign: 'start',
+        width: '100%',
         position: 'relative', borderRadius: '18px', overflow: 'hidden', cursor: 'pointer',
         background: 'linear-gradient(165deg, #161a2e 0%, #0e1120 100%)',
         border: '1px solid rgba(255,255,255,0.08)',
