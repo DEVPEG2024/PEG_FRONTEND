@@ -1,6 +1,6 @@
 import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
-import { ReactNode, Suspense, useEffect, useRef, useState } from 'react';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiGetProducts } from '@/services/ProductServices';
 import { Link, useNavigate } from 'react-router-dom';
@@ -84,8 +84,6 @@ const DashboardCustomer = () => {
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isPausedRef = useRef(false);
 
   useEffect(() => {
     if (user.customer?.documentId) {
@@ -111,28 +109,6 @@ const DashboardCustomer = () => {
     })();
     return () => { cancelled = true; };
   }, [catalogAccess]);
-
-  // Auto-scroll continu du carrousel de suggestions
-  useEffect(() => {
-    if (suggestions.length === 0) return;
-    let raf: number | null = null;
-    const startTimeout = setTimeout(() => {
-      const el = scrollRef.current;
-      if (!el) return;
-      const step = () => {
-        if (!isPausedRef.current && el) {
-          el.scrollLeft += 0.6;
-          if (el.scrollLeft >= el.scrollWidth / 2) el.scrollLeft = 0;
-        }
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    }, 200);
-    return () => {
-      clearTimeout(startTimeout);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [suggestions.length]);
 
   if (loading) {
     return (
@@ -526,37 +502,39 @@ const DashboardCustomer = () => {
                     action={catalogAccess ? <Link to="/customer/catalogue" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir le catalogue <HiArrowRight size={12} /></Link> : undefined}
                   />
                 </div>
-                <div
-                  ref={scrollRef}
-                  onMouseEnter={() => { isPausedRef.current = true; }}
-                  onMouseLeave={() => { isPausedRef.current = false; }}
-                  style={{ display: 'flex', gap: '14px', overflowX: 'hidden', scrollbarWidth: 'none', paddingRight: '24px' }}
-                >
-                  {[...suggestions, ...suggestions].map((product, idx) => {
-                    const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
-                    return (
-                      <div
-                        key={`${product.documentId}-${idx}`}
-                        onClick={() => navigate(`/customer/product/${product.documentId}`)}
-                        style={{ flexShrink: 0, width: '210px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          {product.images?.[0]?.url
-                            ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <HiOutlineCube size={30} color="rgba(255,255,255,0.2)" />}
-                        </div>
-                        <div style={{ padding: '12px 14px' }}>
-                          <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-                            <span style={{ background: 'rgba(124,107,255,0.12)', border: '1px solid rgba(124,107,255,0.25)', borderRadius: '8px', padding: '4px 9px', color: '#a99bff', fontSize: '12px', fontWeight: 800 }}>{fmtHT(priceHT)}</span>
-                            <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 600 }}>Voir →</span>
+                <div className="dash-suggest-mask" style={{ overflow: 'hidden', paddingRight: '24px' }}>
+                  <div className="dash-suggest-track" style={{ display: 'flex', width: 'max-content' }}>
+                    {[...suggestions, ...suggestions].map((product, idx) => {
+                      const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
+                      return (
+                        <div
+                          key={`${product.documentId}-${idx}`}
+                          onClick={() => navigate(`/customer/product/${product.documentId}`)}
+                          style={{ flexShrink: 0, width: '210px', marginRight: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        >
+                          <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {product.images?.[0]?.url
+                              ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <HiOutlineCube size={30} color="rgba(255,255,255,0.2)" />}
+                          </div>
+                          <div style={{ padding: '12px 14px' }}>
+                            <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                              <span style={{ background: 'rgba(124,107,255,0.12)', border: '1px solid rgba(124,107,255,0.25)', borderRadius: '8px', padding: '4px 9px', color: '#a99bff', fontSize: '12px', fontWeight: 800 }}>{fmtHT(priceHT)}</span>
+                              <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 600 }}>Voir →</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  <style>{`
+                    @keyframes dashSuggestScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                    .dash-suggest-track { animation: dashSuggestScroll ${Math.max(20, suggestions.length * 4)}s linear infinite; }
+                    .dash-suggest-mask:hover .dash-suggest-track { animation-play-state: paused; }
+                  `}</style>
                 </div>
               </SectionCard>
             )}
