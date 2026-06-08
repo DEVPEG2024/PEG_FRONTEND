@@ -75,9 +75,20 @@ function useAuth() {
             // Échec d'authentification : purger toute session partielle.
             dispatch(signOutSuccess())
             sessionStorage.removeItem('token')
+            // 429 = trop de tentatives → message explicite plutôt que le brut
+            // "AxiosError: Request failed with status code 429".
+            if (errors?.response?.status === 429) {
+                return {
+                    status: 'failed',
+                    message: 'Trop de tentatives de connexion. Patientez une minute puis réessayez.',
+                }
+            }
             return {
                 status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
+                message:
+                    errors?.response?.data?.error?.message ||
+                    errors?.response?.data?.message ||
+                    errors.toString(),
             }
         }
     }
