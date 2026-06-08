@@ -33,6 +33,7 @@ import { CartItem } from '@/@types/cart';
 import { FormAnswer } from '@/@types/formAnswer';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
 import { RichTextEditor } from '@/components/shared';
+import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
@@ -375,18 +376,7 @@ const ShowProduct = () => {
 
             {/* Image panel */}
             <div style={{ flex: '0 0 auto', width: '300px', maxWidth: '100%', background: '#f8faff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '280px', padding: '24px' }}>
-              {product.images?.[0]?.url ? (
-                <img src={product.images[0].url} alt={product.name} style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain', borderRadius: '6px' }} />
-              ) : (
-                <div style={{ fontSize: '48px', opacity: 0.15 }}>📦</div>
-              )}
-              {product.images?.length > 1 && (
-                <div style={{ display: 'flex', gap: '6px', marginTop: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {product.images.slice(1, 5).map((img, i) => (
-                    <img key={i} src={img.url} alt="" style={{ width: '44px', height: '44px', objectFit: 'contain', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', background: '#fff', padding: '2px' }} />
-                  ))}
-                </div>
-              )}
+              <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={220} />
             </div>
 
             {/* Info panel */}
