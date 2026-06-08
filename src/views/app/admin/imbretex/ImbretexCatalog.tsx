@@ -508,6 +508,12 @@ const ImbretexCatalog = () => {
 
   // Import selected products into PEG (full: category, sizes, colors, price, image)
   const [importProgress, setImportProgress] = useState('');
+  // Majoration % appliquée au prix fournisseur pour fixer le prix de vente à l'import.
+  // Mémorisée pour le prochain import. Le prix fournisseur brut est conservé comme prix de revient.
+  const [markupPercent, setMarkupPercent] = useState<number>(() => {
+    const saved = parseFloat(localStorage.getItem('imbretex_markup') || '');
+    return Number.isFinite(saved) ? saved : 0;
+  });
 
   const handleImport = useCallback(async () => {
     const toImport = allProducts.filter((p) => selectedRefs.has(p.reference));
@@ -522,7 +528,7 @@ const ImbretexCatalog = () => {
       const product = toImport[i];
       setImportProgress(`${i + 1}/${toImport.length} — ${product.reference}`);
 
-      const result = await importImbretexProduct(product);
+      const result = await importImbretexProduct(product, markupPercent);
       if (result.success) {
         created++;
       } else {
@@ -536,12 +542,13 @@ const ImbretexCatalog = () => {
     setSelectedRefs(new Set());
 
     if (created > 0) {
-      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''} dans PEG (catégorie, tailles, couleurs, prix, image)`);
+      const markupLabel = markupPercent > 0 ? `, +${markupPercent}% sur le prix` : '';
+      toast.success(`${created} produit${created > 1 ? 's' : ''} importé${created > 1 ? 's' : ''} dans PEG (catégorie, tailles, couleurs, prix de revient${markupLabel}, image)`);
     }
     if (errors > 0) {
       toast.warn(`${errors} erreur${errors > 1 ? 's' : ''} lors de l'import`);
     }
-  }, [allProducts, selectedRefs]);
+  }, [allProducts, selectedRefs, markupPercent]);
 
   // View product detail → fetch price/stock
   const handleViewProduct = useCallback((product: ImbretexProduct) => {
@@ -808,6 +815,30 @@ const ImbretexCatalog = () => {
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>
             {selectedRefs.size} produit{selectedRefs.size > 1 ? 's' : ''} sélectionné{selectedRefs.size > 1 ? 's' : ''}
           </span>
+
+          {/* Majoration % appliquée au prix fournisseur (prix de vente = fournisseur × (1 + %)) */}
+          <div
+            title="Le prix fournisseur devient le prix de revient. Le prix de vente = fournisseur + cette majoration."
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '4px 10px' }}
+          >
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 600 }}>Majoration</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={Number.isFinite(markupPercent) ? markupPercent : 0}
+              disabled={importing}
+              onChange={(e) => {
+                const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                const safe = Number.isFinite(v) && v >= 0 ? v : 0;
+                setMarkupPercent(safe);
+                localStorage.setItem('imbretex_markup', String(safe));
+              }}
+              style={{ width: '56px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', padding: '5px 8px', color: '#fff', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif', outline: 'none', textAlign: 'right' }}
+            />
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 700 }}>%</span>
+          </div>
+
           <button
             onClick={handleImport}
             disabled={importing}

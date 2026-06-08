@@ -326,10 +326,29 @@ const OrderItemsList = () => {
                     </div>
                   </div>
 
-                  {/* Price */}
-                  <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700, flexShrink: 0 }}>
-                    {fmtPrice(order.price ?? 0)}
-                  </span>
+                  {/* Price + marge (réf. interne admin) */}
+                  {(() => {
+                    const cost = order.product?.cost ?? 0;
+                    const lineCost = cost * totalQty;
+                    const price = order.price ?? 0;
+                    const margin = price - lineCost;
+                    const rate = price > 0 ? Math.round((margin / price) * 100) : null;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0 }}>
+                        <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>
+                          {fmtPrice(price)}
+                        </span>
+                        {cost > 0 && (
+                          <span
+                            title={`Prix de revient: ${fmtPrice(lineCost)} (${fmtPrice(cost)} × ${totalQty || 1})`}
+                            style={{ fontSize: '11px', fontWeight: 700, color: margin >= 0 ? '#4ade80' : '#f87171' }}
+                          >
+                            marge {fmtPrice(margin)}{rate != null ? ` · ${rate}%` : ''}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Project badge */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>

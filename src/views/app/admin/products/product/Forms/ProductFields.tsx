@@ -506,6 +506,58 @@ const ProductFields = (props: ProductFieldsProps) => {
           />
         </div>
       </div>
+
+      {/* ── Prix de revient (référence interne admin) ── */}
+      <div style={{ ...card, marginTop: 0 }}>
+        <p style={sectionTitle}>Prix de revient (référence interne)</p>
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '12px', marginTop: 0 }}>
+          Coût d'achat HT du produit. Visible par l'admin uniquement (jamais par le client). Sert au calcul des marges sur les produits et les commandes.
+        </p>
+        <Controller
+          name="cost"
+          control={control}
+          render={({ field }) => {
+            const cost = typeof field.value === 'number' ? field.value : null;
+            const mode = watch('pricingMode') || 'tiers';
+            const tiers = watch('priceTiers') || [];
+            const sellRef = mode === 'm2' ? (watch('pricePerM2') || 0) : (tiers[0]?.price || 0);
+            const margin = cost != null && sellRef > 0 ? sellRef - cost : null;
+            const rate = cost != null && sellRef > 0 ? Math.round(((sellRef - cost) / sellRef) * 100) : null;
+            return (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ maxWidth: '280px', flex: '1 1 200px' }}>
+                  <label style={fieldLabel}>Prix de revient HT (€)</label>
+                  <Input
+                    type="number"
+                    value={field.value ?? ''}
+                    min={0}
+                    step={0.01}
+                    placeholder="Ex: 6.50"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      field.onChange(val === '' ? null : parseFloat(val));
+                    }}
+                  />
+                </div>
+                {margin != null && (
+                  <div style={{
+                    background: margin >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                    border: `1px solid ${margin >= 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                    borderRadius: '10px', padding: '8px 14px',
+                  }}>
+                    <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      Marge unitaire (1er palier)
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: margin >= 0 ? '#4ade80' : '#f87171' }}>
+                      {margin.toFixed(2)} € {rate != null && <span style={{ fontSize: '12px', fontWeight: 600 }}>({rate}%)</span>}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          }}
+        />
+      </div>
       </>)}
 
       {/* ── Step 2 : Catégories & Options ── */}

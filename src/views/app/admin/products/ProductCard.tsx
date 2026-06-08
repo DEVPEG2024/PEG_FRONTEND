@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
-import { getProductBasePrice } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum, arePricesHidden } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
 
@@ -23,6 +23,11 @@ const ProductCard = memo(
     const imageUrl = product.images[0]?.url;
     const initial = (product.name || '?').charAt(0).toUpperCase();
     const price = arePricesHidden() ? '•••••' : fmtNum(getProductBasePrice(product));
+    const cost = getProductCost(product);
+    const basePrice = getProductBasePrice(product);
+    const unitMargin = getUnitMargin(basePrice, cost);
+    const marginRate = getMarginRate(basePrice, cost);
+    const showMargin = cost > 0 && !arePricesHidden();
 
     const handleMouseEnter = () => {
       if (cardRef.current) {
@@ -132,6 +137,26 @@ const ProductCard = memo(
               </span>
             )}
           </div>
+
+          {/* Marge (admin only — réf. interne) */}
+          {showMargin && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start',
+              background: unitMargin >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${unitMargin >= 0 ? 'rgba(34,197,94,0.28)' : 'rgba(239,68,68,0.28)'}`,
+              borderRadius: '8px', padding: '4px 9px',
+            }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Marge
+              </span>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: unitMargin >= 0 ? '#4ade80' : '#f87171' }}>
+                {fmtNum(unitMargin)} €{marginRate != null ? ` · ${marginRate}%` : ''}
+              </span>
+              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>
+                (revient {fmtNum(cost)} €)
+              </span>
+            </div>
+          )}
 
           {/* Sizes + colors count */}
           {(product.sizes?.length > 0 || product.colors?.length > 0) && (

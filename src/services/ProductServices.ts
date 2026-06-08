@@ -65,6 +65,7 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             pricingMode
             pricePerM2
             minM2
+            cost
             images {
                 documentId
                 url
@@ -191,6 +192,7 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                 name
                 price
                 priceTiers
+                cost
                 images {
                     documentId
                     url
@@ -231,6 +233,7 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
             name
             price
             priceTiers
+            cost
             images {
                 documentId
                 url
@@ -406,6 +409,7 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
             name
             price
             priceTiers
+            cost
             images {
                 documentId
                 url

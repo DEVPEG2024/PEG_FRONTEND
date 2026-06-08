@@ -288,7 +288,8 @@ export type ImportResult = {
 };
 
 export async function importImbretexProduct(
-  product: ImbretexProduct
+  product: ImbretexProduct,
+  markupPercent: number = 0
 ): Promise<ImportResult> {
   const ref = product.reference;
   const mv = product.variants[0];
@@ -333,17 +334,21 @@ export async function importImbretexProduct(
     const imageDocId = await uploadImbretexImage(product);
     console.log(`[Import] ${ref} image: ${imageDocId || 'aucune'}`);
 
-    // Prix
-    let price = 0;
+    // Prix fournisseur (= prix de revient / cost) puis prix de vente avec majoration
+    let supplierPrice = 0;
     try {
       const pd = await apiGetImbretexPriceStockByRef(ref);
       if (Array.isArray(pd.products) && pd.products.length > 0) {
-        price = parseFloat(pd.products[0].price) || 0;
+        supplierPrice = parseFloat(pd.products[0].price) || 0;
       }
     } catch {
       /* */
     }
-    console.log(`[Import] ${ref} prix: ${price}€`);
+    const sellPrice =
+      Math.round(supplierPrice * (1 + (markupPercent || 0) / 100) * 100) / 100;
+    console.log(
+      `[Import] ${ref} prix fournisseur (revient): ${supplierPrice}€ → vente (+${markupPercent || 0}%): ${sellPrice}€`
+    );
 
     // Étape 1 : création du produit (sans relations many-to-many)
     const createData: Record<string, any> = {
@@ -351,7 +356,7 @@ export async function importImbretexProduct(
       description: mv.description?.fr || '',
       active: true,
       inCatalogue: true,
-      priceTiers: [{ minQuantity: 1, price }],
+      priceTiers: [{ minQuantity: 1, price: sellPrice }],
     };
     if (catId) createData.productCategory = catId;
     if (imageDocId) createData.images = [imageDocId];
@@ -383,6 +388,10 @@ export async function importImbretexProduct(
       sizes: { set: sizeIds },
       colors: { set: colorIds },
     };
+    // Prix de revient (= prix fournisseur brut). Envoyé via REST : si la colonne
+    // `cost` n'est pas encore déployée côté Strapi, elle est simplement ignorée
+    // (REST sanitize) sans casser l'import.
+    if (supplierPrice > 0) restData.cost = supplierPrice;
 
     console.log(`[Import] ${ref} UPDATE relations:`, JSON.stringify(restData));
 

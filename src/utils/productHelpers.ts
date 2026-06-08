@@ -41,6 +41,28 @@ export function getProductBasePrice(product: Product): number {
   return product.price || 0;
 }
 
+/**
+ * Prix de revient (coût) HT d'un produit. Référence interne admin.
+ * Retourne 0 si non renseigné.
+ */
+export function getProductCost(product?: Product | null): number {
+  return product?.cost != null ? product.cost : 0;
+}
+
+/** Marge unitaire en € : prix de vente − prix de revient. Arrondie au centime. */
+export function getUnitMargin(sellPrice: number, cost: number): number {
+  return Math.round((sellPrice - cost) * 100) / 100;
+}
+
+/**
+ * Taux de marge en % calculé sur le prix de vente : (vente − coût) / vente × 100.
+ * Retourne null si le prix de vente est nul/absent (taux non défini).
+ */
+export function getMarginRate(sellPrice: number, cost: number): number | null {
+  if (!sellPrice || sellPrice <= 0) return null;
+  return Math.round(((sellPrice - cost) / sellPrice) * 100);
+}
+
 export function getProductPriceForQuantity(
   product: Product,
   quantity: number

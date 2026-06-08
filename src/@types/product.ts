@@ -38,6 +38,12 @@ export type Product = {
   pricingMode?: 'tiers' | 'packs' | 'm2';
   pricePerM2?: number;
   minM2?: number;
+  /**
+   * Prix de revient HT (coût fournisseur). Référence INTERNE admin uniquement,
+   * jamais exposée au client. Sert au calcul des marges sur les produits et
+   * les commandes. Rempli automatiquement à l'import catalogue (= prix fournisseur).
+   */
+  cost?: number | null;
 };
 
 /**

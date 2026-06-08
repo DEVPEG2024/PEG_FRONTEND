@@ -49,6 +49,7 @@ export type ProductFormModel = Omit<
   pricingMode?: 'tiers' | 'packs' | 'm2';
   pricePerM2?: number;
   minM2?: number;
+  cost?: number | null;
 };
 
 export type OnDeleteCallback = React.Dispatch<React.SetStateAction<boolean>>;

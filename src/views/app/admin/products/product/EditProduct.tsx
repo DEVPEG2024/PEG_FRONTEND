@@ -97,6 +97,7 @@ const EditProduct = () => {
     pricingMode: product?.pricingMode ?? 'tiers',
     pricePerM2: product?.pricePerM2 ?? undefined,
     minM2: product?.minM2 ?? undefined,
+    cost: product?.cost ?? undefined,
   }), [product?.documentId]);
   const dispatch = useAppDispatch();
 
