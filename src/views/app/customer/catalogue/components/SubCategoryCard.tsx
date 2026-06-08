@@ -35,7 +35,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{
-        flex: '0 0 auto', width: '208px', scrollSnapAlign: 'start',
+        flex: '0 0 auto', width: '270px', scrollSnapAlign: 'start',
         position: 'relative', borderRadius: '18px', overflow: 'hidden', cursor: 'pointer',
         background: 'linear-gradient(165deg, #161a2e 0%, #0e1120 100%)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -45,7 +45,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
       }}
     >
       {/* Zone image */}
-      <div style={{ position: 'relative', height: '150px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', height: '195px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {image?.url ? (
           <img
             ref={imgRef}
@@ -73,7 +73,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
 
       {/* Pied : nom + compteur */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '14px 16px 16px' }}>
-        <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ color: '#fff', fontSize: '16px', fontWeight: 700, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {name}
         </span>
         <span style={{

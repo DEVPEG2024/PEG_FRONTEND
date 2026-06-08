@@ -58,7 +58,7 @@ const CustomerProductsOfCategory = () => {
       ? `${activeSubs.slice(0, 4).map((s) => s.name).join(', ')}${activeSubs.length > 4 ? ' et plus encore' : ''}.`
       : 'Découvrez notre sélection personnalisée, à votre image.');
 
-  const scrollBy = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 260, behavior: 'smooth' });
+  const scrollBy = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
 
   useEffect(() => {
     if (!productCategory) {
