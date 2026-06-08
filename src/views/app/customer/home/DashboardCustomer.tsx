@@ -1,7 +1,8 @@
 import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
-import { ReactNode, Suspense, useEffect } from 'react';
+import { ReactNode, Suspense, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { apiGetProducts } from '@/services/ProductServices';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -24,7 +25,7 @@ import { Project } from '@/@types/project';
 import { Product } from '@/@types/product';
 import dayjs from 'dayjs';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
+import { fmtHT } from '@/utils/priceHelpers';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -79,15 +80,57 @@ const DashboardCustomer = () => {
   const { user }: { user: User } = useSelector(
     (state: RootState) => state.auth.user!
   );
-  // "Mes offres personnalisées" est réservé aux clients Premium
-  const isPremium = !!user?.customer?.premium;
   const catalogAccess = user.customer?.catalogAccess !== false;
+
+  // Suggestions produits (carrousel auto-défilant, comme le panier)
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
 
   useEffect(() => {
     if (user.customer?.documentId) {
       dispatch(getDashboardCustomerInformations(user.customer.documentId));
     }
   }, [dispatch, user.customer?.documentId]);
+
+  // Récupère les produits du catalogue pour les suggestions
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiGetProducts({ pagination: { page: 1, pageSize: 100 }, searchTerm: '' });
+        const all: Product[] = (res.data?.data?.products_connection?.nodes ?? []).filter(
+          (p: Product) => p.active && p.inCatalogue
+        );
+        if (!cancelled) setSuggestions(all);
+      } catch (err) {
+        console.error('Failed to fetch suggestions:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Auto-scroll continu du carrousel de suggestions
+  useEffect(() => {
+    if (suggestions.length === 0) return;
+    let raf: number | null = null;
+    const startTimeout = setTimeout(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const step = () => {
+        if (!isPausedRef.current && el) {
+          el.scrollLeft += 0.6;
+          if (el.scrollLeft >= el.scrollWidth / 2) el.scrollLeft = 0;
+        }
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, 200);
+    return () => {
+      clearTimeout(startTimeout);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [suggestions.length]);
 
   if (loading) {
     return (
@@ -171,8 +214,7 @@ const DashboardCustomer = () => {
     { icon: <HiOutlineLightningBolt size={20} />, title: 'Livraison rapide', sub: 'Respect des délais et suivi en temps réel' },
   ];
 
-  const offerProducts = isPremium ? products.slice(0, 4) : [];
-  const recommendedProducts = products.slice(4, 9);
+  const recommendedProducts = products.slice(0, 5);
 
   const lastOrderImage = lastOrder?.images?.[0]?.url || lastOrder?.orderItem?.product?.images?.[0]?.url;
   const lastOrderState = lastOrder ? getStateInfo(lastOrder.state) : null;
@@ -472,49 +514,53 @@ const DashboardCustomer = () => {
               </SectionCard>
             </div>
 
-            {/* ── 3 colonnes : offres / recommandé / avantages ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-              {/* Vos offres personnalisées */}
-              {offerProducts.length > 0 && (
-                <SectionCard>
+            {/* ── Suggestions (carrousel auto-défilant, comme le panier) ── */}
+            {suggestions.length > 0 && (
+              <SectionCard style={{ padding: '22px 0 22px 24px' }}>
+                <div style={{ paddingRight: '24px' }}>
                   <SectionHeader
                     icon={<HiOutlineCollection size={18} />}
-                    title="Vos offres personnalisées"
-                    action={<Link to="/customer/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link>}
+                    title="Suggestions pour vous"
+                    action={catalogAccess ? <Link to="/customer/catalogue" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir le catalogue <HiArrowRight size={12} /></Link> : undefined}
                   />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    {offerProducts.map((product) => {
-                      const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
-                      return (
-                        <div
-                          key={product.documentId}
-                          onClick={() => navigate(`/customer/product/${product.documentId}`)}
-                          style={{ borderRadius: '13px', overflow: 'hidden', cursor: 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', transition: 'border-color 0.18s, transform 0.18s' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                        >
-                          <div style={{ height: '92px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {product.images?.[0]?.url
-                              ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <HiOutlineCube size={26} color="rgba(255,255,255,0.25)" />}
-                          </div>
-                          <div style={{ padding: '10px 11px' }}>
-                            <p style={{ margin: 0, color: '#fff', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
-                            <p style={{ margin: '5px 0 0', color: '#a99bff', fontSize: '13px', fontWeight: 800 }}>{fmtHT(priceHT)}</p>
-                            <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '10.5px' }}>{fmtTTC(toTTC(priceHT))}</p>
+                </div>
+                <div
+                  ref={scrollRef}
+                  onMouseEnter={() => { isPausedRef.current = true; }}
+                  onMouseLeave={() => { isPausedRef.current = false; }}
+                  style={{ display: 'flex', gap: '14px', overflowX: 'hidden', scrollbarWidth: 'none', paddingRight: '24px' }}
+                >
+                  {[...suggestions, ...suggestions].map((product, idx) => {
+                    const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
+                    return (
+                      <div
+                        key={`${product.documentId}-${idx}`}
+                        onClick={() => navigate(`/customer/product/${product.documentId}`)}
+                        style={{ flexShrink: 0, width: '210px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          {product.images?.[0]?.url
+                            ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <HiOutlineCube size={30} color="rgba(255,255,255,0.2)" />}
+                        </div>
+                        <div style={{ padding: '12px 14px' }}>
+                          <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                            <span style={{ background: 'rgba(124,107,255,0.12)', border: '1px solid rgba(124,107,255,0.25)', borderRadius: '8px', padding: '4px 9px', color: '#a99bff', fontSize: '12px', fontWeight: 800 }}>{fmtHT(priceHT)}</span>
+                            <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 600 }}>Voir →</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                  <Link to="/customer/products">
-                    <button style={{ marginTop: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(90deg, #22c55e, #16a34a)', border: 'none', borderRadius: '11px', padding: '10px', color: '#fff', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 18px rgba(34,197,94,0.35)', fontFamily: FONT }}>
-                      Voir toutes mes offres <HiArrowRight size={13} />
-                    </button>
-                  </Link>
-                </SectionCard>
-              )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            )}
 
+            {/* ── 2 colonnes : recommandé / avantages ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
               {/* Recommandé pour vous */}
               {recommendedProducts.length > 0 && (
                 <SectionCard>
