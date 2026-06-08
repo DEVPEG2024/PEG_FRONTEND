@@ -90,7 +90,8 @@ export async function apiGetImbretexPriceStock(
 ): Promise<ImbretexPriceStockResponse> {
   const { data } = await imbretexAxios.get<ImbretexPriceStockResponse>(
     '/products/price-stock',
-    { params: { products: references } }
+    // L'API attend `products=ref1,ref2` (liste séparée par des virgules).
+    { params: { products: references.join(',') } }
   );
   return data;
 }

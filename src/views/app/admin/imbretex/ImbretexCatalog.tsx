@@ -2,10 +2,11 @@ import { injectReducer } from '@/store';
 import reducer, {
   fetchAllImbretexProducts,
   fetchImbretexPriceStockByRef,
+  fetchImbretexPriceStockBatch,
   useAppDispatch,
   useAppSelector,
 } from './store';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Pagination, Select } from '@/components/ui';
 import { Container, EmptyState } from '@/components/shared';
 import { HiOutlineSearch, HiOutlineCheck, HiOutlineX, HiStar, HiOutlineStar } from 'react-icons/hi';
@@ -63,6 +64,46 @@ function getProductCategory(product: ImbretexProduct): string {
     if (cat) return cat;
   }
   return '';
+}
+
+// Synthèse prix + disponibilité d'un produit à partir du cache prix/stock
+// (indexé par référence de variante). Sert à l'affichage sur les cartes.
+type CardPriceStock = {
+  hasData: boolean;
+  minPrice: number | null;
+  maxPrice: number | null;
+  totalStock: number;
+  supplierStock: number;
+};
+
+function getCardPriceStock(
+  product: ImbretexProduct,
+  map: Record<string, ImbretexPriceStock>
+): CardPriceStock {
+  let min = Infinity;
+  let max = 0;
+  let totalStock = 0;
+  let supplierStock = 0;
+  let count = 0;
+  for (const v of product.variants) {
+    const ps = map[v.variantReference];
+    if (!ps) continue;
+    count++;
+    const price = parseFloat(ps.price);
+    if (Number.isFinite(price) && price > 0) {
+      min = Math.min(min, price);
+      max = Math.max(max, price);
+    }
+    totalStock += parseInt(ps.stock) || 0;
+    supplierStock += parseInt(ps.stock_supplier) || 0;
+  }
+  return {
+    hasData: count > 0,
+    minPrice: Number.isFinite(min) ? min : null,
+    maxPrice: max || null,
+    totalStock,
+    supplierStock,
+  };
 }
 
 // ─── Product Detail Modal ───
@@ -266,14 +307,29 @@ type CardProps = {
   onToggleSelect: (ref: string) => void;
   isFavorite: boolean;
   onToggleFavorite: (ref: string) => void;
+  priceStock: CardPriceStock;
 };
 
-const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavorite, onToggleFavorite }: CardProps) => {
+const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavorite, onToggleFavorite, priceStock }: CardProps) => {
   const image = getBestImage(product);
   const mainVariant = product.variants[0];
   const title = mainVariant ? getProductTitle(mainVariant) : product.reference;
   const family = mainVariant ? getFamily(mainVariant) : '';
   const variantCount = product.variants.length;
+
+  // Disponibilité : en stock PEG > 0, sinon stock fournisseur > 0 (sur commande), sinon rupture
+  const stockBadge = !priceStock.hasData
+    ? { label: 'Dispo. …', color: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', dot: 'rgba(255,255,255,0.3)' }
+    : priceStock.totalStock > 0
+    ? { label: `En stock (${priceStock.totalStock})`, color: '#4ade80', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', dot: '#22c55e' }
+    : priceStock.supplierStock > 0
+    ? { label: 'Sur commande', color: '#fbbf24', bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)', dot: '#f59e0b' }
+    : { label: 'Rupture', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', dot: '#ef4444' };
+  const priceLabel = priceStock.minPrice == null
+    ? null
+    : priceStock.maxPrice != null && priceStock.maxPrice > priceStock.minPrice
+    ? `dès ${priceStock.minPrice.toFixed(2)} €`
+    : `${priceStock.minPrice.toFixed(2)} €`;
 
   return (
     <div
@@ -358,6 +414,24 @@ const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavo
           }}>
             {title}
           </p>
+
+          {/* Prix + disponibilité */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '-0.02em' }}>
+              {priceLabel ?? <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600, fontSize: '12px' }}>Prix …</span>}
+              {priceLabel && <span style={{ fontSize: '10px', fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}> HT</span>}
+            </span>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              background: stockBadge.bg, border: `1px solid ${stockBadge.border}`,
+              borderRadius: '100px', padding: '2px 8px',
+              color: stockBadge.color, fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: stockBadge.dot, flexShrink: 0 }} />
+              {stockBadge.label}
+            </span>
+          </div>
+
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {family && (
               <span style={{
@@ -482,6 +556,19 @@ const ImbretexCatalog = () => {
 
   // Reset page when filters change
   useEffect(() => { setPage(1); }, [searchTerm, brandFilter, categoryFilter, showFavoritesOnly]);
+
+  // Charge prix + disponibilité pour les produits de la page courante (batch),
+  // une seule fois par référence (le Set évite tout refetch en boucle).
+  const pricedRefs = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (loading) return;
+    const toFetch = paginatedProducts
+      .map((p) => p.reference)
+      .filter((ref) => !pricedRefs.current.has(ref));
+    if (toFetch.length === 0) return;
+    toFetch.forEach((ref) => pricedRefs.current.add(ref));
+    dispatch(fetchImbretexPriceStockBatch(toFetch));
+  }, [paginatedProducts, loading, dispatch]);
 
   // Selection
   const handleToggleSelect = useCallback((ref: string) => {
@@ -759,6 +846,7 @@ const ImbretexCatalog = () => {
               onToggleSelect={handleToggleSelect}
               isFavorite={favorites.has(product.reference)}
               onToggleFavorite={handleToggleFavorite}
+              priceStock={getCardPriceStock(product, priceStockMap)}
             />
           ))}
         </div>

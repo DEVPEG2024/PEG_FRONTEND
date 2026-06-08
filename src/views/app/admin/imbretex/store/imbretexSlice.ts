@@ -6,6 +6,7 @@ import type {
 import {
   apiGetImbretexProducts,
   apiGetImbretexPriceStockByRef,
+  apiGetImbretexPriceStock,
 } from '@/services/ImbretexService';
 
 export const SLICE_NAME = 'imbretex';
@@ -76,6 +77,34 @@ export const fetchImbretexPriceStockByRef = createAsyncThunk(
   }
 );
 
+/**
+ * Charge prix + stock pour PLUSIEURS produits en une fois (cartes du catalogue).
+ * Découpé en lots pour respecter la limite de l'API (`limit_exceeded`).
+ * Le résultat est indexé par `code` de variante (comme le fetch unitaire), donc
+ * la carte le retrouve via `priceStockMap[variant.variantReference]`.
+ */
+export const fetchImbretexPriceStockBatch = createAsyncThunk(
+  SLICE_NAME + '/fetchPriceStockBatch',
+  async (productReferences: string[]) => {
+    const CHUNK = 20;
+    const map: Record<string, ImbretexPriceStock> = {};
+    for (let i = 0; i < productReferences.length; i += CHUNK) {
+      const chunk = productReferences.slice(i, i + CHUNK);
+      try {
+        const res = await apiGetImbretexPriceStock(chunk);
+        if (res?.products) {
+          for (const ps of Object.values(res.products)) {
+            if (ps && ps.code) map[ps.code] = ps;
+          }
+        }
+      } catch {
+        /* lot en échec ignoré — les autres cartes restent affichées */
+      }
+    }
+    return map;
+  }
+);
+
 // ─── Slice ───
 
 const initialState: StateData = {
@@ -131,6 +160,11 @@ const imbretexSlice = createSlice({
     });
     builder.addCase(fetchImbretexPriceStockByRef.rejected, (state) => {
       state.loadingPrices = false;
+    });
+
+    // Batch (cartes) : on fusionne sans toucher à `loadingPrices` (réservé au modal détail)
+    builder.addCase(fetchImbretexPriceStockBatch.fulfilled, (state, action) => {
+      state.priceStockMap = { ...state.priceStockMap, ...action.payload };
     });
   },
 });
