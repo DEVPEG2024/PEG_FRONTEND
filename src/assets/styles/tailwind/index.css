@@ -78,10 +78,26 @@
 }
 
 .side-nav {
-  background-image: url('/img/logo/picto.svg.png') ;
-  background-position: bottom;
-  background-size: 100%;
+  position: relative;
+}
+
+/* Filigrane PEG discret en bas du menu — petit, faible opacité, borné et
+   placé DERRIÈRE le contenu : il ne peut plus déborder ni s'afficher en grand
+   (l'ancien `background-size: 100%` étirait le logotype sur toute la largeur). */
+.side-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  height: 48px;
+  background-image: url('/img/logo/picto.svg.png');
+  background-position: bottom center;
+  background-size: auto 48px;
   background-repeat: no-repeat;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .project-card {
