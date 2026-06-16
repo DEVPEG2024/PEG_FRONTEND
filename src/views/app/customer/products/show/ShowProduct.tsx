@@ -100,6 +100,7 @@ const ShowProduct = () => {
   const rawUnitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
   // Remise automatique -15% pour les clients Premium (catalogue standard)
   const unitPrice = applyPremiumDiscount(rawUnitPrice, user?.customer);
+  const isPremium = !!user?.customer?.premium;
 
   // m² pricing calculation
   const m2Data = isM2Pricing && product ? getM2Price(product, m2Width / 100, m2Height / 100, m2Quantity) : null;
@@ -432,6 +433,16 @@ const ShowProduct = () => {
                     </span>
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
                       {fmtHT(product.catalogPrice)}
+                    </span>
+                  </div>
+                )}
+                {isPremium && rawUnitPrice > unitPrice && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '8px', padding: '5px 12px' }}>
+                    <span style={{ fontSize: '13px', color: '#eab308', fontWeight: 700 }}>
+                      ⭐ -15% Premium
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
+                      {fmtHT(rawUnitPrice)}{isPackPricing ? ' / pack' : ' / pièce'}
                     </span>
                   </div>
                 )}

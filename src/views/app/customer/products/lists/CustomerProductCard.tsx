@@ -285,9 +285,14 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
                 {fmtHT(product.catalogPrice)}
               </span>
             )}
-            {isPremium && (
-              <span style={{ fontSize: '10px', color: '#eab308', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                ⭐ -15% Premium
+            {isPremium && fullPriceHT > priceHT && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: 600, textDecoration: 'line-through' }}>
+                  {fmtHT(fullPriceHT)}{unitSuffix}
+                </span>
+                <span style={{ fontSize: '10px', color: '#eab308', fontWeight: 700 }}>
+                  ⭐ -15% Premium
+                </span>
               </span>
             )}
           </div>

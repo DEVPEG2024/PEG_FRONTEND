@@ -13,8 +13,10 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
     <>
       {products.map((product) => {
         const imageUrl = product.images?.[0]?.url;
-        const priceHT = applyPremiumDiscount(getProductBasePrice(product), customer);
+        const fullPriceHT = getProductBasePrice(product);
+        const priceHT = applyPremiumDiscount(fullPriceHT, customer);
         const priceTTC = toTTC(priceHT);
+        const isPremium = !!customer?.premium;
         return (
           <div
             key={product.documentId}
@@ -94,6 +96,11 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
                 <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
                   {fmtTTC(priceTTC)}
                 </span>
+                {isPremium && fullPriceHT > priceHT && (
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px', textDecoration: 'line-through' }}>
+                    {fmtHT(fullPriceHT)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
