@@ -9,10 +9,12 @@ import { Product, PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 import { useState } from 'react';
-import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch, HiReply } from 'react-icons/hi';
+import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch, HiReply, HiOutlineRefresh } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
+import { buildPegOrigName, parsePegOrigRef } from '@/utils/pegOrigRef';
+import { apiGetFile } from '@/services/FileServices';
 
 const STEP_LABELS = ['Infos', 'Prix', 'Options', 'BAT & Ref'];
 
@@ -190,17 +192,62 @@ const ProductForm = (props: ProductFormProps) => {
     if (!originals.has(key)) {
       setOriginals(new Map(originals).set(key, { ...original }));
     }
+    // Marqueur pérenne vers l'image d'origine dans le nom du fichier uploadé :
+    // permet « Remettre l'image d'origine » même après enregistrement (l'
+    // originale reste dans la médiathèque Strapi). Une image déjà marquée
+    // transmet SA référence d'origine (pas la version tamponnée).
+    const origRef =
+      parsePegOrigRef(original.name) ??
+      (original.id && original.documentId
+        ? { id: String(original.id), documentId: original.documentId }
+        : null);
+    const finalName = origRef
+      ? buildPegOrigName(watermarkedFile.name, origRef)
+      : watermarkedFile.name;
+    const namedFile =
+      finalName === watermarkedFile.name
+        ? watermarkedFile
+        : new File([watermarkedFile], finalName, { type: watermarkedFile.type });
     // Clear id/documentId so the watermarked file gets re-uploaded during save
     updated[watermarkTarget.index] = {
-      file: watermarkedFile,
-      name: watermarkedFile.name,
-      url: URL.createObjectURL(watermarkedFile),
+      file: namedFile,
+      name: namedFile.name,
+      url: URL.createObjectURL(namedFile),
       _watermarked: true,
       _originalKey: key,
     } as PegFile & { _watermarked: boolean; _originalKey: string };
     setImages(updated);
     setWatermarkTarget(null);
-    toast.success(`Logo appliqué sur ${watermarkedFile.name} (${Math.round(watermarkedFile.size / 1024)} Ko) — pensez à enregistrer`);
+    toast.success(`Logo appliqué (${Math.round(namedFile.size / 1024)} Ko) — pensez à enregistrer`);
+  };
+
+  // Remet l'image d'ORIGINE (sans logo) depuis la médiathèque Strapi, via le
+  // marqueur pérenne du nom de fichier — fonctionne même après enregistrement
+  const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
+  const handleRestoreOriginal = async (index: number) => {
+    const img = images[index];
+    const ref = parsePegOrigRef(img?.name);
+    if (!ref || restoringIndex !== null) return;
+    setRestoringIndex(index);
+    try {
+      const files = await apiGetFile(ref.documentId);
+      const orig = files?.[0];
+      if (!orig?.url) {
+        toast.error("Image d'origine introuvable dans la médiathèque");
+        return;
+      }
+      const updated = [...images];
+      updated[index] = {
+        ...orig,
+        file: new File([], orig.name),
+      } as PegFile;
+      setImages(updated);
+      toast.success("Image d'origine remise — pensez à enregistrer");
+    } catch {
+      toast.error("Impossible de récupérer l'image d'origine");
+    } finally {
+      setRestoringIndex(null);
+    }
   };
 
   const handleWatermarkUndo = (index: number) => {
@@ -359,6 +406,23 @@ const ProductForm = (props: ProductFormProps) => {
                             }}
                           >
                             <HiReply size={13} />
+                          </button>
+                        )}
+                        {!img?._watermarked && parsePegOrigRef(img?.name) && (
+                          <button
+                            type="button"
+                            title="Remettre l'image d'origine (sans logo)"
+                            disabled={restoringIndex !== null}
+                            onClick={(e) => { e.stopPropagation(); handleRestoreOriginal(index); }}
+                            style={{
+                              background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)',
+                              borderRadius: '6px', padding: '4px 6px',
+                              cursor: restoringIndex !== null ? 'wait' : 'pointer',
+                              color: '#fbbf24', display: 'flex', alignItems: 'center',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <HiOutlineRefresh size={13} />
                           </button>
                         )}
                       </>
