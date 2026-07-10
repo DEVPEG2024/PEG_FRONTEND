@@ -35,6 +35,7 @@ const NAV_ACTIVITY_EVENTS: Record<string, string[]> = {
   '/admin/invoices': ['new_invoice', 'payment_received'],
   '/customer/invoices': ['new_invoice', 'payment_received'],
   '/admin/store/orders': ['new_order'],
+  '/customer/files': ['new_file'],
 };
 const ACTIVITY_SEEN_KEY = 'peg_nav_activity_seen';
 // Référence stable pour le sélecteur Redux (évite un re-rendu à chaque poll)
