@@ -15,9 +15,11 @@ export interface FileItemProps extends CommonProps {
 
 const FileItem = (props: FileItemProps) => {
     const { file, clickable, children } = props
-    // previewUrl est une propriété custom parfois attachée au File par l'app
+    // previewUrl / displayName sont des propriétés custom parfois attachées
+    // au File par l'app (displayName : nom lisible sans marqueurs techniques)
     const { type, name, size } = file
     const previewUrl = (file as File & { previewUrl?: string }).previewUrl
+    const displayName = (file as File & { displayName?: string }).displayName ?? name
 
     const renderThumbnail = () => {
         const isImageFile = type.split('/')[0] === 'image'
@@ -60,7 +62,7 @@ const FileItem = (props: FileItemProps) => {
             <div className="flex">
                 <div className="upload-file-thumbnail">{renderThumbnail()}</div>
                 <div className="upload-file-info">
-                    {clickable ? <a className="upload-file-name font-bold" target="_blank" href={previewUrl}>{name}</a> : <h6 className="upload-file-name">{name}</h6>}
+                    {clickable ? <a className="upload-file-name font-bold" target="_blank" href={previewUrl}>{displayName}</a> : <h6 className="upload-file-name" title={name}>{displayName}</h6>}
                     <span className="upload-file-size">{getKB(size)} kb</span>
                 </div>
             </div>

@@ -13,7 +13,7 @@ import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColor
 import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
-import { buildPegOrigName, parsePegOrigRef } from '@/utils/pegOrigRef';
+import { buildPegOrigName, parsePegOrigRef, stripPegOrigMarker } from '@/utils/pegOrigRef';
 import { apiGetFile } from '@/services/FileServices';
 
 const STEP_LABELS = ['Infos', 'Prix', 'Options', 'BAT & Ref'];
@@ -357,8 +357,10 @@ const ProductForm = (props: ProductFormProps) => {
                   onFileRemove={(file) => onFileRemove(file)}
                   field={{ name: 'images' }}
                   fileList={images.map((pf) => {
-                    const file = pf.file as File & { previewUrl?: string };
+                    const file = pf.file as File & { previewUrl?: string; displayName?: string };
                     file.previewUrl = pf.url;
+                    // Nom lisible : sans le marqueur technique __pegorig-…
+                    file.displayName = stripPegOrigMarker(pf.name || file.name || '');
                     return file;
                   })}
                   renderFileActions={(file, index) => {
