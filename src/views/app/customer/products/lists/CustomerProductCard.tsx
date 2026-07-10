@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { getProductBasePrice, getCatalogSavingsPercent, applyPremiumDiscount } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
+import { sortSizes } from '@/utils/sizeSort';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
 import { HiArrowRight } from 'react-icons/hi';
@@ -215,7 +216,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
         {/* Sizes */}
         {product.sizes?.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {product.sizes.slice(0, 5).map((s) => (
+            {sortSizes(product.sizes).slice(0, 5).map((s) => (
               <span key={s.documentId} style={{
                 background: 'rgba(255,255,255,0.07)',
                 border: '1px solid rgba(255,255,255,0.1)',

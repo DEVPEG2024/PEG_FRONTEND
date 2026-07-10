@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
-
-const sizesOrder: string[] = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+import { sortSizes } from '@/utils/sizeSort';
 
 const Stepper = ({
   value,
@@ -73,9 +72,7 @@ const SizeChoice = ({
   color?: Color;
   handleSizeAndColorsChanged: (value: number, size: Size, color: Color) => void;
 }) => {
-  const sorted = [...product.sizes].sort(
-    (a, b) => sizesOrder.indexOf(a.name) - sizesOrder.indexOf(b.name)
-  );
+  const sorted = sortSizes(product.sizes);
 
   const relevantSelections = sizeAndColorsSelected.filter(
     (s) => !color || s.color.value === color.value

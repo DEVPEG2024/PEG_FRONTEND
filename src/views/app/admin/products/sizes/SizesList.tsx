@@ -25,6 +25,8 @@ import {
 import { MdStraighten } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import { unwrapData } from '@/utils/serviceHelper';
+// Tri naturel des tailles (XS < S < M < … puis numérique) — partagé avec la fiche produit client
+import { compareSizes } from '@/utils/sizeSort';
 import {
   apiGetProductCategories,
   apiDeleteProductCategory,
@@ -51,42 +53,6 @@ const TEMPLATES = [
   { icon: '🖨️', label: 'Print', sizes: ['A3', 'A4', 'A5'] },
 ];
 
-// Tri naturel des tailles : XS < S < M < L < XL < XXL < 3XL, puis numérique (pointures), puis alpha
-const SIZE_SCALE = [
-  'xxxs',
-  'xxs',
-  'xs',
-  's',
-  'm',
-  'l',
-  'xl',
-  'xxl',
-  'xxxl',
-  'xxxxl',
-  'xxxxxl',
-];
-const SIZE_ALIASES: Record<string, string> = {
-  '2xl': 'xxl',
-  '3xl': 'xxxl',
-  '4xl': 'xxxxl',
-  '5xl': 'xxxxxl',
-};
-const sizeRank = (name: string): [number, number | string] => {
-  let n = name.trim().toLowerCase();
-  n = SIZE_ALIASES[n] ?? n;
-  const li = SIZE_SCALE.indexOf(n);
-  if (li !== -1) return [0, li];
-  const num = parseFloat(name.replace(',', '.'));
-  if (!isNaN(num) && /^[\d.,\s]+$/.test(name.trim())) return [1, num];
-  return [2, name.trim().toLowerCase()];
-};
-const compareSizes = (a: Size, b: Size): number => {
-  const [ga, va] = sizeRank(a.name);
-  const [gb, vb] = sizeRank(b.name);
-  if (ga !== gb) return ga - gb;
-  if (typeof va === 'number' && typeof vb === 'number') return va - vb;
-  return String(va).localeCompare(String(vb));
-};
 
 // Catégories d'une taille (relation multiple). Le fallback sur l'ancien champ
 // unique ne s'applique QUE si `productCategories` est absent (backend pas
