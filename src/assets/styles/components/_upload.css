@@ -49,3 +49,18 @@
 .upload-file-remove {
   @apply p-3 mx-2;
 }
+
+/* Variante : actions (logo, restaurer, supprimer) SOUS la photo au lieu d'à
+   droite — utilisée par le formulaire produit où la colonne images est étroite */
+.upload-file.upload-file--actions-below {
+  @apply flex-col items-stretch;
+}
+
+.upload-file.upload-file--actions-below > div:last-child {
+  @apply px-3 pb-2 pt-1;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.upload-file.upload-file--actions-below .upload-file-remove {
+  @apply p-1 mx-0 ltr:ml-auto rtl:mr-auto;
+}

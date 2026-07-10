@@ -352,6 +352,7 @@ const ProductForm = (props: ProductFormProps) => {
                   showList
                   draggable
                   uploadLimit={4}
+                  fileItemClass="upload-file--actions-below"
                   beforeUpload={beforeUpload}
                   onFileAdd={(file) => onFileAdd(file)}
                   onFileRemove={(file) => onFileRemove(file)}

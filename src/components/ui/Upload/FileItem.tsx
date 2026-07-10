@@ -1,3 +1,4 @@
+import classNames from 'classnames'
 import { VscFilePdf, VscFileZip, VscFile } from 'react-icons/vsc'
 import type { CommonProps } from '../@types/common'
 
@@ -14,7 +15,7 @@ export interface FileItemProps extends CommonProps {
 }
 
 const FileItem = (props: FileItemProps) => {
-    const { file, clickable, children } = props
+    const { file, clickable, children, className } = props
     // previewUrl / displayName sont des propriétés custom parfois attachées
     // au File par l'app (displayName : nom lisible sans marqueurs techniques)
     const { type, name, size } = file
@@ -58,7 +59,7 @@ const FileItem = (props: FileItemProps) => {
     }
 
     return (
-        <div className="upload-file">
+        <div className={classNames('upload-file', className)}>
             <div className="flex">
                 <div className="upload-file-thumbnail">{renderThumbnail()}</div>
                 <div className="upload-file-info">
