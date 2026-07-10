@@ -11,12 +11,42 @@ import navigationIcon from '@/configs/navigation-icon.config';
 import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { MdDragIndicator } from 'react-icons/md';
 import { useAppSelector } from '@/store';
+import type { NotificationItem } from '@/store/slices/base/notificationSlice';
 import { apiGetQuotes, apiGetCustomerQuotes } from '@/services/QuoteServices';
 import { apiGetPremiumCustomers } from '@/services/PremiumServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const STORAGE_KEY = 'peg_nav_order_v2';
 // Renommage supprimé — les labels sont figés (cf. GLOSSARY.md)
+
+// Pastilles « du nouveau » : chaque section du menu écoute les notifications
+// (state.base.notification, alimenté par le polling de la cloche) selon ses
+// types d'événements. La pastille disparaît à la visite de la section
+// (timestamp « vu » par chemin, stocké en localStorage).
+const NAV_ACTIVITY_EVENTS: Record<string, string[]> = {
+  '/support': ['new_ticket'],
+  '/common/projects': [
+    'project_status_change',
+    'new_comment',
+    'new_file',
+    'new_task',
+    'task_status_change',
+  ],
+  '/admin/invoices': ['new_invoice', 'payment_received'],
+  '/customer/invoices': ['new_invoice', 'payment_received'],
+  '/admin/store/orders': ['new_order'],
+};
+const ACTIVITY_SEEN_KEY = 'peg_nav_activity_seen';
+// Référence stable pour le sélecteur Redux (évite un re-rendu à chaque poll)
+const EMPTY_NOTIFICATIONS: NotificationItem[] = [];
+
+function getStoredActivitySeen(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVITY_SEEN_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
 
 function getStoredOrder(items: NavigationTree[]): NavigationTree[] {
   try {
@@ -75,6 +105,44 @@ const CustomVerticalMenu = ({
   const customerDocumentId = user?.customer?.documentId;
   const [quoteCount, setQuoteCount] = useState(0);
   const [premiumCount, setPremiumCount] = useState(0);
+  const notifications = useAppSelector(
+    (state) => state.base?.notification?.notifications ?? EMPTY_NOTIFICATIONS
+  );
+  const [activitySeen, setActivitySeen] = useState<Record<string, string>>(
+    getStoredActivitySeen
+  );
+
+  const getActivityCount = (path: string): number => {
+    const events = NAV_ACTIVITY_EVENTS[path];
+    if (!events || notifications.length === 0) return 0;
+    const lastSeen = activitySeen[path];
+    return notifications.filter(
+      (n) =>
+        !n.read &&
+        events.includes(n.eventType) &&
+        (!lastSeen || n.createdAt > lastSeen)
+    ).length;
+  };
+
+  const markActivitySeen = (path: string) => {
+    if (!NAV_ACTIVITY_EVENTS[path]) return;
+    const next = { ...activitySeen, [path]: new Date().toISOString() };
+    setActivitySeen(next);
+    try {
+      localStorage.setItem(ACTIVITY_SEEN_KEY, JSON.stringify(next));
+    } catch {}
+  };
+
+  // La section actuellement visitée est toujours considérée « vue »
+  useEffect(() => {
+    const path = Object.keys(NAV_ACTIVITY_EVENTS).find((p) =>
+      location.pathname.startsWith(p)
+    );
+    if (path && getActivityCount(path) > 0) {
+      markActivitySeen(path);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, notifications]);
 
   // Nettoyer les anciens labels custom au mount
   useEffect(() => {
@@ -198,10 +266,22 @@ const CustomVerticalMenu = ({
     const active = isActive(nav.path);
     const isHovered = hoveredKey === nav.key;
     const isPremiumNav = nav.path === '/admin/premium';
-    const badgeCount = nav.path === '/common/quotes' ? quoteCount : isPremiumNav ? premiumCount : 0;
+    const activityCount = getActivityCount(nav.path);
+    const isActivityBadge =
+      nav.path !== '/common/quotes' && !isPremiumNav && activityCount > 0;
+    const badgeCount =
+      nav.path === '/common/quotes'
+        ? quoteCount
+        : isPremiumNav
+          ? premiumCount
+          : activityCount;
     const showBadge = badgeCount > 0;
-    const badgeColor = isPremiumNav ? '#eab308' : '#8b5cf6';
-    const badgeGlow = isPremiumNav ? 'rgba(234,179,8,0.6)' : 'rgba(139,92,246,0.6)';
+    const badgeColor = isPremiumNav ? '#eab308' : isActivityBadge ? '#ef4444' : '#8b5cf6';
+    const badgeGlow = isPremiumNav
+      ? 'rgba(234,179,8,0.6)'
+      : isActivityBadge
+        ? 'rgba(239,68,68,0.6)'
+        : 'rgba(139,92,246,0.6)';
 
     return (
       <div
@@ -225,7 +305,11 @@ const CustomVerticalMenu = ({
           transition: 'all 0.12s',
           position: 'relative',
         }}
-        onClick={() => nav.path && navigate(nav.path)}
+        onClick={() => {
+          if (!nav.path) return;
+          markActivitySeen(nav.path);
+          navigate(nav.path);
+        }}
         onMouseEnter={() => setHoveredKey(nav.key)}
         onMouseLeave={() => setHoveredKey(null)}
       >
@@ -346,6 +430,13 @@ const CustomVerticalMenu = ({
     const active = isGroupActive(nav);
     const isOpen = expanded[nav.key] ?? active;
     const isHovered = hoveredKey === nav.key;
+    // Pastille sur l'en-tête si un sous-item a de l'activité (masquée si déplié :
+    // la pastille du sous-item est alors visible)
+    const groupActivityCount = groupItems.reduce(
+      (sum, sub) => sum + getActivityCount(sub.path),
+      0
+    );
+    const showGroupDot = groupActivityCount > 0 && (!isOpen || collapsed);
 
     return (
       <div key={nav.key} style={{ marginBottom: '2px' }}>
@@ -396,9 +487,24 @@ const CustomVerticalMenu = ({
             style={{
               color: active ? '#6b9eff' : 'rgba(255,255,255,0.65)',
               flexShrink: 0,
+              position: 'relative',
             }}
           >
             {renderIcon(groupIcon)}
+            {collapsed && showGroupDot && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-3px',
+                  right: '-4px',
+                  width: '9px',
+                  height: '9px',
+                  borderRadius: '50%',
+                  background: '#ef4444',
+                  boxShadow: '0 0 8px rgba(239,68,68,0.6)',
+                }}
+              />
+            )}
           </span>
 
           {/* Label */}
@@ -415,6 +521,18 @@ const CustomVerticalMenu = ({
               >
                 {groupLabel}
               </span>
+              {showGroupDot && (
+                <span
+                  style={{
+                    flexShrink: 0,
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                    boxShadow: '0 0 8px rgba(239,68,68,0.6)',
+                  }}
+                />
+              )}
               <span style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
                 {isOpen ? (
                   <HiChevronDown size={13} />
