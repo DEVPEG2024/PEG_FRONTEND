@@ -400,6 +400,147 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
     })
 }
 
+// ─── Suggestions catalogue (onglet client « Nos suggestions ») ───────────────
+// Le champ booléen `suggested` doit être ajouté au schéma produit côté
+// peg_strapi (backend d'abord, comme catalogPrice). Tant qu'il n'est pas
+// déployé, toute requête qui l'utilise renvoie une erreur GraphQL : on sonde
+// donc sa disponibilité une fois (cache mémoire) et on se replie sur les
+// nouveautés du catalogue.
+
+let suggestedFieldAvailable: boolean | null = null;
+
+export async function apiIsSuggestedFieldAvailable(): Promise<boolean> {
+    if (suggestedFieldAvailable !== null) return suggestedFieldAvailable;
+    try {
+        const response = await ApiService.fetchData<{data?: unknown, errors?: unknown[]}>({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: {
+                query: `query ProbeSuggestedField { products_connection(filters: {suggested: {eq: true}}, pagination: {pageSize: 1}) { pageInfo { total } } }`,
+            },
+        });
+        suggestedFieldAvailable = !response.data?.errors;
+    } catch {
+        suggestedFieldAvailable = false;
+    }
+    return suggestedFieldAvailable;
+}
+
+const SUGGESTED_PRODUCT_FIELDS = `
+                images {
+                    url
+                }
+                description
+                documentId
+                name
+                price
+                priceTiers
+                pricingMode
+                pricePerM2
+                minM2
+                productCategory {
+                    documentId
+                    name
+                }`;
+
+export type SuggestedProductsResult = {
+    products: Product[];
+    /** true = sélection marquée par l'admin (champ suggested), false = fallback nouveautés */
+    curated: boolean;
+};
+
+export async function apiGetSuggestedProducts(): Promise<SuggestedProductsResult> {
+    if (await apiIsSuggestedFieldAvailable()) {
+        try {
+            const response = await ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
+                url: API_GRAPHQL_URL,
+                method: 'post',
+                data: {
+                    query: `
+    query GetSuggestedProducts($pagination: PaginationArg) {
+        products_connection (filters: {
+        and: [
+            {suggested: {eq: true}},
+            {active: {eq: true}},
+            {inCatalogue: {eq: true}}
+        ]},
+        pagination: $pagination, sort: "updatedAt:desc") {
+            nodes {${SUGGESTED_PRODUCT_FIELDS}
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+                    variables: { pagination: { page: 1, pageSize: 24 } },
+                },
+            });
+            const nodes = response.data.data?.products_connection?.nodes ?? [];
+            if (nodes.length > 0) return { products: nodes, curated: true };
+        } catch (error) {
+            console.error('[Suggestions] Échec requête produits suggérés:', error);
+        }
+    }
+    // Fallback : les nouveautés du catalogue
+    const response = await ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query: `
+    query GetNewestCatalogueProducts($pagination: PaginationArg) {
+        products_connection (filters: {
+        and: [
+            {active: {eq: true}},
+            {inCatalogue: {eq: true}}
+        ]},
+        pagination: $pagination, sort: "createdAt:desc") {
+            nodes {${SUGGESTED_PRODUCT_FIELDS}
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+            variables: { pagination: { page: 1, pageSize: 12 } },
+        },
+    });
+    return { products: response.data.data?.products_connection?.nodes ?? [], curated: false };
+}
+
+// Lecture isolée du flag suggested d'un produit (formulaire admin) — requête
+// séparée pour ne pas casser apiGetProductForEditById tant que le champ
+// n'existe pas côté Strapi.
+export async function apiGetProductSuggestedFlag(documentId: string): Promise<boolean> {
+    if (!(await apiIsSuggestedFieldAvailable())) return false;
+    try {
+        const response = await ApiService.fetchData<ApiResponse<{product: {suggested?: boolean}}>>({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: {
+                query: `
+    query GetProductSuggestedFlag($documentId: ID!) {
+        product(documentId: $documentId) {
+            suggested
+        }
+    }
+  `,
+                variables: { documentId },
+            },
+        });
+        return response.data.data?.product?.suggested ?? false;
+    } catch {
+        return false;
+    }
+}
+
 // update product
 export async function apiUpdateProduct(product: Partial<Product>): Promise<AxiosResponse<ApiResponse<{updateProduct: Product}>>> {
     const query = `

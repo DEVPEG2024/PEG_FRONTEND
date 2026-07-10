@@ -6,8 +6,9 @@ import reducer, {
   getCatalogueProductCategories,
   useAppSelector,
 } from './store';
-import { HiSearch } from 'react-icons/hi';
+import { HiOutlineSparkles, HiOutlineViewGrid, HiSearch } from 'react-icons/hi';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
+import SuggestionsTab from './components/SuggestionsTab';
 
 injectReducer('catalogue', reducer);
 
@@ -32,7 +33,13 @@ const SkeletonCard = () => (
   }} />
 );
 
+const TABS: { key: 'categories' | 'suggestions'; label: string; icon: JSX.Element }[] = [
+  { key: 'categories', label: 'Catégories', icon: <HiOutlineViewGrid size={15} /> },
+  { key: 'suggestions', label: 'Nos suggestions', icon: <HiOutlineSparkles size={15} /> },
+];
+
 const Categories = () => {
+  const [activeTab, setActiveTab] = useState<'categories' | 'suggestions'>('categories');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,6 +92,35 @@ const Categories = () => {
         maxHeight="380px"
       />
 
+      {/* Onglets Catégories / Suggestions */}
+      <div style={{ display: 'flex', gap: '8px', margin: '20px 0 24px' }}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '7px',
+                padding: '9px 18px', borderRadius: '100px', cursor: 'pointer',
+                border: active ? '1px solid rgba(109,93,252,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                background: active ? 'rgba(109,93,252,0.16)' : 'rgba(255,255,255,0.03)',
+                color: active ? '#a99bff' : 'rgba(255,255,255,0.55)',
+                fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                transition: 'all 0.15s',
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === 'suggestions' ? (
+        <SuggestionsTab />
+      ) : (
+      <>
       {/* Grid */}
       {loading ? (
         <div style={{
@@ -150,6 +186,8 @@ const Categories = () => {
             />
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

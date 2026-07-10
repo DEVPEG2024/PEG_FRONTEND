@@ -43,6 +43,8 @@ type ProductFieldsProps = {
   batFile: PegFile | null;
   setBatFile: (f: PegFile | null) => void;
   currentBatUrl?: string | null;
+  /** Affiche le toggle « Suggestion client » (champ suggested déployé côté Strapi) */
+  showSuggested?: boolean;
   currentStep?: number;
 };
 
@@ -101,6 +103,7 @@ const ProductFields = (props: ProductFieldsProps) => {
     batFile,
     setBatFile,
     currentBatUrl,
+    showSuggested,
     currentStep,
   } = props;
 
@@ -277,6 +280,23 @@ const ProductFields = (props: ProductFieldsProps) => {
                 {watch('inCatalogue') ? 'Visible' : 'Masqué'}
               </span>
             </div>
+            {showSuggested && (
+              <>
+                <label style={{ ...fieldLabel, marginTop: '14px' }}>Suggestion client</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                  <Controller
+                    name="suggested"
+                    control={control}
+                    render={({ field }) => (
+                      <Switcher checked={field.value} onChange={(val) => field.onChange(!val)} />
+                    )}
+                  />
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                    {watch('suggested') ? 'Mis en avant' : 'Non suggéré'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

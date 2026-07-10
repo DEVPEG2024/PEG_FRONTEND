@@ -32,6 +32,13 @@ export type Product = {
   inCatalogue: boolean;
   productRef?: string;
   refVisibleToCustomer?: boolean;
+  /**
+   * Produit mis en avant dans l'onglet « Nos suggestions » du catalogue client.
+   * Champ Strapi à déployer côté backend (peg_strapi) — le frontend détecte sa
+   * disponibilité via `apiIsSuggestedFieldAvailable` et bascule sur les
+   * nouveautés tant qu'il n'existe pas.
+   */
+  suggested?: boolean;
   requiresBat?: boolean;
   batFile?: PegFile | null;
   catalogPrice?: number | null;

@@ -8,7 +8,12 @@ import {
   apiGetCustomers,
   GetCustomersResponse,
 } from '@/services/CustomerServices';
-import { apiCreateProduct, apiUpdateProduct } from '@/services/ProductServices';
+import {
+  apiCreateProduct,
+  apiGetProductSuggestedFlag,
+  apiIsSuggestedFieldAvailable,
+  apiUpdateProduct,
+} from '@/services/ProductServices';
 import { toast } from 'react-toastify';
 import { apiGetForms, GetFormsResponse } from '@/services/FormServices';
 import { Form } from '@/@types/form';
@@ -69,6 +74,9 @@ const EditProduct = () => {
   const [images, setImages] = useState<PegFile[]>([]);
   const [imagesLoading, setImagesLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState(0);
+  // Champ `suggested` : disponible seulement une fois déployé côté Strapi
+  const [suggestedAvailable, setSuggestedAvailable] = useState(false);
+  const [initialSuggested, setInitialSuggested] = useState(false);
   const initialData: ProductFormModel = useMemo(() => ({
     documentId: documentId ?? '',
     name: product?.name || '',
@@ -98,13 +106,26 @@ const EditProduct = () => {
     pricePerM2: product?.pricePerM2 ?? undefined,
     minM2: product?.minM2 ?? undefined,
     cost: product?.cost ?? undefined,
-  }), [product?.documentId]);
+    suggested: initialSuggested,
+  }), [product?.documentId, initialSuggested]);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    const loadSuggested = async () => {
+      const available = await apiIsSuggestedFieldAvailable();
+      setSuggestedAvailable(available);
+      if (available && onEdition) {
+        setInitialSuggested(await apiGetProductSuggestedFlag(documentId));
+      }
+    };
     if (onEdition) {
-      dispatch(getProductById(documentId)).finally(() => setInitialLoading(false));
+      // Attendre aussi le flag suggested : il alimente les defaultValues du
+      // formulaire, figées au premier rendu de ProductForm
+      Promise.all([dispatch(getProductById(documentId)), loadSuggested()]).finally(
+        () => setInitialLoading(false)
+      );
     } else {
+      loadSuggested();
       setInitialLoading(false);
     }
     return () => {
@@ -317,6 +338,9 @@ const EditProduct = () => {
       delete data.pricingMode;
       delete data.pricePerM2;
       delete data.minM2;
+      if (!suggestedAvailable) {
+        delete data.suggested;
+      }
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
@@ -355,6 +379,7 @@ const EditProduct = () => {
         imagesLoading={imagesLoading}
         currentBatUrl={product?.batFile?.url ?? null}
         initialData={initialData}
+        showSuggested={suggestedAvailable}
         currentStep={currentStep}
         setCurrentStep={setCurrentStep}
         filterSizesListByProductCategory={filterSizesListByProductCategory}

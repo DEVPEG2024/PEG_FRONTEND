@@ -72,6 +72,8 @@ type ProductFormProps = {
   setImages: (images: PegFile[]) => void;
   imagesLoading: boolean;
   currentBatUrl?: string | null;
+  /** Affiche le toggle « Suggestion client » (champ suggested déployé côté Strapi) */
+  showSuggested?: boolean;
   currentStep: number;
   setCurrentStep: (step: number | ((s: number) => number)) => void;
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
@@ -122,6 +124,7 @@ const ProductForm = (props: ProductFormProps) => {
     setImages,
     imagesLoading,
     currentBatUrl,
+    showSuggested,
     currentStep,
     setCurrentStep,
     filterSizesListByProductCategory,
@@ -278,6 +281,7 @@ const ProductForm = (props: ProductFormProps) => {
               batFile={batFile}
               setBatFile={setBatFile}
               currentBatUrl={currentBatUrl}
+              showSuggested={showSuggested}
               currentStep={currentStep}
             />
           </div>
