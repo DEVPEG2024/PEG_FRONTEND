@@ -180,9 +180,13 @@ const ProductForm = (props: ProductFormProps) => {
   const handleWatermarkApply = (watermarkedFile: File) => {
     if (!watermarkTarget) return;
     const updated = [...images];
-    const original = updated[watermarkTarget.index];
-    // Save original before overwriting (keyed by image name)
-    const key = original.name || watermarkTarget.index.toString();
+    const original = updated[watermarkTarget.index] as PegFile & { _originalKey?: string };
+    // Clé UNIQUE par image — pas le nom seul : deux images peuvent porter le
+    // même nom et l'annulation restaurerait alors la mauvaise (conflit de
+    // fichiers). Si l'image est déjà tamponnée, on garde sa clé d'origine.
+    const key =
+      original._originalKey ??
+      `${original.name}-${watermarkTarget.index}-${Math.random().toString(36).slice(2, 8)}`;
     if (!originals.has(key)) {
       setOriginals(new Map(originals).set(key, { ...original }));
     }
@@ -311,13 +315,28 @@ const ProductForm = (props: ProductFormProps) => {
                     return file;
                   })}
                   renderFileActions={(file, index) => {
-                    const img = images[index] as PegFile & { _watermarked?: boolean };
+                    const img = images[index] as PegFile & { _watermarked?: boolean; _originalKey?: string };
                     return (
                       <>
                         <button
                           type="button"
-                          title="Ajouter un logo"
-                          onClick={(e) => { e.stopPropagation(); setWatermarkTarget({ file, index }); }}
+                          title={img?._watermarked ? 'Repositionner le logo (repart de l\'image originale)' : 'Ajouter un logo'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Image déjà tamponnée cette session : rouvrir le modal sur
+                            // l'ORIGINALE pour que le nouveau placement REMPLACE le logo
+                            // au lieu de s'empiler dessus (conflit entre fichiers)
+                            let targetFile = file;
+                            if (img?._watermarked && img._originalKey && originals.has(img._originalKey)) {
+                              const orig = originals.get(img._originalKey)!;
+                              const origFile = orig.file as File & { previewUrl?: string };
+                              if (origFile) {
+                                origFile.previewUrl = orig.url;
+                                targetFile = origFile;
+                              }
+                            }
+                            setWatermarkTarget({ file: targetFile, index });
+                          }}
                           style={{
                             background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)',
                             borderRadius: '6px', padding: '4px 6px', cursor: 'pointer',
