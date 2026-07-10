@@ -57,10 +57,13 @@ const normalizeHex = (input: string): string => {
 const isValidHex = (input: string): boolean =>
   /^#[0-9a-fA-F]{6}$/.test(normalizeHex(input));
 
-// Catégories d'une couleur (relation multiple, fallback ancien champ unique)
+// Catégories d'une couleur (relation multiple). Le fallback sur l'ancien champ
+// unique ne s'applique QUE si `productCategories` est absent (backend pas
+// encore déployé) — pas si la liste est vide : sinon, retirer la dernière
+// catégorie d'une couleur encore porteuse de la relation historique la fait
+// « revenir » à l'écran alors que l'enregistrement a réussi.
 const colorCategories = (c: Color): ProductCategory[] => {
-  if (c.productCategories && c.productCategories.length)
-    return c.productCategories;
+  if (c.productCategories) return c.productCategories;
   if (c.productCategory) return [c.productCategory];
   return [];
 };
@@ -446,6 +449,7 @@ const ColorsList = () => {
               value: ec.e.value,
               description: ec.e.description || '',
               productCategories: [...ec.cats],
+              productCategory: null,
             })
           );
           if (r.meta.requestStatus === 'fulfilled') saved++;
@@ -501,6 +505,7 @@ const ColorsList = () => {
               value: existing.value,
               description: existing.description || '',
               productCategories: union,
+              productCategory: null,
             })
           );
           if (r.meta.requestStatus === 'fulfilled')
@@ -562,6 +567,7 @@ const ColorsList = () => {
               value: existing.value,
               description: existing.description || '',
               productCategories: union,
+              productCategory: null,
             })
           );
           if (r.meta.requestStatus === 'fulfilled') updated++;
@@ -626,6 +632,7 @@ const ColorsList = () => {
           value: normalizeHex(formValue),
           description: formDescription,
           productCategories: formCategories.map((c) => c.value),
+          productCategory: null,
         })
       );
       if (result.meta.requestStatus === 'fulfilled') {
@@ -661,6 +668,7 @@ const ColorsList = () => {
         value: color.value,
         description: color.description || '',
         productCategories: remaining,
+        productCategory: null,
       })
     );
     if (result.meta.requestStatus === 'fulfilled') {

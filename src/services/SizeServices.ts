@@ -133,6 +133,12 @@ export type UpdateSizeRequest = {
   value?: string;
   description?: string;
   productCategories?: string[];
+  /**
+   * Relation historique (oneToOne). Passer `null` pour la purger : sinon la
+   * migration bootstrap de peg_strapi la recopie dans `productCategories` à
+   * chaque redémarrage et les retraits de catégories « reviennent ».
+   */
+  productCategory?: string | null;
 };
 
 export async function apiUpdateSize(

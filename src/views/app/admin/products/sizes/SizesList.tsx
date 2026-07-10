@@ -88,10 +88,13 @@ const compareSizes = (a: Size, b: Size): number => {
   return String(va).localeCompare(String(vb));
 };
 
-// Catégories d'une taille (relation multiple, fallback ancien champ unique)
+// Catégories d'une taille (relation multiple). Le fallback sur l'ancien champ
+// unique ne s'applique QUE si `productCategories` est absent (backend pas
+// encore déployé) — pas si la liste est vide : sinon, retirer la dernière
+// catégorie d'une taille encore porteuse de la relation historique la fait
+// « revenir » à l'écran alors que l'enregistrement a réussi.
 const sizeCategories = (s: Size): ProductCategory[] => {
-  if (s.productCategories && s.productCategories.length)
-    return s.productCategories;
+  if (s.productCategories) return s.productCategories;
   if (s.productCategory) return [s.productCategory];
   return [];
 };
@@ -231,11 +234,17 @@ const SizesList = () => {
     compareSizes({ name: a.name } as Size, { name: b.name } as Size)
   );
 
-  // Parse quick input into trimmed names
-  const parsedSizes = quickInput
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Parse quick input into trimmed names — dédupliqué (insensible à la casse) :
+  // « S, s » ne doit créer qu'une seule entité
+  const parsedSizes = Array.from(
+    new Map(
+      quickInput
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((n) => [n.toLowerCase(), n])
+    ).values()
+  );
 
   // Noms de tailles déjà existants (toutes catégories confondues) → fusion plutôt que doublon
   const existingNamesSet = new Set(
@@ -311,6 +320,7 @@ const SizesList = () => {
               value: ec.e.value || ec.e.name,
               description: ec.e.description || '',
               productCategories: [...ec.cats],
+              productCategory: null,
             })
           );
           if (r.meta.requestStatus === 'fulfilled') saved++;
@@ -367,6 +377,7 @@ const SizesList = () => {
               value: existing.value || existing.name,
               description: existing.description || '',
               productCategories: union,
+              productCategory: null,
             })
           );
           r.meta.requestStatus === 'fulfilled' ? updated++ : errors++;
@@ -438,6 +449,7 @@ const SizesList = () => {
           value: formName,
           description: formDescription,
           productCategories: formCategories.map((c) => c.value),
+          productCategory: null,
         })
       );
       if (result.meta.requestStatus === 'fulfilled') {
@@ -473,6 +485,7 @@ const SizesList = () => {
         value: size.value || size.name,
         description: size.description || '',
         productCategories: remaining,
+        productCategory: null,
       })
     );
     if (result.meta.requestStatus === 'fulfilled') {
