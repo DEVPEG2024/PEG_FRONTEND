@@ -4,7 +4,7 @@ import {
   applyPremiumDiscount,
 } from '@/utils/productHelpers';
 import { Checkout, ShippingAddress } from '@/@types/checkout';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { env } from '@/configs/env.config';
 import { API_BASE_URL } from '@/configs/api.config';
@@ -80,6 +80,28 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
     setAppliedCode('');
     setPromoInput('');
   };
+
+  // Le sous-total peut changer APRÈS l'application d'un code (article retiré du
+  // panier sur la même page, PaymentContent restant monté). On re-valide alors
+  // le code appliqué pour garder la remise AFFICHÉE cohérente : recalcul du
+  // pourcentage sur le nouveau sous-total, ou invalidation si le montant minimum
+  // n'est plus atteint. (Le montant réellement débité est de toute façon
+  // recalculé côté backend ; ceci corrige uniquement l'affichage.)
+  useEffect(() => {
+    if (!appliedCode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await apiValidatePromoCode(appliedCode, subtotalHT);
+        if (!cancelled) setPromoValidation(result);
+      } catch {
+        if (!cancelled) setPromoValidation({ valid: false, reason: 'Erreur de validation' });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [subtotalHT, appliedCode]);
 
   const createFormAnswer = async (
     item: CartItem
