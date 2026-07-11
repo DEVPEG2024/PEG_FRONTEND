@@ -172,6 +172,55 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
     })
 }
 
+// get products by category — vue ADMIN : ne filtre PAS active/inCatalogue
+// (contrairement à apiGetProductsByCategory, destinée au catalogue client),
+// pour que l'admin voie TOUS les produits rattachés à la catégorie.
+export async function apiGetAdminProductsByCategory(data: GetProductsByCategoryRequest): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
+    const query = `
+    query getAdminProductsByCategory($searchTerm: String, $productCategoryDocumentId: ID!, $pagination: PaginationArg) {
+        products_connection (filters: {
+        and: [
+            {name: {containsi: $searchTerm}},
+            {productCategory: {documentId: {eq: $productCategoryDocumentId}}}
+        ]},
+        pagination: $pagination, sort: "name") {
+            nodes {
+                documentId
+                name
+                price
+                priceTiers
+                pricingMode
+                pricePerM2
+                minM2
+                active
+                inCatalogue
+                images {
+                    documentId
+                    url
+                }
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
 // get products
 export type GetProductsRequest = {
     pagination: PaginationRequest;

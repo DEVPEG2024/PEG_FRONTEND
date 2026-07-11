@@ -26,19 +26,19 @@ const AdminProductsOfCategory = () => {
     (state) => state.productCategories.data
   );
 
+  // Tout est piloté par le documentId de l'URL — jamais par l'état persistant.
+  // (L'ancien code ne rechargeait la catégorie que si le store était vide :
+  // la PREMIÈRE catégorie visitée restait affichée pour toutes les autres.)
   useEffect(() => {
-    if (!productCategory) {
-      dispatch(getProductCategoryById(documentId));
-    } else {
-      dispatch(
-        getProductsByCategory({
-          pagination: { page: 1, pageSize: 1000 },
-          searchTerm: '',
-          productCategoryDocumentId: productCategory?.documentId,
-        })
-      );
-    }
-  }, [dispatch, productCategory]);
+    dispatch(getProductCategoryById(documentId));
+    dispatch(
+      getProductsByCategory({
+        pagination: { page: 1, pageSize: 1000 },
+        searchTerm: '',
+        productCategoryDocumentId: documentId,
+      })
+    );
+  }, [dispatch, documentId]);
 
   return (
     <>
@@ -77,6 +77,11 @@ const AdminProductsOfCategory = () => {
                     <p className="text-lg font-bold text-white">
                       {fmtPrice(getProductBasePrice(product))}
                     </p>
+                    {(!product.active || !product.inCatalogue) && (
+                      <p style={{ margin: '4px 0 0', color: '#f87171', fontSize: '11px', fontWeight: 700 }}>
+                        ⚠ Invisible côté client ({[!product.active && 'inactif', !product.inCatalogue && 'hors catalogue'].filter(Boolean).join(' · ')})
+                      </p>
+                    )}
                   </div>
                 </div>
               </Card>

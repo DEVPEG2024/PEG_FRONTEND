@@ -16,7 +16,7 @@ import {
 } from '@/services/ProductCategoryServices';
 import { apiUploadFile } from '@/services/FileServices';
 import {
-  apiGetProductsByCategory,
+  apiGetAdminProductsByCategory,
   GetProductsByCategoryRequest,
   GetProductsResponse,
 } from '@/services/ProductServices';
@@ -116,7 +116,10 @@ export const getProductsByCategory = createAsyncThunk(
     const {
       products_connection,
     }: { products_connection: GetProductsResponse } = await unwrapData(
-      apiGetProductsByCategory(data)
+      // Vue admin : requête NON filtrée sur active/inCatalogue — l'admin doit
+      // voir tous les produits de la catégorie, y compris ceux invisibles
+      // côté client
+      apiGetAdminProductsByCategory(data)
     );
     return products_connection;
   }
