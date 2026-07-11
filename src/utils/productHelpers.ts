@@ -49,6 +49,26 @@ export function getProductCost(product?: Product | null): number {
   return product?.cost != null ? product.cost : 0;
 }
 
+/**
+ * Raisons pour lesquelles un produit est INVISIBLE dans le catalogue client.
+ * La page catégorie client filtre : productCategory = catégorie exacte
+ * + active: true + inCatalogue: true — et la liste des catégories masque
+ * celles qui sont inactives. Un produit qui rate une seule de ces conditions
+ * n'apparaît nulle part côté client, sans que rien ne le signale à l'admin.
+ * Retourne [] si le produit est visible.
+ */
+export function getCatalogueVisibilityIssues(product: Product): string[] {
+  const issues: string[] = [];
+  if (!product.active) issues.push('Produit inactif');
+  if (!product.inCatalogue) issues.push('Hors catalogue');
+  if (!product.productCategory) {
+    issues.push('Aucune catégorie rattachée');
+  } else if ((product.productCategory as { active?: boolean }).active === false) {
+    issues.push(`Catégorie « ${product.productCategory.name} » inactive`);
+  }
+  return issues;
+}
+
 /** Marge unitaire en € : prix de vente − prix de revient. Arrondie au centime. */
 export function getUnitMargin(sellPrice: number, cost: number): number {
   return Math.round((sellPrice - cost) * 100) / 100;

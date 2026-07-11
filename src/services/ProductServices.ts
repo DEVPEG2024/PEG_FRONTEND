@@ -199,6 +199,11 @@ export async function apiGetProducts(data: GetProductsRequest = {pagination: {pa
                 }
                 active
                 inCatalogue
+                productCategory {
+                    documentId
+                    name
+                    active
+                }
             }
             pageInfo {
                 page

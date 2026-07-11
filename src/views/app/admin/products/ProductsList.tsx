@@ -31,6 +31,7 @@ import { PegFile } from '@/@types/pegFile';
 import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
+import { getCatalogueVisibilityIssues } from '@/utils/productHelpers';
 import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
@@ -406,10 +407,24 @@ const ProductsList = () => {
     }
   };
 
-  const activeProducts = useMemo(() => products.filter((p) => p.active), [products]);
-  const inactiveProducts = useMemo(() => products.filter((p) => !p.active), [products]);
-  const activeCount = activeProducts.length;
-  const inactiveCount = inactiveProducts.length;
+  // Audit visibilité catalogue : produits que les clients ne voient PAS
+  // (inactif, hors catalogue, sans catégorie ou catégorie inactive)
+  const [showOnlyIssues, setShowOnlyIssues] = useState(false);
+  const issuesCount = useMemo(
+    () => products.filter((p) => getCatalogueVisibilityIssues(p).length > 0).length,
+    [products]
+  );
+  const displayed = useMemo(
+    () =>
+      showOnlyIssues
+        ? products.filter((p) => getCatalogueVisibilityIssues(p).length > 0)
+        : products,
+    [products, showOnlyIssues]
+  );
+  const activeProducts = useMemo(() => displayed.filter((p) => p.active), [displayed]);
+  const inactiveProducts = useMemo(() => displayed.filter((p) => !p.active), [displayed]);
+  const activeCount = products.filter((p) => p.active).length;
+  const inactiveCount = products.length - activeCount;
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -520,6 +535,35 @@ const ProductsList = () => {
       <div style={{ marginBottom: '24px' }}>
         <CatalogueBanner bannerName="Bannière offres" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
       </div>
+
+      {/* Audit : produits invisibles dans le catalogue client (sur la page affichée) */}
+      {issuesCount > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '14px', flexWrap: 'wrap', marginBottom: '20px',
+          background: 'rgba(239,68,68,0.07)',
+          border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: '12px', padding: '12px 16px',
+        }}>
+          <p style={{ margin: 0, color: '#fca5a5', fontSize: '13px', fontWeight: 600 }}>
+            ⚠ <span style={{ fontWeight: 800 }}>{issuesCount}</span> produit{issuesCount > 1 ? 's' : ''} de cette page
+            {' '}invisible{issuesCount > 1 ? 's' : ''} pour les clients (inactif, hors catalogue, sans catégorie ou catégorie inactive)
+          </p>
+          <button
+            onClick={() => setShowOnlyIssues((v) => !v)}
+            style={{
+              background: showOnlyIssues ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${showOnlyIssues ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.14)'}`,
+              borderRadius: '9px', padding: '7px 14px',
+              color: showOnlyIssues ? '#fca5a5' : 'rgba(255,255,255,0.7)',
+              fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap',
+            }}
+          >
+            {showOnlyIssues ? 'Afficher tous les produits' : 'Voir uniquement ces produits'}
+          </button>
+        </div>
+      )}
 
       <Loading loading={loading} type="cover">
         {products.length > 0 ? (

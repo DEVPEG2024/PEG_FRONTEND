@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
-import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate, getCatalogueVisibilityIssues } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum, arePricesHidden } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
 
@@ -28,6 +28,7 @@ const ProductCard = memo(
     const unitMargin = getUnitMargin(basePrice, cost);
     const marginRate = getMarginRate(basePrice, cost);
     const showMargin = cost > 0 && !arePricesHidden();
+    const visibilityIssues = getCatalogueVisibilityIssues(product);
 
     const handleMouseEnter = () => {
       if (cardRef.current) {
@@ -120,6 +121,22 @@ const ProductCard = memo(
           }}>
             {product.name}
           </p>
+
+          {/* Alerte : invisible dans le catalogue client */}
+          {visibilityIssues.length > 0 && (
+            <div style={{
+              background: 'rgba(239,68,68,0.10)',
+              border: '1px solid rgba(239,68,68,0.30)',
+              borderRadius: '8px', padding: '6px 9px',
+            }}>
+              <p style={{ margin: 0, color: '#f87171', fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                ⚠ Invisible côté client
+              </p>
+              <p style={{ margin: '3px 0 0', color: 'rgba(252,165,165,0.85)', fontSize: '11px', lineHeight: 1.45 }}>
+                {visibilityIssues.join(' · ')}
+              </p>
+            </div>
+          )}
 
           {/* Price + ref */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
