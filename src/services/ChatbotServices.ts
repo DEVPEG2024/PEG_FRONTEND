@@ -110,13 +110,15 @@ export type AiFormField = {
   required?: boolean;
   options?: string[];
 };
-export const apiAiGenerateForm = (description: string) =>
+// mode 'product'       → génère un formulaire de personnalisation pour un produit/service
+// mode 'questionnaire' → traduit fidèlement un questionnaire existant (ex: texte d'un PDF) en formulaire PEG
+export const apiAiGenerateForm = (description: string, mode: 'product' | 'questionnaire' = 'product') =>
   ApiService.fetchData<{
     result: boolean;
     name: string;
     fields: AiFormField[];
     message?: string;
-  }>({ url: '/chatbot/ai-generate-form', method: 'post', data: { description } });
+  }>({ url: '/chatbot/ai-generate-form', method: 'post', data: { description, mode } });
 
 // AI product suggestions (trends & events)
 export type ProductSuggestion = {

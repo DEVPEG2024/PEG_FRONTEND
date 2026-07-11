@@ -10,10 +10,11 @@ import reducer, {
 } from './store';
 import { useEffect, useRef, useState } from 'react';
 import { Form } from '@/@types/form';
-import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate, HiSparkles, HiX } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate, HiSparkles, HiX, HiDocumentText } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 import { toast } from 'react-toastify';
 import { apiAiGenerateForm } from '@/services/ChatbotServices';
+import { extractPdfText } from '@/utils/pdfText';
 
 // Slug déterministe pour la `value` d'une option (le label reste lisible).
 const slugify = (s: string) =>
@@ -64,13 +65,49 @@ function FormsListContent() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiDesc, setAiDesc] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  // Mode 'questionnaire' quand la description provient d'un PDF importé → l'IA traduit fidèlement.
+  const [aiMode, setAiMode] = useState<'product' | 'questionnaire'>('product');
+  const [aiPdfName, setAiPdfName] = useState('');
+  const [aiExtracting, setAiExtracting] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement | null>(null);
+
+  const resetAi = () => {
+    setAiOpen(false);
+    setAiDesc('');
+    setAiMode('product');
+    setAiPdfName('');
+  };
+
+  const handlePdfSelected = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Merci d\'importer un fichier PDF.');
+      return;
+    }
+    setAiExtracting(true);
+    try {
+      const text = await extractPdfText(file);
+      if (!text || text.length < 20) {
+        toast.error('Aucun texte lisible dans ce PDF (peut-être un scan/image). Copiez le questionnaire dans la zone de texte.');
+        return;
+      }
+      setAiDesc(text);
+      setAiMode('questionnaire');
+      setAiPdfName(file.name);
+    } catch {
+      toast.error("Impossible de lire ce PDF. Réessayez ou collez le texte.");
+    } finally {
+      setAiExtracting(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+    }
+  };
 
   const handleGenerateAi = async () => {
     const description = aiDesc.trim();
     if (!description) return;
     setAiLoading(true);
     try {
-      const res = await apiAiGenerateForm(description);
+      const res = await apiAiGenerateForm(description, aiMode);
       const data = res.data;
       if (!data?.result || !Array.isArray(data.fields) || data.fields.length === 0) {
         toast.error(data?.message || "L'IA n'a pas pu générer le formulaire. Réessayez.");
@@ -89,8 +126,7 @@ function FormsListContent() {
       };
       // Brouillon SANS documentId → l'éditeur créera un nouveau formulaire à l'enregistrement.
       dispatch(setForm({ documentId: '', name: data.name, fields: JSON.stringify(structure) } as Form));
-      setAiOpen(false);
-      setAiDesc('');
+      resetAi();
       dispatch(setNewFormDialog(true));
     } catch {
       toast.error('Erreur pendant la génération IA. Réessayez.');
@@ -110,7 +146,7 @@ function FormsListContent() {
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={() => { setAiDesc(''); setAiOpen(true); }}
+          <button onClick={() => { setAiDesc(''); setAiMode('product'); setAiPdfName(''); setAiOpen(true); }}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(139,92,246,0.4)', fontFamily: 'Inter, sans-serif' }}>
             <HiSparkles size={16} /> Créer un formulaire IA
           </button>
@@ -123,7 +159,7 @@ function FormsListContent() {
 
       {/* Modal génération IA */}
       {aiOpen && (
-        <div onClick={() => !aiLoading && setAiOpen(false)}
+        <div onClick={() => !aiLoading && !aiExtracting && resetAi()}
           style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background: 'linear-gradient(160deg, #1a2440, #0f1526)', borderRadius: '18px', width: '100%', maxWidth: '520px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 25px 60px rgba(0,0,0,0.55)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
@@ -134,31 +170,60 @@ function FormsListContent() {
                 </div>
                 <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, margin: 0 }}>Générer un formulaire par IA</h3>
               </div>
-              <button onClick={() => !aiLoading && setAiOpen(false)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '9px', padding: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+              <button onClick={() => !aiLoading && !aiExtracting && resetAi()} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '9px', padding: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
                 <HiX size={16} />
               </button>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 16px' }}>
-              Décris le produit ou le service. L'IA propose les champs adaptés à la commande (tu pourras tout ajuster avant d'enregistrer).
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 14px' }}>
+              Décris le produit ou le service, <b style={{ color: 'rgba(255,255,255,0.7)' }}>ou importe un questionnaire PDF</b> à convertir en formulaire PEG (tu pourras tout ajuster avant d'enregistrer).
             </p>
+
+            {/* Import PDF */}
+            <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" style={{ display: 'none' }}
+              onChange={(e) => handlePdfSelected(e.target.files?.[0])} />
+            <div style={{ marginBottom: '12px' }}>
+              {aiPdfName ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', padding: '9px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <HiDocumentText size={17} style={{ color: '#c084fc', flexShrink: 0 }} />
+                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{aiPdfName}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', flexShrink: 0 }}>· questionnaire</span>
+                  </div>
+                  <button onClick={() => { setAiPdfName(''); setAiDesc(''); setAiMode('product'); }} disabled={aiLoading}
+                    style={{ background: 'transparent', border: 'none', cursor: aiLoading ? 'default' : 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', flexShrink: 0 }}>
+                    <HiX size={15} />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => pdfInputRef.current?.click()} disabled={aiExtracting || aiLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '10px', padding: '11px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600, cursor: aiExtracting || aiLoading ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                  <HiDocumentText size={16} /> {aiExtracting ? 'Lecture du PDF…' : 'Importer un questionnaire PDF'}
+                </button>
+              )}
+            </div>
+
             <textarea
               value={aiDesc}
-              onChange={(e) => setAiDesc(e.target.value)}
-              autoFocus
+              onChange={(e) => { setAiDesc(e.target.value); if (aiPdfName) { setAiPdfName(''); setAiMode('product'); } }}
               placeholder="ex : Création d'un site internet vitrine pour une entreprise locale"
-              rows={3}
+              rows={aiMode === 'questionnaire' ? 5 : 3}
               style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '11px', padding: '12px 14px', color: '#fff', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', resize: 'vertical' }}
               onFocus={(e) => (e.target.style.borderColor = 'rgba(139,92,246,0.6)')}
               onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerateAi(); }}
             />
+            {aiMode === 'questionnaire' && (
+              <p style={{ color: 'rgba(192,132,252,0.75)', fontSize: '12px', margin: '8px 2px 0' }}>
+                Texte extrait du PDF — l'IA va reproduire fidèlement ces questions en champs PEG.
+              </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
-              <button onClick={() => setAiOpen(false)} disabled={aiLoading}
+              <button onClick={resetAi} disabled={aiLoading}
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 18px', color: 'rgba(255,255,255,0.75)', fontSize: '13px', fontWeight: 600, cursor: aiLoading ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
                 Annuler
               </button>
-              <button onClick={handleGenerateAi} disabled={aiLoading || !aiDesc.trim()}
-                style={{ display: 'flex', alignItems: 'center', gap: '7px', background: aiLoading || !aiDesc.trim() ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '10px', padding: '10px 20px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: aiLoading || !aiDesc.trim() ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+              <button onClick={handleGenerateAi} disabled={aiLoading || aiExtracting || !aiDesc.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: '7px', background: aiLoading || aiExtracting || !aiDesc.trim() ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '10px', padding: '10px 20px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: aiLoading || aiExtracting || !aiDesc.trim() ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
                 <HiSparkles size={15} /> {aiLoading ? 'Génération…' : 'Générer'}
               </button>
             </div>
