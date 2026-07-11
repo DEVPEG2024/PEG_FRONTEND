@@ -1,6 +1,5 @@
 import { CartItem } from '@/@types/cart';
 import {
-  getProductPriceForSizeAndColors,
   getTotalPriceForCartItem,
   applyPremiumDiscount,
 } from '@/utils/productHelpers';
@@ -169,16 +168,28 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
 
   const createCheckout = (orderItems: OrderItem[]): Checkout => {
     return {
-      orderItemsCheckout: orderItems.map((orderItem: OrderItem) => ({
-        documentId: orderItem.documentId,
-        productName: orderItem.product.name,
-        productPrice: Math.round(premiumPrice(getProductPriceForSizeAndColors(orderItem.product, orderItem.sizeAndColorSelections)) * (1 + TVA_RATE) * 100),
-        productQuantity: orderItem.sizeAndColorSelections.reduce(
+      orderItemsCheckout: orderItems.map((orderItem: OrderItem) => {
+        const quantity = orderItem.sizeAndColorSelections.reduce(
           (total, sizeAndColor) => total + sizeAndColor.quantity,
           0
-        ),
-        totalPrice: orderItem.price,
-      })),
+        );
+        // `productPrice` = VRAI prix UNITAIRE TTC (centimes) = total de la ligne
+        // ÷ quantité. L'ancien code envoyait ici le prix du PACK ENTIER à côté
+        // de la quantité totale (getProductPriceForSizeAndColors) — incohérent
+        // et dangereux si un jour ce champ sert à un calcul unit × quantité.
+        // Le montant réellement débité vient de `orderItem.price` (recalculé en
+        // base côté backend), pas de ce champ.
+        const unitPriceTTCcents = quantity > 0
+          ? Math.round((orderItem.price / quantity) * (1 + TVA_RATE) * 100)
+          : Math.round(orderItem.price * (1 + TVA_RATE) * 100);
+        return {
+          documentId: orderItem.documentId,
+          productName: orderItem.product.name,
+          productPrice: unitPriceTTCcents,
+          productQuantity: quantity,
+          totalPrice: orderItem.price,
+        };
+      }),
       totalPrice,
       totalPriceWithVAT,
       customerDocumentId: user.customer!.documentId,
