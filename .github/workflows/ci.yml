@@ -5,8 +5,11 @@ name: CI
 # (tarification, remises Premium, permissions, tri des tailles…).
 
 on:
+  # Sur les branches de déploiement, on garde un run direct au push.
   push:
-    branches: ['**']
+    branches: [main, front-test]
+  # Pour les branches de fonctionnalité, le run se fait via la pull request
+  # (évite le double run push + PR sur un même commit).
   pull_request:
     branches: ['**']
 
