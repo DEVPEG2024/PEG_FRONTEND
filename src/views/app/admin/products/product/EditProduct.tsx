@@ -335,27 +335,34 @@ const EditProduct = () => {
       // `batFile` (média) : le code produit un documentId là où Strapi attend un
       // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
-      // Ne transmettre que les champs réellement acceptés par le backend
-      // DÉPLOYÉ (introspection de ProductInput) : un champ inexistant → 400 qui
-      // ferait échouer TOUT l'enregistrement.
+      // Champs CŒUR du schéma produit CONFIRMÉS présents sur le backend déployé :
+      // la requête de lecture (apiGetProductForEditById) les renvoie sans erreur.
+      // On ne les retire JAMAIS du payload — c'est LE correctif du bug « Packs
+      // ne s'enregistre pas » (pricingMode était stripé silencieusement).
+      const ALWAYS_KEEP = new Set([
+        'pricingMode', 'pricePerM2', 'minM2', 'cost', 'priceTiers', 'price',
+      ]);
+
+      // Champs dont la présence sur le backend DÉPLOYÉ n'est PAS garantie : ils
+      // ne figurent pas dans la requête de lecture, donc le Heroku de prod
+      // (déployé à la main, possiblement en retard sur `main`) peut ne pas les
+      // exposer. Les envoyer déclenche un 400 qui fait échouer TOUT
+      // l'enregistrement (y compris pricingMode). On les écarte donc quand on ne
+      // peut PAS vérifier leur existence via introspection.
+      const UNCONFIRMED = ['catalogPrice', 'requiresBat', 'suggested'];
+
       const inputFields = await apiGetProductInputFields();
       if (inputFields) {
+        // Introspection disponible (dev) : filtrage précis, sauf champs cœur.
         Object.keys(data).forEach((k) => {
-          if (k !== 'documentId' && !inputFields.has(k)) delete data[k];
+          if (k !== 'documentId' && !ALWAYS_KEEP.has(k) && !inputFields.has(k)) {
+            delete data[k];
+          }
         });
       } else {
-        // Introspection indisponible — cas NORMAL en production : Strapi v5
-        // (Apollo Server 4) désactive l'introspection quand NODE_ENV=production.
-        // L'ancien repli supprimait pricingMode/pricePerM2/minM2/catalogPrice/
-        // requiresBat/suggested → en prod, choisir « Packs » ne s'enregistrait
-        // JAMAIS (perte silencieuse). Ces champs sont déployés sur la prod
-        // (schéma main) : on les transmet donc. Si un jour le backend est en
-        // retard, l'erreur 400 sera VISIBLE (toast) au lieu d'une perte muette.
-        //
-        // Seule exception : `suggested`. Sans introspection, sa valeur initiale
-        // n'a pas pu être lue (probe __type indisponible) — l'envoyer écraserait
-        // une curation existante avec le défaut du formulaire.
-        if (!suggestedAvailable) delete data.suggested;
+        // Introspection indisponible (prod) : on écarte les champs non confirmés
+        // pour éviter le 400. Les champs cœur (pricingMode…) restent transmis.
+        UNCONFIRMED.forEach((k) => delete data[k]);
       }
 
       await updateOrCreateProduct(data);
