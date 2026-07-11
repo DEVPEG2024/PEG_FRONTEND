@@ -89,7 +89,7 @@ const stateLabels: Record<string, { label: string; color: string; bg: string; bo
 const DashboardProducer = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { producer } = useAppSelector((state) => state.dashboardProducer.data);
+  const { producer, loading } = useAppSelector((state) => state.dashboardProducer.data);
   const { user }: { user: User } = useSelector(
     (state: RootState) => state.auth.user
   );
@@ -117,8 +117,36 @@ const DashboardProducer = () => {
   const projectsInProgress = producer?.projects?.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length ?? 0;
   const activeProjects = producer?.projects?.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled') ?? [];
 
+  // État de chargement (évite l'écran blanc pendant le fetch producteur)
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} style={{ height: '80px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        ))}
+      </div>
+    );
+  }
+
+  // Producteur absent (relation manquante ou fetch en échec) : message plutôt
+  // qu'une page blanche.
+  if (!producer) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '60vh', flexDirection: 'column', gap: '12px', fontFamily: 'Inter, sans-serif',
+      }}>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px' }}>
+          Bienvenue, {user?.firstName || user?.email} 👋
+        </p>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>
+          Votre espace producteur est en cours de configuration. Revenez dans quelques instants.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    producer && (
       <Suspense fallback={<></>}>
         {/* Banner */}
         <div style={{ position: 'relative' }}>
@@ -288,7 +316,6 @@ const DashboardProducer = () => {
           </div>
         </Container>
       </Suspense>
-    )
   );
 };
 

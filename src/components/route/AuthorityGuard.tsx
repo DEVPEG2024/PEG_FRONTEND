@@ -12,7 +12,9 @@ const AuthorityGuard = (props: AuthorityGuardProps) => {
 
     const roleMatched = useAuthority(userAuthority, authority)
 
-    return <>{roleMatched ? children : <Navigate to="/access-denied" />}</>
+    // Accès refusé : on renvoie vers l'accueil (route réelle, résolue par rôle)
+    // plutôt que vers "/access-denied" qui n'existe pas (rebond silencieux).
+    return <>{roleMatched ? children : <Navigate to="/home" replace />}</>
 }
 
 export default AuthorityGuard
