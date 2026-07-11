@@ -4,10 +4,8 @@ import useAuth from '@/utils/hooks/useAuth';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import { toast } from 'react-toastify';
 import type { CommonProps } from '@/@types/common';
 import { HiEye, HiEyeOff, HiOutlineMail, HiOutlineLockClosed, HiArrowRight } from 'react-icons/hi';
-import { FcGoogle } from 'react-icons/fc';
 
 interface SignInFormProps extends CommonProps {
   disableSubmit?: boolean;
@@ -62,22 +60,6 @@ const iconStyle: React.CSSProperties = {
   position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)',
   color: '#94a3b8', pointerEvents: 'none', display: 'flex',
 };
-
-const socialBtn: React.CSSProperties = {
-  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-  height: '48px', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '12px',
-  color: '#0f172a', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-  fontFamily: 'Inter, sans-serif', transition: 'background 0.15s, border-color 0.15s',
-};
-
-const MicrosoftLogo = () => (
-  <svg width="17" height="17" viewBox="0 0 23 23" aria-hidden>
-    <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-    <rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
-    <rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
-    <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
-  </svg>
-);
 
 const SignInForm = (props: SignInFormProps) => {
   const {
@@ -258,35 +240,6 @@ const SignInForm = (props: SignInFormProps) => {
             {isSubmitting ? 'Connexion...' : 'Se connecter'}
             {!isSubmitting && <HiArrowRight size={18} />}
           </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '2px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-            <span style={{ color: '#94a3b8', fontSize: '12.5px', fontWeight: 500 }}>ou continuer avec</span>
-            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-          </div>
-
-          {/* Social */}
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              type="button"
-              style={socialBtn}
-              onClick={() => toast.info('Connexion via Google bientôt disponible')}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-            >
-              <FcGoogle size={19} /> Google
-            </button>
-            <button
-              type="button"
-              style={socialBtn}
-              onClick={() => toast.info('Connexion via Microsoft bientôt disponible')}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-            >
-              <MicrosoftLogo /> Microsoft
-            </button>
-          </div>
 
         </div>
       </form>
