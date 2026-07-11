@@ -335,21 +335,13 @@ const EditProduct = () => {
       // `batFile` (média) : le code produit un documentId là où Strapi attend un
       // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
-      // Champs CŒUR du schéma produit CONFIRMÉS présents sur le backend déployé :
-      // la requête de lecture (apiGetProductForEditById) les renvoie sans erreur.
-      // On ne les retire JAMAIS du payload — c'est LE correctif du bug « Packs
-      // ne s'enregistre pas » (pricingMode était stripé silencieusement).
+      // Champs CŒUR du schéma produit (backend prod désormais aligné sur `main`) :
+      // jamais retirés du payload. C'est le correctif du bug « Packs/m² ne
+      // s'enregistre pas » — pricingMode & consorts étaient stripés silencieusement.
       const ALWAYS_KEEP = new Set([
         'pricingMode', 'pricePerM2', 'minM2', 'cost', 'priceTiers', 'price',
+        'catalogPrice', 'requiresBat',
       ]);
-
-      // Champs dont la présence sur le backend DÉPLOYÉ n'est PAS garantie : ils
-      // ne figurent pas dans la requête de lecture, donc le Heroku de prod
-      // (déployé à la main, possiblement en retard sur `main`) peut ne pas les
-      // exposer. Les envoyer déclenche un 400 qui fait échouer TOUT
-      // l'enregistrement (y compris pricingMode). On les écarte donc quand on ne
-      // peut PAS vérifier leur existence via introspection.
-      const UNCONFIRMED = ['catalogPrice', 'requiresBat', 'suggested'];
 
       const inputFields = await apiGetProductInputFields();
       if (inputFields) {
@@ -359,11 +351,12 @@ const EditProduct = () => {
             delete data[k];
           }
         });
-      } else {
-        // Introspection indisponible (prod) : on écarte les champs non confirmés
-        // pour éviter le 400. Les champs cœur (pricingMode…) restent transmis.
-        UNCONFIRMED.forEach((k) => delete data[k]);
       }
+      // `suggested` n'existe PAS dans le schéma product Strapi (la curation se
+      // gère via l'onglet Suggestions, mutation dédiée). L'envoyer via le
+      // formulaire produit déclencherait un 400 ; on ne le transmet donc que si
+      // l'introspection confirme explicitement sa présence.
+      if (!suggestedAvailable) delete data.suggested;
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
