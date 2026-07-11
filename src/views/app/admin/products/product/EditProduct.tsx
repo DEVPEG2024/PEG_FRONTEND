@@ -336,22 +336,26 @@ const EditProduct = () => {
       // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
       // Ne transmettre que les champs réellement acceptés par le backend
-      // DÉPLOYÉ. La prod Strapi (Heroku) étant déployée à la main, elle peut
-      // être en retard sur le schéma `main` : envoyer un champ inexistant
-      // (pricingMode, pricePerM2, minM2, catalogPrice, requiresBat, suggested…)
-      // renverrait un 400 qui ferait échouer TOUT l'enregistrement. On filtre
-      // donc sur l'introspection de ProductInput.
+      // DÉPLOYÉ (introspection de ProductInput) : un champ inexistant → 400 qui
+      // ferait échouer TOUT l'enregistrement.
       const inputFields = await apiGetProductInputFields();
       if (inputFields) {
         Object.keys(data).forEach((k) => {
           if (k !== 'documentId' && !inputFields.has(k)) delete data[k];
         });
       } else {
-        // Introspection indisponible → repli conservateur (comportement
-        // historique : on écarte les champs potentiellement non déployés).
-        ['requiresBat', 'catalogPrice', 'pricingMode', 'pricePerM2', 'minM2', 'suggested'].forEach(
-          (k) => delete data[k]
-        );
+        // Introspection indisponible — cas NORMAL en production : Strapi v5
+        // (Apollo Server 4) désactive l'introspection quand NODE_ENV=production.
+        // L'ancien repli supprimait pricingMode/pricePerM2/minM2/catalogPrice/
+        // requiresBat/suggested → en prod, choisir « Packs » ne s'enregistrait
+        // JAMAIS (perte silencieuse). Ces champs sont déployés sur la prod
+        // (schéma main) : on les transmet donc. Si un jour le backend est en
+        // retard, l'erreur 400 sera VISIBLE (toast) au lieu d'une perte muette.
+        //
+        // Seule exception : `suggested`. Sans introspection, sa valeur initiale
+        // n'a pas pu être lue (probe __type indisponible) — l'envoyer écraserait
+        // une curation existante avec le défaut du formulaire.
+        if (!suggestedAvailable) delete data.suggested;
       }
 
       await updateOrCreateProduct(data);
