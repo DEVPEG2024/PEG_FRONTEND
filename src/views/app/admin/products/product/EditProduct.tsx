@@ -331,13 +331,15 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
-      // Strip fields not yet deployed on Strapi integration
-      delete data.requiresBat;
+      // Ces champs scalaires existent désormais dans le schéma produit Strapi
+      // (prod) : requiresBat, catalogPrice, pricingMode, pricePerM2, minM2.
+      // On ne les supprime donc PLUS — les supprimer jetait silencieusement
+      // toute modif de tarification (mode, prix m², prix catalogue).
+      // `batFile` (média) reste écarté ici : il attend un id numérique, pas le
+      // documentId — sa gestion propre est un sujet séparé.
       delete data.batFile;
-      delete data.catalogPrice;
-      delete data.pricingMode;
-      delete data.pricePerM2;
-      delete data.minM2;
+      // `suggested` n'est pas encore au schéma → on l'écarte tant que la sonde
+      // d'introspection ne l'a pas confirmé.
       if (!suggestedAvailable) {
         delete data.suggested;
       }
