@@ -33,7 +33,11 @@ const validationSchema = Yup.object().shape({
     firstName: Yup.string().required('Veuillez entrer votre prénom'),
     lastName: Yup.string().required('Veuillez entrer votre nom'),
     email: Yup.string().email('Adresse email invalide').required('Veuillez entrer votre adresse email'),
-    password: Yup.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères').required('Veuillez entrer un mot de passe'),
+    password: Yup.string()
+        .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+        .matches(/[A-Za-z]/, 'Le mot de passe doit contenir au moins une lettre')
+        .matches(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+        .required('Veuillez entrer un mot de passe'),
     confirmPassword: Yup.string()
         .oneOf([Yup.ref('password')], 'Les mots de passe ne correspondent pas')
         .required('Veuillez confirmer votre mot de passe'),

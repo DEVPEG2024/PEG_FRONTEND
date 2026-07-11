@@ -232,9 +232,57 @@ export type GetProductsResponse = {
     pageInfo: PageInfo
 };
 
+// ⚠️ SÉCURITÉ : cette requête est utilisée par des vues CLIENT (panier,
+// dashboard, catalogue) → elle ne doit PAS exposer `cost` (prix de revient,
+// donnée interne admin). La marge admin passe par `apiGetAdminProducts`.
 export async function apiGetProducts(data: GetProductsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
     const query = `
     query getProducts($searchTerm: String, $pagination: PaginationArg) {
+        products_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination, sort: "name") {
+            nodes {
+                documentId
+                name
+                price
+                priceTiers
+                images {
+                    documentId
+                    url
+                }
+                active
+                inCatalogue
+                productCategory {
+                    documentId
+                    name
+                    active
+                }
+            }
+            pageInfo {
+                page
+                pageSize
+                pageCount
+                total
+            }
+        }
+    }
+  `,
+  variables = {
+    ...data
+  }
+    return ApiService.fetchData<ApiResponse<{products_connection: GetProductsResponse}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: {
+            query,
+            variables
+        }
+    })
+}
+
+// Variante ADMIN de apiGetProducts : inclut `cost` (prix de revient) pour
+// l'affichage des marges. À n'utiliser QUE dans les vues admin.
+export async function apiGetAdminProducts(data: GetProductsRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{products_connection: GetProductsResponse}>>> {
+    const query = `
+    query getAdminProducts($searchTerm: String, $pagination: PaginationArg) {
         products_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination, sort: "name") {
             nodes {
                 documentId

@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Button } from '@/components/ui';
-import { removeFromCartItemOfOrderItem } from '@/store/slices/base/cartSlice';
+import { removeFromCartItemOfOrderItem, clearCart } from '@/store/slices/base/cartSlice';
 import { HiOutlineCheckCircle, HiOutlineFolderOpen, HiHome } from 'react-icons/hi';
 
 function Success() {
@@ -18,36 +18,34 @@ function Success() {
       const sessionId = new URLSearchParams(window.location.search).get(
         'session_id'
       );
-      if (sessionId) {
+      if (!sessionId) return;
+      try {
         const response = await fetch(
-            API_BASE_URL + '/checkout/stripePaymentInformations',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `${TOKEN_TYPE}${token}`,
-              },
-              body: JSON.stringify({ sessionId }),
-            }
-          ),
+          API_BASE_URL + '/checkout/stripePaymentInformations',
           {
-            sessionOrderItemsDocumentIds,
-          }: { sessionOrderItemsDocumentIds: string } = await response.json(),
-          orderItemsValidatedDocumentIdsParsed: string[] = JSON.parse(
-            sessionOrderItemsDocumentIds
-          );
-
-        orderItemsValidatedDocumentIdsParsed.map(
-          (orderItemValidatedDocumentId: string) =>
-            dispatch(
-              removeFromCartItemOfOrderItem(orderItemValidatedDocumentId)
-            )
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `${TOKEN_TYPE}${token}`,
+            },
+            body: JSON.stringify({ sessionId }),
+          }
         );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const { sessionOrderItemsDocumentIds } = await response.json();
+        const ids: string[] = JSON.parse(sessionOrderItemsDocumentIds || '[]');
+        ids.forEach((id) => dispatch(removeFromCartItemOfOrderItem(id)));
+      } catch (err) {
+        // Le paiement a réussi (on est sur la page succès) mais la confirmation
+        // des articles a échoué : on vide malgré tout le panier pour éviter une
+        // double commande, et on trace l'erreur.
+        console.error('[Success] Confirmation des articles échouée :', err);
+        dispatch(clearCart());
       }
     };
 
     confirmPayment();
-  }, []);
+  }, [dispatch, token]);
 
   return (
     <Container className="h-full">

@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Product, ProductRequest } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import {
-  apiGetProducts,
+  apiGetAdminProducts,
   apiDeleteProduct,
   apiUpdateProduct,
   GetProductsRequest,
@@ -45,7 +45,9 @@ export const getProducts = createAsyncThunk(
     const {
       products_connection,
     }: { products_connection: GetProductsResponse } = await unwrapData(
-      apiGetProducts(data)
+      // Vue admin : variante avec `cost` (marges). Les vues client utilisent
+      // apiGetProducts (sans cost).
+      apiGetAdminProducts(data)
     );
     return products_connection;
   }

@@ -58,19 +58,22 @@ const CustomerProductsOfCategory = () => {
       : 'Découvrez notre sélection personnalisée, à votre image.');
 
 
+  // Piloté par le documentId de l'URL (jamais par l'état persistant) : sinon la
+  // 1re catégorie visitée reste affichée pour les suivantes. Même correctif que
+  // la vue admin.
   useEffect(() => {
-    if (!productCategory) {
-      dispatch(getCatalogueProductCategoryById(documentId));
-    } else {
-      dispatch(
-        getCatalogueProductsByCategory({
-          pagination: { page, pageSize: PAGE_SIZE },
-          searchTerm: '',
-          productCategoryDocumentId: productCategory?.documentId,
-        })
-      );
-    }
-  }, [dispatch, productCategory, page]);
+    dispatch(getCatalogueProductCategoryById(documentId));
+  }, [dispatch, documentId]);
+
+  useEffect(() => {
+    dispatch(
+      getCatalogueProductsByCategory({
+        pagination: { page, pageSize: PAGE_SIZE },
+        searchTerm: '',
+        productCategoryDocumentId: documentId,
+      })
+    );
+  }, [dispatch, documentId, page]);
 
   useEffect(() => {
     setPage(1);

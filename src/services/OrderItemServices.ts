@@ -71,7 +71,6 @@ export async function apiGetOrderItems(data: GetOrderItemsRequest = {pagination:
                 product {
                     documentId
                     name
-                    cost
                     images {
                         url
                     }

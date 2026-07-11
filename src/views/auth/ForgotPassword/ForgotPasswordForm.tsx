@@ -22,7 +22,9 @@ type ForgotPasswordFormSchema = {
 };
 
 const validationSchema = Yup.object().shape({
-  email: Yup.string().required('Veuillez renseigner votre email'),
+  email: Yup.string()
+    .email('Veuillez entrer une adresse email valide')
+    .required('Veuillez renseigner votre email'),
 });
 
 const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
