@@ -4,14 +4,20 @@ import reducer, {
   duplicateForm,
   getForm,
   getForms,
+  setForm,
   setNewFormDialog,
   useAppSelector,
 } from './store';
 import { useEffect, useRef, useState } from 'react';
 import { Form } from '@/@types/form';
-import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiDuplicate, HiSparkles, HiX } from 'react-icons/hi';
 import { TbForms } from 'react-icons/tb';
 import { toast } from 'react-toastify';
+import { apiAiGenerateForm } from '@/services/ChatbotServices';
+
+// Slug déterministe pour la `value` d'une option (le label reste lisible).
+const slugify = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
 injectReducer('forms', reducer);
 
@@ -54,6 +60,45 @@ function FormsListContent() {
     toast.success('Formulaire dupliqué');
   };
 
+  // ── Génération IA ──
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiDesc, setAiDesc] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleGenerateAi = async () => {
+    const description = aiDesc.trim();
+    if (!description) return;
+    setAiLoading(true);
+    try {
+      const res = await apiAiGenerateForm(description);
+      const data = res.data;
+      if (!data?.result || !Array.isArray(data.fields) || data.fields.length === 0) {
+        toast.error(data?.message || "L'IA n'a pas pu générer le formulaire. Réessayez.");
+        return;
+      }
+      // Conversion vers la structure attendue par l'éditeur (options string[] -> {label,value}[]).
+      const structure = {
+        fields: data.fields.map((f) => ({
+          type: f.type,
+          label: f.label,
+          required: !!f.required,
+          ...(f.options && f.options.length
+            ? { options: f.options.map((o) => ({ label: o, value: slugify(o) })) }
+            : {}),
+        })),
+      };
+      // Brouillon SANS documentId → l'éditeur créera un nouveau formulaire à l'enregistrement.
+      dispatch(setForm({ documentId: '', name: data.name, fields: JSON.stringify(structure) } as Form));
+      setAiOpen(false);
+      setAiDesc('');
+      dispatch(setNewFormDialog(true));
+    } catch {
+      toast.error('Erreur pendant la génération IA. Réessayez.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
@@ -64,11 +109,62 @@ function FormsListContent() {
             Formulaires <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
           </h2>
         </div>
-        <button onClick={() => dispatch(setNewFormDialog(true))}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
-          <HiPlus size={16} /> Créer un formulaire
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => { setAiDesc(''); setAiOpen(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(139,92,246,0.4)', fontFamily: 'Inter, sans-serif' }}>
+            <HiSparkles size={16} /> Créer un formulaire IA
+          </button>
+          <button onClick={() => dispatch(setNewFormDialog(true))}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
+            <HiPlus size={16} /> Créer un formulaire
+          </button>
+        </div>
       </div>
+
+      {/* Modal génération IA */}
+      {aiOpen && (
+        <div onClick={() => !aiLoading && setAiOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background: 'linear-gradient(160deg, #1a2440, #0f1526)', borderRadius: '18px', width: '100%', maxWidth: '520px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 25px 60px rgba(0,0,0,0.55)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(139,92,246,0.16)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <HiSparkles size={20} style={{ color: '#c084fc' }} />
+                </div>
+                <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, margin: 0 }}>Générer un formulaire par IA</h3>
+              </div>
+              <button onClick={() => !aiLoading && setAiOpen(false)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '9px', padding: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+                <HiX size={16} />
+              </button>
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 16px' }}>
+              Décris le produit ou le service. L'IA propose les champs adaptés à la commande (tu pourras tout ajuster avant d'enregistrer).
+            </p>
+            <textarea
+              value={aiDesc}
+              onChange={(e) => setAiDesc(e.target.value)}
+              autoFocus
+              placeholder="ex : Création d'un site internet vitrine pour une entreprise locale"
+              rows={3}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '11px', padding: '12px 14px', color: '#fff', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', resize: 'vertical' }}
+              onFocus={(e) => (e.target.style.borderColor = 'rgba(139,92,246,0.6)')}
+              onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerateAi(); }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
+              <button onClick={() => setAiOpen(false)} disabled={aiLoading}
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 18px', color: 'rgba(255,255,255,0.75)', fontSize: '13px', fontWeight: 600, cursor: aiLoading ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                Annuler
+              </button>
+              <button onClick={handleGenerateAi} disabled={aiLoading || !aiDesc.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: '7px', background: aiLoading || !aiDesc.trim() ? 'rgba(139,92,246,0.4)' : 'linear-gradient(90deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '10px', padding: '10px 20px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: aiLoading || !aiDesc.trim() ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                <HiSparkles size={15} /> {aiLoading ? 'Génération…' : 'Générer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>
