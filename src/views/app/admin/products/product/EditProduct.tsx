@@ -335,32 +335,35 @@ const EditProduct = () => {
       // `batFile` (média) : le code produit un documentId là où Strapi attend un
       // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
-      // Champs CŒUR du schéma produit, confirmés présents sur la prod (la
-      // requête de lecture les renvoie sans erreur). On ne les retire JAMAIS du
-      // payload : les stripper silencieusement causait la perte de
-      // `pricingMode` (Packs/m²) et consorts à l'enregistrement — c'était LE bug.
+      // Champs CŒUR du schéma produit CONFIRMÉS présents sur le backend déployé :
+      // la requête de lecture (apiGetProductForEditById) les renvoie sans erreur.
+      // On ne les retire JAMAIS du payload — c'est LE correctif du bug « Packs
+      // ne s'enregistre pas » (pricingMode était stripé silencieusement).
       const ALWAYS_KEEP = new Set([
-        'pricingMode', 'pricePerM2', 'minM2', 'catalogPrice', 'requiresBat',
-        'cost', 'priceTiers', 'price',
+        'pricingMode', 'pricePerM2', 'minM2', 'cost', 'priceTiers', 'price',
       ]);
 
-      // Filtrage défensif contre un champ inexistant côté backend (→ 400 qui
-      // ferait échouer TOUT l'enregistrement), MAIS uniquement pour les champs
-      // hors cœur, et uniquement quand l'introspection est réellement
-      // disponible. En production, l'introspection est souvent désactivée
-      // (Apollo Server 4) → inputFields est null → on n'écarte plus rien à tort.
+      // Champs dont la présence sur le backend DÉPLOYÉ n'est PAS garantie : ils
+      // ne figurent pas dans la requête de lecture, donc le Heroku de prod
+      // (déployé à la main, possiblement en retard sur `main`) peut ne pas les
+      // exposer. Les envoyer déclenche un 400 qui fait échouer TOUT
+      // l'enregistrement (y compris pricingMode). On les écarte donc quand on ne
+      // peut PAS vérifier leur existence via introspection.
+      const UNCONFIRMED = ['catalogPrice', 'requiresBat', 'suggested'];
+
       const inputFields = await apiGetProductInputFields();
       if (inputFields) {
+        // Introspection disponible (dev) : filtrage précis, sauf champs cœur.
         Object.keys(data).forEach((k) => {
           if (k !== 'documentId' && !ALWAYS_KEEP.has(k) && !inputFields.has(k)) {
             delete data[k];
           }
         });
+      } else {
+        // Introspection indisponible (prod) : on écarte les champs non confirmés
+        // pour éviter le 400. Les champs cœur (pricingMode…) restent transmis.
+        UNCONFIRMED.forEach((k) => delete data[k]);
       }
-      // `suggested` : champ ajouté tardivement. Sans introspection disponible,
-      // sa valeur initiale n'a pas pu être lue (probe __type indisponible) →
-      // l'envoyer écraserait une curation existante avec le défaut du formulaire.
-      if (!inputFields && !suggestedAvailable) delete data.suggested;
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
