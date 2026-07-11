@@ -1,6 +1,5 @@
 import store from '@/store';
-import { PERSIST_STORE_NAME } from '@/constants/app.constant';
-import deepParseJson from '@/utils/deepParseJson';
+import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import ApiService from './ApiService';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 
@@ -11,11 +10,12 @@ const BASE = import.meta.env.DEV
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
-    const rawPersistData = localStorage.getItem(PERSIST_STORE_NAME);
-    const persistData = deepParseJson(rawPersistData);
-    let token = (persistData as any)?.auth?.session?.token;
+    // Store Redux d'abord (session de CET onglet), puis persistance par onglet.
+    // L'ancien ordre lisait le localStorage PARTAGÉ en priorité : les
+    // notifications pouvaient partir avec le token d'un autre onglet (admin).
+    let token = store.getState().auth.session.token;
     if (!token) {
-      token = store.getState().auth.session.token;
+      token = getPersistedAuthToken();
     }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

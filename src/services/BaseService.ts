@@ -1,9 +1,9 @@
 import axios from 'axios'
 import appConfig from '@/configs/app.config'
 import { TOKEN_TYPE, REQUEST_HEADER_AUTH_KEY } from '@/constants/api.constant'
-import { PERSIST_STORE_NAME } from '@/constants/app.constant'
 import deepParseJson from '@/utils/deepParseJson'
 import store, { signOutSuccess } from '../store'
+import { getPersistedAuthToken } from '../store/tabSessionStorage'
 import { API_BASE_URL } from '@/configs/api.config'
 
 const unauthorizedCode = [401]
@@ -44,10 +44,8 @@ BaseService.interceptors.request.use(
         let accessToken = store.getState().auth.session.token
 
         if (!accessToken) {
-            const rawPersistData = localStorage.getItem(PERSIST_STORE_NAME)
-            const persistData = deepParseJson(rawPersistData)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            accessToken = (persistData as any)?.auth?.session?.token
+            // Session persistée PAR ONGLET (sessionStorage → localStorage)
+            accessToken = getPersistedAuthToken()
         }
 
         if (accessToken) {

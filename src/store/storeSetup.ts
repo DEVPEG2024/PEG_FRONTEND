@@ -27,7 +27,9 @@ const persistConfig = {
     key: PERSIST_STORE_NAME,
     keyPrefix: '',
     storage,
-    whitelist: ['auth', 'locale', 'base'],
+    // `auth` n'est plus persisté ici (localStorage partagé entre onglets) :
+    // il a sa propre persistance PAR ONGLET dans rootReducer (tabSessionStorage)
+    whitelist: ['locale', 'base'],
 }
 
 interface CustomStore extends Store<RootState, AnyAction> {
