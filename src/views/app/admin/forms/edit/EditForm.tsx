@@ -5,6 +5,8 @@ import { HiOutlineEye, HiX } from 'react-icons/hi';
 
 import { Field, BannerConfig, FormStructure, FieldWidth } from './types';
 import { getFieldDef, FIELD_DEFS } from './fieldDefs';
+import { FORM_TEMPLATES, FormTemplate } from './templates';
+import { HiOutlineTemplate } from 'react-icons/hi';
 import { JSONValue } from '@/@types/form';
 
 import Sidebar from './components/Sidebar';
@@ -85,6 +87,7 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
   const [structure, setStructure] = useState<FormStructure>(() => parseStructure(fields));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const { banner = {}, fields: formFields } = structure;
   const selectedField = formFields.find((f) => f.id === selectedId) ?? null;
@@ -106,6 +109,23 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
     const field = makeField(type);
     setFields((prev) => [...prev, field]);
     setSelectedId(field.id);
+  };
+
+  // Insère les champs d'un modèle (id frais) et pré-remplit le nom si vide.
+  const applyTemplate = (tpl: FormTemplate) => {
+    const newFields: Field[] = tpl.fields.map((f) => ({
+      id: genId(f.type),
+      type: f.type,
+      label: f.label,
+      required: f.required ?? false,
+      width: (f.width ?? 100) as FieldWidth,
+      ...(f.placeholder ? { placeholder: f.placeholder } : {}),
+      ...(f.description ? { description: f.description } : {}),
+      ...(f.options ? { options: f.options } : {}),
+    }));
+    setFields((prev) => [...prev, ...newFields]);
+    setFormName((n) => (n && n.trim() ? n : tpl.formName));
+    setTemplatesOpen(false);
   };
 
   const duplicateField = (id: string) => {
@@ -226,6 +246,64 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
         >
           {formFields.length} champ{formFields.length !== 1 ? 's' : ''}
         </span>
+
+        {/* Modèles prêts à l'emploi */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => setTemplatesOpen((o) => !o)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 16px',
+              background: templatesOpen ? 'rgba(47,111,237,0.18)' : 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(47,111,237,0.35)',
+              borderRadius: '9px',
+              color: templatesOpen ? '#7eb3ff' : 'rgba(255,255,255,0.75)',
+              fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+            }}
+          >
+            <HiOutlineTemplate size={15} /> Modèles
+          </button>
+          {templatesOpen && (
+            <>
+              {/* clic extérieur pour fermer */}
+              <div
+                onClick={() => setTemplatesOpen(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+              />
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 41,
+                width: '260px', background: '#0f1a2c',
+                border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.5)', padding: '6px',
+                fontFamily: 'Inter, sans-serif',
+              }}>
+                <p style={{ margin: '6px 10px 8px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                  Insérer un modèle
+                </p>
+                {FORM_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.key}
+                    onClick={() => applyTemplate(tpl)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '10px 12px', borderRadius: '9px',
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(47,111,237,0.14)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span style={{ display: 'block', color: '#fff', fontSize: '13.5px', fontWeight: 600 }}>{tpl.label}</span>
+                    <span style={{ display: 'block', color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginTop: '2px' }}>
+                      {tpl.description} · {tpl.fields.length} champs
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Preview */}
         <button
