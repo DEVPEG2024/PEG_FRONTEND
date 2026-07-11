@@ -2,19 +2,18 @@
 // La version doit être incrémentée à chaque modification du texte (trace juridique côté backend).
 import { PREMIUM_PRICE_HT } from '@/services/PremiumServices';
 
-export const PREMIUM_CONTRACT_VERSION = '1.0';
+export const PREMIUM_CONTRACT_VERSION = '1.1';
 
 const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
 
 export const PREMIUM_CONTRACT_TITLE = "Contrat d'abonnement « PEG Premium »";
 
-// Texte du contrat. Les mentions entre crochets sont à compléter avec les informations légales réelles.
 export const PREMIUM_CONTRACT_TEXT = `CONTRAT D'ABONNEMENT « PEG PREMIUM » — version ${PREMIUM_CONTRACT_VERSION}
 
 Conditions particulières d'abonnement au service Premium, à accepter par le Client avant tout paiement.
 
 ENTRE :
-PEG — [dénomination sociale], [forme juridique], immatriculée sous le numéro [SIREN], siège social [adresse], représentée par [représentant légal] (ci-après « PEG » ou « le Prestataire »),
+PEG, société par actions simplifiée (SAS) immatriculée le 22 avril 2025 sous le numéro SIREN 943 335 760 (SIRET du siège social : 943 335 760 00014), numéro de TVA intracommunautaire FR88943335760, code NAF/APE 7021Z — Conseil en relations publiques et communication, dont le siège social est situé 21 rue du Stade, 57460 Behren-lès-Forbach, représentée par son représentant légal en exercice (ci-après « PEG » ou « le Prestataire »),
 ET :
 Le client professionnel identifié dans son espace personnel sur app.mypeg.fr (ci-après « le Client »).
 
@@ -47,7 +46,7 @@ ARTICLE 7 — RÉSILIATION
 Le Client peut résilier à tout moment après l'expiration de la période d'engagement de six (6) mois, depuis son espace personnel ; la résiliation prend effet à la fin de la période mensuelle en cours déjà payée, sans remboursement au prorata. Une demande formulée avant la fin de l'engagement ne prend effet qu'au terme de celui-ci, les mensualités restant dues. PEG peut résilier de plein droit, sans indemnité, en cas de manquement non régularisé dans les quinze (15) jours suivant mise en demeure. À la prise d'effet de la résiliation, le Client perd l'accès à l'ensemble des avantages Premium.
 
 ARTICLE 8 — DONNÉES PERSONNELLES
-Les données sont traitées par PEG (responsable de traitement) aux fins de gestion de l'abonnement, de facturation et de relation commerciale. Les données de paiement sont traitées par Stripe (certifié PCI-DSS) ; PEG n'a pas accès aux numéros de carte. Conformément au RGPD, le Client dispose des droits d'accès, de rectification, d'effacement et de portabilité, exerçables à [e-mail de contact].
+Les données sont traitées par PEG (responsable de traitement) aux fins de gestion de l'abonnement, de facturation et de relation commerciale. Les données de paiement sont traitées par Stripe (certifié PCI-DSS) ; PEG n'a pas accès aux numéros de carte. Conformément au RGPD, le Client dispose des droits d'accès, de rectification, d'effacement et de portabilité, exerçables auprès de PEG via son espace personnel sur app.mypeg.fr ou par tout moyen de contact indiqué sur la plateforme.
 
 ARTICLE 9 — RESPONSABILITÉ
 La responsabilité de PEG ne saurait être engagée en cas d'indisponibilité temporaire de la plateforme, de force majeure ou d'utilisation non conforme. En tout état de cause, elle est limitée au montant des sommes versées au titre de l'abonnement sur les douze (12) derniers mois.
