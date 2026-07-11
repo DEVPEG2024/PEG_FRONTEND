@@ -103,6 +103,21 @@ export const apiAiFillProduct = (
     suggestedChecklist: string;
   }>({ url: '/chatbot/ai-fill-product', method: 'post', data: { name, availableSizes, availableColors, availableCategories, availableForms, availableChecklists } });
 
+// AI form generation from a product/service description
+export type AiFormField = {
+  type: string;
+  label: string;
+  required?: boolean;
+  options?: string[];
+};
+export const apiAiGenerateForm = (description: string) =>
+  ApiService.fetchData<{
+    result: boolean;
+    name: string;
+    fields: AiFormField[];
+    message?: string;
+  }>({ url: '/chatbot/ai-generate-form', method: 'post', data: { description } });
+
 // AI product suggestions (trends & events)
 export type ProductSuggestion = {
   name: string;
