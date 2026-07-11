@@ -1,0 +1,61 @@
+name: CI
+
+# Vérifie le typage, les tests unitaires et le build à chaque push et
+# pull request. Objectif : détecter une régression AVANT le déploiement
+# (tarification, remises Premium, permissions, tri des tailles…).
+
+on:
+  # Sur les branches de déploiement, on garde un run direct au push.
+  push:
+    branches: [main, front-test]
+  # Pour les branches de fonctionnalité, le run se fait via la pull request
+  # (évite le double run push + PR sur un même commit).
+  pull_request:
+    branches: ['**']
+
+# Annule un run précédent encore en cours sur la même réf (push rapides).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck & tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build

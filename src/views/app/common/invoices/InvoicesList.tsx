@@ -14,6 +14,7 @@ import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, H
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
 import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
+import { Pagination } from '@/components/ui';
 
 injectReducer('invoices', reducer);
 
@@ -402,6 +403,16 @@ const InvoicesList = () => {
                   </div>
                 )
               })}
+            </div>
+          )}
+          {!loading && total > pageSize && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px', paddingTop: '4px' }}>
+              <Pagination
+                total={total}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onChange={(page) => setCurrentPage(page)}
+              />
             </div>
           )}
         </Panel>

@@ -5,6 +5,8 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint src/views --ext .js,.jsx,.ts,.tsx",
