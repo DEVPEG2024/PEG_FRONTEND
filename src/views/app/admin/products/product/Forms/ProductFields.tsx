@@ -17,6 +17,7 @@ import { RootState } from '@/store';
 import { SUPER_ADMIN, ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useState } from 'react';
 import { apiAiFillProduct, apiGenerateProductImage } from '@/services/ChatbotServices';
+import { sameName } from '@/utils/nameMatch';
 
 type Options = {
   label: string;
@@ -140,9 +141,9 @@ const ProductFields = (props: ProductFieldsProps) => {
         if (res.data.description) setValue('description', res.data.description);
         if (res.data.priceTiers?.length) setValue('priceTiers', res.data.priceTiers);
 
-        // Catégorie produit
+        // Catégorie produit (correspondance insensible aux accents)
         if (res.data.suggestedCategory) {
-          const catOption = categories.find((c) => c.label.toLowerCase() === res.data.suggestedCategory.toLowerCase());
+          const catOption = categories.find((c) => sameName(c.label, res.data.suggestedCategory));
           if (catOption) {
             setValue('productCategory', catOption.value);
             filterSizesListByProductCategory(catOption.value);
@@ -607,7 +608,7 @@ const ProductFields = (props: ProductFieldsProps) => {
               control={control}
               render={({ field }) => (
                 <Select
-                  value={categories.find((o) => field.value === o.value)}
+                  value={categories.find((o) => field.value === o.value) ?? null}
                   placeholder="Catégorie..."
                   options={categories}
                   onChange={(sel) => {
@@ -619,6 +620,9 @@ const ProductFields = (props: ProductFieldsProps) => {
                 />
               )}
             />
+            {errors.productCategory && (
+              <p style={fieldError}>{String(errors.productCategory.message)}</p>
+            )}
           </div>
           <div>
             <label style={fieldLabel}>Client(s)</label>

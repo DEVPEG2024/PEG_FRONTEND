@@ -107,6 +107,18 @@ const validationSchema = Yup.object().shape({
     otherwise: (schema) => schema.notRequired(),
   }),
   description: Yup.string().required('Description requise'),
+  // Un produit visible au catalogue DOIT avoir une catégorie : la page
+  // catégorie client filtre dessus — sans elle, le produit n'apparaît nulle part
+  productCategory: Yup.string()
+    .nullable()
+    .when('inCatalogue', {
+      is: true,
+      then: (schema) =>
+        schema.required(
+          'Catégorie requise pour un produit du catalogue (sinon il est invisible côté client)'
+        ),
+      otherwise: (schema) => schema.notRequired(),
+    }),
 });
 
 const ProductForm = (props: ProductFormProps) => {
@@ -275,6 +287,10 @@ const ProductForm = (props: ProductFormProps) => {
   const onError = (formErrors: any) => {
     if (formErrors.name || formErrors.description) setCurrentStep(0);
     else if (formErrors.priceTiers || formErrors.pricePerM2) setCurrentStep(1);
+    else if (formErrors.productCategory) {
+      setCurrentStep(2);
+      toast.error(String(formErrors.productCategory?.message || 'Catégorie requise'));
+    }
   };
 
   return (

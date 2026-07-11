@@ -32,6 +32,7 @@ import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
 import { getCatalogueVisibilityIssues } from '@/utils/productHelpers';
+import { normalizeName } from '@/utils/nameMatch';
 import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
@@ -201,7 +202,9 @@ const ProductsList = () => {
 
       // Tables de correspondance nom → documentId pour résoudre les relations,
       // et liste des produits existants pour décider create vs update (anti-doublon).
-      const norm = (s?: string) => (s || '').trim().toLowerCase();
+      // Normalisation insensible aux ACCENTS : « Vêtement » ≡ « Vetement »
+      // (sinon la catégorie n'est pas trouvée et le produit est créé sans).
+      const norm = (s?: string) => normalizeName(s);
       const splitNames = (cell?: string) =>
         (cell || '').split(',').map(n => n.trim()).filter(Boolean);
       const buildMap = (nodes: { documentId: string; name: string }[]) => {
@@ -252,6 +255,7 @@ const ProductsList = () => {
       let created = 0;
       let updated = 0;
       let errors = 0;
+      const unmatchedCategories = new Set<string>();
 
       for (let i = 1; i < lines.length; i++) {
         const cols = parseCsvLine(lines[i]);
@@ -286,8 +290,10 @@ const ProductsList = () => {
 
         // --- Relations (résolues par nom ; omises si vides pour ne pas écraser en update) ---
         if (catProdIdx !== -1) {
-          const id = pcMap.get(norm(cols[catProdIdx]));
+          const rawCat = (cols[catProdIdx] || '').trim();
+          const id = pcMap.get(norm(rawCat));
           if (id) productData.productCategory = id;
+          else if (rawCat) unmatchedCategories.add(rawCat);
         }
         if (catClientIdx !== -1) {
           const ids = splitNames(cols[catClientIdx]).map(n => ccMap.get(norm(n))).filter(Boolean);
@@ -337,6 +343,12 @@ const ProductsList = () => {
       if (updated) summary.push(`${updated} mis à jour`);
       if (errors) summary.push(`${errors} erreur${errors > 1 ? 's' : ''}`);
       toast.success(`Import terminé — ${summary.join(', ') || 'aucune ligne'}`);
+      if (unmatchedCategories.size > 0) {
+        toast.warn(
+          `Catégorie(s) introuvable(s) — produits importés SANS catégorie (invisibles côté client) : ${[...unmatchedCategories].join(', ')}. Créez la catégorie ou corrigez le nom, puis réimportez.`,
+          { autoClose: false }
+        );
+      }
       dispatch(getProducts({ pagination: { page: currentPage, pageSize }, searchTerm }));
     } catch {
       toast.error("Erreur lors de l'import");

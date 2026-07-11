@@ -15,6 +15,7 @@ import {
 import { apiGetImbretexPriceStockByRef } from './ImbretexService';
 import { apiUploadFile } from './FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import { normalizeName } from '@/utils/nameMatch';
 import BaseService from './BaseService';
 import { API_BASE_URL } from '@/configs/api.config';
 
@@ -40,7 +41,7 @@ async function getCategories(): Promise<Map<string, string>> {
   try {
     const r = (await unwrapData(apiGetProductCategories())) as any;
     for (const c of r.productCategories_connection.nodes) {
-      cats.set(c.name.toUpperCase().trim(), c.documentId);
+      cats.set(normalizeName(c.name), c.documentId);
     }
   } catch (e) {
     console.error('[Import] Erreur chargement catégories:', e);
@@ -55,7 +56,7 @@ async function getSizes(): Promise<Map<string, string>> {
   try {
     const r = (await unwrapData(apiGetSizes())) as any;
     for (const s of r.sizes_connection.nodes) {
-      szs.set(s.name.toUpperCase().trim(), s.documentId);
+      szs.set(normalizeName(s.name), s.documentId);
     }
   } catch (e) {
     console.error('[Import] Erreur chargement tailles:', e);
@@ -70,7 +71,7 @@ async function getColors(): Promise<Map<string, string>> {
   try {
     const r = (await unwrapData(apiGetColors())) as any;
     for (const c of r.colors_connection.nodes) {
-      cols.set(c.name.toUpperCase().trim(), c.documentId);
+      cols.set(normalizeName(c.name), c.documentId);
     }
   } catch (e) {
     console.error('[Import] Erreur chargement couleurs:', e);
@@ -92,13 +93,12 @@ const CATEGORY_MAP: Record<string, string> = {
 
 // ─── Match ou création automatique ───
 
+// Correspondance EXACTE (normalisée : casse, accents, espaces). L'ancien
+// match par sous-chaîne bidirectionnelle rangeait des produits dans la
+// MAUVAISE catégorie (ex : « CHAUSSURES » matchait la première catégorie
+// contenant ce mot, selon l'ordre d'itération du cache).
 function findInCache(name: string, cache: Map<string, string>): string | null {
-  const k = name.toUpperCase().trim();
-  if (cache.has(k)) return cache.get(k)!;
-  for (const [pegName, id] of cache) {
-    if (pegName.includes(k) || k.includes(pegName)) return id;
-  }
-  return null;
+  return cache.get(normalizeName(name)) ?? null;
 }
 
 async function matchOrCreateCategory(
@@ -107,9 +107,9 @@ async function matchOrCreateCategory(
 ): Promise<string | null> {
   if (!imbretexCategory) return null;
   const k = imbretexCategory.toUpperCase().trim();
-  // D'abord le mapping explicite
+  // D'abord le mapping explicite (valeurs comparées en normalisé)
   const mapped = CATEGORY_MAP[k];
-  if (mapped && cache.has(mapped)) return cache.get(mapped)!;
+  if (mapped && cache.has(normalizeName(mapped))) return cache.get(normalizeName(mapped))!;
   // Match direct
   const found = findInCache(imbretexCategory, cache);
   if (found) return found;
@@ -123,7 +123,7 @@ async function matchOrCreateCategory(
       } as any)
     );
     const docId = (r as any).createProductCategory.documentId;
-    cache.set(k, docId);
+    cache.set(normalizeName(imbretexCategory), docId);
     console.log(`[Import] Catégorie créée: "${imbretexCategory}" → ${docId}`);
     return docId;
   } catch (e) {
