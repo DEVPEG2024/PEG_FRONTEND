@@ -335,28 +335,32 @@ const EditProduct = () => {
       // `batFile` (média) : le code produit un documentId là où Strapi attend un
       // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
-      // Ne transmettre que les champs réellement acceptés par le backend
-      // DÉPLOYÉ (introspection de ProductInput) : un champ inexistant → 400 qui
-      // ferait échouer TOUT l'enregistrement.
+      // Champs CŒUR du schéma produit, confirmés présents sur la prod (la
+      // requête de lecture les renvoie sans erreur). On ne les retire JAMAIS du
+      // payload : les stripper silencieusement causait la perte de
+      // `pricingMode` (Packs/m²) et consorts à l'enregistrement — c'était LE bug.
+      const ALWAYS_KEEP = new Set([
+        'pricingMode', 'pricePerM2', 'minM2', 'catalogPrice', 'requiresBat',
+        'cost', 'priceTiers', 'price',
+      ]);
+
+      // Filtrage défensif contre un champ inexistant côté backend (→ 400 qui
+      // ferait échouer TOUT l'enregistrement), MAIS uniquement pour les champs
+      // hors cœur, et uniquement quand l'introspection est réellement
+      // disponible. En production, l'introspection est souvent désactivée
+      // (Apollo Server 4) → inputFields est null → on n'écarte plus rien à tort.
       const inputFields = await apiGetProductInputFields();
       if (inputFields) {
         Object.keys(data).forEach((k) => {
-          if (k !== 'documentId' && !inputFields.has(k)) delete data[k];
+          if (k !== 'documentId' && !ALWAYS_KEEP.has(k) && !inputFields.has(k)) {
+            delete data[k];
+          }
         });
-      } else {
-        // Introspection indisponible — cas NORMAL en production : Strapi v5
-        // (Apollo Server 4) désactive l'introspection quand NODE_ENV=production.
-        // L'ancien repli supprimait pricingMode/pricePerM2/minM2/catalogPrice/
-        // requiresBat/suggested → en prod, choisir « Packs » ne s'enregistrait
-        // JAMAIS (perte silencieuse). Ces champs sont déployés sur la prod
-        // (schéma main) : on les transmet donc. Si un jour le backend est en
-        // retard, l'erreur 400 sera VISIBLE (toast) au lieu d'une perte muette.
-        //
-        // Seule exception : `suggested`. Sans introspection, sa valeur initiale
-        // n'a pas pu être lue (probe __type indisponible) — l'envoyer écraserait
-        // une curation existante avec le défaut du formulaire.
-        if (!suggestedAvailable) delete data.suggested;
       }
+      // `suggested` : champ ajouté tardivement. Sans introspection disponible,
+      // sa valeur initiale n'a pas pu être lue (probe __type indisponible) →
+      // l'envoyer écraserait une curation existante avec le défaut du formulaire.
+      if (!inputFields && !suggestedAvailable) delete data.suggested;
 
       await updateOrCreateProduct(data);
       navigate('/admin/products');
