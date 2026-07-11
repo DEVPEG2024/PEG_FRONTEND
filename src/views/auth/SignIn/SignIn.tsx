@@ -5,13 +5,35 @@ import Logo from '@/components/template/Logo';
 import { APP_NAME } from '@/constants/app.constant';
 import { HiLockClosed, HiOutlineShieldCheck, HiOutlineLightningBolt, HiOutlineUsers } from 'react-icons/hi';
 
-/* ── Illustration "espace de gestion" (rendu 3D — laptop + mug PEG + bouclier + plante) ── */
-const Scene = () => (
-  <img
-    src="/img/illustrations/login-dashboard.png"
-    alt="Espace de gestion PEG"
-    style={{ display: 'block', width: '100%', maxWidth: '440px', height: 'auto', filter: 'drop-shadow(0 30px 60px rgba(79,63,209,0.45))' }}
-  />
+/* ── Vitrine de l'offre PEG : tuiles produits/services ── */
+const OFFER_TILES: { emoji: string; label: string; sub: string }[] = [
+  { emoji: '👕', label: 'Textile personnalisé', sub: 'T-shirts, polos, vestes à votre image' },
+  { emoji: '🦺', label: 'Haute visibilité & EPI', sub: 'Vêtements de travail, chaussures de sécurité' },
+  { emoji: '🧢', label: 'Casquettes & accessoires', sub: 'Bonnets, accessoires hiver…' },
+  { emoji: '🖨️', label: 'Print & supports', sub: 'Affiches, flyers, signalétique' },
+  { emoji: '🎁', label: 'Objets publicitaires', sub: 'Goodies et cadeaux d’entreprise' },
+  { emoji: '🎨', label: 'Création & BAT', sub: 'Maquettes validées avant production' },
+];
+
+const OfferShowcase = () => (
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', maxWidth: '460px' }}>
+    {OFFER_TILES.map((tile) => (
+      <div
+        key={tile.label}
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: '11px',
+          background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '14px', padding: '13px 14px',
+        }}
+      >
+        <span style={{ fontSize: '22px', lineHeight: 1, flexShrink: 0 }}>{tile.emoji}</span>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ color: '#fff', fontSize: '13px', fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{tile.label}</p>
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11.5px', margin: '3px 0 0', lineHeight: 1.4 }}>{tile.sub}</p>
+        </div>
+      </div>
+    ))}
+  </div>
 );
 
 const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
@@ -62,23 +84,21 @@ const SignIn = () => {
               borderRadius: '100px', padding: '5px 14px', margin: '40px 0 22px',
             }}>
               <HiLockClosed size={12} color="#a99bff" />
-              <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Accès sécurisé</span>
+              <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Plateforme professionnelle</span>
             </div>
 
-            <h1 style={{ color: '#fff', fontSize: '40px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.08, margin: '0 0 14px' }}>
-              Bon retour 👋
+            <h1 style={{ color: '#fff', fontSize: '38px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 14px' }}>
+              Votre image, sur tous vos supports
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', lineHeight: 1.6, margin: 0, maxWidth: '360px' }}>
-              Connectez-vous à votre espace de gestion pour continuer.
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', lineHeight: 1.6, margin: 0, maxWidth: '400px' }}>
+              Textile personnalisé, haute visibilité, objets publicitaires, print…
+              Commandez vos produits, suivez vos projets et validez vos BAT dans un seul espace.
             </p>
           </div>
 
-          {/* milieu : illustration */}
+          {/* milieu : vitrine de l'offre */}
           <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', margin: '24px 0' }}>
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: '-30px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(109,93,252,0.22) 0%, transparent 62%)', pointerEvents: 'none' }} />
-              <div style={{ position: 'relative' }}><Scene /></div>
-            </div>
+            <OfferShowcase />
           </div>
 
           {/* bas : badges de confiance */}
