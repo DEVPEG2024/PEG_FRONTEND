@@ -435,6 +435,36 @@ export async function apiIsSuggestedFieldAvailable(): Promise<boolean> {
     return suggestedFieldAvailable;
 }
 
+// Champs réellement acceptés par la mutation produit du backend DÉPLOYÉ
+// (introspection de ProductInput, en cache mémoire). La prod Strapi (Heroku)
+// étant déployée manuellement, elle peut être en retard sur le schéma `main` :
+// on filtre donc le payload d'update/create pour ne transmettre que les champs
+// existants et éviter un HTTP 400 (« Unknown field on ProductInput ») qui ferait
+// échouer TOUT l'enregistrement. Renvoie null si l'introspection est indisponible.
+let productInputFieldsCache: Set<string> | null | undefined = undefined;
+
+export async function apiGetProductInputFields(): Promise<Set<string> | null> {
+    if (productInputFieldsCache !== undefined) return productInputFieldsCache;
+    try {
+        const response = await ApiService.fetchData<
+            ApiResponse<{ __type: { inputFields: { name: string }[] } | null }>
+        >({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: {
+                query: `query ProbeProductInput { __type(name: "ProductInput") { inputFields { name } } }`,
+            },
+        });
+        const fields = response.data?.data?.__type?.inputFields;
+        productInputFieldsCache = Array.isArray(fields)
+            ? new Set(fields.map((f) => f.name))
+            : null;
+    } catch {
+        productInputFieldsCache = null;
+    }
+    return productInputFieldsCache;
+}
+
 const SUGGESTED_PRODUCT_FIELDS = `
                 images {
                     url

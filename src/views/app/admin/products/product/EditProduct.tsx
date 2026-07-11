@@ -10,6 +10,7 @@ import {
 } from '@/services/CustomerServices';
 import {
   apiCreateProduct,
+  apiGetProductInputFields,
   apiGetProductSuggestedFlag,
   apiIsSuggestedFieldAvailable,
   apiUpdateProduct,
@@ -331,17 +332,26 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
-      // Ces champs scalaires existent désormais dans le schéma produit Strapi
-      // (prod) : requiresBat, catalogPrice, pricingMode, pricePerM2, minM2.
-      // On ne les supprime donc PLUS — les supprimer jetait silencieusement
-      // toute modif de tarification (mode, prix m², prix catalogue).
-      // `batFile` (média) reste écarté ici : il attend un id numérique, pas le
-      // documentId — sa gestion propre est un sujet séparé.
+      // `batFile` (média) : le code produit un documentId là où Strapi attend un
+      // id numérique → toujours écarté ici (gestion propre à traiter à part).
       delete data.batFile;
-      // `suggested` n'est pas encore au schéma → on l'écarte tant que la sonde
-      // d'introspection ne l'a pas confirmé.
-      if (!suggestedAvailable) {
-        delete data.suggested;
+      // Ne transmettre que les champs réellement acceptés par le backend
+      // DÉPLOYÉ. La prod Strapi (Heroku) étant déployée à la main, elle peut
+      // être en retard sur le schéma `main` : envoyer un champ inexistant
+      // (pricingMode, pricePerM2, minM2, catalogPrice, requiresBat, suggested…)
+      // renverrait un 400 qui ferait échouer TOUT l'enregistrement. On filtre
+      // donc sur l'introspection de ProductInput.
+      const inputFields = await apiGetProductInputFields();
+      if (inputFields) {
+        Object.keys(data).forEach((k) => {
+          if (k !== 'documentId' && !inputFields.has(k)) delete data[k];
+        });
+      } else {
+        // Introspection indisponible → repli conservateur (comportement
+        // historique : on écarte les champs potentiellement non déployés).
+        ['requiresBat', 'catalogPrice', 'pricingMode', 'pricePerM2', 'minM2', 'suggested'].forEach(
+          (k) => delete data[k]
+        );
       }
 
       await updateOrCreateProduct(data);
