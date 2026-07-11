@@ -65,11 +65,18 @@ const AdminProductsOfCategory = () => {
                   <img
                     src={product.images?.[0]?.url ?? '/img/others/img-2.png'}
                     alt={product.name}
-                    className=" rounded-lg bg-slate-50"
+                    className="rounded-lg"
                     style={{
-                      height: '250px',
+                      height: '220px',
                       width: '100%',
-                      objectFit: 'cover',
+                      // `contain` + padding : l'image entière tient dans le cadre
+                      // (jamais rognée ni débordante), cohérent avec la carte
+                      // produit admin. `cover` agrandissait/coupait les visuels.
+                      objectFit: 'contain',
+                      padding: '12px',
+                      boxSizing: 'border-box',
+                      background: '#fff',
+                      display: 'block',
                     }}
                   />
                   <div className="flex flex-col justify-between">

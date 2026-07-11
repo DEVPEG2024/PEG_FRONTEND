@@ -40,7 +40,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       cardRef.current.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(47,111,237,0.25)';
     }
     if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(1.0)';
+      imgRef.current.style.transform = 'scale(1.05)';
     }
   };
 
@@ -50,7 +50,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
       cardRef.current.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)';
     }
     if (imgRef.current) {
-      imgRef.current.style.transform = 'scale(0.94)';
+      imgRef.current.style.transform = 'scale(1)';
     }
   };
 
@@ -84,9 +84,14 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
+              // `contain` + padding : le produit entier tient dans le cadre,
+              // centré, jamais rogné/débordant. `cover` agrandissait et coupait
+              // les visuels (ils « sortaient du cadre »).
+              objectFit: 'contain',
+              padding: '16px',
+              boxSizing: 'border-box',
               display: 'block',
-              transform: 'scale(0.94)',
+              transform: 'scale(1)',
               transition: 'transform 0.35s ease',
             }}
           />
