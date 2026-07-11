@@ -54,6 +54,9 @@ const CustomerProducts = () => {
   useEffect(() => {
     dispatch(setProduct(null));
     fetchProducts('');
+    // Nettoyage : annule le debounce en cours au démontage (évite un fetch
+    // après démontage)
+    return () => clearTimeout(debounceRef.current);
   }, [dispatch]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
