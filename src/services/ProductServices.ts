@@ -403,23 +403,32 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
 // ─── Suggestions catalogue (onglet client « Nos suggestions ») ───────────────
 // Le champ booléen `suggested` doit être ajouté au schéma produit côté
 // peg_strapi (backend d'abord, comme catalogPrice). Tant qu'il n'est pas
-// déployé, toute requête qui l'utilise renvoie une erreur GraphQL : on sonde
-// donc sa disponibilité une fois (cache mémoire) et on se replie sur les
-// nouveautés du catalogue.
+// déployé, on sonde sa disponibilité une fois (cache mémoire) et on se replie
+// sur les nouveautés du catalogue.
+//
+// ⚠️ La sonde utilise l'INTROSPECTION (__type), PAS un filtre `suggested`.
+// Filtrer sur un champ inexistant fait renvoyer un HTTP 400 par Strapi, et ses
+// réponses d'erreur ne portent pas les en-têtes CORS → le navigateur affiche
+// une avalanche d'erreurs « No Access-Control-Allow-Origin » sur chaque page
+// produit. L'introspection est toujours une requête valide (statut 200).
 
 let suggestedFieldAvailable: boolean | null = null;
 
 export async function apiIsSuggestedFieldAvailable(): Promise<boolean> {
     if (suggestedFieldAvailable !== null) return suggestedFieldAvailable;
     try {
-        const response = await ApiService.fetchData<{data?: unknown, errors?: unknown[]}>({
+        const response = await ApiService.fetchData<
+            ApiResponse<{ __type: { fields: { name: string }[] | null } | null }>
+        >({
             url: API_GRAPHQL_URL,
             method: 'post',
             data: {
-                query: `query ProbeSuggestedField { products_connection(filters: {suggested: {eq: true}}, pagination: {pageSize: 1}) { pageInfo { total } } }`,
+                query: `query ProbeSuggestedField { __type(name: "Product") { fields { name } } }`,
             },
         });
-        suggestedFieldAvailable = !response.data?.errors;
+        const fields = response.data?.data?.__type?.fields;
+        suggestedFieldAvailable =
+            Array.isArray(fields) && fields.some((f) => f.name === 'suggested');
     } catch {
         suggestedFieldAvailable = false;
     }
