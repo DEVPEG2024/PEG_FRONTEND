@@ -136,8 +136,11 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
     );
 
     return promises
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => (result as PromiseFulfilledResult<OrderItem>).value);
+      .filter(
+        (result): result is PromiseFulfilledResult<OrderItem> =>
+          result.status === 'fulfilled' && !!result.value
+      )
+      .map((result) => result.value);
   };
 
   const validateCart = async () => {
