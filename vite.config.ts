@@ -44,8 +44,24 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    chunkSizeWarningLimit: 1600,
     commonjsOptions: {
       requireReturnsDefault: 'auto'
+    },
+    rollupOptions: {
+      output: {
+        // Isole quelques grosses libs autonomes dans leurs propres chunks
+        // (meilleur cache navigateur ; formio/pdf restent charges a la demande
+        // car seuls des composants lazy les importent). Conservateur : ne
+        // touche que des libs feuilles, tout le reste garde le decoupage auto.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('@react-pdf') || id.includes('/react-pdf/')) return 'vendor-pdf';
+          if (id.includes('formio')) return 'vendor-formio';
+          if (id.includes('react-icons')) return 'vendor-icons';
+          if (id.includes('@stripe')) return 'vendor-stripe';
+        }
+      }
     }
   }
 });

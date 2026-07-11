@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { getProductBasePrice, getCatalogSavingsPercent, applyPremiumDiscount } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { sortSizes } from '@/utils/sizeSort';
@@ -79,6 +79,8 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
             ref={imgRef}
             src={imageUrl}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             style={{
               width: '100%',
               height: '100%',
@@ -319,4 +321,6 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
   );
 };
 
-export default CustomerProductCard;
+// Mémoïsé : rendu en grille de nombreux produits, ne re-render que si la prop
+// `product` change (référence).
+export default memo(CustomerProductCard);

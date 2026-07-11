@@ -65,6 +65,8 @@ const ProductCard = memo(
             <img
               src={imageUrl}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '10px', boxSizing: 'border-box' }}
             />
           ) : (
