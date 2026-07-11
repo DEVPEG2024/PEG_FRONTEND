@@ -30,11 +30,12 @@ import {
 import { apiUploadFile } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 
-// Fix #6 : strip HTML via DOM plutôt que regex fragile
+// Strip HTML via un document inerte (DOMParser) : contrairement à
+// `div.innerHTML = html`, aucun chargement de ressource ni handler inline
+// (ex. <img onerror>) n'est déclenché lors du parsing.
 const stripHtml = (html: string): string => {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent ?? div.innerText ?? '';
+  const doc = new DOMParser().parseFromString(html ?? '', 'text/html');
+  return doc.body.textContent ?? '';
 };
 
 // Fix #8 : ID de gradient unique par instance via useId
