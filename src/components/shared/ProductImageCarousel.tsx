@@ -8,15 +8,33 @@ type ProductImageCarouselProps = {
   alt?: string;
   /** Hauteur max de l'image principale (px) */
   maxImageHeight?: number;
+  /** Effet loupe au survol de l'image principale */
+  zoomOnHover?: boolean;
+  /** Facteur de grossissement de la loupe */
+  zoomFactor?: number;
+  /** Diamètre de la loupe (px) */
+  lensSize?: number;
 };
 
+type LensState = { x: number; y: number; imgW: number; imgH: number; offsetX: number; offsetY: number };
+
 /**
- * Carrousel d'images produit : flèches, vignettes cliquables, swipe tactile, clavier.
+ * Carrousel d'images produit : flèches, vignettes cliquables, swipe tactile, clavier, loupe au survol.
  * Dépendances : aucune (React + react-icons). Le champ `images` est déjà un tableau côté Strapi.
  */
-const ProductImageCarousel = ({ images, alt = '', maxImageHeight = 220 }: ProductImageCarouselProps) => {
+const ProductImageCarousel = ({
+  images,
+  alt = '',
+  maxImageHeight = 220,
+  zoomOnHover = true,
+  zoomFactor = 2.5,
+  lensSize = 150,
+}: ProductImageCarouselProps) => {
   const [index, setIndex] = useState(0);
+  const [lens, setLens] = useState<LensState | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const isTouch = useRef(false);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   const count = images?.length ?? 0;
 
@@ -29,9 +47,14 @@ const ProductImageCarousel = ({ images, alt = '', maxImageHeight = 220 }: Produc
     return <div style={{ fontSize: '48px', opacity: 0.15 }}>📦</div>;
   }
 
-  const go = (dir: number) => setIndex((i) => (i + dir + count) % count);
+  const go = (dir: number) => {
+    setIndex((i) => (i + dir + count) % count);
+    setLens(null);
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
+    isTouch.current = true;
+    setLens(null);
     touchStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -39,6 +62,23 @@ const ProductImageCarousel = ({ images, alt = '', maxImageHeight = 220 }: Produc
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(delta) > 40) go(delta < 0 ? 1 : -1);
     touchStartX.current = null;
+  };
+
+  // Loupe : position du curseur dans l'image + décalage de l'image dans le conteneur
+  const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!zoomOnHover || isTouch.current) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const imgRect = e.currentTarget.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    setLens({
+      x: e.clientX - imgRect.left,
+      y: e.clientY - imgRect.top,
+      imgW: imgRect.width,
+      imgH: imgRect.height,
+      offsetX: imgRect.left - stageRect.left,
+      offsetY: imgRect.top - stageRect.top,
+    });
   };
 
   const current = images[index];
@@ -54,6 +94,7 @@ const ProductImageCarousel = ({ images, alt = '', maxImageHeight = 220 }: Produc
     >
       {/* Image principale + flèches */}
       <div
+        ref={stageRef}
         style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: `${maxImageHeight}px` }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -62,8 +103,40 @@ const ProductImageCarousel = ({ images, alt = '', maxImageHeight = 220 }: Produc
           key={current.url}
           src={current.url}
           alt={current.name || alt}
-          style={{ maxWidth: '100%', maxHeight: `${maxImageHeight}px`, objectFit: 'contain', borderRadius: '6px', animation: 'pegCarouselFade 0.25s ease-out' }}
+          onMouseMove={onImageMove}
+          onMouseLeave={() => setLens(null)}
+          draggable={false}
+          style={{
+            maxWidth: '100%',
+            maxHeight: `${maxImageHeight}px`,
+            objectFit: 'contain',
+            borderRadius: '6px',
+            animation: 'pegCarouselFade 0.25s ease-out',
+            cursor: zoomOnHover ? 'zoom-in' : 'default',
+          }}
         />
+
+        {/* Loupe */}
+        {lens && (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              zIndex: 5,
+              left: `${lens.offsetX + lens.x - lensSize / 2}px`,
+              top: `${lens.offsetY + lens.y - lensSize / 2}px`,
+              width: `${lensSize}px`,
+              height: `${lensSize}px`,
+              borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,0.9)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.28)',
+              background: `#fff url("${current.url}") no-repeat`,
+              backgroundSize: `${lens.imgW * zoomFactor}px ${lens.imgH * zoomFactor}px`,
+              backgroundPosition: `${lensSize / 2 - lens.x * zoomFactor}px ${lensSize / 2 - lens.y * zoomFactor}px`,
+            }}
+          />
+        )}
 
         {count > 1 && (
           <>
