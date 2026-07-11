@@ -44,20 +44,21 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* Zone image */}
-      <div style={{ position: 'relative', height: '195px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Zone image — fond blanc + `contain` : les visuels produit (souvent
+          sur fond blanc) s'affichent en entier, centrés, sans être rognés ni
+          noyés. Le voile sombre a été retiré : sur une photo blanche il créait
+          un dégradé grisâtre disgracieux. */}
+      <div style={{ position: 'relative', height: '195px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {image?.url ? (
           <img
             ref={imgRef}
             src={image.url}
             alt={name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.5s ease' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '18px', boxSizing: 'border-box', display: 'block', transition: 'transform 0.5s ease' }}
           />
         ) : (
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 35%, #20243f 0%, #0e1120 75%)' }} />
         )}
-        {/* léger voile bas pour fondre avec le pied de carte */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 55%, rgba(14,17,32,0.85) 100%)', pointerEvents: 'none' }} />
 
         {/* Pastille icône */}
         <div style={{
