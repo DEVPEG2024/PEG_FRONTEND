@@ -81,6 +81,16 @@
   position: relative;
 }
 
+/* Le menu doit rester collé en haut (sticky) pour que son bas — et donc le logo —
+   reste TOUJOURS à l'écran quand on défile. On réaffirme le sticky ici car la règle
+   `.side-nav { position: relative }` ci-dessus l'écrasait (même spécificité, chargée
+   après). Sticky ≠ position:fixed : le logo n'est jamais « fixé » par-dessus la page. */
+.side-nav-expand {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
 /* Logo PEG en bas du menu — pleine largeur, taille d'origine, pleine opacité.
    Placé DERRIÈRE le contenu (z-index:-1) : il s'affiche dans l'espace libre du
    bas du menu. Hauteur du conteneur = ratio du picto (565x586) à 100% de largeur
