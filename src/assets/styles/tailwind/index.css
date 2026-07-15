@@ -81,21 +81,22 @@
   position: relative;
 }
 
-/* Filigrane PEG discret en bas du menu — petit, faible opacité, borné et
-   placé DERRIÈRE le contenu : il ne peut plus déborder ni s'afficher en grand
-   (l'ancien `background-size: 100%` étirait le logotype sur toute la largeur). */
+/* Filigrane PEG en bas du menu — borné en HAUTEUR (jamais en largeur) et placé
+   DERRIÈRE le contenu : il ne peut pas déborder ni s'étirer sur toute la largeur
+   (l'ancien `background-size: 100%` étirait le logotype). La hauteur reste < largeur
+   du menu (290px) pour garder le picto entier et centré. */
 .side-nav::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 16px;
-  height: 48px;
+  bottom: 24px;
+  height: 150px;
   background-image: url('/img/logo/picto.svg.png');
   background-position: bottom center;
-  background-size: auto 48px;
+  background-size: auto 150px;
   background-repeat: no-repeat;
-  opacity: 0.05;
+  opacity: 0.08;
   pointer-events: none;
   z-index: -1;
 }
