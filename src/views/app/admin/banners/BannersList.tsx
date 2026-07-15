@@ -98,6 +98,18 @@ const BannerCard = ({
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {!banner.customer?.name && !banner.customerCategory?.name && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: '52px' }}>Portée</span>
+            <span style={{
+              background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)',
+              borderRadius: '100px', padding: '2px 9px',
+              color: '#eab308', fontSize: '11px', fontWeight: 700,
+            }}>
+              Par défaut
+            </span>
+          </div>
+        )}
         {banner.customer?.name && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: '52px' }}>Client</span>
@@ -228,6 +240,21 @@ const BannersList = () => {
         >
           <HiPlus size={16} /> Nouvelle bannière
         </button>
+      </div>
+
+      {/* Note : bannière par défaut */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: '10px',
+        background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.18)',
+        borderRadius: '12px', padding: '12px 16px', marginBottom: '20px',
+      }}>
+        <HiPhotograph size={18} style={{ color: '#eab308', flexShrink: 0, marginTop: '1px' }} />
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12.5px', lineHeight: 1.5, margin: 0 }}>
+          Une bannière <strong style={{ color: '#eab308' }}>sans client ni catégorie</strong> sert de{' '}
+          <strong style={{ color: '#eab308' }}>bannière par défaut</strong> : elle s'affiche sur les comptes
+          qui n'ont pas de bannière propre (par ex. les comptes créés par les clients eux-mêmes).
+          Laissez les champs Client et Catégorie vides pour la créer, et gardez-la active.
+        </p>
       </div>
 
       {/* Recherche */}

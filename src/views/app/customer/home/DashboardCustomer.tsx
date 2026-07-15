@@ -3,6 +3,7 @@ import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiGetProducts } from '@/services/ProductServices';
+import { apiGetDefaultBanner } from '@/services/BannerServices';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -84,12 +85,23 @@ const DashboardCustomer = () => {
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
+  // Bannière par défaut (gérée dans l'admin) pour les comptes sans bannière propre
+  const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user.customer?.documentId) {
       dispatch(getDashboardCustomerInformations(user.customer.documentId));
     }
   }, [dispatch, user.customer?.documentId]);
+
+  // Si le client n'a pas de bannière assignée, on tente la bannière par défaut
+  useEffect(() => {
+    if (customer && !customer.banner) {
+      apiGetDefaultBanner().then((b) => setDefaultBannerUrl(b?.image?.url ?? null));
+    } else {
+      setDefaultBannerUrl(null);
+    }
+  }, [customer?.documentId, customer?.banner]);
 
   // Récupère les produits du catalogue pour les suggestions
   // (uniquement si le client a accès au catalogue)
@@ -228,6 +240,20 @@ const DashboardCustomer = () => {
           <div style={{ position: 'relative' }}>
             <img
               src={customer.banner.image.url}
+              alt="Banner"
+              style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
+            />
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: '80px',
+              background: 'linear-gradient(to top, #0a1628, transparent)',
+            }} />
+          </div>
+        ) : defaultBannerUrl ? (
+          /* Bannière par défaut (admin) — comptes sans bannière propre */
+          <div style={{ position: 'relative' }}>
+            <img
+              src={defaultBannerUrl}
               alt="Banner"
               style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />

@@ -59,6 +59,47 @@ export async function apiGetBanners(data: GetBannersRequest = {pagination: {page
     })
 }
 
+// Bannière par défaut : bannière ACTIVE sans client ni catégorie. Elle s'applique
+// aux comptes qui n'ont pas de bannière propre (typiquement les comptes créés par
+// les clients eux-mêmes). Renvoie null si aucune n'est configurée.
+export type DefaultBannerNode = {
+    documentId: string;
+    image?: { url?: string } | null;
+    customer?: { documentId?: string } | null;
+    customerCategory?: { documentId?: string } | null;
+};
+
+export async function apiGetDefaultBanner(): Promise<DefaultBannerNode | null> {
+    const query = `
+    query DefaultBanner($pagination: PaginationArg) {
+        banners_connection (filters: {active: {eq: true}}, pagination: $pagination) {
+            nodes {
+                documentId
+                image { url }
+                customer { documentId }
+                customerCategory { documentId }
+            }
+        }
+    }
+  `;
+    try {
+        const res = await ApiService.fetchData<ApiResponse<{ banners_connection: { nodes: DefaultBannerNode[] } }>>({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: { query, variables: { pagination: { page: 1, pageSize: 100 } } },
+        });
+        const nodes = res.data?.data?.banners_connection?.nodes ?? [];
+        // La bannière par défaut = active, sans client ET sans catégorie, avec une image.
+        return nodes.find(
+            (b) => !b.customer?.documentId && !b.customerCategory?.documentId && b.image?.url
+        ) ?? null;
+    } catch {
+        // Ex. : le rôle client n'a pas le droit de lister les bannières côté Strapi.
+        // On dégrade silencieusement (le dashboard retombe sur son fond par défaut).
+        return null;
+    }
+}
+
 // create banner
 export type CreateBannerRequest = Omit<Banner, "documentId">
 
