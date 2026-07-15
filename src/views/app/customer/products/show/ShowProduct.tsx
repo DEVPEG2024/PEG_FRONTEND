@@ -260,9 +260,9 @@ const ShowProduct = () => {
   // ─── Skeleton ────────────────────────────────────────────────────────────────
   const Skeleton = (
     <Container>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0', background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', minHeight: '480px' }}>
-        <div style={{ width: '100%', height: '380px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '0', background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', minHeight: '480px' }}>
+        <div style={{ flex: '1 1 440px', minWidth: '300px', margin: '20px', borderRadius: '16px', minHeight: '360px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ flex: '1 1 380px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
           {[60, 35, 80, 50, 70, 45].map((w, i) => (
             <div key={i} style={{ height: i === 0 ? '28px' : '14px', borderRadius: '6px', width: `${w}%`, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
           ))}
@@ -326,8 +326,8 @@ const ShowProduct = () => {
         ← {wizardStep > 0 ? 'Étape précédente' : 'Retour'}
       </button>
 
-      {/* Card */}
-      <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+      {/* Card — overflow visible pour laisser la galerie sticky suivre le scroll */}
+      <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
 
         {/* ── Wizard step indicator ──────────────────────────────────────── */}
         <div style={{ padding: '24px 32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0' }}>
@@ -373,15 +373,17 @@ const ShowProduct = () => {
 
         {/* ── Step 0: Sélection ──────────────────────────────────────────── */}
         {wizardStep === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', animation: 'wizFadeIn 0.3s ease-out' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', animation: 'wizFadeIn 0.3s ease-out' }}>
 
-            {/* Hero image — pleine largeur */}
-            <div style={{ width: '100%', background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', padding: '40px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={480} lensSize={200} zoomFactor={2.5} />
+            {/* Image column — sticky : reste visible pendant toute la sélection */}
+            <div style={{ flex: '1 1 440px', minWidth: '300px', boxSizing: 'border-box', padding: '20px' }}>
+              <div style={{ position: 'sticky', top: '16px', background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', borderRadius: '16px', padding: '28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '360px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={440} lensSize={200} zoomFactor={2.5} />
+              </div>
             </div>
 
             {/* Info panel */}
-            <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', minWidth: 0, padding: '32px 32px 12px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            <div style={{ flex: '1 1 380px', minWidth: 0, padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
               {/* Name + ref */}
               <div style={{ marginBottom: '16px' }}>
