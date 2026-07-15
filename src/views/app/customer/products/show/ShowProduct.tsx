@@ -375,10 +375,78 @@ const ShowProduct = () => {
         {wizardStep === 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', animation: 'wizFadeIn 0.3s ease-out' }}>
 
-            {/* Image column — sticky : reste visible pendant toute la sélection */}
+            {/* Colonne gauche — photo + choix des tailles, sticky : toujours visibles */}
             <div style={{ flex: '1 1 440px', minWidth: '300px', boxSizing: 'border-box', padding: '20px' }}>
-              <div style={{ position: 'sticky', top: '16px', background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', borderRadius: '16px', padding: '28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '360px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={440} lensSize={200} zoomFactor={2.5} />
+              <div style={{ position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* Photo */}
+                <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', borderRadius: '16px', padding: '28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '340px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={420} lensSize={200} zoomFactor={2.5} />
+                </div>
+
+                {/* Choix des tailles / dimensions — sous la photo */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px' }}>
+                  <p style={{ margin: '0 0 14px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
+                    {isM2Pricing ? 'Dimensions & quantité' : 'Votre commande'}
+                  </p>
+
+                  {isM2Pricing ? (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                        <div>
+                          <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (cm)</label>
+                          <input type="number" value={m2Width} min={1} step={1}
+                            onChange={(e) => setM2Width(Math.max(1, parseFloat(e.target.value) || 0))}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (cm)</label>
+                          <input type="number" value={m2Height} min={1} step={1}
+                            onChange={(e) => setM2Height(Math.max(1, parseFloat(e.target.value) || 0))}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Quantité</label>
+                          <input type="number" value={m2Quantity} min={1} step={1}
+                            onChange={(e) => setM2Quantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
+                          />
+                        </div>
+                      </div>
+
+                      {m2Data && (
+                        <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '12px', padding: '14px 16px', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Surface</span>
+                            <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{m2Data.area.toFixed(2)} m²{product.minM2 && (m2Width / 100) * (m2Height / 100) < product.minM2 ? ' (min. ' + product.minM2 + ' m²)' : ''}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtNum(product.pricePerM2 || 0)} € HT/m²</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix unitaire</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtHT(m2Data.pricePerUnit)}</span>
+                          </div>
+                          {m2Quantity > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>× {m2Quantity} exemplaire{m2Quantity > 1 ? 's' : ''}</span>
+                              <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{fmtHT(m2Data.total)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <SizeAndColorsChoice
+                      product={product}
+                      sizeAndColorsSelected={sizeAndColorsSelected}
+                      handleSizeAndColorsChanged={handleSizeAndColorsChanged}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -511,70 +579,6 @@ const ShowProduct = () => {
                   </div>
                 </div>
               )}
-
-              {/* Séparateur + section commande */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px', marginBottom: '16px' }}>
-                <p style={{ margin: '0 0 14px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
-                  {isM2Pricing ? 'Dimensions & quantité' : 'Votre commande'}
-                </p>
-
-                {isM2Pricing ? (
-                  <div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                      <div>
-                        <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (cm)</label>
-                        <input type="number" value={m2Width} min={1} step={1}
-                          onChange={(e) => setM2Width(Math.max(1, parseFloat(e.target.value) || 0))}
-                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (cm)</label>
-                        <input type="number" value={m2Height} min={1} step={1}
-                          onChange={(e) => setM2Height(Math.max(1, parseFloat(e.target.value) || 0))}
-                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Quantité</label>
-                        <input type="number" value={m2Quantity} min={1} step={1}
-                          onChange={(e) => setM2Quantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
-                        />
-                      </div>
-                    </div>
-
-                    {m2Data && (
-                      <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '12px', padding: '14px 16px', marginBottom: '4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Surface</span>
-                          <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 700 }}>{m2Data.area.toFixed(2)} m²{product.minM2 && (m2Width / 100) * (m2Height / 100) < product.minM2 ? ' (min. ' + product.minM2 + ' m²)' : ''}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
-                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtNum(product.pricePerM2 || 0)} € HT/m²</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix unitaire</span>
-                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtHT(m2Data.pricePerUnit)}</span>
-                        </div>
-                        {m2Quantity > 1 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>× {m2Quantity} exemplaire{m2Quantity > 1 ? 's' : ''}</span>
-                            <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{fmtHT(m2Data.total)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <SizeAndColorsChoice
-                    product={product}
-                    sizeAndColorsSelected={sizeAndColorsSelected}
-                    handleSizeAndColorsChanged={handleSizeAndColorsChanged}
-                  />
-                )}
-              </div>
 
               {/* Résumé rapide + bouton Suivant */}
               {(isM2Pricing ? m2Data && m2Data.total > 0 : amountSelected > 0) && (
