@@ -259,7 +259,7 @@ const protectedCustomersRoutes = [
   },
   {
     key: "customer.product",
-    path: "/customer/product/:id/edit",
+    path: "/customer/product/:documentId/edit",
     component: lazy(() => import("@/views/app/customer/products/show/ShowProduct")),
     authority: [CUSTOMER],
   },
