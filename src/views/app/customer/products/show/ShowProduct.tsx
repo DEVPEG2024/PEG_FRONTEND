@@ -260,9 +260,9 @@ const ShowProduct = () => {
   // ─── Skeleton ────────────────────────────────────────────────────────────────
   const Skeleton = (
     <Container>
-      <div style={{ display: 'flex', gap: '0', background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', minHeight: '480px' }}>
-        <div style={{ flex: '0 0 300px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ flex: '1', padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0', background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', minHeight: '480px' }}>
+        <div style={{ width: '100%', height: '380px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
           {[60, 35, 80, 50, 70, 45].map((w, i) => (
             <div key={i} style={{ height: i === 0 ? '28px' : '14px', borderRadius: '6px', width: `${w}%`, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
           ))}
@@ -373,15 +373,15 @@ const ShowProduct = () => {
 
         {/* ── Step 0: Sélection ──────────────────────────────────────────── */}
         {wizardStep === 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', animation: 'wizFadeIn 0.3s ease-out' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', animation: 'wizFadeIn 0.3s ease-out' }}>
 
-            {/* Image panel */}
-            <div style={{ flex: '0 0 auto', width: '300px', maxWidth: '100%', background: '#f8faff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '280px', padding: '24px' }}>
-              <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={220} />
+            {/* Hero image — pleine largeur */}
+            <div style={{ width: '100%', background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', padding: '40px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={480} lensSize={200} zoomFactor={2.5} />
             </div>
 
             {/* Info panel */}
-            <div style={{ flex: '1 1 360px', minWidth: 0, padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', minWidth: 0, padding: '32px 32px 12px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
               {/* Name + ref */}
               <div style={{ marginBottom: '16px' }}>
