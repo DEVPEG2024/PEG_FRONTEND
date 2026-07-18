@@ -59,19 +59,19 @@ export async function apiGetBanners(data: GetBannersRequest = {pagination: {page
     })
 }
 
-// Bannière par défaut : bannière ACTIVE sans client ni catégorie. Elle s'applique
-// aux comptes qui n'ont pas de bannière propre (typiquement les comptes créés par
-// les clients eux-mêmes). Renvoie null si aucune n'est configurée.
-export type DefaultBannerNode = {
+// Résolution de la bannière affichée quand le client n'a PAS de bannière propre
+// (`customer.banner` absent). Priorité : bannière de sa catégorie → bannière par
+// défaut (active, sans client ni catégorie). Renvoie l'URL de l'image, ou null.
+export type FallbackBannerNode = {
     documentId: string;
     image?: { url?: string } | null;
     customer?: { documentId?: string } | null;
     customerCategory?: { documentId?: string } | null;
 };
 
-export async function apiGetDefaultBanner(): Promise<DefaultBannerNode | null> {
+export async function apiGetFallbackBannerUrl(customerCategoryDocumentId?: string | null): Promise<string | null> {
     const query = `
-    query DefaultBanner($pagination: PaginationArg) {
+    query FallbackBanner($pagination: PaginationArg) {
         banners_connection (filters: {active: {eq: true}}, pagination: $pagination) {
             nodes {
                 documentId
@@ -83,16 +83,25 @@ export async function apiGetDefaultBanner(): Promise<DefaultBannerNode | null> {
     }
   `;
     try {
-        const res = await ApiService.fetchData<ApiResponse<{ banners_connection: { nodes: DefaultBannerNode[] } }>>({
+        const res = await ApiService.fetchData<ApiResponse<{ banners_connection: { nodes: FallbackBannerNode[] } }>>({
             url: API_GRAPHQL_URL,
             method: 'post',
             data: { query, variables: { pagination: { page: 1, pageSize: 100 } } },
         });
-        const nodes = res.data?.data?.banners_connection?.nodes ?? [];
-        // La bannière par défaut = active, sans client ET sans catégorie, avec une image.
-        return nodes.find(
-            (b) => !b.customer?.documentId && !b.customerCategory?.documentId && b.image?.url
-        ) ?? null;
+        const nodes = (res.data?.data?.banners_connection?.nodes ?? []).filter((b) => b.image?.url);
+
+        // 1) Bannière de la catégorie du client (sans client spécifique — ce cas
+        //    est déjà couvert par customer.banner).
+        if (customerCategoryDocumentId) {
+            const byCategory = nodes.find(
+                (b) => b.customerCategory?.documentId === customerCategoryDocumentId && !b.customer?.documentId
+            );
+            if (byCategory) return byCategory.image!.url!;
+        }
+
+        // 2) Bannière par défaut : active, sans client ET sans catégorie.
+        const byDefault = nodes.find((b) => !b.customer?.documentId && !b.customerCategory?.documentId);
+        return byDefault?.image?.url ?? null;
     } catch {
         // Ex. : le rôle client n'a pas le droit de lister les bannières côté Strapi.
         // On dégrade silencieusement (le dashboard retombe sur son fond par défaut).

@@ -3,7 +3,7 @@ import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiGetProducts } from '@/services/ProductServices';
-import { apiGetDefaultBanner } from '@/services/BannerServices';
+import { apiGetFallbackBannerUrl } from '@/services/BannerServices';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -85,7 +85,7 @@ const DashboardCustomer = () => {
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  // Bannière par défaut (gérée dans l'admin) pour les comptes sans bannière propre
+  // Bannière de repli (gérée dans l'admin) : catégorie du client, sinon par défaut
   const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,14 +94,14 @@ const DashboardCustomer = () => {
     }
   }, [dispatch, user.customer?.documentId]);
 
-  // Si le client n'a pas de bannière assignée, on tente la bannière par défaut
+  // Si le client n'a pas de bannière propre : bannière de sa catégorie, sinon par défaut
   useEffect(() => {
     if (customer && !customer.banner) {
-      apiGetDefaultBanner().then((b) => setDefaultBannerUrl(b?.image?.url ?? null));
+      apiGetFallbackBannerUrl(customer.customerCategory?.documentId).then(setDefaultBannerUrl);
     } else {
       setDefaultBannerUrl(null);
     }
-  }, [customer?.documentId, customer?.banner]);
+  }, [customer?.documentId, customer?.banner, customer?.customerCategory?.documentId]);
 
   // Récupère les produits du catalogue pour les suggestions
   // (uniquement si le client a accès au catalogue)
@@ -250,7 +250,7 @@ const DashboardCustomer = () => {
             }} />
           </div>
         ) : defaultBannerUrl ? (
-          /* Bannière par défaut (admin) — comptes sans bannière propre */
+          /* Bannière de repli (admin) : catégorie du client, sinon par défaut */
           <div style={{ position: 'relative' }}>
             <img
               src={defaultBannerUrl}
