@@ -9,6 +9,7 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant';
 import { apiUpdateTicketMessages } from '@/services/TicketServices';
 import { apiUploadFile } from '@/services/FileServices';
+import { triggerNotification } from '@/services/NotificationService';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify';
 import {
@@ -323,6 +324,30 @@ const TicketsList = () => {
     const newMessages = [...(ticket.messages || []), msg];
     try {
       await apiUpdateTicketMessages(ticket.documentId, newMessages);
+
+      // Notifier l'autre partie de la nouvelle réponse → « botif » (cloche) +
+      // pastille rouge sur la section Tickets (/support écoute `new_ticket`).
+      // - Admin/producteur répond → le client (propriétaire du ticket) est prévenu.
+      // - Client répond → les admins sont prévenus.
+      // Le senderId est toujours exclu des destinataires côté backend, donc pas
+      // d'auto-notification si l'auteur du ticket répond lui-même.
+      const rawSenderId = user?.documentId || (user as any)?.id || (user as any)?._id;
+      const senderId = rawSenderId != null ? String(rawSenderId) : undefined;
+      if (senderId) {
+        const isStaffReply = getUserRole() === 'admin' || getUserRole() === 'producer';
+        const ownerId = ticket.user?.documentId;
+        triggerNotification({
+          eventType: 'new_ticket',
+          senderId,
+          recipients: ownerId ? [{ userId: ownerId }] : [],
+          notifyAdmins: !isStaffReply,
+          title: isStaffReply ? 'Réponse à votre ticket' : 'Nouvelle réponse à un ticket',
+          message: `${getDisplayName()} a répondu au ticket « ${ticket.name} »`,
+          link: '/support',
+          metadata: { ticketId: ticket.documentId, ticketName: ticket.name },
+        });
+      }
+
       dispatch(getTickets({ request: { pagination: { page: currentPage, pageSize }, searchTerm }, user }));
     } catch { toast.error('Erreur envoi message'); }
     setMsgText((p) => ({ ...p, [ticket.documentId]: '' }));
