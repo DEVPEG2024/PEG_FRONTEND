@@ -280,7 +280,23 @@ const TicketsList = () => {
         name: wizName.trim(), description: wizDescription.trim(),
         state: 'pending', priority: wizPriority, type: wizType,
         user: user.documentId, image: imagePayload,
-      } as any));
+      } as any)).unwrap();
+
+      // Prévenir les admins de l'ouverture du ticket → cloche + pastille /support.
+      const rawSenderId = user?.documentId || (user as any)?.id || (user as any)?._id;
+      const senderId = rawSenderId != null ? String(rawSenderId) : undefined;
+      if (senderId) {
+        triggerNotification({
+          eventType: 'new_ticket',
+          senderId,
+          notifyAdmins: true,
+          title: 'Nouveau ticket',
+          message: `${getDisplayName()} a ouvert le ticket « ${wizName.trim()} »`,
+          link: '/support',
+          metadata: { ticketName: wizName.trim(), ticketType: wizType, ticketPriority: wizPriority },
+        });
+      }
+
       toast.success('Ticket créé');
       resetWizard();
       dispatch(getTickets({ request: { pagination: { page: currentPage, pageSize }, searchTerm }, user }));
