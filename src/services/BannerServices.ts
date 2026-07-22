@@ -4,6 +4,14 @@ import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
 import { AxiosResponse } from 'axios';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
 
+// Nom réservé identifiant la bannière « nouveaux comptes » (accueil client).
+// Elle est INDÉPENDANTE des bannières nommées du catalogue/projets/offres
+// (« Bannière catalogue », « Bannière projets », etc.) qui, elles aussi, n'ont
+// ni client ni catégorie : on ne peut donc PAS l'identifier par « sans portée ».
+export const NEW_CUSTOMER_BANNER_NAME = 'NEW CUSTOMER';
+export const isNewCustomerBanner = (name?: string | null): boolean =>
+    (name ?? '').trim().toLowerCase() === NEW_CUSTOMER_BANNER_NAME.toLowerCase();
+
 // get banners
 export type GetBannersRequest = {
     pagination: PaginationRequest;
@@ -64,6 +72,7 @@ export async function apiGetBanners(data: GetBannersRequest = {pagination: {page
 // défaut (active, sans client ni catégorie). Renvoie l'URL de l'image, ou null.
 export type FallbackBannerNode = {
     documentId: string;
+    name?: string | null;
     image?: { url?: string } | null;
     customer?: { documentId?: string } | null;
     customerCategory?: { documentId?: string } | null;
@@ -75,6 +84,7 @@ export async function apiGetFallbackBannerUrl(customerCategoryDocumentId?: strin
         banners_connection (filters: {active: {eq: true}}, pagination: $pagination) {
             nodes {
                 documentId
+                name
                 image { url }
                 customer { documentId }
                 customerCategory { documentId }
@@ -99,9 +109,12 @@ export async function apiGetFallbackBannerUrl(customerCategoryDocumentId?: strin
             if (byCategory) return byCategory.image!.url!;
         }
 
-        // 2) Bannière par défaut : active, sans client ET sans catégorie.
-        const byDefault = nodes.find((b) => !b.customer?.documentId && !b.customerCategory?.documentId);
-        return byDefault?.image?.url ?? null;
+        // 2) Bannière « nouveaux comptes » : identifiée par son NOM (NEW CUSTOMER),
+        //    pas par « sans portée » — sinon on servirait une bannière du catalogue.
+        const newCustomer = nodes.find(
+            (b) => isNewCustomerBanner(b.name) && !b.customer?.documentId && !b.customerCategory?.documentId
+        );
+        return newCustomer?.image?.url ?? null;
     } catch {
         // Ex. : le rôle client n'a pas le droit de lister les bannières côté Strapi.
         // On dégrade silencieusement (le dashboard retombe sur son fond par défaut).

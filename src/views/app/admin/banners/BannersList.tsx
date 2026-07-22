@@ -20,6 +20,7 @@ import reducer, {
 import ModalNewBanner from './modals/ModalNewBanner';
 import { Banner } from '@/@types/banner';
 import ModalEditBanner from './modals/ModalEditBanner';
+import { isNewCustomerBanner, NEW_CUSTOMER_BANNER_NAME } from '@/services/BannerServices';
 
 injectReducer('banners', reducer);
 
@@ -99,15 +100,28 @@ const BannerCard = ({
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {!banner.customer?.name && !banner.customerCategory?.name && (
+        {isNewCustomerBanner(banner.name) ? (
+          /* Bannière « nouveaux comptes » (accueil client) */
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: '52px' }}>Portée</span>
             <span style={{
               background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)',
               borderRadius: '100px', padding: '2px 9px',
-              color: '#eab308', fontSize: '11px', fontWeight: 700,
+              color: '#eab308', fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em',
             }}>
-              Par défaut
+              NEW CUSTOMER
+            </span>
+          </div>
+        ) : (!banner.customer?.name && !banner.customerCategory?.name) && (
+          /* Bannière nommée sans portée client/catégorie (catalogue, projets…) */
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: '52px' }}>Portée</span>
+            <span style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: '100px', padding: '2px 9px',
+              color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600,
+            }}>
+              Générale
             </span>
           </div>
         )}
@@ -205,16 +219,18 @@ const BannersList = () => {
   const activeCount = banners.filter((b) => b.active).length;
   const inactiveCount = banners.filter((b) => !b.active).length;
 
-  // Bannière standard des nouveaux comptes = bannière sans client NI catégorie.
-  const defaultBanner =
-    banners.find((b) => !b.customer?.documentId && !b.customerCategory?.documentId) || null;
+  // Bannière standard des nouveaux comptes = bannière nommée « NEW CUSTOMER ».
+  // (PAS « sans client ni catégorie » : les bannières catalogue/projets/offres
+  //  n'ont pas de portée non plus et ne doivent surtout pas être confondues.)
+  const newCustomerBanner =
+    banners.find((b) => isNewCustomerBanner(b.name)) || null;
 
   const handleEditNewCustomerBanner = () => {
-    if (defaultBanner) {
-      dispatch(setSelectedBanner(defaultBanner));
+    if (newCustomerBanner) {
+      dispatch(setSelectedBanner(newCustomerBanner));
       dispatch(setEditBannerDialog(true));
     } else {
-      dispatch(setNewBannerPreset({ name: 'NEW CUSTOMER', customer: '', customerCategory: '', active: true }));
+      dispatch(setNewBannerPreset({ name: NEW_CUSTOMER_BANNER_NAME, customer: '', customerCategory: '', active: true }));
       dispatch(setNewBannerDialog(true));
     }
   };
@@ -263,14 +279,14 @@ const BannersList = () => {
         background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.22)',
         borderRadius: '14px', padding: '16px 18px', marginBottom: '20px',
       }}>
-        {/* Aperçu de la bannière par défaut si elle existe */}
+        {/* Aperçu de la bannière NEW CUSTOMER si elle existe */}
         <div style={{
           width: '132px', height: '68px', borderRadius: '10px', flexShrink: 0,
           background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
           overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {defaultBanner?.image?.url ? (
-            <img src={defaultBanner.image.url} alt="NEW CUSTOMER" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          {newCustomerBanner?.image?.url ? (
+            <img src={newCustomerBanner.image.url} alt="NEW CUSTOMER" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <HiPhotograph size={26} style={{ color: 'rgba(234,179,8,0.4)' }} />
           )}
@@ -290,7 +306,7 @@ const BannersList = () => {
           </p>
           <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
             Elle s'affiche sur les comptes sans bannière propre (comptes créés par les clients).
-            {defaultBanner
+            {newCustomerBanner
               ? ' Modifiez son image ici quand vous le souhaitez.'
               : " Tant qu'aucune image n'est définie, un visuel épuré sans texte est affiché par défaut."}
           </p>
@@ -307,7 +323,7 @@ const BannersList = () => {
             boxShadow: '0 4px 14px rgba(234,179,8,0.3)', fontFamily: 'Inter, sans-serif',
           }}
         >
-          {defaultBanner ? <><HiPencil size={15} /> Modifier la bannière</> : <><HiPlus size={15} /> Définir la bannière</>}
+          {newCustomerBanner ? <><HiPencil size={15} /> Modifier la bannière</> : <><HiPlus size={15} /> Définir la bannière</>}
         </button>
       </div>
 
