@@ -3,7 +3,7 @@ import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
-import { apiSignUp } from '@/services/AuthService';
+import { apiSignUp, apiVerifyEmailCode, apiResendEmailCode } from '@/services/AuthService';
 import { API_BASE_URL } from '@/configs/api.config';
 
 const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
@@ -99,6 +99,14 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [categories, setCategories] = useState<CustomerCategory[]>([]);
+    // Étape de validation par code email
+    const [awaitingCode, setAwaitingCode] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState('');
+    const [pendingFirstName, setPendingFirstName] = useState('');
+    const [code, setCode] = useState('');
+    const [verifying, setVerifying] = useState(false);
+    const [codeError, setCodeError] = useState('');
+    const [resendInfo, setResendInfo] = useState('');
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/auth/customer-categories`)
@@ -124,6 +132,12 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
         reset();
         setSuccessMessage('');
         setErrorMessage('');
+        setAwaitingCode(false);
+        setPendingEmail('');
+        setPendingFirstName('');
+        setCode('');
+        setCodeError('');
+        setResendInfo('');
         onClose();
     };
 
@@ -142,17 +156,55 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                 zipCode: values.zipCode,
                 city: values.city,
             });
-            // Envoi de l'email de bienvenue (non bloquant)
-            fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to: values.email, firstName: values.firstName }),
-            }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
-            setSuccessMessage('Votre compte a été créé avec succès ! Un email de bienvenue vous a été envoyé. Vous pouvez maintenant vous connecter.');
-            reset();
+            // Compte créé mais non confirmé : on passe à l'étape de saisie du code
+            // envoyé par email. L'email de bienvenue est envoyé après validation.
+            setPendingEmail(values.email);
+            setPendingFirstName(values.firstName);
+            setAwaitingCode(true);
+            setCode('');
+            setCodeError('');
+            setResendInfo('');
         } catch (err: any) {
             const msg = err?.response?.data?.error?.message || 'Une erreur est survenue. Veuillez réessayer.';
             setErrorMessage(msg);
+        }
+    };
+
+    const onVerifyCode = async () => {
+        setCodeError('');
+        const trimmed = code.trim();
+        if (!/^\d{6}$/.test(trimmed)) {
+            setCodeError('Entrez le code à 6 chiffres reçu par email.');
+            return;
+        }
+        setVerifying(true);
+        try {
+            await apiVerifyEmailCode({ email: pendingEmail, code: trimmed });
+            // Email de bienvenue (non bloquant) une fois le compte validé
+            fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: pendingEmail, firstName: pendingFirstName }),
+            }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
+            setAwaitingCode(false);
+            setSuccessMessage('Votre email est validé et votre compte est actif ! Vous pouvez maintenant vous connecter.');
+            reset();
+        } catch (err: any) {
+            const msg = err?.response?.data?.error?.message || 'Code invalide ou expiré.';
+            setCodeError(msg);
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const onResendCode = async () => {
+        setCodeError('');
+        setResendInfo('');
+        try {
+            await apiResendEmailCode({ email: pendingEmail });
+            setResendInfo('Un nouveau code vient de vous être envoyé par email.');
+        } catch {
+            setResendInfo('Un nouveau code vient de vous être envoyé par email.');
         }
     };
 
@@ -240,10 +292,12 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                         </span>
                     </div>
                     <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 8px' }}>
-                        Créer un compte client
+                        {awaitingCode ? 'Vérifiez votre email' : 'Créer un compte client'}
                     </h2>
                     <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: '13px', lineHeight: 1.65, margin: 0 }}>
-                        Rejoignez la plateforme PEG en quelques secondes
+                        {awaitingCode
+                            ? `Un code à 6 chiffres a été envoyé à ${pendingEmail}`
+                            : 'Rejoignez la plateforme PEG en quelques secondes'}
                     </p>
                 </div>
 
@@ -278,7 +332,59 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                     </div>
                 )}
 
-                {!successMessage && (
+                {/* Étape : saisie du code de validation */}
+                {!successMessage && awaitingCode && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                            <label style={labelStyle}>Code de validation <span style={{ color: '#f87171' }}>*</span></label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                value={code}
+                                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') onVerifyCode(); }}
+                                placeholder="123456"
+                                autoFocus
+                                style={{
+                                    ...inputStyle,
+                                    textAlign: 'center',
+                                    fontSize: '26px',
+                                    fontWeight: 700,
+                                    letterSpacing: '10px',
+                                    borderColor: codeError ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)',
+                                }}
+                            />
+                            {codeError && <p style={errorStyle}>{codeError}</p>}
+                            {resendInfo && <p style={{ ...errorStyle, color: '#4ade80' }}>{resendInfo}</p>}
+                        </div>
+
+                        <button type="button" onClick={onVerifyCode} disabled={verifying} style={{
+                            width: '100%',
+                            background: verifying ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
+                            border: 'none', borderRadius: '10px', padding: '13px',
+                            color: '#fff', fontSize: '14px', fontWeight: 700,
+                            cursor: verifying ? 'not-allowed' : 'pointer',
+                            boxShadow: verifying ? 'none' : '0 4px 16px rgba(47,111,237,0.4)',
+                            transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
+                        }}>
+                            {verifying ? 'Validation...' : 'Valider mon compte'}
+                        </button>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <button type="button" onClick={onResendCode} style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: 'rgba(255,255,255,0.55)', fontSize: '12.5px', fontFamily: 'Inter, sans-serif',
+                                textDecoration: 'underline',
+                            }}>
+                                Je n'ai pas reçu le code — le renvoyer
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {!successMessage && !awaitingCode && (
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 

@@ -64,6 +64,27 @@ export async function apiSignUp(data: SignUpCredential) {
     })
 }
 
+export async function apiVerifyEmailCode(data: { email: string; code: string }) {
+    return ApiService.fetchData<{ ok: boolean; alreadyConfirmed?: boolean }>({
+        url: `${API_BASE_URL}/auth/verify-email-code`,
+        method: 'post',
+        data: {
+            email: data.email,
+            code: data.code,
+        },
+    })
+}
+
+export async function apiResendEmailCode(data: { email: string }) {
+    return ApiService.fetchData<{ ok: boolean }>({
+        url: `${API_BASE_URL}/auth/resend-email-code`,
+        method: 'post',
+        data: {
+            email: data.email,
+        },
+    })
+}
+
 export async function apiRefreshToken(_data: RefreshToken) {
     return ApiService.fetchData({
         url: '/refresh-token',
