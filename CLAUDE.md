@@ -174,6 +174,32 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 🤖 Chatbot client — Agent autonome (mise à jour 23/07/2026)
+
+### Concept
+- Le widget en bas à droite (`ChatWidget.tsx`) n'est plus un simple LLM sans données : c'est un **agent** qui interroge **en direct les vraies données PEG** via des **outils (function calling Groq)**. Il sait renseigner le client avec justesse **et préparer des offres chiffrées**.
+- Modèle : Groq `llama-3.3-70b-versatile` (env `GROQ_MODEL`). Boucle agentique côté backend, **max 6 itérations** d'appels d'outils.
+
+### Backend — `peg_strapi/src/api/chatbot/controllers/chatbot.ts` → `customerChat`
+- **Auth FIABLE** : le client est identifié par son **JWT vérifié côté serveur** (`resolveCustomer`), **jamais** par un `userId` envoyé dans le body. Sans token valide → mode anonyme (pas d'accès aux données perso ni au catalogue).
+- **Outils exposés** (`CUSTOMER_TOOLS`, uniquement si client identifié) :
+  - `rechercher_catalogue` / `details_produit` / `lister_categories` — catalogue **visible par ce client** (mêmes règles que `apiGetCustomerProducts` : `active` ET rattaché au client OU à sa catégorie), prix HT par palier.
+  - `preparer_offre` — chiffre un devis (paliers de quantité + **remise Premium −15 %**), renvoie le détail par ligne, le total HT et un `texte_offre` prêt à présenter.
+  - `mes_projets` / `mes_commandes` / `mon_compte` — données perso du client connecté.
+- **Prix** : `applyPremium()` réplique `productHelpers.ts` du front (`PREMIUM_DISCOUNT_RATE = 0.15`) — les prix renvoyés par les outils sont **déjà** Premium-inclus, le modèle ne recalcule pas.
+- **`TOOL_GUIDANCE`** est toujours ajouté au prompt système (même si l'admin a personnalisé son prompt) → garantit l'usage des outils et l'interdiction d'inventer un prix.
+- ORM : `strapi.documents(...)` (Strapi v5) avec filtres `$eq/$containsi/$or`.
+
+### Frontend — `src/components/template/ChatWidget.tsx`
+- Envoie le **token JWT** (`Authorization: Bearer`) + `origin` (`window.location.origin`) dans `POST /chatbot/chat`.
+- **Plus de préchargement** d'instantané figé (les 3 requêtes au montage ont été supprimées) — les données viennent des outils en direct.
+
+### ⚠️ Ordre de déploiement
+- **Backend Strapi d'abord** (int → prod) pour que les outils existent. Les changements sont mutuellement rétro-compatibles (ancien back ↔ nouveau front dégradent sans casser), mais la fonctionnalité n'est active qu'une fois le back déployé.
+- Nécessite la variable d'env **`GROQ_API_KEY`** (déjà présente) côté Strapi.
+
+---
+
 ## 👁️ Tracking des vues projet (mise à jour 03/04/2026)
 
 ### Endpoints (peg-backend Express)

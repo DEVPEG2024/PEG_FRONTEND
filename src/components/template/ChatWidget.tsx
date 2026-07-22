@@ -3,9 +3,7 @@ import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
-import { apiGetCustomerProjects } from '@/services/ProjectServices';
-import { apiGetCustomerProducts } from '@/services/ProductServices';
-import { apiGetOrderItems } from '@/services/OrderItemServices';
+import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -35,54 +33,16 @@ const ChatWidget = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [userContext, setUserContext] = useState('');
   const [awaitingClose, setAwaitingClose] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const user = useAppSelector((state) => state.auth.user.user);
+  const sessionToken = useAppSelector((state) => state.auth.session.token);
   const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Client';
-  const userId   = user?.documentId ?? undefined;
 
-  // Charger le contexte client une seule fois
-  useEffect(() => {
-    if (!user?.customer?.documentId) return;
-    const customerDocumentId = user.customer.documentId;
-    const customerCategoryDocumentId = user.customer?.customerCategory?.documentId ?? '';
-    const base = window.location.origin;
-    Promise.allSettled([
-      apiGetCustomerProjects({ customerDocumentId, pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
-      apiGetCustomerProducts(customerDocumentId, customerCategoryDocumentId, { page: 1, pageSize: 10 }),
-      apiGetOrderItems({ pagination: { page: 1, pageSize: 5 }, searchTerm: '' }),
-    ]).then(([projectsRes, productsRes, ordersRes]) => {
-      const lines: string[] = [
-        `URL plateforme : ${base}`,
-        `Liens utiles : Catalogue → ${base}/customer/catalogue | Mes projets → ${base}/common/projects | Mon panier → ${base}/customer/cart`,
-      ];
-      if (projectsRes.status === 'fulfilled') {
-        const projects = projectsRes.value.data.data.projects_connection?.nodes ?? [];
-        if (projects.length > 0) {
-          lines.push('Projets du client :\n' + projects.map((p: any) =>
-            `- ${p.name} (état: ${p.state}) → ${base}/common/projects/details/${p.documentId}`
-          ).join('\n'));
-        }
-      }
-      if (productsRes.status === 'fulfilled') {
-        const products = productsRes.value.data.data.products_connection?.nodes ?? [];
-        if (products.length > 0) {
-          lines.push('Produits disponibles :\n' + products.map((p: any) =>
-            `- ${p.name} → ${base}/customer/product/${p.documentId}`
-          ).join('\n'));
-        }
-      }
-      if (ordersRes.status === 'fulfilled') {
-        const orders = ordersRes.value.data.data.orderItems_connection?.nodes ?? [];
-        if (orders.length > 0) {
-          lines.push('Dernières commandes : ' + orders.map((o: any) => `${o.product?.name ?? 'produit'} (qté: ${o.quantity})`).join(', '));
-        }
-      }
-      setUserContext(lines.join('\n'));
-    });
-  }, [user]);
+  // Le backend interroge désormais les vraies données PEG en direct (catalogue,
+  // projets, commandes, compte) via ses outils, en identifiant le client par son
+  // JWT — plus besoin de précharger un instantané figé côté front.
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -108,12 +68,17 @@ const ChatWidget = () => {
     setInput('');
     setLoading(true);
     try {
-      const res = await axios.post(`${EXPRESS_BACKEND_URL}/chatbot/chat`, {
-        messages: next,
-        userName,
-        userId,
-        userContext: userContext || undefined,
-      });
+      // Le token identifie le client côté backend (accès sécurisé à ses données).
+      const token = sessionToken || getPersistedAuthToken();
+      const res = await axios.post(
+        `${EXPRESS_BACKEND_URL}/chatbot/chat`,
+        {
+          messages: next,
+          userName,
+          origin: window.location.origin,
+        },
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+      );
       const reply = res.data.reply as string;
       const updated = [...next, { role: 'assistant' as const, content: reply }];
       setMessages(updated);
@@ -205,7 +170,7 @@ const ChatWidget = () => {
                 </div>
                 {/* Suggestions rapides */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {['Comment passer une commande ?', 'Quels sont vos produits ?', 'Comment vous contacter ?'].map((q) => (
+                  {['Prépare-moi une offre', 'Quels produits me proposez-vous ?', 'Où en sont mes projets ?'].map((q) => (
                     <button
                       key={q}
                       onClick={() => { setInput(q); }}
