@@ -25,6 +25,9 @@ export type BannerState = {
   newBannerDialog: boolean;
   editBannerDialog: boolean;
   loading: boolean;
+  // Valeurs pré-remplies à l'ouverture du modal de création (ex. bannière
+  // « NEW CUSTOMER » = bannière standard des nouveaux comptes).
+  newBannerPreset: Partial<BannerForm> | null;
 };
 
 export const getBanners = createAsyncThunk(
@@ -130,6 +133,7 @@ const initialState: BannerState = {
   editBannerDialog: false,
   loading: false,
   total: 0,
+  newBannerPreset: null,
 };
 
 const bannerSlice = createSlice({
@@ -138,6 +142,11 @@ const bannerSlice = createSlice({
   reducers: {
     setNewBannerDialog: (state, action) => {
       state.newBannerDialog = action.payload;
+      // Le preset ne vaut que pour l'ouverture qui vient de le poser.
+      if (!action.payload) state.newBannerPreset = null;
+    },
+    setNewBannerPreset: (state, action) => {
+      state.newBannerPreset = action.payload;
     },
     setEditBannerDialog: (state, action) => {
       state.editBannerDialog = action.payload;
@@ -208,7 +217,11 @@ const bannerSlice = createSlice({
   },
 });
 
-export const { setNewBannerDialog, setEditBannerDialog, setSelectedBanner } =
-  bannerSlice.actions;
+export const {
+  setNewBannerDialog,
+  setEditBannerDialog,
+  setSelectedBanner,
+  setNewBannerPreset,
+} = bannerSlice.actions;
 
 export default bannerSlice.reducer;

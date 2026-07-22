@@ -13,6 +13,7 @@ import reducer, {
   getBanners,
   setEditBannerDialog,
   setNewBannerDialog,
+  setNewBannerPreset,
   setSelectedBanner,
   useAppSelector,
 } from './store';
@@ -204,6 +205,20 @@ const BannersList = () => {
   const activeCount = banners.filter((b) => b.active).length;
   const inactiveCount = banners.filter((b) => !b.active).length;
 
+  // Bannière standard des nouveaux comptes = bannière sans client NI catégorie.
+  const defaultBanner =
+    banners.find((b) => !b.customer?.documentId && !b.customerCategory?.documentId) || null;
+
+  const handleEditNewCustomerBanner = () => {
+    if (defaultBanner) {
+      dispatch(setSelectedBanner(defaultBanner));
+      dispatch(setEditBannerDialog(true));
+    } else {
+      dispatch(setNewBannerPreset({ name: 'NEW CUSTOMER', customer: '', customerCategory: '', active: true }));
+      dispatch(setNewBannerDialog(true));
+    }
+  };
+
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
 
@@ -242,19 +257,58 @@ const BannersList = () => {
         </button>
       </div>
 
-      {/* Note : bannière par défaut */}
+      {/* Bannière standard des nouveaux comptes — "NEW CUSTOMER" */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', gap: '10px',
-        background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.18)',
-        borderRadius: '12px', padding: '12px 16px', marginBottom: '20px',
+        display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
+        background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.22)',
+        borderRadius: '14px', padding: '16px 18px', marginBottom: '20px',
       }}>
-        <HiPhotograph size={18} style={{ color: '#eab308', flexShrink: 0, marginTop: '1px' }} />
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12.5px', lineHeight: 1.5, margin: 0 }}>
-          Une bannière <strong style={{ color: '#eab308' }}>sans client ni catégorie</strong> sert de{' '}
-          <strong style={{ color: '#eab308' }}>bannière par défaut</strong> : elle s'affiche sur les comptes
-          qui n'ont pas de bannière propre (par ex. les comptes créés par les clients eux-mêmes).
-          Laissez les champs Client et Catégorie vides pour la créer, et gardez-la active.
-        </p>
+        {/* Aperçu de la bannière par défaut si elle existe */}
+        <div style={{
+          width: '132px', height: '68px', borderRadius: '10px', flexShrink: 0,
+          background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
+          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {defaultBanner?.image?.url ? (
+            <img src={defaultBanner.image.url} alt="NEW CUSTOMER" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <HiPhotograph size={26} style={{ color: 'rgba(234,179,8,0.4)' }} />
+          )}
+        </div>
+
+        {/* Texte explicatif */}
+        <div style={{ flex: 1, minWidth: '240px' }}>
+          <span style={{
+            display: 'inline-block', background: 'rgba(234,179,8,0.14)', border: '1px solid rgba(234,179,8,0.35)',
+            borderRadius: '100px', padding: '2px 10px', color: '#eab308',
+            fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '6px',
+          }}>
+            NEW CUSTOMER
+          </span>
+          <p style={{ color: '#fff', fontSize: '13.5px', fontWeight: 700, margin: '0 0 4px' }}>
+            Bannière standard des nouveaux comptes
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+            Elle s'affiche sur les comptes sans bannière propre (comptes créés par les clients).
+            {defaultBanner
+              ? ' Modifiez son image ici quand vous le souhaitez.'
+              : " Tant qu'aucune image n'est définie, un visuel épuré sans texte est affiché par défaut."}
+          </p>
+        </div>
+
+        {/* Action : modifier / définir */}
+        <button
+          onClick={handleEditNewCustomerBanner}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0,
+            background: 'linear-gradient(90deg, #eab308, #ca8a04)', border: 'none',
+            borderRadius: '10px', padding: '10px 18px',
+            color: '#1a1200', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(234,179,8,0.3)', fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          {defaultBanner ? <><HiPencil size={15} /> Modifier la bannière</> : <><HiPlus size={15} /> Définir la bannière</>}
+        </button>
       </div>
 
       {/* Recherche */}

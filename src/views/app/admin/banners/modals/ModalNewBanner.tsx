@@ -35,16 +35,18 @@ const labelStyle: React.CSSProperties = {
 };
 
 function ModalNewBanner() {
-  const { newBannerDialog } = useAppSelector((state) => state.banners.data);
+  const { newBannerDialog, newBannerPreset } = useAppSelector((state) => state.banners.data);
   const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const dispatch = useAppDispatch();
+  // Le modal est monté à la volée (`newBannerDialog && <ModalNewBanner />`), donc
+  // le preset éventuel (ex. bannière « NEW CUSTOMER ») est disponible au montage.
   const [formData, setFormData] = useState<BannerForm>({
-    name: '',
-    customer: '',
-    customerCategory: '',
-    active: true,
+    name: newBannerPreset?.name ?? '',
+    customer: newBannerPreset?.customer ?? '',
+    customerCategory: newBannerPreset?.customerCategory ?? '',
+    active: newBannerPreset?.active ?? true,
   });
 
   const fetchCustomers = async () => {
