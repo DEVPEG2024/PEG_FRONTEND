@@ -181,22 +181,26 @@ Le bucket d'images autorise ces origines :
 - Modèle : Groq `llama-3.3-70b-versatile` (env `GROQ_MODEL`). Boucle agentique côté backend, **max 6 itérations** d'appels d'outils.
 
 ### Backend — `peg_strapi/src/api/chatbot/controllers/chatbot.ts` → `customerChat`
-- **Auth FIABLE** : le client est identifié par son **JWT vérifié côté serveur** (`resolveCustomer`), **jamais** par un `userId` envoyé dans le body. Sans token valide → mode anonyme (pas d'accès aux données perso ni au catalogue).
+- **Auth FIABLE** : le client est identifié par son **JWT vérifié côté serveur** (`resolveCustomer`), **jamais** par un `userId` envoyé dans le body. Sans token valide → mode anonyme (pas d'accès aux données perso ni au catalogue). La réponse renvoie `authenticated: boolean` (le widget affiche « mode limité » si token présent mais non résolu = session expirée).
+- **Sécurité** : messages entrants sanitizés (seuls `user`/`assistant`, 20 derniers, 4000 c — rejet de `system`/`tool` forgés) ; `origin` validé contre une allowlist d'hôtes ; **tous** les outils filtrent sur `customer.documentId` ; commentaires projet filtrés sur `visibility ∈ {all, customer}` (jamais les notes admin/producteur) ; `mes_documents` double-filtre `visibleToCustomer=true`.
 - **Outils exposés** (`CUSTOMER_TOOLS`, uniquement si client identifié) :
-  - `rechercher_catalogue` / `details_produit` / `lister_categories` — catalogue **visible par ce client** (mêmes règles que `apiGetCustomerProducts` : `active` ET rattaché au client OU à sa catégorie), prix HT par palier.
-  - `preparer_offre` — chiffre un devis (paliers de quantité + **remise Premium −15 %**), renvoie le détail par ligne, le total HT et un `texte_offre` prêt à présenter.
-  - `mes_projets` / `mes_commandes` / `mon_compte` — données perso du client connecté.
-- **Prix** : `applyPremium()` réplique `productHelpers.ts` du front (`PREMIUM_DISCOUNT_RATE = 0.15`) — les prix renvoyés par les outils sont **déjà** Premium-inclus, le modèle ne recalcule pas.
-- **`TOOL_GUIDANCE`** est toujours ajouté au prompt système (même si l'admin a personnalisé son prompt) → garantit l'usage des outils et l'interdiction d'inventer un prix.
-- ORM : `strapi.documents(...)` (Strapi v5) avec filtres `$eq/$containsi/$or`.
+  - Catalogue : `rechercher_catalogue` / `details_produit` (+ champs de personnalisation du formulaire, économie vs prix catalogue) / `lister_categories` — visibilité identique à `apiGetCustomerProducts`.
+  - Offres : `preparer_offre` — chiffre un devis (paliers, **Premium −15 %**, **livraison 9,90 € HT**, TVA 20 %, m² avec largeur/hauteur), renvoie sous-total/livraison/total HT/TTC + `texte_offre`.
+  - Suivi : `mes_projets`, `etat_projet_detaille` (dates, étapes, % d'avancement, messages client), `mes_commandes` (+ **statut BAT**, sélections tailles/couleurs, action requise).
+  - Finances : `mes_factures` (FAC-XXXX, impayés, PDF, total dû), `mon_historique_paiements`, `mes_devis`.
+  - Autres : `mes_tickets_sav`, `verifier_code_promo`, `mes_documents` (logo/charte), `mon_compte`.
+- **Pricing = source de vérité `checkout.ts`** : `SHIPPING_HT`, `TVA_RATE`, `PREMIUM_DISCOUNT_RATE`, `PREMIUM_PRICE_HT` sont des **miroirs** des constantes du checkout (`recalculateFromDB`) et du front (`Cart.tsx`, `productHelpers.ts`). Premium appliqué **une seule fois** sur le total ligne, arrondi une fois → l'offre = le montant Stripe débité. **⚠️ Garder ces constantes alignées** si le checkout change.
+- **Robustesse** : boucle max 5 itérations, deadline **22 s** (< H12 Heroku 30 s), timeout + `maxRetries:1` par appel Groq, contexte documents plafonné (8000 c), fallback sans outils, **jamais de 500** (tout échec → réponse simple). Log `info` d'observabilité (auth, itérations, outils, branche, latence).
+- **`TOOL_GUIDANCE`** toujours ajouté au prompt système → mappe chaque type de question au bon outil et interdit d'inventer prix/données.
+- ORM : `strapi.documents(...)` (Strapi v5), filtres `$eq/$ne/$in/$notIn/$eqi/$containsi/$or`, traversée de relations (`user.customer.documentId` pour les tickets).
 
 ### Frontend — `src/components/template/ChatWidget.tsx`
-- Envoie le **token JWT** (`Authorization: Bearer`) + `origin` (`window.location.origin`) dans `POST /chatbot/chat`.
-- **Plus de préchargement** d'instantané figé (les 3 requêtes au montage ont été supprimées) — les données viennent des outils en direct.
+- Envoie le **token JWT** (`Authorization: Bearer`) + `origin` dans `POST /chatbot/chat` ; **plus de préchargement** figé (données live via outils).
+- **Rendu markdown** des réponses (gras/italique/listes/liens) → les offres s'affichent proprement. Suggestions **envoyées au clic**. Responsive (`min(…, 100vw/vh)`) + a11y (`role=dialog/log`, `aria-live`, `aria-label`, focus à l'ouverture). Badge « mode limité » si session expirée.
 
 ### ⚠️ Ordre de déploiement
-- **Backend Strapi d'abord** (int → prod) pour que les outils existent. Les changements sont mutuellement rétro-compatibles (ancien back ↔ nouveau front dégradent sans casser), mais la fonctionnalité n'est active qu'une fois le back déployé.
-- Nécessite la variable d'env **`GROQ_API_KEY`** (déjà présente) côté Strapi.
+- **Backend Strapi d'abord** (int → prod) pour que les outils existent. Changements mutuellement rétro-compatibles, mais feature active seulement une fois le back **redéployé** (peg-prod = déploiement Heroku manuel). Nécessite `GROQ_API_KEY` (déjà présent).
+- Nouveaux outils = **lecture seule**. Actions d'écriture (créer un devis/ticket) volontairement **non implémentées** (décision produit).
 
 ---
 

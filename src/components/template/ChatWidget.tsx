@@ -10,21 +10,50 @@ type Message = { role: 'user' | 'assistant'; content: string };
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
 
-const renderContent = (content: string): (string | JSX.Element)[] => {
-  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|https?:\/\/[^\s\]>]+/g;
-  const result: (string | JSX.Element)[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(content)) !== null) {
-    if (match.index > lastIndex) result.push(content.slice(lastIndex, match.index));
-    const isMarkdown = match[0].startsWith('[');
-    const href = isMarkdown ? match[2] : match[0];
-    const label = isMarkdown ? match[1] : match[0];
-    result.push(<a key={match.index} href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#6b9eff', textDecoration: 'underline' }}>{label}</a>);
-    lastIndex = match.index + match[0].length;
+const LINK_STYLE = { color: '#6b9eff', textDecoration: 'underline', wordBreak: 'break-word' as const };
+
+// Rendu inline : liens markdown [label](url), URLs nues, **gras**, _italique_.
+const renderInline = (text: string, keyBase: string): (string | JSX.Element)[] => {
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|(https?:\/\/[^\s\]>]+)|\*\*([^*]+)\*\*|_([^_]+)_/g;
+  const out: (string | JSX.Element)[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const key = `${keyBase}-${i++}`;
+    if (m[1] !== undefined) out.push(<a key={key} href={m[2]} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>{m[1]}</a>);
+    else if (m[3] !== undefined) out.push(<a key={key} href={m[3]} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>{m[3]}</a>);
+    else if (m[4] !== undefined) out.push(<strong key={key} style={{ fontWeight: 700, color: '#fff' }}>{m[4]}</strong>);
+    else if (m[5] !== undefined) out.push(<em key={key} style={{ opacity: 0.85 }}>{m[5]}</em>);
+    last = m.index + m[0].length;
   }
-  if (lastIndex < content.length) result.push(content.slice(lastIndex));
-  return result.length > 0 ? result : [content];
+  if (last < text.length) out.push(text.slice(last));
+  return out.length ? out : [text];
+};
+
+// Rendu markdown léger : paragraphes + listes à puces (les offres du bot utilisent
+// **gras**, _italique_, lignes "- ...") — sinon les ** et _ s'afficheraient bruts.
+const renderContent = (content: string): JSX.Element[] => {
+  const lines = (content || '').split('\n');
+  const blocks: JSX.Element[] = [];
+  let li: JSX.Element[] = [];
+  const flush = () => {
+    if (li.length) {
+      blocks.push(<ul key={`ul-${blocks.length}`} style={{ margin: '4px 0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '2px' }}>{li}</ul>);
+      li = [];
+    }
+  };
+  lines.forEach((line, idx) => {
+    const t = line.trim();
+    const bullet = /^[-*]\s+(.*)$/.exec(t);
+    if (bullet) { li.push(<li key={`li-${idx}`}>{renderInline(bullet[1], `li-${idx}`)}</li>); return; }
+    flush();
+    if (t === '') { blocks.push(<div key={`sp-${idx}`} style={{ height: '5px' }} />); return; }
+    blocks.push(<div key={`p-${idx}`} style={{ margin: '1px 0' }}>{renderInline(line, `p-${idx}`)}</div>);
+  });
+  flush();
+  return blocks.length ? blocks : [<span key="0">{content}</span>];
 };
 
 const ChatWidget = () => {
@@ -34,7 +63,9 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [awaitingClose, setAwaitingClose] = useState(false);
+  const [authWarn, setAuthWarn] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const user = useAppSelector((state) => state.auth.user.user);
   const sessionToken = useAppSelector((state) => state.auth.session.token);
@@ -57,9 +88,9 @@ const ChatWidget = () => {
     setAwaitingClose(false);
   };
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
+  const sendText = async (raw: string) => {
+    const text = (raw || '').trim();
+    if (!text || loading) return;
     // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
     const isClosing = awaitingClose && USER_NO_RE.test(text);
     const userMsg: Message = { role: 'user', content: text };
@@ -82,6 +113,8 @@ const ChatWidget = () => {
       const reply = res.data.reply as string;
       const updated = [...next, { role: 'assistant' as const, content: reply }];
       setMessages(updated);
+      // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
+      setAuthWarn(Boolean(token) && res.data?.authenticated === false);
       if (!open) setUnread((n) => n + 1);
       if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
       if (isClosing) {
@@ -94,9 +127,16 @@ const ChatWidget = () => {
     }
   };
 
+  const send = () => sendText(input);
+
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
+
+  // Focus le champ à l'ouverture (accessibilité clavier).
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 60);
+  }, [open]);
 
   return (
     <div style={{ position: 'fixed', bottom: '90px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
@@ -108,12 +148,12 @@ const ChatWidget = () => {
       `}</style>
       {/* Fenêtre de chat */}
       {open && (
-        <div style={{
+        <div role="dialog" aria-label="Assistant PEG" style={{
           position: 'absolute',
           bottom: '72px',
           right: 0,
-          width: '360px',
-          height: '500px',
+          width: 'min(360px, calc(100vw - 32px))',
+          height: 'min(500px, calc(100vh - 140px))',
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '20px',
@@ -147,6 +187,7 @@ const ChatWidget = () => {
             </div>
             <button
               onClick={() => setOpen(false)}
+              aria-label="Fermer le chat"
               style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}
             >
               <MdClose size={18} />
@@ -154,7 +195,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div role="log" aria-live="polite" aria-label="Conversation" style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {messages.length === 0 && (
               <div style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -168,12 +209,12 @@ const ChatWidget = () => {
                     Comment puis-je vous aider ?
                   </span>
                 </div>
-                {/* Suggestions rapides */}
+                {/* Suggestions rapides — envoi direct au clic */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {['Prépare-moi une offre', 'Quels produits me proposez-vous ?', 'Où en sont mes projets ?'].map((q) => (
+                  {['Prépare-moi une offre', 'Où en sont mes projets ?', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'].map((q) => (
                     <button
                       key={q}
-                      onClick={() => { setInput(q); }}
+                      onClick={() => sendText(q)}
                       style={{
                         background: 'rgba(47,111,237,0.1)',
                         border: '1px solid rgba(47,111,237,0.2)',
@@ -241,6 +282,17 @@ const ChatWidget = () => {
             <div ref={bottomRef} />
           </div>
 
+          {/* Bandeau session expirée */}
+          {authWarn && (
+            <div style={{
+              padding: '6px 12px', fontSize: '11px', textAlign: 'center',
+              color: '#fcd34d', background: 'rgba(234,179,8,0.12)',
+              borderTop: '1px solid rgba(234,179,8,0.25)',
+            }}>
+              Mode limité : reconnectez-vous pour accéder à vos données (offres, projets, factures).
+            </div>
+          )}
+
           {/* Input */}
           <div style={{
             borderTop: '1px solid rgba(255,255,255,0.07)',
@@ -250,6 +302,8 @@ const ChatWidget = () => {
             alignItems: 'flex-end',
           }}>
             <textarea
+              ref={inputRef}
+              aria-label="Votre message"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -273,6 +327,7 @@ const ChatWidget = () => {
             <button
               onClick={send}
               disabled={loading || !input.trim()}
+              aria-label="Envoyer"
               style={{
                 width: '36px', height: '36px',
                 background: loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
@@ -296,6 +351,7 @@ const ChatWidget = () => {
       {/* Bouton flottant */}
       <button
         onClick={() => setOpen((o) => !o)}
+        aria-label={open ? 'Fermer le chat' : 'Ouvrir le chat assistant'}
         style={{
           width: '56px',
           height: '56px',
