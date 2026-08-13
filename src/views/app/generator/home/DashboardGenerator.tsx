@@ -127,11 +127,31 @@ const DashboardGenerator = () => {
                 >
                     {generator.name || 'Mon parrainage'}
                 </h1>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '6px 0 0' }}>
-                    Vous percevez {generator.commissionRate}% de commission sur chaque commande payée
-                    par un filleul, sans limite de durée.
-                </p>
+                {generator.active !== false && (
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '6px 0 0' }}>
+                        Vous percevez {generator.commissionRate}% de commission sur chaque commande payée
+                        par un filleul, sans limite de durée.
+                    </p>
+                )}
             </div>
+
+            {generator.active === false && (
+                <div
+                    style={{
+                        ...panelStyle,
+                        borderColor: 'rgba(251,146,60,0.3)',
+                        background: 'rgba(251,146,60,0.06)',
+                    }}
+                >
+                    <p style={{ color: '#fb923c', fontSize: '14px', fontWeight: 700, margin: '0 0 6px' }}>
+                        Votre compte Générateur est suspendu
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
+                        Votre lien ne rattache plus de nouveaux filleuls et aucune nouvelle commission
+                        n'est générée. Vos commissions déjà acquises restent dues — contactez PEG.
+                    </p>
+                </div>
+            )}
 
             {/* Code et lien de parrainage */}
             <div style={{ ...panelStyle, borderColor: 'rgba(47,111,237,0.28)' }}>

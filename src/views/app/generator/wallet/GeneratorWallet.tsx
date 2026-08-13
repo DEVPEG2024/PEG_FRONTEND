@@ -1,9 +1,10 @@
 /**
- * Wallet du Générateur : solde, historique complet des commissions
+ * Wallet du Générateur : solde, retraits, historique complet des commissions
  * (filtrable par statut) et historique des paiements reçus.
  *
- * Écran en LECTURE SEULE — la validation et le versement des commissions sont
- * des actions strictement réservées à l'administration PEG.
+ * Le Générateur peut demander un retrait de ses commissions VALIDÉES ; la
+ * validation des commissions et l'exécution du versement restent des actions
+ * strictement réservées à l'administration PEG.
  */
 import { useMemo, useState } from 'react';
 import { TbWallet, TbClock, TbCoins, TbCash, TbRefresh, TbHourglassLow } from 'react-icons/tb';
@@ -16,6 +17,7 @@ import {
     formatEuros,
     panelStyle,
 } from '../components/GeneratorUI';
+import WalletWithdrawal from '../components/WalletWithdrawal';
 import { COMMISSION_STATUS_LABELS } from '@/services/GeneratorServices';
 
 const FILTERS: { value: string; label: string }[] = [
@@ -82,7 +84,7 @@ const GeneratorWallet = () => {
         );
     }
 
-    const { stats, payouts } = space;
+    const { generator, stats, payouts } = space;
 
     return (
         <div style={pageStyle}>
@@ -103,6 +105,24 @@ const GeneratorWallet = () => {
                     lors d&apos;un paiement.
                 </p>
             </div>
+
+            {generator.active === false && (
+                <div
+                    style={{
+                        ...panelStyle,
+                        borderColor: 'rgba(251,146,60,0.3)',
+                        background: 'rgba(251,146,60,0.06)',
+                    }}
+                >
+                    <p style={{ color: '#fb923c', fontSize: '14px', fontWeight: 700, margin: '0 0 6px' }}>
+                        Votre compte Générateur est suspendu
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
+                        Votre lien ne rattache plus de nouveaux filleuls et aucune nouvelle commission
+                        n'est générée. Vos commissions déjà acquises restent dues — contactez PEG.
+                    </p>
+                </div>
+            )}
 
             {/* Solde */}
             <div
@@ -148,6 +168,19 @@ const GeneratorWallet = () => {
                     accent="#94a3b8"
                 />
             </div>
+
+            {/* Retraits — coordonnées bancaires et demandes */}
+            <WalletWithdrawal
+                bank={space.bank}
+                requestState={space.requestState}
+                requests={space.payoutRequests}
+                creditBalance={space.creditBalance}
+                // Un apporteur d'affaires n'a pas de panier : le virement est sa
+                // seule destination possible.
+                allowStoreCredit={false}
+                minPayoutAmount={space.minPayoutAmount}
+                onChanged={reload}
+            />
 
             {/* Historique des commissions */}
             <div style={panelStyle}>

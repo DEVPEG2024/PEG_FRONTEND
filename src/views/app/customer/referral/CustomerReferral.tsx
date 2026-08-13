@@ -524,6 +524,21 @@ const CustomerReferral = () => {
                         />
                     </div>
 
+                    {/* Retraits : avoir sur commande ou virement bancaire */}
+                    {space.requestState && space.bank && (
+                        <WalletWithdrawal
+                            bank={space.bank}
+                            requestState={space.requestState}
+                            requests={space.payoutRequests || []}
+                            creditBalance={space.creditBalance || 0}
+                            // Un client parrain a un panier : il peut choisir de
+                            // convertir ses gains en avoir plutôt qu'en virement.
+                            allowStoreCredit
+                            minPayoutAmount={space.minPayoutAmount}
+                            onChanged={reload}
+                        />
+                    )}
+
                     {/* Versements */}
                     <div style={panelStyle}>
                         <SectionTitle

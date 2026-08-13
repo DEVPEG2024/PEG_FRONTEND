@@ -7,12 +7,17 @@
 import ApiService from './ApiService';
 import { API_BASE_URL } from '@/configs/api.config';
 import type {
+    BankDetails,
     Commission,
     CustomerReferralSpace,
     GeneratorAdminDetail,
     GeneratorAdminRow,
     GeneratorPayout,
     GeneratorSpace,
+    PayoutMode,
+    PayoutRequest,
+    PayoutRequestAdminRow,
+    PayoutRequestStatus,
     ReferralCustomer,
     ReferralSettings,
 } from '@/@types/generator';
@@ -63,7 +68,100 @@ export async function apiGetCustomerReferralSpace(): Promise<CustomerReferralSpa
     return res.data;
 }
 
+/** Avoir de parrainage du client connecté — appelé par le panier */
+export async function apiGetReferralCredit(): Promise<number> {
+    try {
+        const res = await ApiService.fetchData<{ balance: number }>({
+            url: `${REFERRAL_URL}/customer/credit`,
+            method: 'get',
+        });
+        return Number(res.data?.balance) || 0;
+    } catch {
+        // Un client sans parrainage n'a simplement pas d'avoir : jamais bloquant
+        return 0;
+    }
+}
+
+// ──────────────────────── Retraits (tout parrain) ────────────────────────────
+
+/**
+ * Enregistre ou remplace les coordonnées bancaires du parrain connecté.
+ * L'IBAN est validé côté serveur et n'est jamais relu : la réponse ne contient
+ * qu'une version masquée.
+ */
+export async function apiSetBankDetails(data: {
+    holder: string;
+    iban: string;
+    bic?: string;
+}): Promise<BankDetails> {
+    const res = await ApiService.fetchData<BankDetails>({
+        url: `${REFERRAL_URL}/me/bank`,
+        method: 'put',
+        data,
+    });
+    return res.data;
+}
+
+/**
+ * Demande de retrait. `amount` omis = tout le disponible.
+ * Le montant réellement retenu peut être inférieur au montant demandé : une
+ * commission ne se fractionne pas (`adjusted: true` le signale).
+ */
+export async function apiRequestPayout(data: {
+    amount?: number;
+    mode: PayoutMode;
+    note?: string;
+}): Promise<{ request: PayoutRequest; amount: number; adjusted: boolean; creditBalance?: number }> {
+    const res = await ApiService.fetchData<{
+        request: PayoutRequest;
+        amount: number;
+        adjusted: boolean;
+        creditBalance?: number;
+    }>({
+        url: `${REFERRAL_URL}/me/payout-request`,
+        method: 'post',
+        data,
+    });
+    return res.data;
+}
+
+/** Annule une demande en attente (les commissions redeviennent retirables) */
+export async function apiCancelPayoutRequest(documentId: string): Promise<PayoutRequest> {
+    const res = await ApiService.fetchData<{ request: PayoutRequest }>({
+        url: `${REFERRAL_URL}/me/payout-request/${documentId}`,
+        method: 'delete',
+    });
+    return res.data.request;
+}
+
 // ─────────────────────────────── Admin ───────────────────────────────────────
+
+export async function apiGetPayoutRequests(status?: PayoutRequestStatus): Promise<PayoutRequestAdminRow[]> {
+    const res = await ApiService.fetchData<{ requests: PayoutRequestAdminRow[] }>({
+        url: `${REFERRAL_URL}/admin/payout-requests${status ? `?status=${status}` : ''}`,
+        method: 'get',
+    });
+    return res.data.requests || [];
+}
+
+/** Approuve (versement créé, commissions soldées) ou refuse une demande */
+export async function apiProcessPayoutRequest(
+    documentId: string,
+    data: {
+        action: 'approve' | 'reject';
+        method?: GeneratorPayout['method'];
+        reference?: string;
+        note?: string;
+        rejectReason?: string;
+    }
+): Promise<{ request: PayoutRequest; amount?: number }> {
+    const res = await ApiService.fetchData<{ request: PayoutRequest; amount?: number }>({
+        url: `${REFERRAL_URL}/admin/payout-requests/${documentId}`,
+        method: 'put',
+        data,
+    });
+    return res.data;
+}
 
 export async function apiGetReferralSettings(): Promise<ReferralSettings> {
     const res = await ApiService.fetchData<ReferralSettings>({
@@ -264,7 +362,22 @@ export const PAYOUT_METHOD_LABELS: Record<string, string> = {
     transfer: 'Virement',
     cheque: 'Chèque',
     cash: 'Espèces',
+    store_credit: 'Avoir sur commande',
     other: 'Autre',
+};
+
+export const PAYOUT_REQUEST_STATUS_LABELS: Record<string, string> = {
+    pending: 'En attente',
+    paid: 'Traitée',
+    rejected: 'Refusée',
+    canceled: 'Annulée',
+};
+
+export const PAYOUT_REQUEST_STATUS_COLORS: Record<string, { bg: string; border: string; color: string }> = {
+    pending: { bg: 'rgba(251,146,60,0.15)', border: 'rgba(251,146,60,0.35)', color: '#fb923c' },
+    paid: { bg: 'rgba(74,222,128,0.15)', border: 'rgba(74,222,128,0.35)', color: '#4ade80' },
+    rejected: { bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.35)', color: '#f87171' },
+    canceled: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.35)', color: '#94a3b8' },
 };
 
 /** Formatage monétaire homogène sur tout l'espace Générateur */

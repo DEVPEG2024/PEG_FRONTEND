@@ -35,10 +35,52 @@ export type GeneratorPayout = {
   documentId: string;
   amount: number;
   date: string;
-  method: 'transfer' | 'cheque' | 'cash' | 'other';
+  method: 'transfer' | 'cheque' | 'cash' | 'store_credit' | 'other';
   reference: string;
   note: string;
   commissionsCount?: number;
+};
+
+/**
+ * Destination d'un retrait :
+ *  - `bank_transfer` : virement, soumis au traitement de l'administration ;
+ *  - `store_credit`  : avoir utilisable au panier, effet immédiat. Réservé aux
+ *    clients parrains — un apporteur d'affaires n'a pas de panier.
+ */
+export type PayoutMode = 'bank_transfer' | 'store_credit';
+
+export type PayoutRequestStatus = 'pending' | 'paid' | 'rejected' | 'canceled';
+
+export type PayoutRequest = {
+  documentId: string;
+  amount: number;
+  mode: PayoutMode;
+  status: PayoutRequestStatus;
+  requestedAt: string;
+  processedAt?: string | null;
+  rejectReason?: string;
+  note?: string;
+  commissionsCount?: number;
+};
+
+/** Coordonnées bancaires du parrain — l'IBAN n'est jamais renvoyé en clair */
+export type BankDetails = {
+  holder: string;
+  ibanMasked: string;
+  bic: string;
+  filled: boolean;
+};
+
+/** Ce qu'il est possible de retirer maintenant */
+export type PayoutRequestState = {
+  /** Total validé, engagé compris */
+  availableBalance: number;
+  /** Déjà engagé dans une demande en attente */
+  pendingRequested: number;
+  /** Réellement retirable */
+  requestable: number;
+  /** Plus petite commission libre — en dessous, aucun retrait n'est possible */
+  smallestFree: number;
 };
 
 export type Referral = {
@@ -96,8 +138,19 @@ export type Sponsor = {
   since?: string | null;
 };
 
+/** Partie « retraits » commune à l'espace Générateur et à l'espace client parrain */
+export type ReferralWalletPart = {
+  bank: BankDetails;
+  /** Avoir disponible au panier (clients parrains) */
+  creditBalance: number;
+  requestState: PayoutRequestState;
+  payoutRequests: PayoutRequest[];
+  /** Seuil de virement fixé par PEG (0 = aucun) */
+  minPayoutAmount: number;
+};
+
 /** Payload de l'espace Générateur (`GET /referral/me`) */
-export type GeneratorSpace = {
+export type GeneratorSpace = ReferralWalletPart & {
   generator: GeneratorProfile;
   stats: GeneratorStats;
   commissions: Commission[];
@@ -110,7 +163,7 @@ export type GeneratorSpace = {
  * `enabled: false` = parrainage entre clients fermé côté PEG : seul le parrain
  * du client est renvoyé, il n'a pas de code à lui.
  */
-export type CustomerReferralSpace = {
+export type CustomerReferralSpace = Partial<ReferralWalletPart> & {
   enabled: boolean;
   sponsor: Sponsor | null;
   generator?: GeneratorProfile;
@@ -118,6 +171,19 @@ export type CustomerReferralSpace = {
   commissions?: Commission[];
   payouts?: GeneratorPayout[];
   referrals?: Referral[];
+};
+
+/** Demande de retrait vue par l'administration (avec les coordonnées à payer) */
+export type PayoutRequestAdminRow = PayoutRequest & {
+  bankSnapshot: string;
+  generator: {
+    documentId: string;
+    name: string;
+    kind: ReferrerKind;
+    bankHolder: string;
+    bankIban: string;
+    bankBic: string;
+  } | null;
 };
 
 /** Réglages globaux du programme */
