@@ -591,6 +591,25 @@ Backend et frontend sont couplés : entre les deux déploiements, un client en p
 
 ---
 
+## 🔒 Écriture des fiches CLIENT — réservée à l'admin (correctif faille, 13/08/2026)
+
+### Ce qui était ouvert
+`api::customer.customer.update` était accordé au rôle `customer` **sans policy de propriété**. `PUT /api/customers/:documentId` acceptant n'importe quel identifiant, un client pouvait :
+- modifier la fiche d'un **autre** client ;
+- s'attribuer sur sa propre fiche des champs sensibles — `customerCategory` (**pilote la visibilité du catalogue et les tarifs**), `premium`, `deferredPayment`, `catalogAccess`.
+
+L'écran client `account/components/CompanyProfile.tsx` envoyait effectivement `customerCategory` dans son payload.
+
+### Correctif
+- Route dédiée **`PUT /api/auth/update-own-company`** : la fiche visée est **déduite du JWT** (aucun identifiant transmis), et seuls `name`, `logo` et une liste blanche de `companyInformations` (adresse, CP, ville, pays, téléphone, email, TVA, SIRET, site) sont acceptés.
+- `api::customer.customer.create` et `.update` ajoutés à **`REVOKE_FROM_NON_ADMIN`**. ⚠️ Même piège que pour les factures : `grantAuthenticatedPermissions()` rejoue la liste à chaque boot — **ne jamais les remettre dans `AUTHENTICATED_ACTIONS`**.
+- Le **secteur d'activité passe en lecture seule** côté client : il conditionne catalogue et tarifs, il relève de PEG.
+
+### Règle générale à retenir
+Avant de révoquer une permission, **vérifier qu'aucun écran client ne s'en sert** : `invoice.create` servait à la validation de devis différé, `customer.update` à la fiche entreprise. Dans les deux cas le correctif est le même — une route dédiée qui déduit la cible du token et filtre les champs, puis la révocation.
+
+---
+
 ## 🐛 Problèmes connus (au 18/04/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification
