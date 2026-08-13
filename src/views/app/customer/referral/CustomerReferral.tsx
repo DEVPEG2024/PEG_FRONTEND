@@ -36,6 +36,7 @@ import {
     formatEuros,
     panelStyle,
 } from '@/views/app/generator/components/GeneratorUI';
+import WalletWithdrawal from '@/views/app/generator/components/WalletWithdrawal';
 
 const pageStyle: React.CSSProperties = {
     padding: '24px',
@@ -535,7 +536,7 @@ const CustomerReferral = () => {
                             // convertir ses gains en avoir plutôt qu'en virement.
                             allowStoreCredit
                             minPayoutAmount={space.minPayoutAmount}
-                            onChanged={reload}
+                            onChanged={load}
                         />
                     )}
 

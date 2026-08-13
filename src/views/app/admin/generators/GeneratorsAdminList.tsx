@@ -29,6 +29,7 @@ import {
 import type {
     GeneratorAdminDetail,
     GeneratorAdminRow,
+    PayoutRequestAdminRow,
     ReferralCustomer,
     ReferralSettings,
 } from '@/@types/generator';
@@ -37,6 +38,8 @@ import {
     apiCreateGeneratorPayout,
     apiGetGeneratorDetail,
     apiGetGenerators,
+    apiGetPayoutRequests,
+    apiProcessPayoutRequest,
     apiSearchReferralCustomers,
     apiSetCommissionStatus,
     apiSetCustomerGenerator,
@@ -247,7 +250,19 @@ const GeneratorsAdminList = () => {
     const [customerResults, setCustomerResults] = useState<ReferralCustomer[]>([]);
     const [searching, setSearching] = useState(false);
 
+    const [pendingRequests, setPendingRequests] = useState<PayoutRequestAdminRow[]>([]);
+
     // ── Chargement ──
+    const loadRequests = useCallback(async () => {
+        try {
+            setPendingRequests(await apiGetPayoutRequests('pending'));
+        } catch (err) {
+            // Le backend peut ne pas encore exposer la route : l'écran doit
+            // rester utilisable pour tout le reste.
+            console.error('[Generators] Échec chargement des demandes de retrait:', err);
+        }
+    }, []);
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -256,13 +271,48 @@ const GeneratorsAdminList = () => {
             setSettings(data.settings);
             setGlobalRateDraft(String(data.settings.defaultCommissionRate));
             setCustomerRateDraft(String(data.settings.customerCommissionRate));
+            await loadRequests();
         } catch (err) {
             console.error('[Generators] Échec chargement:', err);
             toast.error('Erreur lors du chargement des générateurs');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loadRequests]);
+
+    /** Verse ou refuse une demande de retrait */
+    const processRequest = async (row: PayoutRequestAdminRow, action: 'approve' | 'reject') => {
+        if (action === 'reject') {
+            const reason = window.prompt('Motif du refus (communiqué au parrain, facultatif) :') ?? '';
+            setBusy(true);
+            try {
+                await apiProcessPayoutRequest(row.documentId, { action, rejectReason: reason });
+                toast.success('Demande refusée — les commissions sont de nouveau disponibles.');
+                await load();
+            } catch (err: any) {
+                toast.error(err?.response?.data?.error?.message || 'Traitement impossible');
+            } finally {
+                setBusy(false);
+            }
+            return;
+        }
+
+        const reference = window.prompt('Référence du virement (facultatif) :') ?? '';
+        setBusy(true);
+        try {
+            const res = await apiProcessPayoutRequest(row.documentId, {
+                action,
+                method: 'transfer',
+                reference,
+            });
+            toast.success(`Versement de ${formatEuros(res.amount)} enregistré.`);
+            await load();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.error?.message || 'Traitement impossible');
+        } finally {
+            setBusy(false);
+        }
+    };
 
     useEffect(() => {
         load();
@@ -735,6 +785,79 @@ const GeneratorsAdminList = () => {
                     accent="#94a3b8"
                 />
             </div>
+
+            {/* Demandes de retrait en attente */}
+            {pendingRequests.length > 0 && (
+                <div style={{ ...panelStyle, borderColor: 'rgba(251,146,60,0.28)' }}>
+                    <SectionTitle
+                        title={`Demandes de retrait (${pendingRequests.length})`}
+                        subtitle="Approuver crée le versement et solde les commissions engagées. Refuser les remet à disposition du parrain."
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {pendingRequests.map((r) => (
+                            <div
+                                key={r.documentId}
+                                style={{
+                                    background: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: '12px',
+                                    padding: '14px 16px',
+                                    display: 'flex',
+                                    gap: '14px',
+                                    flexWrap: 'wrap',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <div style={{ flex: 1, minWidth: '240px' }}>
+                                    <p style={{ color: '#fff', fontSize: '14px', fontWeight: 700, margin: 0 }}>
+                                        {r.generator?.name || '—'}
+                                        <span style={{ color: '#fb923c', marginLeft: '10px' }}>
+                                            {formatEuros(r.amount)}
+                                        </span>
+                                    </p>
+                                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', margin: '4px 0 0' }}>
+                                        {formatDate(r.requestedAt)} · {r.commissionsCount ?? 0} commission(s)
+                                        {r.generator?.kind === 'customer' ? ' · client parrain' : ''}
+                                    </p>
+                                    {/* Coordonnées à créditer — visibles des seuls admins */}
+                                    <p
+                                        style={{
+                                            color: 'rgba(255,255,255,0.65)',
+                                            fontSize: '12.5px',
+                                            margin: '8px 0 0',
+                                            fontFamily: 'monospace',
+                                            wordBreak: 'break-all',
+                                        }}
+                                    >
+                                        {r.generator?.bankHolder || '—'}
+                                        {r.generator?.bankIban ? ` · ${r.generator.bankIban}` : ''}
+                                        {r.generator?.bankBic ? ` · ${r.generator.bankBic}` : ''}
+                                    </p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {r.generator?.bankIban && (
+                                        <CopyButton value={r.generator.bankIban} label="IBAN" />
+                                    )}
+                                    <button
+                                        onClick={() => processRequest(r, 'approve')}
+                                        style={buttonStyle('success')}
+                                        disabled={busy}
+                                    >
+                                        <TbCheck size={14} /> Verser
+                                    </button>
+                                    <button
+                                        onClick={() => processRequest(r, 'reject')}
+                                        style={buttonStyle('danger')}
+                                        disabled={busy}
+                                    >
+                                        <TbX size={14} /> Refuser
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Filtre par nature de parrain */}
             <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>

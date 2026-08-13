@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { HiShieldCheck, HiTag, HiX, HiCheck } from 'react-icons/hi';
 import { MdLocationOn } from 'react-icons/md';
 import { apiValidatePromoCode } from '@/services/PromoCodeServices';
+import { apiGetReferralCredit } from '@/services/GeneratorServices';
 import { PromoCodeValidation } from '@/@types/promoCode';
 import { toast } from 'react-toastify';
 
@@ -57,7 +58,24 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const discountAmount = (promoValidation?.valid && promoValidation.discountAmount) || 0;
   const discountedSubtotalHT = Math.round((subtotalHT - discountAmount) * 100) / 100;
 
-  const totalPrice: number = Math.round((discountedSubtotalHT + SHIPPING_HT) * 100) / 100;
+  // Avoir de parrainage — AFFICHAGE seulement. Le montant réellement débité est
+  // recalculé par `recalculateFromDB` côté Strapi, qui applique exactement la
+  // même règle : imputation en HT, plafonnée au sous-total marchandise (la
+  // livraison reste toujours due).
+  const [referralCredit, setReferralCredit] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    apiGetReferralCredit().then((balance) => {
+      if (!cancelled) setReferralCredit(balance);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const creditApplied = Math.round(Math.min(referralCredit, discountedSubtotalHT) * 100) / 100;
+
+  const totalPrice: number =
+    Math.round((discountedSubtotalHT - creditApplied + SHIPPING_HT) * 100) / 100;
   const totalPriceWithVAT: number = Math.round(totalPrice * (1 + TVA_RATE) * 100) / 100;
   const tva = Math.round((totalPriceWithVAT - totalPrice) * 100) / 100;
 
@@ -442,6 +460,14 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
             <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 500 }}>Remise ({appliedCode})</span>
             <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '13px' }}>
               -{fmtPrice(discountAmount)}
+            </span>
+          </div>
+        )}
+        {creditApplied > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 500 }}>Avoir parrainage</span>
+            <span style={{ color: '#6b9eff', fontWeight: 600, fontSize: '13px' }}>
+              -{fmtPrice(creditApplied)}
             </span>
           </div>
         )}
