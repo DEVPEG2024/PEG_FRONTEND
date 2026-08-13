@@ -67,6 +67,12 @@ export type GeneratorStats = {
   canceledCommissions: number;
   /** Nombre de filleuls rattachés */
   referralsCount?: number;
+  /** Commandes de filleuls facturées mais PAS encore encaissées */
+  awaitingCount?: number;
+  /** CA HT correspondant, en attente d'encaissement */
+  awaitingBase?: number;
+  /** Commission ESTIMÉE sur ces commandes — conditionnelle, jamais un dû */
+  awaitingCommission?: number;
 };
 
 /** Nature d'un parrain : apporteur d'affaires externe, ou client qui parraine. */

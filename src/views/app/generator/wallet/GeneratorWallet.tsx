@@ -6,7 +6,7 @@
  * des actions strictement réservées à l'administration PEG.
  */
 import { useMemo, useState } from 'react';
-import { TbWallet, TbClock, TbCoins, TbCash, TbRefresh } from 'react-icons/tb';
+import { TbWallet, TbClock, TbCoins, TbCash, TbRefresh, TbHourglassLow } from 'react-icons/tb';
 import useGeneratorSpace from '../useGeneratorSpace';
 import {
     CommissionsTable,
@@ -139,6 +139,13 @@ const GeneratorWallet = () => {
                     hint={`CA généré : ${formatEuros(stats.revenueGenerated)}`}
                     icon={<TbCoins size={19} />}
                     accent="#fbbf24"
+                />
+                <StatCard
+                    label="En attente d'encaissement"
+                    value={formatEuros(stats.awaitingCommission)}
+                    hint={`Estimation sur ${stats.awaitingCount ?? 0} commande(s) non encore payée(s)`}
+                    icon={<TbHourglassLow size={19} />}
+                    accent="#94a3b8"
                 />
             </div>
 

@@ -24,6 +24,7 @@ import {
     TbSearch,
     TbLink,
     TbKey,
+    TbHourglassLow,
 } from 'react-icons/tb';
 import type {
     GeneratorAdminDetail,
@@ -583,8 +584,10 @@ const GeneratorsAdminList = () => {
                     revenue: acc.revenue + r.stats.revenueGenerated,
                     pending: acc.pending + r.stats.pendingCommissions,
                     available: acc.available + r.stats.availableBalance,
+                    awaiting: acc.awaiting + (r.stats.awaitingCommission || 0),
+                    awaitingCount: acc.awaitingCount + (r.stats.awaitingCount || 0),
                 }),
-                { referrals: 0, revenue: 0, pending: 0, available: 0 }
+                { referrals: 0, revenue: 0, pending: 0, available: 0, awaiting: 0, awaitingCount: 0 }
             ),
         [rows]
     );
@@ -723,6 +726,13 @@ const GeneratorsAdminList = () => {
                     hint={`${formatEuros(totals.available)} prêt(s) à être versé(s)`}
                     icon={<TbCheck size={19} />}
                     accent="#4ade80"
+                />
+                <StatCard
+                    label="En attente d'encaissement"
+                    value={formatEuros(totals.awaiting)}
+                    hint={`${totals.awaitingCount} commande(s) facturée(s) non payée(s) — estimation`}
+                    icon={<TbHourglassLow size={19} />}
+                    accent="#94a3b8"
                 />
             </div>
 
@@ -917,6 +927,14 @@ const GeneratorsAdminList = () => {
                                         <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
                                             disponible
                                         </div>
+                                        {(row.stats.awaitingCount || 0) > 0 && (
+                                            <div
+                                                style={{ color: '#94a3b8', fontSize: '11px', marginTop: '3px' }}
+                                                title="Commandes facturées mais pas encore encaissées — estimation, aucune commission n'existe encore"
+                                            >
+                                                + {formatEuros(row.stats.awaitingCommission)} à encaisser
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Actions */}
