@@ -14,6 +14,7 @@ import { useAppSelector } from '@/store';
 import type { NotificationItem } from '@/store/slices/base/notificationSlice';
 import { apiGetQuotes, apiGetCustomerQuotes } from '@/services/QuoteServices';
 import { apiGetPremiumCustomers } from '@/services/PremiumServices';
+import { apiGetPayoutRequests } from '@/services/GeneratorServices';
 import { unwrapData } from '@/utils/serviceHelper';
 
 const STORAGE_KEY = 'peg_nav_order_v2';
@@ -106,6 +107,7 @@ const CustomVerticalMenu = ({
   const customerDocumentId = user?.customer?.documentId;
   const [quoteCount, setQuoteCount] = useState(0);
   const [premiumCount, setPremiumCount] = useState(0);
+  const [payoutRequestCount, setPayoutRequestCount] = useState(0);
   const notifications = useAppSelector(
     (state) => state.base?.notification?.notifications ?? EMPTY_NOTIFICATIONS
   );
@@ -204,6 +206,28 @@ const CustomVerticalMenu = ({
     };
   }, [isAdmin]);
 
+  // Demandes de retrait en attente (admin) → pastille sur l'onglet "Générateurs".
+  // Un parrain qui demande un virement attend une action humaine : sans cette
+  // pastille, sa demande peut dormir jusqu'à ce qu'un admin ouvre l'écran.
+  useEffect(() => {
+    if (!isAdmin) return;
+    let stopped = false;
+    const fetchPayoutRequests = async () => {
+      try {
+        const list = await apiGetPayoutRequests('pending');
+        if (!stopped) setPayoutRequestCount(list.length);
+      } catch {
+        // silencieux (backend pas encore déployé / route absente)
+      }
+    };
+    fetchPayoutRequests();
+    const id = setInterval(fetchPayoutRequests, 60000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [isAdmin]);
+
   // "Mes offres" (offres personnalisées) est réservé aux clients Premium (abonnement).
   // Les clients Standard (inscription autonome) ne le voient pas.
   const isCustomerPremium = !!user?.customer?.premium;
@@ -267,22 +291,35 @@ const CustomVerticalMenu = ({
     const active = isActive(nav.path);
     const isHovered = hoveredKey === nav.key;
     const isPremiumNav = nav.path === '/admin/premium';
+    // Retraits en attente : orange, la même couleur que « en attente » dans les
+    // wallets — un montant à verser, pas une simple nouveauté à consulter.
+    const isGeneratorsNav = nav.path === '/admin/generators';
     const activityCount = getActivityCount(nav.path);
     const isActivityBadge =
-      nav.path !== '/common/quotes' && !isPremiumNav && activityCount > 0;
+      nav.path !== '/common/quotes' && !isPremiumNav && !isGeneratorsNav && activityCount > 0;
     const badgeCount =
       nav.path === '/common/quotes'
         ? quoteCount
         : isPremiumNav
           ? premiumCount
-          : activityCount;
+          : isGeneratorsNav
+            ? payoutRequestCount
+            : activityCount;
     const showBadge = badgeCount > 0;
-    const badgeColor = isPremiumNav ? '#eab308' : isActivityBadge ? '#ef4444' : '#8b5cf6';
+    const badgeColor = isPremiumNav
+      ? '#eab308'
+      : isGeneratorsNav
+        ? '#fb923c'
+        : isActivityBadge
+          ? '#ef4444'
+          : '#8b5cf6';
     const badgeGlow = isPremiumNav
       ? 'rgba(234,179,8,0.6)'
-      : isActivityBadge
-        ? 'rgba(239,68,68,0.6)'
-        : 'rgba(139,92,246,0.6)';
+      : isGeneratorsNav
+        ? 'rgba(251,146,60,0.6)'
+        : isActivityBadge
+          ? 'rgba(239,68,68,0.6)'
+          : 'rgba(139,92,246,0.6)';
 
     return (
       <div
