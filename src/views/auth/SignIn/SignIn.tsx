@@ -3,7 +3,15 @@ import SignInForm from './SignInForm';
 import SignUpModal, { type AccountType } from './SignUpModal';
 import Logo from '@/components/template/Logo';
 import { APP_NAME } from '@/constants/app.constant';
-import { HiLockClosed, HiOutlineShieldCheck, HiOutlineLightningBolt, HiOutlineUsers } from 'react-icons/hi';
+import {
+  HiLockClosed,
+  HiOutlineShieldCheck,
+  HiOutlineLightningBolt,
+  HiOutlineUsers,
+  HiOutlineOfficeBuilding,
+  HiOutlineCash,
+  HiArrowNarrowRight,
+} from 'react-icons/hi';
 
 /* ── Vitrine de l'offre PEG : tuiles produits/services ── */
 const OFFER_TILES: { emoji: string; label: string; sub: string }[] = [
@@ -35,6 +43,38 @@ const OfferShowcase = () => (
     ))}
   </div>
 );
+
+/* ── Cartes d'inscription : les deux natures de compte, mises au même niveau ── */
+const AccountCta = ({
+  variant, icon, title, subtitle, onClick,
+}: {
+  variant: 'client' | 'generator';
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) => {
+  const accent = variant === 'client'
+    ? { tile: '#efedff', icon: '#6d5dfc' }
+    : { tile: '#e6f7ef', icon: '#0d9f6e' };
+
+  return (
+    <button type="button" onClick={onClick} className={`si-acct si-acct--${variant}`}>
+      <span className="si-acct__tile" style={{ background: accent.tile, color: accent.icon }}>
+        {icon}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', color: '#1e1b4b', fontSize: '13.5px', fontWeight: 700 }}>
+          {title}
+        </span>
+        <span style={{ display: 'block', color: '#64748b', fontSize: '11.5px', lineHeight: 1.45, marginTop: '2px' }}>
+          {subtitle}
+        </span>
+      </span>
+      <HiArrowNarrowRight className="si-acct__arrow" size={16} color="#94a3b8" />
+    </button>
+  );
+};
 
 const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', textAlign: 'center', maxWidth: '100px' }}>
@@ -70,6 +110,24 @@ const SignIn = () => {
     }}>
       <style>{`
         @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; } }
+
+        .si-acct{
+          display:flex; align-items:center; gap:13px; width:100%;
+          text-align:left; cursor:pointer; background:#fff;
+          border:1px solid #e8e5f7; border-radius:14px; padding:13px 15px;
+          font-family:Inter, sans-serif;
+          transition:border-color .15s, box-shadow .15s, transform .15s;
+        }
+        .si-acct:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(17,24,39,0.07); }
+        .si-acct:focus-visible{ outline:2px solid #6d5dfc; outline-offset:2px; }
+        .si-acct--client:hover{ border-color:#c7bfff; }
+        .si-acct--generator:hover{ border-color:#9fdcc1; }
+        .si-acct__tile{
+          display:flex; align-items:center; justify-content:center; flex-shrink:0;
+          width:38px; height:38px; border-radius:11px;
+        }
+        .si-acct__arrow{ flex-shrink:0; transition:transform .15s; }
+        .si-acct:hover .si-acct__arrow{ transform:translateX(3px); }
       `}</style>
 
       <div className="si-card" style={{
@@ -133,29 +191,35 @@ const SignIn = () => {
           <div style={{ width: '100%', maxWidth: '400px' }}>
             <SignInForm disableSubmit={false} />
 
-            {/* Liens création de compte — client ou apporteur d'affaires */}
-            <div style={{ textAlign: 'center', marginTop: '22px' }}>
-              <span style={{ color: '#64748b', fontSize: '13.5px' }}>Pas encore de compte ? </span>
-              <button
+            {/* Création de compte — les deux natures, chacune sa carte */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '26px 0 14px' }}>
+              <span style={{ flex: 1, height: '1px', background: '#eef0f5' }} />
+              <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                Pas encore de compte ?
+              </span>
+              <span style={{ flex: 1, height: '1px', background: '#eef0f5' }} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <AccountCta
+                variant="client"
+                icon={<HiOutlineOfficeBuilding size={19} />}
+                title="Créer un compte client"
+                subtitle="Commandez vos produits, suivez vos projets et validez vos BAT"
                 onClick={() => openSignUp('customer')}
-                style={{ background: 'none', border: 'none', color: '#5b4de0', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
-              >
-                Créer un compte client
-              </button>
-              <div style={{ marginTop: '8px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '12.5px' }}>Vous apportez des clients à PEG ? </span>
-                <button
-                  onClick={() => openSignUp('generator')}
-                  style={{ background: 'none', border: 'none', color: '#5b4de0', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
-                >
-                  Devenir Générateur
-                </button>
-              </div>
+              />
+              <AccountCta
+                variant="generator"
+                icon={<HiOutlineCash size={19} />}
+                title="Devenir Générateur"
+                subtitle="Apportez des clients à PEG et percevez une commission sur leurs commandes"
+                onClick={() => openSignUp('generator')}
+              />
             </div>
 
             {/* Carte sécurité SSL */}
             <div style={{
-              marginTop: '28px', background: '#f8f7ff', border: '1px solid #eceaff',
+              marginTop: '22px', background: '#f8f7ff', border: '1px solid #eceaff',
               borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
