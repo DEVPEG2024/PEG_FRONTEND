@@ -153,6 +153,8 @@ export async function apiProcessPayoutRequest(
         reference?: string;
         note?: string;
         rejectReason?: string;
+        /** Id du média téléversé servant de preuve du virement */
+        proofFile?: string | number | null;
     }
 ): Promise<{ request: PayoutRequest; amount?: number }> {
     const res = await ApiService.fetchData<{ request: PayoutRequest; amount?: number }>({

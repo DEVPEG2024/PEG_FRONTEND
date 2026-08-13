@@ -3,6 +3,7 @@
  * et réutilisées par l'écran d'administration des générateurs.
  */
 import { useState } from 'react';
+import { env } from '@/configs/env.config';
 import { TbCopy, TbCheck } from 'react-icons/tb';
 import type { Commission, GeneratorPayout } from '@/@types/generator';
 import {
@@ -11,6 +12,11 @@ import {
     PAYOUT_METHOD_LABELS,
     formatEuros,
 } from '@/services/GeneratorServices';
+
+
+/** Les médias Strapi sont servis en URL relative en local, absolue via S3 */
+const resolveFileUrl = (url: string): string =>
+    url.startsWith('http') ? url : `${env?.API_ENDPOINT_URL ?? ''}${url}`;
 
 export const panelStyle: React.CSSProperties = {
     background: 'linear-gradient(160deg, rgba(22,28,43,0.9), rgba(13,16,24,0.9))',
@@ -350,6 +356,7 @@ export const PayoutsTable = ({
                         <th style={thStyle}>Date</th>
                         <th style={thStyle}>Moyen</th>
                         <th style={thStyle}>Référence</th>
+                        <th style={thStyle}>Justificatif</th>
                         <th style={{ ...thStyle, textAlign: 'right' }}>Commissions</th>
                         <th style={{ ...thStyle, textAlign: 'right' }}>Montant</th>
                     </tr>
@@ -361,6 +368,20 @@ export const PayoutsTable = ({
                             <td style={tdStyle}>{PAYOUT_METHOD_LABELS[p.method] || p.method}</td>
                             <td style={{ ...tdStyle, color: 'rgba(255,255,255,0.55)' }}>
                                 {p.reference || '—'}
+                            </td>
+                            <td style={tdStyle}>
+                                {p.proofUrl ? (
+                                    <a
+                                        href={resolveFileUrl(p.proofUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#6b9eff', fontSize: '12.5px', fontWeight: 600 }}
+                                    >
+                                        {p.proofName || 'Voir'}
+                                    </a>
+                                ) : (
+                                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>
+                                )}
                             </td>
                             <td style={{ ...tdStyle, textAlign: 'right', color: 'rgba(255,255,255,0.55)' }}>
                                 {p.commissionsCount ?? '—'}

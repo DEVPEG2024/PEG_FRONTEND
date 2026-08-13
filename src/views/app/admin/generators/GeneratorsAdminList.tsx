@@ -48,6 +48,7 @@ import {
     apiUpdateReferralSettings,
     formatEuros,
 } from '@/services/GeneratorServices';
+import { apiUploadFile } from '@/services/FileServices';
 import {
     CommissionsTable,
     CopyButton,
@@ -208,6 +209,23 @@ const Modal = ({
 
 // ─────────────────────────────── Écran ───────────────────────────────────────
 
+
+/**
+ * Ouvre un sélecteur de fichier et renvoie le justificatif choisi, ou `null`
+ * si l'admin passe l'étape. Volontairement facultatif : ne jamais empêcher
+ * d'enregistrer un versement réellement effectué.
+ */
+function pickProofFile(): Promise<File | null> {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,application/pdf';
+        input.onchange = () => resolve(input.files?.[0] ?? null);
+        input.oncancel = () => resolve(null);
+        input.click();
+    });
+}
+
 const emptyCreateForm = {
     name: '',
     email: '',
@@ -298,12 +316,25 @@ const GeneratorsAdminList = () => {
         }
 
         const reference = window.prompt('Référence du virement (facultatif) :') ?? '';
+        // Justificatif : sans lui, un versement ne laisse qu'une ligne de texte.
+        // Le parrain le retrouve dans son wallet, et la comptabilité aussi.
+        let proofFile: string | number | null = null;
+        try {
+            const picked = await pickProofFile();
+            if (picked) {
+                const uploaded: any = await apiUploadFile(picked);
+                proofFile = uploaded?.id ?? null;
+            }
+        } catch {
+            toast.error("Le justificatif n'a pas pu être envoyé — le versement est enregistré sans.");
+        }
         setBusy(true);
         try {
             const res = await apiProcessPayoutRequest(row.documentId, {
                 action,
                 method: 'transfer',
                 reference,
+                proofFile,
             });
             toast.success(`Versement de ${formatEuros(res.amount)} enregistré.`);
             await load();

@@ -38,6 +38,9 @@ export type GeneratorPayout = {
   method: 'transfer' | 'cheque' | 'cash' | 'store_credit' | 'other';
   reference: string;
   note: string;
+  /** Justificatif du virement joint par PEG (relevé, capture, PDF) */
+  proofUrl?: string | null;
+  proofName?: string | null;
   commissionsCount?: number;
 };
 
