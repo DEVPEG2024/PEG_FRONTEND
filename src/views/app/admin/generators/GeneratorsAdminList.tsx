@@ -25,6 +25,7 @@ import {
     TbLink,
     TbKey,
     TbHourglassLow,
+    TbDownload,
 } from 'react-icons/tb';
 import type {
     GeneratorAdminDetail,
@@ -49,6 +50,7 @@ import {
     formatEuros,
 } from '@/services/GeneratorServices';
 import { apiUploadFile } from '@/services/FileServices';
+import { exportCommissionsCsv, exportPayoutsCsv } from '@/utils/referralExport';
 import {
     CommissionsTable,
     CopyButton,
@@ -1304,6 +1306,21 @@ const GeneratorsAdminList = () => {
                                                     <SectionTitle
                                                         title="Commissions"
                                                         subtitle="Valider une commission la rend disponible au paiement. L'annulation sert aux remboursements et commandes annulées."
+                                                        right={
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    exportCommissionsCsv(
+                                                                        detail.commissions,
+                                                                        detail.generator.name
+                                                                    )
+                                                                }
+                                                                style={buttonStyle('ghost')}
+                                                                title="Relevé CSV — pour la comptabilité"
+                                                            >
+                                                                <TbDownload size={14} /> Exporter
+                                                            </button>
+                                                        }
                                                     />
                                                     <CommissionsTable
                                                         commissions={detail.commissions}
@@ -1348,6 +1365,21 @@ const GeneratorsAdminList = () => {
                                                     <SectionTitle
                                                         title="Versements"
                                                         subtitle={`Total versé : ${formatEuros(detail.stats.paidCommissions)}`}
+                                                        right={
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    exportPayoutsCsv(
+                                                                        detail.payouts,
+                                                                        detail.generator.name
+                                                                    )
+                                                                }
+                                                                style={buttonStyle('ghost')}
+                                                                title="Relevé CSV des versements"
+                                                            >
+                                                                <TbDownload size={14} /> Exporter
+                                                            </button>
+                                                        }
                                                     />
                                                     <PayoutsTable payouts={detail.payouts} />
                                                 </div>

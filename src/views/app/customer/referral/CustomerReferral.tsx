@@ -22,9 +22,11 @@ import {
     TbRefresh,
     TbHeartHandshake,
     TbHourglassLow,
+    TbDownload,
 } from 'react-icons/tb';
 import { apiGetCustomerReferralSpace, COMMISSION_STATUS_LABELS } from '@/services/GeneratorServices';
 import type { CustomerReferralSpace } from '@/@types/generator';
+import { exportCommissionsCsv, exportPayoutsCsv } from '@/utils/referralExport';
 import {
     CommissionsTable,
     CopyButton,
@@ -484,7 +486,23 @@ const CustomerReferral = () => {
                             title="Mes commissions"
                             subtitle="Calculées uniquement sur les commandes réellement payées par vos filleuls"
                             right={
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <button
+                            type="button"
+                            onClick={() => exportCommissionsCsv(filtered, generator?.name)}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                color: 'rgba(255,255,255,0.75)',
+                                borderRadius: '9px', padding: '6px 12px',
+                                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                fontFamily: 'Inter, sans-serif',
+                            }}
+                            title="Relevé CSV — pour votre comptabilité"
+                        >
+                            <TbDownload size={14} /> Exporter
+                        </button>
                                     {FILTERS.map((f) => (
                                         <button
                                             key={f.value}
@@ -545,6 +563,22 @@ const CustomerReferral = () => {
                         <SectionTitle
                             title="Mes paiements"
                             subtitle={`Total versé : ${formatEuros(stats?.paidCommissions)}`}
+                            right={<button
+                            type="button"
+                            onClick={() => exportPayoutsCsv(payouts, generator?.name)}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                color: 'rgba(255,255,255,0.75)',
+                                borderRadius: '9px', padding: '6px 12px',
+                                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                fontFamily: 'Inter, sans-serif',
+                            }}
+                            title="Relevé CSV — pour votre comptabilité"
+                        >
+                            <TbDownload size={14} /> Exporter
+                        </button>}
                         />
                         <PayoutsTable payouts={payouts} />
                     </div>
