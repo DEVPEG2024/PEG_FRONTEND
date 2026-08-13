@@ -9,7 +9,7 @@
  *  - valider les commissions et enregistrer les versements ;
  *  - annuler une commission (remboursement ou annulation de commande).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import {
     TbShare3,
@@ -222,6 +222,8 @@ const GeneratorsAdminList = () => {
     const [busy, setBusy] = useState(false);
 
     const [globalRateDraft, setGlobalRateDraft] = useState('');
+    const [customerRateDraft, setCustomerRateDraft] = useState('');
+    const [kindFilter, setKindFilter] = useState<'all' | 'partner' | 'customer'>('all');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [detail, setDetail] = useState<GeneratorAdminDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -247,6 +249,7 @@ const GeneratorsAdminList = () => {
             setRows(data.generators);
             setSettings(data.settings);
             setGlobalRateDraft(String(data.settings.defaultCommissionRate));
+            setCustomerRateDraft(String(data.settings.customerCommissionRate));
         } catch (err) {
             console.error('[Generators] Échec chargement:', err);
             toast.error('Erreur lors du chargement des générateurs');
@@ -259,15 +262,25 @@ const GeneratorsAdminList = () => {
         load();
     }, [load]);
 
+    // Dernier détail demandé : en dépliant deux parrains coup sur coup, la
+    // réponse la plus lente pouvait écraser la plus récente — on affichait alors
+    // (et on modifiait) le détail d'un AUTRE parrain sous la ligne dépliée.
+    const lastDetailRequest = useRef<string | null>(null);
+
     const loadDetail = useCallback(async (documentId: string) => {
+        lastDetailRequest.current = documentId;
         setDetailLoading(true);
         try {
-            setDetail(await apiGetGeneratorDetail(documentId));
+            const data = await apiGetGeneratorDetail(documentId);
+            if (lastDetailRequest.current !== documentId) return; // réponse périmée
+            setDetail(data);
         } catch (err) {
             console.error('[Generators] Échec chargement du détail:', err);
-            toast.error('Erreur lors du chargement du détail');
+            if (lastDetailRequest.current === documentId) {
+                toast.error('Erreur lors du chargement du détail');
+            }
         } finally {
-            setDetailLoading(false);
+            if (lastDetailRequest.current === documentId) setDetailLoading(false);
         }
     }, []);
 
@@ -275,6 +288,7 @@ const GeneratorsAdminList = () => {
         if (expandedId === documentId) {
             setExpandedId(null);
             setDetail(null);
+            lastDetailRequest.current = null;
             return;
         }
         setExpandedId(documentId);
@@ -304,6 +318,45 @@ const GeneratorsAdminList = () => {
             await load();
         } catch {
             toast.error('Erreur lors de la mise à jour du taux');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const saveCustomerRate = async () => {
+        const rate = Number(customerRateDraft.replace(',', '.'));
+        if (isNaN(rate) || rate < 0 || rate > 100) {
+            toast.error('Taux invalide (0 à 100)');
+            return;
+        }
+        setBusy(true);
+        try {
+            const updated = await apiUpdateReferralSettings({ customerCommissionRate: rate });
+            setSettings(updated);
+            toast.success(`Taux des clients parrains : ${rate}%`);
+            await load();
+        } catch {
+            toast.error('Erreur lors de la mise à jour du taux client');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const toggleCustomerReferral = async () => {
+        if (!settings) return;
+        setBusy(true);
+        try {
+            const updated = await apiUpdateReferralSettings({
+                customerReferralEnabled: !settings.customerReferralEnabled,
+            });
+            setSettings(updated);
+            toast.success(
+                updated.customerReferralEnabled
+                    ? 'Le parrainage entre clients est ouvert'
+                    : 'Le parrainage entre clients est fermé'
+            );
+        } catch {
+            toast.error('Erreur lors de la mise à jour');
         } finally {
             setBusy(false);
         }
@@ -485,6 +538,17 @@ const GeneratorsAdminList = () => {
         }
     };
 
+    // ── Dérivés : répartition par nature et lignes visibles ──
+    const partnerCount = useMemo(() => rows.filter((r) => r.kind !== 'customer').length, [rows]);
+    const customerCount = useMemo(() => rows.filter((r) => r.kind === 'customer').length, [rows]);
+    const visibleRows = useMemo(
+        () =>
+            kindFilter === 'all'
+                ? rows
+                : rows.filter((r) => (kindFilter === 'customer' ? r.kind === 'customer' : r.kind !== 'customer')),
+        [rows, kindFilter]
+    );
+
     // ── Totaux d'en-tête ──
     const totals = useMemo(
         () =>
@@ -573,9 +637,30 @@ const GeneratorsAdminList = () => {
                         </div>
                     </div>
 
+                    <div style={{ maxWidth: '190px' }}>
+                        <label style={labelStyle}>Taux des clients parrains (%)</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={customerRateDraft}
+                                onChange={(e) => setCustomerRateDraft(e.target.value)}
+                                style={inputStyle}
+                            />
+                            <button onClick={saveCustomerRate} style={buttonStyle('primary')} disabled={busy}>
+                                <TbCheck size={14} />
+                            </button>
+                        </div>
+                    </div>
+
                     <button onClick={toggleAutoValidate} style={buttonStyle('ghost')} disabled={busy}>
                         {settings?.autoValidate ? '✅' : '⏸'} Validation automatique{' '}
                         {settings?.autoValidate ? 'activée' : 'désactivée'}
+                    </button>
+
+                    <button onClick={toggleCustomerReferral} style={buttonStyle('ghost')} disabled={busy}>
+                        {settings?.customerReferralEnabled ? '✅' : '⏸'} Parrainage entre clients{' '}
+                        {settings?.customerReferralEnabled ? 'ouvert' : 'fermé'}
                     </button>
                 </div>
             </div>
@@ -589,9 +674,9 @@ const GeneratorsAdminList = () => {
                 }}
             >
                 <StatCard
-                    label="Générateurs"
+                    label="Parrains"
                     value={String(rows.length)}
-                    hint={`${rows.filter((r) => r.active).length} actif(s)`}
+                    hint={`${partnerCount} apporteur(s), ${customerCount} client(s)`}
                     icon={<TbShare3 size={19} />}
                     accent="#6b9eff"
                 />
@@ -616,14 +701,50 @@ const GeneratorsAdminList = () => {
                 />
             </div>
 
+            {/* Filtre par nature de parrain */}
+            <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                {([
+                    { value: 'all', label: `Tous (${rows.length})` },
+                    { value: 'partner', label: `Apporteurs d'affaires (${partnerCount})` },
+                    { value: 'customer', label: `Clients parrains (${customerCount})` },
+                ] as const).map((f) => (
+                    <button
+                        key={f.value}
+                        onClick={() => setKindFilter(f.value)}
+                        style={{
+                            background:
+                                kindFilter === f.value ? 'rgba(47,111,237,0.18)' : 'rgba(255,255,255,0.04)',
+                            border: `1px solid ${
+                                kindFilter === f.value ? 'rgba(47,111,237,0.4)' : 'rgba(255,255,255,0.09)'
+                            }`,
+                            color: kindFilter === f.value ? '#6b9eff' : 'rgba(255,255,255,0.55)',
+                            borderRadius: '100px',
+                            padding: '6px 14px',
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: 'Inter, sans-serif',
+                        }}
+                    >
+                        {f.label}
+                    </button>
+                ))}
+            </div>
+
             {/* Liste */}
-            {rows.length === 0 ? (
+            {visibleRows.length === 0 ? (
                 <div style={panelStyle}>
-                    <EmptyState message="Aucun générateur pour le moment — créez le premier apporteur d'affaires." />
+                    <EmptyState
+                        message={
+                            rows.length === 0
+                                ? "Aucun parrain pour le moment — créez le premier apporteur d'affaires."
+                                : 'Aucun parrain dans cette catégorie.'
+                        }
+                    />
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {rows.map((row) => {
+                    {visibleRows.map((row) => {
                         const expanded = expandedId === row.documentId;
                         return (
                             <div
@@ -680,6 +801,29 @@ const GeneratorsAdminList = () => {
                                             >
                                                 {row.referralCode}
                                             </span>
+                                            <span
+                                                style={{
+                                                    background:
+                                                        row.kind === 'customer'
+                                                            ? 'rgba(167,139,250,0.12)'
+                                                            : 'rgba(255,255,255,0.05)',
+                                                    border: `1px solid ${
+                                                        row.kind === 'customer'
+                                                            ? 'rgba(167,139,250,0.32)'
+                                                            : 'rgba(255,255,255,0.12)'
+                                                    }`,
+                                                    color:
+                                                        row.kind === 'customer'
+                                                            ? '#a78bfa'
+                                                            : 'rgba(255,255,255,0.55)',
+                                                    borderRadius: '100px',
+                                                    padding: '2px 9px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                {row.kind === 'customer' ? 'Client parrain' : "Apporteur d'affaires"}
+                                            </span>
                                             {!row.active && (
                                                 <span
                                                     style={{
@@ -720,7 +864,9 @@ const GeneratorsAdminList = () => {
                                             type="text"
                                             inputMode="decimal"
                                             defaultValue={row.commissionRate ?? ''}
-                                            placeholder={`${row.effectiveRate} (global)`}
+                                            placeholder={`${row.effectiveRate} (${
+                                                row.kind === 'customer' ? 'taux client' : 'taux global'
+                                            })`}
                                             onBlur={(e) => {
                                                 const raw = e.target.value;
                                                 const current = row.commissionRate === null ? '' : String(row.commissionRate);
@@ -779,7 +925,7 @@ const GeneratorsAdminList = () => {
                                             gap: '18px',
                                         }}
                                     >
-                                        {detailLoading || !detail ? (
+                                        {detailLoading || !detail || detail.generator.documentId !== row.documentId ? (
                                             <EmptyState message="Chargement du détail…" />
                                         ) : (
                                             <>

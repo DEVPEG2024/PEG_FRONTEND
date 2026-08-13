@@ -28,7 +28,8 @@
     "markets": "Markets",
     "planning": "Planning",
     "generators": "Generators",
-    "wallet": "My wallet"
+    "wallet": "My wallet",
+    "referral": "Referral"
   },
   "cat": {
     "categories": "Categories",

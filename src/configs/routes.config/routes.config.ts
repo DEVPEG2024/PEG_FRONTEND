@@ -336,6 +336,12 @@ const protectedCustomersRoutes = [
     component: lazy(() => import("@/views/app/customer/files/MyFiles")),
     authority: [CUSTOMER],
   },
+  {
+    key: "customer.referral",
+    path: "/customer/referral",
+    component: lazy(() => import("@/views/app/customer/referral/CustomerReferral")),
+    authority: [CUSTOMER],
+  },
 ];
 const protectedGeneratorRoutes = [
   {

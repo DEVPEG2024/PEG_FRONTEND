@@ -8,6 +8,7 @@ import ApiService from './ApiService';
 import { API_BASE_URL } from '@/configs/api.config';
 import type {
     Commission,
+    CustomerReferralSpace,
     GeneratorAdminDetail,
     GeneratorAdminRow,
     GeneratorPayout,
@@ -42,6 +43,21 @@ export async function apiCheckReferralCode(code: string): Promise<ReferralCodeCh
 export async function apiGetGeneratorSpace(): Promise<GeneratorSpace> {
     const res = await ApiService.fetchData<GeneratorSpace>({
         url: `${REFERRAL_URL}/me`,
+        method: 'get',
+    });
+    return res.data;
+}
+
+// ───────────────────────────── Client parrain ────────────────────────────────
+
+/**
+ * Espace parrainage du client connecté : son parrain (lecture seule) et sa
+ * propre fiche de parrainage (code, lien, filleuls, commissions, solde).
+ * Le périmètre est déduit du JWT côté serveur — aucun identifiant n'est envoyé.
+ */
+export async function apiGetCustomerReferralSpace(): Promise<CustomerReferralSpace> {
+    const res = await ApiService.fetchData<CustomerReferralSpace>({
+        url: `${REFERRAL_URL}/customer/me`,
         method: 'get',
     });
     return res.data;

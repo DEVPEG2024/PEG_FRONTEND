@@ -78,6 +78,16 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "customer.referral",
+    path: "/customer/referral",
+    title: "Parrainage",
+    translateKey: "nav.referral",
+    icon: "generators",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [CUSTOMER],
+    subMenu: [],
+  },
+  {
     key: "customer.support",
     path: "/support",
     title: "Tickets",

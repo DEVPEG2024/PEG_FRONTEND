@@ -458,6 +458,38 @@ Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permi
 
 ---
 
+## 🤝 Parrainage CLIENT (extension du programme Générateur, ajout 13/08/2026)
+
+### Concept
+- Un **client** peut lui aussi parrainer et toucher une commission, via une entrée de menu **« Parrainage »** (`/customer/referral`).
+- Il y voit **son parrain** (qui l'a parrainé — jusque-là invisible côté client) **et** sa propre fiche : code, lien, filleuls, commissions, solde, versements.
+
+### Choix d'architecture — une seule mécanique, deux natures
+- Un client parrain reçoit une **fiche `generator` marquée `kind: 'customer'`** reliée à son compte (`generator.customer` ↔ `customer.referralProfile`). Les apporteurs d'affaires gardent `kind: 'partner'`.
+- ⚠️ **Tout est mutualisé** : commissions, validation, annulation, versements, écran admin. **NE PAS créer un second circuit de commission pour les clients** — c'est précisément ce que cette conception évite.
+- La fiche client est créée **à la demande** (`generatorService.ensureCustomerReferralProfile`) à la première ouverture de la page — pas de fiche vide pour les clients qui n'y vont jamais.
+- ⚠️ Les fiches créées **avant** cette évolution ont `kind` à NULL : tout le code doit traiter « NULL ou `partner` » comme apporteur d'affaires (comparer avec `=== 'customer'`, jamais `!== 'partner'`).
+
+### Deux taux distincts (`referral-setting`)
+| Réglage | Applique à |
+|---|---|
+| `defaultCommissionRate` | apporteurs d'affaires (`kind: partner`) |
+| `customerCommissionRate` | clients parrains (`kind: customer`) |
+| `customerReferralEnabled` | ferme le parrainage entre clients (les clients ne voient plus que leur parrain, aucune commission client créée) |
+- `resolveRate()` : taux personnalisé de la fiche → sinon le taux global **de sa nature**.
+
+### Garde-fous
+- **Auto-parrainage impossible** : `createForInvoice` ignore le cas `generator.customer === invoice.customer`, et le rattachement admin le refuse explicitement.
+- **Parrainage à un seul niveau** : A→B→C, une commande de C rémunère B, jamais A. Pas de cumul multi-niveaux.
+- **Périmètre déduit du JWT** : `GET /referral/customer/me` ne prend **aucun identifiant** en entrée.
+- Le filleul ne voit de son parrain que **nom, code et date** — rien d'autre.
+
+### Fichiers clés
+- Back : `commission/services/commission.ts` (`resolveRate`, `referralRecipients`, garde auto-parrainage), `generator/services/generator.ts` (`ensureCustomerReferralProfile`), `referral/controllers/referral.ts` (`customerSpace`, `buildReferralSpace`)
+- Front : `src/views/app/customer/referral/CustomerReferral.tsx`, `src/configs/navigation.config/customer.ts`
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données
@@ -537,6 +569,25 @@ Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permi
 - `src/views/app/admin/home/DashboardAdmin.tsx` — composant principal (PROTÉGÉ)
 - `src/services/DashboardSuperAdminService.ts` — requête GraphQL principale + requête additionalSales séparée
 - `src/services/AdminPreferenceService.ts` — prefs admin (PROTÉGÉ)
+
+---
+
+## 🔐 Écriture des factures — réservée à l'admin (correctif faille, 13/08/2026)
+
+### Ce qui était ouvert
+Le bootstrap accordait `api::invoice.invoice.create` **et** `.update` à tous les rôles de `ROLES_TO_GRANT`, dont `customer` ; seul `.delete` était révoqué. Aucune policy de propriété ne couvrait l'écriture (le middleware d'isolation ne filtre que `findMany`).
+Un client pouvait donc appeler `POST /api/invoices` (ou la mutation GraphQL `createInvoice`) avec `paymentState: 'fulfilled'` :
+- **facture « encaissée » sans le moindre paiement** → comptabilité et CA du dashboard faussés (le dashboard somme `project.price` / `paidPrice`, mais les factures alimentent le reste) ;
+- **commission de parrainage indue** générée automatiquement par le middleware facture, au profit du parrain ;
+- possibilité de passer sa **propre** facture impayée en `fulfilled` via `PUT /api/invoices/:id`.
+
+### Correctif
+- `api::invoice.invoice.create` et `.update` ajoutés à **`REVOKE_FROM_NON_ADMIN`** (`peg_strapi/src/index.ts`). ⚠️ `grantAuthenticatedPermissions()` s'exécute à chaque boot : **ne jamais les remettre dans `AUTHENTICATED_ACTIONS`**, sinon la faille se réouvre au prochain redémarrage.
+- Le seul flux client légitime, « je déclare mon virement », passe par l'action distincte **`updatePaymentStatus`**, qui reste accordée et vérifie propriété + rôle dans son contrôleur.
+- ⚠️ **Un seul flux client écrivait une facture** : la validation d'un devis en **paiement différé** (`QuotesList.finalizeDeferred`) créait projet + facture en GraphQL depuis le navigateur. Il passe désormais par **`POST /api/checkout/quote-deferred`** (déjà existant, création serveur). **Ne pas revenir à une création de facture côté front.**
+
+### Ordre de déploiement de ce correctif
+Backend et frontend sont couplés : entre les deux déploiements, un client en paiement différé qui valide un devis obtiendrait un projet **sans facture** (l'échec est silencieux, `catch` non bloquant). Enchaîner les deux rapidement, et vérifier après coup qu'aucun devis différé n'a été validé dans l'intervalle.
 
 ---
 

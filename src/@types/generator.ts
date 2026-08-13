@@ -69,14 +69,25 @@ export type GeneratorStats = {
   referralsCount?: number;
 };
 
+/** Nature d'un parrain : apporteur d'affaires externe, ou client qui parraine. */
+export type ReferrerKind = 'partner' | 'customer';
+
 export type GeneratorProfile = {
   documentId: string;
   name: string;
+  kind?: ReferrerKind;
   referralCode: string;
   referralLink: string;
-  /** Taux effectivement appliqué (taux propre, sinon taux global) */
+  /** Taux effectivement appliqué (taux propre, sinon taux global de sa nature) */
   commissionRate: number;
   active: boolean;
+};
+
+/** Parrain d'un client, tel qu'affiché au filleul (aucune donnée sensible) */
+export type Sponsor = {
+  name: string;
+  referralCode: string;
+  since?: string | null;
 };
 
 /** Payload de l'espace Générateur (`GET /referral/me`) */
@@ -88,9 +99,29 @@ export type GeneratorSpace = {
   referrals: Referral[];
 };
 
+/**
+ * Espace parrainage d'un CLIENT (`GET /referral/customer/me`).
+ * `enabled: false` = parrainage entre clients fermé côté PEG : seul le parrain
+ * du client est renvoyé, il n'a pas de code à lui.
+ */
+export type CustomerReferralSpace = {
+  enabled: boolean;
+  sponsor: Sponsor | null;
+  generator?: GeneratorProfile;
+  stats?: GeneratorStats;
+  commissions?: Commission[];
+  payouts?: GeneratorPayout[];
+  referrals?: Referral[];
+};
+
 /** Réglages globaux du programme */
 export type ReferralSettings = {
+  /** Taux des apporteurs d'affaires (Générateurs) */
   defaultCommissionRate: number;
+  /** Taux des clients qui parrainent */
+  customerCommissionRate: number;
+  /** Parrainage entre clients ouvert ou non */
+  customerReferralEnabled: boolean;
   autoValidate: boolean;
   minPayoutAmount: number;
 };
@@ -99,6 +130,9 @@ export type ReferralSettings = {
 export type GeneratorAdminRow = {
   documentId: string;
   name: string;
+  kind: ReferrerKind;
+  /** Renseigné pour un client parrain : le compte client bénéficiaire */
+  customerDocumentId: string | null;
   referralCode: string;
   referralLink: string;
   /** Taux personnalisé (null = taux global) */
