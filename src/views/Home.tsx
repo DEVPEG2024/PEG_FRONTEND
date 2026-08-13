@@ -1,10 +1,11 @@
 import { User } from '@/@types/user'
 import { useAppSelector } from '@/store'
 import { hasRole } from '@/utils/permissions'
-import { SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant'
+import { SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER, GENERATOR } from '@/constants/roles.constant'
 import DashboardAdmin from '@/views/app/admin/home/DashboardAdmin'
 import DashboardCustomer from '@/views/app/customer/home/DashboardCustomer'
 import DashboardProducer from '@/views/app/producer/home/DashboardProducer'
+import DashboardGenerator from '@/views/app/generator/home/DashboardGenerator'
 import { Suspense } from 'react'
 
 /**
@@ -20,13 +21,15 @@ const Home = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN])
   const isCustomer = hasRole(user, [CUSTOMER])
   const isProducer = hasRole(user, [PRODUCER])
-  const isKnownRole = isAdmin || isCustomer || isProducer
+  const isGenerator = hasRole(user, [GENERATOR])
+  const isKnownRole = isAdmin || isCustomer || isProducer || isGenerator
 
   return (
     <Suspense fallback={null}>
       {isAdmin && <DashboardAdmin />}
       {isCustomer && <DashboardCustomer />}
       {isProducer && <DashboardProducer />}
+      {isGenerator && <DashboardGenerator />}
       {/* Repli : rôle inconnu/non configuré → message plutôt qu'une page blanche */}
       {!isKnownRole && (
         <div style={{

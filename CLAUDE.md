@@ -402,6 +402,62 @@ Le bucket d'images autorise ces origines :
 
 ---
 
+## 🤝 Générateur — Apporteur d'affaires & commissions (ajout 13/08/2026)
+
+### Concept
+- Nouveau profil utilisateur **« Générateur »** (rôle users-permissions `generator`, **nom du rôle = `generator`** car le front calcule l'autorité depuis `role.name`).
+- Il n'a accès qu'à **un tableau de bord** (`/home`) et **un wallet** (`/generator/wallet`) — ni catalogue, ni projets, ni données d'autres profils.
+- Il dispose d'un **code de parrainage unique** (ex. `DUPONT-A7K2`) et d'un **lien** `FRONTEND_URL/sign-in?ref=CODE`.
+- Un client inscrit avec ce code est **rattaché définitivement** (pas de durée limite, nombre de filleuls illimité). Chaque commande **réellement payée** d'un filleul génère une commission.
+
+### Modèle de données (Strapi)
+| Content-type | Rôle |
+|---|---|
+| `generator` | fiche du Générateur : `referralCode` (unique), `commissionRate` (null = taux global), `active`, `users`, `referredCustomers`, `commissions`, `payouts`, `payoutDetails`, `notes` |
+| `commission` | une par facture payée : `baseAmount`, `rate` (**figé à la création**), `amount`, `status`, `generator`, `customer`, `invoice`, `payout` |
+| `generator-payout` | versement effectué au Générateur (lot de commissions) |
+| `referral-setting` (singleType) | `defaultCommissionRate` (5 % par défaut), `autoValidate`, `minPayoutAmount` |
+- `customer` gagne `generator` + `referredAt` ; `user` gagne `generator`.
+
+### Cycle de vie d'une commission
+`pending` (créée) → `validated` (approuvée par l'admin, entre dans le **solde disponible**) → `paid` (versée, rattachée à un payout). `canceled` = remboursement / commande annulée.
+- **Solde disponible** = somme des `validated`. **En attente** = somme des `pending`. **Cumulées** = tout sauf `canceled`.
+
+### Point d'accroche UNIQUE : facture payée
+- Middleware document service sur `api::invoice.invoice` dans `peg_strapi/src/index.ts` (`register()`) : à la **création** ou dès que `paymentState`/`state` change → si `paymentState ∈ {fulfilled, transfer_received}` → `commission.createForInvoice()` ; si `state === 'canceled'` → `cancelForInvoice()`.
+- Couvre **tous** les canaux : CB Stripe, devis payé, virement confirmé, saisie admin (REST **et** GraphQL).
+- **Base de calcul = `invoice.amount` (HT réellement facturé**, après remise promo, livraison incluse).
+- **Idempotent** : une seule commission par facture. **Jamais bloquant** : toute erreur est journalisée, le flux de paiement n'échoue jamais.
+- ⚠️ **NE PAS** dupliquer l'appel dans `checkout.ts` / `invoice.ts` — le middleware suffit et l'idempotence repose dessus.
+- Un générateur **désactivé** (`active = false`) ne génère plus de nouvelle commission.
+
+### API `/api/referral/*` — routes CUSTOM `auth: false` + JWT vérifié dans le contrôleur
+Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permissions** sur les content-types de parrainage, tout passe par le contrôleur qui filtre sur le générateur du porteur du token.
+- Public : `GET /referral/code/:code` (validation à l'inscription)
+- Générateur : `GET /referral/me` (périmètre déduit du JWT — **aucun id envoyé par le client**)
+- Admin : `GET|PUT /referral/admin/settings`, `GET|POST /referral/admin/generators`, `GET|PUT /referral/admin/generators/:documentId`, `GET /referral/admin/commissions`, `PUT /referral/admin/commissions/:documentId/status`, `POST /referral/admin/payouts`, `GET /referral/admin/customers`, `PUT /referral/admin/customers/:documentId/generator`
+
+### Inscription
+- `clientRegister` accepte `referralCode` : code inconnu/inactif → inscription normale **sans** parrain (jamais bloquante). Notifie le générateur + les admins.
+- `SignUpModal` : champ « Code de parrainage » vérifié en direct (nom du parrain affiché) ; `/sign-in?ref=CODE` ouvre la modale pré-remplie.
+
+### Bootstrap (`peg_strapi/src/index.ts`)
+- `ensureGeneratorRole()` crée le rôle `generator` + permissions **minimales** (`user.me`, `changePassword`, upload) — surtout **ne pas** ajouter `generator` à `ROLES_TO_GRANT` (donnerait accès au catalogue, aux clients, aux factures…).
+- `ensureReferralSettings()` initialise le single type (5 %).
+
+### Taux de commission
+- Taux effectif = `generator.commissionRate` sinon `referral-setting.defaultCommissionRate`.
+- Le taux est **copié dans la commission** à sa création → une modification du taux n'est **jamais rétroactive**.
+
+### ⚠️ Ordre de déploiement
+**Backend Strapi d'abord** (int → prod) : le bootstrap crée les tables, le rôle et les réglages. Le frontend déployé avant ferait échouer `/referral/*` et l'onglet « Générateurs ».
+
+### Fichiers clés
+- Back : `peg_strapi/src/api/{generator,commission,generator-payout,referral-setting}/`, `src/api/referral/{controllers,routes}/referral.ts`, `src/api/commission/services/commission.ts`, `src/index.ts` (middleware facture + bootstrap), `src/api/auth/controllers/auth.ts`
+- Front : `src/services/GeneratorServices.ts`, `src/@types/generator.ts`, `src/views/app/generator/` (dashboard, wallet, `components/GeneratorUI.tsx`, `useGeneratorSpace.ts`), `src/views/app/admin/generators/GeneratorsAdminList.tsx`, `src/configs/navigation.config/generator.ts`
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

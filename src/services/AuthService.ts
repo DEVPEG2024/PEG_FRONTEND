@@ -60,6 +60,7 @@ export async function apiSignUp(data: SignUpCredential) {
             address: data.address,
             zipCode: data.zipCode,
             city: data.city,
+            referralCode: data.referralCode,
         },
     })
 }

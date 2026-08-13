@@ -1,6 +1,6 @@
 import authRoute from "./authRoute";
 import type { Routes } from "@/@types/routes";
-import { SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER } from "@/constants/roles.constant";
+import { SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR } from "@/constants/roles.constant";
 import lazy from "@/utils/lazyWithRetry";
 
 export const publicRoutes: Routes = [...authRoute];
@@ -25,6 +25,13 @@ const protectedAdminRoutes = [
     key: "admin.premium",
     path: "/admin/premium",
     component: lazy(() => import("@/views/app/admin/premium/PremiumAdminList")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  // générateurs (apporteurs d'affaires)
+  {
+    key: "admin.generators",
+    path: "/admin/generators",
+    component: lazy(() => import("@/views/app/admin/generators/GeneratorsAdminList")),
     authority: [SUPER_ADMIN, ADMIN],
   },
   // planning (planificateur de charge)
@@ -330,6 +337,15 @@ const protectedCustomersRoutes = [
     authority: [CUSTOMER],
   },
 ];
+const protectedGeneratorRoutes = [
+  {
+    key: "generator.wallet",
+    path: "/generator/wallet",
+    component: lazy(() => import("@/views/app/generator/wallet/GeneratorWallet")),
+    authority: [GENERATOR],
+  },
+];
+
 const protectedProducerRoutes = [
   {
     key: "producer.pool",
@@ -384,7 +400,7 @@ const protectedDefaultRoutes = [
     key: "home",
     path: "/home",
     component: lazy(() => import("@/views/Home")),
-    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR],
     meta: {
       pageContainerType: "gutterless",
     },
@@ -393,31 +409,32 @@ const protectedDefaultRoutes = [
     key: "default.settings",  
     path: "/settings/profile",
     component: lazy(() => import("@/views/app/account/Settings")),
-    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR],
   },
   {
     key: "default.settings.company",
     path: "/settings/company",
     component: lazy(() => import("@/views/app/account/Settings")),
-    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR],
   },
   {
     key: "default.settings.notifications",
     path: "/settings/notifications",
     component: lazy(() => import("@/views/app/account/Settings")),
-    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR],
   },
   {
     key: "default.settings.password",
     path: "/settings/password",
     component: lazy(() => import("@/views/app/account/Settings")),
-    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER],
+    authority: [SUPER_ADMIN, CUSTOMER, PRODUCER, PUBLISHER, ADMIN, USER, GENERATOR],
   },
 ];
 export const protectedRoutes = [
   ...protectedAdminRoutes,
   ...protectedCustomersRoutes,
   ...protectedProducerRoutes,
+  ...protectedGeneratorRoutes,
   ...protectedCommonRoutes,
   ...protectedDefaultRoutes,
 ];

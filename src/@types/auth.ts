@@ -23,6 +23,8 @@ export type SignUpCredential = {
   address?: string;
   zipCode?: string;
   city?: string;
+  /** Code de parrainage d'un Générateur — rattache définitivement le nouveau client. */
+  referralCode?: string;
 };
 
 export type ForgotPassword = {

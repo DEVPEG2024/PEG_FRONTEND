@@ -26,7 +26,9 @@
     "tasks": "Tasks",
     "support": "Support",
     "markets": "Markets",
-    "planning": "Planning"
+    "planning": "Planning",
+    "generators": "Generators",
+    "wallet": "My wallet"
   },
   "cat": {
     "categories": "Categories",

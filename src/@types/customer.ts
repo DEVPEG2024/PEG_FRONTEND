@@ -37,4 +37,8 @@ export type Customer = {
   premiumProcessed?: boolean;
   /** Date de passage en Premium (ISO). */
   premiumSince?: string;
+  /** Générateur (apporteur d'affaires) ayant parrainé ce client — rattachement permanent. */
+  generator?: { documentId: string; name?: string } | null;
+  /** Date de rattachement au générateur (ISO). */
+  referredAt?: string | null;
 };

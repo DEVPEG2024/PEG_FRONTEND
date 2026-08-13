@@ -21,7 +21,7 @@ import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
 import { FaPenNib } from 'react-icons/fa';
 import { BsCalendar3 } from 'react-icons/bs';
-import { TbFileInvoice, TbCrown, TbCalendarStats } from 'react-icons/tb';
+import { TbFileInvoice, TbCrown, TbCalendarStats, TbShare3 } from 'react-icons/tb';
 
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -65,6 +65,7 @@ const navigationIcon: NavigationIcons = {
     expenses: <IoReceiptOutline />,
     premium: <TbCrown />,
     planning: <TbCalendarStats />,
+    generators: <TbShare3 />,
 }
 
 export default navigationIcon

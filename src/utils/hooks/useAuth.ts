@@ -110,6 +110,7 @@ function useAuth() {
                 authority: [],
                 customer: undefined,
                 producer: undefined,
+                generator: undefined,
                 role: { documentId: '', description: 'public', name: 'public', type: 'public' },
             })
         )

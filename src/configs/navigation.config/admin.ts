@@ -124,6 +124,18 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
 
+  // --- Générateurs (apporteurs d'affaires) ---
+  {
+    key: "admin.generators",
+    path: "/admin/generators",
+    title: "Générateurs",
+    translateKey: "nav.generators",
+    icon: "generators",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [],
+  },
+
   // --- Producteurs ---
   {
     key: "admin.producers",

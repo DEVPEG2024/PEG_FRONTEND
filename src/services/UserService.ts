@@ -12,7 +12,7 @@ import { Producer } from '@/@types/producer'
 
 export async function getUser(token: string) : Promise<UserWithId>{
     const {data} : {data: Omit<User, 'authority'>} = await ApiService.fetchData<User>({
-        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer&populate[3]=avatar',
+        url: API_BASE_URL + '/users/me?populate[0]=role&populate[1]=customer&populate[2]=producer&populate[3]=avatar&populate[4]=generator',
         headers: {'Authorization': `Bearer ${token}`}
     })
     // Garde-fou identité : le profil renvoyé DOIT correspondre au token utilisé.

@@ -5,6 +5,8 @@ export const CUSTOMER = 'customer'
 export const PRODUCER = 'producer'
 export const ACCOUNTANT = 'accountant'
 export const PUBLISHER = 'publisher'
+/** Générateur = apporteur d'affaires (parrainage + commissions). */
+export const GENERATOR = 'generator'
 
 
 export const roleToText: Record<string, string> = {
@@ -15,6 +17,7 @@ export const roleToText: Record<string, string> = {
     [PRODUCER]: 'Producteur',
     [ACCOUNTANT]: 'Comptable',
     [PUBLISHER]: 'Éditeur',
+    [GENERATOR]: 'Générateur',
   }
 
   export const ROLES_OPTIONS = [

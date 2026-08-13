@@ -22,6 +22,8 @@ export type User = {
   companyName?: string;
   customer?: Customer;
   producer?: Producer;
+  /** Profil Générateur (apporteur d'affaires) rattaché au compte, le cas échéant. */
+  generator?: { documentId: string; name?: string; referralCode?: string };
   role: Role;
   authority: string[];
   blocked: boolean;

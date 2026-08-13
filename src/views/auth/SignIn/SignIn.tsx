@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import SignInForm from './SignInForm';
 import SignUpModal from './SignUpModal';
 import Logo from '@/components/template/Logo';
@@ -44,7 +44,16 @@ const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) =>
 );
 
 const SignIn = () => {
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+  // Lien de parrainage Générateur : /sign-in?ref=CODE → on ouvre directement
+  // l'inscription avec le code pré-rempli.
+  const referralFromUrl = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('ref') || '';
+    } catch {
+      return '';
+    }
+  }, []);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(!!referralFromUrl);
   const year = new Date().getFullYear();
 
   return (
@@ -164,7 +173,11 @@ const SignIn = () => {
         </div>
       </div>
 
-      <SignUpModal isOpen={isSignUpOpen} onClose={() => setIsSignUpOpen(false)} />
+      <SignUpModal
+        isOpen={isSignUpOpen}
+        onClose={() => setIsSignUpOpen(false)}
+        initialReferralCode={referralFromUrl}
+      />
     </div>
   );
 };

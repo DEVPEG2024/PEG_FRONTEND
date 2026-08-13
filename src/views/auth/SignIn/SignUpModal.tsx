@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
 import { apiSignUp, apiVerifyEmailCode, apiResendEmailCode } from '@/services/AuthService';
+import { apiCheckReferralCode } from '@/services/GeneratorServices';
 import { API_BASE_URL } from '@/configs/api.config';
 
 const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
@@ -11,6 +12,8 @@ const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https:/
 interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
+    /** Code de parrainage issu du lien /sign-in?ref=CODE (pré-rempli et vérifié). */
+    initialReferralCode?: string;
 }
 
 type CustomerCategory = { documentId: string; name: string };
@@ -27,6 +30,7 @@ type SignUpFormSchema = {
     address?: string;
     zipCode?: string;
     city?: string;
+    referralCode?: string;
 };
 
 const validationSchema = Yup.object().shape({
@@ -47,6 +51,7 @@ const validationSchema = Yup.object().shape({
     address: Yup.string(),
     zipCode: Yup.string(),
     city: Yup.string(),
+    referralCode: Yup.string(),
 });
 
 const inputStyle: React.CSSProperties = {
@@ -93,7 +98,7 @@ const sectionTitleStyle: React.CSSProperties = {
     paddingBottom: '8px',
 };
 
-const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
+const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalProps) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -107,6 +112,11 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
     const [verifying, setVerifying] = useState(false);
     const [codeError, setCodeError] = useState('');
     const [resendInfo, setResendInfo] = useState('');
+    // Parrainage : vérification du code auprès du backend (nom du parrain)
+    const [referralStatus, setReferralStatus] = useState<{
+        state: 'idle' | 'checking' | 'valid' | 'invalid';
+        name?: string;
+    }>({ state: 'idle' });
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/auth/customer-categories`)
@@ -125,8 +135,34 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
         defaultValues: {
             firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
             jobTitle: '', companyName: '', customerCategoryId: '', address: '', zipCode: '', city: '',
+            referralCode: initialReferralCode.toUpperCase(),
         },
     });
+
+    const checkReferral = async (raw: string) => {
+        const code = (raw || '').trim().toUpperCase();
+        if (!code) {
+            setReferralStatus({ state: 'idle' });
+            return;
+        }
+        setReferralStatus({ state: 'checking' });
+        const res = await apiCheckReferralCode(code);
+        setReferralStatus(
+            res.valid ? { state: 'valid', name: res.name } : { state: 'invalid' }
+        );
+    };
+
+    // Code arrivé par le lien de parrainage → vérification immédiate à l'ouverture
+    useEffect(() => {
+        if (!isOpen || !initialReferralCode) return;
+        let canceled = false;
+        setReferralStatus({ state: 'checking' });
+        apiCheckReferralCode(initialReferralCode).then((res) => {
+            if (canceled) return;
+            setReferralStatus(res.valid ? { state: 'valid', name: res.name } : { state: 'invalid' });
+        });
+        return () => { canceled = true; };
+    }, [isOpen, initialReferralCode]);
 
     const handleClose = () => {
         reset();
@@ -138,6 +174,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
         setCode('');
         setCodeError('');
         setResendInfo('');
+        setReferralStatus({ state: 'idle' });
         onClose();
     };
 
@@ -155,6 +192,7 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                 address: values.address,
                 zipCode: values.zipCode,
                 city: values.city,
+                referralCode: values.referralCode,
             });
             // Compte créé mais non confirmé : on passe à l'étape de saisie du code
             // envoyé par email. L'email de bienvenue est envoyé après validation.
@@ -479,6 +517,56 @@ const SignUpModal = ({ isOpen, onClose }: SignUpModalProps) => {
                             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
                                 {renderField('zipCode', 'Code postal', '75001', 'text')}
                                 {renderField('city', 'Ville', 'Paris', 'text')}
+                            </div>
+
+                            {/* Section : Parrainage */}
+                            <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Parrainage (facultatif)</p>
+
+                            <div>
+                                <label style={labelStyle}>Code de parrainage</label>
+                                <Controller
+                                    name="referralCode"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <input
+                                            {...field}
+                                            type="text"
+                                            placeholder="Ex : DUPONT-A7K2"
+                                            autoCapitalize="characters"
+                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                            onBlur={(e) => {
+                                                field.onBlur();
+                                                checkReferral(e.target.value);
+                                            }}
+                                            style={{
+                                                ...inputStyle,
+                                                letterSpacing: '0.06em',
+                                                borderColor:
+                                                    referralStatus.state === 'valid'
+                                                        ? 'rgba(34,197,94,0.5)'
+                                                        : referralStatus.state === 'invalid'
+                                                        ? 'rgba(239,68,68,0.5)'
+                                                        : 'rgba(255,255,255,0.1)',
+                                            }}
+                                        />
+                                    )}
+                                />
+                                {referralStatus.state === 'checking' && (
+                                    <p style={{ ...errorStyle, color: 'rgba(255,255,255,0.45)' }}>
+                                        Vérification du code…
+                                    </p>
+                                )}
+                                {referralStatus.state === 'valid' && (
+                                    <p style={{ ...errorStyle, color: '#4ade80' }}>
+                                        Code valide — vous serez parrainé par{' '}
+                                        {referralStatus.name || 'un Générateur PEG'}.
+                                    </p>
+                                )}
+                                {referralStatus.state === 'invalid' && (
+                                    <p style={errorStyle}>
+                                        Code inconnu — vous pouvez continuer sans parrainage.
+                                    </p>
+                                )}
                             </div>
 
                             {/* Submit */}
