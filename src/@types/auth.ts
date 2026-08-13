@@ -42,6 +42,8 @@ export type GeneratorSignUpCredential = {
   address?: string;
   zipCode?: string;
   city?: string;
+  /** Version du contrat d'apport d'affaires acceptée — obligatoire, tracée en base. */
+  contractVersion: string;
 };
 
 export type GeneratorSignUpResponse = {

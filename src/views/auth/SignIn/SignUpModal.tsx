@@ -5,6 +5,12 @@ import * as Yup from 'yup';
 import { HiEye, HiEyeOff, HiX, HiOutlineOfficeBuilding, HiOutlineCash, HiOutlineDuplicate, HiCheck } from 'react-icons/hi';
 import { apiSignUp, apiSignUpGenerator, apiVerifyEmailCode, apiResendEmailCode } from '@/services/AuthService';
 import { apiCheckReferralCode } from '@/services/GeneratorServices';
+import {
+    GENERATOR_CONTRACT_TEXT,
+    GENERATOR_CONTRACT_TITLE,
+    GENERATOR_CONTRACT_VERSION,
+    downloadGeneratorContract,
+} from './generatorContract';
 import { API_BASE_URL } from '@/configs/api.config';
 
 const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
@@ -177,6 +183,9 @@ const SignUpModal = ({
         state: 'idle' | 'checking' | 'valid' | 'invalid';
         name?: string;
     }>({ state: 'idle' });
+    // Contrat d'apport d'affaires : obligatoire pour créer un compte Générateur
+    const [contractAccepted, setContractAccepted] = useState(false);
+    const [contractOpen, setContractOpen] = useState(false);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/auth/customer-categories`)
@@ -279,6 +288,7 @@ const SignUpModal = ({
                     address: values.address,
                     zipCode: values.zipCode,
                     city: values.city,
+                    contractVersion: GENERATOR_CONTRACT_VERSION,
                 });
                 setGrantedReferral({ code: data?.referralCode || '', link: data?.referralLink || '' });
             } else {
@@ -392,6 +402,69 @@ const SignUpModal = ({
     );
 
     if (!isOpen) return null;
+
+    // Lecture du contrat par-dessus le formulaire : la saisie reste intacte
+    // derrière, et la case ne peut être cochée qu'en connaissance de cause.
+    if (contractOpen) {
+        return (
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 1100,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+            }}>
+                <div
+                    onClick={() => setContractOpen(false)}
+                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(4px)' }}
+                />
+                <div style={{
+                    position: 'relative', width: '100%', maxWidth: '760px', maxHeight: '88vh',
+                    background: 'linear-gradient(145deg, #0f1623, #111827)',
+                    border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px',
+                    padding: '26px', display: 'flex', flexDirection: 'column',
+                    boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: 'Inter, sans-serif',
+                }}>
+                    <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 4px' }}>
+                        {GENERATOR_CONTRACT_TITLE}
+                    </h2>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 16px' }}>
+                        Version {GENERATOR_CONTRACT_VERSION}
+                    </p>
+                    <pre style={{
+                        flex: 1, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        color: 'rgba(255,255,255,0.68)', fontSize: '12.5px', lineHeight: 1.65,
+                        fontFamily: 'Inter, sans-serif', margin: 0,
+                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                        borderRadius: '10px', padding: '16px',
+                    }}>
+                        {GENERATOR_CONTRACT_TEXT}
+                    </pre>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                        <button
+                            type="button"
+                            onClick={downloadGeneratorContract}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+                                color: 'rgba(255,255,255,0.75)', borderRadius: '9px', padding: '9px 15px',
+                                fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                            }}
+                        >
+                            Télécharger
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setContractAccepted(true); setContractOpen(false); }}
+                            style={{
+                                background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none',
+                                color: '#fff', borderRadius: '9px', padding: '9px 17px',
+                                fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                            }}
+                        >
+                            J'accepte
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{
@@ -767,8 +840,58 @@ const SignUpModal = ({
                               </>
                             )}
 
+                            {/* Contrat d'apport d'affaires — obligatoire pour un Générateur */}
+                            {isGenerator && (
+                                <div style={{
+                                    background: 'rgba(47,111,237,0.06)',
+                                    border: '1px solid rgba(47,111,237,0.22)',
+                                    borderRadius: '10px', padding: '13px 15px',
+                                }}>
+                                    <label style={{
+                                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                                        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={contractAccepted}
+                                            onChange={(e) => setContractAccepted(e.target.checked)}
+                                            style={{ marginTop: '2px', width: '15px', height: '15px', cursor: 'pointer', flexShrink: 0 }}
+                                        />
+                                        <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: '12.5px', lineHeight: 1.55 }}>
+                                            J'ai lu et j'accepte le{' '}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); setContractOpen(true); }}
+                                                style={{
+                                                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                                                    color: '#6b9eff', fontWeight: 700, textDecoration: 'underline',
+                                                    fontSize: '12.5px', fontFamily: 'Inter, sans-serif',
+                                                }}
+                                            >
+                                                contrat d'apport d'affaires
+                                            </button>{' '}
+                                            (v{GENERATOR_CONTRACT_VERSION}). Je retiens notamment que la commission
+                                            porte sur les commandes <strong>réellement payées</strong>, que le taux
+                                            est <strong>révisable à tout moment</strong> sans effet rétroactif, et
+                                            que le rattachement d'un filleul est <strong>définitif</strong>.
+                                        </span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={downloadGeneratorContract}
+                                        style={{
+                                            background: 'none', border: 'none', padding: '8px 0 0 25px', cursor: 'pointer',
+                                            color: 'rgba(255,255,255,0.45)', fontSize: '11.5px',
+                                            textDecoration: 'underline', fontFamily: 'Inter, sans-serif',
+                                        }}
+                                    >
+                                        Télécharger le contrat
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Submit */}
-                            <button type="submit" disabled={isSubmitting} style={{
+                            <button type="submit" disabled={isSubmitting || (isGenerator && !contractAccepted)} style={{
                                 width: '100%', marginTop: '8px',
                                 background: isSubmitting ? 'rgba(47,111,237,0.5)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
                                 border: 'none', borderRadius: '10px', padding: '13px',

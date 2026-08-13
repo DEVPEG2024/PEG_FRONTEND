@@ -86,6 +86,7 @@ export async function apiSignUpGenerator(data: GeneratorSignUpCredential) {
             address: data.address,
             zipCode: data.zipCode,
             city: data.city,
+            contractVersion: data.contractVersion,
         },
     })
 }
