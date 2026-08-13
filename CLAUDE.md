@@ -610,6 +610,30 @@ Avant de révoquer une permission, **vérifier qu'aucun écran client ne s'en se
 
 ---
 
+## 🛡️ Isolation en ÉCRITURE par propriété (ajout 13/08/2026)
+
+### Le principe
+`grantAuthenticatedPermissions()` accorde des actions d'écriture aux rôles client/producteur **à chaque démarrage**, et le middleware d'isolation historique ne filtrait que les `findMany`. Toute écriture était donc possible sur les données de n'importe qui.
+
+Deux mécanismes se complètent désormais :
+1. **Révocation** (`REVOKE_FROM_NON_ADMIN`) pour les types sans aucun usage client — 26 actions.
+2. **Garde en écriture** (second middleware `documents.use` dans `register()`) pour les types qui ONT un usage client légitime : `invoice`, `project`, `order-item`, `quote`, `client-file` (propriété via `customer`), `comment`, `ticket` (propriété via `user`).
+
+Le garde n'agit que sur `update`/`delete`, uniquement pour le rôle `customer`, laisse passer les appels internes (pas de contexte HTTP) et **fail-open** en cas d'erreur inattendue. Seul un refus délibéré remonte en 403.
+
+### ⚠️ Le prix est calculé par le SERVEUR
+`orderItem.price` est écrit par le navigateur (`PaymentContent.tsx`). `recalculateFromDB` se contentait de l'additionner : un client pouvait fixer le montant débité par Stripe (10 200 € HT payés 13 € TTC, avec facture, projet et CA cohérents entre eux).
+`serverLinePriceHT()` (checkout.ts) recalcule chaque ligne depuis le produit, les quantités, les paliers, le mode (`tiers`/`packs`/`m2`) et la remise Premium. Si le prix stocké est inférieur, **c'est le tarif serveur qui est facturé** et les admins sont alertés.
+**⚠️ Garder aligné avec `src/utils/productHelpers.ts` du frontend** — toute évolution du calcul de prix front doit être répercutée.
+
+### ⚠️ Une relation s'écrit des DEUX côtés
+Révoquer `customer.update` ne suffisait pas : la relation client↔catégorie s'écrit aussi depuis `customer-category`. Avant de considérer une écriture fermée, vérifier l'autre extrémité de chaque relation.
+
+### Règle avant toute révocation
+**Chercher qui appelle l'action côté front.** `invoice.create` servait au devis différé, `customer.update` à la fiche entreprise, `quote.update` au refus client, `order-item.update` au BAT. Une révocation sèche les aurait cassés — en silence pour le premier.
+
+---
+
 ## 🐛 Problèmes connus (au 18/04/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification
