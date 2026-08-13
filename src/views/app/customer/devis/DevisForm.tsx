@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/store';
 import { toast } from 'react-toastify';
 import { TbSparkles, TbArrowLeft, TbCheck } from 'react-icons/tb';
-import { apiCreateQuote } from '@/services/QuoteServices';
+import { apiRequestQuote } from '@/services/QuoteServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 
@@ -63,9 +63,11 @@ const DevisForm = () => {
     if (!description.trim()) { toast.error('Merci de décrire votre projet'); return; }
     setSending(true);
     try {
-      await unwrapData(apiCreateQuote({
+      // Le statut et le rattachement client sont imposés par le serveur :
+      // le navigateur n'écrit plus directement sur `quote` (il pouvait fixer
+      // `proposalAmount`, donc le prix qu'il aurait payé).
+      await apiRequestQuote({
         title: `${company || contact || 'Client'} — ${projectType}`,
-        status: 'requested',
         projectType,
         quantity: quantity.trim() || undefined,
         description: description.trim(),
@@ -73,8 +75,7 @@ const DevisForm = () => {
         requestedByName: contact || null,
         requestedByEmail: email || null,
         requestedByPhone: phone || null,
-        customer: user?.customer?.documentId || null,
-      }));
+      });
       setDone(true);
       toast.success('Votre demande de devis a bien été envoyée');
     } catch (e) {

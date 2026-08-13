@@ -14,7 +14,7 @@ import dayjs from 'dayjs';
 import { TbSparkles, TbSend, TbCheck, TbX, TbClock, TbTrash, TbRefresh, TbFileInvoice, TbClipboardCheck, TbCoin, TbMessageDots, TbFolderPlus } from 'react-icons/tb';
 import { HiOutlineSearch } from 'react-icons/hi';
 import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
-import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote } from '@/services/QuoteServices';
+import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote, apiRejectQuoteAsCustomer } from '@/services/QuoteServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
 
@@ -535,7 +535,13 @@ const QuotesList = () => {
   const handleReject = async (q: Quote) => {
     setBusyId(q.documentId);
     try {
-      await unwrapData(apiUpdateQuote(q.documentId, { status: 'rejected' }));
+      // Route dédiée : le serveur vérifie que le devis appartient bien à
+      // l'appelant et ne laisse changer que le statut.
+      if (isAdmin) {
+        await unwrapData(apiUpdateQuote(q.documentId, { status: 'rejected' }));
+      } else {
+        await apiRejectQuoteAsCustomer(q.documentId);
+      }
       toast.success('Devis refusé');
       await load();
     } catch { toast.error("Échec"); } finally { setBusyId(null); }

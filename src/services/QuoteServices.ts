@@ -1,4 +1,4 @@
-import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import { Quote } from '@/@types/quote'
 import { AxiosResponse } from 'axios'
@@ -128,5 +128,39 @@ export async function apiDeleteQuote(
         url: API_GRAPHQL_URL,
         method: 'post',
         data: { query, variables: { documentId } },
+    })
+}
+
+
+/**
+ * Demande de devis par un client. Passe par une route dédiée : le statut est
+ * forcé côté serveur et le devis est rattaché au client du token — l'écriture
+ * directe sur `quote` est révoquée pour les rôles non-admin (elle permettait
+ * de fixer soi-même `proposalAmount`, donc le prix payé).
+ */
+export async function apiRequestQuote(data: {
+    title?: string;
+    projectType?: string;
+    quantity?: string;
+    description: string;
+    desiredDeadline?: string | null;
+    requestedByName?: string | null;
+    requestedByEmail?: string | null;
+    requestedByPhone?: string | null;
+}): Promise<AxiosResponse<{ documentId: string; status: string }>> {
+    return ApiService.fetchData({
+        url: `${API_BASE_URL}/quotes/request`,
+        method: 'post',
+        data,
+    })
+}
+
+/** Refus d'une proposition par le client (seul le statut change, sur SON devis) */
+export async function apiRejectQuoteAsCustomer(
+    documentId: string
+): Promise<AxiosResponse<{ documentId: string; status: string }>> {
+    return ApiService.fetchData({
+        url: `${API_BASE_URL}/quotes/${documentId}/reject`,
+        method: 'put',
     })
 }
