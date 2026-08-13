@@ -155,6 +155,23 @@ export async function apiUpdateGenerator(
     });
 }
 
+/**
+ * Crée ou répare le compte de connexion d'un apporteur d'affaires.
+ * Sert quand la fiche a été créée sans email (aucun compte) ou sans mot de
+ * passe (mot de passe aléatoire inconnu).
+ */
+export async function apiSetGeneratorAccount(
+    documentId: string,
+    payload: { email?: string; password?: string; firstName?: string; lastName?: string }
+): Promise<{ created: boolean; email: string }> {
+    const res = await ApiService.fetchData<{ created: boolean; email: string }>({
+        url: `${REFERRAL_URL}/admin/generators/${documentId}/account`,
+        method: 'put',
+        data: payload,
+    });
+    return res.data;
+}
+
 export async function apiGetCommissions(params?: {
     status?: string;
     generator?: string;

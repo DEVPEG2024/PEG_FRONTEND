@@ -23,6 +23,7 @@ import {
     TbUsers,
     TbSearch,
     TbLink,
+    TbKey,
 } from 'react-icons/tb';
 import type {
     GeneratorAdminDetail,
@@ -38,6 +39,7 @@ import {
     apiSearchReferralCustomers,
     apiSetCommissionStatus,
     apiSetCustomerGenerator,
+    apiSetGeneratorAccount,
     apiUpdateGenerator,
     apiUpdateReferralSettings,
     formatEuros,
@@ -233,6 +235,9 @@ const GeneratorsAdminList = () => {
 
     const [payoutFor, setPayoutFor] = useState<GeneratorAdminRow | null>(null);
     const [payoutForm, setPayoutForm] = useState({ method: 'transfer', reference: '', note: '' });
+
+    const [accountFor, setAccountFor] = useState<GeneratorAdminRow | null>(null);
+    const [accountForm, setAccountForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
 
     const [cancelTarget, setCancelTarget] = useState<{ documentId: string; reference: string } | null>(null);
     const [cancelReason, setCancelReason] = useState('');
@@ -438,6 +443,26 @@ const GeneratorsAdminList = () => {
             await refreshAll(expandedId === row.documentId ? row.documentId : undefined);
         } catch {
             toast.error('Erreur lors de la mise à jour');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const submitAccount = async () => {
+        if (!accountFor) return;
+        setBusy(true);
+        try {
+            const res = await apiSetGeneratorAccount(accountFor.documentId, accountForm);
+            toast.success(
+                res.created
+                    ? `Compte d'accès créé — ${res.email} peut désormais se connecter`
+                    : `Compte mis à jour — ${res.email}`
+            );
+            setAccountFor(null);
+            setAccountForm({ email: '', password: '', firstName: '', lastName: '' });
+            await load();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.error?.message || 'Erreur sur le compte d\'accès');
         } finally {
             setBusy(false);
         }
@@ -851,6 +876,11 @@ const GeneratorsAdminList = () => {
                                             }}
                                         >
                                             {row.email && <span>{row.email}</span>}
+                                            {row.kind !== 'customer' && !row.userDocumentId && (
+                                                <span style={{ color: '#fb923c', fontWeight: 600 }}>
+                                                    Aucun compte de connexion
+                                                </span>
+                                            )}
                                             <span>{row.referralsCount} filleul(s)</span>
                                             <span>CA {formatEuros(row.stats.revenueGenerated)}</span>
                                             <span>Cumul {formatEuros(row.stats.totalCommissions)}</span>
@@ -892,6 +922,28 @@ const GeneratorsAdminList = () => {
                                     {/* Actions */}
                                     <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
                                         <CopyButton value={row.referralLink} label="Lien" />
+                                        {row.kind !== 'customer' && (
+                                            <button
+                                                onClick={() => {
+                                                    setAccountFor(row);
+                                                    setAccountForm({
+                                                        email: row.email || '',
+                                                        password: '',
+                                                        firstName: '',
+                                                        lastName: '',
+                                                    });
+                                                }}
+                                                style={buttonStyle(row.userDocumentId ? 'ghost' : 'primary')}
+                                                disabled={busy}
+                                                title={
+                                                    row.userDocumentId
+                                                        ? "Modifier l'email ou réinitialiser le mot de passe"
+                                                        : "Aucun compte de connexion — en créer un"
+                                                }
+                                            >
+                                                <TbKey size={14} /> {row.userDocumentId ? 'Accès' : 'Créer l\'accès'}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => setPayoutFor(row)}
                                             style={buttonStyle('success')}
@@ -1236,6 +1288,85 @@ const GeneratorsAdminList = () => {
                             </button>
                             <button onClick={createGenerator} style={buttonStyle('primary')} disabled={busy}>
                                 <TbPlus size={14} /> Créer le Générateur
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Modale : compte d'accès */}
+            {accountFor && (
+                <Modal
+                    title={
+                        accountFor.userDocumentId
+                            ? `Compte d'accès — ${accountFor.name}`
+                            : `Créer l'accès de ${accountFor.name}`
+                    }
+                    onClose={() => setAccountFor(null)}
+                >
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '0 0 16px' }}>
+                        {accountFor.userDocumentId
+                            ? "Modifiez l'email de connexion et/ou définissez un nouveau mot de passe. Laissez un champ vide pour ne pas y toucher."
+                            : "Cette fiche n'a aucun compte de connexion : le Générateur ne peut pas accéder à son espace. Renseignez un email et un mot de passe pour le créer."}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
+                        <div>
+                            <label style={labelStyle}>
+                                Email de connexion
+                                {!accountFor.userDocumentId && <span style={{ color: '#f87171' }}> *</span>}
+                            </label>
+                            <input
+                                style={inputStyle}
+                                value={accountForm.email}
+                                onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                                placeholder="generateur@exemple.com"
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>
+                                Mot de passe
+                                {!accountFor.userDocumentId && <span style={{ color: '#f87171' }}> *</span>}
+                            </label>
+                            <input
+                                style={inputStyle}
+                                type="text"
+                                value={accountForm.password}
+                                onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                                placeholder={
+                                    accountFor.userDocumentId
+                                        ? 'Laisser vide pour conserver le mot de passe actuel'
+                                        : '6 caractères minimum'
+                                }
+                            />
+                            <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '11.5px', margin: '5px 0 0' }}>
+                                Le mot de passe est affiché en clair : notez-le, il ne sera plus consultable.
+                            </p>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div>
+                                <label style={labelStyle}>Prénom</label>
+                                <input
+                                    style={inputStyle}
+                                    value={accountForm.firstName}
+                                    onChange={(e) => setAccountForm({ ...accountForm, firstName: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Nom</label>
+                                <input
+                                    style={inputStyle}
+                                    value={accountForm.lastName}
+                                    onChange={(e) => setAccountForm({ ...accountForm, lastName: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setAccountFor(null)} style={buttonStyle('ghost')}>
+                                Annuler
+                            </button>
+                            <button onClick={submitAccount} style={buttonStyle('primary')} disabled={busy}>
+                                <TbKey size={14} />{' '}
+                                {accountFor.userDocumentId ? 'Enregistrer' : "Créer le compte"}
                             </button>
                         </div>
                     </div>
