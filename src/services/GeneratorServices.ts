@@ -307,6 +307,8 @@ export async function apiCreateGeneratorPayout(payload: {
     method?: 'transfer' | 'cheque' | 'cash' | 'other';
     reference?: string;
     note?: string;
+    /** Id du média déjà téléversé (justificatif du virement) */
+    proofFile?: string | number | null;
 }): Promise<{ payout: GeneratorPayout; commissionsPaid: number; amount: number }> {
     const res = await ApiService.fetchData<{
         payout: GeneratorPayout;

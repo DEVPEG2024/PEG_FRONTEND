@@ -26,6 +26,8 @@ import {
     TbKey,
     TbHourglassLow,
     TbDownload,
+    TbCamera,
+    TbPaperclip,
 } from 'react-icons/tb';
 import type {
     GeneratorAdminDetail,
@@ -259,6 +261,8 @@ const GeneratorsAdminList = () => {
 
     const [payoutFor, setPayoutFor] = useState<GeneratorAdminRow | null>(null);
     const [payoutForm, setPayoutForm] = useState({ method: 'transfer', reference: '', note: '' });
+    /** Justificatif choisi mais pas encore téléversé : l'envoi a lieu à la validation */
+    const [proofFile, setProofFile] = useState<File | null>(null);
 
     const [accountFor, setAccountFor] = useState<GeneratorAdminRow | null>(null);
     const [accountForm, setAccountForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
@@ -587,17 +591,31 @@ const GeneratorsAdminList = () => {
         if (!payoutFor) return;
         setBusy(true);
         try {
+            // Le justificatif part d'abord : son échec ne doit pas empêcher
+            // d'enregistrer un versement réellement effectué.
+            let proofId: string | number | null = null;
+            if (proofFile) {
+                try {
+                    const uploaded: any = await apiUploadFile(proofFile);
+                    proofId = uploaded?.id ?? null;
+                } catch {
+                    toast.warning("Le justificatif n'a pas pu être envoyé — versement enregistré sans.");
+                }
+            }
+
             const res = await apiCreateGeneratorPayout({
                 generatorDocumentId: payoutFor.documentId,
                 method: payoutForm.method as any,
                 reference: payoutForm.reference,
                 note: payoutForm.note,
+                proofFile: proofId,
             });
             toast.success(
                 `Versement de ${formatEuros(res.amount)} enregistré (${res.commissionsPaid} commission(s))`
             );
             setPayoutFor(null);
             setPayoutForm({ method: 'transfer', reference: '', note: '' });
+            setProofFile(null);
             await refreshAll(expandedId || undefined);
         } catch (err: any) {
             toast.error(err?.response?.data?.error?.message || 'Erreur lors du versement');
@@ -1579,7 +1597,13 @@ const GeneratorsAdminList = () => {
 
             {/* Modale : versement */}
             {payoutFor && (
-                <Modal title={`Verser à ${payoutFor.name}`} onClose={() => setPayoutFor(null)}>
+                <Modal
+                    title={`Verser à ${payoutFor.name}`}
+                    onClose={() => {
+                        setPayoutFor(null);
+                        setProofFile(null);
+                    }}
+                >
                     <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '0 0 16px' }}>
                         Toutes les commissions disponibles ({formatEuros(payoutFor.stats.availableBalance)})
                         seront marquées comme payées et regroupées dans ce versement.
@@ -1615,8 +1639,70 @@ const GeneratorsAdminList = () => {
                                 onChange={(e) => setPayoutForm({ ...payoutForm, note: e.target.value })}
                             />
                         </div>
+
+                        {/* Justificatif : photo du virement, capture ou PDF. Facultatif —
+                            ne jamais empêcher d'enregistrer un versement réellement fait. */}
+                        <div>
+                            <label style={labelStyle}>Justificatif (photo ou PDF)</label>
+                            {proofFile ? (
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        background: 'rgba(34,197,94,0.08)',
+                                        border: '1px solid rgba(34,197,94,0.25)',
+                                        borderRadius: '9px',
+                                        padding: '9px 12px',
+                                    }}
+                                >
+                                    <TbPaperclip size={15} color="#4ade80" style={{ flexShrink: 0 }} />
+                                    <span
+                                        style={{
+                                            flex: 1,
+                                            minWidth: 0,
+                                            color: 'rgba(255,255,255,0.8)',
+                                            fontSize: '12.5px',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {proofFile.name}
+                                    </span>
+                                    <button
+                                        onClick={() => setProofFile(null)}
+                                        aria-label="Retirer le justificatif"
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'rgba(255,255,255,0.5)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            padding: 0,
+                                        }}
+                                    >
+                                        <TbX size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={async () => setProofFile(await pickProofFile())}
+                                    style={{ ...buttonStyle('ghost'), width: '100%', justifyContent: 'center' }}
+                                >
+                                    <TbCamera size={15} /> Joindre une photo du virement
+                                </button>
+                            )}
+                        </div>
+
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setPayoutFor(null)} style={buttonStyle('ghost')}>
+                            <button
+                                onClick={() => {
+                                    setPayoutFor(null);
+                                    setProofFile(null);
+                                }}
+                                style={buttonStyle('ghost')}
+                            >
                                 Annuler
                             </button>
                             <button onClick={submitPayout} style={buttonStyle('success')} disabled={busy}>
