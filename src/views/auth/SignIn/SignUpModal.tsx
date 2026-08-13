@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import { HiEye, HiEyeOff, HiX } from 'react-icons/hi';
-import { apiSignUp, apiVerifyEmailCode, apiResendEmailCode } from '@/services/AuthService';
+import { HiEye, HiEyeOff, HiX, HiOutlineOfficeBuilding, HiOutlineCash, HiOutlineDuplicate, HiCheck } from 'react-icons/hi';
+import { apiSignUp, apiSignUpGenerator, apiVerifyEmailCode, apiResendEmailCode } from '@/services/AuthService';
 import { apiCheckReferralCode } from '@/services/GeneratorServices';
 import { API_BASE_URL } from '@/configs/api.config';
 
@@ -14,7 +14,17 @@ interface SignUpModalProps {
     onClose: () => void;
     /** Code de parrainage issu du lien /sign-in?ref=CODE (pré-rempli et vérifié). */
     initialReferralCode?: string;
+    /** Nature de compte présélectionnée (l'utilisateur peut en changer). */
+    initialAccountType?: AccountType;
 }
+
+/**
+ * Deux natures de compte s'auto-inscrivent :
+ *  - `customer`  : client PEG (catalogue, projets, commandes) ;
+ *  - `generator` : apporteur d'affaires — code de parrainage + commissions.
+ * Un Générateur n'est pas un client : ni secteur d'activité, ni parrainage.
+ */
+export type AccountType = 'customer' | 'generator';
 
 type CustomerCategory = { documentId: string; name: string };
 
@@ -27,6 +37,7 @@ type SignUpFormSchema = {
     jobTitle?: string;
     companyName?: string;
     customerCategoryId?: string;
+    phoneNumber?: string;
     address?: string;
     zipCode?: string;
     city?: string;
@@ -48,6 +59,7 @@ const validationSchema = Yup.object().shape({
     jobTitle: Yup.string(),
     companyName: Yup.string(),
     customerCategoryId: Yup.string(),
+    phoneNumber: Yup.string(),
     address: Yup.string(),
     zipCode: Yup.string(),
     city: Yup.string(),
@@ -98,12 +110,60 @@ const sectionTitleStyle: React.CSSProperties = {
     paddingBottom: '8px',
 };
 
-const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalProps) => {
+/** Carte de sélection de la nature du compte à créer */
+const AccountTypeCard = ({
+    active, title, subtitle, icon, onClick,
+}: {
+    active: boolean;
+    title: string;
+    subtitle: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+}) => (
+    <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        style={{
+            flex: 1, textAlign: 'left', cursor: 'pointer',
+            background: active ? 'rgba(47,111,237,0.12)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${active ? 'rgba(47,111,237,0.55)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: '12px', padding: '13px 14px',
+            display: 'flex', alignItems: 'flex-start', gap: '10px',
+            transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
+        }}
+    >
+        <span style={{ color: active ? '#6b9eff' : 'rgba(255,255,255,0.4)', display: 'flex', flexShrink: 0, marginTop: '1px' }}>
+            {icon}
+        </span>
+        <span style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', color: active ? '#fff' : 'rgba(255,255,255,0.75)', fontSize: '13px', fontWeight: 700 }}>
+                {title}
+            </span>
+            <span style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '11.5px', lineHeight: 1.4, marginTop: '2px' }}>
+                {subtitle}
+            </span>
+        </span>
+    </button>
+);
+
+const SignUpModal = ({
+    isOpen,
+    onClose,
+    initialReferralCode = '',
+    initialAccountType = 'customer',
+}: SignUpModalProps) => {
+    const [accountType, setAccountType] = useState<AccountType>(initialAccountType);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [categories, setCategories] = useState<CustomerCategory[]>([]);
+    // Code de parrainage attribué au Générateur — affiché après validation
+    const [grantedReferral, setGrantedReferral] = useState<{ code: string; link: string } | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    const isGenerator = accountType === 'generator';
     // Étape de validation par code email
     const [awaitingCode, setAwaitingCode] = useState(false);
     const [pendingEmail, setPendingEmail] = useState('');
@@ -134,7 +194,8 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
         resolver: yupResolver(validationSchema) as Resolver<SignUpFormSchema>,
         defaultValues: {
             firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
-            jobTitle: '', companyName: '', customerCategoryId: '', address: '', zipCode: '', city: '',
+            jobTitle: '', companyName: '', customerCategoryId: '', phoneNumber: '',
+            address: '', zipCode: '', city: '',
             referralCode: initialReferralCode.toUpperCase(),
         },
     });
@@ -164,6 +225,11 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
         return () => { canceled = true; };
     }, [isOpen, initialReferralCode]);
 
+    // Le type demandé à l'ouverture prime tant que l'utilisateur n'a rien changé
+    useEffect(() => {
+        if (isOpen) setAccountType(initialAccountType);
+    }, [isOpen, initialAccountType]);
+
     const handleClose = () => {
         reset();
         setSuccessMessage('');
@@ -175,25 +241,61 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
         setCodeError('');
         setResendInfo('');
         setReferralStatus({ state: 'idle' });
+        setGrantedReferral(null);
+        setCopied(false);
         onClose();
+    };
+
+    /** Bascule client ↔ générateur : on repart d'un formulaire propre */
+    const switchAccountType = (type: AccountType) => {
+        if (type === accountType) return;
+        setAccountType(type);
+        setErrorMessage('');
+        if (type === 'generator') setReferralStatus({ state: 'idle' });
+    };
+
+    const copyReferralLink = async () => {
+        if (!grantedReferral) return;
+        try {
+            await navigator.clipboard.writeText(grantedReferral.link);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('[SignUp] Copie du lien de parrainage impossible:', err);
+        }
     };
 
     const onSubmit = async (values: SignUpFormSchema) => {
         setErrorMessage('');
         try {
-            await apiSignUp({
-                firstName: values.firstName,
-                lastName: values.lastName,
-                email: values.email,
-                password: values.password,
-                jobTitle: values.jobTitle,
-                companyName: values.companyName,
-                customerCategoryId: values.customerCategoryId,
-                address: values.address,
-                zipCode: values.zipCode,
-                city: values.city,
-                referralCode: values.referralCode,
-            });
+            if (accountType === 'generator') {
+                const { data } = await apiSignUpGenerator({
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    email: values.email,
+                    password: values.password,
+                    companyName: values.companyName,
+                    phoneNumber: values.phoneNumber,
+                    address: values.address,
+                    zipCode: values.zipCode,
+                    city: values.city,
+                });
+                setGrantedReferral({ code: data?.referralCode || '', link: data?.referralLink || '' });
+            } else {
+                await apiSignUp({
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    email: values.email,
+                    password: values.password,
+                    jobTitle: values.jobTitle,
+                    companyName: values.companyName,
+                    customerCategoryId: values.customerCategoryId,
+                    address: values.address,
+                    zipCode: values.zipCode,
+                    city: values.city,
+                    referralCode: values.referralCode,
+                });
+            }
             // Compte créé mais non confirmé : on passe à l'étape de saisie du code
             // envoyé par email. L'email de bienvenue est envoyé après validation.
             setPendingEmail(values.email);
@@ -218,14 +320,22 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
         setVerifying(true);
         try {
             await apiVerifyEmailCode({ email: pendingEmail, code: trimmed });
-            // Email de bienvenue (non bloquant) une fois le compte validé
-            fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to: pendingEmail, firstName: pendingFirstName }),
-            }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
+            // Email de bienvenue (non bloquant) une fois le compte validé.
+            // Réservé aux clients : il renvoie vers le catalogue, qui n'existe
+            // pas pour un Générateur.
+            if (accountType === 'customer') {
+                fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: pendingEmail, firstName: pendingFirstName }),
+                }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
+            }
             setAwaitingCode(false);
-            setSuccessMessage('Votre email est validé et votre compte est actif ! Vous pouvez maintenant vous connecter.');
+            setSuccessMessage(
+                accountType === 'generator'
+                    ? 'Votre email est validé et votre compte Générateur est actif ! Vous pouvez maintenant vous connecter.'
+                    : 'Votre email est validé et votre compte est actif ! Vous pouvez maintenant vous connecter.'
+            );
             reset();
         } catch (err: any) {
             const msg = err?.response?.data?.error?.message || 'Code invalide ou expiré.';
@@ -330,14 +440,40 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                         </span>
                     </div>
                     <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 8px' }}>
-                        {awaitingCode ? 'Vérifiez votre email' : 'Créer un compte client'}
+                        {awaitingCode
+                            ? 'Vérifiez votre email'
+                            : isGenerator
+                            ? "Devenir apporteur d'affaires"
+                            : 'Créer un compte client'}
                     </h2>
                     <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: '13px', lineHeight: 1.65, margin: 0 }}>
                         {awaitingCode
                             ? `Un code à 6 chiffres a été envoyé à ${pendingEmail}`
+                            : isGenerator
+                            ? 'Recommandez PEG et percevez une commission sur les commandes de vos filleuls'
                             : 'Rejoignez la plateforme PEG en quelques secondes'}
                     </p>
                 </div>
+
+                {/* Choix de la nature du compte */}
+                {!successMessage && !awaitingCode && (
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+                        <AccountTypeCard
+                            active={!isGenerator}
+                            title="Client"
+                            subtitle="Commander, suivre vos projets et vos BAT"
+                            icon={<HiOutlineOfficeBuilding size={18} />}
+                            onClick={() => switchAccountType('customer')}
+                        />
+                        <AccountTypeCard
+                            active={isGenerator}
+                            title="Générateur"
+                            subtitle="Apporter des clients et toucher une commission"
+                            icon={<HiOutlineCash size={18} />}
+                            onClick={() => switchAccountType('generator')}
+                        />
+                    </div>
+                )}
 
                 {/* Success */}
                 {successMessage && (
@@ -347,6 +483,39 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                         color: '#4ade80', fontSize: '13px', fontFamily: 'Inter, sans-serif', textAlign: 'center',
                     }}>
                         {successMessage}
+
+                        {/* Générateur : son code de parrainage, disponible immédiatement */}
+                        {isGenerator && grantedReferral?.code && (
+                            <div style={{
+                                marginTop: '14px', background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
+                                padding: '14px', textAlign: 'left',
+                            }}>
+                                <p style={{ ...labelStyle, marginBottom: '8px' }}>Votre code de parrainage</p>
+                                <p style={{
+                                    color: '#fff', fontSize: '20px', fontWeight: 800,
+                                    letterSpacing: '0.1em', margin: '0 0 10px',
+                                }}>
+                                    {grantedReferral.code}
+                                </p>
+                                <p style={{
+                                    color: 'rgba(255,255,255,0.45)', fontSize: '11.5px',
+                                    margin: '0 0 10px', wordBreak: 'break-all', lineHeight: 1.5,
+                                }}>
+                                    {grantedReferral.link}
+                                </p>
+                                <button type="button" onClick={copyReferralLink} style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                    background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.35)',
+                                    borderRadius: '8px', color: '#6b9eff', fontSize: '12.5px', fontWeight: 600,
+                                    cursor: 'pointer', padding: '7px 12px', fontFamily: 'Inter, sans-serif',
+                                }}>
+                                    {copied ? <HiCheck size={14} /> : <HiOutlineDuplicate size={14} />}
+                                    {copied ? 'Lien copié' : 'Copier mon lien de parrainage'}
+                                </button>
+                            </div>
+                        )}
+
                         <div style={{ marginTop: '12px' }}>
                             <button onClick={handleClose} style={{
                                 background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)',
@@ -426,6 +595,20 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+                            {/* Générateur : rappel du fonctionnement avant de saisir quoi que ce soit */}
+                            {isGenerator && (
+                                <div style={{
+                                    background: 'rgba(47,111,237,0.08)', border: '1px solid rgba(47,111,237,0.2)',
+                                    borderRadius: '10px', padding: '12px 14px',
+                                    color: 'rgba(255,255,255,0.6)', fontSize: '12.5px', lineHeight: 1.6,
+                                    fontFamily: 'Inter, sans-serif',
+                                }}>
+                                    Une fois votre email validé, vous recevez un <strong style={{ color: '#fff' }}>code
+                                    de parrainage unique</strong> et un lien à partager. Chaque commande payée par un
+                                    client inscrit avec votre code vous rapporte une commission, suivie dans votre wallet.
+                                </div>
+                            )}
+
                             {/* Section : Identité */}
                             <p style={sectionTitleStyle}>Informations personnelles</p>
 
@@ -435,7 +618,9 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                             </div>
 
                             {renderField('email', 'Adresse email', 'vous@exemple.com', 'email', true)}
-                            {renderField('jobTitle', "Rôle dans l'entreprise", 'Directeur commercial, CEO...', 'text')}
+                            {isGenerator
+                                ? renderField('phoneNumber', 'Téléphone', '06 12 34 56 78', 'tel')
+                                : renderField('jobTitle', "Rôle dans l'entreprise", 'Directeur commercial, CEO...', 'text')}
 
                             {/* Mot de passe */}
                             <div>
@@ -481,34 +666,43 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                             </div>
 
                             {/* Section : Entreprise */}
-                            <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Informations entreprise</p>
+                            <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>
+                                {isGenerator ? 'Votre structure (facultatif)' : 'Informations entreprise'}
+                            </p>
 
-                            {renderField('companyName', 'Nom de la société', 'Mon Entreprise SAS', 'text')}
+                            {renderField(
+                                'companyName',
+                                isGenerator ? 'Société / structure' : 'Nom de la société',
+                                'Mon Entreprise SAS',
+                                'text'
+                            )}
 
-                            <div>
-                                <label style={labelStyle}>Secteur d'activité</label>
-                                <Controller
-                                    name="customerCategoryId"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <select
-                                            {...field}
-                                            style={{
-                                                ...inputStyle,
-                                                cursor: 'pointer',
-                                                appearance: 'none',
-                                            }}
-                                        >
-                                            <option value="" style={{ background: '#111827' }}>— Choisir un secteur —</option>
-                                            {categories.map((cat) => (
-                                                <option key={cat.documentId} value={cat.documentId} style={{ background: '#111827' }}>
-                                                    {cat.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                />
-                            </div>
+                            {!isGenerator && (
+                                <div>
+                                    <label style={labelStyle}>Secteur d'activité</label>
+                                    <Controller
+                                        name="customerCategoryId"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <select
+                                                {...field}
+                                                style={{
+                                                    ...inputStyle,
+                                                    cursor: 'pointer',
+                                                    appearance: 'none',
+                                                }}
+                                            >
+                                                <option value="" style={{ background: '#111827' }}>— Choisir un secteur —</option>
+                                                {categories.map((cat) => (
+                                                    <option key={cat.documentId} value={cat.documentId} style={{ background: '#111827' }}>
+                                                        {cat.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    />
+                                </div>
+                            )}
 
                             {/* Section : Adresse */}
                             <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Adresse postale</p>
@@ -519,55 +713,59 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                                 {renderField('city', 'Ville', 'Paris', 'text')}
                             </div>
 
-                            {/* Section : Parrainage */}
-                            <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Parrainage (facultatif)</p>
+                            {/* Section : Parrainage — un Générateur parraine, il n'est pas parrainé */}
+                            {!isGenerator && (
+                              <>
+                                <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Parrainage (facultatif)</p>
 
-                            <div>
-                                <label style={labelStyle}>Code de parrainage</label>
-                                <Controller
-                                    name="referralCode"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <input
-                                            {...field}
-                                            type="text"
-                                            placeholder="Ex : DUPONT-A7K2"
-                                            autoCapitalize="characters"
-                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                            onBlur={(e) => {
-                                                field.onBlur();
-                                                checkReferral(e.target.value);
-                                            }}
-                                            style={{
-                                                ...inputStyle,
-                                                letterSpacing: '0.06em',
-                                                borderColor:
-                                                    referralStatus.state === 'valid'
-                                                        ? 'rgba(34,197,94,0.5)'
-                                                        : referralStatus.state === 'invalid'
-                                                        ? 'rgba(239,68,68,0.5)'
-                                                        : 'rgba(255,255,255,0.1)',
-                                            }}
-                                        />
+                                <div>
+                                    <label style={labelStyle}>Code de parrainage</label>
+                                    <Controller
+                                        name="referralCode"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <input
+                                                {...field}
+                                                type="text"
+                                                placeholder="Ex : DUPONT-A7K2"
+                                                autoCapitalize="characters"
+                                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                                onBlur={(e) => {
+                                                    field.onBlur();
+                                                    checkReferral(e.target.value);
+                                                }}
+                                                style={{
+                                                    ...inputStyle,
+                                                    letterSpacing: '0.06em',
+                                                    borderColor:
+                                                        referralStatus.state === 'valid'
+                                                            ? 'rgba(34,197,94,0.5)'
+                                                            : referralStatus.state === 'invalid'
+                                                            ? 'rgba(239,68,68,0.5)'
+                                                            : 'rgba(255,255,255,0.1)',
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                    {referralStatus.state === 'checking' && (
+                                        <p style={{ ...errorStyle, color: 'rgba(255,255,255,0.45)' }}>
+                                            Vérification du code…
+                                        </p>
                                     )}
-                                />
-                                {referralStatus.state === 'checking' && (
-                                    <p style={{ ...errorStyle, color: 'rgba(255,255,255,0.45)' }}>
-                                        Vérification du code…
-                                    </p>
-                                )}
-                                {referralStatus.state === 'valid' && (
-                                    <p style={{ ...errorStyle, color: '#4ade80' }}>
-                                        Code valide — vous serez parrainé par{' '}
-                                        {referralStatus.name || 'un Générateur PEG'}.
-                                    </p>
-                                )}
-                                {referralStatus.state === 'invalid' && (
-                                    <p style={errorStyle}>
-                                        Code inconnu — vous pouvez continuer sans parrainage.
-                                    </p>
-                                )}
-                            </div>
+                                    {referralStatus.state === 'valid' && (
+                                        <p style={{ ...errorStyle, color: '#4ade80' }}>
+                                            Code valide — vous serez parrainé par{' '}
+                                            {referralStatus.name || 'un Générateur PEG'}.
+                                        </p>
+                                    )}
+                                    {referralStatus.state === 'invalid' && (
+                                        <p style={errorStyle}>
+                                            Code inconnu — vous pouvez continuer sans parrainage.
+                                        </p>
+                                    )}
+                                </div>
+                              </>
+                            )}
 
                             {/* Submit */}
                             <button type="submit" disabled={isSubmitting} style={{
@@ -579,7 +777,11 @@ const SignUpModal = ({ isOpen, onClose, initialReferralCode = '' }: SignUpModalP
                                 boxShadow: isSubmitting ? 'none' : '0 4px 16px rgba(47,111,237,0.4)',
                                 transition: 'all 0.15s', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em',
                             }}>
-                                {isSubmitting ? 'Création en cours...' : 'Créer mon compte'}
+                                {isSubmitting
+                                    ? 'Création en cours...'
+                                    : isGenerator
+                                    ? 'Créer mon compte Générateur'
+                                    : 'Créer mon compte'}
                             </button>
 
                         </div>

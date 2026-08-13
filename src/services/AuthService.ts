@@ -7,6 +7,8 @@ import type {
     SignInResponse,
     SignUpCredential,
     SignUpResponse,
+    GeneratorSignUpCredential,
+    GeneratorSignUpResponse,
 } from '@/@types/auth'
 import { LOGIN_API_URL } from '@/constants/api.constant'
 
@@ -61,6 +63,29 @@ export async function apiSignUp(data: SignUpCredential) {
             zipCode: data.zipCode,
             city: data.city,
             referralCode: data.referralCode,
+        },
+    })
+}
+
+/**
+ * Inscription d'un apporteur d'affaires. Le compte est créé non confirmé :
+ * la validation passe par le même code email que l'inscription client
+ * (`apiVerifyEmailCode` / `apiResendEmailCode`).
+ */
+export async function apiSignUpGenerator(data: GeneratorSignUpCredential) {
+    return ApiService.fetchData<GeneratorSignUpResponse>({
+        url: `${API_BASE_URL}/auth/generator-register`,
+        method: 'post',
+        data: {
+            email: data.email,
+            password: data.password,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            companyName: data.companyName,
+            phoneNumber: data.phoneNumber,
+            address: data.address,
+            zipCode: data.zipCode,
+            city: data.city,
         },
     })
 }

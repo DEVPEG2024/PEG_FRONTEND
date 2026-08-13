@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import SignInForm from './SignInForm';
-import SignUpModal from './SignUpModal';
+import SignUpModal, { type AccountType } from './SignUpModal';
 import Logo from '@/components/template/Logo';
 import { APP_NAME } from '@/constants/app.constant';
 import { HiLockClosed, HiOutlineShieldCheck, HiOutlineLightningBolt, HiOutlineUsers } from 'react-icons/hi';
@@ -54,7 +54,14 @@ const SignIn = () => {
     }
   }, []);
   const [isSignUpOpen, setIsSignUpOpen] = useState(!!referralFromUrl);
+  // Nature de compte proposée à l'ouverture — modifiable dans la modale
+  const [signUpType, setSignUpType] = useState<AccountType>('customer');
   const year = new Date().getFullYear();
+
+  const openSignUp = (type: AccountType) => {
+    setSignUpType(type);
+    setIsSignUpOpen(true);
+  };
 
   return (
     <div style={{
@@ -126,15 +133,24 @@ const SignIn = () => {
           <div style={{ width: '100%', maxWidth: '400px' }}>
             <SignInForm disableSubmit={false} />
 
-            {/* Lien créer un compte */}
+            {/* Liens création de compte — client ou apporteur d'affaires */}
             <div style={{ textAlign: 'center', marginTop: '22px' }}>
               <span style={{ color: '#64748b', fontSize: '13.5px' }}>Pas encore de compte ? </span>
               <button
-                onClick={() => setIsSignUpOpen(true)}
+                onClick={() => openSignUp('customer')}
                 style={{ background: 'none', border: 'none', color: '#5b4de0', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
               >
-                Créer un compte
+                Créer un compte client
               </button>
+              <div style={{ marginTop: '8px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '12.5px' }}>Vous apportez des clients à PEG ? </span>
+                <button
+                  onClick={() => openSignUp('generator')}
+                  style={{ background: 'none', border: 'none', color: '#5b4de0', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                >
+                  Devenir Générateur
+                </button>
+              </div>
             </div>
 
             {/* Carte sécurité SSL */}
@@ -177,6 +193,7 @@ const SignIn = () => {
         isOpen={isSignUpOpen}
         onClose={() => setIsSignUpOpen(false)}
         initialReferralCode={referralFromUrl}
+        initialAccountType={signUpType}
       />
     </div>
   );
