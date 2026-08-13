@@ -266,3 +266,22 @@ export async function apiGetAllProducers() : Promise<{data: ProducerWithId[]}> {
     
     return response.data
 }
+/**
+ * Mise à jour par un client de SA fiche entreprise.
+ *
+ * Passe par une route dédiée qui déduit la fiche du token : le navigateur
+ * n'envoie plus d'identifiant et n'écrit plus directement sur `customer`
+ * (`api::customer.customer.update` est révoqué pour les rôles non-admin —
+ * il permettait de modifier la fiche d'un AUTRE client).
+ */
+export async function apiUpdateOwnCompany(data: {
+    name?: string;
+    logo?: string | number;
+    companyInformations?: Record<string, string | undefined>;
+}) {
+    return ApiService.fetchData({
+        url: API_BASE_URL + '/auth/update-own-company',
+        method: 'put',
+        data,
+    });
+}

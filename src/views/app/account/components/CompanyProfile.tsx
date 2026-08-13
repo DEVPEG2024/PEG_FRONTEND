@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useAppSelector } from '@/store';
 import { User } from '@/@types/user';
-import { apiUpdateCustomerByDocumentId, apiGetCustomerForEditByDocumentId } from '@/services/CustomerServices';
+import { apiGetCustomerForEditByDocumentId } from '@/services/CustomerServices';
+import { apiUpdateOwnCompany } from '@/services/UserService';
 import { apiUploadFile } from '@/services/FileServices';
 import { API_BASE_URL } from '@/configs/api.config';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -147,10 +148,12 @@ const CompanyProfile = () => {
                 setExistingLogoId(String(logoId));
                 setNewLogoFile(undefined);
             }
-            await apiUpdateCustomerByDocumentId(user.customer.documentId, {
+            // La fiche visée est déduite du token côté serveur : aucun
+            // identifiant n'est envoyé. Le secteur d'activité n'est plus
+            // modifiable ici — il pilote la visibilité du catalogue et les prix.
+            await apiUpdateOwnCompany({
                 name: values.name,
                 ...(logoId !== undefined ? { logo: logoId } : {}),
-                ...(values.customerCategoryId ? { customerCategory: values.customerCategoryId } : {}),
                 companyInformations: {
                     address: values.address,
                     zipCode: values.zipCode,
@@ -271,18 +274,14 @@ const CompanyProfile = () => {
                 <div>
                     <label style={labelStyle}>Secteur d'activité</label>
                     <Controller name="customerCategoryId" control={control} render={({ field }) => (
-                        <select
-                            {...field}
-                            style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' }}
-                        >
-                            <option value="" style={{ background: '#111827' }}>— Choisir un secteur —</option>
-                            {categories.map((cat) => (
-                                <option key={cat.documentId} value={cat.documentId} style={{ background: '#111827' }}>
-                                    {cat.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div style={{ ...inputStyle, opacity: 0.75 }}>
+                            {categories.find((c) => c.documentId === field.value)?.name || 'Non renseigné'}
+                        </div>
                     )} />
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11.5px', margin: '5px 0 0' }}>
+                        Votre secteur conditionne le catalogue et les tarifs qui vous sont proposés :
+                        il est défini par PEG. Contactez votre interlocuteur pour le faire évoluer.
+                    </p>
                 </div>
 
                 {/* Paiement différé — lecture seule */}
