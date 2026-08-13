@@ -128,6 +128,42 @@ const SignIn = () => {
         }
         .si-acct__arrow{ flex-shrink:0; transition:transform .15s; }
         .si-acct:hover .si-acct__arrow{ transform:translateX(3px); }
+
+        /* Le parcours Générateur est le moins connu des visiteurs : il pulse
+           pour se signaler, et s'arrête dès qu'on le survole (l'attention est
+           captée, l'animation n'a plus lieu d'être). */
+        @keyframes siGenPulse{
+          0%, 100%{
+            border-color:rgba(13,159,110,0.45);
+            box-shadow:0 0 0 0 rgba(13,159,110,0.35);
+            background:#fff;
+          }
+          50%{
+            border-color:rgba(13,159,110,0.95);
+            box-shadow:0 0 20px 3px rgba(13,159,110,0.28), 0 0 0 4px rgba(13,159,110,0.10);
+            background:#f2fdf8;
+          }
+        }
+        @keyframes siGenTilePulse{
+          0%, 100%{ transform:scale(1); }
+          50%{ transform:scale(1.12); }
+        }
+        .si-acct--generator{
+          border-color:rgba(13,159,110,0.45);
+          animation:siGenPulse 1.9s ease-in-out infinite;
+        }
+        .si-acct--generator .si-acct__tile{
+          animation:siGenTilePulse 1.9s ease-in-out infinite;
+        }
+        /* animation:none plutôt que animation-play-state:paused — une animation
+           en pause continue d'imposer ses valeurs et écraserait l'ombre du survol. */
+        .si-acct--generator:hover,
+        .si-acct--generator:hover .si-acct__tile{ animation:none; }
+
+        @media (prefers-reduced-motion: reduce){
+          .si-acct--generator,
+          .si-acct--generator .si-acct__tile{ animation:none; }
+        }
       `}</style>
 
       <div className="si-card" style={{
