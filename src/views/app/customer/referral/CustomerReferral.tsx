@@ -489,7 +489,7 @@ const CustomerReferral = () => {
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                                     <button
                             type="button"
-                            onClick={() => exportCommissionsCsv(filtered, generator?.name)}
+                            onClick={() => exportCommissionsCsv(filtered, generator?.name, { vatRegistered: generator?.vatRegistered })}
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                                 background: 'rgba(255,255,255,0.05)',
@@ -535,6 +535,7 @@ const CustomerReferral = () => {
                         />
                         <CommissionsTable
                             commissions={filtered}
+                            vatRegistered={generator?.vatRegistered}
                             emptyMessage={
                                 filter === 'all'
                                     ? 'Aucune commission pour le moment.'

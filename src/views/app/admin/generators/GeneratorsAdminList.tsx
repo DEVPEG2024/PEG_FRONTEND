@@ -523,6 +523,23 @@ const GeneratorsAdminList = () => {
         }
     };
 
+    const toggleVat = async (row: GeneratorAdminRow) => {
+        setBusy(true);
+        try {
+            await apiUpdateGenerator(row.documentId, { vatRegistered: !row.vatRegistered });
+            toast.success(
+                row.vatRegistered
+                    ? `${row.name} : non assujetti — montants nets, sans TVA`
+                    : `${row.name} : assujetti — HT, TVA et TTC détaillés`
+            );
+            await refreshAll(expandedId === row.documentId ? row.documentId : undefined);
+        } catch {
+            toast.error('Erreur lors de la mise à jour');
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const toggleActive = async (row: GeneratorAdminRow) => {
         setBusy(true);
         try {
@@ -1149,6 +1166,14 @@ const GeneratorsAdminList = () => {
                                             <TbCash size={14} /> Payer
                                         </button>
                                         <button
+                                            onClick={() => toggleVat(row)}
+                                            style={buttonStyle('ghost')}
+                                            disabled={busy}
+                                            title="Un parrain assujetti facture la TVA à PEG : son espace détaille HT, TVA et TTC. Un particulier en franchise ne voit qu'un montant net."
+                                        >
+                                            {row.vatRegistered ? 'Assujetti TVA' : 'Non assujetti'}
+                                        </button>
+                                        <button
                                             onClick={() => toggleActive(row)}
                                             style={buttonStyle(row.active ? 'danger' : 'ghost')}
                                             disabled={busy}
@@ -1330,7 +1355,8 @@ const GeneratorsAdminList = () => {
                                                                 onClick={() =>
                                                                     exportCommissionsCsv(
                                                                         detail.commissions,
-                                                                        detail.generator.name
+                                                                        detail.generator.name,
+                                                                        { vatRegistered: detail.generator.vatRegistered }
                                                                     )
                                                                 }
                                                                 style={buttonStyle('ghost')}
@@ -1342,6 +1368,7 @@ const GeneratorsAdminList = () => {
                                                     />
                                                     <CommissionsTable
                                                         commissions={detail.commissions}
+                                                        vatRegistered={detail.generator.vatRegistered}
                                                         renderActions={(c) => (
                                                             <div
                                                                 style={{

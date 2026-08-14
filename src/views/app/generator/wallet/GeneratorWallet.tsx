@@ -18,7 +18,7 @@ import {
     panelStyle,
 } from '../components/GeneratorUI';
 import WalletWithdrawal from '../components/WalletWithdrawal';
-import { COMMISSION_STATUS_LABELS } from '@/services/GeneratorServices';
+import { COMMISSION_STATUS_LABELS, commissionAmounts } from '@/services/GeneratorServices';
 import { exportCommissionsCsv, exportPayoutsCsv } from '@/utils/referralExport';
 
 const FILTERS: { value: string; label: string }[] = [
@@ -103,7 +103,10 @@ const GeneratorWallet = () => {
                 </h1>
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '6px 0 0' }}>
                     Vos commissions deviennent disponibles une fois validées par PEG, puis versées
-                    lors d&apos;un paiement.
+                    lors d&apos;un paiement.{' '}
+                    {generator?.vatRegistered
+                        ? 'Les montants sont indiqués hors taxes ; la TVA est détaillée dans le tableau.'
+                        : 'Les montants sont nets : vous n\'êtes pas assujetti à la TVA.'}
                 </p>
             </div>
 
@@ -136,7 +139,11 @@ const GeneratorWallet = () => {
                 <StatCard
                     label="Solde disponible"
                     value={formatEuros(stats.availableBalance)}
-                    hint="Validé, en attente de versement"
+                    hint={
+                        generator?.vatRegistered
+                            ? `Soit ${formatEuros(commissionAmounts(stats.availableBalance, true).ttc)} TTC`
+                            : 'Validé, en attente de versement'
+                    }
                     icon={<TbWallet size={19} />}
                     accent="#4ade80"
                 />
@@ -192,7 +199,7 @@ const GeneratorWallet = () => {
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                             <button
                             type="button"
-                            onClick={() => exportCommissionsCsv(filtered, generator?.name)}
+                            onClick={() => exportCommissionsCsv(filtered, generator?.name, { vatRegistered: generator?.vatRegistered })}
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                                 background: 'rgba(255,255,255,0.05)',
@@ -237,6 +244,7 @@ const GeneratorWallet = () => {
                 />
                 <CommissionsTable
                     commissions={filtered}
+                    vatRegistered={generator?.vatRegistered}
                     emptyMessage={
                         filter === 'all'
                             ? 'Aucune commission pour le moment.'

@@ -246,7 +246,7 @@ export async function apiCreateGenerator(payload: CreateGeneratorPayload): Promi
 
 export async function apiUpdateGenerator(
     documentId: string,
-    payload: Partial<CreateGeneratorPayload> & { active?: boolean }
+    payload: Partial<CreateGeneratorPayload> & { active?: boolean; vatRegistered?: boolean }
 ): Promise<void> {
     await ApiService.fetchData({
         url: `${REFERRAL_URL}/admin/generators/${documentId}`,
@@ -383,6 +383,24 @@ export const PAYOUT_REQUEST_STATUS_COLORS: Record<string, { bg: string; border: 
     rejected: { bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.35)', color: '#f87171' },
     canceled: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.35)', color: '#94a3b8' },
 };
+
+/** Taux de TVA applicable — miroir de TVA_RATE côté backend (checkout.ts) */
+export const TVA_RATE = 0.2;
+
+/**
+ * Décomposition d'une commission pour l'affichage.
+ *
+ * Les commissions sont TOUJOURS calculées et dues en HT. Un parrain assujetti
+ * à la TVA la facture à PEG : il voit donc HT + TVA + TTC. Un particulier en
+ * franchise en base ne collecte AUCUNE TVA — pour lui il n'existe pas de TTC,
+ * et afficher un montant majoré lui promettrait 20 % de plus qu'il ne touchera.
+ */
+export function commissionAmounts(amountHT: number | undefined | null, vatRegistered?: boolean) {
+    const ht = Number(amountHT) || 0;
+    if (!vatRegistered) return { ht, vat: 0, ttc: ht, showsVat: false };
+    const vat = Math.round(ht * TVA_RATE * 100) / 100;
+    return { ht, vat, ttc: Math.round((ht + vat) * 100) / 100, showsVat: true };
+}
 
 /** Formatage monétaire homogène sur tout l'espace Générateur */
 export const formatEuros = (value: number | undefined | null): string =>

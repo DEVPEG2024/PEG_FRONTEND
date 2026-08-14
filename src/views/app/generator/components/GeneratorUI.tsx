@@ -10,6 +10,7 @@ import {
     COMMISSION_STATUS_COLORS,
     COMMISSION_STATUS_LABELS,
     PAYOUT_METHOD_LABELS,
+    commissionAmounts,
     formatEuros,
 } from '@/services/GeneratorServices';
 
@@ -265,11 +266,14 @@ export const CommissionsTable = ({
     showCustomer = true,
     renderActions,
     emptyMessage = 'Aucune commission pour le moment.',
+    vatRegistered = false,
 }: {
     commissions: Commission[];
     showCustomer?: boolean;
     renderActions?: (c: Commission) => React.ReactNode;
     emptyMessage?: string;
+    /** Parrain assujetti : on détaille TVA et TTC. Sinon un seul montant. */
+    vatRegistered?: boolean;
 }) => {
     if (!commissions.length) return <EmptyState message={emptyMessage} />;
 
@@ -283,7 +287,15 @@ export const CommissionsTable = ({
                         {showCustomer && <th style={thStyle}>Filleul</th>}
                         <th style={{ ...thStyle, textAlign: 'right' }}>CA HT</th>
                         <th style={{ ...thStyle, textAlign: 'right' }}>Taux</th>
-                        <th style={{ ...thStyle, textAlign: 'right' }}>Commission</th>
+                        <th style={{ ...thStyle, textAlign: 'right' }}>
+                            {vatRegistered ? 'Commission HT' : 'Commission'}
+                        </th>
+                        {vatRegistered && (
+                            <>
+                                <th style={{ ...thStyle, textAlign: 'right' }}>TVA 20%</th>
+                                <th style={{ ...thStyle, textAlign: 'right' }}>Commission TTC</th>
+                            </>
+                        )}
                         <th style={thStyle}>Statut</th>
                         {renderActions && <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>}
                     </tr>
@@ -313,6 +325,16 @@ export const CommissionsTable = ({
                             >
                                 {formatEuros(c.amount)}
                             </td>
+                            {vatRegistered && (
+                                <>
+                                    <td style={{ ...tdStyle, textAlign: 'right', color: 'rgba(255,255,255,0.5)' }}>
+                                        {formatEuros(commissionAmounts(c.amount, true).vat)}
+                                    </td>
+                                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
+                                        {formatEuros(commissionAmounts(c.amount, true).ttc)}
+                                    </td>
+                                </>
+                            )}
                             <td style={tdStyle}>
                                 <StatusBadge status={c.status} />
                                 {c.status === 'canceled' && c.cancelReason && (

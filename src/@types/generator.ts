@@ -132,6 +132,11 @@ export type GeneratorProfile = {
   /** Taux effectivement appliqué (taux propre, sinon taux global de sa nature) */
   commissionRate: number;
   active: boolean;
+  /**
+   * Parrain assujetti à la TVA. Les commissions sont toujours dues en HT ;
+   * ce drapeau ne change que l'affichage (HT + TVA + TTC, ou montant unique).
+   */
+  vatRegistered?: boolean;
 };
 
 /** Parrain d'un client, tel qu'affiché au filleul (aucune donnée sensible) */
@@ -215,6 +220,7 @@ export type GeneratorAdminRow = {
   /** Taux réellement appliqué */
   effectiveRate: number;
   active: boolean;
+  vatRegistered?: boolean;
   payoutDetails: string;
   notes: string;
   email: string;

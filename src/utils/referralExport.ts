@@ -10,7 +10,7 @@
  * exporte est exactement ce que l'utilisateur voit à l'écran, filtres compris.
  */
 import type { Commission, GeneratorPayout } from '@/@types/generator';
-import { COMMISSION_STATUS_LABELS, PAYOUT_METHOD_LABELS } from '@/services/GeneratorServices';
+import { COMMISSION_STATUS_LABELS, PAYOUT_METHOD_LABELS, commissionAmounts } from '@/services/GeneratorServices';
 
 /** Séparateur `;` et décimale `,` : c'est ce qu'attend Excel en configuration française. */
 const SEP = ';';
@@ -67,31 +67,39 @@ const slug = (name?: string): string =>
 export function exportCommissionsCsv(
     commissions: Commission[],
     sponsorName?: string,
-    options: { withCustomer?: boolean } = {}
+    options: { withCustomer?: boolean; vatRegistered?: boolean } = {}
 ): void {
     const withCustomer = options.withCustomer !== false;
+    // Parrain assujetti : on détaille TVA et TTC. Sinon la commission est nette
+    // et il n'existe aucune TVA — ajouter des colonnes vides induirait en erreur.
+    const vat = options.vatRegistered === true;
     const header = [
         'Date',
         'Commande',
         ...(withCustomer ? ['Filleul'] : []),
         'CA HT (EUR)',
         'Taux (%)',
-        'Commission (EUR)',
+        vat ? 'Commission HT (EUR)' : 'Commission (EUR)',
+        ...(vat ? ['TVA 20% (EUR)', 'Commission TTC (EUR)'] : []),
         'Statut',
         'Validée le',
         'Payée le',
     ];
-    const rows = commissions.map((c) => [
-        day(c.date),
-        c.reference || c.invoice?.name || '',
-        ...(withCustomer ? [c.customer?.name || ''] : []),
-        money(c.baseAmount),
-        String(c.rate ?? ''),
-        money(c.amount),
-        COMMISSION_STATUS_LABELS[c.status] || c.status,
-        day(c.validatedAt),
-        day(c.paidAt),
-    ]);
+    const rows = commissions.map((c) => {
+        const a = commissionAmounts(c.amount, vat);
+        return [
+            day(c.date),
+            c.reference || c.invoice?.name || '',
+            ...(withCustomer ? [c.customer?.name || ''] : []),
+            money(c.baseAmount),
+            String(c.rate ?? ''),
+            money(a.ht),
+            ...(vat ? [money(a.vat), money(a.ttc)] : []),
+            COMMISSION_STATUS_LABELS[c.status] || c.status,
+            day(c.validatedAt),
+            day(c.paidAt),
+        ];
+    });
     download(`commissions-${slug(sponsorName)}-${stamp()}.csv`, [header, ...rows]);
 }
 
