@@ -16,6 +16,9 @@ import { estimateWorkload, WorkloadEstimate } from './estimateWorkload';
 /** Statuts considérés comme "travail en cours" (à planifier). */
 export const ACTIVE_STATES = ['pending', 'waiting', 'sav'];
 
+/** Ligne fictive regroupant les projets sans producteur assigné. */
+export const UNASSIGNED_ID = '__unassigned__';
+
 export type RiskLevel = 'late' | 'tight' | 'ok';
 
 export type ScheduledProject = {
@@ -149,53 +152,13 @@ export function analyzeProjects(
   return scheduled.sort((a, b) => b.urgency - a.urgency);
 }
 
-// ---------------------------------------------------------------------------
-// Répartition jour-par-jour (lissage de charge)
-// ---------------------------------------------------------------------------
-
-export type DayPlan = { date: Date; items: ScheduledProject[] };
-
 /**
- * Répartit chaque projet sur des jours ouvrés consécutifs.
- *  - Risque `late` / `tight` → démarre dès que possible (aujourd'hui).
- *  - Risque `ok` → démarre au plus tard pour finir juste avant la deadline
- *    (lissage : on n'encombre pas le début du planning).
- * Plusieurs projets peuvent partager un même jour (producteurs différents).
+ * Projets qui devraient être planifiés mais ne peuvent pas l'être : statut actif
+ * mais aucune date de fin. Ils sont silencieusement écartés par
+ * `analyzeProjects` — les compter permet de le signaler à l'admin.
  */
-export function buildWeekPlan(
-  scheduled: ScheduledProject[],
-  weeks = 2,
-  today = new Date()
-): DayPlan[] {
-  const days = nextBusinessDays(weeks * 5, today);
-  const plan: DayPlan[] = days.map((date) => ({ date, items: [] }));
-
-  for (const sp of scheduled) {
-    const need = Math.max(1, Math.ceil(sp.workload.days));
-
-    let startIdx = 0;
-    if (sp.risk === 'ok') {
-      // démarre au plus tard : deadline (en index horizon) − besoin
-      const deadlineIdx = days.findIndex(
-        (d) => atMidnightTime(d) >= atMidnightTime(new Date(sp.project.endDate))
-      );
-      const lastUsable = deadlineIdx === -1 ? days.length - 1 : deadlineIdx;
-      startIdx = Math.max(0, lastUsable - need + 1);
-    }
-
-    for (let k = 0; k < need; k++) {
-      const idx = startIdx + k;
-      if (idx >= 0 && idx < plan.length) plan[idx].items.push(sp);
-    }
-  }
-
-  return plan;
-}
-
-function atMidnightTime(d: Date): number {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c.getTime();
+export function unplannableProjects(projects: Project[]): Project[] {
+  return projects.filter((p) => ACTIVE_STATES.includes(p.state) && !p.endDate);
 }
 
 // ---------------------------------------------------------------------------
@@ -223,13 +186,6 @@ export type CapacityConfig = {
   unavailableDates?: string[];
 };
 
-function isoDay(d: Date): string {
-  const c = atMidnight(d);
-  const m = `${c.getMonth() + 1}`.padStart(2, '0');
-  const day = `${c.getDate()}`.padStart(2, '0');
-  return `${c.getFullYear()}-${m}-${day}`;
-}
-
 /**
  * Capacité d'un producteur sur l'horizon, en jours-homme :
  *   (jours ouvrés de l'horizon − jours off hebdo − congés ponctuels) × capacité/jour.
@@ -239,7 +195,7 @@ function capacityForHorizon(cap: CapacityConfig | undefined, horizonDays: Date[]
   if (!cap) return horizonDays.length;
   const off = new Set(cap.weeklyOffDays ?? []);
   const unavailable = new Set(cap.unavailableDates ?? []);
-  const usable = horizonDays.filter((d) => !off.has(d.getDay()) && !unavailable.has(isoDay(d)));
+  const usable = horizonDays.filter((d) => !off.has(d.getDay()) && !unavailable.has(dateKey(d)));
   return Math.round(usable.length * cap.dailyCapacityDays * 10) / 10;
 }
 
@@ -258,7 +214,7 @@ export function computeProducerLoads(
 
   for (const sp of scheduled) {
     const producer = sp.project.producer;
-    const id = producer?.documentId ?? '__unassigned__';
+    const id = producer?.documentId ?? UNASSIGNED_ID;
     const name = producer?.name ?? 'Non assigné';
 
     const existing = byProducer.get(id);
@@ -363,98 +319,6 @@ export function isoWeekNumber(d = new Date()): number {
   return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
-// ---------------------------------------------------------------------------
-// Matrice ressources : producteurs (lignes) × projets répartis (board)
-// ---------------------------------------------------------------------------
-
-export type ResourceBlock = {
-  kind: 'project' | 'available';
-  project?: ScheduledProject;
-  days: number;
-  risk?: RiskLevel;
-};
-
-export type ResourceRow = {
-  producerId: string;
-  producerName: string;
-  totalDays: number;
-  capacityDays: number;
-  ratioPct: number;
-  overloaded: boolean;
-  blocks: ResourceBlock[];
-};
-
-export function buildResourceMatrix(
-  scheduled: ScheduledProject[],
-  producerLoads: ProducerLoad[]
-): ResourceRow[] {
-  const byProducer = new Map<string, ScheduledProject[]>();
-  for (const sp of scheduled) {
-    const id = sp.project.producer?.documentId ?? '__unassigned__';
-    const arr = byProducer.get(id);
-    if (arr) arr.push(sp);
-    else byProducer.set(id, [sp]);
-  }
-
-  return producerLoads.map((pl) => {
-    const projs = (byProducer.get(pl.producerId) ?? []).slice().sort((a, b) => b.urgency - a.urgency);
-    const blocks: ResourceBlock[] = projs.map((sp) => ({
-      kind: 'project',
-      project: sp,
-      days: sp.workload.days,
-      risk: sp.risk,
-    }));
-    const free = Math.round((pl.capacityDays - pl.totalDays) * 10) / 10;
-    if (free > 0.1) blocks.push({ kind: 'available', days: free });
-    return {
-      producerId: pl.producerId,
-      producerName: pl.producerName,
-      totalDays: pl.totalDays,
-      capacityDays: pl.capacityDays,
-      ratioPct: pl.capacityDays > 0 ? Math.round((pl.totalDays / pl.capacityDays) * 100) : 0,
-      overloaded: pl.overloaded,
-      blocks,
-    };
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Charge prévisionnelle par semaine (load % vs capacité)
-// ---------------------------------------------------------------------------
-
-export type ForecastPoint = { label: string; loadPct: number };
-
-export function buildForecast(
-  scheduled: ScheduledProject[],
-  producerCount: number,
-  weeks = 6,
-  today = new Date()
-): ForecastPoint[] {
-  const weeklyCapacity = Math.max(1, producerCount) * 5; // 1 j-homme / jour ouvré
-  const startWeek = isoWeekNumber(today);
-  const monday = currentWeekDays(today)[0];
-
-  const points: ForecastPoint[] = [];
-  for (let w = 0; w < weeks; w++) {
-    const from = addDays(monday, w * 7);
-    const to = addDays(from, 7);
-    let load = 0;
-    for (const sp of scheduled) {
-      const end = new Date(sp.project.endDate);
-      if (end >= from && end < to) load += sp.workload.days;
-    }
-    points.push({
-      label: `Sem. ${startWeek + w}`,
-      loadPct: Math.round((load / weeklyCapacity) * 100),
-    });
-  }
-  return points;
-}
-
-// ---------------------------------------------------------------------------
-// Actions recommandées (heuristiques déterministes à partir du moteur)
-// ---------------------------------------------------------------------------
-
 // ===========================================================================
 // ÉTALEMENT TEMPOREL en blocs de 30 min (modèle métier)
 // ---------------------------------------------------------------------------
@@ -482,9 +346,14 @@ export function formatBlocks(blocks: number): string {
   return `${h}h${`${m}`.padStart(2, '0')}`;
 }
 
-function dateKey(d: Date): string {
+/** Clé de jour `YYYY-MM-DD` en heure LOCALE (jamais `toISOString`, qui décale). */
+export function dateKey(d: Date): string {
   const c = atMidnight(d);
   return `${c.getFullYear()}-${`${c.getMonth() + 1}`.padStart(2, '0')}-${`${c.getDate()}`.padStart(2, '0')}`;
+}
+
+export function isWeekendDay(d: Date): boolean {
+  return isWeekend(d);
 }
 
 /** Un producteur est-il disponible ce jour (Lun→Ven, hors jours off / congés) ? */
@@ -506,14 +375,76 @@ function spreadEvenly(total: number, n: number): number[] {
 }
 
 export type DayLoadDetail = { documentId: string; name: string; risk: RiskLevel; blocks: number };
-export type ProducerDayLoad = { blocks: number; capacityBlocks: number; details: DayLoadDetail[] };
+/**
+ * Charge d'un producteur un jour donné. La capacité n'est volontairement PAS
+ * stockée ici : elle se lit via `capacityBlocksOn(row, date)`, seule à connaître
+ * les jours off et les congés. Deux sources se seraient contredites.
+ */
+export type ProducerDayLoad = { blocks: number; details: DayLoadDetail[] };
 
 export type TimelineRow = {
   producerId: string;
   producerName: string;
   dailyCapacityBlocks: number;
+  /**
+   * Config de dispo du producteur — indispensable pour ne PAS compter comme
+   * capacité les jours off hebdo et les congés (sinon les % de charge sont
+   * mécaniquement sous-évalués).
+   */
+  capacity?: CapacityConfig;
   byDay: Record<string, ProducerDayLoad>;
 };
+
+/** Capacité réellement disponible (en blocs de 30 min) d'un producteur un jour donné. */
+export function capacityBlocksOn(row: TimelineRow, date: Date): number {
+  return isAvailable(date, row.capacity) ? row.dailyCapacityBlocks : 0;
+}
+
+export type LoadStats = { usedBlocks: number; capacityBlocks: number; pct: number };
+
+/** Charge vs capacité d'UN producteur sur une plage de jours. */
+export function timelineRowStats(row: TimelineRow, days: Date[]): LoadStats {
+  let usedBlocks = 0;
+  let capacityBlocks = 0;
+  for (const d of days) {
+    usedBlocks += row.byDay[dateKey(d)]?.blocks ?? 0;
+    capacityBlocks += capacityBlocksOn(row, d);
+  }
+  return {
+    usedBlocks,
+    capacityBlocks,
+    pct: capacityBlocks > 0 ? Math.round((usedBlocks / capacityBlocks) * 100) : usedBlocks > 0 ? 100 : 0,
+  };
+}
+
+/**
+ * Agrégat charge/capacité sur une plage de jours, hors ligne « Non assigné »
+ * (qui n'a pas de capacité réelle). `avgPct` = moyenne des taux par producteur,
+ * `pct` = taux global (blocs utilisés / blocs disponibles).
+ */
+export function timelineStats(
+  rows: TimelineRow[],
+  days: Date[]
+): LoadStats & { avgPct: number; freeBlocks: number; producerCount: number } {
+  const real = rows.filter((r) => r.producerId !== UNASSIGNED_ID);
+  let usedBlocks = 0;
+  let capacityBlocks = 0;
+  const ratios: number[] = [];
+  for (const r of real) {
+    const s = timelineRowStats(r, days);
+    usedBlocks += s.usedBlocks;
+    capacityBlocks += s.capacityBlocks;
+    ratios.push(s.pct);
+  }
+  return {
+    usedBlocks,
+    capacityBlocks,
+    pct: capacityBlocks > 0 ? Math.round((usedBlocks / capacityBlocks) * 100) : 0,
+    avgPct: ratios.length ? Math.round(ratios.reduce((s, x) => s + x, 0) / ratios.length) : 0,
+    freeBlocks: Math.max(0, capacityBlocks - usedBlocks),
+    producerCount: real.length,
+  };
+}
 
 /**
  * Construit l'étalement : pour chaque producteur, la charge (en blocs de 30 min)
@@ -538,7 +469,7 @@ function buildFlashTimeline(
   const start0 = atMidnight(today);
   const byProducer = new Map<string, ScheduledProject[]>();
   for (const sp of scheduled) {
-    const id = sp.project.producer?.documentId ?? '__unassigned__';
+    const id = sp.project.producer?.documentId ?? UNASSIGNED_ID;
     const arr = byProducer.get(id);
     if (arr) arr.push(sp);
     else byProducer.set(id, [sp]);
@@ -548,7 +479,7 @@ function buildFlashTimeline(
   byProducer.forEach((group, id) => {
     const cap = capacities[id];
     const name = group[0].project.producer?.name ?? 'Non assigné';
-    const row: TimelineRow = { producerId: id, producerName: name, dailyCapacityBlocks: FLASH_CAP_BLOCKS, byDay: {} };
+    const row: TimelineRow = { producerId: id, producerName: name, dailyCapacityBlocks: FLASH_CAP_BLOCKS, capacity: cap, byDay: {} };
 
     const items = group
       .map((sp) => ({ sp, remaining: Math.max(1, Math.round(sp.workload.days * BLOCKS_PER_EFFORT_DAY)) }))
@@ -565,7 +496,7 @@ function buildFlashTimeline(
         if (dayCap <= 0) break;
         if (it.remaining <= 0) continue;
         const take = Math.min(it.remaining, dayCap);
-        const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, capacityBlocks: FLASH_CAP_BLOCKS, details: [] });
+        const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, details: [] });
         day.blocks += take;
         day.details.push({ documentId: it.sp.project.documentId, name: it.sp.project.name, risk: it.sp.risk, blocks: take });
         it.remaining -= take;
@@ -596,14 +527,14 @@ export function buildTimeline(
     if (!r) {
       const cap = capacities[id];
       const dailyCapacityBlocks = Math.max(1, Math.round((cap?.dailyCapacityDays ?? 1) * BLOCKS_PER_EFFORT_DAY));
-      r = { producerId: id, producerName: name, dailyCapacityBlocks, byDay: {} };
+      r = { producerId: id, producerName: name, dailyCapacityBlocks, capacity: cap, byDay: {} };
       rows.set(id, r);
     }
     return r;
   };
 
   for (const sp of scheduled) {
-    const id = sp.project.producer?.documentId ?? '__unassigned__';
+    const id = sp.project.producer?.documentId ?? UNASSIGNED_ID;
     const name = sp.project.producer?.name ?? 'Non assigné';
     const row = getRow(id, name);
     const cap = capacities[id];
@@ -623,23 +554,28 @@ export function buildTimeline(
       cur.setDate(cur.getDate() + 1);
       guard++;
     }
-    // En retard / aucun jour dispo → prochain jour disponible (BORNÉ pour éviter
-    // toute boucle infinie si le producteur n'a aucune dispo configurée).
+    // Deadline dépassée (ou plus aucun jour dispo avant elle) → PLAN DE
+    // RATTRAPAGE : l'effort est réparti au rythme de la capacité quotidienne dès
+    // le prochain jour disponible. Sans ça, tout l'effort d'un projet en retard
+    // s'empilait sur UN seul jour et créait un pic de charge fictif.
+    // Borné pour éviter toute boucle infinie si le producteur n'a aucune dispo.
     if (windowDates.length === 0) {
+      const needed = Math.max(1, Math.ceil(effortBlocks / row.dailyCapacityBlocks));
       const c = new Date(start0);
       let g = 0;
-      while (!isAvailable(c, cap) && g < 30) {
+      while (windowDates.length < needed && g < 400) {
+        if (isAvailable(c, cap)) windowDates.push(new Date(c));
         c.setDate(c.getDate() + 1);
         g++;
       }
-      windowDates.push(c); // fallback garanti même si aucune dispo trouvée
+      if (windowDates.length === 0) windowDates.push(new Date(start0)); // garantie
     }
 
     const alloc = spreadEvenly(effortBlocks, windowDates.length);
     windowDates.forEach((d, i) => {
       if (alloc[i] <= 0) return;
       const k = dateKey(d);
-      const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, capacityBlocks: row.dailyCapacityBlocks, details: [] });
+      const day = row.byDay[k] ?? (row.byDay[k] = { blocks: 0, details: [] });
       day.blocks += alloc[i];
       day.details.push({ documentId: sp.project.documentId, name: sp.project.name, risk: sp.risk, blocks: alloc[i] });
     });
@@ -648,53 +584,193 @@ export function buildTimeline(
   return Array.from(rows.values());
 }
 
+// ---------------------------------------------------------------------------
+// Séries dérivées de la timeline (SOURCE UNIQUE : le même étalement que le board)
+// ---------------------------------------------------------------------------
+
+export type ForecastPoint = {
+  label: string;
+  loadPct: number;
+  usedBlocks: number;
+  capacityBlocks: number;
+};
+
+/**
+ * Charge prévisionnelle par semaine, calculée à partir de l'étalement RÉEL
+ * (`buildTimeline`) et des capacités RÉELLES des producteurs.
+ *
+ * ⚠️ Ne jamais revenir à un calcul indépendant (charge posée sur la semaine de
+ * la deadline, capacité = producteurs × 5) : le graphe contredisait alors le
+ * board affiché juste au-dessus.
+ */
+export function buildForecastFromTimeline(
+  rows: TimelineRow[],
+  weeks = 6,
+  today = new Date()
+): ForecastPoint[] {
+  const monday = currentWeekDays(today)[0];
+  const points: ForecastPoint[] = [];
+
+  for (let w = 0; w < weeks; w++) {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(monday, w * 7 + i));
+    const s = timelineStats(rows, days);
+    points.push({
+      label: `Sem. ${isoWeekNumber(days[0])}`,
+      loadPct: s.pct,
+      usedBlocks: s.usedBlocks,
+      capacityBlocks: s.capacityBlocks,
+    });
+  }
+  return points;
+}
+
+/** Taux de charge quotidien (%) sur une plage — série pour sparkline. */
+export function dailyLoadSeries(rows: TimelineRow[], days: Date[]): number[] {
+  return days.map((d) => timelineStats(rows, [d]).pct);
+}
+
+/**
+ * Nombre de projets d'un niveau de risque donné dont la deadline tombe dans
+ * chacune des `weeks` prochaines semaines. Contrairement à l'ancienne série
+ * (projets actifs par jour, qui décroissait mécaniquement vers 0), celle-ci
+ * répond à une vraie question : « quand tombent les échéances à risque ? ».
+ */
+export function deadlineSeries(
+  scheduled: ScheduledProject[],
+  risk: RiskLevel,
+  weeks = 6,
+  today = new Date()
+): number[] {
+  const monday = currentWeekDays(today)[0];
+  return Array.from({ length: weeks }, (_, w) => {
+    const from = addDays(monday, w * 7);
+    const to = addDays(from, 7);
+    return scheduled.filter((sp) => {
+      if (sp.risk !== risk) return false;
+      const end = atMidnight(new Date(sp.project.endDate));
+      return end >= from && end < to;
+    }).length;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Actions recommandées (heuristiques déterministes à partir du moteur)
+// ---------------------------------------------------------------------------
+
 export type RecommendedAction = {
-  icon: 'reassign' | 'shift' | 'accept';
+  icon: 'reassign' | 'shift' | 'accept' | 'assign' | 'split';
   title: string;
   detail: string;
   badge: string;
   tone: RiskLevel;
+  /** Projet concerné — permet d'ouvrir sa fiche depuis l'action. */
+  projectDocumentId?: string;
+  /** Changement à pré-charger dans la simulation « et si… ». */
+  sim?: SimChange;
 };
 
+/** Ajoute `n` jours OUVRÉS à une date (n ≥ 0). */
+export function addBusinessDays(from: Date, n: number): Date {
+  const c = atMidnight(from);
+  let left = Math.max(0, Math.round(n));
+  let guard = 0;
+  while (left > 0 && guard < 400) {
+    c.setDate(c.getDate() + 1);
+    if (!isWeekend(c)) left--;
+    guard++;
+  }
+  return c;
+}
+
+const MAX_ACTIONS = 4;
+
+/**
+ * Actions concrètes déduites du moteur, de la plus à la moins rentable :
+ * assigner un producteur → replanifier ce qui est déjà en retard → délester un
+ * producteur surchargé → sécuriser les marges serrées.
+ *
+ * Chaque action embarque de quoi être EXÉCUTÉE (`projectDocumentId` pour ouvrir
+ * la fiche, `sim` pour pré-remplir la simulation) — une recommandation qu'on ne
+ * peut pas appliquer n'a aucune valeur.
+ */
 export function recommendActions(
   scheduled: ScheduledProject[],
-  producerLoads: ProducerLoad[]
+  producerLoads: ProducerLoad[],
+  today = new Date()
 ): RecommendedAction[] {
   const actions: RecommendedAction[] = [];
-  const real = producerLoads.filter((p) => p.producerId !== '__unassigned__');
-  const overloaded = real.filter((p) => p.overloaded);
-  const underloaded = real
-    .filter((p) => !p.overloaded)
-    .sort((a, b) => a.totalDays / a.capacityDays - b.totalDays / b.capacityDays);
+  const push = (a: RecommendedAction) => {
+    if (actions.length < MAX_ACTIONS) actions.push(a);
+  };
 
-  for (const ov of overloaded.slice(0, 2)) {
-    const projs = scheduled
-      .filter((s) => s.project.producer?.documentId === ov.producerId)
-      .sort((a, b) => b.workload.days - a.workload.days);
-    const heavy = projs[0];
-    const target = underloaded[0];
-    if (heavy && target) {
-      const pct = Math.round((heavy.workload.days / Math.max(1, ov.capacityDays)) * 100);
-      actions.push({
-        icon: 'reassign',
-        tone: 'late',
-        title: `Réaffecter « ${heavy.project.name} » de ${ov.producerName} vers ${target.producerName}`,
-        detail: `Libère ${heavy.workload.days} j et réduit le risque de retard`,
-        badge: `+${pct}% capacité`,
-      });
-    }
-  }
-
-  for (const t of scheduled.filter((s) => s.risk === 'tight').slice(0, 2 - actions.length + 1)) {
-    if (actions.length >= 3) break;
-    actions.push({
-      icon: 'shift',
-      tone: 'tight',
-      title: `Décaler « ${t.project.name} » de 1 jour`,
-      detail: 'Évite une surcharge ponctuelle',
-      badge: 'marge +1 j',
+  // 1. Projets sans producteur : rien ne peut être planifié tant que c'est le cas.
+  for (const sp of scheduled.filter((s) => !s.project.producer?.documentId).slice(0, 2)) {
+    push({
+      icon: 'assign',
+      tone: sp.risk,
+      title: `Assigner un producteur à « ${sp.project.name} »`,
+      detail: `~${sp.workload.days} j de travail non affectés · échéance ${formatShortDate(sp.project.endDate)}`,
+      badge: 'non assigné',
+      projectDocumentId: sp.project.documentId,
     });
   }
 
-  return actions.slice(0, 4);
+  // 2. Projets déjà en retard : proposer une échéance TENABLE, chiffrée.
+  for (const sp of scheduled.filter((s) => s.risk === 'late').sort((a, b) => a.margin - b.margin).slice(0, 2)) {
+    const realistic = addBusinessDays(today, Math.ceil(sp.workload.days));
+    push({
+      icon: 'shift',
+      tone: 'late',
+      title: `Replanifier « ${sp.project.name} » au ${formatShortDate(realistic)}`,
+      detail: `Il manque ${Math.abs(sp.margin)} j ouvrés pour tenir l'échéance actuelle`,
+      badge: `+${Math.abs(Math.ceil(sp.margin))} j`,
+      projectDocumentId: sp.project.documentId,
+      sim: { projectDocumentId: sp.project.documentId, newEndDate: dateKey(realistic) },
+    });
+  }
+
+  // 3. Producteurs surchargés : délester le plus gros projet vers le moins chargé.
+  const real = producerLoads.filter((p) => p.producerId !== UNASSIGNED_ID);
+  const ratio = (p: ProducerLoad) => (p.capacityDays > 0 ? p.totalDays / p.capacityDays : Infinity);
+  const underloaded = real.filter((p) => !p.overloaded).sort((a, b) => ratio(a) - ratio(b));
+
+  for (const ov of real.filter((p) => p.overloaded).slice(0, 2)) {
+    const heavy = scheduled
+      .filter((s) => s.project.producer?.documentId === ov.producerId)
+      .sort((a, b) => b.workload.days - a.workload.days)[0];
+    const target = underloaded[0];
+    if (!heavy || !target) continue;
+    const pct = Math.round((heavy.workload.days / Math.max(1, ov.capacityDays)) * 100);
+    push({
+      icon: 'reassign',
+      tone: 'late',
+      title: `Réaffecter « ${heavy.project.name} » de ${ov.producerName} vers ${target.producerName}`,
+      detail: `Libère ${heavy.workload.days} j chez ${ov.producerName} (chargé à ${Math.round(ratio(ov) * 100)} %)`,
+      badge: `−${pct} % de charge`,
+      projectDocumentId: heavy.project.documentId,
+    });
+  }
+
+  // 4. Marges serrées : gagner du battement en décalant l'échéance de 2 jours.
+  for (const sp of scheduled.filter((s) => s.risk === 'tight').sort((a, b) => a.margin - b.margin)) {
+    if (actions.length >= MAX_ACTIONS) break;
+    const shifted = addBusinessDays(new Date(sp.project.endDate), 2);
+    push({
+      icon: 'shift',
+      tone: 'tight',
+      title: `Décaler « ${sp.project.name} » au ${formatShortDate(shifted)}`,
+      detail: `Marge actuelle : ${sp.margin} j — un aléa suffit à faire basculer le projet`,
+      badge: 'marge +2 j',
+      projectDocumentId: sp.project.documentId,
+      sim: { projectDocumentId: sp.project.documentId, newEndDate: dateKey(shifted) },
+    });
+  }
+
+  return actions;
+}
+
+function formatShortDate(d: Date | string): string {
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
 }

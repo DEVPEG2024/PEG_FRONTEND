@@ -14,6 +14,8 @@ import { RISK_COLOR, RISK_LABEL, PLANNING_ACCENT, rgba } from '../theme';
 type Props = {
   projects: Project[];
   overrides: Record<string, number>;
+  /** Changement pré-chargé (ouverture depuis une action recommandée). */
+  initialChange?: SimChange;
   onClose: () => void;
 };
 
@@ -28,8 +30,8 @@ const KpiPill = ({ counts }: { counts: { late: number; tight: number; ok: number
   </span>
 );
 
-const SimulationDrawer = ({ projects, overrides, onClose }: Props) => {
-  const [changes, setChanges] = useState<SimChange[]>([]);
+const SimulationDrawer = ({ projects, overrides, initialChange, onClose }: Props) => {
+  const [changes, setChanges] = useState<SimChange[]>(initialChange ? [initialChange] : []);
   const [selProject, setSelProject] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
   const [newDays, setNewDays] = useState('');

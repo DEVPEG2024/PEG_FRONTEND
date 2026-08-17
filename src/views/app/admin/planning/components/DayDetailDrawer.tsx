@@ -1,6 +1,6 @@
-import { TbX, TbChevronRight, TbCircle, TbCircleCheck } from 'react-icons/tb';
+import { TbX, TbChevronRight, TbCircle, TbCircleCheck, TbPencil } from 'react-icons/tb';
 import { Project } from '@/@types/project';
-import { TimelineRow, formatBlocks } from '@/utils/planning/scheduler';
+import { TimelineRow, formatBlocks, dateKey, capacityBlocksOn } from '@/utils/planning/scheduler';
 import { RISK_COLOR, RISK_LABEL, PLANNING_ACCENT, rgba, projectColor } from '../theme';
 
 type Props = {
@@ -9,13 +9,11 @@ type Props = {
   projectsById: Record<string, Project>;
   onClose: () => void;
   onProjectClick: (documentId: string) => void;
+  /** Corriger la durée estimée du projet depuis le détail du jour. */
+  onEditEstimate?: (documentId: string) => void;
 };
 
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
-}
-
-const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick }: Props) => {
+const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick, onEditEstimate }: Props) => {
   const key = dateKey(date);
   const title = date.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
 
@@ -48,8 +46,8 @@ const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick }: 
                 {/* Producteur */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>👷 {row.producerName}</span>
-                  <span style={{ color: (load?.blocks ?? 0) > row.dailyCapacityBlocks ? RISK_COLOR.late : 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 700 }}>
-                    {formatBlocks(load?.blocks ?? 0)} / {formatBlocks(row.dailyCapacityBlocks)}
+                  <span style={{ color: (load?.blocks ?? 0) > capacityBlocksOn(row, date) ? RISK_COLOR.late : 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 700 }}>
+                    {formatBlocks(load?.blocks ?? 0)} / {formatBlocks(capacityBlocksOn(row, date))}
                   </span>
                 </div>
 
@@ -62,12 +60,22 @@ const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick }: 
                     const color = projectColor(d.documentId);
                     return (
                       <div key={d.documentId} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${color}`, borderRadius: '11px', padding: '11px 13px' }}>
-                        <div onClick={() => onProjectClick(d.documentId)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ width: '11px', height: '11px', borderRadius: '3px', background: color, flexShrink: 0 }} />
-                          <span style={{ flex: 1, color: '#fff', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                          <span onClick={() => onProjectClick(d.documentId)} style={{ flex: 1, minWidth: 0, color: '#fff', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{d.name}</span>
                           <span style={{ flexShrink: 0, color: RISK_COLOR[d.risk], background: rgba(RISK_COLOR[d.risk], 0.14), border: `1px solid ${rgba(RISK_COLOR[d.risk], 0.3)}`, borderRadius: '100px', padding: '2px 8px', fontSize: '10px', fontWeight: 700 }}>{RISK_LABEL[d.risk]}</span>
                           <span style={{ flexShrink: 0, color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 700 }}>{formatBlocks(d.blocks)}</span>
-                          <TbChevronRight size={15} color="rgba(255,255,255,0.3)" />
+                          {onEditEstimate && (
+                            <button
+                              onClick={() => onEditEstimate(d.documentId)}
+                              aria-label={`Corriger la durée estimée de ${d.name}`}
+                              title="Corriger la durée estimée"
+                              style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}
+                            >
+                              <TbPencil size={14} />
+                            </button>
+                          )}
+                          <TbChevronRight onClick={() => onProjectClick(d.documentId)} size={15} color="rgba(255,255,255,0.3)" style={{ cursor: 'pointer', flexShrink: 0 }} />
                         </div>
 
                         {/* Tâches à faire */}
