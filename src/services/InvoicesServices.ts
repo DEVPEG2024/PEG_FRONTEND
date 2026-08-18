@@ -1,11 +1,15 @@
 import { Invoice } from '@/@types/invoice';
 import ApiService from './ApiService'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
-import { API_GRAPHQL_URL } from '@/configs/api.config';
+import { API_GRAPHQL_URL, EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { AxiosResponse } from 'axios';
 
 // create invoice
-export type CreateInvoiceRequest = Omit<Invoice, "documentId">
+// `name` = le numéro de facture. Il est attribué par le SERVEUR : ne pas le
+// renseigner pour une facture émise par PEG. Seul cas où il est transmis (et
+// conservé) : le téléversement d'un PDF externe, dont on garde le nom de
+// fichier — ce document reste hors de la séquence FAC-XXXX.
+export type CreateInvoiceRequest = Omit<Invoice, "documentId" | "name"> & { name?: string }
 
 export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<AxiosResponse<ApiResponse<{createInvoice: Invoice}>>> {
     const query = `
@@ -282,47 +286,39 @@ export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<Axios
     })
 }
 
-// get next invoice number (FAC-XXXX)
-export async function apiGetNextInvoiceNumber(): Promise<string> {
-    const query = `
-    query GetLastInvoiceNumber {
-        invoices_connection(
-            filters: { name: { containsi: "FAC-" } },
-            pagination: { page: 1, pageSize: 1000 },
-            sort: ["createdAt:desc"]
-        ) {
-            nodes {
-                name
-            }
-        }
-    }
-    `;
-    const res = await ApiService.fetchData<ApiResponse<{ invoices_connection: { nodes: { name: string }[] } }> & { errors?: { message: string }[] }>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: { query }
-    });
-    // La séquence FAC-XXXX est partagée PEG/NOVA : ne JAMAIS retomber sur FAC-0001
-    // silencieusement si la requête échoue (risque de collision de numéros).
-    const gqlErrors = res.data?.errors;
-    if (gqlErrors?.length) {
-        console.error('[Invoices] Erreurs GraphQL apiGetNextInvoiceNumber:', gqlErrors);
-        throw new Error('Impossible de récupérer le dernier numéro de facture (erreur GraphQL).');
-    }
-    if (!res.data?.data?.invoices_connection) {
-        throw new Error('Réponse GraphQL invalide pour le numéro de facture.');
-    }
-    const nodes = res.data.data.invoices_connection.nodes ?? [];
-    let maxNum = 0;
-    for (const node of nodes) {
-        const match = node.name?.match(/^FAC-(\d+)$/);
-        if (match) {
-            const num = parseInt(match[1], 10);
-            if (num > maxNum) maxNum = num;
-        }
-    }
-    return `FAC-${String(maxNum + 1).padStart(4, '0')}`;
+// Contrôle de cohérence de la séquence (admins).
+// Répond à « comment sait-on que la numérotation est saine ? » autrement que
+// par la confiance : doublons, trous, ruptures de chronologie.
+export type NumberingReport = {
+    series: string
+    lastNumber: string | null
+    counts: { inSeries: number; legacySeries: number; externalDocuments: number }
+    duplicates: { name: string; count: number }[]
+    missing: string[]
+    chronologyIssues: { previous: string; current: string }[]
+    allocatedUnused: { number: string; allocated_at: string; source: string }[]
+    healthy: boolean
 }
+
+export async function apiGetNumberingReport(): Promise<NumberingReport> {
+    const res = await ApiService.fetchData<NumberingReport>({
+        url: `${EXPRESS_BACKEND_URL}/invoices/numbering-report`,
+        method: 'get',
+    })
+    return res.data
+}
+
+// ⚠️ Le numéro de facture n'est PLUS calculé côté navigateur.
+//
+// Il l'était par un MAX()+1 sur les factures existantes, en même temps que NOVA
+// faisait le même calcul de son côté : deux créations rapprochées lisaient le
+// même maximum et produisaient le même numéro. Depuis, la séquence FAC-XXXX est
+// attribuée de façon atomique par Strapi à l'insertion, pour TOUTES les sources
+// (admin PEG, NOVA, Stripe, devis, paiement différé).
+//
+// Conséquence : ne jamais renseigner `name` à la création — le numéro réel est
+// dans la réponse de `apiCreateInvoice`.
+// Voir peg_strapi/src/services/invoice-numbering.service.ts.
 
 // delete invoice
 export type DeleteInvoiceResponse = {

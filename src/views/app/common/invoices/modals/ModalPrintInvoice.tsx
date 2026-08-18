@@ -23,6 +23,28 @@ const safeAmount = (val: any) => {
     : '0,00';
 };
 
+// États membres de l'UE (ISO-2). Sert à distinguer les trois régimes de TVA :
+// France → TVA 20 % ; UE hors France → autoliquidation ; hors UE → exportation.
+// L'ancien test `country !== 'FR'` traitait la Suisse comme de l'autoliquidation
+// intracommunautaire, ce qui est faux — et c'est un cas courant ici (Genève).
+const EU_COUNTRIES = new Set([
+  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR',
+  'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK',
+]);
+
+type VatRegime = 'domestic' | 'intracom' | 'export';
+
+const resolveVatRegime = (country?: string | null): VatRegime => {
+  const c = (country || 'FR').toUpperCase();
+  if (c === 'FR') return 'domestic';
+  return EU_COUNTRIES.has(c) ? 'intracom' : 'export';
+};
+
+const VAT_LEGAL_MENTION: Record<Exclude<VatRegime, 'domestic'>, string> = {
+  intracom: 'Autoliquidation de la TVA - Article 283-2 du CGI',
+  export: 'Exoneration de TVA - Article 262 I du CGI (exportation hors UE)',
+};
+
 // Composant Document PDF separe
 const InvoicePDF = ({
   selectedInvoice,
@@ -38,7 +60,22 @@ const InvoicePDF = ({
     (item: any) => item.value === selectedInvoice?.paymentMethod
   )?.label ?? '';
 
-  const isAutoLiquidation = companyInfo?.country && companyInfo.country !== 'FR';
+  const vatRegime = resolveVatRegime(companyInfo?.country);
+  const isVatExempt = vatRegime !== 'domestic';
+
+  // Taux réellement appliqué, déduit des montants de la facture. Le calcul
+  // précédent divisait par `amount` sans garde : une facture à 0 € HT sortait
+  // « NaN% » ou « Infinity% » sur le PDF.
+  const amountHT = Number(selectedInvoice?.amount) || 0;
+  const vatAmount = Number(selectedInvoice?.vatAmount) || 0;
+  const appliedVatRate =
+    amountHT > 0 && vatAmount > 0 ? Math.round((vatAmount / amountHT) * 100) : 0;
+
+  // Une facture doit décrire ce qui est facturé. Les factures sans ligne de
+  // commande (générées depuis un projet, ou par NOVA) sortaient avec un tableau
+  // vide sous un total non nul : on rétablit une ligne unique récapitulative.
+  const orderItems = selectedInvoice?.orderItems ?? [];
+  const hasLines = orderItems.length > 0;
 
   return (
     <Document>
@@ -114,6 +151,15 @@ const InvoicePDF = ({
               <Text style={{ fontSize: 10, marginTop: 3 }}>
                 {countries.find((c) => c.value === companyInfo?.country)?.label ?? ''}
               </Text>
+              {/* Identifiants du client : le n° de TVA intracommunautaire de
+                  l'acquéreur est obligatoire sur une facture en autoliquidation,
+                  et attendu par la compta sur toute facture B2B. */}
+              {companyInfo?.vatNumber ? (
+                <Text style={{ fontSize: 9, marginTop: 6 }}>{`TVA intracom. : ${companyInfo.vatNumber}`}</Text>
+              ) : null}
+              {companyInfo?.siretNumber ? (
+                <Text style={{ fontSize: 9, marginTop: 2 }}>{`SIRET : ${companyInfo.siretNumber}`}</Text>
+              ) : null}
             </View>
           </View>
         </View>
@@ -128,22 +174,35 @@ const InvoicePDF = ({
               <View style={pdfStyles.section15}><Text style={{ fontSize: 8, padding: 4 }}>TVA</Text></View>
               <View style={pdfStyles.section11}><Text style={{ fontSize: 8, padding: 4 }}>Total HT</Text></View>
             </View>
-            {(selectedInvoice?.orderItems ?? []).map((orderItem: OrderItem, i: number) => {
-              const total = Number(orderItem?.price) || 0;
-              const qty = Array.isArray(orderItem?.sizeAndColorSelections)
-                ? orderItem.sizeAndColorSelections.reduce((q: number, sel: any) => q + (Number(sel?.quantity) || 0), 0)
-                : 0;
-              return (
-                <View style={{ flexDirection: 'row', width: '100%', borderBottom: 1, borderColor: '#ECECEC' }} key={i}>
-                  <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4 }}>{i + 1}</Text></View>
-                  <View style={pdfStyles.section14}><Text style={{ fontSize: 8, padding: 4 }}>{orderItem?.product?.name ?? ''}</Text></View>
-                  <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{qty}</Text></View>
-                  <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(orderItem?.price)} EUR</Text></View>
-                  <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{selectedInvoice?.vatAmount && selectedInvoice?.amount ? `${Math.round((selectedInvoice.vatAmount / selectedInvoice.amount) * 100)}%` : '0%'} </Text></View>
-                  <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR</Text></View>
-                </View>
-              );
-            })}
+            {hasLines ? (
+              orderItems.map((orderItem: OrderItem, i: number) => {
+                const total = Number(orderItem?.price) || 0;
+                const qty = Array.isArray(orderItem?.sizeAndColorSelections)
+                  ? orderItem.sizeAndColorSelections.reduce((q: number, sel: any) => q + (Number(sel?.quantity) || 0), 0)
+                  : 0;
+                return (
+                  <View style={{ flexDirection: 'row', width: '100%', borderBottom: 1, borderColor: '#ECECEC' }} key={i}>
+                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4 }}>{i + 1}</Text></View>
+                    <View style={pdfStyles.section14}><Text style={{ fontSize: 8, padding: 4 }}>{orderItem?.product?.name ?? ''}</Text></View>
+                    <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{qty}</Text></View>
+                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(orderItem?.price)} EUR</Text></View>
+                    <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{appliedVatRate}% </Text></View>
+                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR</Text></View>
+                  </View>
+                );
+              })
+            ) : (
+              // Repli : aucune ligne de commande rattachée. Le montant facturé
+              // reste décrit, plutôt qu'un tableau vide sous un total non nul.
+              <View style={{ flexDirection: 'row', width: '100%', borderBottom: 1, borderColor: '#ECECEC' }}>
+                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4 }}>1</Text></View>
+                <View style={pdfStyles.section14}><Text style={{ fontSize: 8, padding: 4 }}>Prestation PEG</Text></View>
+                <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>1</Text></View>
+                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(amountHT)} EUR</Text></View>
+                <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{appliedVatRate}% </Text></View>
+                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(amountHT)} EUR</Text></View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -153,37 +212,39 @@ const InvoicePDF = ({
               <View style={pdfStyles.section2}><Text style={{ fontSize: 10, padding: 3 }}>TOTAL HT : </Text></View>
               <View style={pdfStyles.section5}><Text style={{ fontSize: 10, padding: 3, textAlign: 'right' }}>{safeAmount(selectedInvoice?.amount)} EUR</Text></View>
             </View>
-            {isAutoLiquidation ? (
+            {isVatExempt ? (
               <View style={{ flexDirection: 'row', marginTop: 2 }}>
                 <View style={{ ...pdfStyles.section2, width: 200 }}>
-                  <Text style={{ fontSize: 9, padding: 3 }}>TVA autoliquidation</Text>
+                  <Text style={{ fontSize: 9, padding: 3 }}>
+                    {vatRegime === 'intracom' ? 'TVA autoliquidation' : 'TVA non applicable'}
+                  </Text>
                 </View>
               </View>
             ) : (
               <View style={{ flexDirection: 'row', marginTop: 2 }}>
                 <View style={pdfStyles.section2}>
                   <Text style={{ fontSize: 10, padding: 3 }}>
-                    TVA {(Number(selectedInvoice?.vatAmount) || 0) > 0 ? VAT_AMOUNT : 0} %
+                    TVA {vatAmount > 0 ? VAT_AMOUNT : 0} %
                   </Text>
                 </View>
                 <View style={pdfStyles.section5}>
-                  <Text style={{ fontSize: 10, padding: 3, textAlign: 'right' }}>{safeAmount(selectedInvoice?.vatAmount)} EUR</Text>
+                  <Text style={{ fontSize: 10, padding: 3, textAlign: 'right' }}>{safeAmount(vatAmount)} EUR</Text>
                 </View>
               </View>
             )}
             <View style={{ flexDirection: 'row', marginTop: 2 }}>
               <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 12, padding: 3 }}>{isAutoLiquidation ? 'Total HT :' : 'Total TTC :'} </Text>
+                <Text style={{ fontSize: 12, padding: 3 }}>{isVatExempt ? 'Total HT :' : 'Total TTC :'} </Text>
               </View>
               <View style={pdfStyles.section5}>
                 <Text style={{ fontSize: 12, padding: 3, textAlign: 'right' }}>
-                  {isAutoLiquidation ? safeAmount(selectedInvoice?.amount) : safeAmount(selectedInvoice?.totalAmount)} EUR
+                  {isVatExempt ? safeAmount(amountHT) : safeAmount(selectedInvoice?.totalAmount)} EUR
                 </Text>
               </View>
             </View>
-            {isAutoLiquidation && (
+            {isVatExempt && (
               <Text style={{ fontSize: 8, marginTop: 6, fontStyle: 'italic' }}>
-                Autoliquidation de la TVA - Article 283-2 du CGI
+                {VAT_LEGAL_MENTION[vatRegime]}
               </Text>
             )}
           </View>

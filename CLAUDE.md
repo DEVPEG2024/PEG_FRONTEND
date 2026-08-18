@@ -121,14 +121,50 @@ Le bucket d'images autorise ces origines :
 
 ---
 
-## 🧾 Numérotation des factures (mise à jour 01/04/2026)
+## 🧾 Numérotation des factures — séquence unique atomique (refonte 18/08/2026)
 
-### Séquence partagée FAC-XXXX
-- **PEG et NOVA partagent la même séquence** de numéros de facture : `FAC-0001`, `FAC-0002`, etc.
-- Côté PEG Frontend (`Invoices.tsx`), la fonction `apiGetNextInvoiceNumber()` dans `InvoicesServices.ts` requête Strapi GraphQL pour trouver le plus grand numéro FAC-XXXX existant et retourne le suivant
-- Côté NOVA (`peg.py`), le même mécanisme existe via SQL direct (`SELECT MAX(...)`)
-- Le paramètre `name` n'est **jamais** généré par le LLM de NOVA — il est supprimé dans `execute_tool` de `main.py`
-- Les factures uploadées manuellement (PDF) conservent le nom du fichier comme identifiant
+### La règle, en une phrase
+**Le numéro de facture est attribué par le serveur Strapi, à l'insertion, et par lui seul.** Aucun appelant — frontend PEG, NOVA, webhook Stripe, panel admin — ne calcule, ne devine ni ne fournit de numéro.
+
+### Ce qui existait avant (et pourquoi c'était cassé)
+Trois séries coexistaient :
+| Série | Produite par | Problème |
+|---|---|---|
+| `FAC-XXXX` | admin PEG (`apiGetNextInvoiceNumber`, GraphQL `MAX()+1`) **et** NOVA (`SELECT MAX(...)` SQL) | deux `MAX()+1` concurrents → **doublons**. Repli NOVA `FAC-<4 chiffres aléatoires>` → collision + saut définitif de séquence |
+| `INV-<base36>-<aléa>` | **toutes** les factures serveur : Stripe, devis, devis différé, paiement différé (`generateInvoiceReference()`) | ni chronologique, ni continue — c'était la majorité des factures réelles |
+| nom du fichier | PDF téléversés | aucune règle |
+
+Aucune contrainte d'unicité en base, aucune date d'émission garantie (les factures NOVA sortaient avec la case « Date » vide et le champ « FACTURE N° » rempli avec un libellé produit).
+
+### Le mécanisme actuel
+- `peg_strapi/src/services/invoice-numbering.service.ts` — **source unique de vérité**
+  - table `invoice_number_sequence` : un compteur par série, incrémenté dans une transaction avec **verrou de ligne** (`FOR UPDATE` sur PostgreSQL) → les allocations concurrentes se sérialisent
+  - table `invoice_number_journal` : trace chaque allocation (date, source, facture rattachée) → un numéro réservé mais non utilisé reste **visible et justifiable**
+  - **index unique partiel** sur `invoices.name` pour `FAC-%` : dernier rempart, une collision devient une erreur DB et non un doublon silencieux
+  - compteur **calé au boot** sur le plus grand numéro déjà émis, et **jamais reculé**
+- Middleware document service sur `api::invoice.invoice` (`src/index.ts`, `register()`) — **point de passage unique**, couvre REST, GraphQL, panel admin et appels internes :
+  - `create` → attribue le numéro et garantit une `date` d'émission
+  - `update` → le numéro est **figé** (toute tentative de renumérotation est ignorée et journalisée)
+  - `delete` → **refusée** sur une facture de la série (un trou n'est pas justifiable) → annuler via `state: 'canceled'`
+
+### ⚠️ Pièges à ne jamais réintroduire
+- **NE JAMAIS** recalculer un numéro côté appelant (`MAX()+1`, horodatage, aléatoire). Un test de non-régression le verrouille : `src/__tests__/invoiceNumbering.test.ts`.
+- **NE JAMAIS** repasser `name` dans les `create` de `api/invoice/services/invoice.ts` — le middleware s'en charge.
+- **NE JAMAIS** rétablir `generateInvoiceReference()` / la série `INV-*`.
+- Les factures `INV-*` **historiques ne sont pas renumérotées** : elles ont été émises et envoyées. Série close, conservée telle quelle.
+
+### Documents externes (PDF téléversés)
+Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF — et restent **hors de la séquence**. Si le nom imite un numéro de la série, le serveur le préfixe `EXT-` pour qu'il ne puisse pas usurper un numéro.
+
+### Contrôle de cohérence
+`GET /api/invoices/numbering-report` (admin, JWT vérifié dans le contrôleur) → doublons, numéros manquants, ruptures de chronologie, numéros réservés inutilisés, comptages par série. Bouton **« Contrôler la numérotation »** dans la liste des factures (admins).
+
+### Côté NOVA
+- `create_invoice` n'a **plus** de paramètre `name` et ne calcule plus rien : il envoie la mutation sans nom et **lit le numéro dans la réponse**. Il renseigne aussi `date` / `dueDate`.
+- `update_invoice` fait une correspondance **exacte** sur le numéro (l'ancien `ILIKE '%FAC-0001%'` remontait aussi `FAC-00010`) et **refuse de modifier le montant d'une facture déjà payée** (il faut un avoir).
+
+### ⚠️ Ordre de déploiement
+**Backend Strapi d'abord** (int → prod) : le bootstrap crée les tables et cale le compteur. Front déployé avant → les créations de facture partiraient sans numéro côté serveur.
 
 ---
 

@@ -27,7 +27,8 @@ import { stateData } from '@/views/app/common/invoices/constants';
 import { toast } from 'react-toastify';
 import { apiUploadFile } from '@/services/FileServices';
 import { TVA_RATE, fmtTTC, fmtHT } from '@/utils/priceHelpers';
-import { apiGetNextInvoiceNumber } from '@/services/InvoicesServices';
+import { CreateInvoiceRequest } from '@/services/InvoicesServices';
+import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -76,29 +77,26 @@ const Invoices = () => {
         toast.error(errorOnGeneration)
       );
     } else {
-      try {
-        const nextNumber = await apiGetNextInvoiceNumber();
-        const invoice: Omit<Invoice, 'documentId'> = {
-          // Présence du client garantie en amont par verifyGeneration(). apiCreateInvoice ne lit que customer.documentId.
-          customer: project.customer as Customer,
-          orderItems: [],
-          amount: project.price,
-          vatAmount: Math.round(project.price * TVA_RATE * 100) / 100,
-          totalAmount: Math.round(project.price * (1 + TVA_RATE) * 100) / 100,
-          name: nextNumber,
-          date: dayjs().toDate(),
-          dueDate: dayjs().add(30, 'day').toDate(),
-          state: 'pending',
-          paymentMethod: 'transfer',
-          paymentAmount: 0,
-          paymentReference: '',
-          paymentState: 'pending',
-          paymentDate: new Date(0),
-        };
-        dispatch(addInvoice({ invoice, project }));
-      } catch {
-        toast.error('Erreur lors de la génération du numéro de facture');
-      }
+      // Pas de `name` : le numéro FAC-XXXX est attribué par Strapi à
+      // l'insertion (séquence atomique partagée avec NOVA et les paiements
+      // Stripe). Le calculer ici produisait des doublons.
+      const invoice: CreateInvoiceRequest = {
+        // Présence du client garantie en amont par verifyGeneration(). apiCreateInvoice ne lit que customer.documentId.
+        customer: project.customer as Customer,
+        orderItems: [],
+        amount: project.price,
+        vatAmount: Math.round(project.price * TVA_RATE * 100) / 100,
+        totalAmount: Math.round(project.price * (1 + TVA_RATE) * 100) / 100,
+        date: dayjs().toDate(),
+        dueDate: dayjs().add(30, 'day').toDate(),
+        state: 'pending',
+        paymentMethod: 'transfer',
+        paymentAmount: 0,
+        paymentReference: '',
+        paymentState: 'pending',
+        paymentDate: new Date(0),
+      };
+      dispatch(addInvoice({ invoice, project }));
     }
   };
 
@@ -132,7 +130,10 @@ const Invoices = () => {
     for (const file of pdfs) {
       try {
         const uploadedFile = await apiUploadFile(file);
-        const invoice: Omit<Invoice, 'documentId'> = {
+        // Document externe : on conserve le nom du fichier, dont le numéro est
+        // déjà imprimé sur le PDF. Il reste hors de la séquence FAC-XXXX (le
+        // serveur refuse qu'un nom de fichier usurpe un numéro de la série).
+        const invoice: CreateInvoiceRequest = {
           // apiCreateInvoice ne lit que customer.documentId ; le client peut être absent sur un upload manuel.
           customer: currentProject.customer as Customer,
           orderItems: [],
@@ -291,7 +292,10 @@ const Invoices = () => {
                           <HiBan size={14} />
                         </button>
                       )}
-                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
+                      {/* Une facture de la séquence ne se supprime pas : le trou
+                          laissé dans la numérotation n'est pas justifiable.
+                          Seule l'annulation ci-dessus est proposée. */}
+                      {hasRole(user, [SUPER_ADMIN, ADMIN]) && !isNumberedInvoice(invoice.name) && (
                         <button
                           style={iconBtn(true)}
                           onClick={() => handleDeleteInvoice(invoice)}

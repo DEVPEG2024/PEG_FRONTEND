@@ -14,6 +14,9 @@ import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, H
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
 import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
+import { isNumberedInvoice } from '@/utils/invoiceHelpers';
+import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
+import { toast } from 'react-toastify';
 import { Pagination } from '@/components/ui';
 
 injectReducer('invoices', reducer);
@@ -191,6 +194,19 @@ const InvoicesList = () => {
   const isAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isPremium = !!customer?.premium;
   const { invoices, total, loading, selectedInvoice, editInvoiceDialog, printInvoiceDialog } = useAppSelector((state) => state.invoices.data);
+  const [report, setReport] = useState<NumberingReport | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const loadNumberingReport = async () => {
+    setReportLoading(true);
+    try {
+      setReport(await apiGetNumberingReport());
+    } catch {
+      toast.error('Contrôle de numérotation indisponible');
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(getInvoices({ request: { pagination: { page: currentPage, pageSize }, searchTerm }, user }));
@@ -313,14 +329,57 @@ const InvoicesList = () => {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)' }}
           />
         </div>
+        {isAdmin && (
+          <button onClick={loadNumberingReport} title="Vérifier la continuité de la numérotation" disabled={reportLoading}
+            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.3)', cursor: reportLoading ? 'wait' : 'pointer', color: '#6b9eff', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.2)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.1)' }}
+          >
+            <HiClipboardCheck size={15} /> {reportLoading ? 'Contrôle…' : 'Contrôler la numérotation'}
+          </button>
+        )}
         <button onClick={handleExport} title="Exporter en CSV"
-          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'rgba(139,125,255,0.1)', border: '1px solid rgba(139,125,255,0.3)', cursor: 'pointer', color: '#a99bff', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+          style={{ marginLeft: isAdmin ? undefined : 'auto', display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'rgba(139,125,255,0.1)', border: '1px solid rgba(139,125,255,0.3)', cursor: 'pointer', color: '#a99bff', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139,125,255,0.2)' }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(139,125,255,0.1)' }}
         >
           <HiDownload size={15} /> Exporter
         </button>
       </div>
+
+      {/* Rapport de continuité — rend vérifiable ce que la séquence garantit :
+          pas de doublon, pas de trou, numéros croissants dans le temps. */}
+      {isAdmin && report && (
+        <div style={{ margin: '0 0 16px', padding: '14px 18px', borderRadius: '12px', background: report.healthy ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${report.healthy ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: report.healthy ? '#4ade80' : '#f87171' }}>
+              {report.healthy ? 'Numérotation continue et sans doublon' : 'Anomalies détectées dans la numérotation'}
+            </span>
+            <button onClick={() => setReport(null)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Fermer</button>
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7 }}>
+            <div>Série {report.series} — dernier numéro émis : <strong>{report.lastNumber ?? 'aucun'}</strong> ({report.counts.inSeries} facture{report.counts.inSeries > 1 ? 's' : ''})</div>
+            {report.counts.legacySeries > 0 && (
+              <div>{report.counts.legacySeries} facture(s) de l'ancienne série INV-* (antérieures à l'unification, conservées telles quelles)</div>
+            )}
+            {report.counts.externalDocuments > 0 && (
+              <div>{report.counts.externalDocuments} document(s) externe(s) téléversé(s), hors séquence</div>
+            )}
+            {report.duplicates.length > 0 && (
+              <div style={{ color: '#f87171' }}>Doublons : {report.duplicates.map((d) => `${d.name} (×${d.count})`).join(', ')}</div>
+            )}
+            {report.missing.length > 0 && (
+              <div style={{ color: '#f87171' }}>Numéros manquants : {report.missing.join(', ')}</div>
+            )}
+            {report.chronologyIssues.length > 0 && (
+              <div style={{ color: '#fbbf24' }}>Chronologie : {report.chronologyIssues.map((c) => `${c.current} antérieure à ${c.previous}`).join(' ; ')}</div>
+            )}
+            {report.allocatedUnused.length > 0 && (
+              <div style={{ color: '#fbbf24' }}>Numéros réservés puis inutilisés (création interrompue) : {report.allocatedUnused.map((a) => a.number).join(', ')}</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Grille principale : liste + activité ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', marginBottom: '18px' }}>
@@ -398,7 +457,11 @@ const InvoicesList = () => {
                       )}
                       {isAdmin && <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setEditInvoiceDialog(true)) }} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />}
                       {isAdmin && <Btn onClick={() => dispatch(updateInvoice({ documentId: inv.documentId, state: 'canceled' }))} icon={<HiBan size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Annuler" disabled={inv.state === 'canceled'} />}
-                      {isAdmin && <Btn onClick={() => { if (window.confirm(`Supprimer définitivement la facture ${inv.name} ?`)) dispatch(deleteInvoice(inv.documentId)) }} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.15)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.4)" title="Supprimer" />}
+                      {/* Pas de suppression pour une facture de la séquence :
+                          elle laisserait un trou injustifiable dans la
+                          numérotation. L'annulation ci-dessus la neutralise
+                          tout en conservant la trace. */}
+                      {isAdmin && !isNumberedInvoice(inv.name) && <Btn onClick={() => { if (window.confirm(`Supprimer définitivement la facture ${inv.name} ?`)) dispatch(deleteInvoice(inv.documentId)) }} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.15)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.4)" title="Supprimer" />}
                     </div>
                   </div>
                 )
