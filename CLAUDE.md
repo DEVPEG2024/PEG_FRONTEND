@@ -198,7 +198,7 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - Le cache des `adminIds` est en mémoire côté frontend (variable `cachedAdminIds` dans `NotificationService.ts`), réinitialisé à chaque refresh
 
 ### Destinataires d'une notification
-1. **`recipients`** : liste explicite envoyée par le frontend (ex: le `customer.documentId` du projet pour `new_comment`)
+1. **`recipients`** : liste explicite envoyée par le frontend — toujours des `user.documentId` (le polling lit par `user.documentId`). Pour notifier un client, passer `customerRecipient` (le `customer.documentId` du projet) à `triggerNotification` : le service le résout en `user.documentId` des comptes rattachés via GraphQL (`getCustomerUserIds`, cache par client, repli sur la fiche brute si la résolution échoue). **NE PAS mettre un `customer.documentId` directement dans `recipients`** — la notification ne serait jamais lue (correctif 18/08/2026)
 2. **`adminIds`** : liste des admins envoyée par le frontend quand `notifyAdmins: true`
 3. Le `senderId` est **toujours exclu** des destinataires
 

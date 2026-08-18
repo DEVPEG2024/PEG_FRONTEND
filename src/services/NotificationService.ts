@@ -164,10 +164,51 @@ async function getAdminIds(): Promise<string[]> {
   }
 }
 
+/** Résout une fiche client (customer.documentId) vers les documentId des
+ * users rattachés. Les notifications sont stockées et pollées par
+ * user.documentId : une notification adressée au customer.documentId ne
+ * serait jamais lue. Cache par client, résultat vide non mis en cache. */
+const cachedCustomerUserIds = new Map<string, string[]>();
+async function getCustomerUserIds(customerDocumentId: string): Promise<string[]> {
+  const cached = cachedCustomerUserIds.get(customerDocumentId);
+  if (cached) return cached;
+  try {
+    const res = await ApiService.fetchData<any>({
+      url: API_GRAPHQL_URL,
+      method: 'post',
+      data: {
+        query: `query CustomerUsers($documentId: ID!) {
+          usersPermissionsUsers_connection(
+            pagination: { limit: 100 }
+            filters: { customer: { documentId: { eq: $documentId } } }
+          ) {
+            nodes { documentId }
+          }
+        }`,
+        variables: { documentId: customerDocumentId },
+      },
+    });
+    if (res.data?.errors?.length) {
+      console.error('[Notifications] Erreurs GraphQL getCustomerUserIds:', res.data.errors);
+    }
+    const nodes = res.data?.data?.usersPermissionsUsers_connection?.nodes || [];
+    const ids = nodes.map((n: any) => n.documentId).filter(Boolean);
+    if (ids.length === 0) return [];
+    cachedCustomerUserIds.set(customerDocumentId, ids);
+    return ids;
+  } catch (error) {
+    console.error('[Notifications] Échec résolution des users du client:', error);
+    return [];
+  }
+}
+
 /** Trigger a notification from the frontend (for Strapi-based actions that bypass Express controllers) */
 export async function triggerNotification(data: {
   eventType: string;
   recipients?: { userId: string; email?: string }[];
+  /** documentId de la fiche client à notifier — résolu en user.documentId
+   * des comptes rattachés (repli : la fiche brute si la résolution échoue). */
+  customerRecipient?: string;
   title: string;
   message: string;
   link?: string;
@@ -176,7 +217,14 @@ export async function triggerNotification(data: {
   senderId: string;
 }) {
   try {
-    const payload: any = { ...data };
+    const { customerRecipient, ...rest } = data;
+    const payload: any = { ...rest };
+    if (customerRecipient) {
+      const userIds = await getCustomerUserIds(customerRecipient);
+      const customerRecipients = (userIds.length > 0 ? userIds : [customerRecipient])
+        .map((userId) => ({ userId }));
+      payload.recipients = [...(rest.recipients ?? []), ...customerRecipients];
+    }
     if (data.notifyAdmins) {
       payload.adminIds = await getAdminIds();
     }

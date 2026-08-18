@@ -109,9 +109,7 @@ export const createTask = createAsyncThunk(
       triggerNotification({
         eventType: 'new_task',
         senderId,
-        recipients: data.project.customer?.documentId
-          ? [{ userId: data.project.customer.documentId }]
-          : [],
+        customerRecipient: data.project.customer?.documentId,
         notifyAdmins: true,
         title: 'Nouvelle tâche',
         message: `Tâche "${data.task.title}" ajoutée au projet "${projectTitle}"`,
@@ -180,9 +178,7 @@ export const createComment = createAsyncThunk(
       triggerNotification({
         eventType: 'new_comment',
         senderId,
-        recipients: data.project.customer?.documentId
-          ? [{ userId: data.project.customer.documentId }]
-          : [],
+        customerRecipient: data.project.customer?.documentId,
         notifyAdmins: true,
         title: 'Nouveau message',
         message: `${senderName} a commenté le projet "${projectTitle}"`,
@@ -231,9 +227,7 @@ export const addInvoice = createAsyncThunk(
       triggerNotification({
         eventType: 'new_invoice',
         senderId,
-        recipients: data.project.customer?.documentId
-          ? [{ userId: data.project.customer.documentId }]
-          : [],
+        customerRecipient: data.project.customer?.documentId,
         notifyAdmins: true,
         title: 'Nouvelle facture',
         message: `Facture ajoutée au projet "${projectTitle}"`,

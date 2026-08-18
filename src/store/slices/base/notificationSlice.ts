@@ -38,6 +38,9 @@ const notificationSlice = createSlice({
       state.notifications = action.payload;
       state.page = 1;
     },
+    setHasMore(state, action: PayloadAction<boolean>) {
+      state.hasMore = action.payload;
+    },
     appendNotifications(state, action: PayloadAction<{ notifications: NotificationItem[]; hasMore: boolean }>) {
       const existingIds = new Set(state.notifications.map((n) => n._id));
       const newNotifs = action.payload.notifications.filter((n) => !existingIds.has(n._id));
@@ -89,6 +92,7 @@ const notificationSlice = createSlice({
 export const {
   setUnreadCount,
   setNotifications,
+  setHasMore,
   appendNotifications,
   addNotification,
   markAsRead,

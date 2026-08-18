@@ -85,6 +85,10 @@ const NotificationBell = () => {
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Garde anti-rafale : les événements scroll partent en rafale avec un
+  // `page` figé → plusieurs fetch concurrents de la même page incrémentaient
+  // chacun state.page (pages sautées = notifications jamais affichées).
+  const loadingMoreRef = useRef(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -125,8 +129,15 @@ const NotificationBell = () => {
     if (!el || !open) return;
 
     const handleScroll = () => {
-      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40 && hasMore) {
-        loadMore(page + 1);
+      if (
+        el.scrollTop + el.clientHeight >= el.scrollHeight - 40 &&
+        hasMore &&
+        !loadingMoreRef.current
+      ) {
+        loadingMoreRef.current = true;
+        Promise.resolve(loadMore(page + 1)).finally(() => {
+          loadingMoreRef.current = false;
+        });
       }
     };
     el.addEventListener('scroll', handleScroll);

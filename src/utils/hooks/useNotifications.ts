@@ -7,6 +7,7 @@ import {
   addNotification,
   setUnreadCount,
   setNotifications,
+  setHasMore,
   appendNotifications,
   setConnectionStatus,
 } from '@/store/slices/base/notificationSlice';
@@ -92,6 +93,10 @@ export default function useNotifications() {
       if (page === 1) {
         if (notifData.notifications) {
           dispatch(setNotifications(notifData.notifications));
+          // Recalcule hasMore à chaque rechargement de la page 1 : sans ça,
+          // hasMore reste figé (ex: false après « Tout supprimer ») et
+          // l'infinite scroll ne charge plus jamais au-delà de 20.
+          dispatch(setHasMore(notifData.notifications.length === limit));
         }
       } else {
         dispatch(appendNotifications({
@@ -147,7 +152,11 @@ export default function useNotifications() {
         dispatch(setConnectionStatus('disconnected'));
       });
 
-      socket.on('reconnect', () => {
+      // socket.io-client v4 : « reconnect » est un événement du Manager
+      // (socket.io), pas du socket — socket.on('reconnect') ne fire jamais.
+      // Sans ça, les notifications manquées pendant la coupure ne sont pas
+      // rechargées (le register est déjà rejoué par « connect »).
+      socket.io.on('reconnect', () => {
         socket.emit('register', userId);
         dispatch(setConnectionStatus('connected'));
         loadNotifications();
@@ -173,6 +182,10 @@ export default function useNotifications() {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
+      // Reset au changement d'utilisateur : sinon le compteur non-lus du
+      // compte précédent sert de référence et déclenche un chime parasite
+      // au premier chargement du nouveau compte.
+      lastUnreadRef.current = null;
       dispatch(setConnectionStatus('disconnected'));
     };
   }, [userId, dispatch, loadNotifications]);

@@ -106,7 +106,7 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
         triggerNotification({
           eventType: 'project_status_change',
           senderId,
-          recipients: [{ userId: project.customer.documentId }],
+          customerRecipient: project.customer.documentId,
           notifyAdmins: true,
           title: 'Projet livré',
           message: 'Le projet "' + project.name + '" a été livré par le producteur',
