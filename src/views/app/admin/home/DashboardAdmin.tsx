@@ -2,6 +2,7 @@
  * COMPOSANT PROTEGE — NE PAS MODIFIER SANS DEMANDE EXPLICITE DE NOVA
  * Contient : banniere admin (hero), pense-bete (TodoListWidget), layout widgets
  * Derniere validation : 2026-04-18
+ * Ajout 2026-09-02 (demande Nova) : detail du widget « Reste a encaisser » (PendingBreakdownModal)
  * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
  */
 import Container from '@/components/shared/Container'
@@ -12,6 +13,7 @@ import { apiGetDashboardSuperAdminInformations, apiGetProjectsAdditionalSales } 
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
 import { env } from '@/configs/env.config'
 import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
+import { statusTextData } from '@/views/app/common/projects/lists/constants'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
@@ -277,6 +279,59 @@ function loadHidden(): WidgetId[] {
 
 const MAX_BANNER = 2 * 1024 * 1024
 
+/* ═══════════════════════════════════════════════ */
+/*  DÉTAIL « RESTE À ENCAISSER »                    */
+/* ═══════════════════════════════════════════════ */
+type PendingProjectLine = { documentId?: string; name: string; customer: string; state: string; price: number; paid: number; remaining: number }
+type PendingSaleLine = { label: string; projectName: string; projectId?: string; date?: string; amount: number }
+type PendingBreakdown = { projectLines: PendingProjectLine[]; saleLines: PendingSaleLine[]; projectsTotal: number; salesTotal: number; total: number }
+
+function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProject, onOpenInvoices }: { open: boolean; onClose: () => void; breakdown: PendingBreakdown; displayed: number; onOpenProject: (documentId?: string) => void; onOpenInvoices: () => void }) {
+  useEffect(() => { if (!open) return; const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [open, onClose])
+  if (!open) return null
+  const { projectLines, saleLines, projectsTotal, salesTotal, total } = breakdown
+  const stateLabel = (st: string) => (statusTextData as Record<string, string>)[st] ?? (st || '—')
+  const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+  const Row = ({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) => <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] ${onClick ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/15 transition-colors' : ''}`}>{children}</div>
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Détail du reste à encaisser">
+      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
+        <div className="flex items-start justify-between gap-4 p-5 border-b border-white/[0.08]">
+          <div className="min-w-0">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Reste à encaisser · détail</div>
+            <div className="mt-1 text-2xl font-black text-white tracking-tight">{eur(displayed)} <span className="text-sm font-medium text-white/40">TTC · {eur(toHT(displayed))} HT</span></div>
+            <div className="mt-1 text-[11px] text-white/35">Calcul : CA total (prix des projets + ventes additionnelles) − Encaissé (montants payés des projets)</div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="shrink-0 h-8 w-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"><HiOutlineX className="w-4 h-4" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          <section>
+            <div className="flex items-center justify-between mb-2"><div className="text-xs font-semibold uppercase tracking-wider text-white/50">Projets avec un solde</div><div className="text-xs font-bold text-amber-300">{projectLines.length} · {eur(projectsTotal)}</div></div>
+            {projectLines.length === 0 ? <div className="text-xs text-white/30 py-2">Aucun projet avec un solde</div> : <div className="space-y-1.5">{projectLines.map((l, i) => <Row key={l.documentId ?? i} onClick={l.documentId ? () => onOpenProject(l.documentId) : undefined}>
+              <div className="min-w-0"><div className="text-sm text-white/85 truncate">{l.customer} <span className="text-white/35">·</span> {l.name}</div><div className="mt-0.5 flex items-center gap-2 text-[11px] text-white/40"><span className={`px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${stateClass(l.state)}`}>{stateLabel(l.state)}</span><span>{eur(l.price)} − payé {eur(l.paid)}</span></div></div>
+              <div className={`shrink-0 text-sm font-bold ${l.remaining < 0 ? 'text-emerald-400' : 'text-amber-300'}`}>{l.remaining < 0 ? `− ${eur(Math.abs(l.remaining))}` : eur(l.remaining)}{l.remaining < 0 && <div className="text-[10px] font-medium text-emerald-400/70 text-right">trop-perçu</div>}</div>
+            </Row>)}</div>}
+          </section>
+          <section>
+            <div className="flex items-center justify-between mb-2"><div className="text-xs font-semibold uppercase tracking-wider text-white/50">Ventes additionnelles</div><div className="text-xs font-bold text-amber-300">{saleLines.length} · {eur(salesTotal)}</div></div>
+            <div className="text-[11px] text-white/35 mb-2">Ajoutées au CA mais jamais comptées dans « Encaissé » : elles restent ici en totalité, même si le projet est soldé.</div>
+            {saleLines.length === 0 ? <div className="text-xs text-white/30 py-2">Aucune vente additionnelle</div> : <div className="space-y-1.5">{saleLines.map((l, i) => <Row key={`${l.projectId ?? 'p'}-${i}`} onClick={l.projectId ? () => onOpenProject(l.projectId) : undefined}>
+              <div className="min-w-0"><div className="text-sm text-white/85 truncate">{l.label}</div><div className="mt-0.5 text-[11px] text-white/40 truncate">{l.projectName}{l.date ? ` · ${dayjs(l.date).format('DD/MM/YY')}` : ''}</div></div>
+              <div className="shrink-0 text-sm font-bold text-amber-300">{eur(l.amount)}</div>
+            </Row>)}</div>}
+          </section>
+          {Math.round(total * 100) !== Math.round(displayed * 100) && <div className="text-[11px] text-rose-300/80 border border-rose-500/20 bg-rose-500/10 rounded-xl px-3 py-2">Somme des lignes : {eur(total)}. Le widget affiche {eur(displayed)} car un solde négatif est ramené à 0 €.</div>}
+        </div>
+        <div className="flex items-center justify-between gap-3 p-4 border-t border-white/[0.08] bg-white/[0.02]">
+          <div className="text-sm text-white/60">Total <span className="font-black text-white ml-1">{eur(displayed)}</span></div>
+          <button type="button" onClick={onOpenInvoices} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 hover:bg-white/10 transition-colors">Voir les factures →</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardAdmin() {
   const navigate = useNavigate()
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -371,6 +426,21 @@ export default function DashboardAdmin() {
   const invoiceTotal = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales, [projects, totalAdditionalSales])
   const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.paidPrice) || 0), 0), [projects])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
+  // Détail du « Reste à encaisser » : projets dont le prix diffère du montant payé + ventes additionnelles
+  // (celles-ci entrent dans le CA mais jamais dans « Encaissé », elles pèsent donc en totalité)
+  const pendingBreakdown = useMemo<PendingBreakdown>(() => {
+    const projectLines: PendingProjectLine[] = []
+    for (const p of projects) {
+      const price = Number(p?.price) || 0; const paid = Number(p?.paidPrice) || 0; const remaining = Math.round((price - paid) * 100) / 100
+      if (remaining === 0) continue
+      projectLines.push({ documentId: p?.documentId, name: p?.name ?? '—', customer: p?.customer?.name ?? '—', state: String(p?.state ?? ''), price, paid, remaining })
+    }
+    projectLines.sort((a, b) => b.remaining - a.remaining)
+    const saleLines: PendingSaleLine[] = allAdditionalSales.map(sl => ({ label: sl.label ?? '—', projectName: sl.projectName ?? '—', projectId: sl.projectId, date: sl.date, amount: Number(sl.amount) || 0 })).filter(sl => sl.amount !== 0).sort((a, b) => b.amount - a.amount)
+    const projectsTotal = projectLines.reduce((a, l) => a + l.remaining, 0); const salesTotal = saleLines.reduce((a, l) => a + l.amount, 0)
+    return { projectLines, saleLines, projectsTotal, salesTotal, total: projectsTotal + salesTotal }
+  }, [projects, allAdditionalSales])
+  const [showPendingDetails, setShowPendingDetails] = useState(false)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
   const atRiskProjects = useMemo(() => { const now = new Date(); return projects.filter((p: any) => { const end = safeDate(p?.endDate); if (!end) return false; const s = (p?.state ?? '').toString().toLowerCase(); return end.getTime() < now.getTime() && !(s.includes('done') || s.includes('closed') || s.includes('term') || s.includes('livr')) }).length }, [projects])
   const avgDeliveryDays = useMemo(() => { const p2 = projects.map((p: any) => ({ s: safeDate(p?.startDate), e: safeDate(p?.endDate) })).filter((x: any) => x.s && x.e); if (!p2.length) return 0; return Math.round(p2.reduce((a: number, x: any) => a + Math.max(0, (x.e.getTime() - x.s.getTime()) / 86400000), 0) / p2.length) }, [projects])
@@ -574,7 +644,7 @@ export default function DashboardAdmin() {
                   <GlassCard onClick={() => navigate('/admin/invoices')} glow="cyan" className="h-full"><div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-90" /><div className="absolute bottom-0 left-0 right-0 h-24 opacity-20 pointer-events-none"><Sparkline data={caSparkData} color="#22d3ee" height={96} /></div><div className="relative p-5 md:p-6"><div className="flex items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-widest text-cyan-400/60 flex items-center gap-2"><HiOutlineLightningBolt className="w-3.5 h-3.5" />CA total TTC</div><div className="mt-2 text-3xl md:text-4xl font-black text-white tracking-tight"><AnimatedValue value={invoiceTotal} format={eur} /></div><div className="text-sm text-white/40 mt-0.5">{eur(toHT(invoiceTotal))} HT</div><div className="flex items-center gap-3 mt-2"><DeltaBadge current={invoiceTotal} previous={caLastMonth} />{caLastMonth > 0 && <span className="text-xs text-white/35">vs mois préc.</span>}</div></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-500/25 shrink-0 text-cyan-400"><HiOutlineCurrencyEuro className="w-6 h-6" /></div></div></div></GlassCard>
                 </motion.div>
                 <motion.div variants={fadeInUp} custom={1}><KPI title="Encaissé TTC" value={eur(invoicePaid)} subtitle={`${eur(toHT(invoicePaid))} HT`} icon={<HiOutlineCheckCircle className="w-5 h-5" />} variant="success" onClick={() => navigate('/admin/invoices')} delta={<DeltaBadge current={paidThisMonth} previous={paidLastMonth} />} /></motion.div>
-                <motion.div variants={fadeInUp} custom={2}><KPI title="Reste à encaisser" value={eur(invoicePending)} subtitle={`${eur(toHT(invoicePending))} HT`} icon={<HiOutlineClock className="w-5 h-5" />} variant={invoicePending > 0 ? 'warning' : 'success'} onClick={() => navigate('/admin/invoices')} /></motion.div>
+                <motion.div variants={fadeInUp} custom={2}><KPI title="Reste à encaisser" value={eur(invoicePending)} subtitle={`${eur(toHT(invoicePending))} HT`} icon={<HiOutlineClock className="w-5 h-5" />} variant={invoicePending > 0 ? 'warning' : 'success'} onClick={() => setShowPendingDetails(true)} /></motion.div>
               </AnimatedSection>
               <AnimatedSection immediate className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
                 <motion.div variants={fadeInUp} custom={0}>
@@ -691,6 +761,7 @@ export default function DashboardAdmin() {
 
         </div>
       </Container>
+      <PendingBreakdownModal open={showPendingDetails} onClose={() => setShowPendingDetails(false)} breakdown={pendingBreakdown} displayed={invoicePending} onOpenProject={(documentId) => { if (documentId) { setShowPendingDetails(false); navigate(`/common/projects/details/${documentId}`) } }} onOpenInvoices={() => { setShowPendingDetails(false); navigate('/admin/invoices') }} />
     </div>
   )
 }
