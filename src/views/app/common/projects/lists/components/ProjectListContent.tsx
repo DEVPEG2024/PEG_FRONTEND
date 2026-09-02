@@ -10,6 +10,7 @@ const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https:/
 
 const statusSections = [
   { key: 'pending',   label: 'En cours',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
+  { key: 'pending_paid', label: 'En cours (payé)', color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)', border: 'rgba(45,212,191,0.35)' },
   { key: 'waiting',   label: 'En attente',        color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)' },
   { key: 'sav',       label: 'SAV',               color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
   { key: 'unpaid',    label: 'Terminé impayé',    color: '#e879f9', bg: 'rgba(232,121,249,0.15)', border: 'rgba(232,121,249,0.35)' },

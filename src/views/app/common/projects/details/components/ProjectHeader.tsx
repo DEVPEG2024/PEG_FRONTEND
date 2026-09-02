@@ -17,6 +17,7 @@ import { HiOutlineEye } from 'react-icons/hi';
 
 const statusOptions = [
   { value: 'pending',   label: 'En cours',    color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
+  { value: 'pending_paid', label: 'En cours (payé)', color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)', border: 'rgba(45,212,191,0.35)' },
   { value: 'fulfilled', label: 'Terminé',     color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'  },
   { value: 'waiting',   label: 'En attente',  color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'  },
   { value: 'canceled',  label: 'Annulé',      color: '#f87171', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'  },
@@ -44,7 +45,12 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
 
   const handleStatusChange = (newState: string) => {
     if (newState !== project.state) {
-      dispatch(updateCurrentProject({ documentId: project.documentId, state: newState }));
+      // « En cours (payé) » : le prix est réglé → paidPrice aligné sur price pour que les KPI du dashboard
+      // (Encaissé / Reste à encaisser) comptabilisent le projet. Le serveur applique la même règle.
+      const paidSync = newState === 'pending_paid' && (Number(project.paidPrice) || 0) < (Number(project.price) || 0)
+        ? { paidPrice: Number(project.price) || 0 }
+        : {};
+      dispatch(updateCurrentProject({ documentId: project.documentId, state: newState, ...paidSync }));
       const label = statusOptions.find((s) => s.value === newState)?.label ?? newState;
       toast.success(`Statut changé en "${label}"`);
     }

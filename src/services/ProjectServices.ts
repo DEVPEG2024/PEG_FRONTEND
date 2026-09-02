@@ -458,7 +458,7 @@ export async function apiGetProjects(data: GetProjectsRequest = {pagination: {pa
         projects_connection(filters: {
             and: [
                 {name: {containsi: $searchTerm}},
-                {state: {containsi: $statusFilter}}
+                {state: {eq: $statusFilter}}
             ]
         }, pagination: $pagination) {
             nodes {
@@ -550,7 +550,7 @@ export async function apiGetCustomerProjects(data: GetCustomerProjectsRequest = 
                 name: {containsi: $searchTerm}
             },
             {
-                state: {containsi: $statusFilter}
+                state: {eq: $statusFilter}
             }
             ]
             }, pagination: $pagination){
@@ -648,7 +648,7 @@ export async function apiGetProducerProjects(data: GetProducerProjectsRequest = 
                 name: {containsi: $searchTerm}
             },
             {
-                state: {containsi: $statusFilter}
+                state: {eq: $statusFilter}
             }
             ]
             }, pagination: $pagination){

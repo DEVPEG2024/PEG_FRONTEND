@@ -322,6 +322,26 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 
 ---
 
+## 💠 Statut « En cours (payé) » — `pending_paid` (ajout 02/09/2026)
+
+### Concept
+- Vrai statut Strapi (enum `project.state`), demandé par Nova : projet **encore en production** dont le **prix est déjà réglé**.
+- Objectif : que la somme soit **comptabilisée dans les KPI du dashboard** (Encaissé ↑, Reste à encaisser ↓) sans attendre le passage en « Terminé ».
+
+### Mécanique (deux garde-fous)
+1. **Le statut aligne `paidPrice` sur `price`** : côté front (`ProjectHeader.handleStatusChange`) **et** côté serveur (pré-hook du middleware projet dans `peg_strapi/src/index.ts`, quel que soit le canal : front, NOVA, panel admin). Un projet `pending_paid` a donc toujours `paidPrice >= price`.
+2. **Le dashboard compte `pending_paid` comme encaissé** même si la synchro n'a pas eu lieu : `effectivePaid(p)` dans `DashboardAdmin.tsx` (= `max(paidPrice, price)` pour ce statut) alimente « Encaissé », la courbe 6 mois et le détail du widget « Reste à encaisser ».
+
+### ⚠️ Pièges
+- Le filtre GraphQL des listes projets est passé de `containsi` à **`eq`** sur `state` (`ProjectServices.ts`) : avec `containsi`, l'onglet « En cours » (`pending`) remontait aussi les `pending_paid`. **Ne pas revenir à `containsi`.**
+- Tout nouveau statut doit être ajouté dans **toutes** les cartes de statut du front (`constants.ts`, `ProjectHeader`, `ProjectsList` (onglets, libellés, ordre kanban, comptages, cartes de synthèse), `ProjectListContent`, `ProjectItem`, `RecentProjects`) + `GLOSSARY.md` + test `terminology-guard`.
+- Couleur : teal `#2dd4bf` (bg `rgba(45,212,191,0.15)`, border `rgba(45,212,191,0.35)`).
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (enum + pré-hook) : tant que peg-prod n'est pas redéployé, choisir « En cours (payé) » depuis le front échoue (valeur d'enum refusée par GraphQL) ; le reste du front fonctionne normalement.
+
+---
+
 ## 🔀 Deux backends distincts (mise à jour 03/04/2026)
 
 ### 1. Strapi — via `EXPRESS_BACKEND_URL`

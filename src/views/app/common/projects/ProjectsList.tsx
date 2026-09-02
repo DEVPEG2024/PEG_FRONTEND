@@ -61,6 +61,7 @@ const sortOptions: SortOption[] = [
 const statusTabs = [
   { key: 'all',       label: 'Tous',        color: 'rgba(255,255,255,0.6)',  bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' },
   { key: 'pending',   label: 'En cours',    color: '#6b9eff',               bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)'  },
+  { key: 'pending_paid', label: 'En cours (payé)', color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)', border: 'rgba(45,212,191,0.35)' },
   { key: 'fulfilled', label: 'Terminé',     color: '#4ade80',               bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'   },
   { key: 'waiting',   label: 'En attente',  color: '#fbbf24',               bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'   },
   { key: 'canceled',  label: 'Annulé',      color: '#f87171',               bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'   },
@@ -76,6 +77,7 @@ const priorityStyles: Record<string, { label: string; color: string }> = {
 
 const statusLabelStyles: Record<string, { label: string; color: string }> = {
   pending:   { label: 'En cours',   color: '#6b9eff' },
+  pending_paid: { label: 'En cours (payé)', color: '#2dd4bf' },
   fulfilled: { label: 'Terminé',    color: '#4ade80' },
   waiting:   { label: 'En attente', color: '#fbbf24' },
   canceled:  { label: 'Annulé',     color: '#f87171' },
@@ -83,7 +85,7 @@ const statusLabelStyles: Record<string, { label: string; color: string }> = {
   unpaid:    { label: 'Terminé impayé', color: '#e879f9' },
 };
 
-const statusOrder: Record<string, number> = { pending: 0, waiting: 1, sav: 2, fulfilled: 3, canceled: 4, unpaid: 5 };
+const statusOrder: Record<string, number> = { pending: 0, pending_paid: 1, waiting: 2, sav: 3, fulfilled: 4, canceled: 5, unpaid: 6 };
 const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 function getProjectProgress(project: Project): number {
@@ -258,7 +260,7 @@ const ProjectsList = () => {
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   useEffect(() => {
     const fetchCounts = async () => {
-      const statuses = ['pending', 'fulfilled', 'waiting', 'canceled', 'unpaid'];
+      const statuses = ['pending', 'pending_paid', 'fulfilled', 'waiting', 'canceled', 'unpaid'];
       const results: Record<string, number> = {};
 
       const fetchForStatus = async (s: string) => {
@@ -297,7 +299,7 @@ const ProjectsList = () => {
         // Subtract unpaid from fulfilled count
         results['fulfilled'] = (results['fulfilled'] ?? 0) - unpaidCount;
       } catch { /* ignore */ }
-      results['all'] = (results['pending'] ?? 0) + (results['fulfilled'] ?? 0) + (results['waiting'] ?? 0) + (results['canceled'] ?? 0) + (results['unpaid'] ?? 0);
+      results['all'] = (results['pending'] ?? 0) + (results['pending_paid'] ?? 0) + (results['fulfilled'] ?? 0) + (results['waiting'] ?? 0) + (results['canceled'] ?? 0) + (results['unpaid'] ?? 0);
       setStatusCounts(results);
     };
     fetchCounts();
@@ -543,6 +545,7 @@ const ProjectsList = () => {
           {([
             { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },
             { key: 'pending',   label: 'En cours',      sub: 'Projets actifs',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  icon: <HiOutlineClock size={20} /> },
+            { key: 'pending_paid', label: 'En cours (payé)', sub: 'Réglés, en production', color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)', icon: <HiOutlineCheckCircle size={20} /> },
             { key: 'waiting',   label: 'En attente',    sub: 'En attente de retour',   color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   icon: <MdHourglassEmpty size={20} /> },
             { key: 'fulfilled', label: 'Terminés',      sub: 'Projets livrés',         color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   icon: <HiOutlineCheckCircle size={20} /> },
             { key: 'canceled',  label: 'Annulés',       sub: 'Projets annulés',        color: '#f87171', bg: 'rgba(239,68,68,0.15)',   icon: <HiOutlineXCircle size={20} /> },

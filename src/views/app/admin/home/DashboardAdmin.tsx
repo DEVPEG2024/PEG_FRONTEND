@@ -36,6 +36,10 @@ dayjs.extend(isoWeek); dayjs.extend(relativeTime); dayjs.locale('fr')
 /* ═══════════════════════════════════════════════ */
 function safeDate(s?: string) { if (!s) return null; const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d }
 function eur(n: number) { if (arePricesHidden()) return '•••••'; try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) } catch { return `${Math.round(n)} €` } }
+// « En cours (payé) » (pending_paid) : projet en production dont le prix est réglé → compté comme encaissé
+// même si paidPrice n'a pas été synchronisé (le serveur l'aligne aussi, ceinture et bretelles).
+const PAID_IN_PROGRESS_STATE = 'pending_paid'
+function effectivePaid(p: any) { const price = Number(p?.price) || 0; const paid = Number(p?.paidPrice) || 0; return String(p?.state ?? '') === PAID_IN_PROGRESS_STATE ? Math.max(paid, price) : paid }
 function monthKey(d: Date) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
 function monthLabel(key: string) { const m = Number(key.split('-')[1]) - 1; return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m] ?? key }
 
@@ -291,7 +295,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
   if (!open) return null
   const { projectLines, saleLines, projectsTotal, salesTotal, total } = breakdown
   const stateLabel = (st: string) => (statusTextData as Record<string, string>)[st] ?? (st || '—')
-  const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+  const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === PAID_IN_PROGRESS_STATE ? 'bg-teal-500/15 text-teal-300 border-teal-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
   const Row = ({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) => <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] ${onClick ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/15 transition-colors' : ''}`}>{children}</div>
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Détail du reste à encaisser">
@@ -424,14 +428,14 @@ export default function DashboardAdmin() {
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
   const invoiceTotal = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales, [projects, totalAdditionalSales])
-  const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.paidPrice) || 0), 0), [projects])
+  const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + effectivePaid(p), 0), [projects])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   // Détail du « Reste à encaisser » : projets dont le prix diffère du montant payé + ventes additionnelles
   // (celles-ci entrent dans le CA mais jamais dans « Encaissé », elles pèsent donc en totalité)
   const pendingBreakdown = useMemo<PendingBreakdown>(() => {
     const projectLines: PendingProjectLine[] = []
     for (const p of projects) {
-      const price = Number(p?.price) || 0; const paid = Number(p?.paidPrice) || 0; const remaining = Math.round((price - paid) * 100) / 100
+      const price = Number(p?.price) || 0; const paid = effectivePaid(p); const remaining = Math.round((price - paid) * 100) / 100
       if (remaining === 0) continue
       projectLines.push({ documentId: p?.documentId, name: p?.name ?? '—', customer: p?.customer?.name ?? '—', state: String(p?.state ?? ''), price, paid, remaining })
     }
@@ -454,7 +458,7 @@ export default function DashboardAdmin() {
     const now = new Date(); const months: string[] = []; for (let i = 5; i >= 0; i--) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
     const by = new Map<string, { ca: number; costs: number; paid: number; depenses: number }>(); months.forEach(k => by.set(k, { ca: 0, costs: 0, paid: 0, depenses: 0 }))
     // CA par mois = prix des projets (source de vérité)
-    for (const p of projects) { const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = Number(p?.paidPrice) || 0; if (paidPrice) by.get(k)!.paid += paidPrice }
+    for (const p of projects) { const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = effectivePaid(p); if (paidPrice) by.get(k)!.paid += paidPrice }
     for (const tx of transactions) { const d = safeDate(tx?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += (Number(tx?.amount) || 0) }
     // Ajouter les coûts producteur par mois
     for (const p of projects) { const cost = Math.max(Number(p?.producerPrice) || 0, Number(p?.producerPaidPrice) || 0); if (!cost) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.costs += cost }

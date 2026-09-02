@@ -8,6 +8,7 @@ import { paymentTypes } from '@/views/app/producer/wallet/constants';
 
 export const statusColorData = {
   pending: 'bg-blue-500',
+  pending_paid: 'bg-teal-500',
   fulfilled: 'bg-green-500',
   waiting: 'bg-yellow-500',
   canceled: 'bg-red-500',
@@ -16,6 +17,7 @@ export const statusColorData = {
 };
 export const statusColorText = {
   pending: 'text-blue-500',
+  pending_paid: 'text-teal-500',
   fulfilled: 'text-green-500',
   waiting: 'text-yellow-500',
   canceled: 'text-red-500',
@@ -24,6 +26,7 @@ export const statusColorText = {
 };
 export const statusTextData = {
   pending: 'En cours',
+  pending_paid: 'En cours (payé)',
   fulfilled: 'Terminé',
   waiting: 'En attente',
   canceled: 'Annulé',
@@ -60,6 +63,10 @@ export const stateData = [
   {
     value: 'pending',
     label: 'En cours',
+  },
+  {
+    value: 'pending_paid',
+    label: 'En cours (payé)',
   },
   {
     value: 'fulfilled',

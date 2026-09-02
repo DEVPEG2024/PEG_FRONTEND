@@ -27,6 +27,7 @@ const formatLastSeen = (dateStr: string) => {
 
 const statusStyles: Record<string, { label: string; color: string; bg: string; border: string }> = {
   pending:   { label: 'En cours',   color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
+  pending_paid: { label: 'En cours (payé)', color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)', border: 'rgba(45,212,191,0.35)' },
   fulfilled: { label: 'Terminé',    color: '#4ade80', bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.35)'  },
   waiting:   { label: 'En attente', color: '#fbbf24', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'  },
   canceled:  { label: 'Annulé',     color: '#f87171', bg: 'rgba(239,68,68,0.15)',   border: 'rgba(239,68,68,0.35)'  },

@@ -7,6 +7,7 @@ import { fmtPrice } from '@/utils/priceHelpers'
 const statusColorData: Record<string, string> = {
   pending: 'bg-blue-100 text-blue-700',
   fulfilled: 'bg-green-100 text-green-700',
+  pending_paid: 'bg-teal-100 text-teal-700',
   waiting: 'bg-yellow-100 text-yellow-700',
   canceled: 'bg-red-100 text-red-700',
   sav: 'bg-orange-100 text-orange-700',
@@ -14,6 +15,7 @@ const statusColorData: Record<string, string> = {
 
 const statusTextData: Record<string, string> = {
   pending: 'En cours',
+  pending_paid: 'En cours (payé)',
   fulfilled: 'Terminé',
   waiting: 'En attente',
   canceled: 'Annulé',

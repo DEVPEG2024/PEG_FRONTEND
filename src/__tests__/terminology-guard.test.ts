@@ -159,6 +159,10 @@ describe('Statuts projet', () => {
   test('Statut unpaid = "Terminé impayé"', () => {
     expect(constantsContent).toMatch(/unpaid.*Terminé impayé/)
   })
+
+  test('Statut pending_paid = "En cours (payé)"', () => {
+    expect(constantsContent).toMatch(/pending_paid.*En cours \(payé\)/)
+  })
 })
 
 // ─── 6. Absence de synonymes interdits ───────────────────────────────────────

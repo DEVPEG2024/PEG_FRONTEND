@@ -34,6 +34,7 @@
 | Valeur interne   | Label FR attendu        |
 |------------------|-------------------------|
 | `pending`        | En attente              |
+| `pending_paid`   | En cours (paye)         |
 | `waiting`        | Attente                 |
 | `fulfilled`      | Termine / Complete      |
 | `canceled`       | Annule                  |
