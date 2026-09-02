@@ -22,6 +22,7 @@ import {
 } from 'react-icons/hi';
 import { hasRole } from '@/utils/permissions';
 import { CUSTOMER } from '@/constants/roles.constant';
+import { pegBackendFetch } from '@/services/PegBackendClient';
 
 /* ── Helpers ── */
 const isImageFile = (name: string) => /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(name);
@@ -55,8 +56,6 @@ const ALLOWED_TYPES = [
   'image/vnd.adobe.photoshop', 'application/postscript', 'application/illustrator',
 ];
 
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
-
 const Files = () => {
   const [pegFiles, setPegFiles] = useState<PegFile[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -79,7 +78,7 @@ const Files = () => {
 
   useEffect(() => {
     if (!isCustomer || !project?.documentId) return;
-    fetch(`${PEG_BACKEND_URL}/projects/files/ownership/${project.documentId}`)
+    pegBackendFetch(`/projects/files/ownership/${encodeURIComponent(project.documentId)}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -92,7 +91,7 @@ const Files = () => {
           setMyFileIds(mine);
         }
       })
-      .catch((err) => console.error('[FileOwnership] GET error:', err));
+      .catch((err) => console.warn('[FileOwnership] GET error:', err));
   }, [isCustomer, project?.documentId, userId]);
 
   const fetchFiles = async () => {
@@ -142,11 +141,10 @@ const Files = () => {
 
       if (isCustomer && newlyUploadedIds.length > 0) {
         setMyFileIds((prev) => [...prev, ...newlyUploadedIds]);
-        fetch(`${PEG_BACKEND_URL}/projects/files/ownership`, {
+        pegBackendFetch('/projects/files/ownership', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileIds: newlyUploadedIds, projectId: project.documentId, userId }),
-        }).catch((err) => console.error('[FileOwnership] POST error:', err));
+        }).catch((err) => console.warn('[FileOwnership] POST error:', err));
       }
 
       await dispatch(

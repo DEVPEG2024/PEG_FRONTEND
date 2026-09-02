@@ -1,16 +1,16 @@
 /**
  * Service Planning — persistance des métadonnées de planification (Phase 1).
  *
- * Appelle PEG_BACKEND (Express) via le proxy same-origin `/peg-api` en prod
- * (pas de CORS) et `http://localhost:3000` en dev — même pattern que
- * NotificationService. Strapi reste la source de vérité des projets ; ces
- * endpoints ne stockent que des overrides keyés par documentId Strapi.
+ * Appelle PEG_BACKEND (Express) via `pegBackendFetch` (proxy same-origin
+ * `/peg-api` en prod, `http://localhost:3000` en dev, JWT Strapi en Bearer —
+ * routes réservées aux admins). Strapi reste la source de vérité des projets ;
+ * ces endpoints ne stockent que des overrides keyés par documentId Strapi.
  *
  * Toutes les fonctions sont tolérantes : si le backend Planning n'est pas
- * déployé, l'appelant retombe sur le calcul 100 % client (mode POC).
+ * déployé ou refuse l'appel, l'appelant retombe sur le calcul 100 % client.
  */
 
-const BASE = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+import { pegBackendFetch } from './PegBackendClient';
 
 export type PlanningSettings = {
   id: string;
@@ -49,15 +49,14 @@ export type PlanningRunSummary = {
 };
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}/planning${path}`, { headers: { 'Content-Type': 'application/json' } });
+  const res = await pegBackendFetch(`/planning${path}`);
   if (!res.ok) throw new Error(`planning GET ${path} → ${res.status}`);
   return res.json();
 }
 
 async function sendJson<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BASE}/planning${path}`, {
+  const res = await pegBackendFetch(`/planning${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
     body: body != null ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`planning ${method} ${path} → ${res.status}`);

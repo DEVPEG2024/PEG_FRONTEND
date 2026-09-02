@@ -1,30 +1,9 @@
-import store from '@/store';
-import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import ApiService from './ApiService';
 import { API_GRAPHQL_URL } from '@/configs/api.config';
+import { pegBackendFetch } from './PegBackendClient';
 
-const BASE = import.meta.env.DEV
-  ? 'http://localhost:3000'
-  : '/peg-api';
-
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  try {
-    // Store Redux d'abord (session de CET onglet), puis persistance par onglet.
-    // L'ancien ordre lisait le localStorage PARTAGÉ en priorité : les
-    // notifications pouvaient partir avec le token d'un autre onglet (admin).
-    let token = store.getState().auth.session.token;
-    if (!token) {
-      token = getPersistedAuthToken();
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-  } catch {
-    // no token available
-  }
-  return headers;
-}
+// Toutes les routes /notifications/* de peg-backend exigent le JWT Strapi :
+// `pegBackendFetch` l'ajoute (store Redux de l'onglet, puis persistance par onglet).
 
 export async function fetchNotifications(
   userId: string,
@@ -37,18 +16,16 @@ export async function fetchNotifications(
     limit: String(limit),
     ...(unreadOnly ? { unreadOnly: 'true' } : {}),
   });
-  const res = await fetch(
-    `${BASE}/notifications/${encodeURIComponent(userId)}?${params}`,
-    { headers: getAuthHeaders() },
+  const res = await pegBackendFetch(
+    `/notifications/${encodeURIComponent(userId)}?${params}`,
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchUnreadCount(userId: string) {
-  const res = await fetch(
-    `${BASE}/notifications/${encodeURIComponent(userId)}/unread-count`,
-    { headers: getAuthHeaders() },
+  const res = await pegBackendFetch(
+    `/notifications/${encodeURIComponent(userId)}/unread-count`,
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
@@ -56,56 +33,52 @@ export async function fetchUnreadCount(userId: string) {
 }
 
 export async function markNotificationAsRead(id: string) {
-  const res = await fetch(`${BASE}/notifications/${encodeURIComponent(id)}/read`, {
+  const res = await pegBackendFetch(`/notifications/${encodeURIComponent(id)}/read`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function markAllNotificationsAsRead(userId: string) {
-  const res = await fetch(
-    `${BASE}/notifications/${encodeURIComponent(userId)}/read-all`,
-    { method: 'PATCH', headers: getAuthHeaders() },
+  const res = await pegBackendFetch(
+    `/notifications/${encodeURIComponent(userId)}/read-all`,
+    { method: 'PATCH' },
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function deleteNotification(id: string) {
-  const res = await fetch(`${BASE}/notifications/${encodeURIComponent(id)}`, {
+  const res = await pegBackendFetch(`/notifications/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function deleteAllNotifications(userId: string) {
-  const res = await fetch(
-    `${BASE}/notifications/${encodeURIComponent(userId)}/all`,
-    { method: 'DELETE', headers: getAuthHeaders() },
+  const res = await pegBackendFetch(
+    `/notifications/${encodeURIComponent(userId)}/all`,
+    { method: 'DELETE' },
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchPreferences(userId: string) {
-  const res = await fetch(
-    `${BASE}/notifications/preferences/${encodeURIComponent(userId)}`,
-    { headers: getAuthHeaders() },
+  const res = await pegBackendFetch(
+    `/notifications/preferences/${encodeURIComponent(userId)}`,
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function updatePreferences(userId: string, preferences: Record<string, { push: boolean; email: boolean }>) {
-  const res = await fetch(
-    `${BASE}/notifications/preferences/${encodeURIComponent(userId)}`,
+  const res = await pegBackendFetch(
+    `/notifications/preferences/${encodeURIComponent(userId)}`,
     {
       method: 'PUT',
-      headers: getAuthHeaders(),
       body: JSON.stringify({ preferences }),
     },
   );
@@ -120,9 +93,8 @@ export async function subscribePush(data: {
   keys?: { p256dh: string; auth: string };
   expoPushToken?: string;
 }) {
-  const res = await fetch(`${BASE}/notifications/subscribe`, {
+  const res = await pegBackendFetch('/notifications/subscribe', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -228,9 +200,8 @@ export async function triggerNotification(data: {
     if (data.notifyAdmins) {
       payload.adminIds = await getAdminIds();
     }
-    const res = await fetch(`${BASE}/notifications/trigger`, {
+    const res = await pegBackendFetch('/notifications/trigger', {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

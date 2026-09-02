@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type {
   ImbretexProductsResponse,
   ImbretexPriceStock,
@@ -7,20 +6,35 @@ import type {
   ImbretexPricesResponse,
   ImbretexDeletedResponse,
 } from '@/@types/imbretex';
+import { pegBackendFetch } from './PegBackendClient';
 
-// Les appels Imbretex passent par le PROXY backend PEG (le token Imbretex est
-// détenu côté serveur, jamais exposé dans le bundle front).
-// Dev: backend Express local ; Prod: proxy same-origin /peg-api -> peg-backend.
-const PEG_BACKEND_BASE = import.meta.env.DEV
-  ? 'http://localhost:3000'
-  : '/peg-api';
+// Les appels Imbretex passent par le PROXY peg-backend (le token Imbretex est
+// détenu côté serveur, jamais exposé dans le bundle front). Routes réservées
+// aux admins : `pegBackendFetch` ajoute le JWT Strapi et cible `/peg-api` en
+// prod, `http://localhost:3000` en dev.
+const IMBRETEX_PREFIX = '/imbretex/api';
+const TIMEOUT_MS = 30_000;
 
-// baseURL = proxy backend ; le backend ajoute le Bearer token Imbretex.
-const imbretexAxios = axios.create({
-  baseURL: `${PEG_BACKEND_BASE}/imbretex/api`,
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
+type QueryParams = Record<string, string | number | undefined>;
+
+async function imbretexGet<T>(path: string, params: QueryParams = {}): Promise<T> {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) search.set(key, String(value));
+  }
+  const qs = search.toString();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await pegBackendFetch(`${IMBRETEX_PREFIX}${path}${qs ? `?${qs}` : ''}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Imbretex ${path} → HTTP ${res.status}`);
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ─── Products ───
 
@@ -34,11 +48,11 @@ export type GetImbretexProductsParams = {
 export async function apiGetImbretexProducts(
   params: GetImbretexProductsParams = {}
 ): Promise<ImbretexProductsResponse> {
-  const { data } = await imbretexAxios.get<ImbretexProductsResponse>(
-    '/products/products',
-    { params: { perPage: 50, page: 1, ...params } }
-  );
-  return data;
+  return imbretexGet<ImbretexProductsResponse>('/products/products', {
+    perPage: 50,
+    page: 1,
+    ...params,
+  });
 }
 
 // ─── Deleted products ───
@@ -48,11 +62,7 @@ export async function apiGetImbretexDeletedProducts(
   page = 1,
   perPage = 50
 ): Promise<ImbretexDeletedResponse> {
-  const { data } = await imbretexAxios.get<ImbretexDeletedResponse>(
-    '/products/deleted',
-    { params: { since, page, perPage } }
-  );
-  return data;
+  return imbretexGet<ImbretexDeletedResponse>('/products/deleted', { since, page, perPage });
 }
 
 // ─── Stocks (bulk) ───
@@ -62,11 +72,7 @@ export async function apiGetImbretexStocks(
   perPage = 1000,
   since?: string
 ): Promise<ImbretexStocksResponse> {
-  const { data } = await imbretexAxios.get<ImbretexStocksResponse>(
-    '/products/stocks',
-    { params: { page, perPage, ...(since ? { since } : {}) } }
-  );
-  return data;
+  return imbretexGet<ImbretexStocksResponse>('/products/stocks', { page, perPage, since });
 }
 
 // ─── Prices (bulk) ───
@@ -76,11 +82,7 @@ export async function apiGetImbretexPrices(
   perPage = 1000,
   since?: string
 ): Promise<ImbretexPricesResponse> {
-  const { data } = await imbretexAxios.get<ImbretexPricesResponse>(
-    '/products/prices',
-    { params: { page, perPage, ...(since ? { since } : {}) } }
-  );
-  return data;
+  return imbretexGet<ImbretexPricesResponse>('/products/prices', { page, perPage, since });
 }
 
 // ─── Price + Stock par références ───
@@ -88,12 +90,10 @@ export async function apiGetImbretexPrices(
 export async function apiGetImbretexPriceStock(
   references: string[]
 ): Promise<ImbretexPriceStockResponse> {
-  const { data } = await imbretexAxios.get<ImbretexPriceStockResponse>(
-    '/products/price-stock',
-    // L'API attend `products=ref1,ref2` (liste séparée par des virgules).
-    { params: { products: references.join(',') } }
-  );
-  return data;
+  // L'API attend `products=ref1,ref2` (liste séparée par des virgules).
+  return imbretexGet<ImbretexPriceStockResponse>('/products/price-stock', {
+    products: references.join(','),
+  });
 }
 
 // ─── Price + Stock par référence produit (toutes variantes) ───
@@ -107,8 +107,7 @@ export type ImbretexPriceStockByRefResponse = {
 export async function apiGetImbretexPriceStockByRef(
   productReference: string
 ): Promise<ImbretexPriceStockByRefResponse> {
-  const { data } = await imbretexAxios.get<ImbretexPriceStockByRefResponse>(
-    `/products/price-stock/${productReference}`
+  return imbretexGet<ImbretexPriceStockByRefResponse>(
+    `/products/price-stock/${encodeURIComponent(productReference)}`
   );
-  return data;
 }

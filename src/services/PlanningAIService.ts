@@ -4,8 +4,7 @@ import {
   ProducerLoad,
   RiskCounts,
 } from '@/utils/planning/scheduler';
-
-const BASE = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+import { pegBackendFetch } from './PegBackendClient';
 
 /**
  * Couche IA explicative du planificateur (Niveau 3).
@@ -146,9 +145,8 @@ function buildPrompt(s: PlanningSnapshot): string {
 export async function apiPlanningSummary(s: PlanningSnapshot, runId?: number): Promise<string> {
   // 1. Endpoint IA dédié au planning (prompt spécialisé + cache par run)
   try {
-    const res = await fetch(`${BASE}/planning/ai/summary`, {
+    const res = await pegBackendFetch('/planning/ai/summary', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ snapshot: s, runId }),
     });
     if (res.ok) {
@@ -183,9 +181,8 @@ export async function apiSimulateNarrative(payload: {
   transitions: { name: string; from: string; to: string }[];
 }): Promise<string | null> {
   try {
-    const res = await fetch(`${BASE}/planning/ai/simulate`, {
+    const res = await pegBackendFetch('/planning/ai/simulate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (res.ok) {

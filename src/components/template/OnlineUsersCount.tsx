@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 import { HiUserCircle } from 'react-icons/hi';
+import { pegBackendFetch } from '@/services/PegBackendClient';
 
-const BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : '/peg-api';
+// Ping et listes passent par peg-backend avec le JWT Strapi (pegBackendFetch).
+// Le ping n'est accepté que pour l'id de l'appelant ; online-count / online-users
+// sont réservés aux admins. Un refus (401/403) reste silencieux.
 const PING_INTERVAL = 10_000;
 const FETCH_INTERVAL = 10_000;
 
@@ -38,24 +41,23 @@ const OnlineUsersCount = () => {
   const userRole = user?.authority?.[0] || user?.role?.name || '';
 
   const ping = (id: string) => {
-    fetch(`${BACKEND_URL}/auth/user/ping/${id}`, {
+    pegBackendFetch(`/auth/user/ping/${encodeURIComponent(id)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName, avatarUrl, role: userRole }),
     }).catch(() => {});
   };
 
   const fetchCount = () => {
-    fetch(`${BACKEND_URL}/auth/user/online-count`)
-      .then((r) => r.json())
-      .then((data) => { if (typeof data.count === 'number') setCount(data.count); })
+    pegBackendFetch('/auth/user/online-count')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (typeof data?.count === 'number') setCount(data.count); })
       .catch(() => {});
   };
 
   const fetchUsers = () => {
-    fetch(`${BACKEND_URL}/auth/user/online-users`)
-      .then((r) => r.json())
-      .then((data) => { if (data.users) setUsers(data.users); })
+    pegBackendFetch('/auth/user/online-users')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (Array.isArray(data?.users)) setUsers(data.users); })
       .catch(() => {});
   };
 
@@ -285,9 +287,8 @@ export const OnlinePing = () => {
   useEffect(() => {
     if (!userId) return;
     const ping = () => {
-      fetch(`${BACKEND_URL}/auth/user/ping/${userId}`, {
+      pegBackendFetch(`/auth/user/ping/${encodeURIComponent(userId)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName, avatarUrl, role: userRole }),
       }).catch(() => {});
     };

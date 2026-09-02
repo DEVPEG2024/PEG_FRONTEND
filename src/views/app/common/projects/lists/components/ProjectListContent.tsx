@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RootState, useAppSelector } from '@/store';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
-
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
+import { pegBackendFetch } from '@/services/PegBackendClient';
 
 const statusSections = [
   { key: 'pending',   label: 'En cours',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
@@ -35,7 +34,7 @@ const ProjectListContent = ({
       const map: Record<string, string> = {};
       await Promise.all(
         projects.map((p) =>
-          fetch(`${PEG_BACKEND_URL}/projects/view/${p.documentId}`)
+          pegBackendFetch(`/projects/view/${encodeURIComponent(p.documentId)}`)
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
               if (data?.views?.length > 0) {

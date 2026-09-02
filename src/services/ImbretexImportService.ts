@@ -18,10 +18,7 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { normalizeName } from '@/utils/nameMatch';
 import BaseService from './BaseService';
 import { API_BASE_URL } from '@/configs/api.config';
-
-const PEG_BACKEND_BASE = import.meta.env.DEV
-  ? 'http://localhost:3000'
-  : '/peg-api';
+import { pegBackendFetch } from './PegBackendClient';
 
 // ─── Caches (chargés une fois par session d'import) ───
 
@@ -246,8 +243,7 @@ function getBestImageUrl(p: ImbretexProduct): string | null {
 
 async function fetchImageViaProxy(imageUrl: string): Promise<File | null> {
   try {
-    const proxyUrl = `${PEG_BACKEND_BASE}/imbretex/image-proxy?url=${encodeURIComponent(imageUrl)}`;
-    const res = await fetch(proxyUrl);
+    const res = await pegBackendFetch(`/imbretex/image-proxy?url=${encodeURIComponent(imageUrl)}`);
     if (!res.ok) return null;
     const blob = await res.blob();
     const ext = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';

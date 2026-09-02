@@ -16,12 +16,9 @@ import {
   fetchUnreadCount,
   subscribePush,
 } from '@/services/NotificationService';
+import { PEG_BACKEND_BASE } from '@/services/PegBackendClient';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-
-const BACKEND_URL = import.meta.env.DEV
-  ? 'http://localhost:3000'
-  : '/peg-api';
 
 // Socket.io activé en dev uniquement — le backend Express est sur Vercel serverless (pas de WebSocket)
 const SOCKET_ENABLED = import.meta.env.DEV;
@@ -126,7 +123,7 @@ export default function useNotifications() {
     loadNotifications();
 
     if (SOCKET_ENABLED) {
-      const socket = io(BACKEND_URL, {
+      const socket = io(PEG_BACKEND_BASE, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: Infinity,

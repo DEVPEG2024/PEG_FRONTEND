@@ -173,6 +173,7 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 ### Architecture
 - **Dev** : Socket.io WebSocket vers `http://localhost:3000` (transports: websocket + polling)
 - **Prod** : Polling HTTP toutes les **5 secondes** via `/peg-api` (Socket.io désactivé — `SOCKET_ENABLED = import.meta.env.DEV` — car Vercel serverless ne supporte pas WebSocket)
+- **Auth (02/09/2026)** : toutes les routes `/notifications/*` exigent le JWT Strapi en `Authorization: Bearer` — ajouté par `pegBackendFetch` (`src/services/PegBackendClient.ts`). peg-backend résout l'appelant via `/api/users/me` et ne sert que les notifications dont le propriétaire est le `user.documentId` du porteur du token. Un 401/403 est avalé par les `try/catch` existants (pas de déconnexion, pas de boucle)
 - **Base de données** : PostgreSQL (tables `notifications`, `notification_preferences`, `push_subscriptions`)
 
 ### Son
@@ -203,6 +204,7 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 3. Le `senderId` est **toujours exclu** des destinataires
 
 ### Fichiers clés
+- `src/services/PegBackendClient.ts` — `PEG_BACKEND_BASE` + `pegBackendFetch()` (Bearer JWT), client unique vers peg-backend
 - `src/utils/hooks/useNotifications.ts` — logique connexion + polling (userId = documentId)
 - `src/services/NotificationService.ts` — appels API + `triggerNotification()` + `getAdminIds()`
 - `PEG_BACKEND/routes/notifications/index.ts` — endpoint `/trigger`, `/preferences`, push subscriptions
@@ -246,13 +248,16 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - **POST** `/projects/view/{documentId}` — enregistre la vue (clients uniquement, pas les admins)
 - **GET** `/projects/view/{documentId}` — récupère les vues (admins uniquement, polling 30s en vue détail)
 
-### URL — ATTENTION : appel direct, PAS le proxy
+### URL — via `pegBackendFetch` (mise à jour 02/09/2026)
 - **Dev** : `http://localhost:3000`
-- **Prod** : `https://peg-backend.vercel.app` (hardcodé, ne passe PAS par le proxy `/peg-api`)
-- **Raison** : les vues projet utilisent `fetch()` simple sans credentials, donc pas besoin de proxy same-origin. L'appel direct fonctionne grâce au CORS configuré dans `app.ts` du backend
+- **Prod** : `/peg-api` (proxy same-origin Vercel) — **plus d'appel direct** à `peg-backend.vercel.app`
+- Helper unique : `src/services/PegBackendClient.ts`
 
 ### Auth
-- **Aucun Bearer token** — le `userId` (documentId Strapi) est envoyé dans le body du POST
+- **JWT Strapi obligatoire** (`Authorization: Bearer`, ajouté par `pegBackendFetch`)
+- **POST** : l'utilisateur est **pris dans le token** — le body est ignoré, le front n'envoie plus de `userId`. Appel conservé pour les clients uniquement (`isCustomer`)
+- **GET** : réservé aux admins
+- Un 401/403 reste silencieux (`console.warn`), jamais bloquant
 
 ### Base de données
 - Table PostgreSQL `project_views` sur le pool PG du backend Express
@@ -288,14 +293,14 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - **`OnlineUsersCount`** : composant visible **uniquement pour les admins** (wrappé dans `AuthorityCheck authority={["admin", "super_admin"]}`). Affiche le compteur vert et la liste déroulante.
 - **⚠️ Le ping DOIT être séparé de l'affichage** — si le ping est à l'intérieur du composant réservé aux admins, les clients/producteurs ne sont jamais visibles en ligne
 
-### URL
-- **Dev** : `http://localhost:3000`
-- **Prod** : `/peg-api` (proxy Vercel same-origin)
+### URL / Auth (mise à jour 02/09/2026)
+- Tous les appels passent par `pegBackendFetch` (`src/services/PegBackendClient.ts`) : `/peg-api` en prod, `http://localhost:3000` en dev, JWT Strapi en Bearer
+- Un refus (401/403) est ignoré silencieusement (`r.ok` vérifié, `.catch(() => {})`)
 
 ### Endpoints (peg-backend Express)
-- **POST** `/auth/user/ping/{userId}` — body: `{ displayName, avatarUrl, role }`
-- **GET** `/auth/user/online-count` — retourne `{ count: N }`
-- **GET** `/auth/user/online-users` — retourne `{ users: [...] }`
+- **POST** `/auth/user/ping/{userId}` — **authentifié** ; `{userId}` doit être l'id numérique **ou** le documentId de l'appelant — body: `{ displayName, avatarUrl, role }`
+- **GET** `/auth/user/online-count` — **admin** — retourne `{ count: N }`
+- **GET** `/auth/user/online-users` — **admin** — retourne `{ users: [...] }`
 
 ### Fichiers clés
 - `src/components/template/OnlineUsersCount.tsx` — composant affichage + `OnlinePing`
@@ -350,20 +355,18 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - **Utilisé pour** : factures (`/invoices/.../payment-status`), chatbot (`/chatbot/chat`), upload (`/upload`), GraphQL (`/graphql`)
 - Config : `src/configs/env.config.ts` + `src/configs/api.config.ts`
 
-### 2. peg-backend (Express) — DEUX modes d'accès
+### 2. peg-backend (Express) — UN SEUL client : `PegBackendClient.ts` (mise à jour 02/09/2026)
 - **Dev** : `http://localhost:3000`
-- **Prod** : `https://peg-backend.vercel.app`
+- **Prod** : `/peg-api` (proxy same-origin Vercel → `https://peg-backend.vercel.app`) — **plus aucun appel direct**, le header `Authorization` traverse le rewrite, aucun CORS à gérer
 - **Repo** : `PEG_BACKEND` (GitHub), déployé manuellement via `vercel --prod` (PAS d'auto-deploy)
+- **Auth** : **toutes** les routes exigent un JWT Strapi (`Authorization: Bearer`) ; peg-backend résout l'appelant via `/api/users/me`. Le front ne transmet plus d'identifiant « de confiance » dans le body
+- **Helper unique** : `src/services/PegBackendClient.ts` — `PEG_BACKEND_BASE` + `pegBackendFetch(path, init)` (ajoute le Bearer — store Redux de l'onglet puis `getPersistedAuthToken()` — et `Content-Type: application/json` sur body JSON). **Tout nouvel appel vers peg-backend passe par lui**, jamais par un `fetch`/axios direct
+- Utilisé par : notifications (`NotificationService.ts`, `useNotifications.ts`), ping/liste en ligne (`OnlineUsersCount.tsx`), vues projet (`ProjectDetails.tsx`, `ProjectListContent.tsx`), propriété des fichiers (`Files.tsx`), planning (`PlanningService.ts`, `PlanningAIService.ts`), Imbretex (`ImbretexService.ts`, `ImbretexImportService.ts`), contrat Premium (`PremiumServices.ts`)
+- **Politique côté Express** : `/notifications/*` (propriétaire = `user.documentId`), `POST /auth/user/ping/:id` (id de l'appelant), `GET /auth/user/online-*` (admin), `POST /projects/view/:id` (auth, user pris dans le token), `GET /projects/view/:id` (admin), `/projects/files/ownership` (auth), `/planning/*` (admin), `POST /premium/contract-accept` (auth, `customerId` = client de l'appelant), `/imbretex/*` (admin)
+- **Routes supprimées côté Express** : `/mails/*` (le mail de bienvenue est envoyé par Strapi à la vérification du code email), `/chatbot/*`, `/upload`, `/user-prefs` — chatbot et upload passent par Strapi via `EXPRESS_BACKEND_URL`
+- **401/403** : silencieux et non bloquant côté front (pas de déconnexion, pas de boucle)
 - **CORS** : `origin` avec liste explicite (`app.mypeg.fr`, `int.mypeg.fr`, etc.) + `credentials: true`
   - **⚠️ JAMAIS `origin: '*'` avec `credentials: true`** — le navigateur bloque silencieusement
-
-#### Mode proxy `/peg-api` (same-origin, pas de CORS)
-- Utilisé par : **notifications** (`NotificationService.ts`), **ping en ligne** (`OnlineUsersCount.tsx`), **polling notifs** (`useNotifications.ts`)
-- Avantage : pas de problème CORS car same-origin
-
-#### Mode appel direct `https://peg-backend.vercel.app`
-- Utilisé par : **vues projet** (`ProjectDetails.tsx`, `ProjectListContent.tsx`)
-- Raison : ces appels n'envoient pas de credentials, le CORS fonctionne
 
 ---
 

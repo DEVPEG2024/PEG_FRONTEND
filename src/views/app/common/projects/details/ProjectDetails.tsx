@@ -20,7 +20,7 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
+import { pegBackendFetch } from '@/services/PegBackendClient';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -58,26 +58,23 @@ const ProjectDetails = () => {
   const [deliveryWizardOpen, setDeliveryWizardOpen] = useState(false);
   const isAssignedProducer = isProducer && project?.producer?.documentId && user?.producer?.documentId === project?.producer?.documentId;
 
-  // Track project view — customers only
+  // Track project view — customers only. peg-backend prend l'utilisateur dans
+  // le JWT (aucun userId dans le body) ; un refus reste silencieux.
   useEffect(() => {
     if (!isCustomer || !documentId || !user?.documentId) return;
-    fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.documentId }),
-    })
+    pegBackendFetch(`/projects/view/${encodeURIComponent(documentId)}`, { method: 'POST' })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .catch((err) => console.error('[ProjectView] POST error:', err));
-  }, [documentId, user?.documentId]);
+      .catch((err) => console.warn('[ProjectView] POST error:', err));
+  }, [isCustomer, documentId, user?.documentId]);
 
-  // Admin: fetch last view by customer
+  // Admin: fetch last view by customer (route admin, JWT via pegBackendFetch)
   useEffect(() => {
     if (!isAdmin || !documentId) return;
     const fetchView = () => {
-      fetch(`${PEG_BACKEND_URL}/projects/view/${documentId}`)
+      pegBackendFetch(`/projects/view/${encodeURIComponent(documentId)}`)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
@@ -87,7 +84,7 @@ const ProjectDetails = () => {
             setCustomerLastSeen(data.views[0].last_seen);
           }
         })
-        .catch((err) => console.error('[ProjectView] GET error:', err));
+        .catch((err) => console.warn('[ProjectView] GET error:', err));
     };
     fetchView();
     const iv = setInterval(fetchView, 30_000);

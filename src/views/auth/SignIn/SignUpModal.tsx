@@ -13,8 +13,6 @@ import {
 } from './generatorContract';
 import { API_BASE_URL } from '@/configs/api.config';
 
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
-
 interface SignUpModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -173,7 +171,6 @@ const SignUpModal = ({
     // Étape de validation par code email
     const [awaitingCode, setAwaitingCode] = useState(false);
     const [pendingEmail, setPendingEmail] = useState('');
-    const [pendingFirstName, setPendingFirstName] = useState('');
     const [code, setCode] = useState('');
     const [verifying, setVerifying] = useState(false);
     const [codeError, setCodeError] = useState('');
@@ -245,7 +242,6 @@ const SignUpModal = ({
         setErrorMessage('');
         setAwaitingCode(false);
         setPendingEmail('');
-        setPendingFirstName('');
         setCode('');
         setCodeError('');
         setResendInfo('');
@@ -307,9 +303,9 @@ const SignUpModal = ({
                 });
             }
             // Compte créé mais non confirmé : on passe à l'étape de saisie du code
-            // envoyé par email. L'email de bienvenue est envoyé après validation.
+            // envoyé par email. L'email de bienvenue est envoyé par Strapi à la
+            // validation du code (plus aucun appel côté client).
             setPendingEmail(values.email);
-            setPendingFirstName(values.firstName);
             setAwaitingCode(true);
             setCode('');
             setCodeError('');
@@ -330,16 +326,6 @@ const SignUpModal = ({
         setVerifying(true);
         try {
             await apiVerifyEmailCode({ email: pendingEmail, code: trimmed });
-            // Email de bienvenue (non bloquant) une fois le compte validé.
-            // Réservé aux clients : il renvoie vers le catalogue, qui n'existe
-            // pas pour un Générateur.
-            if (accountType === 'customer') {
-                fetch(`${PEG_BACKEND_URL}/mails/welcome`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to: pendingEmail, firstName: pendingFirstName }),
-                }).catch((err) => console.error('[SignUp] Échec envoi email de bienvenue:', err));
-            }
             setAwaitingCode(false);
             setSuccessMessage(
                 accountType === 'generator'

@@ -3,6 +3,7 @@
 import ApiService from './ApiService';
 import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
+import { pegBackendFetch } from './PegBackendClient';
 
 // Tarif Premium (HT mensuel) — doit rester aligné avec PREMIUM_PRICE_HT côté backend.
 export const PREMIUM_PRICE_HT = 250;
@@ -10,11 +11,10 @@ export const PREMIUM_PRICE_HT = 250;
 // Engagement minimum de l'abonnement Premium (en mois) — aligné avec le backend.
 export const PREMIUM_MIN_MONTHS = 6;
 
-// peg-backend Express (appel direct, pas de credentials) — comme les vues projet.
-const PEG_BACKEND_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://peg-backend.vercel.app';
-
-// Enregistre la preuve d'acceptation du contrat Premium (trace juridique horodatée côté backend).
-// Best-effort : on ne bloque pas le paiement si la trace échoue, mais on logge.
+// Enregistre la preuve d'acceptation du contrat Premium (trace juridique horodatée côté peg-backend).
+// Route authentifiée (JWT via pegBackendFetch) : le serveur vérifie que `customerId`
+// est bien le client de l'appelant. Best-effort : on ne bloque pas le paiement si la
+// trace échoue, mais on logge.
 export async function apiRecordPremiumContractAcceptance(params: {
   customerId: string;
   customerName?: string;
@@ -22,9 +22,8 @@ export async function apiRecordPremiumContractAcceptance(params: {
   contractVersion: string;
 }): Promise<boolean> {
   try {
-    const res = await fetch(PEG_BACKEND_URL + '/premium/contract-accept', {
+    const res = await pegBackendFetch('/premium/contract-accept', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
     return res.ok;
