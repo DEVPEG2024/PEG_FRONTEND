@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Form as FormViewer } from '@formio/react';
-import type { Options as FormioOptions } from '@formio/react/lib/components/Form';
+import type { FormOptions as FormioOptions, FormType as FormioFormType, Submission as FormioV6Submission } from '@formio/react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
 import fr from '../../../admin/forms/edit/fr.json';
@@ -88,12 +88,13 @@ function ShowForm({
   return (
     <div className="formio-scope">
       <FormViewer
-        form={{
+        // @formio/react 6 : la définition se passe par `src` (objet ou URL), `form` est obsolète.
+        src={{
           type: 'form',
           display: 'form',
           components: sanitizeComponents(components),
-        }}
-        submission={formAnswer?.answer}
+        } as FormioFormType}
+        submission={formAnswer?.answer as FormioV6Submission | undefined}
         options={formOptions}
         onSubmit={onSubmit}
       />
