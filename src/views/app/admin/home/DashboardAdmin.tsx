@@ -41,6 +41,8 @@ function eur(n: number) { if (arePricesHidden()) return '•••••'; try {
 // même si paidPrice n'a pas été synchronisé (le serveur l'aligne aussi, ceinture et bretelles).
 const PAID_IN_PROGRESS_STATE = 'pending_paid'
 function effectivePaid(p: any) { const price = Number(p?.price) || 0; const paid = Number(p?.paidPrice) || 0; return String(p?.state ?? '') === PAID_IN_PROGRESS_STATE ? Math.max(paid, price) : paid }
+// Vente additionnelle encaissée : drapeau `paid` posé dans l'onglet Ventes add. du projet, ou projet « En cours (payé) » (toutes ses ventes sont réglées)
+function isSalePaid(s: any) { return s?.paid === true || String(s?.projectState ?? '') === PAID_IN_PROGRESS_STATE }
 function monthKey(d: Date) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
 function monthLabel(key: string) { const m = Number(key.split('-')[1]) - 1; return ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m] ?? key }
 
@@ -289,7 +291,7 @@ const MAX_BANNER = 2 * 1024 * 1024
 /* ═══════════════════════════════════════════════ */
 type PendingProjectLine = { documentId?: string; name: string; customer: string; state: string; price: number; paid: number; remaining: number }
 type PendingSaleLine = { label: string; projectName: string; projectId?: string; date?: string; amount: number }
-type PendingBreakdown = { projectLines: PendingProjectLine[]; saleLines: PendingSaleLine[]; projectsTotal: number; salesTotal: number; total: number }
+type PendingBreakdown = { projectLines: PendingProjectLine[]; saleLines: PendingSaleLine[]; projectsTotal: number; salesTotal: number; total: number; paidSalesCount: number; paidSalesTotal: number }
 
 function Row({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) {
   return <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] ${onClick ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/15 transition-colors' : ''}`}>{children}</div>
@@ -298,7 +300,7 @@ function Row({ onClick, children }: { onClick?: () => void; children: React.Reac
 function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProject, onOpenInvoices }: { open: boolean; onClose: () => void; breakdown: PendingBreakdown; displayed: number; onOpenProject: (documentId?: string) => void; onOpenInvoices: () => void }) {
   useEffect(() => { if (!open) return; const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [open, onClose])
   if (!open) return null
-  const { projectLines, saleLines, projectsTotal, salesTotal, total } = breakdown
+  const { projectLines, saleLines, projectsTotal, salesTotal, total, paidSalesCount, paidSalesTotal } = breakdown
   const stateLabel = (st: string) => (statusTextData as Record<string, string>)[st] ?? (st || '—')
   const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === PAID_IN_PROGRESS_STATE ? 'bg-teal-500/15 text-teal-300 border-teal-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
   return createPortal(
@@ -309,7 +311,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
           <div className="min-w-0">
             <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Reste à encaisser · détail</div>
             <div className="mt-1 text-2xl font-black text-white tracking-tight">{eur(displayed)} <span className="text-sm font-medium text-white/40">TTC · {eur(toHT(displayed))} HT</span></div>
-            <div className="mt-1 text-[11px] text-white/35">Calcul : CA total (prix des projets + ventes additionnelles) − Encaissé (montants payés des projets)</div>
+            <div className="mt-1 text-[11px] text-white/35">Calcul : CA total (prix des projets + ventes additionnelles) − Encaissé (montants payés des projets + ventes additionnelles encaissées)</div>
           </div>
           <button type="button" onClick={onClose} aria-label="Fermer" className="shrink-0 h-8 w-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"><HiOutlineX className="w-4 h-4" /></button>
         </div>
@@ -322,9 +324,9 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
             </Row>)}</div>}
           </section>
           <section>
-            <div className="flex items-center justify-between mb-2"><div className="text-xs font-semibold uppercase tracking-wider text-white/50">Ventes additionnelles</div><div className="text-xs font-bold text-amber-300">{saleLines.length} · {eur(salesTotal)}</div></div>
-            <div className="text-[11px] text-white/35 mb-2">Ajoutées au CA mais jamais comptées dans « Encaissé » : elles restent ici en totalité, même si le projet est soldé.</div>
-            {saleLines.length === 0 ? <div className="text-xs text-white/30 py-2">Aucune vente additionnelle</div> : <div className="space-y-1.5">{saleLines.map((l, i) => <Row key={`${l.projectId ?? 'p'}-${i}`} onClick={l.projectId ? () => onOpenProject(l.projectId) : undefined}>
+            <div className="flex items-center justify-between mb-2"><div className="text-xs font-semibold uppercase tracking-wider text-white/50">Ventes additionnelles à encaisser</div><div className="text-xs font-bold text-amber-300">{saleLines.length} · {eur(salesTotal)}</div></div>
+            <div className="text-[11px] text-white/35 mb-2">Une vente passe en « payée » depuis l'onglet Ventes add. du projet, ou automatiquement quand le projet passe « En cours (payé) ».{paidSalesCount > 0 && <> {paidSalesCount} vente(s) déjà encaissée(s) ({eur(paidSalesTotal)}) ne sont pas listées.</>}</div>
+            {saleLines.length === 0 ? <div className="text-xs text-white/30 py-2">Aucune vente additionnelle à encaisser</div> : <div className="space-y-1.5">{saleLines.map((l, i) => <Row key={`${l.projectId ?? 'p'}-${i}`} onClick={l.projectId ? () => onOpenProject(l.projectId) : undefined}>
               <div className="min-w-0"><div className="text-sm text-white/85 truncate">{l.label}</div><div className="mt-0.5 text-[11px] text-white/40 truncate">{l.projectName}{l.date ? ` · ${dayjs(l.date).format('DD/MM/YY')}` : ''}</div></div>
               <div className="shrink-0 text-sm font-bold text-amber-300">{eur(l.amount)}</div>
             </Row>)}</div>}
@@ -419,7 +421,7 @@ export default function DashboardAdmin() {
         const sales: any[] = []
         for (const p of nodes) {
           if (!Array.isArray(p?.additionalSales)) continue
-          for (const s of p.additionalSales) sales.push({ ...s, projectName: p.name ?? '—', projectId: p.documentId })
+          for (const s of p.additionalSales) sales.push({ ...s, projectName: p.name ?? '—', projectId: p.documentId, projectState: p.state })
         }
         setAdditionalSalesData(sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
       })
@@ -427,13 +429,15 @@ export default function DashboardAdmin() {
   }, [refreshTick])
   const allAdditionalSales = additionalSalesData
   const totalAdditionalSales = useMemo(() => allAdditionalSales.reduce((a, s) => a + (Number(s.amount) || 0), 0), [allAdditionalSales])
+  const paidAdditionalSales = useMemo(() => allAdditionalSales.reduce((a, s) => a + (isSalePaid(s) ? (Number(s.amount) || 0) : 0), 0), [allAdditionalSales])
 
   const projectsTotal = gql?.projects_connection?.pageInfo?.total ?? 0; const customersTotal = gql?.customers_connection?.pageInfo?.total ?? 0; const producersTotal = gql?.producers_connection?.pageInfo?.total ?? 0; const ticketsTotal = gql?.tickets_connection?.pageInfo?.total ?? 0; const orderItemsTotal = gql?.orderItems_connection?.pageInfo?.total ?? 0
 
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
   // CA = somme des prix projets + ventes additionnelles (source de vérité = projet, pas factures)
   const invoiceTotal = useMemo(() => projects.reduce((a: number, p: any) => a + (Number(p?.price) || 0), 0) + totalAdditionalSales, [projects, totalAdditionalSales])
-  const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + effectivePaid(p), 0), [projects])
+  // Encaissé = montants payés des projets + ventes additionnelles encaissées
+  const invoicePaid = useMemo(() => projects.reduce((a: number, p: any) => a + effectivePaid(p), 0) + paidAdditionalSales, [projects, paidAdditionalSales])
   const invoicePending = Math.max(0, invoiceTotal - invoicePaid)
   // Détail du « Reste à encaisser » : projets dont le prix diffère du montant payé + ventes additionnelles
   // (celles-ci entrent dans le CA mais jamais dans « Encaissé », elles pèsent donc en totalité)
@@ -445,9 +449,10 @@ export default function DashboardAdmin() {
       projectLines.push({ documentId: p?.documentId, name: p?.name ?? '—', customer: p?.customer?.name ?? '—', state: String(p?.state ?? ''), price, paid, remaining })
     }
     projectLines.sort((a, b) => b.remaining - a.remaining)
-    const saleLines: PendingSaleLine[] = allAdditionalSales.map(sl => ({ label: sl.label ?? '—', projectName: sl.projectName ?? '—', projectId: sl.projectId, date: sl.date, amount: Number(sl.amount) || 0 })).filter(sl => sl.amount !== 0).sort((a, b) => b.amount - a.amount)
+    const unpaidSales = allAdditionalSales.filter(sl => !isSalePaid(sl)); const paidSales = allAdditionalSales.filter(sl => isSalePaid(sl))
+    const saleLines: PendingSaleLine[] = unpaidSales.map(sl => ({ label: sl.label ?? '—', projectName: sl.projectName ?? '—', projectId: sl.projectId, date: sl.date, amount: Number(sl.amount) || 0 })).filter(sl => sl.amount !== 0).sort((a, b) => b.amount - a.amount)
     const projectsTotal = projectLines.reduce((a, l) => a + l.remaining, 0); const salesTotal = saleLines.reduce((a, l) => a + l.amount, 0)
-    return { projectLines, saleLines, projectsTotal, salesTotal, total: projectsTotal + salesTotal }
+    return { projectLines, saleLines, projectsTotal, salesTotal, total: projectsTotal + salesTotal, paidSalesCount: paidSales.length, paidSalesTotal: paidSales.reduce((a, sl) => a + (Number(sl.amount) || 0), 0) }
   }, [projects, allAdditionalSales])
   const [showPendingDetails, setShowPendingDetails] = useState(false)
   const overdueInvoices = useMemo(() => { const now = new Date(); return invoices.filter((x: any) => { const d = safeDate(x?.dueDate) ?? safeDate(x?.date); if (!d) return false; const ps = (x?.paymentState ?? '').toString().toLowerCase(); const st = (x?.state ?? '').toString().toLowerCase(); return d.getTime() < now.getTime() && !(ps === 'fulfilled' || st === 'fulfilled' || ps.includes('paid') || ps === 'paye') }).length }, [invoices])
@@ -470,7 +475,7 @@ export default function DashboardAdmin() {
     // Ajouter les dépenses par mois
     for (const exp of allExpenses) { const d = safeDate(exp?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) { by.get(k)!.costs += (Number(exp?.totalAmount) || 0); by.get(k)!.depenses += (Number(exp?.totalAmount) || 0) } }
     // Ajouter les ventes additionnelles au CA par mois
-    for (const s of allAdditionalSales) { const d = safeDate(s.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) by.get(k)!.ca += (Number(s.amount) || 0) }
+    for (const s of allAdditionalSales) { const d = safeDate(s.date); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; const amt = Number(s.amount) || 0; by.get(k)!.ca += amt; if (isSalePaid(s)) by.get(k)!.paid += amt }
     return months.map(k => { const b = by.get(k)!; return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid, depenses: b.depenses } })
   }, [invoices, transactions, projects, allExpenses, allAdditionalSales])
   const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
@@ -606,7 +611,7 @@ export default function DashboardAdmin() {
       case 'top-clients': return <><SectionHeader title="Top clients" subtitle="Par CA facturé" right={<button onClick={() => navigate('/admin/customers/list')} className="text-[11px] text-emerald-400/60 hover:text-emerald-300 transition">Voir tous →</button>} /><div className="space-y-3">{topClients.map((c, i) => <div key={i} className="flex items-center gap-3"><MedalBadge rank={i + 1} color="emerald" /><div className="flex-1 min-w-0"><div className="text-sm text-white/75 truncate">{c.name}</div></div><div className="text-sm font-semibold text-emerald-400/80 shrink-0">{eur(c.revenue)}</div></div>)}</div></>
       case 'top-producers': return <><SectionHeader title="Top producteurs" subtitle="Par projets" right={<button onClick={() => navigate('/admin/producers/list')} className="text-[11px] text-violet-400/60 hover:text-violet-300 transition">Voir tous →</button>} /><div className="space-y-3">{topProducers.map((p, i) => <div key={i} className="flex items-center gap-3"><MedalBadge rank={i + 1} color="violet" /><div className="flex-1 min-w-0"><div className="text-sm text-white/75 truncate">{p.name}</div><div className="text-[10px] text-white/30">{p.projects} projet(s)</div></div><div className="text-sm font-semibold text-violet-400/80 shrink-0">{p.revenue ? eur(p.revenue) : '—'}</div></div>)}</div></>
       case 'activity': return <><SectionHeader title="Activité récente" subtitle="Projets & factures" /><ActivityFeed items={activity} /></>
-      case 'additional-sales': return <><SectionHeader title="Ventes additionnelles" subtitle={`${allAdditionalSales.length} vente(s) · ${eur(totalAdditionalSales)}`} />{allAdditionalSales.length === 0 ? <div className="text-center py-6"><EmptyClipboard /><div className="text-xs text-white/25">Aucune vente additionnelle</div></div> : <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">{allAdditionalSales.slice(0, 15).map((s, i) => <div key={i} className="flex items-start justify-between gap-3 py-1.5"><div className="min-w-0"><div className="text-sm text-white/75 truncate">{s.label}</div><div className="text-[11px] text-white/35 truncate">{s.projectName} · {dayjs(s.date).format('DD/MM/YY')}</div></div><span className="text-sm font-bold text-emerald-400/80 shrink-0">{eur(s.amount)}</span></div>)}</div>}</>
+      case 'additional-sales': return <><SectionHeader title="Ventes additionnelles" subtitle={`${allAdditionalSales.length} vente(s) · ${eur(totalAdditionalSales)} · encaissé ${eur(paidAdditionalSales)}`} />{allAdditionalSales.length === 0 ? <div className="text-center py-6"><EmptyClipboard /><div className="text-xs text-white/25">Aucune vente additionnelle</div></div> : <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">{allAdditionalSales.slice(0, 15).map((s, i) => <div key={i} className="flex items-start justify-between gap-3 py-1.5"><div className="min-w-0"><div className="text-sm text-white/75 truncate">{s.label}</div><div className="text-[11px] text-white/35 truncate">{s.projectName} · {dayjs(s.date).format('DD/MM/YY')}</div></div><div className="shrink-0 text-right"><span className={`text-sm font-bold ${isSalePaid(s) ? 'text-emerald-400/80' : 'text-amber-300/90'}`}>{eur(s.amount)}</span><div className={`text-[10px] font-semibold ${isSalePaid(s) ? 'text-emerald-400/60' : 'text-amber-300/60'}`}>{isSalePaid(s) ? 'payée' : 'à encaisser'}</div></div></div>)}</div>}</>
       default: return null
     }
   }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdditionalSale } from '@/@types/project';
-import { useAppSelector } from '../store';
+import { useAppSelector, useAppDispatch, setProject } from '../store';
 import { apiGetProjectAdditionalSales, apiUpdateProjectAdditionalSales } from '@/services/ProjectServices';
 import { toast } from 'react-toastify';
 import { HiPlus, HiTrash, HiPencil, HiCheck, HiX } from 'react-icons/hi';
@@ -40,6 +40,7 @@ const emptyForm: FormData = { label: '', amount: '', date: dayjs().format('YYYY-
 
 const AdditionalSales = () => {
   const { project } = useAppSelector((state) => state.projectDetails.data);
+  const dispatch = useAppDispatch();
   const [sales, setSales] = useState<AdditionalSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -67,6 +68,8 @@ const AdditionalSales = () => {
     try {
       await apiUpdateProjectAdditionalSales(project.documentId, updated);
       setSales(updated);
+      // La fiche Finances (DetailsRight) lit project.additionalSales dans Redux → on la tient à jour
+      dispatch(setProject({ ...project, additionalSales: updated }));
       toast.success('Ventes additionnelles mises a jour');
     } catch {
       toast.error('Erreur lors de la sauvegarde');
@@ -129,7 +132,13 @@ const AdditionalSales = () => {
     setForm(emptyForm);
   };
 
+  // Encaissement : drapeau `paid` par vente (posé ici, ou par le statut projet « En cours (payé) » côté serveur)
+  const togglePaid = async (id: string) => {
+    await saveSales(sales.map((s) => (s.id === id ? { ...s, paid: !s.paid } : s)));
+  };
+
   const total = sales.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalPaid = sales.reduce((s, e) => s + (e.paid ? (e.amount || 0) : 0), 0);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', padding: '20px 0', fontFamily: 'Inter, sans-serif' }}>
@@ -253,10 +262,10 @@ const AdditionalSales = () => {
         }}>
           {/* Header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 80px',
+            display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 110px 80px',
             padding: '10px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', gap: '8px',
           }}>
-            {['Libelle', 'Montant', 'Date', 'Note', 'Actions'].map((h) => (
+            {['Libelle', 'Montant', 'Date', 'Note', 'Statut', 'Actions'].map((h) => (
               <span key={h} style={{
                 color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -280,7 +289,7 @@ const AdditionalSales = () => {
                 <div
                   key={sale.id}
                   style={{
-                    display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 80px',
+                    display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 110px 80px',
                     padding: '10px 18px', alignItems: 'center', gap: '8px',
                     borderBottom: i < sales.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                     transition: 'background 0.15s',
@@ -300,6 +309,20 @@ const AdditionalSales = () => {
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {sale.note || '—'}
                   </span>
+                  <button
+                    onClick={() => togglePaid(sale.id)}
+                    disabled={saving}
+                    title={sale.paid ? 'Repasser en « à encaisser »' : 'Marquer comme payée'}
+                    style={{
+                      padding: '4px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: 700,
+                      cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap',
+                      background: sale.paid ? 'rgba(34,197,94,0.15)' : 'rgba(251,191,36,0.15)',
+                      border: `1px solid ${sale.paid ? 'rgba(34,197,94,0.35)' : 'rgba(251,191,36,0.35)'}`,
+                      color: sale.paid ? '#4ade80' : '#fbbf24',
+                    }}
+                  >
+                    {sale.paid ? 'Payée' : 'À encaisser'}
+                  </button>
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button onClick={() => startEdit(sale)} style={{
                       padding: '5px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)',
@@ -318,7 +341,7 @@ const AdditionalSales = () => {
               ))}
               {/* Total row */}
               <div style={{
-                display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 80px',
+                display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 110px 80px',
                 padding: '12px 18px', gap: '8px',
                 borderTop: '1px solid rgba(255,255,255,0.08)',
                 background: 'rgba(255,255,255,0.02)',
@@ -328,7 +351,9 @@ const AdditionalSales = () => {
                   {fmtPrice(total)}
                 </span>
                 <span />
-                <span />
+                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', gridColumn: 'span 2', whiteSpace: 'nowrap' }}>
+                  Encaissé {fmtPrice(totalPaid)} · À encaisser {fmtPrice(total - totalPaid)}
+                </span>
                 <span />
               </div>
             </>

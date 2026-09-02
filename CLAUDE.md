@@ -336,6 +336,12 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 ### Mécanique (deux garde-fous)
 1. **Le statut aligne `paidPrice` sur `price`** : côté front (`ProjectHeader.handleStatusChange`) **et** côté serveur (pré-hook du middleware projet dans `peg_strapi/src/index.ts`, quel que soit le canal : front, NOVA, panel admin). Un projet `pending_paid` a donc toujours `paidPrice >= price`.
 2. **Le dashboard compte `pending_paid` comme encaissé** même si la synchro n'a pas eu lieu : `effectivePaid(p)` dans `DashboardAdmin.tsx` (= `max(paidPrice, price)` pour ce statut) alimente « Encaissé », la courbe 6 mois et le détail du widget « Reste à encaisser ».
+3. **Les ventes additionnelles du projet sont réglées elles aussi** : le pré-hook serveur pose `paid: true` sur chaque entrée du JSON `additionalSales` (demande Nova du 02/09/2026 : « la vente additionnelle du projet est également payée »).
+
+### Ventes additionnelles — drapeau `paid` (ajout 02/09/2026)
+- Chaque entrée `additionalSales` porte `paid?: boolean` (`src/@types/project.ts`). Posé à la main dans l'onglet **Ventes add.** du projet (bouton « Payée / À encaisser », `AdditionalSales.tsx`) ou automatiquement par le statut « En cours (payé) ».
+- Dashboard : `isSalePaid(s)` = `paid === true` **ou** projet `pending_paid`. **Encaissé = Σ effectivePaid(projet) + Σ ventes encaissées** ; le détail du widget « Reste à encaisser » ne liste que les ventes non encaissées. Sans ce drapeau, une vente additionnelle restait « à encaisser » pour toujours (10 800 € Borboleta).
+- Fiche projet (`DetailsRight.tsx`) : « Reste dû client » = prix + ventes − payé − ventes encaissées.
 
 ### ⚠️ Pièges
 - Le filtre GraphQL des listes projets est passé de `containsi` à **`eq`** sur `state` (`ProjectServices.ts`) : avec `containsi`, l'onglet « En cours » (`pending`) remontait aussi les `pending_paid`. **Ne pas revenir à `containsi`.**

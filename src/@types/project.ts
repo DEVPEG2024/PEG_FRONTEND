@@ -43,6 +43,8 @@ export type AdditionalSale = {
   amount: number;
   date: string;
   note?: string;
+  /** Encaissée : comptée dans « Encaissé » du dashboard (posée à la main ou par le statut « En cours (payé) ») */
+  paid?: boolean;
 }
 
 export type Task = {

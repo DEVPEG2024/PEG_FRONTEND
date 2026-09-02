@@ -127,6 +127,7 @@ const DetailsRight = () => {
   }, [isAdmin, project?.documentId]);
   const totalExpenses = useMemo(() => projectExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0), [projectExpenses]);
   const totalAdditionalSales = useMemo(() => (project?.additionalSales ?? []).reduce((s: number, e: any) => s + (Number(e?.amount) || 0), 0), [project?.additionalSales]);
+  const paidAdditionalSales = useMemo(() => (project?.additionalSales ?? []).reduce((s: number, e: any) => s + (e?.paid === true ? (Number(e?.amount) || 0) : 0), 0), [project?.additionalSales]);
 
   // Inline edit paidPrice / producerPaidPrice
   const [editingField, setEditingField] = useState<'paidPrice' | 'producerPaidPrice' | null>(null);
@@ -352,7 +353,7 @@ const DetailsRight = () => {
             const projectPrice = project.price ?? 0;
             const paidPrice = project.paidPrice ?? 0;
             const totalToInvoice = projectPrice + totalAdditionalSales;
-            const remainingClient = totalToInvoice - paidPrice;
+            const remainingClient = totalToInvoice - paidPrice - paidAdditionalSales;
             const producerPrice = project.producerPrice ?? 0;
             const producerPaidPrice = project.producerPaidPrice ?? 0;
             const remainingProducer = producerPrice - producerPaidPrice;
@@ -373,6 +374,9 @@ const DetailsRight = () => {
                     color="#4ade80"
                     onClick={isAdmin ? () => startEditField('paidPrice') : undefined}
                   />
+                )}
+                {paidAdditionalSales > 0 && (
+                  <FinanceRow label="Ventes add. encaissées" value={fmtPrice(paidAdditionalSales)} color="#4ade80" />
                 )}
                 <FinanceRow
                   label="Reste dû client"
