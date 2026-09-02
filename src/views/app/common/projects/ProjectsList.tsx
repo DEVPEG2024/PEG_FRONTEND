@@ -108,8 +108,19 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
 }) {
   // Column order (D&D columns)
   const [colOrder, setColOrder] = useState<string[]>(() => {
-    try { const raw = localStorage.getItem(KANBAN_COL_ORDER_KEY); if (raw) return JSON.parse(raw) } catch {}
-    return statusTabs.filter(t => t.key !== 'all').map(t => t.key)
+    const defaults = statusTabs.filter(t => t.key !== 'all').map(t => t.key)
+    try {
+      const raw = localStorage.getItem(KANBAN_COL_ORDER_KEY)
+      if (raw) {
+        // Un ordre mémorisé avant l'ajout d'un statut (ex. « En cours (payé) ») ne le contient pas :
+        // on garde l'ordre de l'utilisateur et on insère les colonnes manquantes à leur place par défaut.
+        const stored = (JSON.parse(raw) as unknown[]).filter((k): k is string => typeof k === 'string' && defaults.includes(k))
+        const merged = [...stored]
+        defaults.forEach((k, i) => { if (!merged.includes(k)) merged.splice(Math.min(i, merged.length), 0, k) })
+        return merged
+      }
+    } catch { /* localStorage indisponible ou corrompu → ordre par défaut */ }
+    return defaults
   })
   const [dragProjectId, setDragProjectId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)

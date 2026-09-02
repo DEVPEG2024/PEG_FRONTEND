@@ -50,9 +50,11 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
       const paidSync = newState === 'pending_paid' && (Number(project.paidPrice) || 0) < (Number(project.price) || 0)
         ? { paidPrice: Number(project.price) || 0 }
         : {};
-      dispatch(updateCurrentProject({ documentId: project.documentId, state: newState, ...paidSync }));
       const label = statusOptions.find((s) => s.value === newState)?.label ?? newState;
-      toast.success(`Statut changé en "${label}"`);
+      dispatch(updateCurrentProject({ documentId: project.documentId, state: newState, ...paidSync }))
+        .unwrap()
+        .then(() => toast.success(`Statut changé en "${label}"`))
+        .catch(() => toast.error(`Impossible de passer le projet en "${label}" : le serveur a refusé le changement`));
     }
   };
 

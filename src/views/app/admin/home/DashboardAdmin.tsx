@@ -8,6 +8,7 @@
 import Container from '@/components/shared/Container'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import { useAppSelector } from '@/store'
 import { apiGetDashboardSuperAdminInformations, apiGetProjectsAdditionalSales } from '@/services/DashboardSuperAdminService'
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
@@ -290,14 +291,17 @@ type PendingProjectLine = { documentId?: string; name: string; customer: string;
 type PendingSaleLine = { label: string; projectName: string; projectId?: string; date?: string; amount: number }
 type PendingBreakdown = { projectLines: PendingProjectLine[]; saleLines: PendingSaleLine[]; projectsTotal: number; salesTotal: number; total: number }
 
+function Row({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) {
+  return <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] ${onClick ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/15 transition-colors' : ''}`}>{children}</div>
+}
+
 function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProject, onOpenInvoices }: { open: boolean; onClose: () => void; breakdown: PendingBreakdown; displayed: number; onOpenProject: (documentId?: string) => void; onOpenInvoices: () => void }) {
   useEffect(() => { if (!open) return; const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [open, onClose])
   if (!open) return null
   const { projectLines, saleLines, projectsTotal, salesTotal, total } = breakdown
   const stateLabel = (st: string) => (statusTextData as Record<string, string>)[st] ?? (st || '—')
   const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === PAID_IN_PROGRESS_STATE ? 'bg-teal-500/15 text-teal-300 border-teal-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-  const Row = ({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) => <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] ${onClick ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/15 transition-colors' : ''}`}>{children}</div>
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Détail du reste à encaisser">
       <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
@@ -332,7 +336,8 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
           <button type="button" onClick={onOpenInvoices} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 hover:bg-white/10 transition-colors">Voir les factures →</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
