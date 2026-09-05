@@ -115,7 +115,10 @@ async function matchOrCreateCategory(
     const r = await unwrapData(
       apiCreateProductCategory({
         name: imbretexCategory,
-        active: true,
+        // Catégorie issue de la taxonomie du FOURNISSEUR : elle ne doit pas
+        // apparaître dans le catalogue client tant qu'un admin ne l'a pas
+        // activée explicitement. Sinon l'import expose l'arborescence Imbretex.
+        active: false,
         products: [],
       } as any)
     );
@@ -351,7 +354,13 @@ export async function importImbretexProduct(
       name: getTitle(mv) || ref,
       description: mv.description?.fr || '',
       active: true,
-      inCatalogue: true,
+      // Le catalogue Imbretex est un catalogue FOURNISSEUR, privé : un produit
+      // importé ne doit JAMAIS atterrir tout seul dans le catalogue client ni
+      // dans les suggestions. `inCatalogue` est le commutateur de visibilité
+      // client (cf. productHelpers.getCatalogueVisibilityIssues) ; il vaut déjà
+      // false à la création manuelle d'un produit (EditProduct.tsx). La mise en
+      // vente reste une décision explicite de l'admin, produit par produit.
+      inCatalogue: false,
       priceTiers: [{ minQuantity: 1, price: sellPrice }],
     };
     if (catId) createData.productCategory = catId;

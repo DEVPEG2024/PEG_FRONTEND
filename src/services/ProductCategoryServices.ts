@@ -126,6 +126,15 @@ export async function apiUpdateProductCategory(productCategory: Partial<ProductC
 export type GetProductCategoriesRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
+    /**
+     * Ne remonter que les catégories ACTIVES. Réservé aux écrans CLIENT : sans
+     * ce filtre, une catégorie désactivée par un admin restait visible côté
+     * client (l'interrupteur « Catégorie activée / désactivée » n'avait aucun
+     * effet), et les catégories créées automatiquement par l'import Imbretex
+     * exposaient la taxonomie du fournisseur.
+     * Les écrans ADMIN doivent l'omettre : ils ont besoin de tout voir.
+     */
+    onlyActive?: boolean;
   };
 
 export type GetProductCategoriesResponse = {
@@ -134,9 +143,13 @@ export type GetProductCategoriesResponse = {
 };
 
 export async function apiGetProductCategories(data: GetProductCategoriesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{productCategories_connection: GetProductCategoriesResponse}>>> {
+    const nameFilter = `{name: {containsi: $searchTerm}}`;
+    const categoryFilters = data.onlyActive
+        ? `{and: [${nameFilter}, {active: {eq: true}}]}`
+        : nameFilter;
     const query = `
     query GetProductCategories($searchTerm: String, $pagination: PaginationArg) {
-        productCategories_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination, sort: "order:asc") {
+        productCategories_connection (filters: ${categoryFilters}, pagination: $pagination, sort: "order:asc") {
             nodes {
                 documentId
                 image {

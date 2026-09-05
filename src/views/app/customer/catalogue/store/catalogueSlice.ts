@@ -92,7 +92,10 @@ export const getCatalogueProductCategories = createAsyncThunk(
     const {
       productCategories_connection,
     }: { productCategories_connection: GetProductCategoriesResponse } =
-      await unwrapData(apiGetProductCategories(data));
+      // Écran CLIENT : uniquement les catégories actives. Sans ce filtre, une
+      // catégorie désactivée par un admin restait visible, et les catégories
+      // créées par l'import Imbretex exposaient la taxonomie du fournisseur.
+      await unwrapData(apiGetProductCategories({ ...data, onlyActive: true }));
     return productCategories_connection;
   }
 );
