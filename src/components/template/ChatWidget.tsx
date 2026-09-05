@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
 import { useLocation } from 'react-router-dom';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
@@ -71,6 +72,7 @@ const renderContent = (content: string): JSX.Element[] => {
 
 const ChatWidget = () => {
   const { pathname } = useLocation();
+  const { smaller } = useResponsive();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -152,8 +154,13 @@ const ChatWidget = () => {
     if (open) setTimeout(() => inputRef.current?.focus(), 60);
   }, [open]);
 
-  // Masqué pendant une commande : le bouton flottant recouvrait les contrôles
-  // de la fiche produit (le « + » de la première ligne de tailles) et du panier.
+  // Masqué sur TÉLÉPHONE (< md) : sur un écran étroit, un bouton flottant de
+  // 56px recouvre en permanence une partie du contenu — il chevauchait le « + »
+  // de la première ligne de tailles. Le chatbot reste accessible sur ordinateur.
+  if (smaller.md) return null;
+
+  // Masqué aussi pendant une commande sur grand écran : le bouton recouvrait
+  // les actions de ligne du panier et le lien « Voir tout » du tableau de bord.
   if (FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   return (
