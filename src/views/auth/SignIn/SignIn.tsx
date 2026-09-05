@@ -109,7 +109,7 @@ const SignIn = () => {
       padding: 'var(--peg-pad-24)', fontFamily: 'Inter, sans-serif',
     }}>
       <style>{`
-        @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; } }
+        @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; } .si-card-logo{ display:block !important; } }
 
         .si-acct{
           display:flex; align-items:center; gap:13px; width:100%;
@@ -225,6 +225,18 @@ const SignIn = () => {
           alignItems: 'center', justifyContent: 'center', padding: '48px 40px',
         }}>
           <div style={{ width: '100%', maxWidth: '400px' }}>
+            {/* Logo — affiché UNIQUEMENT sous 920px, là où le panneau de gauche
+                (.si-left), qui porte le logo, est masqué : sur téléphone la page
+                s'ouvrait sans aucune identification de marque.
+                Version COLORÉE volontairement : les deux variantes du composant
+                Logo (logo-light-full / logo-dark-full) sont blanches, donc
+                invisibles sur cette carte blanche. */}
+            <img
+              className="si-card-logo"
+              src="/img/logo/logo.png"
+              alt="MyPEG"
+              style={{ display: 'none', height: '46px', width: 'auto', margin: '0 auto 26px' }}
+            />
             <SignInForm disableSubmit={false} />
 
             {/* Création de compte — les deux natures, chacune sa carte */}
