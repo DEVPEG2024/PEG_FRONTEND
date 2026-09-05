@@ -380,7 +380,7 @@ const ShowProduct = () => {
               <div style={{ position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                 {/* Photo */}
-                <div style={{ background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', borderRadius: '16px', padding: '28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '340px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="peg-media-cap" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)', borderRadius: '16px', padding: '28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '340px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={420} lensSize={200} zoomFactor={2.5} />
                 </div>
 

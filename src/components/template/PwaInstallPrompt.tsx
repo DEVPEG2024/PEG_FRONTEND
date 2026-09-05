@@ -260,8 +260,19 @@ const PwaInstallPrompt = () => {
   // produit à valider, pas un effet de bord du chantier mobile).
   const showUpdate = smaller.md && updateReady && !updateHidden
   const showInstall = smaller.md && (canInstall || showIosHint)
+  const barVisible = showUpdate || showInstall
 
-  if (!showUpdate && !showInstall) return null
+  // Le bandeau est en position fixed en bas : sans réserve de place, il masque
+  // en permanence le dernier contrôle de la page (mesuré sur la fiche produit,
+  // où il recouvrait le sélecteur de couleur). La classe libère 104px de marge
+  // basse, uniquement sous md et uniquement tant que le bandeau est affiché.
+  useEffect(() => {
+    if (!barVisible) return
+    document.body.classList.add('peg-bottom-bar')
+    return () => document.body.classList.remove('peg-bottom-bar')
+  }, [barVisible])
+
+  if (!barVisible) return null
 
   return (
     <div style={wrapStyle}>

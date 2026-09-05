@@ -306,7 +306,10 @@ const CustomerReferral = () => {
                                     <span
                                         style={{
                                             color: '#fff',
-                                            fontSize: '20px',
+                                            // 20px sur desktop (inchangé), 17px sous md : à 20px
+                                            // un code de 13 caractères ne tient pas à côté du
+                                            // bouton et « break-all » le coupait en plein milieu.
+                                            fontSize: 'var(--peg-fs-20)',
                                             fontWeight: 800,
                                             letterSpacing: '0.06em',
                                             wordBreak: 'break-all',

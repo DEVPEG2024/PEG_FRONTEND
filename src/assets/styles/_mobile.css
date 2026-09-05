@@ -185,6 +185,32 @@
   .peg-hide-mobile {
     display: none !important;
   }
+
+  /* Plafonne un bloc média (photo produit) qui, dimensionné pour un écran large,
+     mange l'essentiel de la hauteur du téléphone. Mesuré sur la fiche produit :
+     minHeight 340 + padding 56 + carrousel 420 = 476px, soit 56% d'un écran de
+     844px — le prix, les tailles et le bouton passaient sous la ligne de
+     flottaison. Le conteneur ET le carrousel imposent leur hauteur, d'où la
+     remise à zéro des min-height descendants. */
+  .peg-media-cap {
+    min-height: 0 !important;
+    padding: 14px !important;
+  }
+  .peg-media-cap div {
+    min-height: 0 !important;
+  }
+  .peg-media-cap img {
+    max-height: 34vh !important;
+    height: auto !important;
+  }
+
+  /* Quand une barre flottante occupe le bas de l'écran (bandeau d'installation
+     PWA), la page doit pouvoir défiler au-delà, sinon la barre masque en
+     permanence le dernier contrôle — mesuré sur la fiche produit, où elle
+     recouvrait le sélecteur de couleur. */
+  body.peg-bottom-bar .page-container {
+    padding-bottom: 104px !important;
+  }
 }
 
 /* -----------------------------------------------------------------------------

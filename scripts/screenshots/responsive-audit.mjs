@@ -741,6 +741,21 @@ async function auditOnePage(page, spec, profile, role, outRoot) {
     return result;
   }
 
+  // Une redirection vers une AUTRE page que celle demandée — typiquement /home
+  // quand le rôle du compte n'a pas accès à la route — doit être SIGNALÉE, pas
+  // mesurée. Sans ce contrôle, un compte producteur envoyé sur /customer/*
+  // fait rapporter « OK » dix fois de suite sur le même tableau de bord, et on
+  // croit avoir audité le parcours client alors qu'on ne l'a jamais affiché.
+  if (spec.path && !spec.discover) {
+    const wanted = new URL(`${CONFIG.baseUrl}${spec.path}`).pathname.replace(/\/+$/, '');
+    const reached = new URL(result.url).pathname.replace(/\/+$/, '');
+    if (wanted && reached !== wanted) {
+      result.status = 'skipped';
+      result.error = `redirigé vers ${reached || '/'} au lieu de ${wanted} — ce rôle n'a pas accès à cette route`;
+      return result;
+    }
+  }
+
   const probe = await page.evaluate(pageProbe, {
     tolerance: THRESHOLDS.overflowTolerancePx,
     minTouchTarget: THRESHOLDS.minTouchTargetPx,
