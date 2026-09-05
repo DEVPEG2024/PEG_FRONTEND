@@ -7,7 +7,9 @@
 }
 
 .side-nav-content {
-  height: calc(100vh - theme("spacing.16"));
+  /* `dvh` et non `vh` : sur mobile la barre d'URL fausse `vh`. Sur desktop
+     `100dvh === 100vh`, le rendu est inchangé. */
+  height: calc(100dvh - theme("spacing.16"));
   @apply overflow-y-auto;
 }
 

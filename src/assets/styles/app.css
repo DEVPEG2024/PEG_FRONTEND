@@ -2,3 +2,5 @@
 @import "./components/index.css";
 @import "./template/index.css";
 @import "./tailwind/index.css";
+/* Socle mobile — ADDITIF. Retirer cet import suffit à annuler tout le chantier. */
+@import "./_mobile.css";

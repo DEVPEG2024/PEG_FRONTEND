@@ -254,3 +254,121 @@ body {
   color: #dc2626 !important;
   font-size: 12px !important;
 }
+
+/* ── SOCLE MOBILE (< md) ─────────────────────────────────────
+   Le DOM Formio ne nous appartient pas (Bootstrap 4) : on le rend lisible au
+   doigt sans le réécrire. Rien ne change au-dessus de 767.98px.
+   NB : ce fichier est chargé APRÈS le CSS applicatif (balise <link> injectée à
+   l'ouverture du formulaire), il a donc le dernier mot sur `.dialog-formbuilder`. */
+@media (max-width: 767.98px) {
+  /* Le formulaire de personnalisation prend tout l'écran. */
+  .dialog-formbuilder {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .dialog-formbuilder-header {
+    padding: 12px 14px;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+  }
+
+  .dialog-formbuilder-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dialog-formbuilder-body {
+    padding: 14px 14px calc(24px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* 16px minimum : sous cette taille, iOS Safari zoome à chaque focus. */
+  .formio-scope .form-control,
+  .formio-scope input,
+  .formio-scope select,
+  .formio-scope textarea {
+    font-size: 16px !important;
+    padding: 12px 14px !important;
+    min-height: 44px !important;
+  }
+
+  .formio-scope textarea.form-control {
+    min-height: 96px !important;
+  }
+
+  /* Les colonnes Bootstrap sans breakpoint (`col-4`, `col-6`…) restent côte à
+     côte sous 768px : on les empile. */
+  .formio-scope [class^='col-'],
+  .formio-scope [class*=' col-'],
+  .formio-scope .formio-component-columns > .row > [class*='col'] {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .formio-scope .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .formio-scope .formio-component {
+    margin-bottom: 14px !important;
+  }
+
+  .formio-scope .formio-component-panel > .card > .card-body {
+    padding: 12px !important;
+  }
+
+  /* Boutons du wizard : atteignables au pouce, jamais tronqués. */
+  .formio-scope .btn {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+
+  .formio-scope .formio-wizard-nav-container,
+  .formio-scope ul.list-inline {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding-left: 0 !important;
+    margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .formio-scope .formio-wizard-nav-container > li,
+  .formio-scope ul.list-inline > li {
+    flex: 1 1 45% !important;
+    margin: 0 !important;
+  }
+
+  .formio-scope .formio-wizard-nav-container > li > .btn,
+  .formio-scope ul.list-inline > li > .btn {
+    width: 100% !important;
+  }
+
+  /* Fil d'étapes du wizard : on glisse au doigt plutôt que de le casser. */
+  .formio-scope .pagination {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .formio-scope .pagination::-webkit-scrollbar {
+    display: none;
+    height: 0;
+  }
+  .formio-scope .pagination > .page-item {
+    flex: 0 0 auto !important;
+  }
+
+  /* Rien ne dépasse horizontalement. */
+  .formio-scope img,
+  .formio-scope table {
+    max-width: 100% !important;
+  }
+  .formio-scope .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

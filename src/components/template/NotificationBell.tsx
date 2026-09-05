@@ -225,7 +225,7 @@ const NotificationBell = () => {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-[fadeInDown_0.15s_ease-out]">
+        <div className="absolute right-0 mt-2 w-[calc(100vw_-_1rem)] max-w-[24rem] md:w-96 md:max-w-none bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-[fadeInDown_0.15s_ease-out]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
             <div className="flex items-center gap-2">
@@ -311,11 +311,11 @@ const NotificationBell = () => {
                   </div>
 
                   {/* Actions (visible on hover) */}
-                  <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex-shrink-0 flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     {!notif.read && (
                       <button
                         onClick={(e) => handleMarkAsRead(notif._id, e)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        className="peg-tap-target p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         title="Marquer comme lu"
                       >
                         <HiOutlineCheck className="w-3.5 h-3.5" />
@@ -323,7 +323,7 @@ const NotificationBell = () => {
                     )}
                     <button
                       onClick={(e) => handleDelete(notif._id, e)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="peg-tap-target p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       title="Supprimer"
                     >
                       <HiOutlineTrash className="w-3.5 h-3.5" />

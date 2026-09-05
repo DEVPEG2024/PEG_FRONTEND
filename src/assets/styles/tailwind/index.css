@@ -88,7 +88,8 @@
 .side-nav-expand {
   position: sticky;
   top: 0;
-  height: 100vh;
+  /* `dvh` et non `vh` : identique à `vh` sur desktop, exact sur mobile. */
+  height: 100dvh;
 }
 
 /* Logo PEG en bas du menu — pleine largeur, taille d'origine, pleine opacité.

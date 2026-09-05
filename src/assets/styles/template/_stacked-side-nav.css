@@ -3,7 +3,8 @@
 }
 
 .stacked-side-nav-content {
-  height: calc(100vh - theme("spacing.16"));
+  /* `dvh` et non `vh` : cf. `_side-nav.css`. Identique à `vh` sur desktop. */
+  height: calc(100dvh - theme("spacing.16"));
   @apply overflow-y-auto;
 }
 

@@ -139,7 +139,7 @@ const ChatWidget = () => {
   }, [open]);
 
   return (
-    <div style={{ position: 'fixed', bottom: '90px', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         @keyframes peg-chat-pulse {
           0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
@@ -153,7 +153,7 @@ const ChatWidget = () => {
           bottom: '72px',
           right: 0,
           width: 'min(360px, calc(100vw - 32px))',
-          height: 'min(500px, calc(100vh - 140px))',
+          height: 'min(500px, calc(100dvh - 140px))',
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '20px',
@@ -328,6 +328,7 @@ const ChatWidget = () => {
               onClick={send}
               disabled={loading || !input.trim()}
               aria-label="Envoyer"
+              className="peg-tap-target"
               style={{
                 width: '36px', height: '36px',
                 background: loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',

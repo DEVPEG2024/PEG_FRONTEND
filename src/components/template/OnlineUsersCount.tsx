@@ -92,6 +92,7 @@ const OnlineUsersCount = () => {
     <div ref={dropdownRef} style={{ position: 'relative' }}>
       <button
         onClick={handleClick}
+        className="peg-tap-target"
         title={`${count} personne${count > 1 ? 's' : ''} en ligne`}
         style={{
           display: 'flex',
@@ -132,7 +133,7 @@ const OnlineUsersCount = () => {
           position: 'absolute',
           right: 0,
           marginTop: '8px',
-          width: '280px',
+          width: 'min(280px, calc(100vw - 24px))',
           background: '#1a2332',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '14px',

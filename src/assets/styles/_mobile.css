@@ -1,0 +1,440 @@
+/* =============================================================================
+   PEG — SOCLE MOBILE (feuille ADDITIVE et REVERTABLE)
+   -----------------------------------------------------------------------------
+   Tout le chantier « utilisable au doigt » vit ici. Retirer l'unique
+   `@import "./_mobile.css";` de `app.css` supprime la totalité du socle et
+   restaure l'application telle qu'elle était avant.
+
+   RÈGLE DE CONCEPTION
+   - Le rendu DESKTOP (>= 768px) doit rester rigoureusement identique. Toutes les
+     règles qui changent quelque chose sont donc enfermées dans
+     `@media (max-width: 767.98px)` (= strictement sous le breakpoint `md` de
+     Tailwind, celui qu'utilise déjà `useResponsive`).
+   - Les seules règles hors media query sont des no-op sur desktop :
+     * les variables `env(safe-area-inset-*)` valent 0px sur un écran sans encoche ;
+     * `100dvh` est égal à `100vh` sans barre d'URL dynamique.
+   - Aucun `@apply` : du CSS nu, lisible et détachable de la config Tailwind.
+
+   NOTE SUR LA CASCADE — en Tailwind v4 les utilitaires vivent dans
+   `@layer utilities`. Une règle NON layerée (comme celles de ce fichier) l'emporte
+   sur n'importe quel utilitaire, sans `!important`. Le `!important` n'est employé
+   ici que là où il faut battre un style INLINE (react-modal, Drawer, vues).
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. JETONS PARTAGÉS
+   Les agents de vues s'appuient sur ces variables plutôt que sur des valeurs
+   magiques : la valeur desktop est identique à l'existant, seule la valeur
+   mobile change. Le rendu desktop est donc préservé PAR CONSTRUCTION.
+   -------------------------------------------------------------------------- */
+:root {
+  /* Encoche / barre gestuelle iOS — 0px partout ailleurs. */
+  --peg-safe-top: env(safe-area-inset-top, 0px);
+  --peg-safe-right: env(safe-area-inset-right, 0px);
+  --peg-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --peg-safe-left: env(safe-area-inset-left, 0px);
+
+  /* Cible tactile minimale recommandée (Apple HIG / Material). */
+  --peg-tap: 44px;
+
+  /* Espacements : desktop = valeur d'origine, mobile = valeur resserrée. */
+  --peg-pad-32: 32px;
+  --peg-pad-24: 24px;
+  --peg-pad-20: 20px;
+  --peg-pad-16: 16px;
+
+  --peg-gap-24: 24px;
+  --peg-gap-20: 20px;
+  --peg-gap-16: 16px;
+  --peg-gap-12: 12px;
+
+  /* Typographie des grands chiffres / titres de page. */
+  --peg-fs-36: 36px;
+  --peg-fs-32: 32px;
+  --peg-fs-28: 28px;
+  --peg-fs-24: 24px;
+  --peg-fs-20: 20px;
+  --peg-fs-18: 18px;
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --peg-pad-32: 18px;
+    --peg-pad-24: 14px;
+    --peg-pad-20: 13px;
+    --peg-pad-16: 12px;
+
+    --peg-gap-24: 14px;
+    --peg-gap-20: 12px;
+    --peg-gap-16: 10px;
+    --peg-gap-12: 8px;
+
+    --peg-fs-36: 26px;
+    --peg-fs-32: 24px;
+    --peg-fs-28: 22px;
+    --peg-fs-24: 19px;
+    --peg-fs-20: 17px;
+    --peg-fs-18: 16px;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   2. UTILITAIRES DISPONIBLES SUR TOUS LES ÉCRANS (no-op sur desktop)
+   -------------------------------------------------------------------------- */
+
+/* Plein écran fiable sur mobile : la barre d'URL fausse `100vh`. */
+.peg-dvh {
+  height: 100dvh;
+}
+.peg-min-dvh {
+  min-height: 100dvh;
+}
+
+/* Safe-area iOS. Sans encoche, `env()` vaut 0px → aucun effet. */
+.peg-safe-top {
+  padding-top: var(--peg-safe-top);
+}
+.peg-safe-bottom {
+  padding-bottom: var(--peg-safe-bottom);
+}
+.peg-safe-x {
+  padding-left: var(--peg-safe-left);
+  padding-right: var(--peg-safe-right);
+}
+
+/* Barre d'actions collée en bas : garde ses boutons au-dessus de la barre
+   gestuelle iOS. */
+.peg-safe-bar {
+  padding-bottom: calc(var(--peg-gap-12) + var(--peg-safe-bottom));
+}
+
+/* -----------------------------------------------------------------------------
+   3. UTILITAIRES MOBILES (< md) — inertes au-dessus de 767.98px
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  /* Rangée qui défile au doigt (onglets, filtres, statuts, puces).
+     À poser sur un conteneur FLEX en ligne. */
+  .peg-scroll-x {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: none;
+  }
+  .peg-scroll-x::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .peg-scroll-x > * {
+    flex: 0 0 auto;
+  }
+
+  /* Enveloppe de tableau : le tableau défile, la page non. */
+  .peg-table-wrap {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Largeur plancher des lignes d'un tableau en grille placé dans
+     .peg-table-wrap : les colonnes gardent leur largeur et le conteneur défile,
+     au lieu d'être comprimées ou empilées sans leur en-tête. À poser sur la
+     ligne d'en-tête ET sur chaque ligne de données, pour qu'elles restent
+     alignées. N'existe que sous md : le desktop n'a aucune largeur plancher. */
+  .peg-table-min {
+    min-width: 720px;
+  }
+
+  /* Force l'empilement d'un bloc à colonnes figées (grid OU flex). */
+  .peg-stack-mobile {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Neutralise une largeur/hauteur figée héritée du desktop. */
+  .peg-full-mobile {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-basis: auto !important;
+  }
+
+  /* Resserre un bloc trop généreux (remplace un padding fixe). */
+  .peg-pad-mobile {
+    padding: var(--peg-pad-16) !important;
+  }
+
+  /* Cible tactile 44px sans hauteur figée : on n'agrandit que le minimum. */
+  .peg-tap-target {
+    min-width: var(--peg-tap);
+    min-height: var(--peg-tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Élément PUREMENT DÉCORATIF (illustration, séparateur, fond).
+     JAMAIS une action, une donnée ou un bouton. */
+  .peg-hide-mobile {
+    display: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   4. FONDAMENTAUX TACTILES (< md)
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  /* 4.1 — CHAMPS DE SAISIE À 16px MINIMUM.
+     Sous 16px, iOS Safari zoome à chaque focus : c'est le défaut mobile le plus
+     visible. `!important` est requis : de nombreuses vues posent un `fontSize`
+     inline sur leurs champs. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='hidden']),
+  select,
+  textarea,
+  .input,
+  .select__control,
+  .select__input,
+  .select__input input,
+  .select__single-value,
+  .select__placeholder,
+  .picker-view input,
+  .time-input input {
+    font-size: 16px !important;
+  }
+
+  /* Hauteur : `.input` porte une hauteur figée (`h-7`/`h-9`/`h-11`) trop basse
+     pour 16px de texte. On la libère et on garantit la cible tactile.
+     Le textarea garde son `min-height: 7rem` d'origine. */
+  .input:not(.input-textarea) {
+    height: auto !important;
+    min-height: var(--peg-tap);
+  }
+  .input.input-textarea {
+    height: auto !important;
+  }
+
+  /* react-select : même traitement de cible tactile. */
+  .select .select__control {
+    min-height: var(--peg-tap);
+  }
+
+  /* 4.2 — CIBLES TACTILES 44px (par le minimum, jamais par une hauteur figée). */
+  .button,
+  .menu-item,
+  .menu-collapse-item,
+  .segment-item-default,
+  .close-btn,
+  .dropdown-toggle {
+    min-height: var(--peg-tap);
+  }
+  .close-btn {
+    min-width: var(--peg-tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .menu-item,
+  .menu-collapse-item {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  /* 4.3 — Les mots très longs (emails, URLs, références) ne poussent plus la
+     page horizontalement. `break-word` n'altère pas la taille min-content, donc
+     aucune grille ne change de comportement. */
+  .page-container {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   5. COQUE APPLICATIVE (< md)
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  /* En-tête : on resserre au lieu de retirer. Aucune action n'est masquée —
+     burger, panier, présence, cloche, langue et compte restent atteignables. */
+  .header {
+    padding-top: var(--peg-safe-top);
+    padding-left: var(--peg-safe-left);
+    padding-right: var(--peg-safe-right);
+  }
+  .header-wrapper {
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 2px;
+  }
+  .header-action {
+    min-width: 0;
+  }
+  .header-action-end {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .header-action-item {
+    margin-left: 1px;
+    margin-right: 1px;
+    padding: 6px;
+    min-width: var(--peg-tap);
+    min-height: var(--peg-tap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Panier : l'icône ET le compteur restent visibles, seul le libellé est
+     resserré pour tenir sur 360px. Aucun texte n'est supprimé. */
+  .header-action-end .alert {
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.25;
+    min-height: var(--peg-tap);
+    align-items: center;
+    min-width: 0;
+  }
+
+}
+
+/* -----------------------------------------------------------------------------
+   6. MODALES ET DRAWERS — PLEIN ÉCRAN SOUS md
+   Traitement GÉNÉRIQUE : les agents de vues n'ont AUCUNE modale à retoucher.
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  /* La page derrière ne défile plus pendant qu'une modale est ouverte. */
+  body.dialog-open {
+    overflow: hidden;
+  }
+
+  .dialog-overlay {
+    backdrop-filter: none;
+  }
+
+  /* `.dialog` = l'élément de contenu react-modal. Sa largeur est posée INLINE
+     (prop `width`), d'où le `!important`. Les insets de safe-area sont portés
+     ici en padding : le corps de la modale n'a donc pas à les connaître. */
+  .dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    /* `100%` de l'overlay (`fixed inset-0`) plutôt que `100dvh` : les deux
+       valeurs ne coïncident pas toujours pendant que la barre d'URL se replie. */
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding-top: var(--peg-safe-top);
+    padding-bottom: var(--peg-safe-bottom);
+    padding-left: var(--peg-safe-left);
+    padding-right: var(--peg-safe-right);
+  }
+
+  /* Coins non arrondis, plus de marge flottante, corps défilant. */
+  .dialog-content {
+    height: 100% !important;
+    max-height: 100% !important;
+    width: 100%;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none;
+    border-right: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* La croix de fermeture ne doit pas défiler avec le contenu.
+     `.dialog-content` porte un `transform` (framer-motion) : elle devient donc
+     le bloc conteneur du `position: fixed`, qui reste collé à la modale. */
+  .dialog-content > .close-btn {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    left: auto;
+    z-index: 20;
+  }
+
+  /* Drawers — la hauteur (`h-full` = 100% de l'overlay `fixed inset-0`) est déjà juste :
+     on ne touche qu'à la largeur, posée INLINE par le composant.
+     On BORNE au lieu de forcer 100% : le seul drawer latéral du projet est la
+     navigation (`MobileNav`, 330px). La bande d'overlay restante est la zone de
+     « taper à côté pour fermer », geste attendu sur mobile — et l'animation
+     d'ouverture (framer anime `left: -<width>px`) part bien hors écran. */
+  .drawer-content.vertical {
+    max-width: calc(100vw - 2rem) !important;
+    padding-bottom: var(--peg-safe-bottom);
+  }
+  .drawer-content.horizontal {
+    width: 100% !important;
+    max-height: 92% !important;
+    padding-bottom: var(--peg-safe-bottom);
+  }
+  /* `max(1rem, …)` : sans encoche la valeur reste 1rem, soit le `py-4` d'origine. */
+  .drawer-header {
+    padding-top: max(1rem, var(--peg-safe-top));
+  }
+  /* Le corps prend la place restante et défile seul (au lieu d'un `h-full`
+     qui déborde sous l'en-tête et le pied). */
+  .drawer-body {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .drawer-footer {
+    flex: 0 0 auto;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   7. RANGÉES QUI DÉBORDENT (< md)
+   Une barre d'onglets se glisse horizontalement, elle ne se casse ni ne s'empile.
+   (`.segment` est laissé tel quel : ses items sont déjà `w-full md:w-auto`.
+    `.steps` non plus : ses connecteurs sont en `w-full` et un `flex-shrink: 0`
+    les ferait déborder.)
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  .tab-list {
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .tab-list::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .tab-nav {
+    flex-shrink: 0;
+  }
+  .tab-nav-underline {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  /* Fil d'étapes : le titre passe à la ligne au lieu de pousser la page. */
+  .steps:not(.steps-vertical) .step-item-title {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  .steps:not(.steps-vertical) .step-connect:not(.step-connect-vertical) {
+    min-width: 12px;
+  }
+
+  /* Les tableaux (rares : les listes métier sont en cartes) sont déjà enveloppés
+     dans un `overflow-x-auto` par `components/ui/Table` — rien à ajouter ici. */
+
+  /* Sélecteur de date : jamais plus large que l'écran. */
+  .date-picker {
+    max-width: min(20rem, calc(100vw - 24px));
+  }
+}
