@@ -34,7 +34,7 @@ const PAY_CFG: Record<string, { label: string; bg: string; color: string; border
 const initials = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title, disabled }: any) => (
-  <button title={title} onClick={onClick} disabled={disabled}
+  <button title={title} onClick={onClick} disabled={disabled} className="peg-tap-target"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder } }}
     onMouseLeave={(e) => { if (!disabled) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}
@@ -78,7 +78,7 @@ const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: an
     </div>
     <div style={{ minWidth: 0 }}>
       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
-      <p style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
+      <p style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
       <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
     </div>
   </div>
@@ -86,7 +86,7 @@ const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: an
 
 /* ── Illustration hero (facture + carte + graphe) ── */
 const HeroArt = () => (
-  <svg width="300" height="170" viewBox="0 0 300 170" fill="none" style={{ flexShrink: 0, maxWidth: '40%', height: 'auto' }} aria-hidden>
+  <svg width="300" height="170" viewBox="0 0 300 170" fill="none" className="peg-hide-mobile" style={{ flexShrink: 0, maxWidth: '40%', height: 'auto' }} aria-hidden>
     <defs>
       <linearGradient id="invG" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#6d5dfc" /><stop offset="1" stopColor="#4534c9" />
@@ -143,7 +143,7 @@ const SpendingChart = ({ data, empty }: { data: number[]; empty?: boolean }) => 
         {ticks.map((t) => <span key={t} style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'right', lineHeight: 1 }}>{Math.round(t)} €</span>)}
       </div>
       {/* Plot */}
-      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', overflowX: 'hidden' }}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200" preserveAspectRatio="none" role="img" style={{ display: 'block' }}>
           <defs>
             <linearGradient id="spendG" x1="0" y1="0" x2="0" y2="1">
@@ -276,7 +276,7 @@ const InvoicesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Bannière ── */}
-      <div style={{
+      <div className="peg-pad-mobile" style={{
         position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
         padding: '34px 36px', marginTop: '24px', marginBottom: '24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px',
@@ -308,7 +308,7 @@ const InvoicesList = () => {
 
       {/* ── Tabs + Search + Export ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="peg-scroll-x" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
           {TAB_STATES.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, background: activeTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: activeTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
@@ -382,7 +382,7 @@ const InvoicesList = () => {
       )}
 
       {/* ── Grille principale : liste + activité ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', marginBottom: '18px' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', marginBottom: '18px' }}>
         {/* Liste factures */}
         <Panel style={{ padding: '16px' }}>
           {loading ? (
@@ -415,7 +415,7 @@ const InvoicesList = () => {
                 const payCfg = PAY_CFG[inv.paymentState] ?? PAY_CFG.pending
                 const customerName = inv.customer?.name ?? '—'
                 return (
-                  <div key={inv.documentId}
+                  <div key={inv.documentId} className="peg-stack-mobile"
                     style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
@@ -529,7 +529,7 @@ const InvoicesList = () => {
       </div>
 
       {/* ── Grille basse : dépenses + avantages premium ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', paddingBottom: '40px' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', paddingBottom: '40px' }}>
         {/* Dépenses */}
         <Panel title={`Dépenses ${year}`} action={
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}

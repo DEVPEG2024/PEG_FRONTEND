@@ -6,6 +6,7 @@ import { createTicket } from './store/ticketSlice';
 import { Ticket, TicketMessage } from '@/@types/ticket';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { ADMIN, SUPER_ADMIN, CUSTOMER, PRODUCER } from '@/constants/roles.constant';
 import { apiUpdateTicketMessages } from '@/services/TicketServices';
 import { apiUploadFile } from '@/services/FileServices';
@@ -160,6 +161,7 @@ const TicketsList = () => {
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]) && !isAdmin;
   const isProducer = hasRole(user, [PRODUCER]) && !isAdmin && !isCustomer;
+  const { larger } = useResponsive();
 
   const getUserRole = () => isAdmin ? 'admin' : hasRole(user, [CUSTOMER]) ? 'customer' : hasRole(user, [PRODUCER]) ? 'producer' : 'admin';
   const getDisplayName = () => [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Utilisateur';
@@ -426,6 +428,7 @@ const TicketsList = () => {
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
             {isAdmin && (
               <button onClick={(e) => { e.stopPropagation(); dispatch(deleteTicket(ticket.documentId)); }} title="Supprimer"
+                className="peg-tap-target"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
                 <HiTrash size={13} />
               </button>
@@ -600,13 +603,13 @@ const TicketsList = () => {
       display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) resetWizard(); }}>
       <div style={{
-        width: '520px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '520px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a1730 0%, #0f1018 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={resetWizard} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+        <button onClick={resetWizard} className="peg-tap-target" style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
           <HiX size={16} />
         </button>
 
@@ -627,7 +630,7 @@ const TicketsList = () => {
             </div>
 
             <span style={labelStyle}>Type</span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '6px', marginBottom: '16px' }}>
               {ticketTypeData.map((t: any) => {
                 const TIcon = TYPE_ICONS[t.value] || MdHelp;
                 return (
@@ -773,7 +776,7 @@ const TicketsList = () => {
     return (
       <Container style={{ fontFamily: 'Inter, sans-serif', paddingBottom: '40px' }}>
         {/* HERO */}
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
           padding: '34px 36px', marginTop: '24px', marginBottom: '20px',
           background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
@@ -788,7 +791,7 @@ const TicketsList = () => {
             </p>
           </div>
           <button onClick={() => openWizard(undefined, 0)}
-            style={{ ...PRIMARY_BTN, position: 'absolute', top: '28px', right: '32px', zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
+            style={{ ...PRIMARY_BTN, ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
             <HiPlus size={16} /> Nouveau ticket
           </button>
           <ChatArt />
@@ -832,7 +835,7 @@ const TicketsList = () => {
         </div>
 
         {/* Tous les tickets + Activité récente */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
           <Panel style={{ minWidth: 0 }} title={`Tous les tickets (${total})`}>
             {renderTabsAndSearch()}
             {renderList('Aucun ticket', "Aucun ticket à afficher pour le moment.")}
@@ -874,7 +877,7 @@ const TicketsList = () => {
     return (
       <Container style={{ fontFamily: 'Inter, sans-serif', paddingBottom: '40px' }}>
         {/* HERO */}
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
           padding: '34px 36px', marginTop: '24px', marginBottom: '20px',
           background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
@@ -889,7 +892,7 @@ const TicketsList = () => {
             </p>
           </div>
           <button onClick={() => openWizard(undefined, 0)}
-            style={{ ...PRIMARY_BTN, position: 'absolute', top: '28px', right: '32px', zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
+            style={{ ...PRIMARY_BTN, ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
             <HiPlus size={16} /> Nouveau ticket
           </button>
           <ChatArt />
@@ -976,7 +979,7 @@ const TicketsList = () => {
         </div>
 
         {/* Mes tickets + Activité récente */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
           <Panel style={{ minWidth: 0 }} title="Mes tickets" action={null}>
             {renderTabsAndSearch()}
             {renderList(

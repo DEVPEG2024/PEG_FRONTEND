@@ -76,7 +76,7 @@ const ShowOrderItem = () => {
                 </div>
 
                 {orderItem.product.sizes.length > 0 ? (
-                  <div className="grid grid-cols-7 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
                     {orderItem.sizeAndColorSelections.map(
                       (sizeAndColorSelected: SizeAndColorSelection) => (
                         <div
@@ -107,7 +107,7 @@ const ShowOrderItem = () => {
                     )}
                   </div>
                 ) : orderItem.product.colors.length > 0 ? (
-                  <div className="grid grid-cols-7 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
                     {orderItem.sizeAndColorSelections.map(
                       (sizeAndColorSelected: SizeAndColorSelection) => (
                         <div
@@ -177,12 +177,12 @@ function OrderChecklist({ items }: { items: ChecklistItem[] }) {
       <div style={{
         background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
         borderRadius: '18px',
-        padding: '24px',
+        padding: 'var(--peg-pad-24)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         marginTop: '24px',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <MdChecklist size={20} style={{ color: '#818cf8' }} />
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: 700, margin: 0 }}>

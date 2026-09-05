@@ -183,6 +183,7 @@ const CatalogueBanner = ({
           <button
             onClick={onPick}
             disabled={uploading}
+            className="peg-tap-target"
             style={{
               position: 'absolute', top: '12px', right: '12px', zIndex: 2,
               display: 'flex', alignItems: 'center', gap: '6px',

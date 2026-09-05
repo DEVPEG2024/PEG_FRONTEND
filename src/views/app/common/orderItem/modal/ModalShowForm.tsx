@@ -48,11 +48,12 @@ function ModalShowForm({
         onClick={handleClose}
       >
         <div
+          className="peg-full-mobile"
           style={{
             position: 'relative',
             width: '90vw',
             maxWidth: 800,
-            maxHeight: '90vh',
+            maxHeight: '90dvh',
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: 20,
             boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
@@ -66,6 +67,7 @@ function ModalShowForm({
           {/* Close button */}
           <button
             onClick={handleClose}
+            className="peg-tap-target"
             style={{
               position: 'absolute',
               top: 16,
@@ -103,7 +105,7 @@ function ModalShowForm({
           </div>
 
           {/* Body */}
-          <div style={{ flex: 1, overflow: 'auto', padding: 24 }} className="dialog-formbuilder-body">
+          <div style={{ flex: 1, overflow: 'auto', padding: 'var(--peg-pad-24)' }} className="dialog-formbuilder-body">
             <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: 40 }}>Chargement...</div>}>
               <ShowForm
                 onSubmit={() => {}}

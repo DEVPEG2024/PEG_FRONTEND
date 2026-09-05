@@ -206,10 +206,10 @@ const Summary = ({ project }: { project: Project }) => {
   return (
     <Container className="h-full">
       <Loading loading={loading}>
-        <div style={{
+        <div className="peg-stack-mobile" style={{
           display: 'grid',
           gridTemplateColumns: '2fr 1fr',
-          gap: '20px',
+          gap: 'var(--peg-gap-20)',
           paddingTop: '20px',
           paddingBottom: '20px',
           fontFamily: 'Inter, sans-serif',
@@ -218,10 +218,10 @@ const Summary = ({ project }: { project: Project }) => {
           {/* Left column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Top row: Image + Progress circle + Project name */}
-            <div style={{ ...cardStyle, display: 'flex', alignItems: 'stretch' }}>
+            <div className="peg-stack-mobile" style={{ ...cardStyle, display: 'flex', alignItems: 'stretch' }}>
               {/* Image column */}
               {(hasImage || !project.orderItem) && (
-                <div style={{
+                <div className="peg-full-mobile" style={{
                   width: '180px',
                   flexShrink: 0,
                   borderRight: '1px solid rgba(255,255,255,0.05)',
@@ -230,7 +230,7 @@ const Summary = ({ project }: { project: Project }) => {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '20px',
+                  padding: 'var(--peg-pad-20)',
                   gap: '10px',
                 }}>
                   {imageUrl ? (
@@ -292,7 +292,7 @@ const Summary = ({ project }: { project: Project }) => {
               )}
 
               {/* Progress + Name */}
-              <div style={{ flex: 1, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div className="peg-pad-mobile" style={{ flex: 1, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 'var(--peg-gap-24)' }}>
                 <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} size={88} />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <h3 style={{
@@ -320,7 +320,7 @@ const Summary = ({ project }: { project: Project }) => {
 
             {/* Description card */}
             {project.orderItem ? (
-              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+              <div className="peg-pad-mobile" style={{ ...cardStyle, padding: '24px 28px' }}>
                 <OrderItemDetails
                   orderItem={project.orderItem}
                   customer={project.customer!}
@@ -328,7 +328,7 @@ const Summary = ({ project }: { project: Project }) => {
                 />
               </div>
             ) : (
-              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+              <div className="peg-pad-mobile" style={{ ...cardStyle, padding: '24px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <p style={sectionLabel}>
                     Description détaillée
@@ -363,7 +363,7 @@ const Summary = ({ project }: { project: Project }) => {
 
             {/* Admin Notes card */}
             {isAdmin && (
-              <div style={{ ...cardStyle, padding: '24px 28px' }}>
+              <div className="peg-pad-mobile" style={{ ...cardStyle, padding: '24px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                   <p style={sectionLabel}>Notes internes</p>
                   {!notesEditing && (

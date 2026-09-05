@@ -8,6 +8,7 @@ import { Container } from '@/components/shared';
 import { RootState, useAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
@@ -60,7 +61,7 @@ const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: an
     </div>
     <div style={{ minWidth: 0 }}>
       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
-      <p style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
+      <p style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
       <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
     </div>
   </div>
@@ -134,7 +135,7 @@ const QuotesChart = ({ data, empty }: { data: number[]; empty?: boolean }) => {
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '200px', paddingBottom: '22px', flexShrink: 0 }}>
         {ticks.map((t) => <span key={t} style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'right', lineHeight: 1 }}>{Math.round(t)} €</span>)}
       </div>
-      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', overflowX: 'hidden' }}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200" preserveAspectRatio="none" role="img" style={{ display: 'block' }}>
           <defs>
             <linearGradient id="quoteG" x1="0" y1="0" x2="0" y2="1">
@@ -209,6 +210,7 @@ function QuoteCard({ quote, isAdmin, busy, validateLabel = 'Valider le devis', o
               onClick={onDelete}
               disabled={busy}
               title="Supprimer le devis"
+              className="peg-tap-target"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '28px', height: '28px', borderRadius: '8px',
@@ -351,6 +353,7 @@ const QuotesList = () => {
   const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
   const { token } = useAppSelector((state: RootState) => state.auth.session);
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const { larger } = useResponsive();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -550,7 +553,7 @@ const QuotesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Bannière par défaut (comme Tickets / Fichiers) ── */}
-      <div style={{
+      <div className="peg-pad-mobile" style={{
         position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
         padding: '34px 36px', marginTop: '24px', marginBottom: '22px',
         background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
@@ -566,7 +569,7 @@ const QuotesList = () => {
         </div>
         {!isAdmin && (
           <button onClick={() => navigate('/customer/devis')}
-            style={{ position: 'absolute', top: '28px', right: '32px', zIndex: 3, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #6d5dfc, #5a47e0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(109,93,252,0.35)' }}>
+            style={{ ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #6d5dfc, #5a47e0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(109,93,252,0.35)' }}>
             <TbSend size={16} /> Demander un devis
           </button>
         )}
@@ -590,7 +593,7 @@ const QuotesList = () => {
 
       {/* ── Tabs + Search ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="peg-scroll-x" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
           {TAB_STATES.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, background: activeTab === tab.key ? 'rgba(139,92,246,0.2)' : 'transparent', color: activeTab === tab.key ? '#a78bfa' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
@@ -623,7 +626,7 @@ const QuotesList = () => {
       </div>
 
       {/* ── Grille principale : liste + activité ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', marginBottom: '18px' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', marginBottom: '18px' }}>
         {/* Liste devis */}
         <Panel style={{ padding: '16px' }}>
           {loading ? (
@@ -720,7 +723,7 @@ const QuotesList = () => {
       </div>
 
       {/* ── Grille basse : suivi + comment ça marche ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', paddingBottom: '40px' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(0, 1fr)', gap: '18px', paddingBottom: '40px' }}>
         {/* Suivi des devis validés */}
         <Panel title={`Devis validés ${year}`} action={
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}

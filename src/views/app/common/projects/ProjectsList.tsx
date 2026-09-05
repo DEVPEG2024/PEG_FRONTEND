@@ -31,6 +31,7 @@ import {
 } from '@/services/ProjectServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 injectReducer('projects', reducer);
 
@@ -106,6 +107,11 @@ type ColDef = typeof statusTabs[number]
 function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdmin, navigate, dispatch, user }: {
   projects: Project[]; statusTabs: ColDef[]; priorityStyles: Record<string, { label: string; color: string }>; isSuperAdmin: boolean; isAdmin: boolean; navigate: any; dispatch: any; user: User
 }) {
+  // Le glisser-déposer HTML5 n'existe pas au doigt : le tableau kanban reste inchangé à
+  // partir de md, en dessous les colonnes sont empilées en liste et le statut se change
+  // par menu déroulant (même action que le dépôt sur une colonne).
+  const { smaller } = useResponsive()
+  const isBoard = !smaller.md
   // Column order (D&D columns)
   const [colOrder, setColOrder] = useState<string[]>(() => {
     const defaults = statusTabs.filter(t => t.key !== 'all').map(t => t.key)
@@ -135,6 +141,22 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
     const el = document.createElement('div'); el.style.opacity = '0'; document.body.appendChild(el); e.dataTransfer.setDragImage(el, 0, 0); setTimeout(() => document.body.removeChild(el), 0)
   }
   const handleColDragOver = (colKey: string) => (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverCol !== colKey) setDragOverCol(colKey) }
+  const moveProjectToState = async (projectId: string, newState: string) => {
+    const project = projects.find(p => p.documentId === projectId)
+    if (!project || project.state === newState) return
+    // 'unpaid' (« Terminé impayé ») est un filtre calculé côté client, pas une
+    // valeur de l'enum Strapi project.state : aucun projet ne peut y être déplacé.
+    if (newState === 'unpaid') return
+    // 'pending_paid' aligne paidPrice sur price et solde les ventes additionnelles
+    // côté serveur : on ne l'applique jamais sur un simple relâchement de sélecteur.
+    if (newState === 'pending_paid' &&
+        !window.confirm(`Passer « ${project.name} » en « ${statusTabs.find(t => t.key === newState)?.label ?? newState} » ? Le projet et ses ventes additionnelles seront comptabilisés comme encaissés.`)) return
+    try {
+      await dispatch(updateProject({ documentId: projectId, state: newState } as any))
+      toast.success(`Projet déplacé → ${statusTabs.find(t => t.key === newState)?.label ?? newState}`)
+      dispatch(getProjects({ user, pagination: { page: 1, pageSize: 30 }, searchTerm: '' }))
+    } catch { toast.error('Erreur lors du changement de statut') }
+  }
   const handleColDrop = (newState: string) => async (e: React.DragEvent) => {
     e.preventDefault()
     // Column reorder
@@ -147,13 +169,7 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
     }
     // Card move
     if (!dragProjectId) return
-    const project = projects.find(p => p.documentId === dragProjectId)
-    if (!project || project.state === newState) { setDragProjectId(null); setDragOverCol(null); return }
-    try {
-      await dispatch(updateProject({ documentId: dragProjectId, state: newState } as any))
-      toast.success(`Projet déplacé → ${statusTabs.find(t => t.key === newState)?.label ?? newState}`)
-      dispatch(getProjects({ user, pagination: { page: 1, pageSize: 30 }, searchTerm: '' }))
-    } catch { toast.error('Erreur lors du changement de statut') }
+    await moveProjectToState(dragProjectId, newState)
     setDragProjectId(null); setDragOverCol(null)
   }
   const handleDragEnd = () => { setDragProjectId(null); setDragOverCol(null); setDragColKey(null); setDragOverColKey(null) }
@@ -166,7 +182,7 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
 
   return (
     <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
-      <div style={{ display: 'flex', gap: '14px', minWidth: 'max-content' }}>
+      <div style={{ display: 'flex', flexDirection: isBoard ? 'row' : 'column', gap: '14px', minWidth: isBoard ? 'max-content' : 0 }}>
         {orderedCols.map((col) => {
           const colProjects = col.key === 'unpaid'
             ? projects.filter(p => p.state === 'fulfilled' && (p.paidPrice ?? 0) < (p.price ?? 0))
@@ -179,21 +195,21 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
           return (
             <div
               key={col.key}
-              style={{ width: '280px', flexShrink: 0, opacity: isColDragging ? 0.4 : 1, transition: 'opacity 0.15s' }}
+              style={{ width: isBoard ? '280px' : '100%', flexShrink: isBoard ? 0 : 1, opacity: isColDragging ? 0.4 : 1, transition: 'opacity 0.15s' }}
               onDragOver={handleColDragOver(col.key)}
               onDrop={handleColDrop(col.key)}
               onDragLeave={() => { setDragOverCol(null); setDragOverColKey(null) }}
             >
               {/* Column header — draggable only for admin */}
               <div
-                draggable={isAdmin}
-                onDragStart={isAdmin ? handleColHeaderDragStart(col.key) : undefined}
-                onDragEnd={isAdmin ? handleDragEnd : undefined}
+                draggable={isAdmin && isBoard}
+                onDragStart={isAdmin && isBoard ? handleColHeaderDragStart(col.key) : undefined}
+                onDragEnd={isAdmin && isBoard ? handleDragEnd : undefined}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 14px', marginBottom: '10px',
                   background: col.bg, border: `1px solid ${isColOver ? '#fff' : isCardOver ? col.color : col.border}`,
-                  borderRadius: '12px', cursor: isAdmin ? 'grab' : 'default',
+                  borderRadius: '12px', cursor: isAdmin && isBoard ? 'grab' : 'default',
                   transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.15s',
                   boxShadow: isCardOver ? `0 0 20px ${col.color}30` : isColOver ? '0 0 20px rgba(255,255,255,0.15)' : 'none',
                   transform: isColOver ? 'scale(1.03)' : 'none',
@@ -225,8 +241,8 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
                   const pr = priorityStyles[project.priority]; const progressColor = progress > 70 ? '#22c55e' : progress < 40 ? '#ef4444' : '#f59e0b'
                   const isDragging = dragProjectId === project.documentId
                   return (
-                    <div key={project.documentId} draggable={isAdmin} onDragStart={isAdmin ? handleCardDragStart(project.documentId) : undefined} onDragEnd={isAdmin ? handleDragEnd : undefined} onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
-                      style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 14px', cursor: isAdmin ? 'grab' : 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', opacity: isDragging ? 0.4 : 1, transform: isDragging ? 'scale(0.95)' : 'none' }}
+                    <div key={project.documentId} draggable={isAdmin && isBoard} onDragStart={isAdmin && isBoard ? handleCardDragStart(project.documentId) : undefined} onDragEnd={isAdmin && isBoard ? handleDragEnd : undefined} onClick={() => navigate(`/common/projects/details/${project.documentId}`)}
+                      style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 14px', cursor: isAdmin && isBoard ? 'grab' : 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', opacity: isDragging ? 0.4 : 1, transform: isDragging ? 'scale(0.95)' : 'none' }}
                       onMouseEnter={(e) => { if (!isDragging) { e.currentTarget.style.borderColor = `${col.color}40`; e.currentTarget.style.transform = 'translateY(-1px)' } }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = isDragging ? 'scale(0.95)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
@@ -236,6 +252,18 @@ function KanbanBoard({ projects, statusTabs, priorityStyles, isSuperAdmin, isAdm
                       <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', marginBottom: '8px' }}>{project.customer?.name ?? '—'}{project.producer?.name && <span style={{ color: 'rgba(255,255,255,0.25)' }}> · {project.producer.name}</span>}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '100px', overflow: 'hidden' }}><div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '100px' }} /></div><span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600 }}>{progress}%</span></div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600 }}><MdAccessTime size={10} />{dayjs(project.endDate).format('DD/MM')}{duration < 0 && <span style={{ color: '#f87171' }}> Dépassé</span>}</span>{isSuperAdmin && <span style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700 }}>{fmtEur(project.price ?? 0)}</span>}</div>
+                      {!isBoard && isAdmin && (
+                        <select
+                          value={project.state}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => { e.stopPropagation(); moveProjectToState(project.documentId, e.target.value) }}
+                          style={{ width: '100%', marginTop: '10px', minHeight: 'var(--peg-tap)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: '#fff', padding: '8px 10px', fontFamily: 'Inter, sans-serif' }}
+                        >
+                          {orderedCols.filter((c) => c.key !== 'unpaid').map((c) => (
+                            <option key={c.key} value={c.key} style={{ color: '#111' }}>{c.label}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   )
                 })}
@@ -262,6 +290,7 @@ const ProjectsList = () => {
   const [tableSort, setTableSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: '', dir: 'asc' });
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { smaller } = useResponsive();
 
   const { total, projects, loading, newProjectDialog } = useAppSelector(
     (state) => state.projects.data
@@ -409,7 +438,7 @@ const ProjectsList = () => {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: '16px', paddingTop: '24px', paddingBottom: '24px', flexWrap: 'wrap',
+        gap: 'var(--peg-gap-16)', paddingTop: 'var(--peg-pad-24)', paddingBottom: 'var(--peg-pad-24)', flexWrap: 'wrap',
       }}>
         <div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
@@ -430,13 +459,14 @@ const ProjectsList = () => {
               { mode: 'table' as const, icon: <HiViewList size={16} />, radius: '0' },
               { mode: 'kanban' as const, icon: <HiViewBoards size={16} />, radius: '0 10px 10px 0' },
             ]).map(({ mode, icon, radius }) => (
-              <button key={mode} onClick={() => setViewMode(mode)} title={mode === 'kanban' ? 'Vue Kanban' : mode === 'table' ? 'Vue tableau' : 'Vue cartes'}
+              <button key={mode} className="peg-tap-target" onClick={() => setViewMode(mode)} title={mode === 'kanban' ? 'Vue Kanban' : mode === 'table' ? 'Vue tableau' : 'Vue cartes'}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: radius, background: viewMode === mode ? 'rgba(47,111,237,0.25)' : 'transparent', color: viewMode === mode ? '#6b9eff' : 'rgba(255,255,255,0.35)' }}
               >{icon}</button>
             ))}
           </div>
           {isAdminOrSuperAdmin && (
             <button
+              className="peg-tap-target"
               onClick={() => dispatch(setNewProjectDialog(true))}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
@@ -508,13 +538,14 @@ const ProjectsList = () => {
       </div>
 
       {/* Status tabs with real counts */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="peg-scroll-x" style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: smaller.md ? 'nowrap' : 'wrap' }}>
         {statusTabs.map((tab) => {
           const active = statusFilter === tab.key;
           const count = statusCounts[tab.key];
           return (
             <button
               key={tab.key}
+              className="peg-tap-target"
               onClick={() => { setStatusFilter(tab.key); setCurrentPage(1); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
@@ -546,13 +577,13 @@ const ProjectsList = () => {
       </div>
 
       {/* Bannière */}
-      <div style={{ paddingBottom: '24px' }}>
+      <div style={{ paddingBottom: 'var(--peg-pad-24)' }}>
         <CatalogueBanner bannerName="Bannière projets" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
       </div>
 
       {/* Aperçu — cartes de synthèse par statut (sous la bannière) */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: 'var(--peg-pad-24)' }}>
+        <div style={{ display: 'flex', gap: 'var(--peg-gap-12)', flexWrap: 'wrap' }}>
           {([
             { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },
             { key: 'pending',   label: 'En cours',      sub: 'Projets actifs',         color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  icon: <HiOutlineClock size={20} /> },
@@ -611,6 +642,7 @@ const ProjectsList = () => {
             border: '1px solid rgba(255,255,255,0.07)',
             overflow: 'hidden',
           }}>
+            <div className="peg-table-wrap">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -754,6 +786,7 @@ const ProjectsList = () => {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </Loading>

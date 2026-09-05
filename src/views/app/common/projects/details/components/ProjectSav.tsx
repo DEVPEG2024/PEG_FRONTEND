@@ -365,16 +365,16 @@ const ProjectSav = () => {
       onClick={(e) => { if (e.target === e.currentTarget) resetWizard(); }}
       >
         <div style={{
-          width: '560px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+          width: '560px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
           background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-          borderRadius: '20px', padding: '32px',
+          borderRadius: '20px', padding: 'var(--peg-pad-32)',
           boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
           animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
         >
           {/* Close */}
-          <button onClick={resetWizard} style={{
+          <button onClick={resetWizard} className="peg-tap-target" style={{
             position: 'absolute', top: '16px', right: '16px',
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '8px', width: '32px', height: '32px',
@@ -890,6 +890,7 @@ const ProjectSav = () => {
                         }}
                       />
                       <button onClick={() => messageFileRefs.current[ticket.id]?.click()}
+                        className="peg-tap-target"
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}
                         title="Photo">
                         <HiPhotograph size={18} />
@@ -902,6 +903,7 @@ const ProjectSav = () => {
                       />
                       <button onClick={() => sendMessage(ticket.id)}
                         disabled={uploading || (!(messageText[ticket.id] || '').trim() && !(messageFiles[ticket.id] || []).length)}
+                        className="peg-tap-target"
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
                           background: (messageText[ticket.id] || '').trim() || (messageFiles[ticket.id] || []).length ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.04)',
@@ -968,10 +970,10 @@ const ProjectSav = () => {
   return (
     <Container className="h-full">
       {renderWizard()}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '28px', paddingBottom: '28px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-          borderRadius: '20px', padding: '24px',
+          borderRadius: '20px', padding: 'var(--peg-pad-24)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)',
         }}>
           {/* Header */}

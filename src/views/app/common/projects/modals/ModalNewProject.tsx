@@ -152,14 +152,14 @@ function ModalNewProject() {
       animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div style={{
-        width: '620px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '620px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
 
-        <button onClick={handleClose} style={{
+        <button className="peg-tap-target" onClick={handleClose} style={{
           position: 'absolute', top: '16px', right: '16px',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '8px', width: '32px', height: '32px',
@@ -205,8 +205,8 @@ function ModalNewProject() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-              <button onClick={handleClose} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Annuler</button>
-              <button onClick={() => setStep(1)} style={{
+              <button className="peg-tap-target" onClick={handleClose} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Annuler</button>
+              <button className="peg-tap-target" onClick={() => setStep(1)} style={{
                 padding: '10px 24px', borderRadius: '10px', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', display: 'flex', alignItems: 'center', gap: '6px',
                 boxShadow: '0 4px 16px rgba(47,111,237,0.3)',
@@ -235,7 +235,7 @@ function ModalNewProject() {
               <span style={labelStyle}>Description</span>
               <textarea placeholder="Décrivez le projet..." value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
               {description.trim() && (
-                <button onClick={handleRewrite} disabled={rewriting} style={{
+                <button className="peg-tap-target" onClick={handleRewrite} disabled={rewriting} style={{
                   display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px',
                   padding: '5px 12px', borderRadius: '8px',
                   background: 'linear-gradient(90deg, rgba(168,85,247,0.12), rgba(139,92,246,0.12))',
@@ -248,7 +248,7 @@ function ModalNewProject() {
             </div>
 
             {/* Producer + Pool + Priority + Status + Dates */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <span style={labelStyle}>Producteur</span>
                 <select value={producerId} onChange={(e) => setProducerId(e.target.value)} style={{ ...inputStyle, appearance: 'auto' }}>
@@ -264,7 +264,7 @@ function ModalNewProject() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <span style={labelStyle}>Date de début</span>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
@@ -283,10 +283,10 @@ function ModalNewProject() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-              <button onClick={() => setStep(0)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="peg-tap-target" onClick={() => setStep(0)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HiArrowLeft size={14} /> Retour
               </button>
-              <button onClick={() => { if (!name.trim()) { toast.error('Nom du projet obligatoire'); return; } setStep(2); }} style={{
+              <button className="peg-tap-target" onClick={() => { if (!name.trim()) { toast.error('Nom du projet obligatoire'); return; } setStep(2); }} style={{
                 padding: '10px 24px', borderRadius: '10px', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif',
                 background: name.trim() ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.05)',
                 display: 'flex', alignItems: 'center', gap: '6px', boxShadow: name.trim() ? '0 4px 16px rgba(47,111,237,0.3)' : 'none',
@@ -306,7 +306,7 @@ function ModalNewProject() {
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: 0 }}>Montants et commissions</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
               <div>
                 <span style={labelStyle}>Prix du projet</span>
                 <div style={{ position: 'relative' }}>
@@ -352,10 +352,10 @@ function ModalNewProject() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-              <button onClick={() => setStep(1)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="peg-tap-target" onClick={() => setStep(1)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HiArrowLeft size={14} /> Retour
               </button>
-              <button onClick={() => setStep(3)} style={{
+              <button className="peg-tap-target" onClick={() => setStep(3)} style={{
                 padding: '10px 24px', borderRadius: '10px', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', display: 'flex', alignItems: 'center', gap: '6px',
                 boxShadow: '0 4px 16px rgba(47,111,237,0.3)',
@@ -376,7 +376,7 @@ function ModalNewProject() {
             </div>
 
             <div style={{ borderRadius: '14px', padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
                 <div>
                   <span style={{ ...labelStyle, marginBottom: '2px' }}>Projet</span>
                   <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600, margin: 0 }}>{name || '—'}</p>
@@ -394,7 +394,7 @@ function ModalNewProject() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
                 <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', textAlign: 'center' }}>
                   <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prix</span>
                   <p style={{ color: '#4ade80', fontSize: '16px', fontWeight: 700, margin: '2px 0 0' }}>{price} €</p>
@@ -420,10 +420,10 @@ function ModalNewProject() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
-              <button onClick={() => setStep(2)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="peg-tap-target" onClick={() => setStep(2)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HiArrowLeft size={14} /> Modifier
               </button>
-              <button onClick={handleSubmit} disabled={loading} style={{
+              <button className="peg-tap-target" onClick={handleSubmit} disabled={loading} style={{
                 padding: '12px 28px', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700,
                 cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif',
                 background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(90deg, #22c55e, #16a34a)',

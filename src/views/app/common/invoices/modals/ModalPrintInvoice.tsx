@@ -386,11 +386,12 @@ const ModalPrintInvoice = ({
         onClick={handleClose}
       >
         <div
+          className="peg-full-mobile"
           style={{
             position: 'relative',
             width: '95vw',
             maxWidth: 1100,
-            height: '92vh',
+            height: '92dvh',
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: 20,
             boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
@@ -404,6 +405,7 @@ const ModalPrintInvoice = ({
           {/* Close button */}
           <button
             onClick={handleClose}
+            className="peg-tap-target"
             style={{
               position: 'absolute',
               top: 16,
@@ -441,7 +443,7 @@ const ModalPrintInvoice = ({
           </div>
 
           {/* PDF Content */}
-          <div style={{ flex: 1, padding: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, padding: 'var(--peg-pad-16)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {loading && (
               <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.5)', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 Generation du PDF en cours...

@@ -141,12 +141,13 @@ const AdditionalSales = () => {
   const totalPaid = sales.reduce((s, e) => s + (e.paid ? (e.amount || 0) : 0), 0);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', padding: '20px 0', fontFamily: 'Inter, sans-serif' }}>
+    <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--peg-gap-20)', padding: '20px 0', fontFamily: 'Inter, sans-serif' }}>
       {/* Left — sales list */}
       <div>
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: '10px',
           marginBottom: '16px',
         }}>
           <div>
@@ -177,12 +178,12 @@ const AdditionalSales = () => {
 
         {/* Form */}
         {showForm && (
-          <div style={{
+          <div className="peg-pad-mobile" style={{
             background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
             border: '1.5px solid rgba(255,255,255,0.08)',
             borderRadius: '14px', padding: '18px 20px', marginBottom: '16px',
           }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
                 <div style={labelStyle}>Libelle *</div>
                 <input
@@ -204,7 +205,7 @@ const AdditionalSales = () => {
                 />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <div style={labelStyle}>Date</div>
                 <input
@@ -255,7 +256,8 @@ const AdditionalSales = () => {
         )}
 
         {/* Table */}
-        <div style={{
+        <div className="peg-table-wrap">
+        <div className="min-w-[640px] md:min-w-0" style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           border: '1.5px solid rgba(255,255,255,0.07)',
           borderRadius: '16px', overflow: 'hidden',
@@ -358,6 +360,7 @@ const AdditionalSales = () => {
               </div>
             </>
           )}
+        </div>
         </div>
       </div>
 

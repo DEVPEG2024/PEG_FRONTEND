@@ -54,13 +54,14 @@ const QuickFilterTab = () => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+    <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '5px' }}>
       {tabs.map((tab, index) => {
         const isActive = selectedTab === tab;
         const count = getTabCount(tab);
         return (
           <button
             key={`${tab}-${index}`}
+            className="peg-tap-target"
             onClick={() => handleTabChange(tab)}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',

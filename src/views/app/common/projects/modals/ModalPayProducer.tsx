@@ -78,14 +78,14 @@ function ModalPayProducer({
       animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div style={{
-        width: '480px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '480px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
 
-        <button onClick={handleClose} style={{
+        <button className="peg-tap-target" onClick={handleClose} style={{
           position: 'absolute', top: '16px', right: '16px',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '8px', width: '32px', height: '32px',
@@ -163,8 +163,8 @@ function ModalPayProducer({
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={handleClose} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Annuler</button>
-              <button onClick={() => { if (!formData.amount || formData.amount <= 0) return; setStep(1); }} style={{
+              <button className="peg-tap-target" onClick={handleClose} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Annuler</button>
+              <button className="peg-tap-target" onClick={() => { if (!formData.amount || formData.amount <= 0) return; setStep(1); }} style={{
                 padding: '10px 24px', borderRadius: '10px', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700,
                 cursor: formData.amount > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif',
                 background: formData.amount > 0 ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.05)',
@@ -187,7 +187,7 @@ function ModalPayProducer({
             </div>
 
             <div style={{ borderRadius: '14px', padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px' }}>
                 <div>
                   <span style={{ ...labelStyle, marginBottom: '2px' }}>Producteur</span>
                   <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600, margin: 0 }}>{project.producer?.name || '--'}</p>
@@ -198,7 +198,7 @@ function ModalPayProducer({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px' }}>
                 <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.1)', textAlign: 'center' }}>
                   <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Montant</span>
                   <p style={{ color: '#4ade80', fontSize: '20px', fontWeight: 700, margin: '4px 0 0' }}>{formData.amount} EUR</p>
@@ -217,10 +217,10 @@ function ModalPayProducer({
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
-              <button onClick={() => setStep(0)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="peg-tap-target" onClick={() => setStep(0)} style={{ padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HiArrowLeft size={14} /> Modifier
               </button>
-              <button onClick={handleSubmit} style={{
+              <button className="peg-tap-target" onClick={handleSubmit} style={{
                 padding: '12px 28px', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700,
                 cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 background: 'linear-gradient(90deg, #22c55e, #16a34a)',

@@ -15,6 +15,7 @@ import { PegFile } from '@/@types/pegFile';
 import { apiUploadFile } from '@/services/FileServices';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { hasRole } from '@/utils/permissions';
+import useResponsive from '@/utils/hooks/useResponsive';
 import ChatMessage from './ChatMessage';
 
 /* ── Visibility options ── */
@@ -82,6 +83,7 @@ const Comments = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useAppDispatch();
+  const { larger } = useResponsive();
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
@@ -264,8 +266,8 @@ const Comments = () => {
     <Container className="h-full">
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '2fr 1fr',
-        gap: '20px',
+        gridTemplateColumns: larger.md ? '2fr 1fr' : '1fr',
+        gap: 'var(--peg-gap-20)',
         paddingTop: '20px',
         paddingBottom: '20px',
         fontFamily: 'Inter, sans-serif',
@@ -280,7 +282,7 @@ const Comments = () => {
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
           overflow: 'hidden',
           minHeight: '500px',
-          maxHeight: '75vh',
+          maxHeight: '75dvh',
         }}>
           {/* ── Header ── */}
           <div style={{
@@ -316,6 +318,7 @@ const Comments = () => {
               {/* Search toggle */}
               <button
                 onClick={() => { setSearchOpen(!searchOpen); setSearchTerm(''); }}
+                className="peg-tap-target"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -443,7 +446,7 @@ const Comments = () => {
           }}>
             {/* Visibility selector — admin only */}
             {isAdmin && (
-              <div style={{
+              <div className="peg-scroll-x" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -464,6 +467,7 @@ const Comments = () => {
                   return (
                     <button
                       key={opt.value}
+                      className="peg-tap-target"
                       onClick={() => setVisibility(opt.value)}
                       style={{
                         display: 'flex',
@@ -560,6 +564,7 @@ const Comments = () => {
               {/* Photo button — opens native file picker */}
               <button
                 onClick={() => fileInputRef.current?.click()}
+                className="peg-tap-target"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -623,6 +628,7 @@ const Comments = () => {
               <button
                 onClick={submitComment}
                 disabled={loading || (!commentText.trim() && pegFiles.length === 0)}
+                className="peg-tap-target"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -729,7 +735,7 @@ const Comments = () => {
         )}
 
         {/* ── Right sidebar ── */}
-        <div style={{ gridColumn: '2 / 3', gridRow: '1 / -1', alignSelf: 'start' }}>
+        <div style={{ gridColumn: larger.md ? '2 / 3' : undefined, gridRow: larger.md ? '1 / -1' : undefined, alignSelf: 'start' }}>
           <DetailsRight />
         </div>
       </div>

@@ -54,12 +54,12 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
       {/* Top bar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 20px', background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: 'calc(12px + var(--peg-safe-top)) 20px 12px', background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: 600 }}>{fileName}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
           <span style={{
-            fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+            fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', flexShrink: 0,
             background: batStatus === 'approved' ? 'rgba(34,197,94,0.12)' : batStatus === 'rejected' ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)',
             color: batStatus === 'approved' ? '#4ade80' : batStatus === 'rejected' ? '#f87171' : '#fbbf24',
             textTransform: 'uppercase',
@@ -67,7 +67,7 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
             {batStatus === 'approved' ? 'Validé' : batStatus === 'rejected' ? 'Refusé' : 'En attente'}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {isImage && (
             <>
               <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
@@ -106,10 +106,10 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
       {/* Bottom action bar — client only, not yet approved */}
       {isClient && batStatus !== 'approved' && (
         <div style={{
-          padding: '16px 20px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '16px 20px calc(16px + var(--peg-safe-bottom))', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.06)',
         }}>
           {action === null && (
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => setAction('approve')} style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 28px', borderRadius: '12px',
                 background: 'linear-gradient(90deg, #22c55e, #16a34a)', border: 'none', color: '#fff',
@@ -129,7 +129,7 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
           )}
 
           {action === 'approve' && (
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Confirmer l'approbation ?</span>
               <button onClick={handleApprove} disabled={submitting} style={{
                 padding: '10px 24px', borderRadius: '10px', background: 'linear-gradient(90deg, #22c55e, #16a34a)',
@@ -149,7 +149,7 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
                 style={{ width: '100%', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', color: '#fff', fontSize: '13px', padding: '10px 14px', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', marginBottom: '10px' }}
                 autoFocus
               />
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={handleReject} disabled={submitting || !rejectComment.trim()} style={{
                   padding: '10px 24px', borderRadius: '10px', background: 'rgba(239,68,68,0.15)',
                   border: '1.5px solid rgba(239,68,68,0.4)', color: '#f87171', fontSize: '13px',

@@ -178,15 +178,15 @@ const Invoices = () => {
 
   return (
     <Container className="h-full">
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <Button loading={loading} onClick={generateInvoice}>
                 Générer la facture du projet
               </Button>
@@ -221,6 +221,7 @@ const Invoices = () => {
                 return (
                   <div
                     key={invoice.documentId}
+                    className="peg-stack-mobile"
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                       padding: '12px 16px', borderRadius: '12px',
@@ -229,7 +230,7 @@ const Invoices = () => {
                     }}
                   >
                     {/* Left info */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div className="peg-scroll-x" style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                       <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
                       <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {invoice.name}
@@ -239,7 +240,7 @@ const Invoices = () => {
                     </div>
 
                     {/* Right: amount + actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                         <span style={{
                           background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
@@ -268,22 +269,24 @@ const Invoices = () => {
                           href={invoice.file.url}
                           target="_blank"
                           rel="noreferrer"
+                          className="peg-tap-target"
                           style={{ ...iconBtn(), color: '#6fa3f5', textDecoration: 'none' }}
                           title="Voir le PDF"
                         >
                           <HiDocumentText size={14} />
                         </a>
                       )}
-                      <button style={iconBtn()} onClick={() => handlePrintInvoice(invoice)}>
+                      <button className="peg-tap-target" style={iconBtn()} onClick={() => handlePrintInvoice(invoice)}>
                         <HiPrinter size={14} />
                       </button>
                       {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-                        <button style={iconBtn()} onClick={() => handleUpdateInvoice(invoice)}>
+                        <button className="peg-tap-target" style={iconBtn()} onClick={() => handleUpdateInvoice(invoice)}>
                           <HiPencil size={14} />
                         </button>
                       )}
                       {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                         <button
+                          className="peg-tap-target"
                           style={{ ...iconBtn(true), opacity: isCanceled ? 0.4 : 1, cursor: isCanceled ? 'not-allowed' : 'pointer' }}
                           onClick={() => !isCanceled && handleCancelInvoice(invoice)}
                           disabled={isCanceled}
@@ -297,6 +300,7 @@ const Invoices = () => {
                           Seule l'annulation ci-dessus est proposée. */}
                       {hasRole(user, [SUPER_ADMIN, ADMIN]) && !isNumberedInvoice(invoice.name) && (
                         <button
+                          className="peg-tap-target"
                           style={iconBtn(true)}
                           onClick={() => handleDeleteInvoice(invoice)}
                           title="Supprimer"

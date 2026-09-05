@@ -109,15 +109,15 @@ const ProjectBat = () => {
 
   return (
     <Container className="h-full">
-      <div style={{
+      <div className="peg-stack-mobile" style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1fr',
-        gap: '20px',
+        gap: 'var(--peg-gap-20)',
         paddingTop: '20px',
         paddingBottom: '20px',
         fontFamily: 'Inter, sans-serif',
       }}>
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
           padding: '28px',
@@ -172,7 +172,7 @@ const ProjectBat = () => {
 
           {/* BAT file */}
           {batFile?.url ? (
-            <div style={{
+            <div className="peg-stack-mobile" style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '12px',

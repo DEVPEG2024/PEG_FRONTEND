@@ -138,13 +138,14 @@ function ModalEditInvoice({
       >
         {/* Modal */}
         <div
+          className="peg-pad-mobile"
           style={{
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: '20px',
             padding: '36px',
             width: '95%',
             maxWidth: '1100px',
-            maxHeight: '90vh',
+            maxHeight: '90dvh',
             overflowY: 'auto',
             position: 'relative',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -165,6 +166,7 @@ function ModalEditInvoice({
             </div>
             <button
               onClick={handleClose}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -187,7 +189,7 @@ function ModalEditInvoice({
           <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', marginBottom: '28px' }} />
 
           {/* Row 1: Status + Dates */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             <div style={fieldGroupStyle}>
               <span style={labelStyle}>Statut</span>
               <Select
@@ -234,7 +236,7 @@ function ModalEditInvoice({
           </div>
 
           {/* Row 2: Payment info */}
-          <div style={{ display: 'grid', gridTemplateColumns: formData.paymentState === 'fulfilled' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: formData.paymentState === 'fulfilled' ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '28px' }}>
             <div style={fieldGroupStyle}>
               <span style={labelStyle}>Mode de paiement</span>
               <Select
@@ -292,7 +294,7 @@ function ModalEditInvoice({
           <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', marginBottom: '24px' }} />
 
           {/* Summary section */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div className="peg-stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             {/* TVA toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '8px' }}>
               <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>TVA ({VAT_AMOUNT}%)</span>

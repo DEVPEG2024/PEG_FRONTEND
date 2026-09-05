@@ -123,15 +123,15 @@ const ProjectExpenses = () => {
 
   return (
     <Container className="h-full">
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           {/* Header + KPI */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
             <div>
               <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 700 }}>
                 Dépenses du projet
@@ -147,6 +147,7 @@ const ProjectExpenses = () => {
               </div>
             </div>
             <button onClick={handleOpenCreate}
+              className="peg-tap-target"
               style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', borderRadius: '10px', padding: '8px 16px', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)', fontFamily: 'Inter, sans-serif' }}
             >
               <HiPlus size={14} /> Ajouter
@@ -170,12 +171,12 @@ const ProjectExpenses = () => {
                 const cat = CAT_CFG[exp.category] ?? CAT_CFG.other;
                 const status = STATUS_CFG[exp.status] ?? STATUS_CFG.pending;
                 return (
-                  <div key={exp.documentId} style={{
+                  <div key={exp.documentId} className="peg-stack-mobile" style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                     padding: '12px 16px', borderRadius: '12px',
                     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div className="peg-scroll-x" style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                       <HiOutlineBanknotes size={16} style={{ color: '#f87171', flexShrink: 0 }} />
                       <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {exp.label}
@@ -193,7 +194,7 @@ const ProjectExpenses = () => {
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                         <span style={{
                           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
@@ -206,10 +207,10 @@ const ProjectExpenses = () => {
                           {fmtHT(exp.amount)}
                         </span>
                       </div>
-                      <button style={iconBtn()} onClick={() => handleOpenEdit(exp)}>
+                      <button className="peg-tap-target" style={iconBtn()} onClick={() => handleOpenEdit(exp)}>
                         <HiPencil size={14} />
                       </button>
-                      <button style={iconBtn(true)} onClick={() => handleDelete(exp)}>
+                      <button className="peg-tap-target" style={iconBtn(true)} onClick={() => handleDelete(exp)}>
                         <HiTrash size={14} />
                       </button>
                     </div>

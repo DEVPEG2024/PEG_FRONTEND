@@ -94,7 +94,7 @@ const ProjectDetails = () => {
 
   return (
     project && (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
         <ProjectHeader project={project} customerLastSeen={customerLastSeen} />
         <div style={{ flex: 1, overflow: 'auto' }}>
           <Container className="h-full">
@@ -103,7 +103,7 @@ const ProjectDetails = () => {
             {selectedTab === 'Fichiers' && <Files />}
             {selectedTab === 'Fichiers client' && customerDocId && (
               <div style={{ paddingTop: '20px', paddingBottom: '20px' }}>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 peg-pad-mobile">
                   <ClientFilesPanel
                     customerDocumentId={customerDocId}
                     mode={isProducer ? 'producer' : isCustomer ? 'customer' : 'admin'}
@@ -126,7 +126,7 @@ const ProjectDetails = () => {
             <button
               onClick={() => setDeliveryWizardOpen(true)}
               style={{
-                position: 'fixed', bottom: '24px', right: '24px', zIndex: 100,
+                position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom))', right: '24px', zIndex: 100,
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '14px 24px', borderRadius: '14px',
                 background: 'linear-gradient(90deg, #22c55e, #16a34a)',

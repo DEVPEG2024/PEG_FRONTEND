@@ -79,11 +79,11 @@ const Devis = () => {
 
   return (
     <Container className="h-full">
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
@@ -111,6 +111,7 @@ const Devis = () => {
               devisList.map((devisFile: PegFile, index: number) => (
                 <div
                   key={devisFile.documentId}
+                  className="peg-stack-mobile"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                     padding: '12px 16px', borderRadius: '12px',
@@ -132,6 +133,7 @@ const Devis = () => {
                         href={devisFile.url}
                         target="_blank"
                         rel="noreferrer"
+                        className="peg-tap-target"
                         style={{ ...iconBtn(), color: '#6fa3f5', textDecoration: 'none' }}
                         title="Voir le PDF"
                       >
@@ -140,6 +142,7 @@ const Devis = () => {
                     )}
                     {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
                       <button
+                        className="peg-tap-target"
                         style={iconBtn(true)}
                         onClick={() => handleDeleteDevis(devisFile)}
                         title="Supprimer"

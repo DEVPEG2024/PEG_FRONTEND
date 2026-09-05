@@ -209,14 +209,14 @@ function ModalEditProject() {
       animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div style={{
-        width: '620px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '620px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
 
-        <button onClick={handleClose} style={{
+        <button onClick={handleClose} className="peg-tap-target" style={{
           position: 'absolute', top: '16px', right: '16px',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '8px', width: '32px', height: '32px',
@@ -258,7 +258,7 @@ function ModalEditProject() {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <span style={labelStyle}>Priorite</span>
                 <select value={formData.priority as string} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} style={{ ...inputStyle, appearance: 'auto' }}>
@@ -302,7 +302,7 @@ function ModalEditProject() {
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: 0 }}>Montants et commissions</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <span style={labelStyle}>Montant total</span>
                 <div style={{ position: 'relative' }}>
@@ -431,7 +431,7 @@ function ModalEditProject() {
             </div>
 
             {/* Dates */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <span style={labelStyle}>Date de debut</span>
                 <input className="peg-date-input" type="date" value={formData.startDate ? dayjs(formData.startDate).format('YYYY-MM-DD') : ''} onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? dayjs(e.target.value).toDate() : new Date() })} style={inputStyle} />
@@ -467,7 +467,7 @@ function ModalEditProject() {
             </div>
 
             <div style={{ borderRadius: '14px', padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
                   <span style={{ ...labelStyle, marginBottom: '2px' }}>Projet</span>
                   <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600, margin: 0 }}>{formData.name as string || '--'}</p>
@@ -485,7 +485,7 @@ function ModalEditProject() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
                 <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', textAlign: 'center' }}>
                   <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prix</span>
                   <p style={{ color: '#4ade80', fontSize: '16px', fontWeight: 700, margin: '2px 0 0' }}>{price} EUR</p>

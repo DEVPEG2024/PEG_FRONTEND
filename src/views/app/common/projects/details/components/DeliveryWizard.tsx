@@ -135,14 +135,14 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
       animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) reset(); }}>
       <div style={{
-        width: '540px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '540px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
 
-        <button onClick={reset} style={{
+        <button onClick={reset} className="peg-tap-target" style={{
           position: 'absolute', top: '16px', right: '16px',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '8px', width: '32px', height: '32px',
@@ -280,7 +280,7 @@ const DeliveryWizard = ({ open, onClose }: Props) => {
             </div>
 
             <div style={{ borderRadius: '14px', padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Projet</span>
                   <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: '2px 0 0' }}>{project?.name}</p>

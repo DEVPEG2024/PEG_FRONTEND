@@ -96,10 +96,10 @@ const ProjectItem = ({
       {/* Barre de couleur statut */}
       <div style={{ height: '4px', background: status.color, opacity: 0.8 }} />
 
-      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'row', gap: '14px' }}>
+      <div className="peg-stack-mobile" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'row', gap: '14px' }}>
 
       {/* Photo du produit à gauche */}
-      <div style={{
+      <div className="peg-full-mobile" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         width: '200px',
         background: 'rgba(255,255,255,0.04)',

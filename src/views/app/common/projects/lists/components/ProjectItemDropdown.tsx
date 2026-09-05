@@ -70,6 +70,7 @@ const ProjectItemDropdown = ({
             {/* Close button */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
               <button
+                className="peg-tap-target"
                 onClick={() => setIsValidDeleteOpen(false)}
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
@@ -86,12 +87,14 @@ const ProjectItemDropdown = ({
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', margin: '0 0 28px' }}>Voulez-vous vraiment supprimer ce projet ?</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
               <button
+                className="peg-tap-target"
                 onClick={() => setIsValidDeleteOpen(false)}
                 style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
               >
                 Annuler
               </button>
               <button
+                className="peg-tap-target"
                 onClick={handleConfirmDelete}
                 style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #ef4444, #dc2626)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(239,68,68,0.4)' }}
               >

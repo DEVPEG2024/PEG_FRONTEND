@@ -118,6 +118,7 @@ const TaskCard = ({
 
           {/* Custom checkbox */}
           <div
+            className="peg-tap-target"
             onClick={() => {
               if (!loading && canToggle) {
                 handleChangeTaskState(task.documentId, checked ? 'pending' : 'fulfilled');

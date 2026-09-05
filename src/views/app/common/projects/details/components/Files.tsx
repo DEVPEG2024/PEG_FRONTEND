@@ -214,11 +214,11 @@ const Files = () => {
 
   return (
     <Container className="h-full">
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 peg-pad-mobile">
 
           {/* HEADER */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex flex-wrap gap-2 items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <HiOutlineFolder className="w-5 h-5 text-white/50" />
               <h3 className="text-base font-semibold text-white">Fichiers du projet</h3>
@@ -227,7 +227,7 @@ const Files = () => {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium transition shadow-lg shadow-cyan-500/15"
+              className="peg-tap-target flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium transition shadow-lg shadow-cyan-500/15"
             >
               <HiOutlineUpload className="w-3.5 h-3.5" />
               Ajouter un fichier
@@ -365,17 +365,17 @@ const Files = () => {
                             </div>
 
                             {/* Actions (visible on hover) */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition shrink-0">
                               {img && (
-                                <button onClick={() => setPreviewUrl(file.url)} className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition" title="Aperçu">
+                                <button onClick={() => setPreviewUrl(file.url)} className="peg-tap-target p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition" title="Aperçu">
                                   <HiOutlineEye className="w-4 h-4" />
                                 </button>
                               )}
-                              <button onClick={() => handleDownload(file)} className="p-1.5 rounded-lg text-white/30 hover:text-cyan-400 hover:bg-cyan-500/[0.05] transition" title="Télécharger">
+                              <button onClick={() => handleDownload(file)} className="peg-tap-target p-1.5 rounded-lg text-white/30 hover:text-cyan-400 hover:bg-cyan-500/[0.05] transition" title="Télécharger">
                                 <HiOutlineDownload className="w-4 h-4" />
                               </button>
                               {canDelete(file) && (
-                                <button onClick={() => handleDelete(file)} className="p-1.5 rounded-lg text-white/30 hover:text-rose-400 hover:bg-rose-500/[0.05] transition" title="Supprimer">
+                                <button onClick={() => handleDelete(file)} className="peg-tap-target p-1.5 rounded-lg text-white/30 hover:text-rose-400 hover:bg-rose-500/[0.05] transition" title="Supprimer">
                                   <HiOutlineTrash className="w-4 h-4" />
                                 </button>
                               )}
@@ -397,11 +397,11 @@ const Files = () => {
       {/* IMAGE PREVIEW MODAL */}
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewUrl(null)}>
-          <div className="relative max-w-3xl max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-[calc(100vw_-_2rem)] md:max-w-3xl max-h-[85dvh]" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setPreviewUrl(null)} className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition">
               <HiOutlineX className="w-5 h-5" />
             </button>
-            <img src={previewUrl} alt="Preview" className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" />
+            <img src={previewUrl} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl shadow-2xl" />
           </div>
         </div>
       )}

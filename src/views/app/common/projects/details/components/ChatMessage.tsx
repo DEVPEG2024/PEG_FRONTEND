@@ -83,14 +83,13 @@ const ChatMessage = ({ comment, currentUser, isOwn, showAvatar, showName }: Chat
 
   return (
     <div
+      className={isOwn ? 'pl-[12px] md:pl-[48px]' : 'pr-[12px] md:pr-[48px]'}
       style={{
         display: 'flex',
         flexDirection: isOwn ? 'row-reverse' : 'row',
         alignItems: 'flex-end',
         gap: '8px',
         marginBottom: showAvatar ? '12px' : '3px',
-        paddingLeft: isOwn ? '48px' : '0',
-        paddingRight: isOwn ? '0' : '48px',
         animation: 'chatFadeIn 0.25s ease-out',
       }}
       onMouseEnter={() => setHovered(true)}
@@ -114,7 +113,7 @@ const ChatMessage = ({ comment, currentUser, isOwn, showAvatar, showName }: Chat
       </div>
 
       {/* Bubble */}
-      <div style={{ maxWidth: '70%', minWidth: '120px' }}>
+      <div className="max-w-[85%] md:max-w-[70%]" style={{ minWidth: '120px' }}>
         {/* Author name */}
         {showName && !isOwn && (
           <div style={{
@@ -192,7 +191,7 @@ const ChatMessage = ({ comment, currentUser, isOwn, showAvatar, showName }: Chat
                       alt={file.name}
                       style={{
                         maxHeight: '180px',
-                        maxWidth: '240px',
+                        maxWidth: 'min(240px, 100%)',
                         objectFit: 'cover',
                         borderRadius: '10px',
                         border: '1px solid rgba(255,255,255,0.1)',

@@ -16,11 +16,11 @@ const Tasks = () => {
 
   return (
     <Container className="h-full">
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
         }}>
           <Loading loading={loading}>

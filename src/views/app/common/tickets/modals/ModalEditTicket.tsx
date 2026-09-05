@@ -130,13 +130,14 @@ function ModalEditTicket() {
       >
         {/* Modal */}
         <div
+          className="peg-pad-mobile"
           style={{
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: '20px',
             padding: '36px',
             width: '95%',
             maxWidth: '860px',
-            maxHeight: '90vh',
+            maxHeight: '90dvh',
             overflowY: 'auto',
             position: 'relative',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -152,6 +153,7 @@ function ModalEditTicket() {
             </h2>
             <button
               onClick={handleClose}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -188,7 +190,7 @@ function ModalEditTicket() {
           </div>
 
           {/* Row: Status, Priority, Type */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             <div style={fieldGroupStyle}>
               <span style={labelStyle}>Statut</span>
               <Select

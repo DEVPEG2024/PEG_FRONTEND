@@ -76,7 +76,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
       paddingTop: '20px',
       paddingBottom: '12px',
     }}>
-      <Container className="px-6">
+      <Container className="px-4 md:px-6">
         {/* Row 1 — Title + badge + avatars + edit */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '12px', flexWrap: 'wrap' }}>
           {/* Left: title + badges */}
@@ -154,6 +154,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
             {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
               <button
                 onClick={handleEditProject}
+                className="peg-tap-target"
                 style={{
                   width: '32px', height: '32px', borderRadius: '8px',
                   background: 'rgba(255,255,255,0.06)',
@@ -171,12 +172,13 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
 
         {/* Row 2 — Status quick-change (admin only) */}
         {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '4px', marginBottom: '14px' }}>
             {statusOptions.map((opt) => {
               const isActive = project.state === opt.value;
               return (
                 <button
                   key={opt.value}
+                  className="peg-tap-target"
                   onClick={() => handleStatusChange(opt.value)}
                   style={{
                     padding: '4px 11px',
