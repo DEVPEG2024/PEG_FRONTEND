@@ -7,6 +7,7 @@ import View from "@/views";
 import LanguageSelector from "../template/LanguageSelector";
 import OnlineUsersCount, { OnlinePing } from "../template/OnlineUsersCount";
 import NotificationBell from "../template/NotificationBell";
+import PwaInstallPrompt from "../template/PwaInstallPrompt";
 import { MdShoppingCart } from "react-icons/md";
 import { Alert } from "../ui";
 import { RootState, useAppSelector } from "@/store";
@@ -72,6 +73,7 @@ const ModernLayout = () => {
           <View />
         </div>
       </div>
+      <PwaInstallPrompt />
     </div>
   );
 };
