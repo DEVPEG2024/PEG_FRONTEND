@@ -60,6 +60,7 @@ const DefaultChoice = ({
         }}>
           <button
             type="button"
+            className="peg-tap-target"
             onClick={() => onChange(qty - 1)}
             style={{ width: '36px', height: '44px', background: 'rgba(255,255,255,0.04)', border: 'none', borderRight: '1px solid rgba(255,255,255,0.07)', color: '#a0b9dc', cursor: 'pointer', fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
@@ -75,6 +76,7 @@ const DefaultChoice = ({
           />
           <button
             type="button"
+            className="peg-tap-target"
             onClick={() => onChange(qty + 1)}
             style={{ width: '36px', height: '44px', background: 'rgba(255,255,255,0.04)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.07)', color: '#a0b9dc', cursor: 'pointer', fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >

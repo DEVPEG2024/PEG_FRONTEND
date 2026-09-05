@@ -164,6 +164,7 @@ const SignInForm = (props: SignInFormProps) => {
                   />
                   <button
                     type="button"
+                    className="peg-tap-target"
                     onClick={() => setShowPassword((v) => !v)}
                     style={{
                       position: 'absolute', right: '14px', top: '50%',
@@ -181,7 +182,7 @@ const SignInForm = (props: SignInFormProps) => {
           </div>
 
           {/* Remember me + Forgot password */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <Controller
               name="rememberMe"
               control={control}

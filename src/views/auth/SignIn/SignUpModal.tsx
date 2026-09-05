@@ -395,14 +395,14 @@ const SignUpModal = ({
         return (
             <div style={{
                 position: 'fixed', inset: 0, zIndex: 1100,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--peg-pad-16)',
             }}>
                 <div
                     onClick={() => setContractOpen(false)}
                     style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(4px)' }}
                 />
-                <div style={{
-                    position: 'relative', width: '100%', maxWidth: '760px', maxHeight: '88vh',
+                <div className="peg-pad-mobile" style={{
+                    position: 'relative', width: '100%', maxWidth: '760px', maxHeight: '88dvh',
                     background: 'linear-gradient(145deg, #0f1623, #111827)',
                     border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px',
                     padding: '26px', display: 'flex', flexDirection: 'column',
@@ -455,7 +455,7 @@ const SignUpModal = ({
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 1000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--peg-pad-16)',
         }}>
             {/* Backdrop */}
             <div onClick={handleClose} style={{
@@ -468,12 +468,12 @@ const SignUpModal = ({
                 position: 'relative', width: '100%', maxWidth: '520px',
                 background: 'linear-gradient(145deg, #0f1623, #111827)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '18px', padding: '32px',
+                borderRadius: '18px', padding: 'var(--peg-pad-32)',
                 boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
-                maxHeight: '90vh', overflowY: 'auto',
+                maxHeight: '90dvh', overflowY: 'auto',
             }}>
                 {/* Close */}
-                <button onClick={handleClose} style={{
+                <button onClick={handleClose} className="peg-tap-target" style={{
                     position: 'absolute', top: '16px', right: '16px',
                     background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: '8px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
@@ -516,7 +516,7 @@ const SignUpModal = ({
 
                 {/* Choix de la nature du compte */}
                 {!successMessage && !awaitingCode && (
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+                    <div className="peg-stack-mobile" style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
                         <AccountTypeCard
                             active={!isGenerator}
                             title="Client"
@@ -639,7 +639,7 @@ const SignUpModal = ({
                         </button>
 
                         <div style={{ textAlign: 'center' }}>
-                            <button type="button" onClick={onResendCode} style={{
+                            <button type="button" className="peg-tap-target" onClick={onResendCode} style={{
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: 'rgba(255,255,255,0.55)', fontSize: '12.5px', fontFamily: 'Inter, sans-serif',
                                 textDecoration: 'underline',
@@ -671,7 +671,7 @@ const SignUpModal = ({
                             {/* Section : Identité */}
                             <p style={sectionTitleStyle}>Informations personnelles</p>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                                 {renderField('firstName', 'Prénom', 'Jean', 'text', true)}
                                 {renderField('lastName', 'Nom', 'Dupont', 'text', true)}
                             </div>
@@ -691,7 +691,7 @@ const SignUpModal = ({
                                             onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
                                             onBlur={(e) => { e.target.style.borderColor = errors.password ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
                                         />
-                                        <button type="button" onClick={() => setShowPassword(v => !v)} style={{
+                                        <button type="button" className="peg-tap-target" onClick={() => setShowPassword(v => !v)} style={{
                                             position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                                             background: 'none', border: 'none', cursor: 'pointer',
                                             color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',
@@ -712,7 +712,7 @@ const SignUpModal = ({
                                             onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
                                             onBlur={(e) => { e.target.style.borderColor = errors.confirmPassword ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
                                         />
-                                        <button type="button" onClick={() => setShowConfirm(v => !v)} style={{
+                                        <button type="button" className="peg-tap-target" onClick={() => setShowConfirm(v => !v)} style={{
                                             position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                                             background: 'none', border: 'none', cursor: 'pointer',
                                             color: 'rgba(255,255,255,0.55)', padding: 0, display: 'flex',

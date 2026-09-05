@@ -38,6 +38,7 @@ const ColorTabBar = ({ colors }: { colors: Color[] }) => {
             <button
               key={color.value}
               type="button"
+              className="peg-tap-target"
               aria-pressed={selected}
               onClick={() => onValueChange?.(color.value)}
               style={{

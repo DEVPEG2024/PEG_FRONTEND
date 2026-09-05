@@ -311,7 +311,7 @@ const DashboardCustomer = () => {
           <div style={{ paddingTop: '28px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
             {/* ── Hero : bienvenue + actions rapides ── */}
-            <div style={{
+            <div className="peg-pad-mobile" style={{
               position: 'relative',
               borderRadius: '22px',
               overflow: 'hidden',
@@ -322,13 +322,13 @@ const DashboardCustomer = () => {
               {/* Swoosh décoratif */}
               <div style={{ position: 'absolute', top: '-30px', right: '-20px', width: '260px', height: '260px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,107,255,0.22), transparent 70%)', pointerEvents: 'none' }} />
 
-              <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) auto', gap: '32px', alignItems: 'center' }}>
+              <div className="peg-stack-mobile" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) auto', gap: '32px', alignItems: 'center' }}>
                 {/* Gauche : message de bienvenue */}
                 <div>
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
                     Bonjour, {user?.firstName || customer?.name} 👋
                   </p>
-                  <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+                  <h1 style={{ color: '#fff', fontSize: 'var(--peg-fs-32)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
                     Bienvenue dans votre<br /><span style={{ color: '#a99bff' }}>espace client.</span>
                   </h1>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', lineHeight: 1.55, margin: '14px 0 0', maxWidth: '380px' }}>
@@ -341,7 +341,7 @@ const DashboardCustomer = () => {
                   <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 12px' }}>
                     Actions rapides
                   </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 116px)', gap: '12px' }}>
+                  <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 116px)', gap: '12px' }}>
                     {quickActions.map((a) => (
                       <div
                         key={a.title}
@@ -593,7 +593,7 @@ const DashboardCustomer = () => {
                   <HiOutlineSupport size={28} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, color: '#fff', fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>Besoin d'aide ou d'un conseil personnalisé ?</h3>
+                  <h3 style={{ margin: 0, color: '#fff', fontSize: 'var(--peg-fs-18)', fontWeight: 700, letterSpacing: '-0.01em' }}>Besoin d'aide ou d'un conseil personnalisé ?</h3>
                   <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.55)', fontSize: '13.5px' }}>Notre équipe est disponible pour vous accompagner dans tous vos projets.</p>
                 </div>
               </div>

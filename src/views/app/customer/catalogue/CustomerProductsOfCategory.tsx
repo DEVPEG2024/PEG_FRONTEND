@@ -122,7 +122,7 @@ const CustomerProductsOfCategory = () => {
         }} />
 
         {/* contenu */}
-        <div style={{ position: 'relative', zIndex: 2, padding: '40px 44px', maxWidth: '640px' }}>
+        <div className="peg-pad-mobile" style={{ position: 'relative', zIndex: 2, padding: '40px 44px', maxWidth: '640px' }}>
           <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 12px' }}>
             {productCategory?.name ?? '—'}
           </h1>
@@ -156,7 +156,7 @@ const CustomerProductsOfCategory = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>Sous-catégories</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+          <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
             {activeSubs.map((sub) => (
               <SubCategoryCard key={sub.documentId} data={sub} />
             ))}
@@ -209,8 +209,9 @@ const CustomerProductsOfCategory = () => {
 
       {/* Pagination */}
       {!loading && pageCount > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
           <button
+            className="peg-tap-target"
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
             style={{
@@ -231,6 +232,7 @@ const CustomerProductsOfCategory = () => {
           {Array.from({ length: pageCount }, (_, i) => i + 1).map(p => (
             <button
               key={p}
+              className="peg-tap-target"
               onClick={() => setPage(p)}
               style={{
                 width: '36px',
@@ -250,6 +252,7 @@ const CustomerProductsOfCategory = () => {
           ))}
 
           <button
+            className="peg-tap-target"
             onClick={() => setPage(p => Math.min(pageCount, p + 1))}
             disabled={page === pageCount}
             style={{

@@ -76,7 +76,9 @@ function StepIndicator({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        flexWrap: 'wrap',
         gap: '0',
+        rowGap: '8px',
         marginBottom: '28px',
       }}
     >
@@ -182,7 +184,7 @@ function CartItemCard({
         borderRadius: '18px',
         padding: '18px 20px',
         display: 'flex',
-        gap: '16px',
+        gap: 'var(--peg-gap-16)',
         alignItems: 'center',
         backdropFilter: 'blur(10px)',
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
@@ -312,6 +314,7 @@ function CartItemCard({
 
       {/* Price + Actions (stacked on mobile) */}
       <div
+        className="cart-item-price-actions"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -336,6 +339,7 @@ function CartItemCard({
           <button
             onClick={onEdit}
             title="Modifier"
+            className="peg-tap-target"
             style={{
               width: '34px',
               height: '34px',
@@ -363,6 +367,7 @@ function CartItemCard({
           <button
             onClick={onDelete}
             title="Supprimer"
+            className="peg-tap-target"
             style={{
               width: '34px',
               height: '34px',
@@ -655,7 +660,7 @@ function Cart() {
       {styleTag}
 
       {/* Header */}
-      <div style={{ paddingTop: '32px', paddingBottom: '8px' }}>
+      <div style={{ paddingTop: 'var(--peg-pad-32)', paddingBottom: '8px' }}>
         <div
           style={{
             display: 'flex',
@@ -703,7 +708,7 @@ function Cart() {
           <h2
             style={{
               color: '#fff',
-              fontSize: '24px',
+              fontSize: 'var(--peg-fs-24)',
               fontWeight: 800,
               letterSpacing: '-0.025em',
               margin: 0,
@@ -971,6 +976,7 @@ function Cart() {
                 }}
               >
                 <div
+                  className="peg-stack-mobile"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
@@ -1033,6 +1039,7 @@ function Cart() {
                   />
                 </div>
                 <div
+                  className="peg-stack-mobile"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',

@@ -385,7 +385,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
                   : `-${fmtPrice(promoValidation.discountValue!)}`}
               </span>
             </div>
-            <button type="button" onClick={handleRemovePromo} style={{
+            <button type="button" onClick={handleRemovePromo} className="peg-tap-target" style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '2px',
               color: 'rgba(255,255,255,0.3)', display: 'flex',
             }}>
@@ -425,6 +425,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
                 type="button"
                 onClick={handleApplyPromo}
                 disabled={isValidating || !promoInput.trim()}
+                className="peg-tap-target"
                 style={{
                   padding: '7px 14px',
                   background: !promoInput.trim() ? 'rgba(255,255,255,0.04)' : 'rgba(47,111,237,0.15)',

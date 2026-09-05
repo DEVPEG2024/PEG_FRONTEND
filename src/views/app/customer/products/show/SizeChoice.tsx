@@ -32,9 +32,10 @@ const Stepper = ({
 
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      <button type="button" style={btnStyle('left')} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+      <button type="button" className="peg-tap-target" style={btnStyle('left')} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
       <input
         type="text"
+        className="peg-tap-target"
         inputMode="numeric"
         value={value === 0 ? '' : value}
         placeholder="0"
@@ -56,7 +57,7 @@ const Stepper = ({
           outline: 'none',
         }}
       />
-      <button type="button" style={btnStyle('right')} onClick={() => onChange(value + 1)}>+</button>
+      <button type="button" className="peg-tap-target" style={btnStyle('right')} onClick={() => onChange(value + 1)}>+</button>
     </div>
   );
 };
@@ -109,6 +110,7 @@ const SizeChoice = ({
                     <button
                       key={size.value}
                       type="button"
+                      className="peg-tap-target"
                       onClick={() => {
                         setSelectedSize(size);
                         if (total > 0) {

@@ -270,7 +270,7 @@ const MyFiles = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
         {/* Hero */}
         <div
-          className="xl:col-span-2 relative overflow-hidden rounded-2xl border border-white/10 p-8"
+          className="xl:col-span-2 relative overflow-hidden rounded-2xl border border-white/10 p-5 md:p-8"
           style={{
             background:
               'radial-gradient(120% 140% at 80% 10%, rgba(99,102,241,0.28) 0%, rgba(79,70,229,0.10) 35%, rgba(15,18,32,0.4) 70%), linear-gradient(160deg, #14172a 0%, #0d1020 100%)',
@@ -280,7 +280,7 @@ const MyFiles = () => {
             <p className="text-[11px] font-bold tracking-[0.18em] text-indigo-300 mb-3">
               VOS FICHIERS
             </p>
-            <h2 className="text-4xl font-extrabold leading-tight text-white">
+            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-white">
               CENTRALISÉS.{' '}
               <span className="text-indigo-400">SÉCURISÉS.</span>
             </h2>
@@ -368,7 +368,7 @@ const MyFiles = () => {
             <h3 className="text-lg font-bold text-white">Accès rapide</h3>
             <button
               onClick={() => setShowLibrary(true)}
-              className="text-white/40 hover:text-white/80 transition"
+              className="text-white/40 hover:text-white/80 transition peg-tap-target"
             >
               <HiOutlineChevronRight className="w-5 h-5" />
             </button>
@@ -560,7 +560,7 @@ const MyFiles = () => {
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-white">Ajouter un fichier</h3>
-              <button onClick={resetUpload} className="text-white/30 hover:text-white/70 transition">
+              <button onClick={resetUpload} className="text-white/30 hover:text-white/70 transition peg-tap-target">
                 <HiOutlineX className="w-5 h-5" />
               </button>
             </div>
@@ -644,7 +644,7 @@ const MyFiles = () => {
                   setShowLibrary(false)
                   fetchFiles()
                 }}
-                className="text-white/30 hover:text-white/70 transition"
+                className="text-white/30 hover:text-white/70 transition peg-tap-target"
               >
                 <HiOutlineX className="w-5 h-5" />
               </button>

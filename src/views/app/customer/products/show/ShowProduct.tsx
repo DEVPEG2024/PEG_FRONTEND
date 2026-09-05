@@ -330,7 +330,7 @@ const ShowProduct = () => {
       <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
 
         {/* ── Wizard step indicator ──────────────────────────────────────── */}
-        <div style={{ padding: '24px 32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0' }}>
+        <div className="peg-pad-mobile" style={{ padding: '24px 32px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '0' }}>
           {STEPS.map((label, i) => {
             const Icon = stepIcons[i];
             const isActive = i === wizardStep;
@@ -360,7 +360,7 @@ const ShowProduct = () => {
                   }}>{label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div style={{
+                  <div className="peg-hide-mobile" style={{
                     width: '48px', height: '2px', margin: '0 4px', marginBottom: '20px',
                     background: i < wizardStep ? '#4ade80' : 'rgba(255,255,255,0.08)',
                     borderRadius: '2px', transition: 'background 0.3s',
@@ -376,7 +376,7 @@ const ShowProduct = () => {
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', animation: 'wizFadeIn 0.3s ease-out' }}>
 
             {/* Colonne gauche — photo + choix des tailles, sticky : toujours visibles */}
-            <div style={{ flex: '1 1 440px', minWidth: '300px', boxSizing: 'border-box', padding: '20px' }}>
+            <div style={{ flex: '1 1 440px', minWidth: '300px', boxSizing: 'border-box', padding: 'var(--peg-pad-20)' }}>
               <div style={{ position: 'sticky', top: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                 {/* Photo */}
@@ -385,14 +385,14 @@ const ShowProduct = () => {
                 </div>
 
                 {/* Choix des tailles / dimensions — sous la photo */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: 'var(--peg-pad-20)' }}>
                   <p style={{ margin: '0 0 14px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
                     {isM2Pricing ? 'Dimensions & quantité' : 'Votre commande'}
                   </p>
 
                   {isM2Pricing ? (
                     <div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px', marginBottom: '14px' }}>
                         <div>
                           <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (cm)</label>
                           <input type="number" value={m2Width} min={1} step={1}
@@ -451,11 +451,11 @@ const ShowProduct = () => {
             </div>
 
             {/* Info panel */}
-            <div style={{ flex: '1 1 380px', minWidth: 0, padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            <div className="peg-pad-mobile" style={{ flex: '1 1 380px', minWidth: 0, padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
               {/* Name + ref */}
               <div style={{ marginBottom: '16px' }}>
-                <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                <h1 style={{ margin: 0, fontSize: 'var(--peg-fs-24)', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                   {product.name}
                 </h1>
                 {product.refVisibleToCustomer && product.productRef && (
@@ -649,7 +649,7 @@ const ShowProduct = () => {
 
         {/* ── Step 1: Formulaire (si product.form) ───────────────────────── */}
         {wizardStep === formStepIndex && hasForm && (
-          <div style={{ padding: '28px 32px', animation: 'wizFadeIn 0.3s ease-out' }}>
+          <div className="peg-pad-mobile" style={{ padding: '28px 32px', animation: 'wizFadeIn 0.3s ease-out' }}>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 12px', background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.05))', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <HiClipboardList size={24} style={{ color: '#c084fc' }} />
@@ -670,7 +670,7 @@ const ShowProduct = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-              <button onClick={() => setWizardStep(0)} style={{
+              <button className="peg-tap-target" onClick={() => setWizardStep(0)} style={{
                 padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)',
                 fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
@@ -679,7 +679,7 @@ const ShowProduct = () => {
                 <HiArrowLeft size={14} /> Retour
               </button>
               {formCompleted && (
-                <button onClick={() => setWizardStep(recapStepIndex)} style={{
+                <button className="peg-tap-target" onClick={() => setWizardStep(recapStepIndex)} style={{
                   padding: '10px 24px', borderRadius: '10px', border: 'none', color: '#fff',
                   fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
@@ -695,7 +695,7 @@ const ShowProduct = () => {
 
         {/* ── Step récap: Récapitulatif ──────────────────────────────────── */}
         {wizardStep === recapStepIndex && (
-          <div style={{ padding: '28px 32px', animation: 'wizFadeIn 0.3s ease-out' }}>
+          <div className="peg-pad-mobile" style={{ padding: '28px 32px', animation: 'wizFadeIn 0.3s ease-out' }}>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 12px', background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <HiEye size={24} style={{ color: '#4ade80' }} />
@@ -775,8 +775,8 @@ const ShowProduct = () => {
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setWizardStep(hasForm ? formStepIndex : 0)} style={{
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'space-between' }}>
+              <button className="peg-tap-target" onClick={() => setWizardStep(hasForm ? formStepIndex : 0)} style={{
                 padding: '10px 20px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)',
                 fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
@@ -809,7 +809,7 @@ const ShowProduct = () => {
       {product.requiresBat && product.batFile?.url && (() => {
         const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | 'pending' | null) ?? null;
         return (
-          <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: '24px' }}>
+          <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: 'var(--peg-pad-24)' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -822,6 +822,7 @@ const ShowProduct = () => {
                 </div>
               </div>
               <a
+                className="peg-tap-target"
                 href={product.batFile!.url}
                 target="_blank"
                 rel="noreferrer"

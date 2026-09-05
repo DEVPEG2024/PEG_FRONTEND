@@ -41,7 +41,7 @@ import {
 import WalletWithdrawal from '@/views/app/generator/components/WalletWithdrawal';
 
 const pageStyle: React.CSSProperties = {
-    padding: '24px',
+    padding: 'var(--peg-pad-24)',
     fontFamily: 'Inter, sans-serif',
     display: 'flex',
     flexDirection: 'column',
@@ -467,6 +467,7 @@ const CustomerReferral = () => {
                                                 fontSize: '13.5px',
                                                 fontWeight: 600,
                                                 flex: 1,
+                                                minWidth: 0,
                                             }}
                                         >
                                             {r.name}

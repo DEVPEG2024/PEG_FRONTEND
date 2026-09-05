@@ -34,7 +34,7 @@ const Settings = () => {
   }, []);
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', display: 'flex', justifyContent: 'center', paddingTop: '36px', paddingBottom: '60px', paddingLeft: '16px', paddingRight: '16px' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', display: 'flex', justifyContent: 'center', paddingTop: '36px', paddingBottom: '60px', paddingLeft: 'var(--peg-pad-16)', paddingRight: 'var(--peg-pad-16)' }}>
       <div style={{ width: '100%', maxWidth: '520px' }}>
 
         {/* Header */}
@@ -44,7 +44,7 @@ const Settings = () => {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '20px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '20px' }}>
           {TABS.map((tab) => (
             <button key={tab.key} onClick={() => onTabChange(tab.key)}
               style={{ flex: 1, padding: '8px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, background: currentTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: currentTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
@@ -53,7 +53,7 @@ const Settings = () => {
         </div>
 
         {/* Card */}
-        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '32px 28px' }}>
+        <div className="peg-pad-mobile" style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '32px 28px' }}>
           <Suspense fallback={
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {Array.from({ length: 4 }).map((_, i) => (

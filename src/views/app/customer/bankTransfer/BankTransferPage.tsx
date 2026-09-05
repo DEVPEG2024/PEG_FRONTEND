@@ -95,7 +95,7 @@ const BankTransferPage = () => {
 
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ maxWidth: '640px', margin: '0 auto', paddingTop: '32px', paddingBottom: '48px' }}>
+      <div style={{ maxWidth: '640px', margin: '0 auto', paddingTop: 'var(--peg-pad-32)', paddingBottom: '48px' }}>
         {/* Back */}
         <button
           onClick={() => navigate('/customer/invoices')}
@@ -124,7 +124,7 @@ const BankTransferPage = () => {
         ) : invoice ? (
           <>
             {/* Invoice summary */}
-            <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: '12px' }}>
+            <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: 'var(--peg-pad-20) var(--peg-pad-24)', marginBottom: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Référence de virement</p>
@@ -149,7 +149,7 @@ const BankTransferPage = () => {
             </div>
 
             {/* Bank details card */}
-            <div style={{ background: 'linear-gradient(135deg, #1a3a5c 0%, #0d2441 100%)', border: '1.5px solid rgba(47,111,237,0.3)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
+            <div style={{ background: 'linear-gradient(135deg, #1a3a5c 0%, #0d2441 100%)', border: '1.5px solid rgba(47,111,237,0.3)', borderRadius: '16px', padding: 'var(--peg-pad-24)', marginBottom: '20px' }}>
               <p style={{ color: 'rgba(107,158,255,0.7)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '20px' }}>
                 Coordonnées bancaires
               </p>

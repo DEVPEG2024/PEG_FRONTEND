@@ -190,7 +190,7 @@ const SuggestionsTab = () => {
       )}
 
       {/* Encart « Suggérer un produit » */}
-      <div style={{
+      <div className="peg-pad-mobile" style={{
         marginTop: '32px',
         display: 'flex',
         alignItems: 'center',
@@ -220,6 +220,7 @@ const SuggestionsTab = () => {
           </div>
         </div>
         <button
+          className="peg-tap-target"
           onClick={() => setModalOpen(true)}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 20px', borderRadius: '12px',
@@ -246,7 +247,7 @@ const SuggestionsTab = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '100%', maxWidth: '480px',
+              width: '100%', maxWidth: '480px', maxHeight: '100%', overflowY: 'auto',
               background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
               border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px',
               padding: '26px', fontFamily: 'Inter, sans-serif',
@@ -259,6 +260,7 @@ const SuggestionsTab = () => {
                 Suggérer un produit
               </h4>
               <button
+                className="peg-tap-target"
                 onClick={resetModal}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', padding: '4px', display: 'flex' }}
               >
@@ -299,6 +301,7 @@ const SuggestionsTab = () => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '22px' }}>
               <button
+                className="peg-tap-target"
                 onClick={resetModal}
                 style={{
                   padding: '10px 18px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)',
@@ -309,6 +312,7 @@ const SuggestionsTab = () => {
                 Annuler
               </button>
               <button
+                className="peg-tap-target"
                 onClick={submitSuggestion}
                 disabled={submitting}
                 style={{

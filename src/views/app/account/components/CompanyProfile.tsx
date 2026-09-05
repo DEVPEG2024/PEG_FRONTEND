@@ -316,7 +316,7 @@ const CompanyProfile = () => {
                 {/* Identifiants légaux */}
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Identifiants légaux</p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     {renderField('vatNumber', 'N° TVA intracommunautaire', 'FR12345678901')}
                     {renderField('siretNumber', 'N° SIRET', '12345678900012')}
                 </div>

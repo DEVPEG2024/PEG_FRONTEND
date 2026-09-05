@@ -93,7 +93,7 @@ const Categories = () => {
       />
 
       {/* Onglets Catégories / Suggestions */}
-      <div style={{ display: 'flex', gap: '8px', margin: '20px 0 24px' }}>
+      <div className="peg-scroll-x" style={{ display: 'flex', gap: '8px', margin: '20px 0 24px' }}>
         {TABS.map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -125,7 +125,7 @@ const Categories = () => {
       {loading ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(330px, 100%), 1fr))',
           gap: '20px',
         }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -169,7 +169,7 @@ const Categories = () => {
 
       {/* Pagination */}
       {showPagination && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginTop: '28px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginTop: '28px' }}>
           <Pagination
             total={total}
             currentPage={currentPage}

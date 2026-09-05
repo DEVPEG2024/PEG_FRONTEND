@@ -131,7 +131,7 @@ const PremiumPage = () => {
           <TbCrown size={22} color={GOLD} />
         </div>
         <div>
-          <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+          <h2 style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
             {isPremium ? 'Votre abonnement Premium' : 'Passer en Premium'}
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '2px 0 0' }}>
@@ -224,7 +224,7 @@ const PremiumPage = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
-                  <span style={{ color: '#fff', fontSize: '28px', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
+                  <span style={{ color: '#fff', fontSize: 'var(--peg-fs-28)', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
                   <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> HT / mois</span>
                   <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
                     soit {priceTTC} € TTC / mois · engagement {PREMIUM_MIN_MONTHS} mois minimum
@@ -259,7 +259,7 @@ const PremiumPage = () => {
             onClick={(e) => e.stopPropagation()}
             style={{
               background: '#0d1018', border: '1px solid rgba(234,179,8,0.25)', borderRadius: '16px',
-              maxWidth: '720px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+              maxWidth: '720px', width: '100%', maxHeight: '85dvh', display: 'flex', flexDirection: 'column',
             }}
           >
             <div style={{
@@ -267,7 +267,7 @@ const PremiumPage = () => {
               padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
             }}>
               <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 800 }}>{PREMIUM_CONTRACT_TITLE}</h3>
-              <button onClick={() => setShowContract(false)} style={{
+              <button onClick={() => setShowContract(false)} className="peg-tap-target" style={{
                 background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '22px',
                 cursor: 'pointer', lineHeight: 1, padding: 0,
               }}>×</button>

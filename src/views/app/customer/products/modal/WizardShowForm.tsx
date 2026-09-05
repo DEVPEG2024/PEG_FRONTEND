@@ -309,6 +309,7 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
       {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
         <button
+          className="peg-tap-target"
           onClick={handlePrev}
           disabled={currentStep === 0}
           style={{
@@ -324,6 +325,7 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
         </button>
 
         <button
+          className="peg-tap-target"
           onClick={handleNext}
           disabled={readOnly}
           style={{

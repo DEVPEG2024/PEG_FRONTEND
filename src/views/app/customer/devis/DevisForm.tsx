@@ -130,7 +130,7 @@ const DevisForm = () => {
           <TbSparkles size={22} color="#a78bfa" />
         </div>
         <div>
-          <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Demander un devis</h2>
+          <h2 style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Demander un devis</h2>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '2px 0 0' }}>
             Décrivez votre projet sur-mesure, notre équipe vous recontacte.
           </p>
@@ -162,7 +162,7 @@ const DevisForm = () => {
         </div>
 
         {/* Projet */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
           <div>
             <label style={labelStyle}>Type de projet</label>
             <select style={{ ...inputStyle, appearance: 'auto' }} value={projectType} onChange={(e) => setProjectType(e.target.value)}>

@@ -181,7 +181,7 @@ const Profile = () => {
           {errors.username && <p style={{ color: '#f87171', fontSize: '11px', marginTop: '4px' }}>{errors.username.message}</p>}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           <div>
             <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Prénom *</label>
             <Controller name="firstName" control={control} render={({ field }) => (

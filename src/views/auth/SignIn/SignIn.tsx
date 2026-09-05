@@ -105,8 +105,8 @@ const SignIn = () => {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#06080f', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px', fontFamily: 'Inter, sans-serif',
+      minHeight: '100dvh', background: '#06080f', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'var(--peg-pad-24)', fontFamily: 'Inter, sans-serif',
     }}>
       <style>{`
         @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; } }
@@ -167,7 +167,7 @@ const SignIn = () => {
       `}</style>
 
       <div className="si-card" style={{
-        width: '100%', maxWidth: '1180px', minHeight: 'min(880px, 92vh)',
+        width: '100%', maxWidth: '1180px', minHeight: 'min(880px, 92dvh)',
         display: 'flex', borderRadius: '28px', overflow: 'hidden',
         boxShadow: '0 40px 120px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.06)',
       }}>
@@ -220,7 +220,7 @@ const SignIn = () => {
         </div>
 
         {/* ───────── PANNEAU DROIT (formulaire) ───────── */}
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           flex: '1 1 50%', background: '#fff', display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', padding: '48px 40px',
         }}>

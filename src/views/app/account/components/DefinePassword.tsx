@@ -52,6 +52,7 @@ const PasswordInput = ({ field, error, placeholder, show, onToggle }: {
       />
       <button
         type="button"
+        className="peg-tap-target"
         onClick={onToggle}
         style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', padding: 0 }}
       >
