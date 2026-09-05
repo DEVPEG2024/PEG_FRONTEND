@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
+import { useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
@@ -11,6 +12,18 @@ const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
 
 const LINK_STYLE = { color: '#6b9eff', textDecoration: 'underline', wordBreak: 'break-word' as const };
+
+/**
+ * Le bouton flottant est en position fixed en bas à droite. Sur les écrans du
+ * tunnel de commande il recouvre les contrôles qui s'y trouvent — constaté sur
+ * la fiche produit, où il chevauchait le « + » de la première ligne de tailles.
+ * On ne l'affiche donc pas pendant une commande en cours.
+ *
+ * ⚠️ Ce widget est le SEUL accès client au chatbot (la seule route chatbot,
+ * /admin/chatbot, est réservée aux admins). Ne pas le retirer partout sans
+ * décision produit explicite : ce serait supprimer la fonctionnalité.
+ */
+const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment'];
 
 // Rendu inline : liens markdown [label](url), URLs nues, **gras**, _italique_.
 const renderInline = (text: string, keyBase: string): (string | JSX.Element)[] => {
@@ -57,6 +70,7 @@ const renderContent = (content: string): JSX.Element[] => {
 };
 
 const ChatWidget = () => {
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -137,6 +151,10 @@ const ChatWidget = () => {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 60);
   }, [open]);
+
+  // Masqué pendant une commande : le bouton flottant recouvrait les contrôles
+  // de la fiche produit (le « + » de la première ligne de tailles) et du panier.
+  if (FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   return (
     <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
