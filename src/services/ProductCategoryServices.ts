@@ -127,14 +127,21 @@ export type GetProductCategoriesRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
     /**
-     * Ne remonter que les catégories ACTIVES. Réservé aux écrans CLIENT : sans
-     * ce filtre, une catégorie désactivée par un admin restait visible côté
-     * client (l'interrupteur « Catégorie activée / désactivée » n'avait aucun
-     * effet), et les catégories créées automatiquement par l'import Imbretex
-     * exposaient la taxonomie du fournisseur.
-     * Les écrans ADMIN doivent l'omettre : ils ont besoin de tout voir.
+     * Ne remonter que les catégories ayant AU MOINS UN produit visible par le
+     * client (active + inCatalogue). Réservé aux écrans CLIENT.
+     *
+     * ⚠️ NE PAS filtrer sur `productCategory.active` : mesuré sur l'intégration
+     * le 05/09/2026, ce champ n'est pas maintenu — les huit vraies catégories
+     * PEG (Vêtement personnalisé, Print, Signalétique & PLV…) l'ont à `null`,
+     * et les seules à `true` étaient celles créées automatiquement par l'import
+     * Imbretex. Filtrer sur `active` masquerait donc tout le catalogue et ne
+     * laisserait que la taxonomie du fournisseur : exactement l'inverse du but.
+     *
+     * Le filtre par contenu s'auto-entretient : une catégorie sort du catalogue
+     * dès qu'elle n'a plus rien à montrer, et y revient dès qu'un produit y
+     * devient visible. Les écrans ADMIN doivent l'omettre.
      */
-    onlyActive?: boolean;
+    onlyWithVisibleProducts?: boolean;
   };
 
 export type GetProductCategoriesResponse = {
@@ -144,8 +151,8 @@ export type GetProductCategoriesResponse = {
 
 export async function apiGetProductCategories(data: GetProductCategoriesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{productCategories_connection: GetProductCategoriesResponse}>>> {
     const nameFilter = `{name: {containsi: $searchTerm}}`;
-    const categoryFilters = data.onlyActive
-        ? `{and: [${nameFilter}, {active: {eq: true}}]}`
+    const categoryFilters = data.onlyWithVisibleProducts
+        ? `{and: [${nameFilter}, {products: {active: {eq: true}, inCatalogue: {eq: true}}}]}`
         : nameFilter;
     const query = `
     query GetProductCategories($searchTerm: String, $pagination: PaginationArg) {
