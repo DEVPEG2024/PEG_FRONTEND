@@ -41,6 +41,53 @@ export default defineConfig({
   },
   server: {
     port: process.env.PORT as unknown as number,
+    // ── Test sur un vrai téléphone ──────────────────────────────────────────
+    // Le backend applique une liste blanche CORS stricte : seules les origines
+    // http://localhost:5173, https://int.mypeg.fr et https://app.mypeg.fr sont
+    // acceptées. Une URL de réseau local (http://192.168.x.x:5173) ou de tunnel
+    // est donc refusée, et l'application échoue en « AxiosError: Network Error »
+    // avant même la connexion.
+    //
+    // En définissant PEG_DEV_PROXY_TARGET, les appels API deviennent RELATIFS et
+    // transitent par le serveur de développement : plus aucune requête
+    // cross-origin côté navigateur, donc plus de CORS du tout.
+    //
+    //   PEG_DEV_PROXY_TARGET=https://api-int.mypeg.fr \
+    //   VITE_API_ENDPOINT_URL=https://mon-tunnel.example.com/strapi \
+    //   npm start -- --host
+    //
+    // ⚠️ VITE_API_ENDPOINT_URL doit être une URL ABSOLUE (celle par laquelle le
+    // téléphone atteint ce serveur), jamais un chemin relatif : de nombreux
+    // services construisent `${API_BASE_URL}/…` ET le passent à un axios dont le
+    // baseURL vaut déjà API_BASE_URL (cf. LOGIN_API_URL dans api.constant.ts).
+    // Avec une base absolue axios n'ajoute rien ; avec une base relative il
+    // préfixe une seconde fois et l'appel part sur /strapi/api/strapi/api/…
+    //
+    // Sans cette variable, la configuration est rigoureusement inchangée. Rien
+    // de tout ceci n'affecte le build de production, qui ne lit pas `server`.
+    ...(process.env.PEG_DEV_PROXY_TARGET
+      ? {
+          host: true,
+          allowedHosts: true as const,
+          proxy: {
+            '/strapi': {
+              target: process.env.PEG_DEV_PROXY_TARGET,
+              changeOrigin: true,
+              rewrite: (path: string) => path.replace(/^\/strapi/, ''),
+              configure: (proxy: any) => {
+                // Le backend applique une liste blanche CORS et répond 500 à
+                // toute origine inconnue. On retire l'en-tête Origin transmis
+                // par le navigateur : la requête devient serveur-à-serveur,
+                // sans origine, ce que le backend accepte.
+                proxy.on('proxyReq', (proxyReq: any) => {
+                  proxyReq.removeHeader('origin')
+                  proxyReq.removeHeader('referer')
+                })
+              },
+            },
+          },
+        }
+      : {}),
   },
   build: {
     outDir: 'build',
