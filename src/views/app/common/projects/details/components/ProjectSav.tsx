@@ -596,7 +596,7 @@ const ProjectSav = () => {
                   padding: '14px 16px', borderRadius: '12px', marginBottom: '12px',
                   background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)',
                 }}>
-                  <button onClick={recorder.playPause} style={{
+                  <button onClick={recorder.playPause} className="peg-tap-target" style={{
                     width: '36px', height: '36px', borderRadius: '50%',
                     background: 'linear-gradient(135deg, #22c55e, #16a34a)',
                     border: 'none', color: '#fff', cursor: 'pointer',

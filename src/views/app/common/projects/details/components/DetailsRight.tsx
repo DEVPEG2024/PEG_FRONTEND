@@ -481,6 +481,7 @@ const DetailsRight = () => {
               {hasRole(user, [PRODUCER]) && !project.producer && (
                 <button
                   onClick={assignMeAsProducer}
+                  className="peg-tap-target"
                   style={{
                     display: 'flex', alignItems: 'center', gap: '4px',
                     background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
@@ -495,6 +496,7 @@ const DetailsRight = () => {
               {isAdmin && (
                 <button
                   onClick={openProducerDropdown}
+                  className="peg-tap-target"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     width: '26px', height: '26px', borderRadius: '6px',

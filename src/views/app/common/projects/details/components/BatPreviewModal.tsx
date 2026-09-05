@@ -70,16 +70,16 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {isImage && (
             <>
-              <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+              <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="peg-tap-target" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
                 <HiZoomOut size={18} />
               </button>
               <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, minWidth: '40px', textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-              <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+              <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="peg-tap-target" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
                 <HiZoomIn size={18} />
               </button>
             </>
           )}
-          <button onClick={reset} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', marginLeft: '8px' }}>
+          <button onClick={reset} className="peg-tap-target" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', marginLeft: '8px' }}>
             <HiX size={18} />
           </button>
         </div>

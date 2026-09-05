@@ -21,7 +21,7 @@ const Side = ({ children, content, ...rest }: SideProps) => {
     return (
         <div
             style={{
-                minHeight: '100vh',
+                minHeight: '100dvh',
                 background: '#05101e',
                 display: 'flex',
                 alignItems: 'center',
