@@ -142,6 +142,13 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Bannière large mise à 100% de largeur : sur un écran de 390px elle retombe
+     à ~80px de haut et se lit comme un bandeau écrasé. On lui impose une
+     hauteur minimale et on laisse `object-fit: cover` recadrer. */
+  .peg-banner-mobile {
+    min-height: 130px;
+  }
+
   /* Largeur plancher des lignes d'un tableau en grille placé dans
      .peg-table-wrap : les colonnes gardent leur largeur et le conteneur défile,
      au lieu d'être comprimées ou empilées sans leur en-tête. À poser sur la

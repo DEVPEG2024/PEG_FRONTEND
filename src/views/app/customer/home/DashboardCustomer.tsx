@@ -2,7 +2,7 @@ import { Container } from '@/components/shared';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { apiGetProducts } from '@/services/ProductServices';
+import { apiGetSuggestedProducts } from '@/services/ProductServices';
 import { apiGetFallbackBannerUrl } from '@/services/BannerServices';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
@@ -14,10 +14,6 @@ import {
   HiOutlineSupport,
   HiOutlineFolder,
   HiOutlineDocumentDownload,
-  HiOutlineCurrencyEuro,
-  HiOutlineUserGroup,
-  HiOutlineBadgeCheck,
-  HiOutlineLightningBolt,
   HiOutlineCube,
   HiArrowRight,
   HiChevronRight,
@@ -72,6 +68,32 @@ const SectionHeader = ({ icon, title, action }: { icon?: ReactNode; title: strin
   </div>
 );
 
+/** Une ligne du bloc « À faire » : un libellé, un motif, une action. */
+const TodoRow = ({ first, color, icon, title, sub, cta, onClick }: {
+  first: boolean; color: string; icon: ReactNode; title: string; sub: string; cta: string; onClick: () => void;
+}) => (
+  <div
+    onClick={onClick}
+    className="peg-stack-mobile"
+    style={{
+      display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
+      padding: '13px 4px', borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.06)',
+      fontFamily: FONT,
+    }}
+  >
+    <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: '10px', background: `${color}22`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {icon}
+    </span>
+    <span style={{ minWidth: 0, flex: 1 }}>
+      <span style={{ display: 'block', color: '#fff', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+      <span style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '11.5px', marginTop: '2px' }}>{sub}</span>
+    </span>
+    <span className="peg-tap-target" style={{ flexShrink: 0, color, background: `${color}1f`, border: `1px solid ${color}55`, borderRadius: '9px', padding: '5px 12px', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+      {cta} →
+    </span>
+  </div>
+);
+
 const DashboardCustomer = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -110,11 +132,15 @@ const DashboardCustomer = () => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await apiGetProducts({ pagination: { page: 1, pageSize: 100 }, searchTerm: '' });
-        const all: Product[] = (res.data?.data?.products_connection?.nodes ?? []).filter(
-          (p: Product) => p.active && p.inCatalogue
-        );
-        if (!cancelled) setSuggestions(all);
+        // apiGetProducts ne filtre QUE sur le terme de recherche : elle renvoyait
+        // ici 100 produits sans distinction de visibilité, et le tri actif/
+        // inCatalogue se faisait dans le navigateur — les produits privés
+        // transitaient donc jusqu'au client, lisibles dans les outils de
+        // développement. apiGetSuggestedProducts filtre côté serveur
+        // (suggested + active + inCatalogue, repli sur les nouveautés du
+        // catalogue) et c'est la même source que l'onglet « Nos suggestions ».
+        const { products } = await apiGetSuggestedProducts();
+        if (!cancelled) setSuggestions(products);
       } catch (err) {
         console.error('Failed to fetch suggestions:', err);
       }
@@ -157,11 +183,28 @@ const DashboardCustomer = () => {
   const sortedProjects = [...projects].sort(
     (a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime()
   );
-  const lastOrder = sortedProjects[0];
 
   const pendingBats = projects.filter(
     (p) => p.orderItem?.product?.requiresBat && p.orderItem?.product?.batFile?.url && (!p.orderItem?.batStatus || p.orderItem?.batStatus === 'pending')
   );
+
+  // ── « À faire » : ce qui attend une action DU CLIENT ──
+  // C'est la seule chose qui justifie un tableau de bord. Les trois cas sont
+  // disjoints : un projet dont la facture est émise est au stade du paiement,
+  // un projet qui n'a qu'un devis est au stade de l'examen.
+  const invoicesToPay = projects.filter(
+    (p) => (p.invoices?.length || 0) > 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
+  );
+  const quotesToReview = projects.filter(
+    (p) => (p.devis?.length || 0) > 0 && (p.invoices?.length || 0) === 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
+  );
+  const todoCount = pendingBats.length + invoicesToPay.length + quotesToReview.length;
+
+  // Commandes réellement en cours : ni terminées, ni annulées.
+  const ongoingProjects = [...projects]
+    .filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled')
+    .sort((a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime())
+    .slice(0, 3);
 
   // Flux d'activité récente (à partir des données réelles)
   type Act = { id: string; color: string; icon: ReactNode; title: string; sub?: string; date: Date };
@@ -197,17 +240,9 @@ const DashboardCustomer = () => {
     { icon: <HiOutlineCollection size={22} />, label: 'Offres personnalisées', value: offersCount, to: '/customer/products', link: 'Voir toutes les offres', color: '#fbbf24', bg: 'rgba(234,179,8,0.16)' },
   ];
 
-  const advantages = [
-    { icon: <HiOutlineCurrencyEuro size={20} />, title: 'Tarifs négociés', sub: "Des prix préférentiels toute l'année" },
-    { icon: <HiOutlineUserGroup size={20} />, title: 'Accompagnement dédié', sub: 'Une équipe à votre écoute' },
-    { icon: <HiOutlineBadgeCheck size={20} />, title: 'Qualité garantie', sub: 'Des produits testés et approuvés' },
-    { icon: <HiOutlineLightningBolt size={20} />, title: 'Livraison rapide', sub: 'Respect des délais et suivi en temps réel' },
-  ];
 
   const recommendedProducts = products.slice(0, 5);
 
-  const lastOrderImage = lastOrder?.images?.[0]?.url || lastOrder?.orderItem?.product?.images?.[0]?.url;
-  const lastOrderState = lastOrder ? getStateInfo(lastOrder.state) : null;
 
   const ProductRow = ({ product }: { product: Product }) => {
     const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
@@ -241,6 +276,12 @@ const DashboardCustomer = () => {
             <img
               src={customer.banner.image.url}
               alt="Banner"
+              // Seul ajout : une classe. Aucun style ni aucune logique de
+              // sélection de bannière n'est modifié. Une bannière large mise à
+              // 100% de largeur retombe à ~80px de haut sur un écran de 390px et
+              // se lit comme un bandeau écrasé ; sous md la classe lui impose une
+              // hauteur minimale et laisse « objectFit: cover » recadrer.
+              className="peg-banner-mobile"
               style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />
             <div style={{
@@ -255,6 +296,12 @@ const DashboardCustomer = () => {
             <img
               src={defaultBannerUrl}
               alt="Banner"
+              // Seul ajout : une classe. Aucun style ni aucune logique de
+              // sélection de bannière n'est modifié. Une bannière large mise à
+              // 100% de largeur retombe à ~80px de haut sur un écran de 390px et
+              // se lit comme un bandeau écrasé ; sous md la classe lui impose une
+              // hauteur minimale et laisse « objectFit: cover » recadrer.
+              className="peg-banner-mobile"
               style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />
             <div style={{
@@ -310,172 +357,170 @@ const DashboardCustomer = () => {
         <Container style={{ fontFamily: FONT }}>
           <div style={{ paddingTop: '28px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-            {/* ── Hero : bienvenue + actions rapides ── */}
-            <div className="peg-pad-mobile" style={{
-              position: 'relative',
-              borderRadius: '22px',
-              overflow: 'hidden',
-              border: '1px solid rgba(124,107,255,0.22)',
-              background: 'radial-gradient(120% 160% at 88% 6%, rgba(124,107,255,0.32) 0%, rgba(91,71,224,0.10) 44%, rgba(10,12,22,0.2) 74%), linear-gradient(160deg, #14152a 0%, #0a0c16 100%)',
-              padding: '32px 34px',
-            }}>
-              {/* Swoosh décoratif */}
-              <div style={{ position: 'absolute', top: '-30px', right: '-20px', width: '260px', height: '260px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,107,255,0.22), transparent 70%)', pointerEvents: 'none' }} />
-
-              <div className="peg-stack-mobile" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) auto', gap: '32px', alignItems: 'center' }}>
-                {/* Gauche : message de bienvenue */}
-                <div>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
-                    Bonjour, {user?.firstName || customer?.name} 👋
-                  </p>
-                  <h1 style={{ color: '#fff', fontSize: 'var(--peg-fs-32)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
-                    Bienvenue dans votre<br /><span style={{ color: '#a99bff' }}>espace client.</span>
-                  </h1>
-                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', lineHeight: 1.55, margin: '14px 0 0', maxWidth: '380px' }}>
-                    Retrouvez ici l'essentiel de vos commandes, devis, factures et offres personnalisées.
-                  </p>
-                </div>
-
-                {/* Droite : actions rapides */}
-                <div>
-                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 12px' }}>
-                    Actions rapides
-                  </p>
-                  <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 116px)', gap: '12px' }}>
-                    {quickActions.map((a) => (
-                      <div
-                        key={a.title}
-                        onClick={() => navigate(a.to)}
-                        style={{
-                          borderRadius: '16px', padding: '16px 12px', cursor: 'pointer',
-                          background: `linear-gradient(160deg, ${a.from}, ${a.to2})`,
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          boxShadow: '0 10px 26px rgba(0,0,0,0.35)',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px',
-                          transition: 'transform 0.18s, box-shadow 0.18s',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 36px rgba(79,63,209,0.4)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 26px rgba(0,0,0,0.35)'; }}
-                      >
-                        <span style={{ color: '#fff', display: 'flex' }}>{a.icon}</span>
-                        <div>
-                          <p style={{ margin: 0, color: '#fff', fontSize: '12.5px', fontWeight: 700, lineHeight: 1.2 }}>{a.title}</p>
-                          <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '10.5px', lineHeight: 1.2 }}>{a.sub}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── BAT en attente ── */}
-            {pendingBats.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {pendingBats.map((p) => (
-                  <div
-                    key={p.documentId}
-                    onClick={() => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`)}
+            {/* ── En-tête : salutation + actions rapides sur une rangée ──
+                Les quatre pavés dégradés qui occupaient ~400px sur téléphone
+                dupliquaient le menu de gauche ; ils deviennent une rangée de
+                boutons compacts, défilante au doigt sous md. */}
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: FONT }}>
+                Bonjour, {user?.firstName || customer?.name} 👋
+              </p>
+              <h1 style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, margin: '0 0 16px', fontFamily: FONT }}>
+                Votre <span style={{ color: '#a99bff' }}>espace client</span>
+              </h1>
+              <div className="peg-scroll-x" style={{ display: 'flex', gap: '10px' }}>
+                {quickActions.map((a) => (
+                  <button
+                    key={a.title}
+                    type="button"
+                    onClick={() => navigate(a.to)}
+                    className="peg-tap-target"
                     style={{
-                      background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)',
-                      border: '1.5px solid rgba(168,85,247,0.3)',
-                      borderRadius: '14px', padding: '14px 18px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-                      cursor: 'pointer', fontFamily: FONT,
+                      display: 'inline-flex', alignItems: 'center', gap: '9px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px', padding: '10px 15px', cursor: 'pointer',
+                      color: '#fff', fontSize: '13px', fontWeight: 600, fontFamily: FONT,
+                      whiteSpace: 'nowrap', transition: 'border-color 0.15s, background 0.15s',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${a.from}88`; e.currentTarget.style.background = `${a.from}1f`; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '20px' }}>📄</span>
-                      <div>
-                        <p style={{ margin: 0, fontWeight: 700, fontSize: '13px', color: '#c084fc' }}>{p.name}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>{p.orderItem!.product.name} — Bon à Tirer à valider</p>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#c084fc', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '4px 10px', whiteSpace: 'nowrap' }}>
-                      Valider →
-                    </span>
-                  </div>
+                    <span style={{ color: a.from, display: 'flex' }}>{a.icon}</span>
+                    {a.title}
+                  </button>
                 ))}
               </div>
-            )}
-
-            {/* ── KPIs ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-              {kpis.map((k) => (
-                <SectionCard key={k.label} style={{ padding: '20px 22px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {k.icon}
-                    </div>
-                  </div>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12.5px', fontWeight: 600, margin: '16px 0 4px' }}>{k.label}</p>
-                  <p style={{ color: '#fff', fontSize: '30px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, margin: 0 }}>{k.value}</p>
-                  <Link to={k.to} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '14px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>
-                    {k.link} <HiArrowRight size={12} />
-                  </Link>
-                </SectionCard>
-              ))}
             </div>
 
-            {/* ── Dernière commande + Activité récente ── */}
+            {/* ── « À faire » : ce qui attend une action du client ──
+                Rendu uniquement s'il y a quelque chose à faire : un panneau
+                vide n'apporte rien et coûtait un écran de défilement. */}
+            {todoCount > 0 && (
+              <SectionCard style={{ borderColor: 'rgba(168,85,247,0.3)' }}>
+                <SectionHeader
+                  icon={<HiOutlineClock size={18} />}
+                  title="À faire"
+                  action={<span style={{ color: '#c084fc', fontSize: '12px', fontWeight: 700, background: 'rgba(168,85,247,0.14)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '100px', padding: '3px 10px' }}>{todoCount}</span>}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {pendingBats.map((p, i) => (
+                    <TodoRow
+                      key={`bat-${p.documentId}`} first={i === 0} color="#c084fc"
+                      icon={<HiOutlineDocumentText size={16} />}
+                      title={p.name} sub={`${p.orderItem!.product.name} — Bon à Tirer à valider`} cta="Valider"
+                      onClick={() => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`)}
+                    />
+                  ))}
+                  {invoicesToPay.map((p, i) => (
+                    <TodoRow
+                      key={`inv-${p.documentId}`} first={pendingBats.length === 0 && i === 0} color="#fbbf24"
+                      icon={<HiOutlineDocumentDownload size={16} />}
+                      title={p.name} sub={`Facture à régler — ${fmtHT((p.price ?? 0) - (p.paidPrice ?? 0))} restant`} cta="Régler"
+                      onClick={() => navigate('/customer/invoices')}
+                    />
+                  ))}
+                  {quotesToReview.map((p, i) => (
+                    <TodoRow
+                      key={`dev-${p.documentId}`} first={pendingBats.length === 0 && invoicesToPay.length === 0 && i === 0} color="#6b9eff"
+                      icon={<HiOutlineDocumentText size={16} />}
+                      title={p.name} sub="Devis à examiner" cta="Voir"
+                      onClick={() => navigate('/customer/devis')}
+                    />
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+
+            {/* ── Chiffres clés, en rangée compacte ──
+                Quatre cartes hautes occupaient ~700px sur téléphone pour
+                afficher quatre nombres. Une seule carte, quatre cellules. */}
+            <SectionCard style={{ padding: '6px 8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                {kpis.map((k) => (
+                  <Link
+                    key={k.label}
+                    to={k.to}
+                    title={k.link}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 14px', borderRadius: '12px', transition: 'background 0.15s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '11px', background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {k.icon}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', color: '#fff', fontSize: '22px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{k.value}</span>
+                      <span style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>{k.label}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </SectionCard>
+
+            {/* ── Commandes en cours + Activité récente ──
+                « Ma dernière commande » affichait une carte pleine hauteur pour
+                dire « Aucune commande pour le moment ». On montre désormais les
+                commandes réellement en cours, et rien si l'activité est vide. */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
-              {/* Dernière commande */}
               <SectionCard>
-                <SectionHeader icon={<HiOutlineShoppingCart size={18} />} title="Ma dernière commande" />
-                {lastOrder ? (
-                  <>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      <div style={{ width: '130px', height: '130px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {lastOrderImage
-                          ? <img src={lastOrderImage} alt={lastOrder.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <HiOutlineCube size={36} color="rgba(255,255,255,0.2)" />}
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                          {lastOrderState && (
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: lastOrderState.color, background: `${lastOrderState.color}22`, border: `1px solid ${lastOrderState.color}55`, borderRadius: '8px', padding: '3px 9px' }}>
-                              {lastOrderState.label}
-                            </span>
-                          )}
-                        </div>
-                        <p style={{ margin: 0, color: '#fff', fontSize: '15px', fontWeight: 700, lineHeight: 1.3 }}>{lastOrder.name}</p>
-                        {lastOrder.orderItem?.product?.name && (
-                          <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{lastOrder.orderItem.product.name}</p>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}>
-                          <HiOutlineCurrencyEuro size={15} color="rgba(255,255,255,0.4)" />
-                          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>Montant HT</span>
-                          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, marginLeft: 'auto' }}>{fmtHT(lastOrder.price || 0)}</span>
-                        </div>
-                        {lastOrder.endDate && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                            <HiOutlineClock size={15} color="rgba(255,255,255,0.4)" />
-                            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>Livraison estimée</span>
-                            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, marginLeft: 'auto' }}>{dayjs(lastOrder.endDate).format('DD MMM YYYY')}</span>
+                <SectionHeader
+                  icon={<HiOutlineShoppingCart size={18} />}
+                  title="Mes commandes en cours"
+                  action={ongoingProjects.length > 0 ? <Link to="/common/projects" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link> : undefined}
+                />
+                {ongoingProjects.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {ongoingProjects.map((p, i) => {
+                      const si = getStateInfo(p.state);
+                      const img = p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url;
+                      return (
+                        <div
+                          key={p.documentId}
+                          onClick={() => navigate(`/common/projects/details/${p.documentId}`)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', cursor: 'pointer', borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                          <div style={{ width: '46px', height: '46px', flexShrink: 0, borderRadius: '11px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {img
+                              ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                              : <HiOutlineCube size={20} color="rgba(255,255,255,0.25)" />}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => navigate(`/common/projects/details/${lastOrder.documentId}`)}
-                      style={{ marginTop: '18px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.35)', borderRadius: '12px', padding: '11px', color: '#a99bff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}
-                    >
-                      Voir le détail <HiArrowRight size={14} />
-                    </button>
-                  </>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ margin: 0, color: '#fff', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '10.5px', fontWeight: 700, color: si.color, background: `${si.color}22`, border: `1px solid ${si.color}55`, borderRadius: '7px', padding: '2px 7px' }}>{si.label}</span>
+                              {p.endDate && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11.5px' }}>Livraison {dayjs(p.endDate).format('DD MMM')}</span>}
+                            </div>
+                          </div>
+                          <span style={{ flexShrink: 0, color: '#fff', fontSize: '13px', fontWeight: 700 }}>{fmtHT(p.price || 0)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Aucune commande pour le moment.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: 0 }}>Aucune commande en cours.</p>
+                    <button
+                      type="button"
+                      onClick={() => navigate(catalogAccess ? '/customer/catalogue' : '/customer/products')}
+                      className="peg-tap-target"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.35)', borderRadius: '10px', padding: '8px 14px', color: '#a99bff', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}
+                    >
+                      Commander <HiArrowRight size={13} />
+                    </button>
+                  </div>
                 )}
               </SectionCard>
+            </div>
 
-              {/* Activité récente */}
+            {/* Activité récente — rendue seulement si elle a du contenu. */}
+            {recentActivity.length > 0 && (
               <SectionCard>
                 <SectionHeader
                   title="Activité récente"
                   action={<Link to="/common/projects" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link>}
                 />
-                {recentActivity.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {recentActivity.map((a, i) => (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0, background: `${a.color}22`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -488,12 +533,9 @@ const DashboardCustomer = () => {
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11.5px', whiteSpace: 'nowrap' }}>{dayjs(a.date).format('DD MMM')}</span>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Aucune activité récente.</p>
-                )}
+                </div>
               </SectionCard>
-            </div>
+            )}
 
             {/* ── Suggestions (carrousel auto-défilant, comme le panier) ── */}
             {catalogAccess && suggestions.length > 0 && (
@@ -519,7 +561,14 @@ const DashboardCustomer = () => {
                         >
                           <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {product.images?.[0]?.url
-                              ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ? <img
+                                  src={product.images[0].url}
+                                  alt=""
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  // Une image en 404 affichait son texte alternatif en clair
+                                  // au milieu du carrousel (« Bache standard 200×80cm »).
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                                />
                               : <HiOutlineCube size={30} color="rgba(255,255,255,0.2)" />}
                           </div>
                           <div style={{ padding: '12px 14px' }}>
@@ -542,42 +591,29 @@ const DashboardCustomer = () => {
               </SectionCard>
             )}
 
-            {/* ── 2 colonnes : recommandé / avantages ── */}
+            {/* ── Offres personnalisées du client ──
+                Ce bloc s'appelait « Recommandé pour vous » et affichait en fait
+                les offres personnalisées (products), pendant que « Suggestions
+                pour vous » montrait le catalogue générique : deux blocs de
+                recommandation sans différence lisible. Le titre reprend le
+                libellé déjà employé plus haut dans la page. */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-              {/* Recommandé pour vous */}
               {recommendedProducts.length > 0 && (
                 <SectionCard>
-                  <SectionHeader icon={<HiOutlineCube size={18} />} title="Recommandé pour vous" />
+                  <SectionHeader icon={<HiOutlineCube size={18} />} title="Vos offres personnalisées" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     {recommendedProducts.map((product) => <ProductRow key={product.documentId} product={product} />)}
                   </div>
-                  {catalogAccess && (
-                    <Link to="/customer/catalogue">
-                      <button style={{ marginTop: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '11px', padding: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}>
-                        Voir toutes les recommandations <HiArrowRight size={13} />
-                      </button>
-                    </Link>
-                  )}
+                  {/* Ces produits sont les offres personnalisées du client :
+                      le lien pointait à tort vers le catalogue générique. */}
+                  <Link to="/customer/products">
+                    <button className="peg-tap-target" style={{ marginTop: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '11px', padding: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}>
+                      Voir toutes mes offres <HiArrowRight size={13} />
+                    </button>
+                  </Link>
                 </SectionCard>
               )}
 
-              {/* Vos avantages PEG */}
-              <SectionCard>
-                <SectionHeader icon={<HiOutlineBadgeCheck size={18} />} title="Vos avantages PEG" />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {advantages.map((adv) => (
-                    <div key={adv.title} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '11px', flexShrink: 0, background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.3)', color: '#a99bff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {adv.icon}
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 700 }}>{adv.title}</p>
-                        <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '11.5px' }}>{adv.sub}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
             </div>
 
             {/* ── CTA support ── */}
