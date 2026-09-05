@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { MdClose, MdInstallMobile, MdIosShare, MdRefresh } from 'react-icons/md'
+import { useLocation } from 'react-router-dom'
 import useResponsive from '@/utils/hooks/useResponsive'
+
+/**
+ * Le bandeau est en position fixed en bas de l'écran. Sur les écrans du tunnel
+ * de commande, il recouvre les contrôles qui s'y trouvent — mesuré sur la fiche
+ * produit, où il masquait tour à tour le sélecteur de couleur et une taille.
+ * On ne propose donc pas l'installation pendant une commande en cours.
+ */
+const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment']
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -119,6 +128,7 @@ const closeStyle: CSSProperties = {
 
 const PwaInstallPrompt = () => {
   const { smaller } = useResponsive()
+  const { pathname } = useLocation()
   const [canInstall, setCanInstall] = useState(false)
   const [showIosHint, setShowIosHint] = useState(false)
   const [updateReady, setUpdateReady] = useState(false)
@@ -259,7 +269,8 @@ const PwaInstallPrompt = () => {
   // aussi sur ordinateur (utile contre les builds périmés, mais c'est un choix
   // produit à valider, pas un effet de bord du chantier mobile).
   const showUpdate = smaller.md && updateReady && !updateHidden
-  const showInstall = smaller.md && (canInstall || showIosHint)
+  const inFunnel = FUNNEL_ROUTES.some((r) => pathname.startsWith(r))
+  const showInstall = smaller.md && !inFunnel && (canInstall || showIosHint)
   const barVisible = showUpdate || showInstall
 
   // Le bandeau est en position fixed en bas : sans réserve de place, il masque

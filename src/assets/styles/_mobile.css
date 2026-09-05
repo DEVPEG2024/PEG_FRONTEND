@@ -142,6 +142,37 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /* ── Sélection des tailles sur une fiche produit ──────────────────────────
+     Le sélecteur de quantité est un contrôle COMPOSITE (− / valeur / +).
+     Lui appliquer .peg-tap-target imposait 44px de LARGEUR à chacun de ses
+     trois éléments : le pas passait de 86px à 132px, la tuile de taille à
+     ~152px, et avec ~300px utiles il ne tenait plus qu'UNE taille par ligne —
+     soit ~1400px de défilement pour huit tailles (XS → 4XL).
+     On garde 44px de HAUTEUR, qui est la vraie contrainte du doigt, et une
+     largeur raisonnable ; et sous md la liste passe en lignes pleine largeur
+     (libellé à gauche, quantité à droite), bien plus lisible qu'une grille
+     de tuiles qui se replie mal. Au-dessus de md, rien ne change. */
+  .peg-stepper-btn {
+    min-width: 38px;
+    min-height: 44px;
+  }
+  .peg-stepper-input {
+    min-width: 46px;
+    min-height: 44px;
+  }
+  .peg-size-list {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+  .peg-size-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100%;
+    min-width: 0 !important;
+    padding: 6px 12px !important;
+  }
+
   /* Bannière large mise à 100% de largeur : sur un écran de 390px elle retombe
      à ~80px de haut et se lit comme un bandeau écrasé. On lui impose une
      hauteur minimale et on laisse `object-fit: cover` recadrer. */

@@ -32,10 +32,10 @@ const Stepper = ({
 
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      <button type="button" className="peg-tap-target" style={btnStyle('left')} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+      <button type="button" className="peg-stepper-btn" style={btnStyle('left')} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
       <input
         type="text"
-        className="peg-tap-target"
+        className="peg-stepper-input"
         inputMode="numeric"
         value={value === 0 ? '' : value}
         placeholder="0"
@@ -57,7 +57,7 @@ const Stepper = ({
           outline: 'none',
         }}
       />
-      <button type="button" className="peg-tap-target" style={btnStyle('right')} onClick={() => onChange(value + 1)}>+</button>
+      <button type="button" className="peg-stepper-btn" style={btnStyle('right')} onClick={() => onChange(value + 1)}>+</button>
     </div>
   );
 };
@@ -144,7 +144,7 @@ const SizeChoice = ({
         </>
       ) : (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="peg-size-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {sorted.map((size) => {
               const qty = sizeAndColorsSelected.find(
                 (s) => s.size.value === size.value && (!color || s.color.value === color.value)
@@ -153,6 +153,7 @@ const SizeChoice = ({
               return (
                 <div
                   key={size.value}
+                  className="peg-size-row"
                   style={{
                     background: active ? 'rgba(47,111,237,0.10)' : 'rgba(255,255,255,0.03)',
                     border: `1px solid ${active ? 'rgba(47,111,237,0.35)' : 'rgba(255,255,255,0.07)'}`,
