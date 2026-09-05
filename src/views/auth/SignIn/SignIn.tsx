@@ -228,15 +228,40 @@ const SignIn = () => {
             {/* Logo — affiché UNIQUEMENT sous 920px, là où le panneau de gauche
                 (.si-left), qui porte le logo, est masqué : sur téléphone la page
                 s'ouvrait sans aucune identification de marque.
-                Version COLORÉE volontairement : les deux variantes du composant
-                Logo (logo-light-full / logo-dark-full) sont blanches, donc
-                invisibles sur cette carte blanche. */}
-            <img
+
+                Il est peint au MASQUE CSS et non affiché en <img> : le logo
+                existe seulement en PNG (aucune version vectorielle — picto.svg
+                n'est qu'un PNG encapsulé), et un masque permet de le teindre
+                exactement du dégradé du bouton « Se connecter ». Le masque
+                travaille sur le canal alpha, ce qui garde des contours lissés
+                à l'agrandissement, là où un PNG mis à l'échelle deviendrait
+                pixelisé. */}
+            <svg
               className="si-card-logo"
-              src="/img/logo/logo.png"
-              alt="MyPEG"
-              style={{ display: 'none', height: '46px', width: 'auto', margin: '0 auto 26px' }}
-            />
+              viewBox="0 0 1130 467"
+              role="img"
+              aria-label="MyPEG"
+              style={{ display: 'none', width: '210px', height: 'auto', margin: '0 auto 28px' }}
+            >
+              <defs>
+                <linearGradient id="si-logo-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#6d5dfc" />
+                  <stop offset="100%" stopColor="#4f3fd1" />
+                </linearGradient>
+              </defs>
+              {/* Tracés repris tels quels de public/img/logo/logo_svg.svg.
+                  Le SVG est intégré plutôt que chargé en <img> pour pouvoir le
+                  teindre du dégradé exact du bouton « Se connecter » — un <img>
+                  garde les couleurs définies dans le fichier (blanc + corail),
+                  invisibles sur cette carte blanche. Vectoriel, donc net à
+                  n'importe quelle taille. */}
+              <g fill="url(#si-logo-grad)">
+                <path d="M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z" />
+                <path d="M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z" />
+                <path d="M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z" />
+                <circle cx="1027.8" cy="331.5" r="82" />
+              </g>
+            </svg>
             <SignInForm disableSubmit={false} />
 
             {/* Création de compte — les deux natures, chacune sa carte */}
