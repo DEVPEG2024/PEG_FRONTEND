@@ -210,7 +210,7 @@ const NotificationBell = () => {
       {/* Bell button */}
       <button
         onClick={() => { setOpen(!open); setConfirmDeleteAll(false); }}
-        className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="peg-tap-target relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         title="Notifications"
       >
         <HiBell className={`text-xl text-gray-600 dark:text-gray-300 transition-transform ${unreadCount > 0 ? 'animate-[bellShake_0.5s_ease-in-out]' : ''}`} />

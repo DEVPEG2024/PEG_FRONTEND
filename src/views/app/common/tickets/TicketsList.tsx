@@ -552,7 +552,7 @@ const TicketsList = () => {
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', flexWrap: 'wrap' }}>
         {TAB_STATES.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="peg-tap-target"
             style={{ padding: '6px 12px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 600, background: activeTab === tab.key ? 'rgba(109,93,252,0.2)' : 'transparent', color: activeTab === tab.key ? '#a99bff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}>
             {tab.label}
             <span style={{ marginLeft: '5px', background: activeTab === tab.key ? 'rgba(109,93,252,0.3)' : 'rgba(255,255,255,0.08)', borderRadius: '100px', padding: '1px 6px', fontSize: '10px' }}>{tabCount(tab.key)}</span>

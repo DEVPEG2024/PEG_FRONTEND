@@ -155,7 +155,7 @@ const Profile = () => {
           Cliquer pour changer la photo
         </p>
         {previewUrl && (
-          <button type="button" onClick={handleRemoveAvatar}
+          <button type="button" onClick={handleRemoveAvatar} className="peg-tap-target"
             style={{ marginTop: '5px', background: 'none', border: 'none', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', padding: 0 }}
           >
             Supprimer la photo

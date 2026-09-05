@@ -46,7 +46,7 @@ const Settings = () => {
         {/* Tabs */}
         <div className="peg-stack-mobile" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '20px' }}>
           {TABS.map((tab) => (
-            <button key={tab.key} onClick={() => onTabChange(tab.key)}
+            <button key={tab.key} onClick={() => onTabChange(tab.key)} className="peg-tap-target"
               style={{ flex: 1, padding: '8px 14px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, background: currentTab === tab.key ? 'rgba(47,111,237,0.2)' : 'transparent', color: currentTab === tab.key ? '#6b9eff' : 'rgba(255,255,255,0.6)', transition: 'all 0.15s' }}
             >{tab.label}</button>
           ))}

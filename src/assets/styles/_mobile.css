@@ -245,6 +245,14 @@
     padding-top: 6px;
     padding-bottom: 6px;
   }
+  /* Le lien à l'intérieur d'un item de menu porte `h-full`, qui ne résout pas
+     contre un parent en hauteur auto : le conteneur faisait bien 44px mais la
+     zone réellement cliquable retombait à 32px, avec 12px de vide inerte.
+     Mesuré sur le tiroir de navigation mobile (a 225x32). */
+  .menu-item a,
+  .menu-collapse-item a {
+    min-height: var(--peg-tap);
+  }
 
   /* 4.3 — Les mots très longs (emails, URLs, références) ne poussent plus la
      page horizontalement. `break-word` n'altère pas la taille min-content, donc

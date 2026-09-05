@@ -210,6 +210,7 @@ const SignInForm = (props: SignInFormProps) => {
             />
             <a
               href={forgotPasswordUrl}
+              className="peg-tap-target"
               style={{ color: '#5b4de0', fontSize: '13.5px', textDecoration: 'none', fontWeight: 600 }}
             >
               Mot de passe oublié ?
