@@ -241,7 +241,7 @@ const SignIn = () => {
               viewBox="0 0 1130 467"
               role="img"
               aria-label="MyPEG"
-              style={{ display: 'none', width: '210px', height: 'auto', margin: '0 auto 28px' }}
+              style={{ display: 'none', width: '150px', height: 'auto', margin: '0 auto 26px' }}
             >
               <defs>
                 <linearGradient id="si-logo-grad" x1="0" y1="0" x2="1" y2="1">
