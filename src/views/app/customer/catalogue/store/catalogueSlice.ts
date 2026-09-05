@@ -92,12 +92,10 @@ export const getCatalogueProductCategories = createAsyncThunk(
     const {
       productCategories_connection,
     }: { productCategories_connection: GetProductCategoriesResponse } =
-      // Écran CLIENT : uniquement les catégories ayant au moins un produit
-      // visible. Sans filtre, les catégories créées par l'import Imbretex
-      // exposaient la taxonomie du fournisseur. Voir le commentaire de
-      // `onlyWithVisibleProducts` : ne PAS filtrer sur `active`, ce champ n'est
-      // pas maintenu et le filtre masquerait tout le catalogue réel.
-      await unwrapData(apiGetProductCategories({ ...data, onlyWithVisibleProducts: true }));
+      // Aucun filtre de visibilité sur les catégories : voir le commentaire de
+      // GetProductCategoriesRequest, les deux filtres essayés masquaient des
+      // catégories réelles du catalogue de production.
+      await unwrapData(apiGetProductCategories(data));
     return productCategories_connection;
   }
 );

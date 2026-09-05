@@ -127,21 +127,23 @@ export type GetProductCategoriesRequest = {
     pagination: PaginationRequest;
     searchTerm: string;
     /**
-     * Ne remonter que les catégories ayant AU MOINS UN produit visible par le
-     * client (active + inCatalogue). Réservé aux écrans CLIENT.
+     * ⚠️ AUCUN filtre de visibilité n'est appliqué aux catégories, et c'est
+     * VOLONTAIRE. Deux tentatives ont été faites le 05/09/2026, toutes deux
+     * fausses, mesurées sur les données réelles :
      *
-     * ⚠️ NE PAS filtrer sur `productCategory.active` : mesuré sur l'intégration
-     * le 05/09/2026, ce champ n'est pas maintenu — les huit vraies catégories
-     * PEG (Vêtement personnalisé, Print, Signalétique & PLV…) l'ont à `null`,
-     * et les seules à `true` étaient celles créées automatiquement par l'import
-     * Imbretex. Filtrer sur `active` masquerait donc tout le catalogue et ne
-     * laisserait que la taxonomie du fournisseur : exactement l'inverse du but.
+     * 1. Filtrer sur `productCategory.active` — le champ n'est pas maintenu.
+     *    Les vraies catégories PEG l'ont à `null` et les seules à `true`
+     *    étaient celles créées par l'import Imbretex : le filtre masquait tout
+     *    le catalogue et ne laissait que la taxonomie du fournisseur.
+     * 2. Filtrer sur « a au moins un produit visible » — le filtre GraphQL ne
+     *    voit que les produits DIRECTEMENT rattachés. Or « Print » (3 produits
+     *    visibles) et « Vêtement personnalisé » (11) portent les leurs dans des
+     *    SOUS-CATÉGORIES : les deux catégories les plus fournies de la
+     *    production disparaissaient du catalogue.
      *
-     * Le filtre par contenu s'auto-entretient : une catégorie sort du catalogue
-     * dès qu'elle n'a plus rien à montrer, et y revient dès qu'un produit y
-     * devient visible. Les écrans ADMIN doivent l'omettre.
+     * Le cloisonnement du catalogue fournisseur se fait au niveau du PRODUIT
+     * (`inCatalogue`, cf. ImbretexImportService), pas de la catégorie.
      */
-    onlyWithVisibleProducts?: boolean;
   };
 
 export type GetProductCategoriesResponse = {
@@ -150,13 +152,9 @@ export type GetProductCategoriesResponse = {
 };
 
 export async function apiGetProductCategories(data: GetProductCategoriesRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{productCategories_connection: GetProductCategoriesResponse}>>> {
-    const nameFilter = `{name: {containsi: $searchTerm}}`;
-    const categoryFilters = data.onlyWithVisibleProducts
-        ? `{and: [${nameFilter}, {products: {active: {eq: true}, inCatalogue: {eq: true}}}]}`
-        : nameFilter;
     const query = `
     query GetProductCategories($searchTerm: String, $pagination: PaginationArg) {
-        productCategories_connection (filters: ${categoryFilters}, pagination: $pagination, sort: "order:asc") {
+        productCategories_connection (filters: {name: {containsi: $searchTerm}}, pagination: $pagination, sort: "order:asc") {
             nodes {
                 documentId
                 image {
