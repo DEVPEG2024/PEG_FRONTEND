@@ -1,0 +1,3 @@
+# Sorties de responsive-audit.mjs : captures + rapports, régénérables à la demande.
+# Le dossier output/ (captures de documentation) reste versionné.
+audit/
