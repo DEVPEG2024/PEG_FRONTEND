@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 import { FIELD_DEFS, CATEGORY_LABELS } from '../fieldDefs';
 import { FieldCategory, FieldDef } from '../types';
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function Sidebar({ onAddField }: Props) {
+  const { larger } = useResponsive();
   const [search, setSearch] = useState('');
   const categories: FieldCategory[] = ['basic', 'advanced', 'layout'];
   const filtered = search
@@ -20,7 +22,8 @@ export default function Sidebar({ onAddField }: Props) {
   return (
     <div
       style={{
-        width: '216px',
+        width: larger.md ? '216px' : '100%',
+        maxHeight: larger.md ? undefined : '38dvh',
         background: 'rgba(7,13,24,0.98)',
         borderRight: '1px solid rgba(255,255,255,0.06)',
         display: 'flex',

@@ -131,6 +131,7 @@ const ProductCategoryCard = ({
       {hasSubcategories && (
         <>
           <button
+            className="peg-tap-target"
             onClick={() => setExpanded(!expanded)}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
@@ -172,6 +173,7 @@ const ProductCategoryCard = ({
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
                       <button
+                        className="peg-tap-target"
                         onClick={(e) => { e.stopPropagation(); handleEditProductCategory(sub); }}
                         style={{
                           background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.2)',
@@ -182,6 +184,7 @@ const ProductCategoryCard = ({
                         <HiPencil size={9} />
                       </button>
                       <button
+                        className="peg-tap-target"
                         onClick={(e) => { e.stopPropagation(); handleDeleteProductCategory(sub); }}
                         style={{
                           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
@@ -232,6 +235,7 @@ const ProductCategoryCard = ({
           </Tooltip>
           {handleAddSubcategory && (
             <button
+              className="peg-tap-target"
               onClick={() => handleAddSubcategory(productCategory)}
               title="Ajouter une sous-catégorie"
               style={{
@@ -252,6 +256,7 @@ const ProductCategoryCard = ({
         {/* Ligne 2 : modifier + supprimer */}
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
+            className="peg-tap-target"
             onClick={() => handleEditProductCategory(productCategory)}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
@@ -267,6 +272,7 @@ const ProductCategoryCard = ({
             <HiPencil size={12} /> Modifier
           </button>
           <button
+            className="peg-tap-target"
             onClick={() => handleDeleteProductCategory(productCategory)}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',

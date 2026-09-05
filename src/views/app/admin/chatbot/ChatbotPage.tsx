@@ -394,13 +394,13 @@ const ConfigPanel = ({
   };
 
   return (
-    <div style={{ ...PANEL, flex: '0 0 420px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div className="peg-full-mobile" style={{ ...PANEL, flex: '0 0 420px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '20px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
         <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>Configurer</div>
       </div>
 
-      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '28px', flex: 1 }}>
+      <div style={{ padding: 'var(--peg-pad-24)', display: 'flex', flexDirection: 'column', gap: '28px', flex: 1 }}>
 
         {/* ── Identité ── */}
         <div>
@@ -727,7 +727,7 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
       )}
 
       {/* Input */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+      <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + var(--peg-safe-bottom))', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
         <input
           ref={fileInputRef}
           type="file"
@@ -813,9 +813,9 @@ const HistoryPanel = () => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '16px', height: '100%' }}>
+    <div style={{ display: 'flex', gap: 'var(--peg-gap-16)', flexWrap: 'wrap', height: '100%' }}>
       {/* Liste */}
-      <div style={{ ...PANEL, flex: '0 0 360px', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '20px' }}>
+      <div className="peg-full-mobile" style={{ ...PANEL, flex: '0 0 360px', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 'var(--peg-pad-20)' }}>
         <div style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <MdHistory size={18} color="#6b9eff" /> Conversations <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, fontSize: '12px' }}>({total})</span>
         </div>
@@ -932,10 +932,10 @@ const ChatbotPage = () => {
   }, []);
 
   return (
-    <div style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="peg-pad-mobile" style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {showHistory && (
             <button
@@ -981,11 +981,11 @@ const ChatbotPage = () => {
       {loading ? (
         <div style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>Chargement...</div>
       ) : showHistory ? (
-        <div style={{ flex: 1, minHeight: 0, height: 'calc(100vh - 130px)' }}>
+        <div style={{ flex: 1, minHeight: 0, height: 'calc(100dvh - 130px)' }}>
           <HistoryPanel />
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '16px', flex: 1, minHeight: 0, height: 'calc(100vh - 130px)' }}>
+        <div style={{ display: 'flex', gap: 'var(--peg-gap-16)', flexWrap: 'wrap', flex: 1, minHeight: 0, height: 'calc(100dvh - 130px)' }}>
           <ConfigPanel config={config} onUpdate={setConfig} />
           <PreviewPanel config={config} />
         </div>

@@ -84,12 +84,12 @@ const RunHistoryDrawer = ({ counts, snapshot, horizonWeeks, generatedBy, onClose
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'flex-end', zIndex: 1000, fontFamily: 'Inter, sans-serif' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '460px', maxWidth: 'calc(100vw - 24px)', height: '100%', overflowY: 'auto', background: 'linear-gradient(160deg, rgba(18,22,34,0.99), rgba(11,14,21,0.99))', borderLeft: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, padding: '22px' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '460px', maxWidth: 'calc(100vw - 24px)', height: '100%', overflowY: 'auto', background: 'linear-gradient(160deg, rgba(18,22,34,0.99), rgba(11,14,21,0.99))', borderLeft: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, padding: '22px', paddingBottom: 'calc(22px + var(--peg-safe-bottom))' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800, margin: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             <TbHistory size={20} color={PLANNING_ACCENT} /> Historique des plannings
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
+          <button className="peg-tap-target" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <TbX size={20} />
           </button>
         </div>
@@ -124,7 +124,7 @@ const RunHistoryDrawer = ({ counts, snapshot, horizonWeeks, generatedBy, onClose
                   <span style={{ color: RISK_COLOR.tight }}>{r.counts?.tight ?? 0}</span>
                   <span style={{ color: RISK_COLOR.ok }}>{r.counts?.ok ?? 0}</span>
                 </span>
-                <button onClick={() => remove(r.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+                <button className="peg-tap-target" onClick={() => remove(r.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
                   <TbTrash size={14} />
                 </button>
               </div>

@@ -63,7 +63,7 @@ const CompanyFields = (props: CompanyFieldsProps) => {
 
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>{t('p.organization')}</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           {t('p.organization_description')}
@@ -90,7 +90,7 @@ const CompanyFields = (props: CompanyFieldsProps) => {
         <div style={divider} />
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Informations légales</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>N° TVA *</label>
             <Controller

@@ -67,7 +67,7 @@ import {
 // ───────────────────────────── Styles partagés ───────────────────────────────
 
 const pageStyle: React.CSSProperties = {
-    padding: '24px',
+    padding: 'var(--peg-pad-24)',
     fontFamily: 'Inter, sans-serif',
     display: 'flex',
     flexDirection: 'column',
@@ -156,7 +156,7 @@ const Modal = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px',
+            padding: 'var(--peg-pad-16)',
         }}
     >
         <div
@@ -171,9 +171,9 @@ const Modal = ({
                 background: 'linear-gradient(145deg, #0f1623, #111827)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '16px',
-                padding: '24px',
+                padding: 'var(--peg-pad-24)',
                 boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
-                maxHeight: '88vh',
+                maxHeight: '88dvh',
                 overflowY: 'auto',
                 fontFamily: 'Inter, sans-serif',
             }}
@@ -190,6 +190,7 @@ const Modal = ({
                 <button
                     onClick={onClose}
                     aria-label="Fermer"
+                    className="peg-tap-target"
                     style={{
                         background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.08)',
@@ -734,7 +735,7 @@ const GeneratorsAdminList = () => {
                     <h1
                         style={{
                             color: '#fff',
-                            fontSize: '24px',
+                            fontSize: 'var(--peg-fs-24)',
                             fontWeight: 700,
                             letterSpacing: '-0.02em',
                             margin: 0,
@@ -750,7 +751,7 @@ const GeneratorsAdminList = () => {
                         payées.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     <button onClick={() => load()} style={buttonStyle('ghost')} disabled={busy}>
                         <TbRefresh size={14} /> Actualiser
                     </button>
@@ -996,6 +997,7 @@ const GeneratorsAdminList = () => {
                                     <button
                                         onClick={() => toggleExpand(row.documentId)}
                                         aria-label={expanded ? 'Replier' : 'Déplier'}
+                                        className="peg-tap-target"
                                         style={{
                                             background: 'none',
                                             border: 'none',
@@ -1453,7 +1455,7 @@ const GeneratorsAdminList = () => {
                                 placeholder="Jean Dupont / Société ABC"
                             />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={labelStyle}>Prénom</label>
                                 <input
@@ -1480,7 +1482,7 @@ const GeneratorsAdminList = () => {
                                 placeholder="Laisser vide pour créer la fiche sans compte d'accès"
                             />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={labelStyle}>Mot de passe</label>
                                 <input
@@ -1504,7 +1506,7 @@ const GeneratorsAdminList = () => {
                                 />
                             </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={labelStyle}>Téléphone</label>
                                 <input
@@ -1591,7 +1593,7 @@ const GeneratorsAdminList = () => {
                                 Le mot de passe est affiché en clair : notez-le, il ne sera plus consultable.
                             </p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px' }}>
                             <div>
                                 <label style={labelStyle}>Prénom</label>
                                 <input
@@ -1700,6 +1702,7 @@ const GeneratorsAdminList = () => {
                                     <button
                                         onClick={() => setProofFile(null)}
                                         aria-label="Retirer le justificatif"
+                                        className="peg-tap-target"
                                         style={{
                                             background: 'none',
                                             border: 'none',

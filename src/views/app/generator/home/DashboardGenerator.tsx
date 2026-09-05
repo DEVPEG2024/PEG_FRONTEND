@@ -33,11 +33,11 @@ import {
 } from '../components/GeneratorUI';
 
 const pageStyle: React.CSSProperties = {
-    padding: '24px',
+    padding: 'var(--peg-pad-24)',
     fontFamily: 'Inter, sans-serif',
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: 'var(--peg-gap-20)',
 };
 
 const DashboardGenerator = () => {
@@ -119,7 +119,7 @@ const DashboardGenerator = () => {
                 <h1
                     style={{
                         color: '#fff',
-                        fontSize: '24px',
+                        fontSize: 'var(--peg-fs-24)',
                         fontWeight: 700,
                         letterSpacing: '-0.02em',
                         margin: 0,
@@ -329,6 +329,7 @@ const DashboardGenerator = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '12px',
+                                    flexWrap: 'wrap',
                                     background: 'rgba(255,255,255,0.03)',
                                     border: '1px solid rgba(255,255,255,0.06)',
                                     borderRadius: '11px',

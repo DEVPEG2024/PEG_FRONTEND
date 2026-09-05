@@ -234,7 +234,7 @@ const ProductFields = (props: ProductFieldsProps) => {
       {show(0) && (
       <div style={card}>
         <p style={sectionTitle}>Informations générales</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start', marginBottom: '16px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start', marginBottom: '16px' }}>
           <div>
             <label style={fieldLabel}>Nom du produit</label>
             <Controller
@@ -393,7 +393,7 @@ const ProductFields = (props: ProductFieldsProps) => {
         </p>
         {/* m² pricing fields */}
         {watch('pricingMode') === 'm2' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
+          <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
             <div>
               <label style={fieldLabel}>Prix par m² (€ HT)</label>
               <Controller
@@ -584,7 +584,7 @@ const ProductFields = (props: ProductFieldsProps) => {
       {/* ── Step 2 : Catégories & Options ── */}
       {show(2) && (<><div style={card}>
         <p style={sectionTitle}>Catégories & clients</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
           <div>
             <label style={fieldLabel}>Catégorie client</label>
             <Controller
@@ -645,7 +645,7 @@ const ProductFields = (props: ProductFieldsProps) => {
 
       <div style={card}>
         <p style={sectionTitle}>Options produit</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '14px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '14px' }}>
           <div>
             <label style={fieldLabel}>Tailles</label>
             <Controller
@@ -793,7 +793,7 @@ const ProductFields = (props: ProductFieldsProps) => {
               Référence produit — Admin &amp; Producteur uniquement
             </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
               <label style={{ ...fieldLabel, color: 'rgba(251,191,36,0.5)' }}>Référence interne</label>
               <Controller

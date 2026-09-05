@@ -68,7 +68,7 @@ function ModalDeleteProductCategory({
           style={{
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: '20px',
-            padding: '36px 32px 28px',
+            padding: '36px var(--peg-pad-32) 28px',
             width: '100%',
             maxWidth: '420px',
             boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
@@ -81,6 +81,7 @@ function ModalDeleteProductCategory({
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-12px', marginRight: '-8px' }}>
             <button
               onClick={handleCloseModal}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: 'none',

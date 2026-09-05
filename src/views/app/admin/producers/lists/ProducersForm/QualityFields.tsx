@@ -53,6 +53,7 @@ const StarRating = ({ value, onChange }: { value: number | null; onChange: (v: n
         key={star}
         type="button"
         onClick={() => onChange(star)}
+        className="peg-tap-target"
         style={{
           background: 'none',
           border: 'none',
@@ -78,7 +79,7 @@ const StarRating = ({ value, onChange }: { value: number | null; onChange: (v: n
 const QualityFields = ({ control, errors }: QualityFieldsProps) => {
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>Qualité & Fiabilité</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           Évaluez la fiabilité et la satisfaction client du producteur.
@@ -97,7 +98,7 @@ const QualityFields = ({ control, errors }: QualityFieldsProps) => {
 
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Statistiques</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>Satisfaction client</label>
             <Controller

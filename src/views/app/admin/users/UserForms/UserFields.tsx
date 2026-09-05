@@ -47,6 +47,9 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '6px',
 };
 
+// Grille figée : l'empilement mobile passe par .peg-stack-mobile sur chaque
+// ligne (cf. UserForm.tsx), et non par auto-fit, qui collapserait les pistes
+// vides des lignes à un seul enfant et doublerait leur largeur sur desktop.
 const rowStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
@@ -85,7 +88,7 @@ const UserFields = (props: UserFieldsProps) => {
           </div>
         </div>
 
-        <div style={rowStyle}>
+        <div className="peg-stack-mobile" style={rowStyle}>
           <FormItem
             label={t('lastname')}
             invalid={!!errors.lastName}
@@ -124,7 +127,7 @@ const UserFields = (props: UserFieldsProps) => {
           </FormItem>
         </div>
 
-        <div style={{ ...rowStyle, marginTop: '8px' }}>
+        <div className="peg-stack-mobile" style={{ ...rowStyle, marginTop: '8px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
               <HiOutlineMail size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
@@ -197,7 +200,7 @@ const UserFields = (props: UserFieldsProps) => {
         </div>
       </div>
 
-      <div style={rowStyle}>
+      <div className="peg-stack-mobile" style={rowStyle}>
         <FormItem
           label="Role"
           invalid={!!errors.role}

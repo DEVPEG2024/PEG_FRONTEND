@@ -15,6 +15,7 @@ import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreferen
 import { env } from '@/configs/env.config'
 import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
 import { statusTextData } from '@/views/app/common/projects/lists/constants'
+import useResponsive from '@/utils/hooks/useResponsive'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
@@ -116,7 +117,7 @@ type KpiVariant = 'default' | 'success' | 'warning' | 'danger'
 const vc = { default: { gradient: 'from-cyan-500 to-blue-600', bg: 'from-cyan-500/15 to-blue-600/5', text: 'text-cyan-400', ring: 'ring-cyan-500/20' }, success: { gradient: 'from-emerald-500 to-teal-600', bg: 'from-emerald-500/15 to-teal-600/5', text: 'text-emerald-400', ring: 'ring-emerald-500/20' }, warning: { gradient: 'from-amber-500 to-orange-600', bg: 'from-amber-500/15 to-orange-600/5', text: 'text-amber-400', ring: 'ring-amber-500/20' }, danger: { gradient: 'from-rose-500 to-red-600', bg: 'from-rose-500/15 to-red-600/5', text: 'text-rose-400', ring: 'ring-rose-500/20' } }
 
 function KPI({ title, value, subtitle, icon, variant = 'default', onClick, sparkData, delta }: { title: string; value: string; subtitle?: string; icon?: React.ReactNode; variant?: KpiVariant; onClick?: () => void; sparkData?: number[]; delta?: React.ReactNode }) {
-  const c = vc[variant]; return <GlassCard onClick={onClick} glow={variant === 'success' ? 'emerald' : variant === 'warning' ? 'amber' : variant === 'danger' ? 'rose' : 'cyan'}><div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${c.gradient} opacity-80`} /><div className="relative p-5"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="text-[11px] font-medium uppercase tracking-wider text-white/40">{title}</div><div className="mt-2 text-2xl lg:text-3xl font-black text-white tracking-tight truncate">{value}</div>{(subtitle || delta) && <div className="flex items-center gap-2 mt-1">{subtitle && <span className="text-xs text-white/45">{subtitle}</span>}{delta}</div>}</div><div className={`flex h-10 w-10 lg:h-11 lg:w-11 items-center justify-center rounded-xl bg-gradient-to-br ${c.bg} ring-1 ${c.ring} shrink-0 ${c.text}`}>{icon ?? <HiOutlineChartBar className="w-5 h-5" />}</div></div>{sparkData && sparkData.length > 1 && <div className="mt-3"><Sparkline data={sparkData} color={variant === 'success' ? '#34d399' : variant === 'warning' ? '#fbbf24' : variant === 'danger' ? '#fb7185' : '#22d3ee'} /></div>}{onClick && <div className={`mt-3 text-[11px] font-medium ${c.text} opacity-70`}>Voir détails →</div>}</div></GlassCard>
+  const c = vc[variant]; return <GlassCard onClick={onClick} glow={variant === 'success' ? 'emerald' : variant === 'warning' ? 'amber' : variant === 'danger' ? 'rose' : 'cyan'}><div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${c.gradient} opacity-80`} /><div className="relative p-4 md:p-5"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="text-[11px] font-medium uppercase tracking-wider text-white/40">{title}</div><div className="mt-2 text-2xl lg:text-3xl font-black text-white tracking-tight truncate">{value}</div>{(subtitle || delta) && <div className="flex items-center gap-2 mt-1">{subtitle && <span className="text-xs text-white/45">{subtitle}</span>}{delta}</div>}</div><div className={`flex h-10 w-10 lg:h-11 lg:w-11 items-center justify-center rounded-xl bg-gradient-to-br ${c.bg} ring-1 ${c.ring} shrink-0 ${c.text}`}>{icon ?? <HiOutlineChartBar className="w-5 h-5" />}</div></div>{sparkData && sparkData.length > 1 && <div className="mt-3"><Sparkline data={sparkData} color={variant === 'success' ? '#34d399' : variant === 'warning' ? '#fbbf24' : variant === 'danger' ? '#fb7185' : '#22d3ee'} /></div>}{onClick && <div className={`mt-3 text-[11px] font-medium ${c.text} opacity-70`}>Voir détails →</div>}</div></GlassCard>
 }
 
 let _sparkId = 0
@@ -134,7 +135,7 @@ function DonutChart({ data, size = 150, thickness = 20, centerLabel, centerValue
 }
 
 function AreaChart({ data }: { data: { label: string; ca: number; marge: number; depenses?: number }[] }) {
-  const [hi, setHi] = useState<number | null>(null); const W = 700, H = 220, pL = 50, pR = 20, pT = 20, pB = 35
+  const [hi, setHi] = useState<number | null>(null); const { smaller } = useResponsive(); const W = smaller.md ? 360 : 700, H = 220, pL = 50, pR = 20, pT = 20, pB = 35
   const mx = useMemo(() => { let m = 1; for (const p of data) m = Math.max(m, p.ca, p.marge, p.depenses ?? 0); return m * 1.1 }, [data])
   const pW = W - pL - pR, pH = H - pT - pB, dv = Math.max(data.length - 1, 1); const x = (i: number) => pL + (i / dv) * pW; const y = (v: number) => pT + (1 - v / mx) * pH
   const caP = data.map((d, i) => `${x(i)},${y(d.ca)}`).join(' '); const mgP = data.map((d, i) => `${x(i)},${y(d.marge)}`).join(' '); const dpP = data.map((d, i) => `${x(i)},${y(d.depenses ?? 0)}`).join(' ')
@@ -192,7 +193,7 @@ function TodoListWidget() {
     <div className="flex gap-2 mb-4"><input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTodo()} placeholder="Nouvelle tâche..." className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition" /><button onClick={addTodo} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-lg shadow-violet-500/20">+</button></div>
     <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
       {todos.length === 0 && <div className="text-center py-4"><EmptyClipboard /><div className="text-xs text-white/25">Aucune tâche</div></div>}
-      {[...pending, ...done].map(t => <motion.div key={t.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: t.done ? 0.4 : 1, x: 0 }} className="group flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.03]"><button onClick={() => toggleTodo(t.id)} className={['flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition', t.done ? 'bg-violet-500/30 border-violet-500/40 text-violet-300' : 'border-white/15 hover:border-violet-500/40'].join(' ')}>{t.done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}</button>{editId === t.id ? <input autoFocus value={editText} onChange={e => setEditText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null) }} onBlur={saveEdit} className="flex-1 bg-transparent text-sm text-white outline-none border-b border-violet-500/30" /> : <span onDoubleClick={() => { setEditId(t.id); setEditText(t.text) }} className={['flex-1 text-sm cursor-default', t.done ? 'line-through text-white/50' : 'text-white/80'].join(' ')}>{t.text}</span>}<button onClick={() => deleteTodo(t.id)} className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-rose-400 transition text-xs shrink-0">{'✕'}</button></motion.div>)}
+      {[...pending, ...done].map(t => <motion.div key={t.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: t.done ? 0.4 : 1, x: 0 }} className="group flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.03]"><button onClick={() => toggleTodo(t.id)} className={['flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition', t.done ? 'bg-violet-500/30 border-violet-500/40 text-violet-300' : 'border-white/15 hover:border-violet-500/40'].join(' ')}>{t.done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}</button>{editId === t.id ? <input autoFocus value={editText} onChange={e => setEditText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null) }} onBlur={saveEdit} className="flex-1 bg-transparent text-sm text-white outline-none border-b border-violet-500/30" /> : <span onDoubleClick={() => { setEditId(t.id); setEditText(t.text) }} className={['flex-1 text-sm cursor-default', t.done ? 'line-through text-white/50' : 'text-white/80'].join(' ')}>{t.text}</span>}<button onClick={() => deleteTodo(t.id)} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-white/25 hover:text-rose-400 transition text-xs shrink-0 peg-tap-target">{'✕'}</button></motion.div>)}
     </div>
   </>
 }
@@ -305,7 +306,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
   const stateClass = (st: string) => st === 'canceled' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : st === PAID_IN_PROGRESS_STATE ? 'bg-teal-500/15 text-teal-300 border-teal-500/30' : st === 'fulfilled' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
   return createPortal(
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Détail du reste à encaisser">
-      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-2xl max-h-[85dvh] flex flex-col rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-400 to-orange-500 opacity-80" />
         <div className="flex items-start justify-between gap-4 p-5 border-b border-white/[0.08]">
           <div className="min-w-0">
@@ -313,7 +314,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
             <div className="mt-1 text-2xl font-black text-white tracking-tight">{eur(displayed)} <span className="text-sm font-medium text-white/40">TTC · {eur(toHT(displayed))} HT</span></div>
             <div className="mt-1 text-[11px] text-white/35">Calcul : CA total (prix des projets + ventes additionnelles) − Encaissé (montants payés des projets + ventes additionnelles encaissées)</div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="shrink-0 h-8 w-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"><HiOutlineX className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="shrink-0 h-8 w-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors peg-tap-target"><HiOutlineX className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           <section>
@@ -335,7 +336,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
         </div>
         <div className="flex items-center justify-between gap-3 p-4 border-t border-white/[0.08] bg-white/[0.02]">
           <div className="text-sm text-white/60">Total <span className="font-black text-white ml-1">{eur(displayed)}</span></div>
-          <button type="button" onClick={onOpenInvoices} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 hover:bg-white/10 transition-colors">Voir les factures →</button>
+          <button type="button" onClick={onOpenInvoices} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-white/80 hover:bg-white/10 transition-colors peg-tap-target">Voir les factures →</button>
         </div>
       </div>
     </div>,
@@ -623,7 +624,7 @@ export default function DashboardAdmin() {
         <div className="relative z-10 space-y-4 pb-8">
 
           {/* HERO BANNER */}
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative overflow-hidden rounded-3xl border border-white/[0.08] aspect-[5/1] md:aspect-[6/1]">
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative overflow-hidden rounded-3xl border border-white/[0.08] aspect-[3/1] sm:aspect-[5/1] md:aspect-[6/1]">
             {bannerUrl ? <img src={bannerUrl} alt="" className="h-full w-full object-cover" /> : <><div className="h-full w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" /><HeroIllustration /></>}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />

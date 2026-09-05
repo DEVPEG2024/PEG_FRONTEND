@@ -1,5 +1,6 @@
 import { Field, FormStructure } from '../types';
 import { HiX } from 'react-icons/hi';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
 
 const fadeSlideKeyframes = `
@@ -40,7 +41,7 @@ export default function PreviewModal({
           alignItems: 'center',
           justifyContent: 'center',
           animation: 'fadeIn 0.2s ease-out',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
         }}
       >
         <div
@@ -50,7 +51,7 @@ export default function PreviewModal({
             borderRadius: '20px',
             width: '100%',
             maxWidth: '740px',
-            maxHeight: '90vh',
+            maxHeight: '90dvh',
             overflow: 'hidden',
             boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
             border: '1px solid rgba(255,255,255,0.06)',
@@ -67,7 +68,7 @@ export default function PreviewModal({
               borderRadius: '16px',
               overflow: 'hidden',
               margin: '12px',
-              maxHeight: 'calc(90vh - 24px)',
+              maxHeight: 'calc(90dvh - 24px)',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -111,6 +112,7 @@ export default function PreviewModal({
                 </span>
               </div>
               <button
+                className="peg-tap-target"
                 onClick={onClose}
                 style={{
                   background: 'none',
@@ -197,6 +199,7 @@ export default function PreviewModal({
 
               {/* Fields */}
               <div
+                className="peg-pad-mobile"
                 style={{
                   padding: '24px 36px',
                   display: 'flex',
@@ -215,7 +218,7 @@ export default function PreviewModal({
               </div>
 
               {/* Submit button */}
-              <div style={{ padding: '4px 36px 36px' }}>
+              <div className="peg-pad-mobile" style={{ padding: '4px 36px 36px' }}>
                 <button
                   style={{
                     background: 'linear-gradient(90deg, #2563eb, #1d4ed8)',
@@ -244,8 +247,10 @@ export default function PreviewModal({
 // ── Field renderers ───────────────────────────────────────────────────────────
 
 function PreviewField({ field }: { field: Field }) {
+  const { larger } = useResponsive();
   const pct = field.width ?? 100;
-  const w = pct === 100 ? '100%' : `calc(${pct}% - 8px)`;
+  // Sous md le formulaire réel empile déjà ses colonnes : l'aperçu fait de même.
+  const w = pct === 100 || !larger.md ? '100%' : `calc(${pct}% - 8px)`;
   const wrap: React.CSSProperties = { width: w, flexShrink: 0 };
 
   if (field.type === 'content') {

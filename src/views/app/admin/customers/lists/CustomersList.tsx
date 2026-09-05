@@ -59,6 +59,7 @@ const Btn = ({
   <button
     title={title}
     onClick={onClick}
+    className="peg-tap-target"
     style={{
       display: 'flex',
       alignItems: 'center',
@@ -304,6 +305,7 @@ const CustomersList = () => {
                   padding: '14px 18px',
                   display: 'flex',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: '14px',
                   transition: 'border-color 0.15s',
                 }}
@@ -352,7 +354,7 @@ const CustomersList = () => {
                     </span>
                   </div>
                 )}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: '160px' }}>
                   <div
                     style={{
                       display: 'flex',
@@ -477,6 +479,7 @@ const CustomersList = () => {
                     }
                     onClick={() => togglePremium(c)}
                     disabled={togglingId === String(c?.documentId ?? c?.id)}
+                    className="peg-tap-target"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -581,11 +584,11 @@ const CustomersList = () => {
             style={{
               width: '680px',
               maxWidth: '95vw',
-              maxHeight: '90vh',
+              maxHeight: '90dvh',
               overflow: 'auto',
               background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
               borderRadius: '20px',
-              padding: '32px',
+              padding: 'var(--peg-pad-32)',
               position: 'relative',
               boxShadow:
                 '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
@@ -664,6 +667,7 @@ const CustomersList = () => {
               </div>
               <button
                 onClick={() => setFilesCustomer(null)}
+                className="peg-tap-target"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(255,255,255,0.1)',

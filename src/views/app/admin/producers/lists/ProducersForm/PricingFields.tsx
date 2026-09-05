@@ -59,7 +59,7 @@ const PricingFields = ({ control, errors }: PricingFieldsProps) => {
 
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>Tarification</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           Positionnement tarifaire et conditions de remise.

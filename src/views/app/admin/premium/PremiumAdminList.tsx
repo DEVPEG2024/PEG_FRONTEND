@@ -73,7 +73,7 @@ const PremiumAdminList = () => {
       <div
         key={c.documentId}
         style={{
-          display: 'flex', alignItems: 'center', gap: '14px',
+          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px',
           background: 'linear-gradient(160deg, rgba(22,28,43,0.9), rgba(13,16,24,0.9))',
           border: `1px solid ${c.premiumProcessed ? 'rgba(255,255,255,0.08)' : 'rgba(234,179,8,0.3)'}`,
           borderRadius: '14px', padding: '14px 16px',
@@ -93,8 +93,8 @@ const PremiumAdminList = () => {
         </div>
 
         {/* Infos */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ flex: 1, minWidth: '160px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <span style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{c.name}</span>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '3px',
@@ -128,6 +128,7 @@ const PremiumAdminList = () => {
           <button
             onClick={() => toggleProcessed(c, false)}
             disabled={busyId === c.documentId}
+            className="peg-tap-target"
             style={{
               flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '6px',
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
@@ -141,6 +142,7 @@ const PremiumAdminList = () => {
           <button
             onClick={() => toggleProcessed(c, true)}
             disabled={busyId === c.documentId}
+            className="peg-tap-target"
             style={{
               flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '6px',
               background: `linear-gradient(90deg, ${GOLD}, #ca8a04)`, border: 'none',
@@ -156,7 +158,7 @@ const PremiumAdminList = () => {
   };
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '900px', margin: '0 auto', padding: '24px 20px 48px' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '900px', margin: '0 auto', padding: 'var(--peg-pad-24) var(--peg-pad-20) 48px' }}>
       {/* En-tête */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
         <div style={{
@@ -167,7 +169,7 @@ const PremiumAdminList = () => {
           <TbCrown size={22} color={GOLD} />
         </div>
         <div>
-          <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Clients Premium</h2>
+          <h2 style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Clients Premium</h2>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: '2px 0 0' }}>
             {customers.length} client(s) Premium · {toProcess.length} à traiter
           </p>

@@ -64,7 +64,7 @@ const ProducerFields = (props: ProducerFieldsProps) => {
 
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>{t('p.producer')}</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           {t('p.producer_description')}
@@ -97,7 +97,7 @@ const ProducerFields = (props: ProducerFieldsProps) => {
           {errors.address && <p style={fieldError}>{errors.address.message}</p>}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>{t('zipCode')} *</label>
             <Controller
@@ -142,7 +142,7 @@ const ProducerFields = (props: ProducerFieldsProps) => {
         <div style={divider} />
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Contact</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div>
             <label style={fieldLabel}>{t('phone')} *</label>
             <Controller

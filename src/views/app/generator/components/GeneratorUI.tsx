@@ -23,7 +23,7 @@ export const panelStyle: React.CSSProperties = {
     background: 'linear-gradient(160deg, rgba(22,28,43,0.9), rgba(13,16,24,0.9))',
     border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: '16px',
-    padding: '20px',
+    padding: 'var(--peg-pad-20)',
     fontFamily: 'Inter, sans-serif',
 };
 
@@ -214,6 +214,7 @@ export const CopyButton = ({ value, label }: { value: string; label?: string }) 
         <button
             type="button"
             onClick={copy}
+            className="peg-tap-target"
             aria-label={label ? `Copier ${label}` : 'Copier'}
             style={{
                 display: 'inline-flex',
@@ -278,7 +279,7 @@ export const CommissionsTable = ({
     if (!commissions.length) return <EmptyState message={emptyMessage} />;
 
     return (
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px' }}>
                 <thead>
                     <tr>
@@ -371,7 +372,7 @@ export const PayoutsTable = ({
     if (!payouts.length) return <EmptyState message={emptyMessage} />;
 
     return (
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '520px' }}>
                 <thead>
                     <tr>

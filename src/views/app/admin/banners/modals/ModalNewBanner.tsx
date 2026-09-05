@@ -115,14 +115,14 @@ function ModalNewBanner() {
       animation: 'fadeIn 0.2s ease',
     }} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div style={{
-        width: '640px', maxWidth: '95vw', maxHeight: '90vh', overflow: 'auto',
+        width: '640px', maxWidth: '95vw', maxHeight: '90dvh', overflow: 'auto',
         background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
-        borderRadius: '20px', padding: '32px', position: 'relative',
+        borderRadius: '20px', padding: 'var(--peg-pad-32)', position: 'relative',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
         animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       }} onClick={(e) => e.stopPropagation()}>
 
-        <button onClick={handleClose} style={{
+        <button onClick={handleClose} className="peg-tap-target" style={{
           position: 'absolute', top: '16px', right: '16px',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '8px', width: '32px', height: '32px',
@@ -160,7 +160,7 @@ function ModalNewBanner() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
             <div>
               <span style={labelStyle}>Client</span>
               <Select
@@ -197,13 +197,13 @@ function ModalNewBanner() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-          <button onClick={handleClose} style={{
+          <button onClick={handleClose} className="peg-tap-target" style={{
             padding: '10px 20px', borderRadius: '10px',
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
             color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600,
             cursor: 'pointer', fontFamily: 'Inter, sans-serif',
           }}>{t('cancel')}</button>
-          <button onClick={handleSubmit} style={{
+          <button onClick={handleSubmit} className="peg-tap-target" style={{
             padding: '12px 28px', borderRadius: '12px', border: 'none', color: '#fff',
             fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
             background: 'linear-gradient(90deg, #2f6fed, #1d4ed8)',

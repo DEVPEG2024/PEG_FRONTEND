@@ -77,13 +77,13 @@ const CapacityEditorModal = ({ producerId, producerName, current, onClose, onSav
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, fontFamily: 'Inter, sans-serif' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '460px', maxWidth: 'calc(100vw - 32px)', background: 'linear-gradient(160deg, rgba(22,28,43,0.98), rgba(13,16,24,0.98))', border: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, borderRadius: '16px', padding: '20px' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '460px', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', background: 'linear-gradient(160deg, rgba(22,28,43,0.98), rgba(13,16,24,0.98))', border: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, borderRadius: '16px', padding: 'var(--peg-pad-20)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
             <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: 800, margin: 0 }}>Capacité de production</h3>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '2px 0 0' }}>{producerName}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
+          <button className="peg-tap-target" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <TbX size={20} />
           </button>
         </div>

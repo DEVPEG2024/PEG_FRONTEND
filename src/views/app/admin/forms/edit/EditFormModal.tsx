@@ -50,7 +50,7 @@ function EditFormModal() {
           alignItems: 'center',
           justifyContent: 'center',
           animation: 'fadeIn 0.2s ease-out',
-          padding: '24px',
+          padding: 'var(--peg-pad-24)',
         }}
       >
         <div
@@ -60,7 +60,7 @@ function EditFormModal() {
             borderRadius: '20px',
             width: '100%',
             maxWidth: '1200px',
-            maxHeight: '92vh',
+            maxHeight: '92dvh',
             overflow: 'hidden',
             boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
             border: '1px solid rgba(255,255,255,0.06)',
@@ -80,6 +80,7 @@ function EditFormModal() {
             }}
           >
             <button
+              className="peg-tap-target"
               onClick={handleClose}
               style={{
                 background: 'rgba(255,255,255,0.06)',
@@ -105,7 +106,7 @@ function EditFormModal() {
           </div>
 
           {/* Content */}
-          <div style={{ overflow: 'auto', flex: 1, padding: '0 20px 20px' }}>
+          <div style={{ overflow: 'auto', flex: 1, padding: '0 var(--peg-pad-20) var(--peg-pad-20)' }}>
             <EditForm
               onValidate={onValidate}
               onCancel={handleClose}

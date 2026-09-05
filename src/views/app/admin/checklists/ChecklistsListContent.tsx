@@ -51,6 +51,7 @@ function Btn({
     <button
       onClick={onClick}
       title={title}
+      className="peg-tap-target"
       style={{
         width: '30px',
         height: '30px',
@@ -439,6 +440,7 @@ function ChecklistsListContent() {
               >
                 {/* Card header */}
                 <div
+                  className="peg-stack-mobile"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -538,6 +540,7 @@ function ChecklistsListContent() {
                   {/* Expand toggle */}
                   {c.items.length > 0 && (
                     <button
+                      className="peg-tap-target"
                       onClick={() =>
                         setExpandedId(isExpanded ? null : c.documentId)
                       }
@@ -567,6 +570,7 @@ function ChecklistsListContent() {
                 {/* Items preview */}
                 {c.items.length > 0 && (
                   <div
+                    className="peg-pad-mobile"
                     style={{
                       padding: '0 16px 14px 74px',
                       display: 'flex',
@@ -676,7 +680,7 @@ function ChecklistsListContent() {
           onClick={handleClose}
         >
           <div
-            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '560px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif' }}
+            style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '28px', width: '560px', maxWidth: '95vw', maxHeight: '90dvh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.25s ease', fontFamily: 'Inter, sans-serif' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
@@ -722,6 +726,7 @@ function ChecklistsListContent() {
                 </div>
                 <button
                   onClick={handleClose}
+                  className="peg-tap-target"
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
@@ -844,6 +849,7 @@ function ChecklistsListContent() {
                                 {/* Drag handle */}
                                 <div
                                   {...provided.dragHandleProps}
+                                  className="peg-tap-target"
                                   style={{
                                     color: 'rgba(255,255,255,0.2)',
                                     cursor: 'grab',
@@ -889,6 +895,7 @@ function ChecklistsListContent() {
                                 {/* Remove */}
                                 {formItems.length > 1 && (
                                   <button
+                                    className="peg-tap-target"
                                     onClick={() => removeItem(index)}
                                     style={{
                                       background: 'none',

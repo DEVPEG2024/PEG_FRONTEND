@@ -708,7 +708,7 @@ const ProductsList = () => {
               background: 'linear-gradient(160deg, #1a2f4a 0%, #111e30 100%)',
               border: '1.5px solid rgba(239,68,68,0.25)',
               borderRadius: '20px',
-              padding: '32px',
+              padding: 'var(--peg-pad-32)',
               maxWidth: '420px',
               width: '100%',
               boxShadow: '0 24px 64px rgba(0,0,0,0.6)',

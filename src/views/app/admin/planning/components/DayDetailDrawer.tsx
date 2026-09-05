@@ -26,10 +26,10 @@ const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick, on
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'flex-end', zIndex: 1000, fontFamily: 'Inter, sans-serif' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '500px', maxWidth: 'calc(100vw - 24px)', height: '100%', overflowY: 'auto', background: 'linear-gradient(160deg, rgba(18,22,34,0.99), rgba(11,14,21,0.99))', borderLeft: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, padding: '22px' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '500px', maxWidth: 'calc(100vw - 24px)', height: '100%', overflowY: 'auto', background: 'linear-gradient(160deg, rgba(18,22,34,0.99), rgba(11,14,21,0.99))', borderLeft: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`, padding: '22px', paddingBottom: 'calc(22px + var(--peg-safe-bottom))' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '4px' }}>
           <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800, margin: 0, textTransform: 'capitalize' }}>📋 {title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
+          <button className="peg-tap-target" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <TbX size={20} />
           </button>
         </div>
@@ -67,6 +67,7 @@ const DayDetailDrawer = ({ date, rows, projectsById, onClose, onProjectClick, on
                           <span style={{ flexShrink: 0, color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 700 }}>{formatBlocks(d.blocks)}</span>
                           {onEditEstimate && (
                             <button
+                              className="peg-tap-target"
                               onClick={() => onEditEstimate(d.documentId)}
                               aria-label={`Corriger la durée estimée de ${d.name}`}
                               title="Corriger la durée estimée"

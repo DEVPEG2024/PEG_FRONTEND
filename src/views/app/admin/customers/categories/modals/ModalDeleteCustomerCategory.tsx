@@ -45,6 +45,7 @@ function ModalDeleteCustomerCategory({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          padding: 'var(--peg-pad-16)',
           animation: 'fadeIn 0.2s ease-out',
         }}
       >
@@ -66,6 +67,7 @@ function ModalDeleteCustomerCategory({
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-12px', marginRight: '-8px' }}>
             <button
               onClick={handleCloseModal}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: 'none',
@@ -117,6 +119,7 @@ function ModalDeleteCustomerCategory({
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button
               onClick={handleCloseModal}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -141,6 +144,7 @@ function ModalDeleteCustomerCategory({
             </button>
             <button
               onClick={onDialogOk}
+              className="peg-tap-target"
               style={{
                 background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
                 border: 'none',

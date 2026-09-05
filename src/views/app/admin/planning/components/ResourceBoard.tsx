@@ -149,7 +149,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity, onDayClick, onAddProducer }
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '262px 1fr', background: 'linear-gradient(160deg, rgba(18,22,34,0.6), rgba(11,14,21,0.6))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '262px 1fr', background: 'linear-gradient(160deg, rgba(18,22,34,0.6), rgba(11,14,21,0.6))', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
         {/* ---- Colonne gauche : producteurs ---- */}
         <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ height: HEAD_H + (weekGroups ? WEEK_H : 0), padding: '0 16px', display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -190,7 +190,7 @@ const ResourceBoard = ({ rows, days, onEditCapacity, onDayClick, onAddProducer }
                   </div>
                 </div>
                 {onEditCapacity && !unassigned && (
-                  <button aria-label={`Régler la disponibilité de ${row.producerName}`} title="Régler la dispo / capacité" onClick={() => onEditCapacity(row)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
+                  <button className="peg-tap-target" aria-label={`Régler la disponibilité de ${row.producerName}`} title="Régler la dispo / capacité" onClick={() => onEditCapacity(row)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
                     <TbPencil size={13} />
                   </button>
                 )}

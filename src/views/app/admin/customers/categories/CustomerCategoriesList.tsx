@@ -11,7 +11,7 @@ import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiTag } from 'react-icons/h
 injectReducer('customerCategories', reducer);
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
-  <button title={title} onClick={onClick}
+  <button title={title} onClick={onClick} className="peg-tap-target"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
@@ -79,14 +79,14 @@ const CustomerCategoriesList = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingBottom: '40px' }}>
           {filtered.map((cat) => (
             <div key={cat.documentId}
-              style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
+              style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', transition: 'border-color 0.15s' }}
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
             >
               <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <HiTag size={16} style={{ color: '#6b9eff' }} />
               </div>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', flex: 1 }}>{cat.name}</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px', flex: 1, minWidth: '140px' }}>{cat.name}</span>
               <span style={{ background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)', borderRadius: '100px', padding: '2px 10px', color: '#6b9eff', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>
                 {cat.customers?.length ?? 0} client{(cat.customers?.length ?? 0) !== 1 ? 's' : ''}
               </span>

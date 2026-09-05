@@ -297,7 +297,7 @@ const ProductForm = (props: ProductFormProps) => {
     <form onSubmit={(e) => e.preventDefault()}>
       <FormContainer>
         {/* Step indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '20px', paddingTop: '12px' }}>
           {STEP_LABELS.map((label, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button type="button" onClick={() => setCurrentStep(i)} style={{
@@ -325,7 +325,7 @@ const ProductForm = (props: ProductFormProps) => {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px', alignItems: 'start' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px', alignItems: 'start' }}>
           {/* Left: fields for current step */}
           <div>
             <ProductFields
@@ -454,7 +454,7 @@ const ProductForm = (props: ProductFormProps) => {
         </div>
 
         {/* Footer with step navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               type="button"

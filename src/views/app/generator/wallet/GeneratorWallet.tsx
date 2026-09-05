@@ -30,11 +30,11 @@ const FILTERS: { value: string; label: string }[] = [
 ];
 
 const pageStyle: React.CSSProperties = {
-    padding: '24px',
+    padding: 'var(--peg-pad-24)',
     fontFamily: 'Inter, sans-serif',
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: 'var(--peg-gap-20)',
 };
 
 const GeneratorWallet = () => {
@@ -93,7 +93,7 @@ const GeneratorWallet = () => {
                 <h1
                     style={{
                         color: '#fff',
-                        fontSize: '24px',
+                        fontSize: 'var(--peg-fs-24)',
                         fontWeight: 700,
                         letterSpacing: '-0.02em',
                         margin: 0,
@@ -200,6 +200,7 @@ const GeneratorWallet = () => {
                             <button
                             type="button"
                             onClick={() => exportCommissionsCsv(filtered, generator?.name, { vatRegistered: generator?.vatRegistered })}
+                            className="peg-tap-target"
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                                 background: 'rgba(255,255,255,0.05)',
@@ -261,6 +262,7 @@ const GeneratorWallet = () => {
                     right={<button
                             type="button"
                             onClick={() => exportPayoutsCsv(payouts, generator?.name)}
+                            className="peg-tap-target"
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                                 background: 'rgba(255,255,255,0.05)',

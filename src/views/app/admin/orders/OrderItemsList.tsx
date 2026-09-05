@@ -66,6 +66,7 @@ const ActionBtn = ({ onClick, icon, color, title, disabled = false }: {
     onClick={onClick}
     disabled={disabled}
     title={title}
+    className="peg-tap-target"
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       width: '32px', height: '32px', borderRadius: '8px',
@@ -272,6 +273,7 @@ const OrderItemsList = () => {
               return (
                 <div
                   key={order.documentId}
+                  className="peg-stack-mobile"
                   style={{
                     background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
                     border: '1.5px solid rgba(255,255,255,0.07)',
@@ -422,7 +424,7 @@ const OrderItemsList = () => {
 
           {/* Pagination */}
           {pageCount > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', padding: '12px 4px' }}>
               <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>
                 {from}–{to} sur {total} commande{total > 1 ? 's' : ''}
               </span>
@@ -430,6 +432,7 @@ const OrderItemsList = () => {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  className="peg-tap-target"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)' }}
                 >
                   <HiChevronLeft size={16} />
@@ -448,6 +451,7 @@ const OrderItemsList = () => {
                       <button
                         key={p}
                         onClick={() => setCurrentPage(p as number)}
+                        className="peg-tap-target"
                         style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', background: currentPage === p ? 'rgba(47,111,237,0.25)' : 'rgba(255,255,255,0.05)', color: currentPage === p ? '#6b9eff' : 'rgba(255,255,255,0.5)' }}
                       >
                         {p}
@@ -457,6 +461,7 @@ const OrderItemsList = () => {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(pageCount, p + 1))}
                   disabled={currentPage === pageCount}
+                  className="peg-tap-target"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: currentPage === pageCount ? 'not-allowed' : 'pointer', color: currentPage === pageCount ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)' }}
                 >
                   <HiChevronRight size={16} />

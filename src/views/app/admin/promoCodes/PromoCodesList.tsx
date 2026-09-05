@@ -175,8 +175,11 @@ function PromoCodesList() {
         border: '1.5px solid rgba(255,255,255,0.07)',
         borderRadius: '16px', overflow: 'hidden',
       }}>
+        {/* Sous md le tableau défile horizontalement : empiler les lignes sans
+            leur en-tête donnait 7 valeurs sans savoir laquelle est laquelle. */}
+        <div className="peg-table-wrap">
         {/* Header */}
-        <div style={{
+        <div className="peg-table-min" style={{
           display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr 0.8fr 0.8fr 0.6fr 100px',
           padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
           gap: '8px',
@@ -198,7 +201,7 @@ function PromoCodesList() {
           </div>
         ) : (
           promoCodes.map((promo, i) => (
-            <div key={promo.documentId} style={{
+            <div key={promo.documentId} className="peg-table-min" style={{
               display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr 0.8fr 0.8fr 0.6fr 100px',
               padding: '12px 20px', alignItems: 'center', gap: '8px',
               borderBottom: i < promoCodes.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
@@ -236,13 +239,13 @@ function PromoCodesList() {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '4px' }}>
-                <button type="button" onClick={() => openEdit(promo)} style={{
+                <button type="button" onClick={() => openEdit(promo)} className="peg-tap-target" style={{
                   padding: '6px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)',
                   borderRadius: '8px', color: '#6b9eff', cursor: 'pointer', display: 'flex',
                 }}>
                   <HiPencil size={14} />
                 </button>
-                <button type="button" onClick={() => handleDelete(promo.documentId)} style={{
+                <button type="button" onClick={() => handleDelete(promo.documentId)} className="peg-tap-target" style={{
                   padding: '6px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
                   borderRadius: '8px', color: '#ef4444', cursor: 'pointer', display: 'flex',
                 }}>
@@ -252,6 +255,7 @@ function PromoCodesList() {
             </div>
           ))
         )}
+        </div>
       </div>
 
       {/* Modal */}
@@ -263,13 +267,13 @@ function PromoCodesList() {
           <div onClick={(e) => e.stopPropagation()} style={{
             background: 'linear-gradient(160deg, #1a2f4e 0%, #111d30 100%)',
             border: '1.5px solid rgba(255,255,255,0.1)',
-            borderRadius: '18px', padding: '24px 28px', width: '480px', maxWidth: '90vw',
+            borderRadius: '18px', padding: 'var(--peg-pad-24) 28px', width: '480px', maxWidth: '90vw',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: 0 }}>
                 {editingId ? 'Modifier le code promo' : 'Nouveau code promo'}
               </h3>
-              <button type="button" onClick={() => setShowModal(false)} style={{
+              <button type="button" onClick={() => setShowModal(false)} className="peg-tap-target" style={{
                 background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex',
               }}>
                 <HiX size={18} />
@@ -289,7 +293,7 @@ function PromoCodesList() {
             </div>
 
             {/* Type + Value */}
-            <div style={rowStyle}>
+            <div className="peg-stack-mobile" style={rowStyle}>
               <div>
                 <div style={labelStyle}>Type de remise</div>
                 <Select
@@ -310,7 +314,7 @@ function PromoCodesList() {
             </div>
 
             {/* Dates */}
-            <div style={rowStyle}>
+            <div className="peg-stack-mobile" style={rowStyle}>
               <div>
                 <div style={labelStyle}>Valide a partir du</div>
                 <Input

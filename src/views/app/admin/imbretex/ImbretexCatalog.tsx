@@ -130,15 +130,15 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
         background: 'linear-gradient(160deg, #1a2f4a 0%, #111e30 100%)',
         border: '1.5px solid rgba(47,111,237,0.2)',
         borderRadius: '20px',
-        padding: '32px',
-        maxWidth: '860px', width: '100%', maxHeight: '85vh',
+        padding: 'var(--peg-pad-32)',
+        maxWidth: '860px', width: '100%', maxHeight: '85dvh',
         overflow: 'auto',
         boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
         fontFamily: 'Inter, sans-serif',
       }} onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: 'var(--peg-gap-20)', marginBottom: '24px' }}>
           {image && (
             <img src={image} alt={product.reference}
               style={{
@@ -148,7 +148,7 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
               }}
             />
           )}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>
               {product.brands?.name}
             </p>
@@ -177,7 +177,7 @@ const ProductDetail = ({ product, priceStockMap, loadingPrices, onClose }: Produ
               </span>
             </div>
           </div>
-          <button onClick={onClose} style={{
+          <button className="peg-tap-target" onClick={onClose} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '8px', width: '36px', height: '36px',
             color: 'rgba(255,255,255,0.5)', fontSize: '18px', cursor: 'pointer',
@@ -356,6 +356,7 @@ const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavo
     >
       {/* Checkbox */}
       <div
+        className="peg-tap-target"
         onClick={(e) => { e.stopPropagation(); onToggleSelect(product.reference); }}
         style={{
           position: 'absolute', top: '8px', left: '8px', zIndex: 2,
@@ -371,6 +372,7 @@ const ImbretexProductCard = ({ product, onView, selected, onToggleSelect, isFavo
 
       {/* Favorite */}
       <div
+        className="peg-tap-target"
         onClick={(e) => { e.stopPropagation(); onToggleFavorite(product.reference); }}
         style={{
           position: 'absolute', top: '8px', right: '8px', zIndex: 2,
@@ -890,13 +892,14 @@ const ImbretexCatalog = () => {
       {/* Floating action bar */}
       {selectedRefs.size > 0 && (
         <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom))', left: '50%', transform: 'translateX(-50%)',
           zIndex: 900,
           background: 'linear-gradient(160deg, #1a2f4a 0%, #111e30 100%)',
           border: '1.5px solid rgba(47,111,237,0.3)',
           borderRadius: '14px',
           padding: '14px 24px',
-          display: 'flex', alignItems: 'center', gap: '16px',
+          maxWidth: 'calc(100vw - 24px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 'var(--peg-gap-16)',
           boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
           fontFamily: 'Inter, sans-serif',
         }}>
@@ -944,6 +947,7 @@ const ImbretexCatalog = () => {
             {importing ? `Import... ${importProgress}` : 'Importer dans PEG'}
           </button>
           <button
+            className="peg-tap-target"
             onClick={() => setSelectedRefs(new Set())}
             style={{
               background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',

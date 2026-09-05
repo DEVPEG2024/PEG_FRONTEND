@@ -57,7 +57,7 @@ const TAB_STATES = [
 ];
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
-  <button title={title} onClick={onClick}
+  <button title={title} onClick={onClick} className="peg-tap-target"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
@@ -191,7 +191,7 @@ const ExpensesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
-      <div style={{ paddingTop: '28px', paddingBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ paddingTop: '28px', paddingBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>Finance</p>
           <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
@@ -206,7 +206,7 @@ const ExpensesList = () => {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
         {[
           { label: 'Total dépenses', value: fmt(totalExpenses), icon: <HiOutlineBanknotes size={20} />, color: '#6b9eff' },
           { label: 'Payé', value: fmt(totalPaid), icon: <HiOutlineCheckCircle size={20} />, color: '#4ade80' },
@@ -265,7 +265,7 @@ const ExpensesList = () => {
             const cat = CAT_CFG[exp.category] ?? CAT_CFG.other;
             const status = STATUS_CFG[exp.status] ?? STATUS_CFG.pending;
             return (
-              <div key={exp.documentId}
+              <div key={exp.documentId} className="peg-stack-mobile"
                 style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}

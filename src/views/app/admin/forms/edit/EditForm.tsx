@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { AiOutlineSave } from 'react-icons/ai';
 import { HiOutlineEye, HiX } from 'react-icons/hi';
@@ -83,6 +84,7 @@ type Props = {
 };
 
 export default function EditForm({ onValidate, onCancel, fields, name }: Props) {
+  const { larger } = useResponsive();
   const [formName, setFormName] = useState(name);
   const [structure, setStructure] = useState<FormStructure>(() => parseStructure(fields));
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -200,6 +202,7 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
         style={{
           display: 'flex',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '10px',
           padding: '11px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -361,6 +364,7 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
 
         {/* Close */}
         <button
+          className="peg-tap-target"
           onClick={onCancel}
           style={{
             display: 'flex',
@@ -391,16 +395,16 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
 
       {/* ── Body ── */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: larger.md ? 'row' : 'column', flex: 1, overflow: larger.md ? 'hidden' : 'auto' }}>
           {/* Left: palette */}
           <Sidebar onAddField={addField} />
 
           {/* Center: banner + canvas */}
           <div
             style={{
-              flex: 1,
+              flex: larger.md ? 1 : '1 0 auto',
               overflowY: 'auto',
-              padding: '20px',
+              padding: 'var(--peg-pad-20)',
               background: 'rgba(10,18,30,0.96)',
             }}
           >
@@ -441,6 +445,7 @@ export default function EditForm({ onValidate, onCancel, fields, name }: Props) 
 function EmptyPanel() {
   return (
     <div
+      className="peg-full-mobile"
       style={{
         width: '272px',
         background: 'rgba(7,13,24,0.98)',

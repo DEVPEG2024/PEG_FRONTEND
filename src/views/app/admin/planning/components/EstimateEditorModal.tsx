@@ -74,10 +74,12 @@ const EstimateEditorModal = ({ item, updatedBy, onClose, onSaved }: Props) => {
         style={{
           width: '440px',
           maxWidth: 'calc(100vw - 32px)',
+          maxHeight: 'calc(100dvh - 32px)',
+          overflowY: 'auto',
           background: 'linear-gradient(160deg, rgba(22,28,43,0.98), rgba(13,16,24,0.98))',
           border: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`,
           borderRadius: '16px',
-          padding: '20px',
+          padding: 'var(--peg-pad-20)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
@@ -85,7 +87,7 @@ const EstimateEditorModal = ({ item, updatedBy, onClose, onSaved }: Props) => {
             <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: 800, margin: 0 }}>Durée estimée</h3>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '2px 0 0' }}>{item.project.name}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
+          <button className="peg-tap-target" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <TbX size={20} />
           </button>
         </div>

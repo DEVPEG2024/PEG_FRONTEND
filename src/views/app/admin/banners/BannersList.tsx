@@ -176,6 +176,7 @@ const BannerCard = ({
       </button>
       <button
         onClick={() => onDelete(banner)}
+        className="peg-tap-target"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
@@ -258,6 +259,7 @@ const BannersList = () => {
         </div>
         <button
           onClick={() => dispatch(setNewBannerDialog(true))}
+          className="peg-tap-target"
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
@@ -293,7 +295,7 @@ const BannersList = () => {
         </div>
 
         {/* Texte explicatif */}
-        <div style={{ flex: 1, minWidth: '240px' }}>
+        <div style={{ flex: 1, minWidth: 'min(240px, 100%)' }}>
           <span style={{
             display: 'inline-block', background: 'rgba(234,179,8,0.14)', border: '1px solid rgba(234,179,8,0.35)',
             borderRadius: '100px', padding: '2px 10px', color: '#eab308',
@@ -315,6 +317,7 @@ const BannersList = () => {
         {/* Action : modifier / définir */}
         <button
           onClick={handleEditNewCustomerBanner}
+          className="peg-tap-target"
           style={{
             display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0,
             background: 'linear-gradient(90deg, #eab308, #ca8a04)', border: 'none',
@@ -356,7 +359,7 @@ const BannersList = () => {
       {/* Grille de cartes */}
       <Loading loading={false}>
         {banners.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '16px' }}>
             {banners.map((banner) => (
               <BannerCard
                 key={banner.documentId}

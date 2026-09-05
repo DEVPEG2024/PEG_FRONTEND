@@ -293,7 +293,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     onClick={e => e.stopPropagation()}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto"
                 >
                     {/* Header */}
                     <div className={`sticky top-0 z-10 px-6 pt-6 pb-4 ${stage.bg} rounded-t-2xl`}>
@@ -316,7 +316,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                                     />
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-1 rounded-full hover:bg-black/10 transition-colors shrink-0">
+                            <button onClick={onClose} className="peg-tap-target p-1 rounded-full hover:bg-black/10 transition-colors shrink-0">
                                 <HiOutlineX className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
@@ -345,7 +345,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                         </div>
 
                         {/* 2 cols: contact infos */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineMail className="inline w-3 h-3 mr-1" />Email
@@ -367,7 +367,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                         </div>
 
                         {/* Value + probability */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineCurrencyEuro className="inline w-3 h-3 mr-1" />Valeur estimée (€)
@@ -389,7 +389,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                         </div>
 
                         {/* Source + Priority */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Source</label>
                                 <select value={form.source} onChange={e => set('source', e.target.value as LeadSource)}
@@ -419,7 +419,7 @@ function LeadModal({ lead, onSave, onDelete, onClose }: {
                         </div>
 
                         {/* Next action */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                                     <HiOutlineLightningBolt className="inline w-3 h-3 mr-1" />Prochaine action
@@ -501,7 +501,7 @@ function ImportPreviewModal({ rows, duplicates, onConfirm, onClose }: {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
                     onClick={e => e.stopPropagation()}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80dvh] flex flex-col"
                 >
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
@@ -514,7 +514,7 @@ function ImportPreviewModal({ rows, duplicates, onConfirm, onClose }: {
                                 )}
                             </p>
                         </div>
-                        <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <button onClick={onClose} className="peg-tap-target p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                             <HiOutlineX className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>
@@ -807,7 +807,7 @@ const LeadsPage = () => {
         <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
             {/* ── Header ── */}
             <div className="px-6 pt-6 pb-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-5 flex-wrap md:flex-nowrap gap-3 md:gap-0">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Leads & Prospection</h1>
                         <p className="text-sm text-gray-400 mt-0.5">{leads.length} leads · {fmtEur(leads.reduce((s, l) => s + l.value, 0))} en valeur totale</p>
@@ -862,7 +862,7 @@ const LeadsPage = () => {
                 </div>
 
                 {/* KPIs */}
-                <div className="grid grid-cols-4 gap-4 mb-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
                     <KpiCard label="Pipeline pondéré" value={fmtEur(kpis.pipeline)} sub="valeur × probabilité" icon={<HiOutlineCurrencyEuro className="w-5 h-5 text-blue-600" />} accent="bg-blue-500" />
                     <KpiCard label="Total leads" value={String(kpis.total)} sub={`${kpis.won} gagnés`} icon={<HiOutlineUser className="w-5 h-5 text-purple-600" />} accent="bg-purple-500" />
                     <KpiCard label="Taux de conversion" value={`${kpis.conversion}%`} sub="leads gagnés / closés" icon={<HiOutlineOfficeBuilding className="w-5 h-5 text-emerald-600" />} accent="bg-emerald-500" />
@@ -870,7 +870,7 @@ const LeadsPage = () => {
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
                     {/* Search */}
                     <div className="relative flex-1 max-w-xs">
                         <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -912,13 +912,13 @@ const LeadsPage = () => {
                     <div className="ml-auto flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-1 gap-0.5">
                         <button
                             onClick={() => setView('kanban')}
-                            className={`p-2 rounded-lg transition-all ${view === 'kanban' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`peg-tap-target p-2 rounded-lg transition-all ${view === 'kanban' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             <HiOutlineViewBoards className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setView('list')}
-                            className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`peg-tap-target p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             <HiOutlineViewList className="w-4 h-4" />
                         </button>
@@ -954,7 +954,7 @@ const LeadsPage = () => {
                                 exit={{ opacity: 0 }}
                                 className="p-6"
                             >
-                                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                                <div className="peg-table-wrap bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">

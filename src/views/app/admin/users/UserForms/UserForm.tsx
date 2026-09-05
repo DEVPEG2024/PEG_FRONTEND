@@ -99,6 +99,10 @@ const UserForm = (props: UserFormProps) => {
     }
   };
 
+  // Grille figée volontairement : une des trois lignes n'a qu'UN enfant selon le
+  // rôle choisi, et « auto-fit » collapse les pistes vides — l'unique champ
+  // passerait de la demi-largeur à la pleine largeur sur desktop. L'empilement
+  // mobile est délégué à .peg-stack-mobile, qui n'agit que sous md.
   const rowStyle: React.CSSProperties = {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '4px',
   };
@@ -126,10 +130,10 @@ const UserForm = (props: UserFormProps) => {
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>
+      <div className="peg-scroll-x" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>
         {STEP_LABELS.map((label, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button type="button" onClick={() => {
+            <button type="button" className="peg-tap-target" onClick={() => {
               if (i > currentStep && !validateStep(currentStep)) return;
               setCurrentStep(i);
             }} style={{
@@ -159,7 +163,7 @@ const UserForm = (props: UserFormProps) => {
 
       <FormContainer>
         {/* Card container */}
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           border: '1.5px solid rgba(255,255,255,0.07)',
           borderRadius: '16px',
@@ -181,7 +185,7 @@ const UserForm = (props: UserFormProps) => {
                 </div>
               </div>
 
-              <div style={rowStyle}>
+              <div className="peg-stack-mobile" style={rowStyle}>
                 <FormItem label={t('lastname')} invalid={!!errors.lastName} errorMessage={errors.lastName}>
                   <Input
                     type="text"
@@ -202,7 +206,7 @@ const UserForm = (props: UserFormProps) => {
                 </FormItem>
               </div>
 
-              <div style={{ ...rowStyle, marginTop: '8px' }}>
+              <div className="peg-stack-mobile" style={{ ...rowStyle, marginTop: '8px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                     <HiOutlineMail size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
@@ -251,7 +255,7 @@ const UserForm = (props: UserFormProps) => {
                 </div>
               </div>
 
-              <div style={rowStyle}>
+              <div className="peg-stack-mobile" style={rowStyle}>
                 <FormItem label="Role" invalid={!!errors.role} errorMessage={errors.role}>
                   <Select
                     options={roles}
@@ -307,11 +311,11 @@ const UserForm = (props: UserFormProps) => {
 
         {/* Footer */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', gap: '10px',
+          display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px',
           padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '16px',
         }}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="button" onClick={() => onDiscard?.()} style={{
+            <button type="button" className="peg-tap-target" onClick={() => onDiscard?.()} style={{
               padding: '10px 20px', background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
               color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600,
@@ -320,7 +324,7 @@ const UserForm = (props: UserFormProps) => {
               {t('cancel')}
             </button>
             {currentStep > 0 && (
-              <button type="button" onClick={() => setCurrentStep((s) => s - 1)} style={{
+              <button type="button" className="peg-tap-target" onClick={() => setCurrentStep((s) => s - 1)} style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '10px 18px', background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
@@ -333,7 +337,7 @@ const UserForm = (props: UserFormProps) => {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {currentStep < totalSteps - 1 ? (
-              <button type="button" onClick={handleNext} style={{
+              <button type="button" className="peg-tap-target" onClick={handleNext} style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '10px 22px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
                 border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px',
@@ -343,7 +347,7 @@ const UserForm = (props: UserFormProps) => {
                 Suivant <HiArrowRight size={14} />
               </button>
             ) : (
-              <button type="button" onClick={handleSubmit} disabled={submitting} style={{
+              <button type="button" className="peg-tap-target" onClick={handleSubmit} disabled={submitting} style={{
                 display: 'flex', alignItems: 'center', gap: '7px',
                 padding: '10px 22px',
                 background: submitting ? 'rgba(34,197,94,0.4)' : 'linear-gradient(90deg, #22c55e, #16a34a)',

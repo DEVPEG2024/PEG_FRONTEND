@@ -186,6 +186,7 @@ function Btn({
 }) {
   return (
     <button
+      className="peg-tap-target"
       onClick={onClick}
       title={title}
       style={{

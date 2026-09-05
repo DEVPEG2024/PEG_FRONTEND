@@ -206,6 +206,7 @@ const PoolProjectsList = () => {
             <button
               key={tab.key}
               onClick={() => setUrgencyFilter(tab.key)}
+              className="peg-tap-target"
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 background: active ? tab.bg : 'transparent',

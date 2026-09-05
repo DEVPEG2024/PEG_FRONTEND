@@ -121,10 +121,10 @@ const ProducerForm = (props: ProducerFormProps) => {
         </div>
 
         {/* Step indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '20px', paddingTop: '4px', flexWrap: 'wrap' }}>
           {STEP_LABELS.map((label, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button type="button" onClick={() => setCurrentStep(i)} style={{
+              <button type="button" onClick={() => setCurrentStep(i)} className="peg-tap-target" style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: i === currentStep ? '7px 16px' : '7px 12px',
                 borderRadius: '100px', border: 'none', cursor: 'pointer',
@@ -189,11 +189,12 @@ const ProducerForm = (props: ProducerFormProps) => {
         )}
 
         {/* Footer with step navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', padding: '20px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '8px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               type="button"
               onClick={() => onDiscard?.()}
+              className="peg-tap-target"
               style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >
               Annuler
@@ -202,6 +203,7 @@ const ProducerForm = (props: ProducerFormProps) => {
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s - 1)}
+                className="peg-tap-target"
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
               >
                 <HiArrowLeft size={14} /> Retour
@@ -213,6 +215,7 @@ const ProducerForm = (props: ProducerFormProps) => {
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s + 1)}
+                className="peg-tap-target"
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.35)', fontFamily: 'Inter, sans-serif' }}
               >
                 Suivant <HiArrowRight size={14} />
@@ -221,6 +224,7 @@ const ProducerForm = (props: ProducerFormProps) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
+                className="peg-tap-target"
                 style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 22px', background: isSubmitting ? 'rgba(34,197,94,0.4)' : 'linear-gradient(90deg, #22c55e, #16a34a)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(34,197,94,0.35)', fontFamily: 'Inter, sans-serif' }}
               >
                 <AiOutlineSave size={15} />

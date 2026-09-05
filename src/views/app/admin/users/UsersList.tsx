@@ -20,7 +20,7 @@ const AVATAR_COLORS = ['rgba(47,111,237,0.3)', 'rgba(168,85,247,0.3)', 'rgba(34,
 const avatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title, disabled }: any) => (
-  <button title={title} onClick={onClick} disabled={disabled}
+  <button title={title} onClick={onClick} disabled={disabled} className="peg-tap-target"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder } }}
     onMouseLeave={(e) => { if (!disabled) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}
@@ -87,7 +87,7 @@ const UsersList = () => {
             const missing = isUserMissingInfos(user)
             return (
               <div key={user.documentId}
-                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: `1.5px solid ${user.blocked ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
+                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: `1.5px solid ${user.blocked ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', transition: 'border-color 0.15s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = user.blocked ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.14)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = user.blocked ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)')}
               >
@@ -101,7 +101,7 @@ const UsersList = () => {
                 </div>
 
                 {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: '160px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{fullName}</span>
                     <span style={{ background: roleCfg.bg, border: `1px solid ${roleCfg.border}`, borderRadius: '100px', padding: '1px 8px', color: roleCfg.color, fontSize: '11px', fontWeight: 600 }}>{roleCfg.label}</span>

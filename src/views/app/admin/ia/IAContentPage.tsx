@@ -167,7 +167,7 @@ const IAContentPage = () => {
     : '';
 
   return (
-    <div style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
+    <div className="peg-pad-mobile" style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100dvh' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
@@ -183,9 +183,9 @@ const IAContentPage = () => {
       </div>
 
       {/* Input area */}
-      <div style={{ ...PANEL, padding: '24px', marginBottom: '20px' }}>
+      <div style={{ ...PANEL, padding: 'var(--peg-pad-24)', marginBottom: '20px' }}>
         <label style={labelStyle}>Nom du produit</label>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <input
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
@@ -275,7 +275,7 @@ const IAContentPage = () => {
             color="#60a5fa"
             copyText={content.sellingPoints.map((s) => `• ${s}`).join('\n')}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {content.sellingPoints.map((point, i) => (
                 <div
                   key={i}

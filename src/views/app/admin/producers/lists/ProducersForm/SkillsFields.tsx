@@ -66,7 +66,7 @@ const divider: React.CSSProperties = {
 const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsProps) => {
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>Compétences & Spécialités</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           Définissez les domaines d'expertise et les labels du producteur.
@@ -98,7 +98,7 @@ const SkillsFields = ({ control, errors, productCategoryOptions }: SkillsFieldsP
         <div style={divider} />
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Forces & Faiblesses</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>Points forts</label>
             <Controller

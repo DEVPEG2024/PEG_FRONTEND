@@ -306,7 +306,7 @@ const PlanningPage = () => {
       ) : (
         <>
           {/* ---- KPIs (les 3 cartes de risque filtrent le board) ---- */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(210px, 100%), 1fr))', gap: '14px', marginBottom: '20px' }}>
             <KpiCard
               icon={<TbClockExclamation size={16} />} label="🔴 En retard" value={String(data.counts.late)}
               color={RISK_COLOR.late} caption="deadline déjà dépassée 😬" series={data.series.late}
@@ -377,7 +377,7 @@ const PlanningPage = () => {
           />
 
           {/* ---- Bas : prévisionnel | actions | à risque ---- */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '16px', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(330px, 100%), 1fr))', gap: 'var(--peg-gap-16)', alignItems: 'start' }}>
             <div style={panel}>
               {sectionTitle(
                 <TbActivity size={16} color={PLANNING_ACCENT} />,

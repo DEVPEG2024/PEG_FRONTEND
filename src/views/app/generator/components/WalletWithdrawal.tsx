@@ -114,6 +114,8 @@ const Modal = ({
             alignItems: 'center',
             justifyContent: 'center',
             padding: '16px',
+            paddingTop: 'calc(16px + var(--peg-safe-top))',
+            paddingBottom: 'calc(16px + var(--peg-safe-bottom))',
         }}
         role="dialog"
         aria-modal="true"
@@ -121,6 +123,7 @@ const Modal = ({
     >
         <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
         <div
+            className="peg-pad-mobile"
             style={{
                 position: 'relative',
                 width: '100%',
@@ -129,8 +132,9 @@ const Modal = ({
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '16px',
                 padding: '26px',
-                maxHeight: '90vh',
+                maxHeight: '90dvh',
                 overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
                 fontFamily: 'Inter, sans-serif',
             }}
         >
@@ -140,6 +144,7 @@ const Modal = ({
                     type="button"
                     onClick={onClose}
                     aria-label="Fermer"
+                    className="peg-tap-target"
                     style={{
                         background: 'rgba(255,255,255,0.06)',
                         border: '1px solid rgba(255,255,255,0.1)',
@@ -285,6 +290,7 @@ const WalletWithdrawal = ({
                             setWithdrawOpen(true);
                         }}
                         disabled={!canWithdraw}
+                        className="peg-tap-target"
                         style={primaryButton(!canWithdraw)}
                     >
                         <TbCash size={16} />
@@ -376,6 +382,7 @@ const WalletWithdrawal = ({
                         setIban('');
                         setBankOpen(true);
                     }}
+                    className="peg-tap-target"
                     style={ghostButton}
                 >
                     <TbPencil size={14} />
@@ -431,6 +438,7 @@ const WalletWithdrawal = ({
                                     <button
                                         type="button"
                                         onClick={() => cancelRequest(r.documentId)}
+                                        className="peg-tap-target"
                                         style={{ ...ghostButton, padding: '5px 10px', fontSize: '12px' }}
                                     >
                                         Annuler
@@ -479,7 +487,7 @@ const WalletWithdrawal = ({
                                 placeholder="BNPAFRPP"
                             />
                         </div>
-                        <button type="button" onClick={saveBank} disabled={savingBank} style={primaryButton(savingBank)}>
+                        <button type="button" onClick={saveBank} disabled={savingBank} className="peg-tap-target" style={primaryButton(savingBank)}>
                             {savingBank ? 'Enregistrement…' : 'Enregistrer'}
                         </button>
                     </div>
@@ -569,6 +577,7 @@ const WalletWithdrawal = ({
                         <button
                             type="button"
                             onClick={() => setFull(true)}
+                            className="peg-tap-target"
                             style={{
                                 ...ghostButton,
                                 flex: 1,
@@ -583,6 +592,7 @@ const WalletWithdrawal = ({
                         <button
                             type="button"
                             onClick={() => setFull(false)}
+                            className="peg-tap-target"
                             style={{
                                 ...ghostButton,
                                 flex: 1,
@@ -621,6 +631,7 @@ const WalletWithdrawal = ({
                         type="button"
                         onClick={submitRequest}
                         disabled={submitting || (mode === 'bank_transfer' && !bank.filled)}
+                        className="peg-tap-target"
                         style={{
                             ...primaryButton(submitting || (mode === 'bank_transfer' && !bank.filled)),
                             width: '100%',

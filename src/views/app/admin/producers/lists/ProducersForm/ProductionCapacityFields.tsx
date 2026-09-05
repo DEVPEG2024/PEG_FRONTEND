@@ -56,7 +56,7 @@ const divider: React.CSSProperties = {
 const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsProps) => {
   return (
     <div style={cardWrap}>
-      <div style={cardInner}>
+      <div className="peg-pad-mobile" style={cardInner}>
         <p style={sectionTitle}>Capacité de Production</p>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginBottom: '16px', marginTop: '-6px' }}>
           Renseignez les capacités de production et les délais de livraison.
@@ -64,7 +64,7 @@ const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsP
 
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Volumes de commande</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>Quantité minimale</label>
             <Controller
@@ -112,7 +112,7 @@ const ProductionCapacityFields = ({ control, errors }: ProductionCapacityFieldsP
         <div style={divider} />
         <p style={{ ...sectionTitle, marginBottom: '12px' }}>Délais de livraison</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
           <div>
             <label style={fieldLabel}>Délai standard</label>
             <Controller

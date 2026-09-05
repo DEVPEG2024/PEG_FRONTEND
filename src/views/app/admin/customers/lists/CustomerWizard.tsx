@@ -321,11 +321,11 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
         style={{
           width: '560px',
           maxWidth: '95vw',
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           overflow: 'auto',
           background: 'linear-gradient(160deg, #1a2d47 0%, #0f1c2e 100%)',
           borderRadius: '20px',
-          padding: '32px',
+          padding: 'var(--peg-pad-32)',
           position: 'relative',
           boxShadow:
             '0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
@@ -335,6 +335,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
       >
         <button
           onClick={handleClose}
+          className="peg-tap-target"
           style={{
             position: 'absolute',
             top: '16px',
@@ -479,7 +480,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '12px',
                 marginBottom: '12px',
               }}
@@ -515,6 +516,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             >
               <button
                 onClick={handleClose}
+                className="peg-tap-target"
                 style={{
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -537,6 +539,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
                   }
                   setStep(1);
                 }}
+                className="peg-tap-target"
                 style={{
                   padding: '10px 24px',
                   borderRadius: '10px',
@@ -636,7 +639,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: '10px',
                 marginBottom: '12px',
               }}
@@ -679,7 +682,9 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: isFrance ? '1fr 1fr' : '1fr',
+                gridTemplateColumns: isFrance
+                  ? 'repeat(auto-fit, minmax(200px, 1fr))'
+                  : '1fr',
                 gap: '10px',
                 marginBottom: '12px',
               }}
@@ -789,10 +794,18 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             </div>
 
             {/* Options */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '4px' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '10px',
+                marginBottom: '4px',
+              }}
+            >
               <div
                 style={{
                   flex: 1,
+                  minWidth: '150px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
@@ -834,6 +847,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
               <div
                 style={{
                   flex: 1,
+                  minWidth: '150px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
@@ -883,6 +897,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             >
               <button
                 onClick={() => setStep(0)}
+                className="peg-tap-target"
                 style={{
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -902,6 +917,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
               </button>
               <button
                 onClick={() => setStep(2)}
+                className="peg-tap-target"
                 style={{
                   padding: '10px 24px',
                   borderRadius: '10px',
@@ -1047,7 +1063,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '4px 16px',
                 }}
               >
@@ -1159,6 +1175,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
             >
               <button
                 onClick={() => setStep(1)}
+                className="peg-tap-target"
                 style={{
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -1179,6 +1196,7 @@ const CustomerWizard = ({ open, onClose, customer }: Props) => {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
+                className="peg-tap-target"
                 style={{
                   padding: '12px 28px',
                   borderRadius: '12px',

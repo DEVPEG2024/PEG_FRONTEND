@@ -154,9 +154,9 @@ const LogoPlacementEditor = ({ productImageUrl, logoFile, onConfirm, onBack }: L
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--peg-gap-24)', flexWrap: 'wrap' }}>
         {/* Canvas */}
-        <div ref={containerRef} style={{ flex: '1 1 400px', minWidth: '300px' }}>
+        <div ref={containerRef} style={{ flex: '1 1 400px', minWidth: 'min(300px, 100%)' }}>
           <div style={{
             background: '#fff',
             borderRadius: '12px',
@@ -181,7 +181,7 @@ const LogoPlacementEditor = ({ productImageUrl, logoFile, onConfirm, onBack }: L
         </div>
 
         {/* Controls */}
-        <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="peg-full-mobile" style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', gap: 'var(--peg-gap-20)' }}>
           <div style={{
             background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
             border: '1px solid rgba(255,255,255,0.07)',

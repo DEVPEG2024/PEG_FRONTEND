@@ -120,7 +120,7 @@ const DashboardProducer = () => {
   // État de chargement (évite l'écran blanc pendant le fetch producteur)
   if (loading) {
     return (
-      <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ padding: 'var(--peg-pad-32)', display: 'flex', flexDirection: 'column', gap: 'var(--peg-gap-16)' }}>
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} style={{ height: '80px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
         ))}
@@ -163,7 +163,7 @@ const DashboardProducer = () => {
         </div>
 
         {/* Welcome header */}
-        <div style={{
+        <div className="peg-pad-mobile" style={{
           background: 'linear-gradient(180deg, #0d1b2e 0%, #0a1628 100%)',
           padding: '28px 32px 24px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -218,7 +218,7 @@ const DashboardProducer = () => {
                   </h3>
                 </div>
                 <Link to="/producer/pool">
-                  <button style={{
+                  <button className="peg-tap-target" style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: 'linear-gradient(90deg, #7c3aed, #5b21b6)',
                     border: 'none', borderRadius: '10px',
@@ -297,7 +297,7 @@ const DashboardProducer = () => {
                   <HiOutlineClipboardList size={48} style={{ color: 'rgba(255,255,255,0.12)', margin: '0 auto 12px' }} />
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>Aucun projet en cours</p>
                   <Link to="/producer/pool" style={{ textDecoration: 'none' }}>
-                    <button style={{
+                    <button className="peg-tap-target" style={{
                       marginTop: '16px',
                       display: 'inline-flex', alignItems: 'center', gap: '6px',
                       background: 'rgba(139,92,246,0.15)',

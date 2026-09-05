@@ -195,7 +195,7 @@ const TransactionsList = () => {
               <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/65">
                 Solde disponible
               </div>
-              <div className="text-5xl font-extrabold tracking-tight text-white tabular-nums">
+              <div className="text-4xl md:text-5xl font-extrabold tracking-tight text-white tabular-nums">
                 {fmtEur(amount)}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -217,7 +217,7 @@ const TransactionsList = () => {
                     'Fonctionnalité à venir — votre gestionnaire sera notifié par email.'
                   )
                 }
-                className="rounded-xl border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
+                className="peg-tap-target rounded-xl border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
               >
                 Demander un retrait →
               </button>
@@ -236,7 +236,7 @@ const TransactionsList = () => {
         </div>
 
         {/* ══ KPI CARDS ══ */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:grid-cols-4">
           {(
             [
               {

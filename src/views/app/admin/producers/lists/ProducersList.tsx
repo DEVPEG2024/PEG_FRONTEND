@@ -18,7 +18,7 @@ const avatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_
 const initials = (name: string) => name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
-  <button title={title} onClick={onClick}
+  <button title={title} onClick={onClick} className="peg-tap-target"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
@@ -46,7 +46,7 @@ const ProducersList = () => {
             Producteurs <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '16px', fontWeight: 500 }}>({total})</span>
           </h2>
         </div>
-        <button onClick={() => navigate(PRODUCERS_NEW)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={() => navigate(PRODUCERS_NEW)} className="peg-tap-target" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', border: 'none', borderRadius: '10px', padding: '10px 18px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(47,111,237,0.4)', fontFamily: 'Inter, sans-serif' }}>
           <HiPlus size={16} /> Nouveau producteur
         </button>
       </div>
@@ -77,14 +77,14 @@ const ProducersList = () => {
             const name = p?.name ?? '?'
             return (
               <div key={p.documentId}
-                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: `1.5px solid ${p.active === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s', opacity: p.active === false ? 0.7 : 1 }}
+                style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: `1.5px solid ${p.active === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', transition: 'border-color 0.15s', opacity: p.active === false ? 0.7 : 1 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = p.active === false ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.14)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = p.active === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)')}
               >
                 <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: avatarColor(name), border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{initials(name)}</span>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: '180px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>{name}</span>
                     {p?.producerCategory?.name && (

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight,
     HiOutlineX, HiOutlineTrash, HiOutlineSearch, HiOutlineDownload,
-    HiOutlineBell, HiOutlineRefresh, HiOutlineLink,
+    HiOutlineBell, HiOutlineRefresh, HiOutlineLink, HiOutlineMenu,
 } from 'react-icons/hi'
 import { BsCalendar3, BsGoogle } from 'react-icons/bs'
 import { unwrapData } from '@/utils/serviceHelper'
@@ -324,13 +324,13 @@ function MiniCalendar({ current, selected, onChange }: { current: Dayjs; selecte
     return (
         <div className="select-none">
             <div className="flex items-center justify-between mb-3">
-                <button onClick={() => setMini(mini.subtract(1, 'month'))} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => setMini(mini.subtract(1, 'month'))} className="peg-tap-target p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <HiOutlineChevronLeft className="w-4 h-4 text-gray-500" />
                 </button>
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 capitalize">
                     {mini.format('MMMM YYYY')}
                 </span>
-                <button onClick={() => setMini(mini.add(1, 'month'))} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button onClick={() => setMini(mini.add(1, 'month'))} className="peg-tap-target p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <HiOutlineChevronRight className="w-4 h-4 text-gray-500" />
                 </button>
             </div>
@@ -555,7 +555,7 @@ function MonthView({ date, events, onDayClick, onEventClick, onMonthDragStart, o
                             onDragOver={(e) => { if (day) e.preventDefault() }}
                             onDrop={(e) => { if (day) onMonthDrop(e, day) }}
                             className={`
-                                border-b border-r border-gray-100 dark:border-gray-700/60 p-1.5 min-h-0 overflow-hidden
+                                border-b border-r border-gray-100 dark:border-gray-700/60 p-1.5 max-md:p-0.5 min-h-0 overflow-hidden
                                 ${day ? 'cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-700/30' : ''}
                                 ${!isCurrentMonth ? 'bg-gray-50/50 dark:bg-gray-800/30' : ''}
                                 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-400' : ''}
@@ -652,8 +652,8 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
     }, [slotDragEnd, onSlotRangeSelect, onSlotClick])
 
     return (
-        <div className="flex flex-col h-full overflow-hidden select-none">
-            <div className="grid grid-cols-8 border-b border-gray-100 dark:border-gray-700 shrink-0">
+        <div className="flex flex-col h-full md:overflow-hidden max-md:overflow-x-auto max-md:overflow-y-hidden select-none">
+            <div className="grid grid-cols-8 border-b border-gray-100 dark:border-gray-700 shrink-0 max-md:min-w-[640px]">
                 <div className="py-2" />
                 {weekDays.map((d) => {
                     const isToday = sameDay(d, dayjs())
@@ -668,7 +668,7 @@ function WeekView({ date, events, onSlotClick, onEventClick, onPointerDragStart,
                     )
                 })}
             </div>
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto flex-1 max-md:min-w-[640px]">
                 <div className="grid grid-cols-8 relative">
                     <div>
                         {HOURS.map((h) => (
@@ -895,7 +895,7 @@ function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelet
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto"
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90dvh] overflow-y-auto"
                 >
                     {/* Header */}
                     <div className={`px-6 pt-6 pb-4 ${cat.bg}`}>
@@ -904,7 +904,7 @@ function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelet
                                 <span className={`w-2 h-2 rounded-full ${cat.dot}`} />
                                 <span className={`text-xs font-semibold uppercase tracking-wider ${cat.color}`}>{cat.label}</span>
                             </div>
-                            <button onClick={onClose} className="p-1 rounded-full hover:bg-black/10 transition-colors">
+                            <button onClick={onClose} className="peg-tap-target p-1 rounded-full hover:bg-black/10 transition-colors">
                                 <HiOutlineX className="w-4 h-4 text-gray-500" />
                             </button>
                         </div>
@@ -952,7 +952,7 @@ function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelet
                         </div>
 
                         {/* Dates */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Début</label>
                                 <input
@@ -974,7 +974,7 @@ function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelet
                         </div>
 
                         {/* Recurrence */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3">
                             <div>
                                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Récurrence</label>
                                 <select
@@ -1093,7 +1093,7 @@ function GoogleCalendarModal({ onClose, onExportICS }: { onClose: () => void; on
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 max-md:items-start max-md:overflow-y-auto"
             onClick={onClose}
         >
             <motion.div
@@ -1108,7 +1108,7 @@ function GoogleCalendarModal({ onClose, onExportICS }: { onClose: () => void; on
                             <BsGoogle className="w-5 h-5 text-red-500" />
                             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Google Agenda</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button onClick={onClose} className="peg-tap-target p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                             <HiOutlineX className="w-4 h-4 text-gray-500" />
                         </button>
                     </div>
@@ -1184,6 +1184,8 @@ const CalendarPage = () => {
     })
     const [googleModal, setGoogleModal] = useState(false)
     const [direction, setDirection] = useState(0)
+    // Affichage seul : sous md le panneau latéral est replié derrière un bouton.
+    const [panelOpen, setPanelOpen] = useState(false)
 
     // ─── Drag & Drop state ──────────────────────────────────────────────────
     const dragRef = useRef<DragState | null>(null)
@@ -1707,7 +1709,7 @@ const CalendarPage = () => {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <div className="flex h-screen peg-dvh items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="text-center space-y-3">
                     <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
                     <p className="text-sm text-gray-500">Chargement du calendrier...</p>
@@ -1717,9 +1719,9 @@ const CalendarPage = () => {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-screen peg-dvh overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
             {/* ── Sidebar ── */}
-            <aside className="w-56 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col p-4 gap-4 overflow-y-auto">
+            <aside className={`w-56 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col p-4 gap-4 overflow-y-auto max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-30 max-md:w-64 max-md:max-w-[85vw] max-md:shadow-2xl ${panelOpen ? '' : 'max-md:hidden'}`}>
                 {/* Logo */}
                 <div className="flex items-center gap-2 px-1">
                     <BsCalendar3 className="w-5 h-5 text-blue-600" />
@@ -1812,11 +1814,26 @@ const CalendarPage = () => {
                 </div>
             </aside>
 
+            {panelOpen && (
+                <div
+                    onClick={() => setPanelOpen(false)}
+                    className="absolute inset-0 z-20 bg-black/40 md:hidden"
+                />
+            )}
+
             {/* ── Main ── */}
             <main className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 {/* Toolbar */}
-                <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0">
+                <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0 max-md:px-3 max-md:flex-wrap max-md:gap-2">
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setPanelOpen((o) => !o)}
+                            aria-label="Panneau du calendrier"
+                            aria-expanded={panelOpen}
+                            className="flex md:hidden items-center justify-center w-11 h-11 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            <HiOutlineMenu className="w-5 h-5 text-gray-500" />
+                        </button>
                         <button
                             onClick={goToday}
                             className="px-4 py-1.5 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
@@ -1824,10 +1841,10 @@ const CalendarPage = () => {
                             Aujourd'hui
                         </button>
                         <div className="flex items-center gap-1">
-                            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <button onClick={() => navigate(-1)} className="peg-tap-target p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <HiOutlineChevronLeft className="w-4 h-4 text-gray-500" />
                             </button>
-                            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <button onClick={() => navigate(1)} className="peg-tap-target p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <HiOutlineChevronRight className="w-4 h-4 text-gray-500" />
                             </button>
                         </div>
@@ -1838,7 +1855,7 @@ const CalendarPage = () => {
                         {/* Refresh */}
                         <button
                             onClick={loadEvents}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="peg-tap-target p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             title="Rafraîchir"
                         >
                             <HiOutlineRefresh className="w-4 h-4 text-gray-500" />

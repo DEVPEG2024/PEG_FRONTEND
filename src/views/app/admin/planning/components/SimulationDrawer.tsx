@@ -126,13 +126,14 @@ const SimulationDrawer = ({ projects, overrides, initialChange, onClose }: Props
           background: 'linear-gradient(160deg, rgba(18,22,34,0.99), rgba(11,14,21,0.99))',
           borderLeft: `1px solid ${rgba(PLANNING_ACCENT, 0.3)}`,
           padding: '22px',
+          paddingBottom: 'calc(22px + var(--peg-safe-bottom))',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
           <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800, margin: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             <TbWand size={20} color={PLANNING_ACCENT} /> Simulation « et si… »
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
+          <button className="peg-tap-target" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <TbX size={20} />
           </button>
         </div>
@@ -152,7 +153,7 @@ const SimulationDrawer = ({ projects, overrides, initialChange, onClose }: Props
             ))}
           </select>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
               <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 600 }}>Nouvelle deadline</label>
               <input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} style={{ ...field, width: '100%', marginTop: '6px' }} />
@@ -199,7 +200,7 @@ const SimulationDrawer = ({ projects, overrides, initialChange, onClose }: Props
                   {c.newEndDate && <> · deadline → {c.newEndDate}</>}
                   {c.newDays != null && <> · durée → {c.newDays} j</>}
                 </span>
-                <button onClick={() => removeChange(c.projectDocumentId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+                <button className="peg-tap-target" onClick={() => removeChange(c.projectDocumentId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
                   <TbTrash size={14} />
                 </button>
               </div>

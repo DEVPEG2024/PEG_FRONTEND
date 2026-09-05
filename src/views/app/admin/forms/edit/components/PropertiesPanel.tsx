@@ -59,6 +59,7 @@ export default function PropertiesPanel({ field, onChange, onClose }: Props) {
 
   return (
     <div
+      className="peg-full-mobile"
       style={{
         width: '272px',
         background: 'rgba(7,13,24,0.98)',
@@ -111,6 +112,7 @@ export default function PropertiesPanel({ field, onChange, onClose }: Props) {
           </p>
         </div>
         <button
+          className="peg-tap-target"
           onClick={onClose}
           style={{
             background: 'none',
@@ -431,6 +433,7 @@ function SegBtn({
 }) {
   return (
     <button
+      className="peg-tap-target"
       onClick={onClick}
       style={{
         padding: '7px 4px',
@@ -484,6 +487,7 @@ function AddBtn({
 function TrashBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
+      className="peg-tap-target"
       onClick={onClick}
       style={{
         background: 'none',

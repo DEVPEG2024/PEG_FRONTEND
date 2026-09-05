@@ -300,10 +300,10 @@ const IAImagesPage = () => {
   };
 
   return (
-    <div style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
+    <div className="peg-pad-mobile" style={{ padding: '24px 28px', fontFamily: 'Inter, sans-serif', minHeight: '100dvh' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(99,102,241,0.2))', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <MdOutlineImage size={22} color="#c084fc" />
@@ -331,10 +331,10 @@ const IAImagesPage = () => {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 'var(--peg-gap-16)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
         {/* Left panel — form */}
-        <div style={{ ...PANEL, flex: '0 0 380px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="peg-full-mobile" style={{ ...PANEL, flex: '0 0 380px', padding: 'var(--peg-pad-24)', display: 'flex', flexDirection: 'column', gap: 'var(--peg-gap-24)' }}>
 
           {/* Prompt */}
           <div>

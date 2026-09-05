@@ -160,7 +160,8 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
         onClick={onClose}
       >
         <div
-          style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '36px', width: '95%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)', animation: 'slideUp 0.35s ease-out' }}
+          className="peg-pad-mobile"
+          style={{ background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)', borderRadius: '20px', padding: '36px', width: '95%', maxWidth: '700px', maxHeight: '90dvh', overflowY: 'auto', position: 'relative', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)', animation: 'slideUp 0.35s ease-out' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -171,7 +172,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
               </h2>
               {isEdit && <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', display: 'block' }}>{expense!.label}</span>}
             </div>
-            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
+            <button onClick={onClose} className="peg-tap-target" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
               <HiX size={20} />
             </button>
           </div>
@@ -180,7 +181,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
 
           <form onSubmit={handleSubmit}>
             {/* Row 1: Label + Fournisseur */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={labelStyle}>Libellé *</label>
                 <input style={inputStyle} value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Ex: Achat tissu polyester" />
@@ -192,7 +193,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
             </div>
 
             {/* Row 2: Catégorie + Statut */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={labelStyle}>Catégorie</label>
                 <select style={selectStyle} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}>
@@ -252,7 +253,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
             )}
 
             {/* Row 4: Dates */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={labelStyle}>Date</label>
                 <input type="date" style={inputStyle} value={form.date ? dayjs(form.date).format('YYYY-MM-DD') : ''} onChange={(e) => setForm({ ...form, date: e.target.value })} />
@@ -268,7 +269,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
             </div>
 
             {/* Row 4: Montant + TVA */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', marginBottom: '16px', alignItems: 'end' }}>
+            <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', marginBottom: '16px', alignItems: 'end' }}>
               <div>
                 <label style={labelStyle}>Montant HT (EUR) *</label>
                 <input type="number" step="0.01" min="0" style={inputStyle} value={form.amount || ''} onChange={(e) => { const v = parseFloat(e.target.value) || 0; updateAmount(v, vatEnabled); }} placeholder="0.00" />
@@ -320,7 +321,7 @@ export default function ModalEditExpense({ open, expense, onClose, onSave, loadi
                 )}
               </div>
               {form.recurring && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                   <div>
                     <label style={labelStyle}>Fréquence</label>
                     <select style={selectStyle} value={form.recurrenceInterval} onChange={(e) => setForm({ ...form, recurrenceInterval: e.target.value as RecurrenceInterval })}>

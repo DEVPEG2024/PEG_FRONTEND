@@ -1370,7 +1370,7 @@ const ColorsList = () => {
             <div
               style={{
                 overflow: 'auto',
-                maxHeight: 'calc(100vh - 180px)',
+                maxHeight: 'calc(100dvh - 180px)',
                 borderRadius: '16px',
                 border: '1.5px solid rgba(255,255,255,0.08)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
@@ -1480,6 +1480,7 @@ const ColorsList = () => {
                               }}
                             >
                               <button
+                                className="peg-tap-target"
                                 onClick={() => toggleCellLocal(row, cat.value)}
                                 title={
                                   checked
@@ -1714,6 +1715,7 @@ const ColorsList = () => {
                           </span>
                         )}
                         <button
+                          className="peg-tap-target"
                           onClick={() => openEdit(color)}
                           style={{
                             background: 'none',
@@ -1736,6 +1738,7 @@ const ColorsList = () => {
                           <HiPencil size={12} />
                         </button>
                         <button
+                          className="peg-tap-target"
                           onClick={() =>
                             category
                               ? handleRemoveFromCategory(
@@ -1782,12 +1785,15 @@ const ColorsList = () => {
         <div
           style={{
             position: 'fixed',
-            bottom: '24px',
+            bottom: 'calc(24px + var(--peg-safe-bottom))',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 9998,
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            width: 'max-content',
+            maxWidth: 'calc(100vw - 32px)',
             gap: '14px',
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             border: '1.5px solid rgba(47,111,237,0.4)',
@@ -1871,7 +1877,7 @@ const ColorsList = () => {
               padding: '28px',
               width: '520px',
               maxWidth: '95vw',
-              maxHeight: '90vh',
+              maxHeight: '90dvh',
               overflowY: 'auto',
               boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
               border: '1.5px solid rgba(255,255,255,0.08)',
@@ -1900,6 +1906,7 @@ const ColorsList = () => {
               </h5>
               <button
                 onClick={handleClose}
+                className="peg-tap-target"
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
@@ -2146,6 +2153,7 @@ const ColorsList = () => {
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
                 gap: '10px',
                 marginTop: '24px',
               }}

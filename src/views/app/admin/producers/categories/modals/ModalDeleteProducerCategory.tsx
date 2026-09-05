@@ -45,11 +45,13 @@ function ModalDeleteProducerCategory({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          padding: '16px',
           animation: 'fadeIn 0.2s ease-out',
         }}
       >
         <div
           onClick={(e) => e.stopPropagation()}
+          className="peg-pad-mobile"
           style={{
             background: 'linear-gradient(160deg, #1a2d47, #0f1c2e)',
             borderRadius: '20px',
@@ -66,6 +68,7 @@ function ModalDeleteProducerCategory({
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-12px', marginRight: '-8px' }}>
             <button
               onClick={handleCloseModal}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: 'none',
@@ -117,6 +120,7 @@ function ModalDeleteProducerCategory({
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button
               onClick={handleCloseModal}
+              className="peg-tap-target"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -141,6 +145,7 @@ function ModalDeleteProducerCategory({
             </button>
             <button
               onClick={onDialogOk}
+              className="peg-tap-target"
               style={{
                 background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
                 border: 'none',

@@ -171,7 +171,7 @@ const Categories = () => {
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
             Produits
           </p>
-          <h2 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
+          <h2 style={{ color: '#fff', fontSize: 'var(--peg-fs-28)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
             Catégories{' '}
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '18px', fontWeight: 500 }}>({total})</span>
           </h2>

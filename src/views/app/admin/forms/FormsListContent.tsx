@@ -23,7 +23,7 @@ const slugify = (s: string) =>
 injectReducer('forms', reducer);
 
 const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title }: any) => (
-  <button title={title} onClick={onClick}
+  <button className="peg-tap-target" title={title} onClick={onClick}
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
     onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder }}
     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
@@ -160,9 +160,9 @@ function FormsListContent() {
       {/* Modal génération IA */}
       {aiOpen && (
         <div onClick={() => !aiLoading && !aiExtracting && resetAi()}
-          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--peg-pad-24)' }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background: 'linear-gradient(160deg, #1a2440, #0f1526)', borderRadius: '18px', width: '100%', maxWidth: '520px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 25px 60px rgba(0,0,0,0.55)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+            style={{ background: 'linear-gradient(160deg, #1a2440, #0f1526)', borderRadius: '18px', width: '100%', maxWidth: '520px', maxHeight: 'calc(100dvh - 2 * var(--peg-pad-24))', overflowY: 'auto', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 25px 60px rgba(0,0,0,0.55)', padding: 'var(--peg-pad-24)', fontFamily: 'Inter, sans-serif' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(139,92,246,0.16)', border: '1px solid rgba(139,92,246,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -170,7 +170,7 @@ function FormsListContent() {
                 </div>
                 <h3 style={{ color: '#fff', fontSize: '17px', fontWeight: 700, margin: 0 }}>Générer un formulaire par IA</h3>
               </div>
-              <button onClick={() => !aiLoading && !aiExtracting && resetAi()} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '9px', padding: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+              <button className="peg-tap-target" onClick={() => !aiLoading && !aiExtracting && resetAi()} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '9px', padding: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
                 <HiX size={16} />
               </button>
             </div>

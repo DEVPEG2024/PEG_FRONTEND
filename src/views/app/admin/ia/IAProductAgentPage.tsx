@@ -384,7 +384,7 @@ const IAProductAgentPage = () => {
         background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
         border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: '16px',
-        padding: '32px',
+        padding: 'var(--peg-pad-32)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <HiSparkles size={20} style={{ color: '#6b9eff' }} />
@@ -538,8 +538,8 @@ const IAProductAgentPage = () => {
 
       {/* Suggestions section */}
       <div style={{ marginTop: '28px', maxWidth: '800px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <HiLightBulb size={18} style={{ color: '#fbbf24' }} />
             <h3 style={{ color: '#fff', fontSize: '15px', fontWeight: 700, margin: 0 }}>
               Suggestions du moment

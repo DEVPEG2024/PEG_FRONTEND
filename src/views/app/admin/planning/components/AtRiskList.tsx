@@ -74,6 +74,7 @@ const AtRiskList = ({ items, onClick, onEditEstimate }: Props) => {
             </span>
             {onEditEstimate && (
               <button
+                className="peg-tap-target"
                 onClick={() => onEditEstimate(sp)}
                 aria-label={`Corriger la durée estimée de ${sp.project.name}`}
                 title="Corriger la durée estimée"
