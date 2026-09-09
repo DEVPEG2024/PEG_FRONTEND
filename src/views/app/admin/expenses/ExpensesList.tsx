@@ -152,14 +152,35 @@ const ExpensesList = () => {
     }
   }, [loading, expenses.length]);
 
-  const filtered = expenses.filter((e) => activeTab === 'all' || e.status === activeTab);
-  const tabCount = (key: string) => key === 'all' ? expenses.length : expenses.filter((e) => e.status === key).length;
+  // Le retard ne peut pas dépendre du seul statut saisi à la main : une dépense
+  // dont l'échéance est dépassée restait marquée « À payer », donc le KPI
+  // « En retard » affichait 0,00 € alors que la liste montrait des échéances de
+  // plusieurs mois. Même règle que les factures en retard du tableau de bord :
+  // non réglée + échéance passée.
+  //
+  // Deux garde-fous, sans lesquels la règle ferait pire que le mal :
+  // — PAS de repli sur `e.date` : c'est la date de la dépense, pas une échéance.
+  //   S'en servir classerait « en retard » toute dépense non réglée créée dans le
+  //   passé, c'est-à-dire presque toutes.
+  // — le statut ENREGISTRÉ prime toujours : un « overdue » posé à la main par un
+  //   admin est conservé même si l'échéance n'est pas encore passée. La règle
+  //   n'ajoute des retards, elle n'en retire jamais.
+  const isOverdue = (e: Expense) => {
+    if (e.status === 'paid') return false;
+    if (e.status === 'overdue') return true;
+    return !!e.dueDate && dayjs(e.dueDate).isBefore(dayjs(), 'day');
+  };
+  const effectiveStatus = (e: Expense) =>
+    e.status === 'paid' ? 'paid' : isOverdue(e) ? 'overdue' : 'pending';
+
+  const filtered = expenses.filter((e) => activeTab === 'all' || effectiveStatus(e) === activeTab);
+  const tabCount = (key: string) => key === 'all' ? expenses.length : expenses.filter((e) => effectiveStatus(e) === key).length;
 
   // KPI
   const totalExpenses = expenses.reduce((s, e) => s + (e.totalAmount || 0), 0);
-  const totalPaid = expenses.filter((e) => e.status === 'paid').reduce((s, e) => s + (e.totalAmount || 0), 0);
-  const totalPending = expenses.filter((e) => e.status === 'pending').reduce((s, e) => s + (e.totalAmount || 0), 0);
-  const totalOverdue = expenses.filter((e) => e.status === 'overdue').reduce((s, e) => s + (e.totalAmount || 0), 0);
+  const totalPaid = expenses.filter((e) => effectiveStatus(e) === 'paid').reduce((s, e) => s + (e.totalAmount || 0), 0);
+  const totalPending = expenses.filter((e) => effectiveStatus(e) === 'pending').reduce((s, e) => s + (e.totalAmount || 0), 0);
+  const totalOverdue = expenses.filter((e) => effectiveStatus(e) === 'overdue').reduce((s, e) => s + (e.totalAmount || 0), 0);
 
   const fmt = (n: number) => arePricesHidden() ? '•••••' : fmtNum(n);
 
@@ -263,7 +284,9 @@ const ExpensesList = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '40px' }}>
           {filtered.map((exp: Expense) => {
             const cat = CAT_CFG[exp.category] ?? CAT_CFG.other;
-            const status = STATUS_CFG[exp.status] ?? STATUS_CFG.pending;
+            // Même règle que le KPI et l'onglet : sinon la pastille annoncerait
+            // « A payer » sur une ligne comptée dans « En retard ».
+            const status = STATUS_CFG[effectiveStatus(exp)] ?? STATUS_CFG.pending;
             return (
               <div key={exp.documentId} className="peg-stack-mobile"
                 style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}

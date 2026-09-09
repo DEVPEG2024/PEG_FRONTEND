@@ -3,33 +3,40 @@ import { Button } from '@/components/ui';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { useAppSelector } from '@/store';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineXCircle, HiArrowLeft, HiHome } from 'react-icons/hi';
 
 function Cancel() {
   const navigate = useNavigate();
   const { token } = useAppSelector((state) => state.auth.session);
+  // L'annulation ne doit partir qu'une fois, même si le token change encore
+  // après la réhydratation (ou en StrictMode).
+  const cancelSent = useRef(false);
 
   useEffect(() => {
-    const cancelOrderItems = async () => {
-      const sessionId = new URLSearchParams(window.location.search).get(
-        'session_id'
-      );
-      if (sessionId) {
-        await fetch(API_BASE_URL + '/checkout/cancel', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `${TOKEN_TYPE}${token}`,
-          },
-          body: JSON.stringify({ sessionId }),
-        });
-      }
-    };
+    const sessionId = new URLSearchParams(window.location.search).get(
+      'session_id'
+    );
+    // Ce retour Stripe est un démarrage à froid : le token peut ne pas encore
+    // être réhydraté au premier rendu. Sans dépendance sur `token`, la requête
+    // partait en « Bearer  », échouait en 401 et n'était jamais rejouée, ce qui
+    // laissait des order-items `pending` orphelins à chaque abandon.
+    if (!token || !sessionId || cancelSent.current) return;
+    cancelSent.current = true;
 
-    cancelOrderItems();
-  }, []);
+    fetch(API_BASE_URL + '/checkout/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${TOKEN_TYPE}${token}`,
+      },
+      body: JSON.stringify({ sessionId }),
+    }).catch((err) => {
+      // L'écran d'annulation reste affiché quoi qu'il arrive.
+      console.error('[Cancel] Annulation des articles échouée :', err);
+    });
+  }, [token]);
 
   return (
     <Container className="h-full">

@@ -1,7 +1,7 @@
 import { Container } from '@/components/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Button } from '@/components/ui';
@@ -12,13 +12,21 @@ function Success() {
   const navigate = useNavigate();
   const { token } = useAppSelector((state) => state.auth.session);
   const dispatch = useAppDispatch();
+  // La confirmation ne doit partir qu'une fois, même si le token change encore
+  // après la réhydratation (ou en StrictMode).
+  const confirmSent = useRef(false);
 
   useEffect(() => {
     const confirmPayment = async () => {
       const sessionId = new URLSearchParams(window.location.search).get(
         'session_id'
       );
-      if (!sessionId) return;
+      // Retour Stripe = démarrage à froid : tant que le token n'est pas
+      // réhydraté, on attend le rendu suivant plutôt que d'envoyer
+      // « Bearer undefined ». Sinon le 401 tombait dans le catch et vidait le
+      // panier sans avoir jamais confirmé les articles réellement payés.
+      if (!sessionId || !token || confirmSent.current) return;
+      confirmSent.current = true;
       try {
         const response = await fetch(
           API_BASE_URL + '/checkout/stripePaymentInformations',

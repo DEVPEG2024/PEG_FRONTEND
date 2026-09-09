@@ -10,7 +10,6 @@ export const FIELD_DEFS: FieldDef[] = [
   { type: 'checkboxgroup',label: 'Cases à cocher',  iconChar: '☑',  color: '#22c55e', category: 'basic' },
   { type: 'select',       label: 'Sélection',       iconChar: '▾',  color: '#fbbf24', category: 'basic' },
   { type: 'radio',        label: 'Boutons radio',   iconChar: '◉',  color: '#f472b6', category: 'basic' },
-  { type: 'file',         label: 'Fichier',          iconChar: '↑',  color: '#a3e635', category: 'basic' },
   // Avancé
   { type: 'email',        label: 'Email',            iconChar: '@',  color: '#fb923c', category: 'advanced' },
   { type: 'url',          label: 'URL',              iconChar: '⛓',  color: '#38bdf8', category: 'advanced' },
@@ -20,7 +19,6 @@ export const FIELD_DEFS: FieldDef[] = [
   { type: 'time',         label: 'Heure',            iconChar: '⏱',  color: '#c084fc', category: 'advanced' },
   { type: 'currency',     label: 'Devise',           iconChar: '€',  color: '#f59e0b', category: 'advanced' },
   { type: 'address',      label: 'Adresse',          iconChar: '⌂',  color: '#f87171', category: 'advanced' },
-  { type: 'signature',    label: 'Signature',        iconChar: '✍',  color: '#e879f9', category: 'advanced' },
   // Mise en page
   { type: 'content',      label: 'Contenu',          iconChar: '≡',  color: '#64748b', category: 'layout' },
   { type: 'columns',      label: 'Colonnes',         iconChar: '⊞',  color: '#0ea5e9', category: 'layout' },
@@ -29,8 +27,19 @@ export const FIELD_DEFS: FieldDef[] = [
   { type: 'tabs',         label: 'Onglets',          iconChar: '⊠',  color: '#f59e0b', category: 'layout' },
 ];
 
+// Types retirés de la palette (aucune saisie réelle côté client : le fichier n'était jamais
+// téléversé, la signature n'écrivait aucune valeur). Ils restent connus de getFieldDef pour que
+// les formulaires DÉJÀ enregistrés continuent de s'afficher avec leur vraie nature dans le
+// constructeur, au lieu d'être présentés comme du texte par le repli FIELD_DEFS[0].
+const RETIRED_FIELD_DEFS: FieldDef[] = [
+  { type: 'file',      label: 'Fichier',   iconChar: '↑', color: '#a3e635', category: 'basic' },
+  { type: 'signature', label: 'Signature', iconChar: '✍', color: '#e879f9', category: 'advanced' },
+];
+
 export const getFieldDef = (type: string): FieldDef =>
-  FIELD_DEFS.find((d) => d.type === type) ?? FIELD_DEFS[0];
+  FIELD_DEFS.find((d) => d.type === type) ??
+  RETIRED_FIELD_DEFS.find((d) => d.type === type) ??
+  FIELD_DEFS[0];
 
 export const CATEGORY_LABELS: Record<string, string> = {
   basic: 'Basique',

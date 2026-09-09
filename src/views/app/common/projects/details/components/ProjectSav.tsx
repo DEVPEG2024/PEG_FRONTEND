@@ -44,6 +44,26 @@ const StepIndicator = ({ current, total }: { current: number; total: number }) =
   </div>
 );
 
+// Safari iOS ne sait pas produire de WebM : on prend le premier conteneur réellement
+// supporté, sinon on laisse le navigateur choisir (MediaRecorder sans options).
+const AUDIO_MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+
+const pickAudioMimeType = (): string | undefined => {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return undefined;
+  return AUDIO_MIME_CANDIDATES.find((t) => MediaRecorder.isTypeSupported(t));
+};
+
+// L'extension doit suivre le conteneur RÉELLEMENT produit : un .webm contenant du
+// MP4/AAC (iOS) est stocké tel quel sur S3 et personne ne peut plus l'écouter.
+const audioExtension = (mimeType?: string): string => {
+  const base = (mimeType || '').split(';')[0].trim().toLowerCase();
+  if (base === 'audio/mp4' || base === 'audio/aac' || base === 'audio/x-m4a') return 'm4a';
+  if (base === 'audio/mpeg') return 'mp3';
+  if (base === 'audio/ogg') return 'ogg';
+  if (base === 'audio/wav' || base === 'audio/x-wav') return 'wav';
+  return 'webm';
+};
+
 // ─── Voice Recorder Hook ───
 const useVoiceRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -59,12 +79,17 @@ const useVoiceRecorder = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const preferredMimeType = pickAudioMimeType();
+      const recorder = preferredMimeType
+        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+        : new MediaRecorder(stream);
       audioChunks.current = [];
 
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.current.push(e.data); };
       recorder.onstop = () => {
-        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        // Type réel du recorder (Safari renvoie audio/mp4), repli sur celui du premier chunk
+        const realType = recorder.mimeType || audioChunks.current[0]?.type || '';
+        const blob = new Blob(audioChunks.current, { type: realType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
@@ -93,7 +118,15 @@ const useVoiceRecorder = () => {
       audioRef.current.onended = () => setIsPlaying(false);
     }
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
-    else { audioRef.current.play(); setIsPlaying(true); }
+    else {
+      setIsPlaying(true);
+      // play() est une promesse : sans catch, un format non décodable laisse l'UI
+      // afficher « lecture en cours » alors que rien ne sort.
+      audioRef.current.play().catch(() => {
+        setIsPlaying(false);
+        toast.error('Lecture impossible sur cet appareil');
+      });
+    }
   };
 
   const clear = () => {
@@ -219,7 +252,7 @@ const ProjectSav = () => {
 
     let voiceUrl: string | undefined;
     if (recorder.audioBlob) {
-      const url = await uploadBlob(recorder.audioBlob, 'vocal-sav-' + Date.now() + '.webm');
+      const url = await uploadBlob(recorder.audioBlob, 'vocal-sav-' + Date.now() + '.' + audioExtension(recorder.audioBlob.type));
       if (url) voiceUrl = url;
     }
 

@@ -158,6 +158,15 @@ function mapFieldType(type: string): string {
   return map[type] ?? 'text';
 }
 
+/**
+ * Types hérités qu'aucune interaction ne peut remplir : le champ « Fichier » ne téléversait rien
+ * (seul le nom du fichier était retenu) et le champ « Signature » n'écrivait aucune valeur. Ils
+ * sont retirés du constructeur, mais des formulaires les contiennent déjà en base — un tel champ
+ * marqué obligatoire enfermerait le client dans le tunnel. On ne les compte donc jamais comme
+ * obligatoires et on ne leur affiche plus d'astérisque.
+ */
+const NON_FILLABLE_TYPES = ['file', 'signature'];
+
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
@@ -221,6 +230,7 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
   const isGroupValid = (): boolean => {
     for (const f of group.fields) {
       if (!f.required) continue;
+      if (NON_FILLABLE_TYPES.includes(f.type)) continue;
       const v = values[f.id];
       if (f.type === 'checkbox' && !v) return false;
       if (f.type === 'checkboxgroup' && !Object.values(v || {}).some(Boolean)) return false;
@@ -294,7 +304,9 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
           <div key={field.id}>
             <label style={labelStyle}>
               {field.label}
-              {field.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+              {field.required && !NON_FILLABLE_TYPES.includes(field.type) && (
+                <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>
+              )}
             </label>
             {field.description && (
               <p style={{ color: 'rgba(160,185,220,0.45)', fontSize: '11px', margin: '-2px 0 8px', lineHeight: 1.5 }}>
@@ -351,6 +363,20 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
       </div>
 
       <style>{`@keyframes wizFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+    </div>
+  );
+}
+
+/** Encadré informatif pour un champ hérité qu'aucune saisie ne peut remplir. */
+function UnavailableField({ text }: { text: string }) {
+  return (
+    <div style={{
+      border: '1px solid rgba(251,191,36,0.25)', borderRadius: '12px',
+      padding: '12px 14px', background: 'rgba(251,191,36,0.06)',
+    }}>
+      <p style={{ color: 'rgba(253,224,71,0.85)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
+        {text}
+      </p>
     </div>
   );
 }
@@ -490,41 +516,14 @@ function renderInput(
         </div>
       );
 
+    // Champs hérités inertes : on l'annonce au lieu de simuler une réussite. L'ancien rendu
+    // « 📎 <nom du fichier> » laissait croire que le fichier était transmis alors que seul son
+    // nom était enregistré ; la zone de signature, elle, n'écrivait jamais rien.
     case 'file':
-      return (
-        <div style={{
-          border: '2px dashed rgba(255,255,255,0.12)', borderRadius: '12px',
-          padding: '24px 16px', textAlign: 'center', cursor: 'pointer',
-          background: 'rgba(255,255,255,0.02)',
-        }}>
-          <input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) setValue(file.name);
-            }}
-            disabled={readOnly}
-            style={{ display: 'none' }}
-            id={`file_${field.id}`}
-          />
-          <label htmlFor={`file_${field.id}`} style={{ cursor: 'pointer', display: 'block' }}>
-            <p style={{ color: 'rgba(160,185,220,0.5)', fontSize: '13px', margin: 0 }}>
-              {value ? `📎 ${value}` : '📎 Cliquez pour importer un fichier'}
-            </p>
-          </label>
-        </div>
-      );
+      return <UnavailableField text="L'import de fichier n'est pas disponible ici. Transmettez votre fichier à votre contact PEG, qui le rattachera à votre commande." />;
 
     case 'signature':
-      return (
-        <div style={{
-          border: '2px dashed rgba(255,255,255,0.12)', borderRadius: '12px',
-          height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(255,255,255,0.02)',
-        }}>
-          <p style={{ color: 'rgba(160,185,220,0.4)', fontSize: '13px' }}>Zone de signature</p>
-        </div>
-      );
+      return <UnavailableField text="La signature en ligne n'est pas disponible. Ce champ n'est pas nécessaire pour valider votre demande." />;
 
     default:
       return (

@@ -29,6 +29,14 @@ const inputStyle: React.CSSProperties = {
   fontFamily: 'Inter, sans-serif',
 };
 
+// Partagé par le tableau (≥ md) et par les lignes empilées (< md).
+const cardStyle: React.CSSProperties = {
+  background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+  border: '1.5px solid rgba(255,255,255,0.07)',
+  borderRadius: '16px',
+  overflow: 'hidden',
+};
+
 type FormData = {
   label: string;
   amount: string;
@@ -136,6 +144,44 @@ const AdditionalSales = () => {
   const togglePaid = async (id: string) => {
     await saveSales(sales.map((s) => (s.id === id ? { ...s, paid: !s.paid } : s)));
   };
+
+  // Les deux contrôles d'une ligne sont rendus par le tableau ET par les lignes
+  // empilées : on les factorise pour que la bascule d'encaissement et la
+  // suppression n'aient qu'une seule définition.
+  const paidButton = (sale: AdditionalSale) => (
+    <button
+      className="peg-tap-target"
+      onClick={() => togglePaid(sale.id)}
+      disabled={saving}
+      title={sale.paid ? 'Repasser en « à encaisser »' : 'Marquer comme payée'}
+      style={{
+        padding: '4px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: 700,
+        cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap',
+        background: sale.paid ? 'rgba(34,197,94,0.15)' : 'rgba(251,191,36,0.15)',
+        border: `1px solid ${sale.paid ? 'rgba(34,197,94,0.35)' : 'rgba(251,191,36,0.35)'}`,
+        color: sale.paid ? '#4ade80' : '#fbbf24',
+      }}
+    >
+      {sale.paid ? 'Payée' : 'À encaisser'}
+    </button>
+  );
+
+  const rowActions = (sale: AdditionalSale) => (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      <button className="peg-tap-target" onClick={() => startEdit(sale)} style={{
+        padding: '5px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)',
+        borderRadius: '6px', color: '#6b9eff', cursor: 'pointer', display: 'flex',
+      }}>
+        <HiPencil size={13} />
+      </button>
+      <button className="peg-tap-target" onClick={() => handleDelete(sale.id)} style={{
+        padding: '5px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+        borderRadius: '6px', color: '#ef4444', cursor: 'pointer', display: 'flex',
+      }}>
+        <HiTrash size={13} />
+      </button>
+    </div>
+  );
 
   const total = sales.reduce((s, e) => s + (e.amount || 0), 0);
   const totalPaid = sales.reduce((s, e) => s + (e.paid ? (e.amount || 0) : 0), 0);
@@ -255,13 +301,11 @@ const AdditionalSales = () => {
           </div>
         )}
 
-        {/* Table */}
-        <div className="peg-table-wrap">
-        <div className="min-w-[640px] md:min-w-0" style={{
-          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-          border: '1.5px solid rgba(255,255,255,0.07)',
-          borderRadius: '16px', overflow: 'hidden',
-        }}>
+        {/* Table (≥ md). Sous md ce tableau est masqué au profit des lignes
+            empilées plus bas : ses 6 colonnes sous `min-w-[640px]` ne tenaient
+            pas sur 390px (Statut et Actions hors écran, état vide tronqué) et
+            élargissaient la colonne entière. */}
+        <div className="hidden md:block" style={cardStyle}>
           {/* Header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 0.8fr 1fr 110px 80px',
@@ -311,34 +355,8 @@ const AdditionalSales = () => {
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {sale.note || '—'}
                   </span>
-                  <button
-                    onClick={() => togglePaid(sale.id)}
-                    disabled={saving}
-                    title={sale.paid ? 'Repasser en « à encaisser »' : 'Marquer comme payée'}
-                    style={{
-                      padding: '4px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: 700,
-                      cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap',
-                      background: sale.paid ? 'rgba(34,197,94,0.15)' : 'rgba(251,191,36,0.15)',
-                      border: `1px solid ${sale.paid ? 'rgba(34,197,94,0.35)' : 'rgba(251,191,36,0.35)'}`,
-                      color: sale.paid ? '#4ade80' : '#fbbf24',
-                    }}
-                  >
-                    {sale.paid ? 'Payée' : 'À encaisser'}
-                  </button>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button onClick={() => startEdit(sale)} style={{
-                      padding: '5px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.2)',
-                      borderRadius: '6px', color: '#6b9eff', cursor: 'pointer', display: 'flex',
-                    }}>
-                      <HiPencil size={13} />
-                    </button>
-                    <button onClick={() => handleDelete(sale.id)} style={{
-                      padding: '5px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-                      borderRadius: '6px', color: '#ef4444', cursor: 'pointer', display: 'flex',
-                    }}>
-                      <HiTrash size={13} />
-                    </button>
-                  </div>
+                  {paidButton(sale)}
+                  {rowActions(sale)}
                 </div>
               ))}
               {/* Total row */}
@@ -361,6 +379,71 @@ const AdditionalSales = () => {
             </>
           )}
         </div>
+
+        {/* Lignes empilées (< md) — mêmes données que le tableau ci-dessus,
+            en-têtes de colonnes remplacés par la mise en page de la ligne. */}
+        <div className="md:hidden" style={cardStyle}>
+          {loading ? (
+            <div style={{ padding: '30px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+              Chargement...
+            </div>
+          ) : sales.length === 0 ? (
+            <div style={{ padding: '30px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>
+              Aucune vente additionnelle
+            </div>
+          ) : (
+            <>
+              {sales.map((sale, i) => (
+                <div
+                  key={sale.id}
+                  style={{
+                    padding: '14px 16px',
+                    borderBottom: i < sales.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* `overflowWrap: anywhere` : un libellé sans espace ne doit pas
+                          élargir la carte au-delà de l'écran. */}
+                      <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, margin: 0, overflowWrap: 'anywhere' }}>
+                        {sale.label}
+                      </p>
+                      <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', margin: '2px 0 0' }}>
+                        {dayjs(sale.date).format('DD/MM/YYYY')}
+                      </p>
+                    </div>
+                    <span style={{ color: '#6b9eff', fontSize: '14px', fontWeight: 700, flexShrink: 0 }}>
+                      {fmtPrice(sale.amount)}
+                    </span>
+                  </div>
+                  {sale.note && (
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '8px 0 0', overflowWrap: 'anywhere' }}>
+                      {sale.note}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '10px' }}>
+                    {paidButton(sale)}
+                    {rowActions(sale)}
+                  </div>
+                </div>
+              ))}
+              <div style={{
+                padding: '14px 16px',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.02)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>Total</span>
+                  <span style={{ color: '#4ade80', fontSize: '15px', fontWeight: 800 }}>
+                    {fmtPrice(total)}
+                  </span>
+                </div>
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', margin: '4px 0 0' }}>
+                  Encaissé {fmtPrice(totalPaid)} · À encaisser {fmtPrice(total - totalPaid)}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

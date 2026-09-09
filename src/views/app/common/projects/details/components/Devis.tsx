@@ -79,8 +79,12 @@ const Devis = () => {
 
   return (
     <Container className="h-full">
-      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
+      {/* `minmax(0, …)` et non `2fr 1fr` : sinon la borne basse de la piste est le
+          contenu minimum de la carte (un nom de devis long, non sécable), qui
+          élargit la colonne et pousse la fiche projet hors de l'écran. */}
+      <div className="peg-stack-mobile" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 'var(--peg-gap-20)', paddingTop: '20px', paddingBottom: '20px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
+          minWidth: 0,
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           borderRadius: '18px',
           padding: 'var(--peg-pad-24)',
@@ -108,10 +112,13 @@ const Devis = () => {
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {devisList.length > 0 ? (
+              // Pas de `peg-stack-mobile` sur la ligne : empilée, elle mettait le
+              // bloc d'actions en pleine largeur — le bouton PDF devenait un carré
+              // isolé suivi d'un vide. Le nom porte une ellipse, la ligne tient
+              // donc en une rangée même sur mobile.
               devisList.map((devisFile: PegFile, index: number) => (
                 <div
                   key={devisFile.documentId}
-                  className="peg-stack-mobile"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
                     padding: '12px 16px', borderRadius: '12px',
@@ -122,7 +129,7 @@ const Devis = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                     <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', flexShrink: 0 }}>#{index + 1}</span>
                     <HiDocumentText size={16} style={{ color: '#6fa3f5', flexShrink: 0 }} />
-                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span title={devisFile.name} style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {devisFile.name}
                     </span>
                   </div>

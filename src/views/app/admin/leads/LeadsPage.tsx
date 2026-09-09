@@ -12,6 +12,7 @@ import {
     HiOutlineDownload, HiOutlineUpload,
 } from 'react-icons/hi'
 import { injectReducer, useAppDispatch, useAppSelector } from '@/store'
+import useResponsive from '@/utils/hooks/useResponsive'
 import reducer, { getLeads, createLead, updateLead, deleteLead, optimisticUpdateStage } from './store'
 import type { Lead, LeadStage, LeadPriority, LeadSource } from '@/@types/lead'
 import { fmtEur } from '@/utils/priceHelpers'
@@ -47,6 +48,9 @@ const SOURCES: { key: LeadSource; label: string }[] = [
     { key: 'site_web',   label: 'Site Web' },
     { key: 'autre',      label: 'Autre' },
 ]
+
+// Nombre de lignes affichées d'emblée dans la vue liste sur mobile uniquement
+const LIST_MOBILE_PAGE_SIZE = 50
 
 const getStage    = (k: LeadStage)    => STAGES.find(s => s.key === k)    ?? STAGES[0]
 const getPriority = (k: LeadPriority) => PRIORITIES.find(p => p.key === k) ?? PRIORITIES[1]
@@ -658,7 +662,14 @@ const LeadsPage = () => {
     const leads: Lead[] = useAppSelector((state: any) => state.leads?.leads ?? [])
     const loading: boolean = useAppSelector((state: any) => state.leads?.loading ?? false)
 
-    const [view, setView] = useState<'kanban' | 'list'>('kanban')
+    const { smaller } = useResponsive()
+
+    // Sous md, le kanban empile toutes les cartes d'une étape dans une colonne
+    // unique (des dizaines d'écrans de défilement, colonnes suivantes hors cadre) :
+    // on DÉMARRE sur la vue liste. Valeur initiale seulement — le sélecteur reste
+    // libre et un redimensionnement ne rebascule pas la vue choisie.
+    const [view, setView] = useState<'kanban' | 'list'>(smaller.md ? 'list' : 'kanban')
+    const [listLimit, setListLimit] = useState(LIST_MOBILE_PAGE_SIZE)
     const [search, setSearch] = useState('')
     const [filterStage, setFilterStage] = useState<LeadStage | 'all'>('all')
     const [filterSource, setFilterSource] = useState<LeadSource | 'all'>('all')
@@ -688,6 +699,9 @@ const LeadsPage = () => {
         const matchSource = filterSource === 'all' || l.source === filterSource
         return matchSearch && matchStage && matchSource
     }), [leads, search, filterStage, filterSource])
+
+    // Vue liste : plafonnée sur mobile seulement (au-dessus de md, la liste reste entière)
+    const visibleRows = smaller.md ? filtered.slice(0, listLimit) : filtered
 
     // Kanban by stage
     const byStage = useMemo(() =>
@@ -964,7 +978,7 @@ const LeadsPage = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filtered.map(lead => (
+                                            {visibleRows.map(lead => (
                                                 <ListRow key={lead.documentId} lead={lead} onClick={openEdit} />
                                             ))}
                                             {filtered.length === 0 && (
@@ -973,6 +987,14 @@ const LeadsPage = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                {visibleRows.length < filtered.length && (
+                                    <button
+                                        onClick={() => setListLimit(n => n + LIST_MOBILE_PAGE_SIZE)}
+                                        className="peg-tap-target mt-3 w-full py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300"
+                                    >
+                                        Afficher plus ({filtered.length - visibleRows.length} restants)
+                                    </button>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>

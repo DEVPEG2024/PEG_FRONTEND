@@ -32,6 +32,7 @@ import {
   apiGetProductCategories,
   GetProductCategoriesResponse,
 } from '@/services/ProductCategoryServices';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 injectReducer('colors', reducer);
 
@@ -263,9 +264,15 @@ const ColorsList = () => {
   const dispatch = useAppDispatch();
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const { smaller } = useResponsive();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [productCategories, setProductCategories] = useState<Option[]>([]);
-  const [view, setView] = useState<ViewMode>('matrix');
+  // Sous md, le tableau croisé coupe en deux la case à cocher de chaque ligne
+  // (colonne « Couleur » figée + défilement horizontal interne non signalé) :
+  // on DÉMARRE sur les cartes. Valeur initiale seulement — le sélecteur reste
+  // libre et un redimensionnement ne rebascule pas la vue choisie.
+  const [view, setView] = useState<ViewMode>(smaller.md ? 'cards' : 'matrix');
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [matrixSaving, setMatrixSaving] = useState(false);
 

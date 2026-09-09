@@ -251,7 +251,7 @@ const Files = () => {
                 <h4 className="text-sm font-semibold text-white">
                   Fichiers à envoyer ({pendingFiles.length})
                 </h4>
-                <button onClick={() => setPendingFiles([])} className="text-white/30 hover:text-white/60 transition">
+                <button onClick={() => setPendingFiles([])} className="peg-tap-target text-white/30 hover:text-white/60 transition">
                   <HiOutlineX className="w-4 h-4" />
                 </button>
               </div>
@@ -272,7 +272,7 @@ const Files = () => {
                       <div className="text-sm text-white/70 truncate">{file.name}</div>
                       <div className="text-[10px] text-white/30">{formatSize(file.size)}</div>
                     </div>
-                    <button onClick={() => removePending(idx)} className="p-1 rounded-lg text-white/30 hover:text-rose-400 transition shrink-0">
+                    <button onClick={() => removePending(idx)} className="peg-tap-target p-1 rounded-lg text-white/30 hover:text-rose-400 transition shrink-0">
                       <HiOutlineX className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -283,7 +283,7 @@ const Files = () => {
                 <button
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/15"
+                  className="peg-tap-target flex items-center gap-1.5 text-xs px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/15"
                 >
                   {uploading ? 'Envoi...' : 'Enregistrer'}
                 </button>
@@ -398,7 +398,7 @@ const Files = () => {
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewUrl(null)}>
           <div className="relative max-w-[calc(100vw_-_2rem)] md:max-w-3xl max-h-[85dvh]" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setPreviewUrl(null)} className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition">
+            <button onClick={() => setPreviewUrl(null)} className="peg-tap-target absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition">
               <HiOutlineX className="w-5 h-5" />
             </button>
             <img src={previewUrl} alt="Preview" className="max-w-full max-h-[85dvh] rounded-2xl shadow-2xl" />
