@@ -168,7 +168,16 @@ const Summary = ({ project }: { project: Project }) => {
   const taskPercent = tasks.length > 0
     ? Number(((completedTasksCount / tasks.length) * 100).toFixed(0))
     : 0;
-  const percentageComplete = checklistPercent !== null ? checklistPercent : taskPercent;
+  // `checklistPercent` n'est alimenté qu'après ouverture de l'onglet Checklist :
+  // à l'arrivée sur la fiche il vaut null et on retombait sur les tâches (0 %),
+  // alors que la carte de liste affiche déjà l'avancement de la checklist.
+  // Même calcul que ProjectItem, pour un seul avancement affiché partout.
+  const checklistItems = project.checklistItems ?? [];
+  const checklistItemsPercent = checklistItems.length > 0
+    ? Math.round((checklistItems.filter((i) => i.done).length / checklistItems.length) * 100)
+    : null;
+  const hasChecklist = checklistPercent !== null || checklistItemsPercent !== null;
+  const percentageComplete = checklistPercent ?? checklistItemsPercent ?? taskPercent;
 
   // Admin notes
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
@@ -293,7 +302,7 @@ const Summary = ({ project }: { project: Project }) => {
 
               {/* Progress + Name */}
               <div className="peg-pad-mobile" style={{ flex: 1, padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 'var(--peg-gap-24)' }}>
-                <CircularProgress percent={percentageComplete} label={checklistPercent !== null ? 'checklist' : 'tâches'} size={88} />
+                <CircularProgress percent={percentageComplete} label={hasChecklist ? 'checklist' : 'tâches'} size={88} />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <h3 style={{
                     color: '#fff',

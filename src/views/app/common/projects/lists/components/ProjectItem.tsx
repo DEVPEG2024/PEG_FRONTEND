@@ -15,7 +15,11 @@ import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
-import { fmtPrice } from '@/utils/priceHelpers';
+import { fmtHT, fmtPrice } from '@/utils/priceHelpers';
+
+// Un délai et une priorité n'ont de sens que tant que le projet est en cours :
+// sur un projet terminé ou annulé, la date de fin est un fait, pas une alerte.
+const ACTIVE_STATES = ['pending', 'pending_paid', 'waiting'];
 
 const formatLastSeen = (dateStr: string) => {
   const d = dayjs(dateStr);
@@ -57,6 +61,9 @@ const ProjectItem = ({
 
   const duration = dayjs(project.endDate).diff(dayjs(), 'day');
   const status = statusStyles[project.state] ?? statusStyles.pending;
+  const isActiveState = ACTIVE_STATES.includes(project.state);
+  // Sans date de fin, `diff` vaut NaN et la pastille affichait « Dépassé ».
+  const hasEndDate = Boolean(project.endDate);
 
   const checklistItems = project.checklistItems ?? [];
   const tasks = project.tasks ?? [];
@@ -141,7 +148,7 @@ const ProjectItem = ({
               {status.label}
             </span>
             {/* Priority badge — admin only */}
-            {isSuperAdmin && (() => {
+            {isSuperAdmin && isActiveState && (() => {
               const p = priorityStyles[project.priority];
               return p ? (
                 <span style={{
@@ -153,17 +160,32 @@ const ProjectItem = ({
                 </span>
               ) : null;
             })()}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '4px',
-              background: duration < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${duration < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: '100px', padding: '3px 9px',
-            }}>
-              <MdAccessTime size={11} style={{ color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.6)', flexShrink: 0 }} />
-              <span style={{ fontSize: '11px', fontWeight: 600, color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>
-                {duration > 0 ? `${duration}j` : duration === 0 ? "Auj." : 'Dépassé'}
-              </span>
-            </div>
+            {hasEndDate && (isActiveState ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                background: duration < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${duration < 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '100px', padding: '3px 9px',
+              }}>
+                <MdAccessTime size={11} style={{ color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.6)', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: duration < 0 ? '#f87171' : 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>
+                  {duration > 0 ? `${duration}j` : duration === 0 ? "Auj." : 'Dépassé'}
+                </span>
+              </div>
+            ) : (
+              /* État non actif : la date de fin est un simple fait, en gris neutre. */
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '100px', padding: '3px 9px',
+              }}>
+                <MdAccessTime size={11} style={{ color: 'rgba(255,255,255,0.6)', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>
+                  {dayjs(project.endDate).format('DD/MM/YY')}
+                </span>
+              </div>
+            ))}
             {isSuperAdmin && customerLastSeen && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -265,16 +287,26 @@ const ProjectItem = ({
                   </span>
                 )}
                 {hasRole(user, [CUSTOMER]) && (
-                  <span
-                    title={totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined}
-                    style={{
-                      background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                      borderRadius: '100px', padding: '2px 9px',
-                      color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-                    }}
-                  >
-                    {fmtPrice(totalCA)}
-                  </span>
+                  /* Le total inclut les ventes additionnelles : la composition
+                     était expliquée dans un `title`, inaccessible au doigt, et
+                     l'accueil client affichait le seul prix projet — deux
+                     montants différents pour la même commande. */
+                  <>
+                    <span
+                      style={{
+                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                        borderRadius: '100px', padding: '2px 9px',
+                        color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                      }}
+                    >
+                      {fmtHT(totalCA)}
+                    </span>
+                    {totalAdditionalSales > 0 && (
+                      <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        dont ventes add. {fmtPrice(totalAdditionalSales)}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             );

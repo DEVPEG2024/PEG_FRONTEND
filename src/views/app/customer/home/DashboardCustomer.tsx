@@ -22,7 +22,8 @@ import { Project } from '@/@types/project';
 import { Product } from '@/@types/product';
 import dayjs from 'dayjs';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { fmtHT } from '@/utils/priceHelpers';
+import { fmtHT, fmtPrice } from '@/utils/priceHelpers';
+import useResponsive from '@/utils/hooks/useResponsive';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -104,6 +105,20 @@ const DashboardCustomer = () => {
     (state: RootState) => state.auth.user!
   );
   const catalogAccess = user.customer?.catalogAccess !== false;
+  // Carrousel de suggestions : une piste animée en boucle ne se saisit pas au
+  // doigt (le :hover qui la met en pause n'existe pas au tactile) et ignore
+  // prefers-reduced-motion. Dans ces deux cas elle devient une piste défilante.
+  const { smaller } = useResponsive();
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const staticCarousel = smaller.md || reducedMotion;
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
@@ -462,7 +477,9 @@ const DashboardCustomer = () => {
                 « Ma dernière commande » affichait une carte pleine hauteur pour
                 dire « Aucune commande pour le moment ». On montre désormais les
                 commandes réellement en cours, et rien si l'activité est vide. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+            {/* `min(340px, 100%)` : auto-fit ne peut pas descendre sous le minimum
+                d'un minmax — à 360px de large la piste restait à 340px et débordait. */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '20px' }}>
               <SectionCard>
                 <SectionHeader
                   icon={<HiOutlineShoppingCart size={18} />}
@@ -492,7 +509,22 @@ const DashboardCustomer = () => {
                               {p.endDate && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11.5px' }}>Livraison {dayjs(p.endDate).format('DD MMM')}</span>}
                             </div>
                           </div>
-                          <span style={{ flexShrink: 0, color: '#fff', fontSize: '13px', fontWeight: 700 }}>{fmtHT(p.price || 0)}</span>
+                          {/* Même base que la liste des commandes (prix projet +
+                              ventes additionnelles) : afficher ici le seul prix
+                              projet donnait deux totaux pour la même commande. */}
+                          {(() => {
+                            const va = (p.additionalSales ?? []).reduce((s: number, e: any) => s + (Number(e?.amount) || 0), 0);
+                            return (
+                              <span style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmtHT((p.price || 0) + va)}</span>
+                                {va > 0 && (
+                                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10.5px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                    dont ventes add. {fmtPrice(va)}
+                                  </span>
+                                )}
+                              </span>
+                            );
+                          })()}
                         </div>
                       );
                     })}
@@ -548,14 +580,24 @@ const DashboardCustomer = () => {
                   />
                 </div>
                 <div className="dash-suggest-mask" style={{ overflow: 'hidden', paddingRight: '24px' }}>
-                  <div className="dash-suggest-track" style={{ display: 'flex', width: 'max-content' }}>
-                    {[...suggestions, ...suggestions].map((product, idx) => {
+                  {/* Sous md (ou en mouvement réduit) : piste défilante au doigt,
+                      liste non dupliquée et aucune animation. Au-dessus de md, sans
+                      préférence de mouvement réduit, le carrousel est inchangé. */}
+                  <div
+                    className={staticCarousel ? 'peg-scroll-x' : 'dash-suggest-track'}
+                    style={staticCarousel
+                      // `overflowX` et `scrollSnapType` en ligne : .peg-scroll-x ne
+                      // s'applique que sous md et y force `scroll-snap-type: none`.
+                      ? { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory' }
+                      : { display: 'flex', width: 'max-content' }}
+                  >
+                    {(staticCarousel ? suggestions : [...suggestions, ...suggestions]).map((product, idx) => {
                       const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
                       return (
                         <div
                           key={`${product.documentId}-${idx}`}
                           onClick={() => navigate(`/customer/product/${product.documentId}`)}
-                          style={{ flexShrink: 0, width: '210px', marginRight: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease' }}
+                          style={{ flexShrink: 0, width: '210px', marginRight: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease', ...(staticCarousel ? { scrollSnapAlign: 'start' as const } : null) }}
                           onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                         >
@@ -586,6 +628,9 @@ const DashboardCustomer = () => {
                     @keyframes dashSuggestScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
                     .dash-suggest-track { animation: dashSuggestScroll ${Math.max(20, suggestions.length * 4)}s linear infinite; }
                     .dash-suggest-mask:hover .dash-suggest-track { animation-play-state: paused; }
+                    @media (prefers-reduced-motion: reduce) {
+                      .dash-suggest-track { animation: none; }
+                    }
                   `}</style>
                 </div>
               </SectionCard>
@@ -597,7 +642,7 @@ const DashboardCustomer = () => {
                 pour vous » montrait le catalogue générique : deux blocs de
                 recommandation sans différence lisible. Le titre reprend le
                 libellé déjà employé plus haut dans la page. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
               {recommendedProducts.length > 0 && (
                 <SectionCard>
                   <SectionHeader icon={<HiOutlineCube size={18} />} title="Vos offres personnalisées" />
