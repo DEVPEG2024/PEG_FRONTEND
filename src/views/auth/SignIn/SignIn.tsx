@@ -109,7 +109,26 @@ const SignIn = () => {
       padding: 'var(--peg-pad-24)', fontFamily: 'Inter, sans-serif',
     }}>
       <style>{`
-        @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; } .si-card-logo{ display:block !important; } }
+        /* Sous 920px le panneau de gauche disparaît : la page de connexion ne
+           disait alors plus rien de la plateforme. On rebascule la division
+           gauche/droite du bureau en HAUT/BAS — bande sombre de marque, puis
+           formulaire — avec exactement le même discours et les mêmes catégories
+           d'offre que le panneau bureau. Au-dessus de 920px, rien ne change. */
+        @media (max-width: 920px){ .si-left{ display:none !important; } .si-card{ max-width:520px !important; flex-direction:column !important; min-height:0 !important; } .si-card-logo{ display:block !important; } .si-hero{ display:flex !important; } .si-form{ flex:1 1 auto !important; } }
+
+        .si-hero{ display:none; }
+        /* Fondu du bord droit : sans lui, la deuxième catégorie est tranchée net
+           et la rangée a l'air cassée au lieu de défilante. */
+        .si-chips{
+          -webkit-mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+          mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+        }
+        .si-chip{
+          display:inline-flex; align-items:center; gap:7px; flex:0 0 auto;
+          background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+          border-radius:100px; padding:7px 13px; white-space:nowrap;
+          color:rgba(255,255,255,0.82); font-size:12.5px; font-weight:600;
+        }
 
         .si-acct{
           display:flex; align-items:center; gap:13px; width:100%;
@@ -219,8 +238,49 @@ const SignIn = () => {
           </div>
         </div>
 
+        {/* ───────── BANDE DE MARQUE — TÉLÉPHONE UNIQUEMENT ─────────
+            Reprend mot pour mot le discours et les catégories du panneau bureau
+            ci-dessus (OFFERS), qui est masqué sous 920px. Aucun texte inventé. */}
+        <div className="si-hero" style={{
+          flex: '0 0 auto', position: 'relative', overflow: 'hidden',
+          flexDirection: 'column', gap: '14px',
+          background: '#070c1a',
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+          padding: '26px 22px 20px',
+        }}>
+          {/* halo, comme sur le panneau bureau */}
+          <div style={{ position: 'absolute', top: '-120px', right: '-70px', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(109,93,252,0.28) 0%, transparent 62%)', pointerEvents: 'none' }} />
+
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <span style={{
+              alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '7px',
+              background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.3)',
+              borderRadius: '100px', padding: '5px 12px',
+            }}>
+              <HiLockClosed size={11} color="#a99bff" />
+              <span style={{ color: '#a99bff', fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Plateforme professionnelle</span>
+            </span>
+
+            <h1 style={{ color: '#fff', fontSize: 'var(--peg-fs-28)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, margin: 0 }}>
+              Votre image, sur tous vos supports
+            </h1>
+          </div>
+
+          {/* Les six catégories, en rangée défilante au doigt : elles disent en un
+              coup d'œil ce que la plateforme permet de commander. */}
+          <div className="peg-scroll-x si-chips" style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '8px', paddingBottom: '2px' }}>
+            {OFFER_TILES.map((tile) => (
+              <span key={tile.label} className="si-chip">
+                <span aria-hidden style={{ fontSize: '14px' }}>{tile.emoji}</span>
+                {tile.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* ───────── PANNEAU DROIT (formulaire) ───────── */}
-        <div className="peg-pad-mobile" style={{
+        <div className="si-form peg-pad-mobile" style={{
           flex: '1 1 50%', background: '#fff', display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', padding: '48px 40px',
         }}>
