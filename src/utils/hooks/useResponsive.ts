@@ -28,7 +28,18 @@ const useResponsive = () => {
       Object.entries(breakpoint).map(([key, value]) => [
         key,
         comparator === 'larger'
-          ? currentWindowWidth > value
+          ? // `>=` et non `>` : les deux bornes doivent être COMPLÉMENTAIRES.
+            // Avec deux comparaisons strictes, une largeur ÉGALE au point de
+            // rupture rendait `larger` ET `smaller` faux — à 768px exactement
+            // (iPad 9,7"/10,2"/mini en portrait) le burger (`smaller.md`) et la
+            // barre latérale (`larger.md`) disparaissaient tous les deux : plus
+            // aucune navigation. Vérification sur `md` (768) :
+            //   767 → larger false, smaller true  (inchangé, branche mobile)
+            //   768 → larger TRUE,  smaller false (corrigé : branche desktop)
+            //   769 → larger true,  smaller false (inchangé, branche desktop)
+            // Exactement une branche rend, à toute largeur et pour tous les
+            // points de rupture ; rien ne change au-dessus ni en dessous.
+            currentWindowWidth >= value
           : currentWindowWidth < value,
       ])
     );

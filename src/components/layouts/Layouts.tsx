@@ -37,19 +37,23 @@ const Layout = () => {
     // courant. Tant que ce n'est pas confirmé, on ne rend AUCUNE partie de
     // l'interface authentifiée (ni sidebar, ni contenu) → impossible d'afficher
     // le rôle d'une autre session (ex: admin pour un client).
-    const { identityConfirmed, failed } = useAuthBootstrap()
+    const { identityConfirmed, authRejected, unreachable, retry } =
+        useAuthBootstrap()
 
     useDirection()
     useLocale()
 
-    // Identité impossible à confirmer (token invalide/croisé, /users/me KO) :
+    // Identité REFUSÉE par le serveur (401/403, token croisé, rôle absent) :
     // on déconnecte plutôt que de risquer d'afficher un mauvais rôle.
+    // Une simple panne de transport (4G coupée, 5xx, timeout) ne déclenche PLUS
+    // de déconnexion — c'est le cas nominal sur téléphone, et le hook a déjà
+    // retenté trois fois. Voir useAuthBootstrap pour l'invariant de sécurité.
     useEffect(() => {
-        if (authenticated && failed && !identityConfirmed) {
+        if (authenticated && authRejected && !identityConfirmed) {
             dispatch(signOutSuccess())
             sessionStorage.removeItem('token')
         }
-    }, [authenticated, failed, identityConfirmed, dispatch])
+    }, [authenticated, authRejected, identityConfirmed, dispatch])
 
     const AppLayout = useMemo(() => {
         if (authenticated) {
@@ -61,10 +65,44 @@ const Layout = () => {
     const isCustomer = authenticated && authority?.includes(CUSTOMER)
 
     // Coquille authentifiée en attente de confirmation d'identité → plein écran.
+    // Le profil du store n'a pas pu être rattaché au token : on ne monte pas
+    // l'application (on afficherait un rôle non vérifié). Si la cause est une
+    // panne réseau, la session est conservée et on propose de relancer.
     if (authenticated && !identityConfirmed) {
         return (
             <div className="flex flex-auto flex-col h-screen">
                 <Loading loading={true} />
+                {unreachable && (
+                    <div className="flex flex-col items-center gap-3 pb-16 px-6 text-center">
+                        {/* Message volontairement factuel : la relance automatique
+                            n'a lieu qu'au retour du réseau (événement « online »).
+                            Une fois les tentatives épuisées alors que le navigateur
+                            se croit connecté, plus rien ne se passe — annoncer une
+                            « nouvelle tentative… » serait faux. */}
+                        <p className="text-gray-600 dark:text-gray-300">
+                            Connexion au serveur impossible. Votre session est conservée.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                            <button
+                                type="button"
+                                className="peg-tap-target px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600"
+                                onClick={retry}
+                            >
+                                Réessayer
+                            </button>
+                            {/* Porte de sortie : sans elle, un serveur durablement
+                                injoignable laisserait l'utilisateur sur cet écran
+                                sans aucun moyen d'en partir. */}
+                            <button
+                                type="button"
+                                className="peg-tap-target px-4 py-2 rounded-md text-gray-500 dark:text-gray-400"
+                                onClick={() => dispatch(signOutSuccess())}
+                            >
+                                Se déconnecter
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }

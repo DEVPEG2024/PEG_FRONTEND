@@ -108,6 +108,47 @@
   padding-bottom: calc(var(--peg-gap-12) + var(--peg-safe-bottom));
 }
 
+/* ── Jetons de TEXTE SECONDAIRE (opt-in) ─────────────────────────────────────
+   Le jeton « muted » du projet décroche : phrases d'aide et sur-titres tombent
+   à 1,95:1 / 2,28:1 sur les fonds sombres, alors que la même palette atteint 6:1
+   sur les montants. Ces deux classes donnent aux agents de vues un remplaçant
+   sûr, à poser AU CAS PAR CAS sur le texte fautif.
+
+   Contrastes calculés (WCAG 2.1, fonds sombres du projet) :
+     fond           L        .peg-text-secondary  .peg-text-caption
+                             #b6c2d3 (L=0,5323)   #94a3b8 (L=0,3595)
+     #0f1c2e   0,01129            9,50:1               6,68:1
+     #16263d   0,01896            8,44:1               5,94:1
+     #161a2e   0,01107            9,52:1               6,71:1
+   Pire cas 5,94:1 — au-dessus des 4,5:1 exigés, y compris sur le fond le plus
+   clair (#16263d). Deux niveaux distincts sont conservés pour que la hiérarchie
+   visuelle survive à la correction.
+
+   `max(12px, 1em)` = plancher de 12px SANS écraser une taille héritée plus
+   grande (`1em` résout la taille du parent). Volontairement OPT-IN : aucune
+   règle sur `*` ni sur une balise — les micro-libellés en capitales à 11px sont
+   un parti pris assumé du projet et ne doivent pas être touchés en masse.
+   Ces classes s'appliquent à TOUTES les largeurs : un défaut de contraste n'est
+   pas une affaire de résolution, et une classe sans effet sur desktop serait un
+   piège pour l'agent qui la pose. Elles ne changent rien tant qu'aucun élément
+   ne les porte.
+
+   ⚠️ À poser UNIQUEMENT sur les surfaces sombres du projet (celles listées
+   ci-dessus, codées en dur dans les vues et donc identiques en thème clair).
+   Sur un fond qui suit le thème clair, ces deux couleurs claires seraient
+   illisibles : là, garder les utilitaires `text-gray-*` de Tailwind. */
+.peg-text-secondary {
+  color: #b6c2d3;
+  font-size: max(12px, 1em);
+  line-height: 1.45;
+}
+/* Métadonnées (dates, compteurs, mentions sous un champ). */
+.peg-text-caption {
+  color: #94a3b8;
+  font-size: max(12px, 1em);
+  line-height: 1.45;
+}
+
 /* -----------------------------------------------------------------------------
    3. UTILITAIRES MOBILES (< md) — inertes au-dessus de 767.98px
    -------------------------------------------------------------------------- */
@@ -189,11 +230,25 @@
     min-width: 720px;
   }
 
-  /* Force l'empilement d'un bloc à colonnes figées (grid OU flex). */
+  /* Force l'empilement d'un bloc à colonnes figées (grid OU flex).
+     `minmax(0, 1fr)` et non `1fr` : `1fr` vaut `minmax(auto, 1fr)`, dont la
+     borne basse est le contenu MINIMUM des enfants (un nom de fichier long, un
+     tableau `min-w-[640px]`). La piste s'élargissait donc au-delà de l'écran et
+     emportait les cartes voisines hors du cadre — sur la fiche projet, le bloc
+     FINANCES perdait ses sept montants sans que rien n'indique de balayer (le
+     document, lui, ne débordait pas). Le `min-width: 0` sur les enfants lève la
+     même borne à l'intérieur de la piste.
+     Aucune régression possible sur les ~75 autres usages : `minmax(0, 1fr)` est
+     strictement plus permissif que `1fr` — il n'ajoute aucune contrainte, il
+     autorise seulement la piste à descendre sous son contenu minimum, ce qu'une
+     colonne pleine largeur en pile n'a de toute façon jamais besoin de dépasser. */
   .peg-stack-mobile {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     flex-direction: column !important;
     align-items: stretch !important;
+  }
+  .peg-stack-mobile > * {
+    min-width: 0;
   }
 
   /* Neutralise une largeur/hauteur figée héritée du desktop. */
