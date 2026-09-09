@@ -16,7 +16,41 @@ const getShortSentence = (desc: string): string => {
   return sentence.slice(0, 80).replace(/\s+\S*$/, '') + '…';
 };
 
-const CustomerProductCard = ({ product }: { product: Product }) => {
+type StrapiImageFormat = { url?: string; width?: number };
+
+/**
+ * Construit un srcset à partir des miniatures générées par Strapi (`formats`).
+ * REPLI EXPLICITE : si `formats` est absent (schéma Strapi plus ancien,
+ * permission, image sans variantes) ou inexploitable, on renvoie uniquement
+ * `src` = l'original — soit exactement le comportement précédent. Aucune image
+ * ne peut disparaître à cause de ce chemin.
+ */
+const buildImageSources = (
+  image?: { url?: string; formats?: unknown }
+): { src: string; srcSet?: string } | null => {
+  const src = image?.url;
+  if (!src) return null;
+  const formats = image?.formats;
+  if (!formats || typeof formats !== 'object') return { src };
+  const seenWidths = new Set<number>();
+  const candidates: string[] = [];
+  for (const format of Object.values(formats as Record<string, StrapiImageFormat>)) {
+    const width = format?.width;
+    if (!format?.url || typeof width !== 'number' || width <= 0 || seenWidths.has(width)) continue;
+    seenWidths.add(width);
+    candidates.push(`${format.url} ${width}w`);
+  }
+  return candidates.length > 0 ? { src, srcSet: candidates.join(', ') } : { src };
+};
+
+const CustomerProductCard = ({
+  product,
+  priority = false,
+}: {
+  product: Product;
+  /** true pour les toutes premières cartes de la grille : image chargée sans lazy */
+  priority?: boolean;
+}) => {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -24,7 +58,7 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const isPremium = !!customer?.premium;
 
-  const imageUrl = product.images[0]?.url;
+  const imageSources = buildImageSources(product.images[0]);
   const shortDesc = product.description ? getShortSentence(product.description) : null;
   const isM2 = product.pricingMode === 'm2';
   const fullPriceHT = isM2 ? (product.pricePerM2 || 0) : getProductBasePrice(product);
@@ -74,12 +108,19 @@ const CustomerProductCard = ({ product }: { product: Product }) => {
     >
       {/* Image full-bleed */}
       <div style={{ position: 'relative', height: '200px', flexShrink: 0, overflow: 'hidden', background: '#ffffff' }}>
-        {imageUrl ? (
+        {imageSources ? (
           <img
             ref={imgRef}
-            src={imageUrl}
+            src={imageSources.src}
+            srcSet={imageSources.srcSet}
+            sizes="(max-width: 640px) 100vw, 220px"
             alt={product.name}
-            loading="lazy"
+            // Dimensions du cadre réel : la boîte reste pilotée par le CSS
+            // ci-dessous (200px de haut), les attributs ne servent qu'à donner
+            // au navigateur un ratio avant chargement.
+            width={220}
+            height={200}
+            loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             style={{
               width: '100%',

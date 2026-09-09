@@ -14,6 +14,7 @@ import { HiOutlineHome, HiChevronRight, HiOutlineViewGrid, HiOutlineCube } from 
 import CustomerProductCard from '../products/lists/CustomerProductCard';
 import SubCategoryCard from './components/SubCategoryCard';
 import { pickCategoryTagline } from '@/utils/categoryIcon';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 injectReducer('catalogue', reducer);
 
@@ -44,6 +45,7 @@ const CustomerProductsOfCategory = () => {
   const { products, productCategory, loading, total } = useAppSelector(
     (state) => state.catalogue.data
   );
+  const { larger } = useResponsive();
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
   const pageCount = Math.ceil(total / PAGE_SIZE);
@@ -109,12 +111,21 @@ const CustomerProductsOfCategory = () => {
         display: 'flex', alignItems: 'center',
         background: 'radial-gradient(120% 160% at 80% 12%, rgba(124,107,255,0.28) 0%, rgba(91,71,224,0.08) 42%, rgba(10,12,22,0.2) 72%), linear-gradient(160deg, #12152a 0%, #0a0c16 100%)',
       }}>
-        {/* bannière produits (fond) — toujours la bannière PEG, entière (non rognée) */}
-        <img
-          src="/img/illustrations/category-hero.png"
-          alt={productCategory?.name ?? 'Catégorie'}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center', display: 'block' }}
-        />
+        {/* bannière produits (fond) — toujours la bannière PEG, entière (non rognée).
+            Sous md, on ne la rend PAS DU TOUT : ce PNG pèse 1,48 Mo pour un cadre
+            d'environ 780 px physiques, et le voile dégradé ci-dessous le recouvre
+            presque entièrement sur un écran étroit. Le dégradé seul suffit. */}
+        {larger.md && (
+          <img
+            src="/img/illustrations/category-hero.png"
+            alt={productCategory?.name ?? 'Catégorie'}
+            width={2764}
+            height={676}
+            loading="lazy"
+            decoding="async"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center', display: 'block' }}
+          />
+        )}
         {/* voile dégradé pour la lisibilité du texte à gauche */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -201,8 +212,12 @@ const CustomerProductsOfCategory = () => {
           gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
           gap: '20px',
         }}>
-          {products.map((product: Product) => (
-            <CustomerProductCard key={product.documentId} product={product} />
+          {products.map((product: Product, index: number) => (
+            <CustomerProductCard
+              key={product.documentId}
+              product={product}
+              priority={index < 4}
+            />
           ))}
         </div>
       )}

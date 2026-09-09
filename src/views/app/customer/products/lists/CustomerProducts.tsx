@@ -38,12 +38,18 @@ const CustomerProducts = () => {
   );
   const [searchTerm, setSearchTerm] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  // Chargement par tranches : 100 produits d'un coup, c'était 100 images
+  // pleine taille sur mobile. On charge 24 puis on étend à la demande.
+  // Le slice remplace la liste à chaque réponse (il n'accumule pas) : on
+  // redemande donc la même page avec un pageSize plus grand.
+  const PAGE_SIZE = 24;
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
-  const fetchProducts = (term: string) => {
+  const fetchProducts = (term: string, size: number = PAGE_SIZE) => {
     dispatch(
       getCustomerProducts({
         page: 1,
-        pageSize: 100,
+        pageSize: size,
         searchTerm: term,
         customerDocumentId: user?.customer?.documentId || '',
         customerCategoryDocumentId: user?.customer?.customerCategory?.documentId || '',
@@ -62,9 +68,20 @@ const CustomerProducts = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+    setPageSize(PAGE_SIZE);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchProducts(value), 400);
   };
+
+  const handleLoadMore = () => {
+    const next = pageSize + PAGE_SIZE;
+    setPageSize(next);
+    fetchProducts(searchTerm, next);
+  };
+
+  // Le service ne renvoie pas le total au slice : on déduit qu'il reste des
+  // produits tant que la réponse remplit exactement la tranche demandée.
+  const hasMore = !loading && products.length >= pageSize;
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -172,15 +189,42 @@ const CustomerProducts = () => {
           </div>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '20px',
-        }}>
-          {products.map((product) => (
-            <CustomerProductCard key={product.documentId} product={product} />
-          ))}
-        </div>
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '20px',
+          }}>
+            {products.map((product, index) => (
+              <CustomerProductCard
+                key={product.documentId}
+                product={product}
+                priority={index < 4}
+              />
+            ))}
+          </div>
+          {hasMore && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
+              <button
+                className="peg-tap-target"
+                onClick={handleLoadMore}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#a0b9dc',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                  cursor: 'pointer',
+                }}
+              >
+                Voir plus de produits
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

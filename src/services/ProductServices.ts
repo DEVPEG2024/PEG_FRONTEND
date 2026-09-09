@@ -151,6 +151,12 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
                 images {
                     documentId
                     url
+                    # formats = miniatures générées par Strapi (thumbnail/small/
+                    # medium/large), scalaire JSON. Sert à construire un srcset sur
+                    # les cartes produit. Si le champ est absent ou vide dans la
+                    # réponse, l'affichage retombe sur url (original) — voir
+                    # buildImageSources dans CustomerProductCard.
+                    formats
                 }
             }
             pageInfo {
@@ -468,6 +474,7 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
             nodes {
                 images {
                     url
+                    formats
                 }
                 description
                 documentId
@@ -573,6 +580,7 @@ export async function apiGetProductInputFields(): Promise<Set<string> | null> {
 const SUGGESTED_PRODUCT_FIELDS = `
                 images {
                     url
+                    formats
                 }
                 description
                 documentId
