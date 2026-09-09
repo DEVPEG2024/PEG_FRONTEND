@@ -176,14 +176,19 @@ const CompanyProfile = () => {
         name: keyof CompanyFormModel,
         label: string,
         placeholder: string,
-        type: string = 'text'
+        type: string = 'text',
+        // Attributs de remplissage automatique (autoComplete, inputMode…) : sans eux
+        // iOS/Android n'offrent ni la suggestion ni le bon clavier.
+        extra: React.InputHTMLAttributes<HTMLInputElement> = {}
     ) => (
         <div>
-            <label style={labelStyle}>{label}</label>
+            <label style={labelStyle} htmlFor={`company-${name}`}>{label}</label>
             <Controller name={name} control={control} render={({ field }) => (
                 <input
                     {...field}
+                    id={`company-${name}`}
                     type={type}
+                    {...extra}
                     placeholder={placeholder}
                     style={inputStyle}
                     onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
@@ -269,7 +274,7 @@ const CompanyProfile = () => {
                     )}
                 </div>
 
-                {renderField('name', 'Nom de la société', 'Mon Entreprise SAS')}
+                {renderField('name', 'Nom de la société', 'Mon Entreprise SAS', 'text', { autoComplete: 'organization' })}
 
                 <div>
                     <label style={labelStyle}>Secteur d'activité</label>
@@ -317,28 +322,33 @@ const CompanyProfile = () => {
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Identifiants légaux</p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    {renderField('vatNumber', 'N° TVA intracommunautaire', 'FR12345678901')}
-                    {renderField('siretNumber', 'N° SIRET', '12345678900012')}
+                    {/* Pas d'inputMode numérique sur la TVA : le numéro commence par deux lettres de pays */}
+                    {renderField('vatNumber', 'N° TVA intracommunautaire', 'FR12345678901', 'text', { autoCapitalize: 'characters' })}
+                    {renderField('siretNumber', 'N° SIRET', '12345678900012', 'text', { inputMode: 'numeric' })}
                 </div>
 
                 {/* Adresse */}
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Adresse postale</p>
 
-                {renderField('address', 'Adresse', '12 rue de la Paix')}
+                {renderField('address', 'Adresse', '12 rue de la Paix', 'text', { autoComplete: 'street-address' })}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
-                    {renderField('zipCode', 'Code postal', '75001')}
-                    {renderField('city', 'Ville', 'Paris')}
+                    {renderField('zipCode', 'Code postal', '75001', 'text', { inputMode: 'numeric', autoComplete: 'postal-code' })}
+                    {renderField('city', 'Ville', 'Paris', 'text', { autoComplete: 'address-level2' })}
                 </div>
 
-                {renderField('country', 'Pays', 'France')}
+                {renderField('country', 'Pays', 'France', 'text', { autoComplete: 'country-name' })}
 
                 {/* Contact */}
                 <p style={{ ...sectionStyle, marginTop: '4px' }}>Contact professionnel</p>
 
-                {renderField('phoneNumber', 'Téléphone', '+33 1 23 45 67 89', 'tel')}
-                {renderField('companyEmail', 'Email professionnel', 'contact@monentreprise.fr', 'email')}
-                {renderField('website', 'Site internet', 'https://monentreprise.fr', 'url')}
+                {renderField('phoneNumber', 'Téléphone', '+33 1 23 45 67 89', 'tel', { inputMode: 'tel', autoComplete: 'tel' })}
+                {renderField('companyEmail', 'Email professionnel', 'contact@monentreprise.fr', 'email', {
+                    inputMode: 'email', autoCapitalize: 'none', autoComplete: 'email',
+                })}
+                {renderField('website', 'Site internet', 'https://monentreprise.fr', 'url', {
+                    inputMode: 'url', autoCapitalize: 'none', autoComplete: 'url',
+                })}
 
             </div>
 

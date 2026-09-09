@@ -102,8 +102,12 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                 render={({ field }) => (
                   <Input
                     {...field}
+                    id="forgot-email"
                     type="email"
-                    autoComplete="off"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    aria-label="Email"
                     placeholder="Email"
                   />
                 )}

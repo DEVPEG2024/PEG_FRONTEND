@@ -357,10 +357,13 @@ const SignUpModal = ({
         label: string,
         placeholder: string,
         type: string = 'text',
-        required: boolean = false
+        required: boolean = false,
+        // Attributs de remplissage automatique (autoComplete, inputMode…) : sans eux
+        // iOS/Android n'offrent ni la suggestion ni le bon clavier.
+        extra: React.InputHTMLAttributes<HTMLInputElement> = {}
     ) => (
         <div>
-            <label style={labelStyle}>
+            <label style={labelStyle} htmlFor={`signup-${name}`}>
                 {label}{required && <span style={{ color: '#f87171' }}> *</span>}
             </label>
             <Controller
@@ -369,7 +372,9 @@ const SignUpModal = ({
                 render={({ field }) => (
                     <input
                         {...field}
+                        id={`signup-${name}`}
                         type={type}
+                        {...extra}
                         placeholder={placeholder}
                         style={{
                             ...inputStyle,
@@ -602,8 +607,10 @@ const SignUpModal = ({
                 {!successMessage && awaitingCode && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div>
-                            <label style={labelStyle}>Code de validation <span style={{ color: '#f87171' }}>*</span></label>
+                            <label style={labelStyle} htmlFor="signup-emailCode">Code de validation <span style={{ color: '#f87171' }}>*</span></label>
                             <input
+                                id="signup-emailCode"
+                                name="emailCode"
                                 type="text"
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
@@ -672,21 +679,27 @@ const SignUpModal = ({
                             <p style={sectionTitleStyle}>Informations personnelles</p>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                                {renderField('firstName', 'Prénom', 'Jean', 'text', true)}
-                                {renderField('lastName', 'Nom', 'Dupont', 'text', true)}
+                                {renderField('firstName', 'Prénom', 'Jean', 'text', true, { autoComplete: 'given-name' })}
+                                {renderField('lastName', 'Nom', 'Dupont', 'text', true, { autoComplete: 'family-name' })}
                             </div>
 
-                            {renderField('email', 'Adresse email', 'vous@exemple.com', 'email', true)}
+                            {renderField('email', 'Adresse email', 'vous@exemple.com', 'email', true, {
+                                inputMode: 'email', autoCapitalize: 'none', autoComplete: 'email',
+                            })}
                             {isGenerator
-                                ? renderField('phoneNumber', 'Téléphone', '06 12 34 56 78', 'tel')
-                                : renderField('jobTitle', "Rôle dans l'entreprise", 'Directeur commercial, CEO...', 'text')}
+                                ? renderField('phoneNumber', 'Téléphone', '06 12 34 56 78', 'tel', false, {
+                                    inputMode: 'tel', autoComplete: 'tel',
+                                })
+                                : renderField('jobTitle', "Rôle dans l'entreprise", 'Directeur commercial, CEO...', 'text', false, {
+                                    autoComplete: 'organization-title',
+                                })}
 
                             {/* Mot de passe */}
                             <div>
-                                <label style={labelStyle}>Mot de passe <span style={{ color: '#f87171' }}>*</span></label>
+                                <label style={labelStyle} htmlFor="signup-password">Mot de passe <span style={{ color: '#f87171' }}>*</span></label>
                                 <Controller name="password" control={control} render={({ field }) => (
                                     <div style={{ position: 'relative' }}>
-                                        <input {...field} type={showPassword ? 'text' : 'password'} placeholder="••••••••"
+                                        <input {...field} id="signup-password" autoComplete="new-password" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
                                             style={{ ...inputStyle, paddingRight: '42px', borderColor: errors.password ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)' }}
                                             onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
                                             onBlur={(e) => { e.target.style.borderColor = errors.password ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
@@ -704,10 +717,10 @@ const SignUpModal = ({
                             </div>
 
                             <div>
-                                <label style={labelStyle}>Confirmer le mot de passe <span style={{ color: '#f87171' }}>*</span></label>
+                                <label style={labelStyle} htmlFor="signup-confirmPassword">Confirmer le mot de passe <span style={{ color: '#f87171' }}>*</span></label>
                                 <Controller name="confirmPassword" control={control} render={({ field }) => (
                                     <div style={{ position: 'relative' }}>
-                                        <input {...field} type={showConfirm ? 'text' : 'password'} placeholder="••••••••"
+                                        <input {...field} id="signup-confirmPassword" autoComplete="new-password" type={showConfirm ? 'text' : 'password'} placeholder="••••••••"
                                             style={{ ...inputStyle, paddingRight: '42px', borderColor: errors.confirmPassword ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)' }}
                                             onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.6)'; }}
                                             onBlur={(e) => { e.target.style.borderColor = errors.confirmPassword ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'; field.onBlur(); }}
@@ -733,18 +746,21 @@ const SignUpModal = ({
                                 'companyName',
                                 isGenerator ? 'Société / structure' : 'Nom de la société',
                                 'Mon Entreprise SAS',
-                                'text'
+                                'text',
+                                false,
+                                { autoComplete: 'organization' }
                             )}
 
                             {!isGenerator && (
                                 <div>
-                                    <label style={labelStyle}>Secteur d'activité</label>
+                                    <label style={labelStyle} htmlFor="signup-customerCategoryId">Secteur d'activité</label>
                                     <Controller
                                         name="customerCategoryId"
                                         control={control}
                                         render={({ field }) => (
                                             <select
                                                 {...field}
+                                                id="signup-customerCategoryId"
                                                 style={{
                                                     ...inputStyle,
                                                     cursor: 'pointer',
@@ -766,10 +782,12 @@ const SignUpModal = ({
                             {/* Section : Adresse */}
                             <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Adresse postale</p>
 
-                            {renderField('address', 'Adresse', '12 rue de la Paix', 'text')}
+                            {renderField('address', 'Adresse', '12 rue de la Paix', 'text', false, { autoComplete: 'street-address' })}
                             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
-                                {renderField('zipCode', 'Code postal', '75001', 'text')}
-                                {renderField('city', 'Ville', 'Paris', 'text')}
+                                {renderField('zipCode', 'Code postal', '75001', 'text', false, {
+                                    inputMode: 'numeric', autoComplete: 'postal-code',
+                                })}
+                                {renderField('city', 'Ville', 'Paris', 'text', false, { autoComplete: 'address-level2' })}
                             </div>
 
                             {/* Section : Parrainage — un Générateur parraine, il n'est pas parrainé */}
@@ -778,16 +796,19 @@ const SignUpModal = ({
                                 <p style={{ ...sectionTitleStyle, marginTop: '8px' }}>Parrainage (facultatif)</p>
 
                                 <div>
-                                    <label style={labelStyle}>Code de parrainage</label>
+                                    <label style={labelStyle} htmlFor="signup-referralCode">Code de parrainage</label>
                                     <Controller
                                         name="referralCode"
                                         control={control}
                                         render={({ field }) => (
                                             <input
                                                 {...field}
+                                                id="signup-referralCode"
                                                 type="text"
                                                 placeholder="Ex : DUPONT-A7K2"
                                                 autoCapitalize="characters"
+                                                // Code propre à PEG : aucune valeur enregistrée par le navigateur n'a de sens ici
+                                                autoComplete="off"
                                                 onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                                                 onBlur={(e) => {
                                                     field.onBlur();

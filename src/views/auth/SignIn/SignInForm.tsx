@@ -122,7 +122,7 @@ const SignInForm = (props: SignInFormProps) => {
 
           {/* Email */}
           <div>
-            <label style={labelStyle}>Adresse email</label>
+            <label style={labelStyle} htmlFor="signin-email">Adresse email</label>
             <Controller
               name="email"
               control={control}
@@ -131,8 +131,11 @@ const SignInForm = (props: SignInFormProps) => {
                   <span style={iconStyle}><HiOutlineMail size={18} /></span>
                   <input
                     {...field}
+                    id="signin-email"
                     type="email"
-                    autoComplete="off"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoComplete="username"
                     placeholder="ex: carto@mypeg.fr"
                     style={{ ...inputStyle, borderColor: errors.email ? '#fca5a5' : '#e5e7eb' }}
                     onFocus={focusOn}
@@ -146,7 +149,7 @@ const SignInForm = (props: SignInFormProps) => {
 
           {/* Password */}
           <div>
-            <label style={labelStyle}>Mot de passe</label>
+            <label style={labelStyle} htmlFor="signin-password">Mot de passe</label>
             <Controller
               name="password"
               control={control}
@@ -155,8 +158,9 @@ const SignInForm = (props: SignInFormProps) => {
                   <span style={iconStyle}><HiOutlineLockClosed size={18} /></span>
                   <input
                     {...field}
+                    id="signin-password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="off"
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     style={{ ...inputStyle, paddingRight: '46px', borderColor: errors.password ? '#fca5a5' : '#e5e7eb' }}
                     onFocus={focusOn}

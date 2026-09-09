@@ -32,8 +32,9 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const PasswordInput = ({ field, error, placeholder, show, onToggle }: {
+const PasswordInput = ({ field, id, error, placeholder, show, onToggle }: {
   field: any;
+  id: string;
   error?: string;
   placeholder: string;
   show: boolean;
@@ -43,6 +44,7 @@ const PasswordInput = ({ field, error, placeholder, show, onToggle }: {
     <div style={{ position: 'relative' }}>
       <input
         {...field}
+        id={id}
         type={show ? 'text' : 'password'}
         placeholder={placeholder}
         autoComplete="new-password"
@@ -98,16 +100,16 @@ const DefinePassword = ({
       {/* Fields */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nouveau mot de passe *</label>
+          <label htmlFor="define-newPassword" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nouveau mot de passe *</label>
           <Controller name="newPassword" control={control} render={({ field }) => (
-            <PasswordInput field={field} error={errors.newPassword?.message} placeholder="Nouveau mot de passe" show={showNew} onToggle={() => setShowNew((v) => !v)} />
+            <PasswordInput field={field} id="define-newPassword" error={errors.newPassword?.message} placeholder="Nouveau mot de passe" show={showNew} onToggle={() => setShowNew((v) => !v)} />
           )} />
         </div>
 
         <div>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Confirmer le mot de passe *</label>
+          <label htmlFor="define-confirmNewPassword" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Confirmer le mot de passe *</label>
           <Controller name="confirmNewPassword" control={control} render={({ field }) => (
-            <PasswordInput field={field} error={errors.confirmNewPassword?.message} placeholder="Confirmer le mot de passe" show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />
+            <PasswordInput field={field} id="define-confirmNewPassword" error={errors.confirmNewPassword?.message} placeholder="Confirmer le mot de passe" show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />
           )} />
         </div>
       </div>

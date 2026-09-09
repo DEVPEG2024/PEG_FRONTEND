@@ -170,9 +170,9 @@ const Profile = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
         <div>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom d'utilisateur *</label>
+          <label htmlFor="profile-username" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom d'utilisateur *</label>
           <Controller name="username" control={control} render={({ field }) => (
-            <input {...field} type="text" placeholder="Nom d'utilisateur"
+            <input {...field} id="profile-username" type="text" autoComplete="username" placeholder="Nom d'utilisateur"
               style={{ ...inputStyle, borderColor: errors.username ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
               onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
               onBlur={(e) => { e.target.style.borderColor = errors.username ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
@@ -183,9 +183,9 @@ const Profile = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           <div>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Prénom *</label>
+            <label htmlFor="profile-firstName" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Prénom *</label>
             <Controller name="firstName" control={control} render={({ field }) => (
-              <input {...field} type="text" placeholder="Prénom"
+              <input {...field} id="profile-firstName" type="text" autoComplete="given-name" placeholder="Prénom"
                 style={{ ...inputStyle, borderColor: errors.firstName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
                 onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
                 onBlur={(e) => { e.target.style.borderColor = errors.firstName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
@@ -195,9 +195,9 @@ const Profile = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom *</label>
+            <label htmlFor="profile-lastName" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nom *</label>
             <Controller name="lastName" control={control} render={({ field }) => (
-              <input {...field} type="text" placeholder="Nom"
+              <input {...field} id="profile-lastName" type="text" autoComplete="family-name" placeholder="Nom"
                 style={{ ...inputStyle, borderColor: errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
                 onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
                 onBlur={(e) => { e.target.style.borderColor = errors.lastName ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
@@ -208,9 +208,9 @@ const Profile = () => {
         </div>
 
         <div>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Email *</label>
+          <label htmlFor="profile-email" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Email *</label>
           <Controller name="email" control={control} render={({ field }) => (
-            <input {...field} type="email" placeholder="Email"
+            <input {...field} id="profile-email" type="email" inputMode="email" autoCapitalize="none" autoComplete="email" placeholder="Email"
               style={{ ...inputStyle, borderColor: errors.email ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
               onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
               onBlur={(e) => { e.target.style.borderColor = errors.email ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
@@ -220,9 +220,9 @@ const Profile = () => {
         </div>
 
         <div>
-          <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Rôle dans l'entreprise</label>
+          <label htmlFor="profile-jobTitle" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Rôle dans l'entreprise</label>
           <Controller name="jobTitle" control={control} render={({ field }) => (
-            <input {...field} type="text" placeholder="Directeur commercial, CEO..."
+            <input {...field} id="profile-jobTitle" type="text" autoComplete="organization-title" placeholder="Directeur commercial, CEO..."
               style={{ ...inputStyle, borderColor: 'rgba(255,255,255,0.09)' }}
               onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
               onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; field.onBlur() }}
