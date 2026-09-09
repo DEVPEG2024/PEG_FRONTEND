@@ -97,14 +97,14 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Isole quelques grosses libs autonomes dans leurs propres chunks
-        // (meilleur cache navigateur ; formio/pdf restent charges a la demande
-        // car seuls des composants lazy les importent). Conservateur : ne
-        // touche que des libs feuilles, tout le reste garde le decoupage auto.
+        // Isole deux libs FEUILLES dans leurs propres chunks (meilleur cache
+        // navigateur). Volontairement limité : regrouper formio ou react-pdf
+        // ici aspirait React dans le chunk, qui cessait d'être une feuille —
+        // Vite le rattachait alors à l'entrée et le préchargeait sur l'écran
+        // de connexion (~900 Ko inutiles). Sans règle, le découpage paresseux
+        // automatique les garde derrière les composants lazy() qui les importent.
         manualChunks(id: string) {
           if (!id.includes('node_modules')) return;
-          if (id.includes('@react-pdf') || id.includes('/react-pdf/')) return 'vendor-pdf';
-          if (id.includes('formio')) return 'vendor-formio';
           if (id.includes('react-icons')) return 'vendor-icons';
           if (id.includes('@stripe')) return 'vendor-stripe';
         }

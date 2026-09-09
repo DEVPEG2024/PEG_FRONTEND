@@ -24,7 +24,7 @@
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.form.io;
         img-src 'self' data: blob: https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com https://www.imbretex.fr https://admin.preprod.imbretex-upgrade.hegyd.net https://admin.imbretex.fr;
         connect-src 'self' https://api.mypeg.fr https://api-int.mypeg.fr https://*.stripe.com https://peg-backend.vercel.app wss://peg-backend.vercel.app https://cdn.jsdelivr.net https://www.imbretex.fr https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
-        frame-src blob: https://*.stripe.com;
+        frame-src blob: https://*.stripe.com https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
         font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.form.io;
         media-src 'self' blob: https://strapi-mypeg-aws-s3-images.s3.eu-west-3.amazonaws.com;
         worker-src 'self' blob:;
@@ -68,7 +68,42 @@
   </head>
   <body>
     <noscript>Vous devez activer JavaScript pour exécuter cette application.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Repli affiché avant le montage de React (~6,5 s sur mobile 4G) :
+           tout est inline, aucune requête réseau. React remplace le contenu
+           de #root en montant, il n'y a donc rien à retirer à la main. -->
+      <style>
+        #peg-boot {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #0f1c2e;
+        }
+        #peg-boot svg {
+          width: min(220px, 48vw);
+          height: auto;
+          opacity: 0.28;
+          animation: peg-boot-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes peg-boot-pulse {
+          0%, 100% { opacity: 0.16; }
+          50% { opacity: 0.4; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #peg-boot svg { animation: none; opacity: 0.28; }
+        }
+      </style>
+      <div id="peg-boot" aria-hidden="true">
+        <svg viewBox="0 0 1130 467" xmlns="http://www.w3.org/2000/svg" fill="#fff">
+          <path d="M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z"/>
+          <path d="M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z"/>
+          <path d="M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z"/>
+          <circle cx="1027.8" cy="331.5" r="82"/>
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       const global = globalThis;

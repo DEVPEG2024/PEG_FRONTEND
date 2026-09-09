@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { MdClose, MdInstallMobile, MdIosShare, MdRefresh } from 'react-icons/md'
 import { useLocation } from 'react-router-dom'
 import useResponsive from '@/utils/hooks/useResponsive'
+import { clearDeferredInstallPrompt, getDeferredInstallPrompt } from '@/main'
 
 /**
  * Le bandeau est en position fixed en bas de l'écran. Sur les écrans du tunnel
@@ -143,12 +144,21 @@ const PwaInstallPrompt = () => {
   useEffect(() => {
     if (isStandalone() || isRecentlyDismissed()) return
 
+    // L'evenement a le plus souvent ete emis avant ce montage (sur /sign-in) et
+    // n'est jamais rejoue : on le recupere la ou il a ete memorise au demarrage.
+    const pending = getDeferredInstallPrompt()
+    if (pending) {
+      deferredRef.current = pending
+      setCanInstall(true)
+    }
+
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
       deferredRef.current = event as BeforeInstallPromptEvent
       setCanInstall(true)
     }
     const onInstalled = () => {
+      clearDeferredInstallPrompt()
       deferredRef.current = null
       setCanInstall(false)
       setShowIosHint(false)
@@ -204,8 +214,9 @@ const PwaInstallPrompt = () => {
       })
     }
 
-    navigator.serviceWorker
-      .register('/sw.js')
+    // L'enregistrement est fait au demarrage (main.tsx), pour tous les visiteurs
+    // y compris non connectes : ici on se contente d'attendre la registration.
+    navigator.serviceWorker.ready
       .then((registration) => {
         if (cancelled) return
         registrationRef.current = registration
@@ -230,6 +241,7 @@ const PwaInstallPrompt = () => {
     const event = deferredRef.current
     if (!event) return
     deferredRef.current = null
+    clearDeferredInstallPrompt()
     setCanInstall(false)
     try {
       await event.prompt()
@@ -242,6 +254,7 @@ const PwaInstallPrompt = () => {
   const dismissInstall = useCallback(() => {
     rememberDismiss()
     deferredRef.current = null
+    clearDeferredInstallPrompt()
     setCanInstall(false)
     setShowIosHint(false)
   }, [])
