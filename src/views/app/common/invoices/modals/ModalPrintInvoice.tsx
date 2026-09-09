@@ -15,6 +15,7 @@ import { OrderItem } from '@/@types/orderItem';
 import { VAT_AMOUNT } from './ModalEditInvoice';
 import { Invoice } from '@/@types/invoice';
 import { countries } from '@/constants/countries.constant';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 const safeAmount = (val: any) => {
   const n = Number(val);
@@ -302,6 +303,14 @@ const ModalPrintInvoice = ({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { smaller } = useResponsive();
+  // Sous md, l'iframe est inutile : iOS Safari ne rend pas un PDF en iframe
+  // (zone blanche) et le rendu coûte un affichage complet pour rien. On sert
+  // directement le lien d'ouverture, qui donne aussi la feuille de partage.
+  const isMobile = smaller.md;
+
+  const invoiceLabel = selectedInvoice?.name ?? '';
+  const downloadName = `Facture-${invoiceLabel.replace(/[^\w.-]+/g, '-') || 'PEG'}.pdf`;
 
   useEffect(() => {
     let cancelled = false;
@@ -454,12 +463,45 @@ const ModalPrintInvoice = ({
                 <p>Erreur : {pdfError}</p>
               </div>
             )}
-            {pdfUrl && (
+            {pdfUrl && !isMobile && (
               <iframe
                 src={pdfUrl}
                 style={{ width: '100%', flex: 1, border: 'none', borderRadius: 12, background: '#fff' }}
                 title={`Facture ${selectedInvoice?.name ?? ''}`}
               />
+            )}
+            {pdfUrl && isMobile && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 14, padding: '0 8px' }}>
+                Le PDF est prêt : ouvrez-le pour le consulter, l'enregistrer ou le partager.
+              </div>
+            )}
+            {/* Seule sortie du PDF : sans ce lien, un blob affiché en iframe
+                n'est ni téléchargeable ni partageable (aucun href dans l'écran). */}
+            {pdfUrl && (
+              <a
+                href={pdfUrl}
+                download={downloadName}
+                target="_blank"
+                rel="noopener"
+                className="peg-tap-target"
+                style={{
+                  marginTop: 12,
+                  alignSelf: 'center',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '10px 22px',
+                  borderRadius: 10,
+                  background: 'rgba(47,111,237,0.15)',
+                  border: '1px solid rgba(47,111,237,0.35)',
+                  color: '#6fa3f5',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Ouvrir / Enregistrer le PDF
+              </a>
             )}
           </div>
         </div>

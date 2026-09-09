@@ -49,6 +49,10 @@ const ProjectBat = () => {
   const [batCommentInput, setBatCommentInput] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Même garde que dans l'aperçu plein écran : l'approbation d'un BAT est un
+  // accord de production, elle ne doit pas pouvoir être donnée sans que le
+  // fichier ait été ouvert au moins une fois (l'aperçu peut rester blanc).
+  const [batOpened, setBatOpened] = useState(false);
 
   const orderItem = project?.orderItem;
   const product = orderItem?.product;
@@ -203,6 +207,8 @@ const ProjectBat = () => {
                   <MdFullscreen size={16} /> Plein écran
                 </button>
                 <a href={batFile.url} target="_blank" rel="noreferrer"
+                  onClick={() => setBatOpened(true)}
+                  className="peg-tap-target"
                   style={{
                     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '8px', padding: '6px 14px',
@@ -234,7 +240,9 @@ const ProjectBat = () => {
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setBatAction('approve')}
-                    style={{ flex: 1, minWidth: '140px', background: 'rgba(34,197,94,0.1)', border: '1.5px solid rgba(34,197,94,0.35)', borderRadius: '10px', padding: '12px', color: '#4ade80', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    disabled={!batOpened}
+                    title={!batOpened ? "Ouvrez le BAT avant de l'approuver" : undefined}
+                    style={{ flex: 1, minWidth: '140px', background: 'rgba(34,197,94,0.1)', border: '1.5px solid rgba(34,197,94,0.35)', borderRadius: '10px', padding: '12px', color: '#4ade80', fontWeight: 700, fontSize: '14px', cursor: batOpened ? 'pointer' : 'not-allowed', opacity: batOpened ? 1 : 0.45, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <MdCheckCircle size={16} /> Approuver le BAT
                   </button>
@@ -244,6 +252,11 @@ const ProjectBat = () => {
                   >
                     <MdCancel size={16} /> Refuser le BAT
                   </button>
+                  {!batOpened && (
+                    <p style={{ width: '100%', margin: '4px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                      Ouvrez le BAT pour pouvoir l'approuver.
+                    </p>
+                  )}
                 </div>
               )}
               {batAction === 'approve' && (
@@ -342,6 +355,7 @@ const ProjectBat = () => {
           fileName={batFile.name || ''}
           batStatus={batStatus}
           isClient={!isSuperAdmin}
+          onOpened={() => setBatOpened(true)}
           onApprove={async () => {
             await apiUpdateBatStatus(orderItem!.documentId, 'approved', null);
             toast.success('BAT approuvé');

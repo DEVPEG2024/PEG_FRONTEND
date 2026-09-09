@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { HiX, HiZoomIn, HiZoomOut, HiCheck } from 'react-icons/hi';
 import { MdCheckCircle, MdCancel } from 'react-icons/md';
 import { toast } from 'react-toastify';
@@ -12,13 +13,21 @@ type Props = {
   isClient: boolean;
   onApprove: () => Promise<void>;
   onReject: (comment: string) => Promise<void>;
+  onOpened?: () => void;
 };
 
-const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient, onApprove, onReject }: Props) => {
+const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient, onApprove, onReject, onOpened }: Props) => {
   const [zoom, setZoom] = useState(1);
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const [rejectComment, setRejectComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Le BAT a-t-il réellement été consulté ? On n'arme PAS ce drapeau sur le
+  // `onLoad` de l'iframe : iOS Safari charge le document (onLoad se déclenche)
+  // sans rendre le PDF — l'accord de production serait donné devant une zone
+  // blanche. Une image, elle, est bien affichée : son `onLoad` fait foi.
+  const [opened, setOpened] = useState(false);
+  const { smaller } = useResponsive();
+  const markOpened = () => { setOpened(true); onOpened?.(); };
 
   const isPdf = fileName?.toLowerCase().endsWith('.pdf');
   const isImage = /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(fileName || '');
@@ -88,9 +97,19 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
       {/* Content */}
       <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         {isPdf ? (
-          <iframe src={fileUrl} style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }} />
+          <iframe
+            src={fileUrl}
+            // Sur grand écran, l'aperçu PDF en iframe s'affiche réellement : son
+            // chargement vaut donc consultation et débloque l'approbation.
+            // Sous md en revanche, iOS Safari déclenche `onLoad` alors que la
+            // zone reste blanche — on n'arme rien, et seul le clic explicite sur
+            // « Ouvrir le BAT » compte. Sans cette distinction, un client de
+            // bureau qui voit parfaitement son BAT ne pourrait plus l'approuver.
+            onLoad={() => { if (!smaller.md) markOpened(); }}
+            style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
+          />
         ) : isImage ? (
-          <img src={fileUrl} alt="BAT" style={{
+          <img src={fileUrl} alt="BAT" onLoad={() => markOpened()} style={{
             maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px',
             transform: 'scale(' + zoom + ')', transition: 'transform 0.2s',
             boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
@@ -98,9 +117,29 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
         ) : (
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>Aperçu non disponible pour ce format</p>
-            <a href={fileUrl} target="_blank" rel="noreferrer" style={{ color: '#6fa3f5', fontSize: '13px' }}>Télécharger le fichier</a>
           </div>
         )}
+      </div>
+
+      {/* Issue de secours INCONDITIONNELLE : l'aperçu intégré peut être vide
+          (PDF en iframe sur iOS Safari, format non prévisualisable). Sans ce
+          lien, le client n'a aucun moyen de voir ce qu'il approuve. */}
+      <div style={{ padding: '0 20px 14px', display: 'flex', justifyContent: 'center' }}>
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener"
+          className="peg-tap-target"
+          onClick={() => markOpened()}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '10px 20px', borderRadius: '10px',
+            background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.35)',
+            color: '#6fa3f5', fontSize: '13px', fontWeight: 700, textDecoration: 'none',
+          }}
+        >
+          Ouvrir le BAT
+        </a>
       </div>
 
       {/* Bottom action bar — client only, not yet approved */}
@@ -110,11 +149,11 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
         }}>
           {action === null && (
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => setAction('approve')} style={{
+              <button onClick={() => setAction('approve')} disabled={!opened} title={!opened ? "Ouvrez le BAT avant de l'approuver" : undefined} style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 28px', borderRadius: '12px',
                 background: 'linear-gradient(90deg, #22c55e, #16a34a)', border: 'none', color: '#fff',
-                fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
+                fontSize: '14px', fontWeight: 700, cursor: opened ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif',
+                boxShadow: '0 4px 20px rgba(34,197,94,0.4)', opacity: opened ? 1 : 0.45,
               }}>
                 <MdCheckCircle size={18} /> Approuver le BAT
               </button>
@@ -125,6 +164,11 @@ const BatPreviewModal = ({ open, onClose, fileUrl, fileName, batStatus, isClient
               }}>
                 <MdCancel size={18} /> Refuser
               </button>
+              {!opened && (
+                <p style={{ width: '100%', textAlign: 'center', margin: '10px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                  Ouvrez le BAT ci-dessus pour pouvoir l'approuver.
+                </p>
+              )}
             </div>
           )}
 
