@@ -18,6 +18,7 @@ import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
 import { toast } from 'react-toastify';
 import { Pagination } from '@/components/ui';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 injectReducer('invoices', reducer);
 
@@ -189,6 +190,7 @@ const InvoicesList = () => {
   const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const { smaller } = useResponsive();
   const { user }: { user: User } = useRootAppSelector((state: RootState) => state.auth.user);
   const customer = useRootAppSelector((state: RootState) => state.auth.user.user?.customer);
   const isAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
@@ -414,6 +416,14 @@ const InvoicesList = () => {
                 const stateCfg = STATE_CFG[inv.state] ?? STATE_CFG.pending
                 const payCfg = PAY_CFG[inv.paymentState] ?? PAY_CFG.pending
                 const customerName = inv.customer?.name ?? '—'
+                // L'annulation était la seule action destructive du fichier sans
+                // garde-fou, à 5 px d'« Imprimer » et sans autre libellé qu'un
+                // title= (invisible au doigt).
+                const confirmCancel = () => {
+                  if (window.confirm(`Annuler la facture ${inv.name} ? Elle passera au statut « Annulée » et ne sera plus comptée dans les montants facturés.`)) {
+                    dispatch(updateInvoice({ documentId: inv.documentId, state: 'canceled' }))
+                  }
+                }
                 return (
                   <div key={inv.documentId} className="peg-stack-mobile"
                     style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'border-color 0.15s' }}
@@ -456,7 +466,18 @@ const InvoicesList = () => {
                         </button>
                       )}
                       {isAdmin && <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setEditInvoiceDialog(true)) }} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />}
-                      {isAdmin && <Btn onClick={() => dispatch(updateInvoice({ documentId: inv.documentId, state: 'canceled' }))} icon={<HiBan size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Annuler" disabled={inv.state === 'canceled'} />}
+                      {/* Sous md, l'annulation sort de la rangée d'icônes muettes :
+                          bouton texte rouge, explicite au doigt. Au-dessus de md,
+                          l'icône d'origine est conservée telle quelle. */}
+                      {isAdmin && (smaller.md ? (
+                        <button onClick={confirmCancel} disabled={inv.state === 'canceled'} className="peg-tap-target"
+                          style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '30px', padding: '0 10px', borderRadius: '8px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', cursor: inv.state === 'canceled' ? 'not-allowed' : 'pointer', color: inv.state === 'canceled' ? 'rgba(248,113,113,0.4)' : '#f87171', fontSize: '11px', fontWeight: 700, fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}
+                        >
+                          <HiBan size={13} /> Annuler la facture
+                        </button>
+                      ) : (
+                        <Btn onClick={confirmCancel} icon={<HiBan size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Annuler" disabled={inv.state === 'canceled'} />
+                      ))}
                       {/* Pas de suppression pour une facture de la séquence :
                           elle laisserait un trou injustifiable dans la
                           numérotation. L'annulation ci-dessus la neutralise

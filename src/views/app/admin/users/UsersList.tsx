@@ -1,5 +1,5 @@
 import { Container } from '@/components/shared';
-import { Switcher } from '@/components/ui';
+import { Pagination, Switcher } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { User } from '@/@types/user';
 import { useNavigate } from 'react-router-dom';
@@ -19,13 +19,21 @@ const ROLE_CFG: Record<string, { label: string; bg: string; border: string; colo
 const AVATAR_COLORS = ['rgba(47,111,237,0.3)', 'rgba(168,85,247,0.3)', 'rgba(34,197,94,0.25)', 'rgba(234,179,8,0.25)', 'rgba(239,68,68,0.25)', 'rgba(20,184,166,0.25)']
 const avatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
 
-const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title, disabled }: any) => (
-  <button title={title} onClick={onClick} disabled={disabled} className="peg-tap-target"
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)', transition: 'all 0.15s' }}
-    onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder } }}
-    onMouseLeave={(e) => { if (!disabled) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' } }}
-  >{icon}</button>
-)
+// `danger` teinte l'action destructive AU REPOS : au doigt il n'existe pas de
+// survol, et sans lui la corbeille est le jumeau gris du crayon voisin.
+const Btn = ({ onClick, icon, hoverBg, hoverColor, hoverBorder, title, disabled, danger }: any) => {
+  const isDanger = danger && !disabled
+  const restBg = isDanger ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)'
+  const restBorder = isDanger ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.1)'
+  const restColor = disabled ? 'rgba(255,255,255,0.2)' : isDanger ? '#f87171' : 'rgba(255,255,255,0.5)'
+  return (
+    <button title={title} onClick={onClick} disabled={disabled} className="peg-tap-target"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '8px', background: restBg, border: `1px solid ${restBorder}`, cursor: disabled ? 'not-allowed' : 'pointer', color: restColor, transition: 'all 0.15s' }}
+      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverColor; e.currentTarget.style.borderColor = hoverBorder } }}
+      onMouseLeave={(e) => { if (!disabled) { e.currentTarget.style.background = restBg; e.currentTarget.style.color = restColor; e.currentTarget.style.borderColor = restBorder } }}
+    >{icon}</button>
+  )
+}
 
 const UsersList = () => {
   const dispatch = useAppDispatch();
@@ -33,11 +41,15 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
-  const { users, total, loading, usersId } = useAppSelector((state) => state.users.data);
+  const { users, total, loading, usersId, error } = useAppSelector((state) => state.users.data);
 
-  useEffect(() => {
+  const loadUsers = () => {
     dispatch(getUsers({ pagination: { page: currentPage, pageSize }, searchTerm }));
     dispatch(getUsersIdTable());
+  };
+
+  useEffect(() => {
+    loadUsers();
   }, [currentPage, searchTerm]);
 
   const isUserMissingInfos = (user: User) =>
@@ -71,6 +83,14 @@ const UsersList = () => {
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {Array.from({ length: 6 }).map((_, i) => <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', height: '68px', border: '1px solid rgba(255,255,255,0.06)' }} />)}
+        </div>
+      ) : error ? (
+        <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <IoWarningOutline size={48} style={{ color: 'rgba(239,68,68,0.5)', margin: '0 auto 14px', display: 'block' }} />
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '15px', fontWeight: 600, marginBottom: '16px' }}>Impossible de charger les utilisateurs</p>
+          <button onClick={loadUsers} style={{ background: 'rgba(47,111,237,0.15)', border: '1px solid rgba(47,111,237,0.4)', borderRadius: '10px', padding: '10px 18px', color: '#6b9eff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            Réessayer
+          </button>
         </div>
       ) : users.length === 0 ? (
         <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '16px', padding: '64px 24px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -122,14 +142,28 @@ const UsersList = () => {
                   onChange={() => numericId !== undefined && dispatch(updateUser({ user: { blocked: !user.blocked }, id: String(numericId) }))}
                 />
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
+                {/* Actions — écart porté à 10 px : à 5 px, la corbeille est dans
+                    la zone de frappe du crayon (cible tactile de 44 px). */}
+                <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                   <Btn onClick={() => navigate(`/admin/users/edit/${user.documentId}`)} icon={<HiPencil size={13} />} hoverBg="rgba(47,111,237,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(47,111,237,0.4)" title="Modifier" />
-                  <Btn onClick={() => numericId !== undefined && dispatch(deleteUser(String(numericId)))} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.12)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.3)" title="Supprimer" disabled={isSuperAdmin || numericId === undefined} />
+                  <Btn onClick={() => { if (numericId !== undefined && window.confirm(`Supprimer définitivement le compte de ${fullName} (${user.email}) ? Cette action est irréversible.`)) dispatch(deleteUser(String(numericId))) }} icon={<HiTrash size={13} />} hoverBg="rgba(239,68,68,0.2)" hoverColor="#f87171" hoverBorder="rgba(239,68,68,0.5)" title="Supprimer" danger disabled={isSuperAdmin || numericId === undefined} />
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Sans ce contrôle, `currentPage` restait bloqué à 1 : au-delà du 50e
+          utilisateur, les suivants étaient inatteignables. */}
+      {!loading && !error && total > pageSize && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px', paddingBottom: '40px' }}>
+          <Pagination
+            total={total}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onChange={(page) => setCurrentPage(page)}
+          />
         </div>
       )}
     </Container>

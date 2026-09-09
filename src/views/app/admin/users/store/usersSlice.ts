@@ -19,6 +19,9 @@ export const SLICE_NAME = 'users';
 
 export type UsersStateData = {
   loading: boolean;
+  // Distingue un échec de chargement d'une liste réellement vide : un total de 0
+  // est impossible ici (l'admin qui consulte est lui-même un utilisateur).
+  error: boolean;
   users: User[];
   user: User | null;
   modalDeleteUser: boolean;
@@ -32,11 +35,18 @@ export type UsersStateData = {
 export const getUsers = createAsyncThunk(
   SLICE_NAME + '/getUsers',
   async (data: GetUsersRequest): Promise<GetUsersResponse> => {
-    const {
-      usersPermissionsUsers_connection,
-    }: { usersPermissionsUsers_connection: GetUsersResponse } =
-      await unwrapData(apiGetUsers(data));
-    return usersPermissionsUsers_connection;
+    // La réponse GraphQL peut renvoyer la connexion à null (permissions, erreur
+    // partielle) : ne pas déstructurer à l'aveugle, sinon la page plante
+    // (« Cannot read properties of null (reading 'nodes') »). Une connexion
+    // absente est un ÉCHEC, pas une liste vide → on rejette.
+    const payload: {
+      usersPermissionsUsers_connection?: GetUsersResponse | null;
+    } | null = await unwrapData(apiGetUsers(data));
+    const connection = payload?.usersPermissionsUsers_connection;
+    if (!connection?.nodes) {
+      throw new Error('USERS_CONNECTION_UNAVAILABLE');
+    }
+    return connection;
   }
 );
 
@@ -102,6 +112,7 @@ export const deleteUser = createAsyncThunk(
 
 const initialState: UsersStateData = {
   loading: false,
+  error: false,
   users: [],
   user: null,
   modalDeleteUser: false,
@@ -130,15 +141,18 @@ const productSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(getUsers.pending, (state) => {
       state.loading = true;
+      state.error = false;
     });
     builder.addCase(getUsers.fulfilled, (state, action) => {
       state.loading = false;
+      state.error = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.users = action.payload.nodes as any;
-      state.total = action.payload.pageInfo.total;
+      state.users = (action.payload?.nodes ?? []) as any;
+      state.total = action.payload?.pageInfo?.total ?? 0;
     });
     builder.addCase(getUsers.rejected, (state) => {
       state.loading = false;
+      state.error = true;
     });
 
     builder.addCase(getUsersIdTable.pending, (state) => {

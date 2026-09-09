@@ -48,6 +48,8 @@ const initials = (name: string) =>
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
 
+// `danger` teinte l'action destructive AU REPOS : sur mobile il n'y a pas de
+// survol, et sans lui la corbeille est le jumeau gris des trois autres carrés.
 const Btn = ({
   onClick,
   icon,
@@ -55,38 +57,46 @@ const Btn = ({
   hoverColor,
   hoverBorder,
   title,
-}: any) => (
-  <button
-    title={title}
-    onClick={onClick}
-    className="peg-tap-target"
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '32px',
-      height: '32px',
-      borderRadius: '8px',
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      cursor: 'pointer',
-      color: 'rgba(255,255,255,0.5)',
-      transition: 'all 0.15s',
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.background = hoverBg;
-      e.currentTarget.style.color = hoverColor;
-      e.currentTarget.style.borderColor = hoverBorder;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-      e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-    }}
-  >
-    {icon}
-  </button>
-);
+  danger,
+}: any) => {
+  const restBg = danger ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)';
+  const restBorder = danger
+    ? 'rgba(239,68,68,0.35)'
+    : 'rgba(255,255,255,0.1)';
+  const restColor = danger ? '#f87171' : 'rgba(255,255,255,0.5)';
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      className="peg-tap-target"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '32px',
+        height: '32px',
+        borderRadius: '8px',
+        background: restBg,
+        border: `1px solid ${restBorder}`,
+        cursor: 'pointer',
+        color: restColor,
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = hoverBg;
+        e.currentTarget.style.color = hoverColor;
+        e.currentTarget.style.borderColor = hoverBorder;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = restBg;
+        e.currentTarget.style.color = restColor;
+        e.currentTarget.style.borderColor = restBorder;
+      }}
+    >
+      {icon}
+    </button>
+  );
+};
 
 const CustomersList = () => {
   const dispatch = useAppDispatch();
@@ -119,6 +129,15 @@ const CustomersList = () => {
   const togglePremium = async (c: any) => {
     const docId = String(c?.documentId ?? c?.id);
     const next = !c?.premium;
+    // La bascule engage l'abonnement du client (tarif, remise catalogue, offres
+    // personnalisées) : un appui sur une étoile muette ne suffit pas.
+    const name = c?.name ?? 'ce client';
+    const confirmed = window.confirm(
+      next
+        ? `Passer ${name} en Premium ? Le client aura accès aux offres personnalisées et à la remise de 15 % sur le catalogue.`
+        : `Retirer le statut Premium à ${name} ? Le client repassera en Standard : plus d'offres personnalisées ni de remise catalogue.`
+    );
+    if (!confirmed) return;
     setTogglingId(docId);
     try {
       const r: any = await dispatch(
@@ -470,7 +489,9 @@ const CustomersList = () => {
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                {/* Écart porté à 10 px : à 6,5 px, l'étoile Premium et la
+                    corbeille sont dans la zone de frappe de leurs voisines. */}
+                <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                   <button
                     title={
                       c?.premium
@@ -536,12 +557,21 @@ const CustomersList = () => {
                     title="Modifier"
                   />
                   <Btn
-                    onClick={() => dispatch(deleteCustomer(String(docId)))}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Supprimer définitivement le client ${name} ? Cette action est irréversible.`
+                        )
+                      ) {
+                        dispatch(deleteCustomer(String(docId)));
+                      }
+                    }}
                     icon={<HiTrash size={14} />}
-                    hoverBg="rgba(239,68,68,0.12)"
+                    hoverBg="rgba(239,68,68,0.2)"
                     hoverColor="#f87171"
-                    hoverBorder="rgba(239,68,68,0.3)"
+                    hoverBorder="rgba(239,68,68,0.5)"
                     title="Supprimer"
+                    danger
                   />
                 </div>
               </div>

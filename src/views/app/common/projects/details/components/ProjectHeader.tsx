@@ -43,14 +43,31 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
     dispatch(setEditCurrentProjectDialog(true));
   };
 
+  // États lourds : ils engagent le projet (fin de production, annulation, SAV) ou de l'argent.
+  // La rangée de statuts écrit en base au premier appui et partage des libellés avec la barre
+  // d'onglets juste en dessous (« SAV ») : sans confirmation, un appui de travers change le
+  // statut d'un projet de production sans aucun retour en arrière possible.
+  const confirmMessageFor = (newState: string, label: string): string | null => {
+    const name = project?.name ?? 'ce projet';
+    if (newState === 'pending_paid') {
+      return `Passer le projet « ${name} » en « ${label} » ?\n\nC'est une opération financière : le montant payé sera aligné sur le prix du projet et toutes les ventes additionnelles du projet seront marquées comme encaissées. Ces sommes seront comptées comme encaissées dans le tableau de bord.`;
+    }
+    if (newState === 'fulfilled' || newState === 'canceled' || newState === 'sav') {
+      return `Passer le projet « ${name} » en « ${label} » ?`;
+    }
+    return null;
+  };
+
   const handleStatusChange = (newState: string) => {
     if (newState !== project.state) {
+      const label = statusOptions.find((s) => s.value === newState)?.label ?? newState;
+      const message = confirmMessageFor(newState, label);
+      if (message && !window.confirm(message)) return;
       // « En cours (payé) » : le prix est réglé → paidPrice aligné sur price pour que les KPI du dashboard
       // (Encaissé / Reste à encaisser) comptabilisent le projet. Le serveur applique la même règle.
       const paidSync = newState === 'pending_paid' && (Number(project.paidPrice) || 0) < (Number(project.price) || 0)
         ? { paidPrice: Number(project.price) || 0 }
         : {};
-      const label = statusOptions.find((s) => s.value === newState)?.label ?? newState;
       dispatch(updateCurrentProject({ documentId: project.documentId, state: newState, ...paidSync }))
         .unwrap()
         .then(() => toast.success(`Statut changé en "${label}"`))
@@ -170,9 +187,29 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
           </div>
         </div>
 
-        {/* Row 2 — Status quick-change (admin only) */}
+        {/* Row 2 — Status quick-change (admin only)
+            Encadré + intitulé + puces à coins droits : cette rangée ÉCRIT en base, elle ne doit pas
+            avoir l'aspect de la barre d'onglets qui la suit (mêmes pastilles arrondies, et deux
+            libellés communs — « SAV »). L'écart vertical avec les onglets est aussi élargi. */}
         {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-          <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '4px', marginBottom: '14px' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.035)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '12px',
+            padding: '9px 10px 10px',
+            marginBottom: '24px',
+          }}>
+            <p style={{
+              color: 'rgba(255,255,255,0.55)',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              margin: '0 0 8px',
+            }}>
+              Statut du projet
+            </p>
+            <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '4px' }}>
             {statusOptions.map((opt) => {
               const isActive = project.state === opt.value;
               return (
@@ -182,10 +219,12 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
                   onClick={() => handleStatusChange(opt.value)}
                   style={{
                     padding: '4px 11px',
-                    borderRadius: '100px',
-                    border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.06)'}`,
-                    background: isActive ? opt.bg : 'transparent',
-                    color: isActive ? opt.color : 'rgba(255,255,255,0.35)',
+                    borderRadius: '7px',
+                    border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.12)'}`,
+                    // Inactif lisible et plein : à 0.35 sur fond transparent, ces boutons d'écriture
+                    // avaient l'aspect de puces désactivées. Les couleurs de statut sont inchangées.
+                    background: isActive ? opt.bg : 'rgba(255,255,255,0.05)',
+                    color: isActive ? opt.color : 'rgba(255,255,255,0.62)',
                     fontSize: '10px',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -197,6 +236,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
                 </button>
               );
             })}
+            </div>
           </div>
         )}
 
