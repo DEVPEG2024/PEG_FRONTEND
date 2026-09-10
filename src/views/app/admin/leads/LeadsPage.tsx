@@ -821,12 +821,18 @@ const LeadsPage = () => {
         <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
             {/* ── Header ── */}
             <div className="px-6 pt-6 pb-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0">
-                <div className="flex items-center justify-between mb-5 flex-wrap md:flex-nowrap gap-3 md:gap-0">
+                {/* Le retour à la ligne reste possible à TOUTE largeur : avec
+                    `md:flex-nowrap`, dès 768px d'écran les trois boutons étaient
+                    forcés sur la ligne du titre alors que, barre de navigation
+                    déduite, il ne restait que 478px — « Nouveau lead » sortait de
+                    118px et disparaissait. Quand la place existe, `flex-wrap`
+                    ne change rien au rendu. */}
+                <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Leads & Prospection</h1>
                         <p className="text-sm text-gray-400 mt-0.5">{leads.length} leads · {fmtEur(leads.reduce((s, l) => s + l.value, 0))} en valeur totale</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {/* Import */}
                         <button
                             onClick={() => fileInputRef.current?.click()}

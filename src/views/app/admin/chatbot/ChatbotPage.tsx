@@ -621,8 +621,14 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
   const avatarUrl = config?.avatarUrl;
   const botName = config?.name ?? 'Assistant';
 
+  /* `minWidth` : le wrapper autorise déjà le retour à la ligne, mais avec
+     `flex: 1` seul (base 0) l'aperçu acceptait n'importe quelle largeur au
+     lieu de passer sous la configuration — à 1024px d'écran il ne faisait
+     plus que 177px : « Réinitialiser » coupé, champ de saisie écrasé.
+     320px = en-tête (avatar, nom, bouton) + ligne de saisie. Dès qu'il y a
+     420 + 16 + 320px de place, rien ne change (bureau ≥ 1280). */
   return (
-    <div style={{ ...PANEL, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ ...PANEL, flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header preview */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

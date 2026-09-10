@@ -1718,10 +1718,19 @@ const CalendarPage = () => {
         )
     }
 
+    /* `@container` : le repli du panneau latéral se décide sur la largeur DU
+       CALENDRIER (`@max-[960px]:` / `@min-[960px]:`), pas sur celle de l'écran
+       (`md:`). L'application place déjà une barre de navigation de 290px à
+       gauche : à 768px d'écran (iPad en portrait) il ne restait que 478px,
+       dont 224px pour ce panneau — la barre d'outils débordait de 128px et
+       les en-têtes de jours se chevauchaient. 960px = 224px de panneau +
+       ~720px pour que la barre d'outils tienne sur une ligne. En dessous, le
+       panneau devient le tiroir que la page avait déjà pour le téléphone
+       (bouton ☰). */
     return (
-        <div className="flex h-screen peg-dvh overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
+        <div className="@container flex h-screen peg-dvh overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
             {/* ── Sidebar ── */}
-            <aside className={`w-56 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col p-4 gap-4 overflow-y-auto max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-30 max-md:w-64 max-md:max-w-[85vw] max-md:shadow-2xl ${panelOpen ? '' : 'max-md:hidden'}`}>
+            <aside className={`w-56 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col p-4 gap-4 overflow-y-auto @max-[960px]:absolute @max-[960px]:inset-y-0 @max-[960px]:left-0 @max-[960px]:z-30 @max-[960px]:w-64 @max-[960px]:max-w-[85vw] @max-[960px]:shadow-2xl ${panelOpen ? '' : '@max-[960px]:hidden'}`}>
                 {/* Logo */}
                 <div className="flex items-center gap-2 px-1">
                     <BsCalendar3 className="w-5 h-5 text-blue-600" />
@@ -1817,20 +1826,21 @@ const CalendarPage = () => {
             {panelOpen && (
                 <div
                     onClick={() => setPanelOpen(false)}
-                    className="absolute inset-0 z-20 bg-black/40 md:hidden"
+                    className="absolute inset-0 z-20 bg-black/40 @min-[960px]:hidden"
                 />
             )}
 
             {/* ── Main ── */}
             <main className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                {/* Toolbar */}
-                <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0 max-md:px-3 max-md:flex-wrap max-md:gap-2">
+                {/* Toolbar — même seuil de conteneur que le panneau : sous 960px
+                    de largeur de calendrier, elle peut passer sur deux lignes. */}
+                <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shrink-0 @max-[960px]:px-3 @max-[960px]:flex-wrap @max-[960px]:gap-2">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setPanelOpen((o) => !o)}
                             aria-label="Panneau du calendrier"
                             aria-expanded={panelOpen}
-                            className="flex md:hidden items-center justify-center w-11 h-11 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="flex @min-[960px]:hidden items-center justify-center w-11 h-11 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             <HiOutlineMenu className="w-5 h-5 text-gray-500" />
                         </button>

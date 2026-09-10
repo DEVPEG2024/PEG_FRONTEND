@@ -720,7 +720,17 @@ export default function DashboardAdmin() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Colonnes : 1 sous 1024px d'écran, 2 jusqu'à 1279, 3 au-delà — à
+              partir de 1280 le rendu est IDENTIQUE à l'ancien `lg:grid-cols-3`.
+              L'ancien `md:grid-cols-2 lg:grid-cols-3` comptait sur la largeur
+              de l'écran sans déduire la barre de navigation (290px) : sur iPad
+              (768 / 1024) les widgets faisaient 231px et leurs légendes
+              (« 100 % », « 70 % »), le « + » du pense-bête et « Ouvrir → » du
+              calendrier étaient rognés. Le `col-span-2` suit le même seuil :
+              avec une seule colonne, il créerait une piste implicite qui
+              déborderait. Mise en page uniquement — aucun libellé, aucun
+              widget, aucune note touchés. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {visibleWidgets.map((wid, index) => {
               const def = WIDGET_DEFS.find(w => w.id === wid)
               if (!def) return null
@@ -736,7 +746,7 @@ export default function DashboardAdmin() {
                   onDrop={editMode ? handleDrop(index) : undefined}
                   onDragEnd={editMode ? handleDragEnd : undefined}
                   className={[
-                    def.span === 2 ? 'md:col-span-2' : '',
+                    def.span === 2 ? 'lg:col-span-2' : '',
                     'transition-all duration-200',
                     isDragging ? 'opacity-40 scale-[0.97]' : '',
                     isOver ? 'scale-[1.01]' : '',
