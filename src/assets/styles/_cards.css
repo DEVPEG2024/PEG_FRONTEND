@@ -1,0 +1,55 @@
+/* =============================================================================
+   PEG — CARTES ADAPTATIVES (feuille ADDITIVE et REVERTABLE)
+   -----------------------------------------------------------------------------
+   Retirer l'unique `@import "./_cards.css";` de `app.css` supprime tout.
+
+   LE PROBLÈME QU'ELLE RÈGLE
+   La carte projet (`ProjectItem`) est une rangée : photo de 200px FIXES à gauche,
+   contenu à droite, `overflow: hidden`. Sa grille comptait les colonnes selon
+   la largeur de l'ÉCRAN (`md:grid-cols-2 lg:grid-cols-3`), sans tenir compte de
+   la barre latérale de 290px. Sur un iPad en portrait, deux colonnes de 199px
+   pour une photo de 200px : le contenu (statut, nom, avancement, prix) était
+   entièrement rogné — la carte n'affichait que la photo. Mesuré le 10/09/2026
+   en production : 21 cartes sur 21 coupées à 768, 820, 1024 et 1280px de large,
+   19 sur 21 à 1440px. Seul le téléphone s'en sortait, parce que le socle mobile
+   empile la carte sous 768px.
+
+   LA RÈGLE
+   Le socle mobile empile selon la largeur de l'ÉCRAN ; ici on empile selon la
+   largeur de la CARTE elle-même (container query), quel que soit l'écran. Les
+   déclarations sont volontairement IDENTIQUES à `.peg-stack-mobile` /
+   `.peg-full-mobile` de `_mobile.css` : une carte empilée sur iPad est la même
+   carte qu'on voit sur téléphone, pas un troisième rendu.
+
+   Seuil : 440px = 200px de photo + 14px d'écart + 36px de marges internes + le
+   minimum lisible pour le contenu (~190px). C'est LE MÊME nombre que la largeur
+   minimale de colonne de la grille (`ProjectListContent`) : une carte plus
+   étroite que ce qu'une rangée exige s'empile, sinon elle reste en rangée. Ne
+   pas faire diverger les deux valeurs — à 400 ici et 440 là, un iPad en
+   portrait (colonne de 413px) restait en rangée avec 161px de contenu.
+
+   Sans prise en charge des container queries (Safari < 16, 2022), la règle est
+   ignorée : rendu identique à l'existant, aucune régression possible. Le
+   `!important` est là pour battre les styles INLINE de la carte, comme dans le
+   socle mobile.
+   ============================================================================= */
+
+.peg-card-cq {
+  container-type: inline-size;
+}
+
+@container (max-width: 439.98px) {
+  .peg-card-cq > .peg-stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .peg-card-cq > .peg-stack-mobile > * {
+    min-width: 0;
+  }
+  .peg-card-cq .peg-full-mobile {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-basis: auto !important;
+  }
+}

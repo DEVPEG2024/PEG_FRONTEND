@@ -78,6 +78,9 @@ const ProjectItem = ({
 
   return (
     <div
+      /* `peg-card-cq` : la carte mesure SA propre largeur et s'empile (photo
+         au-dessus) sous 440px, quel que soit l'écran — voir `_cards.css`. */
+      className="peg-card-cq"
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = 'translateY(-3px)';

@@ -4,3 +4,5 @@
 @import "./tailwind/index.css";
 /* Socle mobile — ADDITIF. Retirer cet import suffit à annuler tout le chantier. */
 @import "./_mobile.css";
+/* Cartes adaptatives (container queries) — ADDITIF, même principe. */
+@import "./_cards.css";

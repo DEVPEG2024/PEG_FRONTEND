@@ -91,7 +91,22 @@ const ProjectListContent = ({
                 {sectionProjects.length}
               </span>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+            {/* Le nombre de colonnes se déduit de la place RÉELLE, pas de la
+                largeur de l'écran : `md:grid-cols-2 lg:grid-cols-3` ignorait la
+                barre latérale de 290px et donnait, sur iPad, des colonnes de
+                199px à une carte dont la photo seule fait 200px — le contenu
+                était entièrement rogné. 440px = ce qu'une carte en rangée
+                demande (photo 200 + écart 14 + marges 36 + contenu lisible).
+                `min(100%, …)` : jamais plus large que le conteneur (téléphone).
+                `auto-fill` et non `auto-fit` : une section à une seule carte
+                garde une carte de largeur normale, pas une carte pleine page.
+                Si une colonne finit malgré tout sous 440px (iPad en portrait :
+                413px), la carte s'empile d'elle-même — voir `_cards.css`, qui
+                utilise volontairement le MÊME seuil. */}
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 440px), 1fr))' }}
+            >
               {sectionProjects.map((project) => (
                 <ProjectItem
                   key={project.documentId}
