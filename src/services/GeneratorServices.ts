@@ -10,6 +10,7 @@ import type {
     BankDetails,
     Commission,
     CustomerReferralSpace,
+    DeleteGeneratorResult,
     GeneratorAdminDetail,
     GeneratorAdminRow,
     GeneratorPayout,
@@ -253,6 +254,21 @@ export async function apiUpdateGenerator(
         method: 'put',
         data: payload,
     });
+}
+
+/**
+ * Supprime définitivement une fiche Générateur (admin).
+ * Le serveur applique la cascade complète : commissions, demandes de
+ * versement et versements supprimés, filleuls détachés, comptes de connexion
+ * dédiés (rôle « generator ») supprimés. Pour un client parrain, le compte
+ * client est conservé — seul son profil de parrainage disparaît.
+ */
+export async function apiDeleteGenerator(documentId: string): Promise<DeleteGeneratorResult> {
+    const res = await ApiService.fetchData<DeleteGeneratorResult>({
+        url: `${REFERRAL_URL}/admin/generators/${documentId}`,
+        method: 'delete',
+    });
+    return res.data;
 }
 
 /**

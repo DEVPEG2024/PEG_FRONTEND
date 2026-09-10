@@ -28,6 +28,7 @@ import {
     TbDownload,
     TbCamera,
     TbPaperclip,
+    TbTrash,
 } from 'react-icons/tb';
 import type {
     GeneratorAdminDetail,
@@ -39,6 +40,7 @@ import type {
 import {
     apiCreateGenerator,
     apiCreateGeneratorPayout,
+    apiDeleteGenerator,
     apiGetGeneratorDetail,
     apiGetGenerators,
     apiGetPayoutRequests,
@@ -270,6 +272,9 @@ const GeneratorsAdminList = () => {
 
     const [cancelTarget, setCancelTarget] = useState<{ documentId: string; reference: string } | null>(null);
     const [cancelReason, setCancelReason] = useState('');
+
+    /** Fiche dont la suppression est en attente de confirmation */
+    const [deleteFor, setDeleteFor] = useState<GeneratorAdminRow | null>(null);
 
     const [customerQuery, setCustomerQuery] = useState('');
     const [customerResults, setCustomerResults] = useState<ReferralCustomer[]>([]);
@@ -549,6 +554,46 @@ const GeneratorsAdminList = () => {
             await refreshAll(expandedId === row.documentId ? row.documentId : undefined);
         } catch {
             toast.error('Erreur lors de la mise à jour');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    /**
+     * Suppression définitive, sans blocage fonctionnel : le serveur applique la
+     * cascade complète (commissions, versements, filleuls détachés, compte dédié).
+     * Les conséquences chiffrées ont été annoncées dans la modale de confirmation.
+     */
+    const confirmDeleteGenerator = async () => {
+        if (!deleteFor) return;
+        const target = deleteFor;
+        setBusy(true);
+        try {
+            await apiDeleteGenerator(target.documentId);
+            toast.success(`${target.name} supprimé`);
+            setDeleteFor(null);
+            if (expandedId === target.documentId) {
+                setExpandedId(null);
+                setDetail(null);
+                lastDetailRequest.current = null;
+            }
+            await refreshAll();
+        } catch (err: any) {
+            const status = err?.response?.status;
+            if (status === 405) {
+                // Route absente : Strapi répond « Method Not Allowed » tant que le
+                // backend portant DELETE n'est pas déployé (vérifié sur int et prod
+                // le 10/09/2026). Un 404, lui, vient d'un backend À JOUR dont la
+                // fiche n'existe plus : on le traite comme tel, pas comme un
+                // serveur en retard.
+                toast.error('Suppression indisponible : le serveur doit être mis à jour.');
+            } else if (status === 404) {
+                toast.error(`${target.name} n'existe plus — la liste a été actualisée`);
+                setDeleteFor(null);
+                await refreshAll();
+            } else {
+                toast.error(err?.response?.data?.error?.message || 'Erreur lors de la suppression');
+            }
         } finally {
             setBusy(false);
         }
@@ -1182,6 +1227,14 @@ const GeneratorsAdminList = () => {
                                         >
                                             {row.active ? 'Désactiver' : 'Réactiver'}
                                         </button>
+                                        <button
+                                            onClick={() => setDeleteFor(row)}
+                                            style={buttonStyle('danger')}
+                                            disabled={busy}
+                                            title="Supprimer définitivement cette fiche — commissions et versements supprimés, filleuls détachés (leurs fiches clients sont conservées)"
+                                        >
+                                            <TbTrash size={14} /> Supprimer
+                                        </button>
                                     </div>
                                 </div>
 
@@ -1775,6 +1828,114 @@ const GeneratorsAdminList = () => {
                         </button>
                         <button onClick={confirmCancelCommission} style={buttonStyle('danger')} disabled={busy}>
                             <TbX size={14} /> Annuler la commission
+                        </button>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Modale : suppression définitive d'une fiche Générateur */}
+            {deleteFor && (
+                <Modal title={`Supprimer ${deleteFor.name}`} onClose={() => setDeleteFor(null)}>
+                    <div
+                        style={{
+                            background: 'rgba(239,68,68,0.08)',
+                            border: '1px solid rgba(239,68,68,0.28)',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            marginBottom: '14px',
+                            color: '#fca5a5',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                        }}
+                    >
+                        Cette action est définitive et ne peut pas être annulée.
+                    </div>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '0 0 10px' }}>
+                        En supprimant cette fiche :
+                    </p>
+                    <ul
+                        style={{
+                            color: 'rgba(255,255,255,0.7)',
+                            fontSize: '13px',
+                            lineHeight: 1.55,
+                            margin: '0 0 18px',
+                            paddingLeft: '18px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                        }}
+                    >
+                        <li>
+                            <strong style={{ color: '#fff' }}>{deleteFor.referralsCount}</strong>{' '}
+                            {deleteFor.referralsCount > 1 ? 'filleuls détachés' : 'filleul détaché'} — les fiches
+                            clients sont conservées, elles ne sont simplement plus rattachées à aucun parrain.
+                        </li>
+                        <li>
+                            Commissions supprimées :{' '}
+                            <strong style={{ color: '#fff' }}>{formatEuros(deleteFor.stats.totalCommissions)}</strong>{' '}
+                            cumulées
+                            {deleteFor.stats.availableBalance > 0 && (
+                                <>
+                                    , dont{' '}
+                                    <strong style={{ color: '#f87171' }}>
+                                        {formatEuros(deleteFor.stats.availableBalance)}
+                                    </strong>{' '}
+                                    de solde disponible non versé
+                                </>
+                            )}
+                            {deleteFor.stats.pendingCommissions > 0 && (
+                                <>, dont {formatEuros(deleteFor.stats.pendingCommissions)} en attente de validation</>
+                            )}
+                            {deleteFor.stats.paidCommissions > 0 && (
+                                <>
+                                    , dont {formatEuros(deleteFor.stats.paidCommissions)} déjà versés (les versements
+                                    enregistrés sont supprimés eux aussi)
+                                </>
+                            )}
+                            .
+                        </li>
+                        {(deleteFor.creditBalance ?? 0) > 0 && (
+                            <li>
+                                Avoir perdu :{' '}
+                                <strong style={{ color: '#f87171' }}>{formatEuros(deleteFor.creditBalance ?? 0)}</strong>{' '}
+                                — commissions converties en avoir, encore utilisable au panier. Il disparaît avec
+                                la fiche et ne peut pas être restitué.
+                            </li>
+                        )}
+                        {deleteFor.kind === 'customer' ? (
+                            <li>
+                                Le compte client est conservé ; seul son profil de parrainage (code, commissions,
+                                filleuls{(deleteFor.creditBalance ?? 0) > 0 ? ', avoir' : ''}) est supprimé.
+                            </li>
+                        ) : deleteFor.userDocumentId ? (
+                            <li>
+                                Le compte de connexion{deleteFor.email ? ` ${deleteFor.email}` : ''} est supprimé :
+                                ce Générateur ne pourra plus se connecter.
+                            </li>
+                        ) : (
+                            <li>Aucun compte de connexion n&apos;est rattaché à cette fiche.</li>
+                        )}
+                        <li>
+                            Le code de parrainage{' '}
+                            <strong style={{ color: '#fff' }}>{deleteFor.referralCode}</strong> cesse de fonctionner.
+                        </li>
+                    </ul>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => setDeleteFor(null)}
+                            style={buttonStyle('ghost')}
+                            className="peg-tap-target"
+                            disabled={busy}
+                        >
+                            Retour
+                        </button>
+                        <button
+                            onClick={confirmDeleteGenerator}
+                            style={buttonStyle('danger')}
+                            className="peg-tap-target"
+                            disabled={busy}
+                        >
+                            <TbTrash size={14} /> Supprimer définitivement
                         </button>
                     </div>
                 </Modal>

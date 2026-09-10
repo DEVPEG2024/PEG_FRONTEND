@@ -228,6 +228,41 @@ export type GeneratorAdminRow = {
   userDocumentId: string | null;
   referralsCount: number;
   stats: GeneratorStats;
+  /**
+   * Avoir porté par la fiche (commissions converties en crédit utilisable au
+   * panier). Optionnel : absent tant que le serveur n'est pas mis à jour.
+   */
+  creditBalance?: number;
+};
+
+/**
+ * Réponse de DELETE /referral/admin/generators/:documentId.
+ * La suppression est une cascade complète côté serveur : les `counts`
+ * rendent compte de ce qui a réellement été supprimé ou détaché.
+ */
+export type DeleteGeneratorResult = {
+  deleted: true;
+  generator: {
+    documentId: string;
+    name: string;
+    kind: ReferrerKind | null;
+    /** Avoir que portait la fiche, perdu avec elle (0 si aucun) */
+    creditBalance: number;
+  };
+  counts: {
+    /** Commissions supprimées (tous statuts confondus) */
+    commissions: number;
+    /** Demandes de versement supprimées */
+    payoutRequests: number;
+    /** Versements supprimés */
+    payouts: number;
+    /** Filleuls détachés (fiches clients conservées) */
+    referredCustomers: number;
+    /** Comptes de connexion supprimés (rôle « generator » uniquement) */
+    usersDeleted: number;
+    /** Comptes de connexion d'un autre rôle, seulement détachés */
+    usersDetached: number;
+  };
 };
 
 /** Détail admin d'un générateur */
