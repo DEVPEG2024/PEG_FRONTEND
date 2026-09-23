@@ -249,6 +249,11 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - Envoie le **token JWT** (`Authorization: Bearer`) + `origin` dans `POST /chatbot/chat` ; **plus de préchargement** figé (données live via outils).
 - **Rendu markdown** des réponses (gras/italique/listes/liens) → les offres s'affichent proprement. Suggestions **envoyées au clic**. Responsive (`min(…, 100vw/vh)`) + a11y (`role=dialog/log`, `aria-live`, `aria-label`, focus à l'ouverture). Badge « mode limité » si session expirée.
 
+### Prompt « produit d'abord » + cartes visuelles (23/09/2026)
+- **Prompt** : `DEFAULT_SYSTEM_PROMPT` (identité, ton ultra-court, exemples) — **remplacé par le prompt enregistré dans `/admin/ia/chatbot`** s'il existe ; bouton admin « Charger le prompt recommandé » (`defaultSystemPrompt` dans la config admin). Les règles non négociables (outils, fiche produit plutôt que catégorie, états projet, cartes, contact SAV `contact@hellonova.fr · 06 59 25 28 23`) sont dans `TOOL_GUIDANCE`, **toujours ajouté**. Les vraies pages du front sont listées dans `accountContext` (fini les `[LIEN_…]` inventés).
+- **Cartes** : chaque produit / projet / facture / devis lu par un outil est inscrit dans un registre serveur indexé par **son lien** (`registerCard`). SSE `cards` après chaque outil + `cards` dans `done` / réponse JSON (seulement les cartes citées). Le widget rend en carte (`ChatCardView.tsx`) tout lien `[Nom](url)` **seul sur sa ligne** dont l'url est dans les cartes (`renderChatMarkdown(content, { cards, onNavigate })`). **Le modèle choisit quelle carte montrer, jamais son contenu.**
+- Rétro-compatible dans les deux sens (backend sans cartes → liens simples).
+
 ### ⚠️ Ordre de déploiement
 - **Backend Strapi d'abord** (int → prod) pour que les outils existent. Changements mutuellement rétro-compatibles, mais feature active seulement une fois le back **redéployé** (peg-prod = déploiement Heroku manuel). Nécessite `GROQ_API_KEY` (déjà présent).
 - Nouveaux outils = **lecture seule**. Actions d'écriture (créer un devis/ticket) volontairement **non implémentées** (décision produit).
