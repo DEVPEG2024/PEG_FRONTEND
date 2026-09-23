@@ -216,11 +216,24 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 
 ### Concept
 - Le widget en bas à droite (`ChatWidget.tsx`) n'est plus un simple LLM sans données : c'est un **agent** qui interroge **en direct les vraies données PEG** via des **outils (function calling Groq)**. Il sait renseigner le client avec justesse **et préparer des offres chiffrées**.
-- Modèle : Groq `llama-3.3-70b-versatile` (env `GROQ_MODEL`). Boucle agentique côté backend, **max 6 itérations** d'appels d'outils.
+- Modèle : env **`GROQ_MODEL`**, défaut **`openai/gpt-oss-120b`** (mise à jour 23/09/2026). ⚠️ `llama-3.3-70b-versatile` a été **retiré du palier gratuit Groq le 16/08/2026** : toute l'IA PEG est restée muette 38 jours sans alerte. `GROQ_MODEL` est posé sur peg-int et peg-prod ; l'Express le lit aussi. Modèles raisonnants → `reasoning_effort: 'low'` (géré par `groqChat()`). Boucle agentique côté backend, **max 5 itérations**.
+- **Quota Groq** : compte en palier gratuit = **8 000 tokens/min partagés int + prod**. Une offre = 3 appels ≈ 7 000 tokens → 429 dès deux clients simultanés. Passage au **Dev Tier** (pay-as-you-go, ~0,002 € par tour) = décision Nova. Les tokens consommés sont dans le log `chatbot agent {…}` (`tokensIn`, `tokensCached`, `tokensOut`).
+
+### Mise à jour 23/09/2026 — streaming, fiabilité, coûts
+- **Streaming SSE** : `POST /chatbot/chat/stream` (événements `open`, `status` = outil en cours, `delta`, `done`, `error` ; battement de cœur 10 s). Le widget l'utilise et **retombe sur `POST /chatbot/chat`** si la route est absente (ordre de déploiement sans risque). Même cœur (`runCustomerAgent`) pour les deux routes.
+- **gpt-oss** : paramètres optionnels des outils rendus **nullables** (`makeOptionalNullable`) — sinon Groq rejette l'appel (400 `tool_use_failed`). Un seul réessai sur `tool_use_failed`.
+- **429** : une attente du délai indiqué puis un essai en contexte allégé. **Aucun chiffrage en mode dégradé** (un total calculé par le modèle omettait la livraison → ≠ montant Stripe).
+- **Contexte** : FAQ/documents choisis **par pertinence** (2 000 / 2 400 c), 12 derniers messages × 2 000 c, `rechercher_catalogue` compact (12 produits). Ordre du prompt = stable puis variable (cache de prompt Groq, tokens en cache non décomptés).
+- **Sorties JSON admin** (fiche produit, formulaire, suggestions, contenu) : `response_format: json_schema` via `groqJson()`, plus de regex.
+- **Historique** : une ligne par `conversation_id` (colonnes ajoutées au boot). Les colonnes JSONB arrivent **en chaîne** dans ce pool pg → toujours `parseJsonArray/parseJsonObject`.
+- **Images IA** : copiées sur S3 (`persistRemoteImage`) — l'URL fal.ai est éphémère et son hôte était hors CSP.
+- **Codes HTTP** : `ctx.send(body, status)` — `ctx.status = N; ctx.send()` renvoie 200 (send réécrit le statut).
+- **Rate-limit** : IP = **dernier** hop de `X-Forwarded-For` (le premier se forge). Plafond global de tours anonymes : `CHATBOT_ANON_PER_MINUTE` (20).
+- ⚠️ **Prompt système de prod** (saisi en avril, ~9 000 c) : copier-coller d'une conversation avec une autre IA, liens fictifs `[LIEN_CATEGORIE_…]`, lien vers une preview Vercel protégée, et interdiction des devis qui contredit l'agent. Une version nettoyée (~1 300 c) est en place **sur int uniquement** ; la remplacer en prod depuis `/admin/ia/chatbot` = décision Nova.
 
 ### Backend — `peg_strapi/src/api/chatbot/controllers/chatbot.ts` → `customerChat`
 - **Auth FIABLE** : le client est identifié par son **JWT vérifié côté serveur** (`resolveCustomer`), **jamais** par un `userId` envoyé dans le body. Sans token valide → mode anonyme (pas d'accès aux données perso ni au catalogue). La réponse renvoie `authenticated: boolean` (le widget affiche « mode limité » si token présent mais non résolu = session expirée).
-- **Sécurité** : messages entrants sanitizés (seuls `user`/`assistant`, 20 derniers, 4000 c — rejet de `system`/`tool` forgés) ; `origin` validé contre une allowlist d'hôtes ; **tous** les outils filtrent sur `customer.documentId` ; commentaires projet filtrés sur `visibility ∈ {all, customer}` (jamais les notes admin/producteur) ; `mes_documents` double-filtre `visibleToCustomer=true`.
+- **Sécurité** : messages entrants sanitizés (seuls `user`/`assistant`, 12 derniers, 2000 c — rejet de `system`/`tool` forgés) ; `origin` validé contre une allowlist d'hôtes ; **tous** les outils filtrent sur `customer.documentId` ; commentaires projet filtrés sur `visibility ∈ {all, customer}` (jamais les notes admin/producteur) ; `mes_documents` double-filtre `visibleToCustomer=true`.
 - **Outils exposés** (`CUSTOMER_TOOLS`, uniquement si client identifié) :
   - Catalogue : `rechercher_catalogue` / `details_produit` (+ champs de personnalisation du formulaire, économie vs prix catalogue) / `lister_categories` — visibilité identique à `apiGetCustomerProducts`.
   - Offres : `preparer_offre` — chiffre un devis (paliers, **Premium −15 %**, **livraison 9,90 € HT**, TVA 20 %, m² avec largeur/hauteur), renvoie sous-total/livraison/total HT/TTC + `texte_offre`.
@@ -228,7 +241,7 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
   - Finances : `mes_factures` (FAC-XXXX, impayés, PDF, total dû), `mon_historique_paiements`, `mes_devis`.
   - Autres : `mes_tickets_sav`, `verifier_code_promo`, `mes_documents` (logo/charte), `mon_compte`.
 - **Pricing = source de vérité `checkout.ts`** : `SHIPPING_HT`, `TVA_RATE`, `PREMIUM_DISCOUNT_RATE`, `PREMIUM_PRICE_HT` sont des **miroirs** des constantes du checkout (`recalculateFromDB`) et du front (`Cart.tsx`, `productHelpers.ts`). Premium appliqué **une seule fois** sur le total ligne, arrondi une fois → l'offre = le montant Stripe débité. **⚠️ Garder ces constantes alignées** si le checkout change.
-- **Robustesse** : boucle max 5 itérations, deadline **22 s** (< H12 Heroku 30 s), timeout + `maxRetries:1` par appel Groq, contexte documents plafonné (8000 c), fallback sans outils, **jamais de 500** (tout échec → réponse simple). Log `info` d'observabilité (auth, itérations, outils, branche, latence).
+- **Robustesse** : boucle max 5 itérations, deadline **22 s** en JSON (< H12 Heroku 30 s) et **45 s en streaming** (H12 ne porte que sur le premier octet), timeout par appel Groq et **`maxRetries: 0`** dans la boucle (le retry SDK doublait la durée), repli sans outils avec consigne explicite, **jamais de 500** (tout échec → réponse simple). Appels admin : timeout 20 s, 1 retry. Log `info` d'observabilité en une ligne JSON : auth, itérations, branche, outils + arguments, latence, modèle, tokens.
 - **`TOOL_GUIDANCE`** toujours ajouté au prompt système → mappe chaque type de question au bon outil et interdit d'inventer prix/données.
 - ORM : `strapi.documents(...)` (Strapi v5), filtres `$eq/$ne/$in/$notIn/$eqi/$containsi/$or`, traversée de relations (`user.customer.documentId` pour les tickets).
 
