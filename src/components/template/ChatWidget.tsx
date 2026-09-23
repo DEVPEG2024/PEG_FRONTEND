@@ -1,25 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MdSmartToy, MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment } from 'react-icons/md';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { getPersistedAuthToken } from '@/store/tabSessionStorage';
-import { renderChatMarkdown as renderContent } from '@/utils/chatMarkdown';
+import { renderChatMarkdown } from '@/utils/chatMarkdown';
+import type { ChatCard } from '@/components/template/ChatCardView';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[] };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
 
 const STORAGE_KEY = 'peg_chat_widget_v2';
-const SUGGESTIONS = ['Prépare-moi une offre', 'Où en sont mes projets ?', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'];
+const SUGGESTIONS = ['Où en est ma commande ?', 'Je cherche un produit', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'];
 
 /**
  * Le bouton flottant est en position fixed en bas à droite. Sur les écrans du
@@ -69,8 +70,8 @@ const saveConversation = (key: string, conversationId: string, messages: Message
 
 // ── Transport ────────────────────────────────────────────────────────────────
 
-type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean };
-type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void };
+type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[] };
+type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void; onCards: (cards: ChatCard[]) => void };
 
 class StreamUnavailableError extends Error {}
 
@@ -110,10 +111,12 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
   let streamedText = '';
 
   type StreamData = { label?: string; text?: string; message?: string } & Partial<ChatResult>;
+  let lastCards: ChatCard[] = [];
   const handleEvent = (event: string, data: StreamData) => {
     if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
     else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
-    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited }; }
+    else if (event === 'cards' && Array.isArray(data?.cards)) { lastCards = data.cards; h.onCards(data.cards); }
+    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined }; }
     else if (event === 'error') { throw new Error(data?.message || 'stream error'); }
   };
 
@@ -141,7 +144,7 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
   if (done) return done;
   if (!received) throw new StreamUnavailableError('flux vide');
   // Flux coupé après du contenu : on garde ce qui a été reçu.
-  return { reply: streamedText };
+  return { reply: streamedText, cards: lastCards };
 };
 
 const chatJson = async (body: object, token: string | null, signal: AbortSignal): Promise<ChatResult> => {
@@ -156,6 +159,7 @@ const chatJson = async (body: object, token: string | null, signal: AbortSignal)
 
 const ChatWidget = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { smaller } = useResponsive();
   const user = useAppSelector((state) => state.auth.user.user);
   const sessionToken = useAppSelector((state) => state.auth.session.token);
@@ -169,6 +173,7 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const [statusLabel, setStatusLabel] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState('');
+  const [streamingCards, setStreamingCards] = useState<ChatCard[]>([]);
   const [unread, setUnread] = useState(0);
   const [awaitingClose, setAwaitingClose] = useState(false);
   const [authWarn, setAuthWarn] = useState(false);
@@ -225,6 +230,7 @@ const ChatWidget = () => {
     setLoading(true);
     setStatusLabel(null);
     setStreamingText('');
+    setStreamingCards([]);
     const token = sessionToken || getPersistedAuthToken();
     const body = {
       messages: history.filter((m) => !m.error).map(({ role, content }) => ({ role, content })),
@@ -238,6 +244,7 @@ const ChatWidget = () => {
         result = await chatStream(body, token, controller.signal, {
           onStatus: (label) => setStatusLabel(label),
           onDelta: (text) => { setStatusLabel(null); setStreamingText((prev) => prev + text); },
+          onCards: setStreamingCards,
         });
       } catch (e) {
         if (!(e instanceof StreamUnavailableError)) throw e;
@@ -249,7 +256,10 @@ const ChatWidget = () => {
       if (result.rateLimited || !reply) {
         setMessages([...history, { role: 'assistant', content: reply || 'Aucune réponse reçue.', error: true }]);
       } else {
-        setMessages([...history, { role: 'assistant', content: reply }]);
+        // Seules les cartes citées dans la réponse sont conservées (le serveur les filtre ; la route
+        // JSON d'un backend antérieur n'en renvoie pas → liens simples).
+        const cards = (result.cards || []).filter((c) => reply.includes(`](${c.url})`));
+        setMessages([...history, { role: 'assistant', content: reply, ...(cards.length ? { cards } : {}) }]);
         // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
         setAuthWarn(Boolean(token) && result.authenticated === false);
         if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
@@ -271,6 +281,7 @@ const ChatWidget = () => {
       setLoading(false);
       setStatusLabel(null);
       setStreamingText('');
+      setStreamingCards([]);
     }
   };
 
@@ -317,6 +328,9 @@ const ChatWidget = () => {
   if (FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
+
+  // Une carte interne navigue dans l'application sans recharger (la conversation reste ouverte).
+  const renderContent = (content: string, cards?: ChatCard[]) => renderChatMarkdown(content, { cards, onNavigate: navigate });
 
   const botAvatar = (
     <div style={{
@@ -455,7 +469,7 @@ const ChatWidget = () => {
               <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                 {msg.role === 'assistant' && botAvatar}
                 <div style={bubble(msg.role, msg.error)}>
-                  {msg.role === 'assistant' && !msg.error ? renderContent(msg.content) : msg.content}
+                  {msg.role === 'assistant' && !msg.error ? renderContent(msg.content, msg.cards) : msg.content}
                   {msg.error && i === messages.length - 1 && (
                     <div style={{ marginTop: '6px' }}>
                       <button
@@ -478,7 +492,7 @@ const ChatWidget = () => {
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 {botAvatar}
                 {streamingText ? (
-                  <div style={bubble('assistant')}>{renderContent(streamingText)}</div>
+                  <div style={bubble('assistant')}>{renderContent(streamingText, streamingCards)}</div>
                 ) : (
                   <div style={{ ...bubble('assistant'), color: 'rgba(255,255,255,0.55)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span aria-hidden="true" style={{ fontSize: '18px', letterSpacing: '2px' }}>

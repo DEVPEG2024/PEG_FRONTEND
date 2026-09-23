@@ -492,6 +492,16 @@ const ConfigPanel = ({
           <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginBottom: '10px', lineHeight: 1.5 }}>
             Définissez la personnalité, le ton et les règles de comportement du bot.
           </p>
+          {config?.defaultSystemPrompt && form.systemPrompt.trim() !== config.defaultSystemPrompt.trim() && (
+            <button
+              type="button"
+              onClick={() => updateForm({ systemPrompt: config.defaultSystemPrompt ?? '' })}
+              style={{ ...btnGhost, marginBottom: '10px', fontSize: '12px' }}
+              title="Remplit l'éditeur avec le prompt recommandé : testez-le dans l'aperçu puis enregistrez"
+            >
+              Charger le prompt recommandé
+            </button>
+          )}
           <textarea
             value={form.systemPrompt}
             onChange={(e) => updateForm({ systemPrompt: e.target.value })}

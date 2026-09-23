@@ -12,6 +12,8 @@ export type ChatbotConfig = {
   description: string;
   avatarUrl: string | null;
   systemPrompt: string;
+  /** Prompt recommandé du code (admins uniquement) — rechargeable dans l'éditeur. */
+  defaultSystemPrompt?: string;
   faqs: FAQ[];
   updatedAt: string;
 };

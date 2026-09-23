@@ -54,4 +54,39 @@ describe('renderChatMarkdown', () => {
     expect(out).toContain('Votre offre');
     expect(out).not.toContain('###');
   });
+
+  describe('cartes', () => {
+    const card = {
+      url: 'https://app.mypeg.fr/customer/product/abc',
+      kind: 'produit' as const,
+      title: 'Casquette brodée',
+      subtitle: 'Textile',
+      image: 'https://cdn.example.com/c.jpg',
+      badge: { label: 'En production', tone: 'blue' as const },
+      meta: 'Dès 8,50 € HT',
+    };
+    const withCards = (md: string, cards = [card]) =>
+      renderToStaticMarkup(<div>{renderChatMarkdown(md, { cards })}</div>);
+
+    it('rend en carte un lien connu seul sur sa ligne (y compris en puce ou en gras)', () => {
+      for (const md of [`[Casquette](${card.url})`, `- [Casquette](${card.url})`, `**[Casquette](${card.url})**`]) {
+        const out = withCards(`Voici :\n${md}`);
+        expect(out).toContain('Dès 8,50 € HT');
+        expect(out).toContain('En production');
+        expect(out).toContain('src="https://cdn.example.com/c.jpg"');
+      }
+    });
+
+    it('laisse un simple lien si le lien est dans une phrase ou inconnu', () => {
+      expect(withCards(`Voir [Casquette](${card.url}) ici`)).not.toContain('Dès 8,50');
+      expect(withCards('[Autre](https://app.mypeg.fr/customer/product/zzz)')).not.toContain('Dès 8,50');
+    });
+
+    it("n'affiche ni lien ni image non http(s)", () => {
+      const bad = { ...card, url: 'javascript:alert(1)', image: 'javascript:alert(2)' };
+      const out = withCards('[x](javascript:alert(1))', [bad]);
+      expect(out).not.toContain('href="javascript:');
+      expect(out).not.toContain('src="javascript:');
+    });
+  });
 });

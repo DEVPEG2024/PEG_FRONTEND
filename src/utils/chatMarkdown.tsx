@@ -4,6 +4,8 @@
  * liens http(s) deviennent des <a>. Aucun HTML brut n'est interprété.
  */
 
+import ChatCardView, { type ChatCard } from '@/components/template/ChatCardView';
+
 const LINK_STYLE = { color: '#6b9eff', textDecoration: 'underline', wordBreak: 'break-word' as const };
 
 // Le texte est toujours rendu par React (échappé) ; seuls les liens http(s)
@@ -37,9 +39,25 @@ const splitRow = (line: string): string[] =>
   line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
 const isTableSeparator = (line: string): boolean => /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line.trim());
 
-export const renderChatMarkdown = (content: string): JSX.Element[] => {
+type RenderOptions = {
+  /** Cartes fournies par le serveur : un lien [Nom](url) SEUL sur sa ligne dont l'url y figure devient une carte. */
+  cards?: ChatCard[];
+  /** Navigation interne (sans rechargement) quand une carte pointe vers l'application. */
+  onNavigate?: (path: string) => void;
+};
+
+// Lien seul sur sa ligne, éventuellement en gras ou suivi d'une ponctuation.
+const SOLO_LINK_RE = /^(?:\*\*)?\[[^\]]+\]\((https?:\/\/[^)\s]+)\)(?:\*\*)?\s*[.,;:!]?$/;
+
+export const renderChatMarkdown = (content: string, opts: RenderOptions = {}): JSX.Element[] => {
   const lines = (content || '').split('\n');
   const blocks: JSX.Element[] = [];
+  const cardByUrl = new Map((opts.cards || []).map((c) => [c.url, c]));
+  const soloCard = (text: string): ChatCard | null => {
+    if (!cardByUrl.size) return null;
+    const m = SOLO_LINK_RE.exec(text.trim());
+    return m ? cardByUrl.get(m[1]) ?? null : null;
+  };
   let list: { ordered: boolean; items: JSX.Element[] } | null = null;
   const flushList = () => {
     if (!list) return;
@@ -76,6 +94,12 @@ export const renderChatMarkdown = (content: string): JSX.Element[] => {
 
     const bullet = /^(?:[-*•])\s+(.*)$/.exec(t);
     const numbered = /^(\d+)[.)]\s+(.*)$/.exec(t);
+    const card = soloCard(bullet ? bullet[1] : numbered ? numbered[2] : t);
+    if (card) {
+      flushList();
+      blocks.push(<ChatCardView key={`card-${idx}`} card={card} onNavigate={opts.onNavigate} />);
+      continue;
+    }
     if (bullet || numbered) {
       const ordered = !!numbered && !bullet;
       if (list && list.ordered !== ordered) flushList();
