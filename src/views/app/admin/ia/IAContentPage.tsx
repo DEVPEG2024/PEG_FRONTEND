@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiGenerateProductContent, apiAiFillProduct } from '@/services/ChatbotServices';
+import { apiGenerateProductContent } from '@/services/ChatbotServices';
 import {
   MdOutlineArticle,
   MdAutoAwesome,
@@ -122,35 +122,17 @@ const IAContentPage = () => {
     setError('');
     setGenerating(true);
     try {
-      // Try the dedicated endpoint first, fall back to ai-fill-product
-      try {
-        const res = await apiGenerateProductContent(productName.trim());
-        setContent({
-          description: res.data.description,
-          highlights: res.data.highlights ?? [],
-          sellingPoints: res.data.sellingPoints ?? [],
-        });
-      } catch {
-        // Fallback: use existing ai-fill-product and generate highlights/points from description
-        const res = await apiAiFillProduct(productName.trim(), [], [], [], [], []);
-        const desc = res.data.description ?? '';
-        // Extract bullet points from description as highlights
-        const sentences = desc
-          .split(/[.!?]\s+/)
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 20)
-          .slice(0, 4);
-        setContent({
-          description: desc,
-          highlights: sentences.length ? sentences : ['Produit de qualité professionnelle', 'Adapté à vos besoins', 'Livraison rapide'],
-          sellingPoints: [
-            'Personnalisation complète',
-            'Rapport qualité/prix excellent',
-            'Délais respectés',
-            'Service client dédié',
-          ],
-        });
-      }
+      // Route dédiée (POST /chatbot/generate-content, sortie JSON garantie). L'ancien
+      // repli sur ai-fill-product affichait la description avec ses balises <p> et
+      // des « points forts » génériques inventés côté navigateur : supprimé, une
+      // erreur est désormais affichée telle quelle.
+      const res = await apiGenerateProductContent(productName.trim());
+      if (!res.data?.description) throw new Error('Réponse vide');
+      setContent({
+        description: res.data.description,
+        highlights: res.data.highlights ?? [],
+        sellingPoints: res.data.sellingPoints ?? [],
+      });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Erreur lors de la génération. Vérifiez que le service IA est disponible.');
     } finally {

@@ -1,18 +1,25 @@
-import { useState, useRef, useEffect } from 'react';
-import { MdSmartToy, MdSend, MdClose, MdChatBubble } from 'react-icons/md';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MdSmartToy, MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment } from 'react-icons/md';
 import { useLocation } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { getPersistedAuthToken } from '@/store/tabSessionStorage';
+import { renderChatMarkdown as renderContent } from '@/utils/chatMarkdown';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+/**
+ * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
+ * renvoyée au modèle : avant, le message « service indisponible » repartait
+ * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
+ */
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
 
-const LINK_STYLE = { color: '#6b9eff', textDecoration: 'underline', wordBreak: 'break-word' as const };
+const STORAGE_KEY = 'peg_chat_widget_v2';
+const SUGGESTIONS = ['Prépare-moi une offre', 'Où en sont mes projets ?', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'];
 
 /**
  * Le bouton flottant est en position fixed en bas à droite. Sur les écrans du
@@ -26,82 +33,245 @@ const LINK_STYLE = { color: '#6b9eff', textDecoration: 'underline', wordBreak: '
  */
 const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment'];
 
-// Rendu inline : liens markdown [label](url), URLs nues, **gras**, _italique_.
-const renderInline = (text: string, keyBase: string): (string | JSX.Element)[] => {
-  const re = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)|(https?:\/\/[^\s\]>]+)|\*\*([^*]+)\*\*|_([^_]+)_/g;
-  const out: (string | JSX.Element)[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  let i = 0;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    const key = `${keyBase}-${i++}`;
-    if (m[1] !== undefined) out.push(<a key={key} href={m[2]} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>{m[1]}</a>);
-    else if (m[3] !== undefined) out.push(<a key={key} href={m[3]} target="_blank" rel="noopener noreferrer" style={LINK_STYLE}>{m[3]}</a>);
-    else if (m[4] !== undefined) out.push(<strong key={key} style={{ fontWeight: 700, color: '#fff' }}>{m[4]}</strong>);
-    else if (m[5] !== undefined) out.push(<em key={key} style={{ opacity: 0.85 }}>{m[5]}</em>);
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return out.length ? out : [text];
+const newConversationId = (): string => {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch { /* contexte non sécurisé */ }
+  return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
 };
 
-// Rendu markdown léger : paragraphes + listes à puces (les offres du bot utilisent
-// **gras**, _italique_, lignes "- ...") — sinon les ** et _ s'afficheraient bruts.
-const renderContent = (content: string): JSX.Element[] => {
-  const lines = (content || '').split('\n');
-  const blocks: JSX.Element[] = [];
-  let li: JSX.Element[] = [];
-  const flush = () => {
-    if (li.length) {
-      blocks.push(<ul key={`ul-${blocks.length}`} style={{ margin: '4px 0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '2px' }}>{li}</ul>);
-      li = [];
-    }
-  };
-  lines.forEach((line, idx) => {
-    const t = line.trim();
-    const bullet = /^[-*]\s+(.*)$/.exec(t);
-    if (bullet) { li.push(<li key={`li-${idx}`}>{renderInline(bullet[1], `li-${idx}`)}</li>); return; }
-    flush();
-    if (t === '') { blocks.push(<div key={`sp-${idx}`} style={{ height: '5px' }} />); return; }
-    blocks.push(<div key={`p-${idx}`} style={{ margin: '1px 0' }}>{renderInline(line, `p-${idx}`)}</div>);
-  });
-  flush();
-  return blocks.length ? blocks : [<span key="0">{content}</span>];
+// Conversation conservée pour l'onglet (sessionStorage) : un rechargement de page
+// ne fait plus perdre l'échange en cours. Lecture/écriture protégées (navigation
+// privée, stockage bloqué).
+// La clé inclut l'utilisateur : après un changement de compte dans le même
+// onglet, l'échange du compte précédent ne doit jamais réapparaître.
+const storageKeyFor = (userKey: string) => `${STORAGE_KEY}:${userKey}`;
+const loadSaved = (key: string): { conversationId: string; messages: Message[] } | null => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.conversationId !== 'string' || !Array.isArray(parsed?.messages)) return null;
+    const messages = (parsed.messages as unknown[])
+      .filter((m): m is Message => {
+        const x = m as Partial<Message> | null;
+        return !!x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string';
+      })
+      .slice(-40);
+    return { conversationId: parsed.conversationId, messages };
+  } catch {
+    return null;
+  }
 };
+const saveConversation = (key: string, conversationId: string, messages: Message[]) => {
+  try { sessionStorage.setItem(key, JSON.stringify({ conversationId, messages: messages.slice(-40) })); } catch { /* ignoré */ }
+};
+
+// ── Transport ────────────────────────────────────────────────────────────────
+
+type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean };
+type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void };
+
+class StreamUnavailableError extends Error {}
+
+/**
+ * Réponse en flux SSE (POST /chatbot/chat/stream) : le texte s'affiche au fil de
+ * l'eau et l'outil en cours est annoncé (« Consultation de vos factures… »).
+ * Lève StreamUnavailableError si la route n'existe pas encore (backend pas
+ * redéployé) ou si le flux est coupé avant tout contenu : l'appelant retombe
+ * alors sur la route JSON historique.
+ */
+const chatStream = async (body: object, token: string | null, signal: AbortSignal, h: StreamHandlers): Promise<ChatResult> => {
+  let res: Response;
+  try {
+    res = await fetch(`${EXPRESS_BACKEND_URL}/chatbot/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e) {
+    // Annulation volontaire : on la propage telle quelle. Toute autre erreur
+    // (réseau, CORS, proxy qui refuse le flux) → repli sur la route JSON.
+    if (signal.aborted) throw e;
+    throw new StreamUnavailableError('fetch stream');
+  }
+  if (res.status === 429) {
+    return { reply: 'Beaucoup de demandes en ce moment : réessayez dans quelques secondes.', rateLimited: true };
+  }
+  if (!res.ok || !res.body || !(res.headers.get('content-type') || '').includes('text/event-stream')) {
+    throw new StreamUnavailableError(`stream ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let received = false;
+  let done: ChatResult | null = null;
+  let streamedText = '';
+
+  type StreamData = { label?: string; text?: string; message?: string } & Partial<ChatResult>;
+  const handleEvent = (event: string, data: StreamData) => {
+    if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
+    else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
+    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited }; }
+    else if (event === 'error') { throw new Error(data?.message || 'stream error'); }
+  };
+
+  for (;;) {
+    const { value, done: finished } = await reader.read();
+    if (finished) break;
+    buffer += decoder.decode(value, { stream: true });
+    let sep: number;
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const rawEvent = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      let event = 'message';
+      const dataLines: string[] = [];
+      for (const l of rawEvent.split('\n')) {
+        if (l.startsWith(':')) continue; // battement de cœur
+        if (l.startsWith('event:')) event = l.slice(6).trim();
+        else if (l.startsWith('data:')) dataLines.push(l.slice(5).trim());
+      }
+      if (!dataLines.length) continue;
+      let data: StreamData;
+      try { data = JSON.parse(dataLines.join('\n')) as StreamData; } catch { continue; }
+      handleEvent(event, data);
+    }
+  }
+  if (done) return done;
+  if (!received) throw new StreamUnavailableError('flux vide');
+  // Flux coupé après du contenu : on garde ce qui a été reçu.
+  return { reply: streamedText };
+};
+
+const chatJson = async (body: object, token: string | null, signal: AbortSignal): Promise<ChatResult> => {
+  const res = await axios.post(`${EXPRESS_BACKEND_URL}/chatbot/chat`, body, {
+    signal,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  });
+  return res.data as ChatResult;
+};
+
+// ── Composant ────────────────────────────────────────────────────────────────
 
 const ChatWidget = () => {
   const { pathname } = useLocation();
   const { smaller } = useResponsive();
+  const user = useAppSelector((state) => state.auth.user.user);
+  const sessionToken = useAppSelector((state) => state.auth.session.token);
+  const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Client';
+  const storageKey = storageKeyFor(String(user?.documentId || user?.id || 'anon'));
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => loadSaved(storageKey)?.messages ?? []);
+  const [conversationId, setConversationId] = useState<string>(() => loadSaved(storageKey)?.conversationId ?? newConversationId());
+  const loadedKeyRef = useRef(storageKey);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [statusLabel, setStatusLabel] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState('');
   const [unread, setUnread] = useState(0);
   const [awaitingClose, setAwaitingClose] = useState(false);
   const [authWarn, setAuthWarn] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  const user = useAppSelector((state) => state.auth.user.user);
-  const sessionToken = useAppSelector((state) => state.auth.session.token);
-  const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Client';
+  // Le backend interroge les vraies données PEG en direct (catalogue, projets,
+  // commandes, compte) via ses outils, en identifiant le client par son JWT.
 
-  // Le backend interroge désormais les vraies données PEG en direct (catalogue,
-  // projets, commandes, compte) via ses outils, en identifiant le client par son
-  // JWT — plus besoin de précharger un instantané figé côté front.
+  // Changement de compte sans démontage : on bascule sur la conversation du nouveau compte.
+  useEffect(() => {
+    if (loadedKeyRef.current === storageKey) return;
+    loadedKeyRef.current = storageKey;
+    abortRef.current?.abort();
+    const next = loadSaved(storageKey);
+    setMessages(next?.messages ?? []);
+    setConversationId(next?.conversationId ?? newConversationId());
+    setAwaitingClose(false);
+    setAuthWarn(false);
+  }, [storageKey]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (loadedKeyRef.current === storageKey) saveConversation(storageKey, conversationId, messages);
+  }, [storageKey, conversationId, messages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, streamingText, statusLabel]);
 
   useEffect(() => {
     if (open) setUnread(0);
   }, [open]);
 
-  const resetConversation = () => {
+  // Annule une requête en cours si le widget est démonté (changement de layout).
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const resetConversation = useCallback(() => {
+    abortRef.current?.abort();
     setMessages([]);
     setAwaitingClose(false);
+    setStreamingText('');
+    setStatusLabel(null);
+    setLoading(false);
+    setConversationId(newConversationId());
+  }, []);
+
+  /** Envoie l'historique (sans les bulles d'erreur locales) et ajoute la réponse. */
+  const requestReply = async (history: Message[], isClosing: boolean) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setStatusLabel(null);
+    setStreamingText('');
+    const token = sessionToken || getPersistedAuthToken();
+    const body = {
+      messages: history.filter((m) => !m.error).map(({ role, content }) => ({ role, content })),
+      userName,
+      origin: window.location.origin,
+      conversationId,
+    };
+    try {
+      let result: ChatResult;
+      try {
+        result = await chatStream(body, token, controller.signal, {
+          onStatus: (label) => setStatusLabel(label),
+          onDelta: (text) => { setStatusLabel(null); setStreamingText((prev) => prev + text); },
+        });
+      } catch (e) {
+        if (!(e instanceof StreamUnavailableError)) throw e;
+        setStreamingText('');
+        result = await chatJson(body, token, controller.signal);
+      }
+      if (controller.signal.aborted) return;
+      const reply = (result.reply || '').trim();
+      if (result.rateLimited || !reply) {
+        setMessages([...history, { role: 'assistant', content: reply || 'Aucune réponse reçue.', error: true }]);
+      } else {
+        setMessages([...history, { role: 'assistant', content: reply }]);
+        // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
+        setAuthWarn(Boolean(token) && result.authenticated === false);
+        if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
+        if (isClosing) setTimeout(() => { setOpen(false); resetConversation(); }, 2500);
+      }
+      if (!openRef.current) setUnread((n) => n + 1);
+    } catch (e: unknown) {
+      const err = e as { name?: string; response?: { status?: number } };
+      if (controller.signal.aborted || err?.name === 'AbortError' || err?.name === 'CanceledError') return;
+      const status = err?.response?.status;
+      const content = status === 429
+        ? 'Beaucoup de demandes en ce moment : réessayez dans quelques secondes.'
+        : !navigator.onLine
+          ? 'Vous semblez hors ligne. Vérifiez votre connexion puis réessayez.'
+          : 'Le service est momentanément indisponible. Réessayez dans un instant.';
+      setMessages([...history, { role: 'assistant', content, error: true }]);
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      setLoading(false);
+      setStatusLabel(null);
+      setStreamingText('');
+    }
   };
 
   const sendText = async (raw: string) => {
@@ -109,44 +279,27 @@ const ChatWidget = () => {
     if (!text || loading) return;
     // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
     const isClosing = awaitingClose && USER_NO_RE.test(text);
-    const userMsg: Message = { role: 'user', content: text };
-    const next = [...messages, userMsg];
+    // Les bulles d'erreur précédentes disparaissent dès qu'on renvoie un message.
+    const next: Message[] = [...messages.filter((m) => !m.error), { role: 'user', content: text }];
     setMessages(next);
     setInput('');
-    setLoading(true);
-    try {
-      // Le token identifie le client côté backend (accès sécurisé à ses données).
-      const token = sessionToken || getPersistedAuthToken();
-      const res = await axios.post(
-        `${EXPRESS_BACKEND_URL}/chatbot/chat`,
-        {
-          messages: next,
-          userName,
-          origin: window.location.origin,
-        },
-        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
-      );
-      const reply = res.data.reply as string;
-      const updated = [...next, { role: 'assistant' as const, content: reply }];
-      setMessages(updated);
-      // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
-      setAuthWarn(Boolean(token) && res.data?.authenticated === false);
-      if (!open) setUnread((n) => n + 1);
-      if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
-      if (isClosing) {
-        setTimeout(() => { setOpen(false); resetConversation(); }, 2500);
-      }
-    } catch {
-      setMessages([...next, { role: 'assistant', content: 'Désolé, le service est momentanément indisponible. Veuillez réessayer plus tard.' }]);
-    } finally {
-      setLoading(false);
-    }
+    await requestReply(next, isClosing);
+  };
+
+  /** Réessaie la dernière question après une erreur, sans la ressaisir. */
+  const retryLast = () => {
+    if (loading) return;
+    const history = messages.filter((m) => !m.error);
+    if (!history.length || history[history.length - 1].role !== 'user') return;
+    setMessages(history);
+    requestReply(history, false);
   };
 
   const send = () => sendText(input);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    if (e.key === 'Escape') setOpen(false);
   };
 
   // Focus le champ à l'ouverture (accessibilité clavier).
@@ -163,6 +316,35 @@ const ChatWidget = () => {
   // les actions de ligne du panier et le lien « Voir tout » du tableau de bord.
   if (FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
+  const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
+
+  const botAvatar = (
+    <div style={{
+      width: '24px', height: '24px', borderRadius: '6px',
+      background: 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0, marginRight: '6px', marginTop: '2px',
+    }}>
+      <MdSmartToy size={14} color="#fff" />
+    </div>
+  );
+
+  const bubble = (role: 'user' | 'assistant', error?: boolean): React.CSSProperties => ({
+    maxWidth: '80%',
+    minWidth: 0,
+    background: role === 'user'
+      ? 'linear-gradient(135deg, rgba(47,111,237,0.35), rgba(47,111,237,0.2))'
+      : error ? 'rgba(234,179,8,0.10)' : 'rgba(255,255,255,0.07)',
+    border: `1px solid ${role === 'user' ? 'rgba(47,111,237,0.4)' : error ? 'rgba(234,179,8,0.3)' : 'rgba(255,255,255,0.08)'}`,
+    borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+    padding: '9px 13px',
+    color: error ? '#fcd34d' : 'rgba(255,255,255,0.9)',
+    fontSize: '13px',
+    lineHeight: 1.55,
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere',
+  });
+
   return (
     <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
       <style>{`
@@ -170,6 +352,8 @@ const ChatWidget = () => {
           0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
           50% { box-shadow: 0 8px 32px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.12); }
         }
+        @keyframes peg-chat-dot { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+        @media (prefers-reduced-motion: reduce) { .peg-chat-anim { animation: none !important; } }
       `}</style>
       {/* Fenêtre de chat */}
       {open && (
@@ -177,8 +361,8 @@ const ChatWidget = () => {
           position: 'absolute',
           bottom: '72px',
           right: 0,
-          width: 'min(360px, calc(100vw - 32px))',
-          height: 'min(500px, calc(100dvh - 140px))',
+          width: 'min(380px, calc(100vw - 32px))',
+          height: 'min(540px, calc(100dvh - 140px))',
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '20px',
@@ -204,12 +388,22 @@ const ChatWidget = () => {
             }}>
               <MdSmartToy size={20} color="#fff" />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>Assistant PEG</div>
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px' }}>
-                {loading ? 'En train d\'écrire...' : 'En ligne'}
+              <div aria-live="polite" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {loading ? (statusLabel || 'En train d\'écrire...') : 'En ligne'}
               </div>
             </div>
+            {messages.length > 0 && (
+              <button
+                onClick={resetConversation}
+                aria-label="Nouvelle conversation"
+                title="Nouvelle conversation"
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}
+              >
+                <MdAddComment size={18} />
+              </button>
+            )}
             <button
               onClick={() => setOpen(false)}
               aria-label="Fermer le chat"
@@ -221,7 +415,7 @@ const ChatWidget = () => {
 
           {/* Messages */}
           <div role="log" aria-live="polite" aria-label="Conversation" style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {messages.length === 0 && (
+            {messages.length === 0 && !loading && (
               <div style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center', height: '100%', gap: '12px',
@@ -230,13 +424,13 @@ const ChatWidget = () => {
                 <MdSmartToy size={40} />
                 <div style={{ textAlign: 'center', fontSize: '13px', lineHeight: 1.5 }}>
                   Bonjour {userName.split(' ')[0] || ''} ! 👋<br />
-                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>
                     Comment puis-je vous aider ?
                   </span>
                 </div>
                 {/* Suggestions rapides — envoi direct au clic */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                  {['Prépare-moi une offre', 'Où en sont mes projets ?', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'].map((q) => (
+                  {SUGGESTIONS.map((q) => (
                     <button
                       key={q}
                       onClick={() => sendText(q)}
@@ -244,7 +438,7 @@ const ChatWidget = () => {
                         background: 'rgba(47,111,237,0.1)',
                         border: '1px solid rgba(47,111,237,0.2)',
                         borderRadius: '8px',
-                        color: 'rgba(107,158,255,0.8)',
+                        color: 'rgba(107,158,255,0.9)',
                         fontSize: '12px',
                         padding: '8px 12px',
                         cursor: 'pointer',
@@ -259,49 +453,42 @@ const ChatWidget = () => {
             )}
             {messages.map((msg, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                {msg.role === 'assistant' && (
-                  <div style={{
-                    width: '24px', height: '24px', borderRadius: '6px',
-                    background: 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, marginRight: '6px', marginTop: '2px',
-                  }}>
-                    <MdSmartToy size={14} color="#fff" />
-                  </div>
-                )}
-                <div style={{
-                  maxWidth: '75%',
-                  background: msg.role === 'user'
-                    ? 'linear-gradient(135deg, rgba(47,111,237,0.35), rgba(47,111,237,0.2))'
-                    : 'rgba(255,255,255,0.07)',
-                  border: `1px solid ${msg.role === 'user' ? 'rgba(47,111,237,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                  padding: '9px 13px',
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: '13px',
-                  lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap',
-                }}>
-                  {renderContent(msg.content)}
+                {msg.role === 'assistant' && botAvatar}
+                <div style={bubble(msg.role, msg.error)}>
+                  {msg.role === 'assistant' && !msg.error ? renderContent(msg.content) : msg.content}
+                  {msg.error && i === messages.length - 1 && (
+                    <div style={{ marginTop: '6px' }}>
+                      <button
+                        onClick={retryLast}
+                        disabled={loading}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)',
+                          borderRadius: '6px', color: '#fcd34d', fontSize: '11px', padding: '3px 8px', cursor: 'pointer',
+                        }}
+                      >
+                        <MdRefresh size={13} /> Réessayer
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{
-                  width: '24px', height: '24px', borderRadius: '6px',
-                  background: 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <MdSmartToy size={14} color="#fff" />
-                </div>
-                <div style={{
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '14px 14px 14px 4px', padding: '9px 13px',
-                  color: 'rgba(255,255,255,0.35)', fontSize: '18px', letterSpacing: '4px',
-                }}>
-                  ···
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                {botAvatar}
+                {streamingText ? (
+                  <div style={bubble('assistant')}>{renderContent(streamingText)}</div>
+                ) : (
+                  <div style={{ ...bubble('assistant'), color: 'rgba(255,255,255,0.55)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span aria-hidden="true" style={{ fontSize: '18px', letterSpacing: '2px' }}>
+                      {[0, 1, 2].map((d) => (
+                        <span key={d} className="peg-chat-anim" style={{ animation: `peg-chat-dot 1.2s ${d * 0.15}s infinite` }}>·</span>
+                      ))}
+                    </span>
+                    {statusLabel && <span>{statusLabel}</span>}
+                  </div>
+                )}
               </div>
             )}
             <div ref={bottomRef} />
@@ -332,8 +519,9 @@ const ChatWidget = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Votre message..."
+              placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Votre message...'}
               rows={1}
+              maxLength={2000}
               style={{
                 flex: 1,
                 background: 'rgba(255,255,255,0.06)',
@@ -378,6 +566,8 @@ const ChatWidget = () => {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Fermer le chat' : 'Ouvrir le chat assistant'}
+        aria-expanded={open}
+        className="peg-chat-anim"
         style={{
           width: '56px',
           height: '56px',

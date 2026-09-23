@@ -62,36 +62,36 @@ const IAProductAgentPage = () => {
     fetchAllOptions();
   }, []);
 
+  // allSettled : un référentiel en échec ne vide plus les quatre autres (avant,
+  // un seul rejet de Promise.all laissait toutes les listes vides ET coupait les
+  // suggestions IA, déclenchées plus bas).
   const fetchAllOptions = async () => {
-    try {
-      const [custRes, custCatRes, prodCatRes, formsRes, checkRes] = await Promise.all([
-        unwrapData(apiGetCustomers()),
-        unwrapData(apiGetCustomerCategories()),
-        unwrapData(apiGetProductCategories()),
-        unwrapData(apiGetForms()),
-        unwrapData(apiGetChecklists()),
-      ]);
+    const [custRes, custCatRes, prodCatRes, formsRes, checkRes] = await Promise.allSettled([
+      unwrapData(apiGetCustomers()),
+      unwrapData(apiGetCustomerCategories()),
+      unwrapData(apiGetProductCategories()),
+      unwrapData(apiGetForms()),
+      unwrapData(apiGetChecklists()),
+    ]);
+    const ok = (r: PromiseSettledResult<unknown>): any => (r.status === 'fulfilled' ? r.value : {});
 
-      const custList = (custRes as any).customers_connection?.nodes || [];
-      setCustomers(custList.map((c: Customer) => ({ value: c.documentId, label: c.name })));
+    const custList = ok(custRes).customers_connection?.nodes || [];
+    setCustomers(custList.map((c: Customer) => ({ value: c.documentId, label: c.name })));
 
-      const custCatList = (custCatRes as any).customerCategories_connection?.nodes || [];
-      setCustomerCategories(custCatList.map((c: CustomerCategory) => ({ value: c.documentId, label: c.name })));
+    const custCatList = ok(custCatRes).customerCategories_connection?.nodes || [];
+    setCustomerCategories(custCatList.map((c: CustomerCategory) => ({ value: c.documentId, label: c.name })));
 
-      const prodCatList = (prodCatRes as any).productCategories_connection?.nodes || [];
-      const prodCatOptions = prodCatList.map((c: ProductCategory) => ({ value: c.documentId, label: c.name }));
-      setProductCategories(prodCatOptions);
-      // Déclenche les suggestions avec les catégories fraîchement chargées
-      fetchSuggestions(prodCatOptions.map((c: Options) => c.label));
+    const prodCatList = ok(prodCatRes).productCategories_connection?.nodes || [];
+    const prodCatOptions = prodCatList.map((c: ProductCategory) => ({ value: c.documentId, label: c.name }));
+    setProductCategories(prodCatOptions);
+    // Déclenche les suggestions avec les catégories fraîchement chargées (même vides).
+    fetchSuggestions(prodCatOptions.map((c: Options) => c.label));
 
-      const formsList = (formsRes as any).forms_connection?.nodes || [];
-      setForms(formsList.map((f: Form) => ({ value: f.documentId, label: f.name })));
+    const formsList = ok(formsRes).forms_connection?.nodes || [];
+    setForms(formsList.map((f: Form) => ({ value: f.documentId, label: f.name })));
 
-      const checksList = (checkRes as any).checklists_connection?.nodes || [];
-      setChecklists(checksList.map((c: Checklist) => ({ value: c.documentId, label: c.name })));
-    } catch {
-      // Options will be empty — user can still fill manually
-    }
+    const checksList = ok(checkRes).checklists_connection?.nodes || [];
+    setChecklists(checksList.map((c: Checklist) => ({ value: c.documentId, label: c.name })));
   };
 
   const fetchSuggestions = async (labels?: string[]) => {

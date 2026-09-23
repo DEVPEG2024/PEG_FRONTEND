@@ -1,6 +1,4 @@
-import axios from 'axios';
 import ApiService from './ApiService';
-import { API_BASE_URL } from '@/configs/api.config';
 
 export type FAQ = {
   _id: string;
@@ -18,13 +16,25 @@ export type ChatbotConfig = {
   updatedAt: string;
 };
 
+export type ConversationMeta = {
+  model?: string;
+  latencyMs?: number;
+  tools?: string[];
+  branch?: string;
+  iterations?: number;
+  streaming?: boolean;
+};
+
 export type ConversationSummary = {
   _id: string;
+  conversationId?: string | null;
   userId?: string;
   userName: string;
   messageCount: number;
   createdAt: string;
+  updatedAt?: string;
   lastMessage?: { role: string; content: string; timestamp: string };
+  meta?: ConversationMeta | null;
 };
 
 export type Message = {
@@ -142,7 +152,7 @@ export const apiGenerateProductImage = (name: string) =>
 
 // AI image generation (advanced — with style & reference images)
 export const apiGenerateImageAdvanced = (prompt: string, style: string, referenceUrls?: string[]) =>
-  ApiService.fetchData<{ result: boolean; imageUrl: string }>({ url: '/chatbot/generate-image', method: 'post', data: { name: prompt, style, referenceUrls } });
+  ApiService.fetchData<{ result: boolean; imageUrl: string; stored?: boolean; referenceUsed?: boolean }>({ url: '/chatbot/generate-image', method: 'post', data: { name: prompt, style, referenceUrls } });
 
 // AI content generation (description, highlights, selling points)
 export const apiGenerateProductContent = (productName: string) =>
@@ -154,5 +164,6 @@ export const apiGenerateProductContent = (productName: string) =>
   }>({ url: '/chatbot/generate-content', method: 'post', data: { productName } });
 
 // Live test
-export const apiTestChat = (messages: Message[]) =>
-  ApiService.fetchData<{ result: boolean; reply: string }>({ url: '/chatbot/test', method: 'post', data: { messages } });
+// `systemPrompt` (optionnel) : brouillon en cours d'édition, testé sans être enregistré.
+export const apiTestChat = (messages: Message[], systemPrompt?: string) =>
+  ApiService.fetchData<{ result: boolean; reply: string; model?: string }>({ url: '/chatbot/test', method: 'post', data: { messages, ...(systemPrompt ? { systemPrompt } : {}) } });

@@ -14,7 +14,14 @@ import {
   apiTestChat,
 } from '@/services/ChatbotServices';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+import { apiUploadFile } from '@/services/FileServices';
+import { extractPdfText } from '@/utils/pdfText';
+import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatbotConfig, FAQ, ChatbotDocument, ConversationSummary, Message } from '@/services/ChatbotServices';
+
+/** Message d'erreur lisible depuis une réponse axios (message serveur si présent). */
+const errMsg = (e: any, fallback: string): string =>
+  e?.response?.data?.message || e?.response?.data?.error?.message || fallback;
 import {
   MdSmartToy, MdSend, MdDelete, MdEdit, MdAdd, MdSave,
   MdHistory, MdChat, MdQuestionAnswer, MdSettings, MdArrowBack,
@@ -111,16 +118,20 @@ const AvatarUpload = ({
   onUploaded: (url: string) => void;
 }) => {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Upload authentifié via Strapi (/upload-single). Avant : fetch brut sans JWT
+  // vers une route « /upload » qui n'existe plus — échec 100 % silencieux.
   const handleFile = async (file: File) => {
+    setError('');
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${EXPRESS_BACKEND_URL}/upload`, { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.fileUrl) onUploaded(data.fileUrl);
+      const uploaded = await apiUploadFile(file);
+      if (uploaded?.url) onUploaded(uploaded.url);
+      else setError("L'image n'a pas pu être enregistrée.");
+    } catch (e) {
+      setError(errMsg(e, "Échec de l'envoi de l'image."));
     } finally {
       setUploading(false);
     }
@@ -180,6 +191,7 @@ const AvatarUpload = ({
         >
           {uploading ? 'Upload...' : 'Changer l\'image'}
         </button>
+        {error && <div style={{ color: '#f87171', fontSize: '11px', marginTop: '6px' }}>{error}</div>}
       </div>
     </div>
   );
@@ -208,26 +220,45 @@ const DocumentsSection = () => {
       .catch((err) => console.error('[Chatbot] Échec chargement documents:', err));
   }, []);
 
+  const MAX_DOC_BYTES = 10 * 1024 * 1024;
+
   const handleFiles = async (files: FileList) => {
     setError('');
+    const errors: string[] = [];
     for (const file of Array.from(files)) {
+      if (file.size > MAX_DOC_BYTES) { errors.push(`${file.name} : plus de 10 Mo`); continue; }
       setUploading(true);
       try {
         const form = new FormData();
         form.append('file', file);
+        form.append('name', file.name);
+        // Le texte d'un PDF est extrait dans le navigateur (pdfjs, déjà utilisé pour
+        // l'import de questionnaires) : le serveur n'a pas de lecteur PDF.
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        if (isPdf) {
+          const text = await extractPdfText(file);
+          if (!text || text.length < 20) { errors.push(`${file.name} : aucun texte lisible (PDF scanné ?)`); continue; }
+          form.append('content', text);
+        }
         const res = await apiUploadDocument(form);
         setDocuments((prev) => [res.data.document, ...prev]);
-      } catch {
-        setError(`Échec de l'envoi : ${file.name}`);
+      } catch (e) {
+        errors.push(`${file.name} : ${errMsg(e, "échec de l'envoi")}`);
       } finally {
         setUploading(false);
       }
     }
+    if (errors.length) setError(errors.join(' · '));
   };
 
   const handleDelete = async (id: number) => {
-    await apiDeleteDocument(id);
-    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    if (!confirm('Supprimer ce document de référence ?')) return;
+    try {
+      await apiDeleteDocument(id);
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (e) {
+      setError(errMsg(e, 'Suppression impossible.'));
+    }
   };
 
   return (
@@ -320,9 +351,12 @@ const DocumentsSection = () => {
 const ConfigPanel = ({
   config,
   onUpdate,
+  onDraftChange,
 }: {
   config: ChatbotConfig | null;
   onUpdate: (c: ChatbotConfig) => void;
+  /** Brouillon d'instructions non enregistré (null = identique à la config). */
+  onDraftChange?: (prompt: string | null) => void;
 }) => {
   const [form, setForm] = useState({
     name: config?.name ?? 'Assistant PEG',
@@ -332,6 +366,11 @@ const ConfigPanel = ({
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [faqError, setFaqError] = useState('');
+  // Modifications non enregistrées (identité / instructions) : un ajout de FAQ
+  // renvoie la config serveur, qui écrasait jusqu'ici le prompt en cours d'édition.
+  const [dirty, setDirty] = useState(false);
   const [faqSection, setFaqSection] = useState(false);
 
   // FAQ state
@@ -344,7 +383,7 @@ const ConfigPanel = ({
   const [faqLoading, setFaqLoading] = useState(false);
 
   useEffect(() => {
-    if (config) {
+    if (config && !dirty) {
       setForm({
         name: config.name ?? 'Assistant PEG',
         description: config.description ?? '',
@@ -352,15 +391,26 @@ const ConfigPanel = ({
         systemPrompt: config.systemPrompt ?? '',
       });
     }
-  }, [config]);
+  }, [config, dirty]);
+
+  const updateForm = (patch: Partial<typeof form>) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setDirty(true);
+    if (patch.systemPrompt !== undefined) onDraftChange?.(patch.systemPrompt);
+  };
 
   const save = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       const res = await apiUpdateChatbotConfig(form.systemPrompt, form.name, form.description, form.avatarUrl);
+      setDirty(false);
+      onDraftChange?.(null);
       onUpdate(res.data.config);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setSaveError(errMsg(e, "Échec de l'enregistrement. Vos modifications sont conservées : réessayez."));
     } finally { setSaving(false); }
   };
 
@@ -372,25 +422,31 @@ const ConfigPanel = ({
   const saveEdit = async () => {
     if (!editingId) return;
     setFaqLoading(true);
+    setFaqError('');
     try { const res = await apiUpdateFaq(editingId, editQ, editR); onUpdate(res.data.config); cancelEdit(); }
+    catch (e) { setFaqError(errMsg(e, 'Modification de la FAQ impossible.')); }
     finally { setFaqLoading(false); }
   };
 
   const handleDeleteFaq = async (id: string) => {
     if (!confirm('Supprimer cette FAQ ?')) return;
     setFaqLoading(true);
+    setFaqError('');
     try { const res = await apiDeleteFaq(id); onUpdate(res.data.config); }
+    catch (e) { setFaqError(errMsg(e, 'Suppression de la FAQ impossible.')); }
     finally { setFaqLoading(false); }
   };
 
   const handleAdd = async () => {
     if (!newQ.trim() || !newR.trim()) return;
     setFaqLoading(true);
+    setFaqError('');
     try {
       const res = await apiAddFaq(newQ.trim(), newR.trim());
       onUpdate(res.data.config);
       setNewQ(''); setNewR(''); setAdding(false);
-    } finally { setFaqLoading(false); }
+    } catch (e) { setFaqError(errMsg(e, "Ajout de la FAQ impossible.")); }
+    finally { setFaqLoading(false); }
   };
 
   return (
@@ -408,13 +464,13 @@ const ConfigPanel = ({
           <AvatarUpload
             currentUrl={form.avatarUrl}
             name={form.name}
-            onUploaded={(url) => setForm({ ...form, avatarUrl: url })}
+            onUploaded={(url) => updateForm({ avatarUrl: url })}
           />
           <div style={{ marginBottom: '12px' }}>
             <label style={labelStyle}>Nom</label>
             <input
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => updateForm({ name: e.target.value })}
               placeholder="Ex: Assistant PEG"
               style={inputStyle}
             />
@@ -423,7 +479,7 @@ const ConfigPanel = ({
             <label style={labelStyle}>Description</label>
             <input
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => updateForm({ description: e.target.value })}
               placeholder="Ex: Votre assistant commercial PEG"
               style={inputStyle}
             />
@@ -438,7 +494,7 @@ const ConfigPanel = ({
           </p>
           <textarea
             value={form.systemPrompt}
-            onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })}
+            onChange={(e) => updateForm({ systemPrompt: e.target.value })}
             rows={8}
             placeholder="Ex: Tu es l'assistant de PEG. Tu réponds toujours en français..."
             style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
@@ -488,6 +544,10 @@ const ConfigPanel = ({
             </div>
           )}
 
+          {faqError && (
+            <div style={{ color: '#f87171', fontSize: '11.5px', marginBottom: '8px' }}>{faqError}</div>
+          )}
+
           {faqs.length === 0 && !adding && (
             <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', textAlign: 'center', padding: '20px' }}>
               Ajoutez des questions-réponses pour enrichir les connaissances du bot.
@@ -532,6 +592,12 @@ const ConfigPanel = ({
 
       {/* Save button */}
       <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {saveError && (
+          <div style={{ color: '#f87171', fontSize: '12px', marginBottom: '8px' }}>{saveError}</div>
+        )}
+        {dirty && !saveError && (
+          <div style={{ color: 'rgba(252,211,77,0.85)', fontSize: '11.5px', marginBottom: '8px' }}>Modifications non enregistrées</div>
+        )}
         <button
           onClick={save}
           disabled={saving}
@@ -557,60 +623,31 @@ const ConfigPanel = ({
 // ─────────────────────────────────────────────────────────────────
 // Preview Panel (right) — chat live
 // ─────────────────────────────────────────────────────────────────
-const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
+const PreviewPanel = ({ config, draftPrompt }: { config: ChatbotConfig | null; draftPrompt?: string | null }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pendingImages, setPendingImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, error]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch(`${EXPRESS_BACKEND_URL}/upload`, { method: 'POST', body: form });
-        const data = await res.json();
-        if (data.fileUrl) {
-          setPendingImages((prev) => [...prev, data.fileUrl]);
-        }
-      }
-    } catch {
-      // silent
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const removePendingImage = (idx: number) => {
-    setPendingImages((prev) => prev.filter((_, i) => i !== idx));
-  };
-
+  // L'aperçu utilise la même instruction, la même FAQ et les mêmes documents que
+  // le widget client (sélection par pertinence côté serveur), sans les outils :
+  // un admin n'est rattaché à aucun client.
   const send = async () => {
-    if ((!input.trim() && pendingImages.length === 0) || loading) return;
-    const userMsg: Message = {
-      role: 'user',
-      content: input.trim(),
-      ...(pendingImages.length > 0 ? { images: [...pendingImages] } : {}),
-    };
-    const next = [...messages, userMsg];
+    if (!input.trim() || loading) return;
+    const next: Message[] = [...messages, { role: 'user', content: input.trim() }];
     setMessages(next);
     setInput('');
-    setPendingImages([]);
+    setError('');
     setLoading(true);
     try {
-      const res = await apiTestChat(next);
+      const res = await apiTestChat(next, draftPrompt ?? undefined);
       setMessages([...next, { role: 'assistant', content: res.data.reply }]);
     } catch (e: any) {
-      setMessages([...next, { role: 'assistant', content: `❌ ${e?.response?.data?.message ?? 'Erreur — vérifiez GROQ_API_KEY'}` }]);
+      // Erreur affichée hors historique : elle n'est pas renvoyée au modèle.
+      setError(errMsg(e, e?.response?.status === 429 ? 'Trop de requêtes : patientez quelques secondes.' : 'Erreur du service IA.'));
     } finally { setLoading(false); }
   };
 
@@ -640,10 +677,12 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
           </div>
           <div>
             <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{botName}</div>
-            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px' }}>Aperçu</div>
+            <div style={{ color: draftPrompt != null ? 'rgba(252,211,77,0.85)' : 'rgba(255,255,255,0.55)', fontSize: '11px' }}>
+              {draftPrompt != null ? 'Aperçu du brouillon (non enregistré)' : 'Aperçu'}
+            </div>
           </div>
         </div>
-        <button onClick={() => setMessages([])} style={{ ...btnGhost, fontSize: '11px', padding: '4px 10px' }}>
+        <button onClick={() => { setMessages([]); setError(''); }} style={{ ...btnGhost, fontSize: '11px', padding: '4px 10px' }}>
           Réinitialiser
         </button>
       </div>
@@ -682,17 +721,10 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
               fontSize: '13.5px',
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
+              minWidth: 0,
             }}>
-              {msg.images && msg.images.length > 0 && (
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: msg.content ? '8px' : 0 }}>
-                  {msg.images.map((url, idx) => (
-                    <a key={idx} href={url} target="_blank" rel="noreferrer">
-                      <img src={url} alt="" style={{ maxWidth: '180px', maxHeight: '140px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }} />
-                    </a>
-                  ))}
-                </div>
-              )}
-              {msg.content}
+              {msg.role === 'assistant' ? renderChatMarkdown(msg.content) : msg.content}
             </div>
           </div>
         ))}
@@ -706,57 +738,16 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
             </div>
           </div>
         )}
+        {error && (
+          <div style={{ color: '#fcd34d', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '10px', padding: '8px 12px', fontSize: '12px' }}>
+            {error}
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Pending images preview */}
-      {pendingImages.length > 0 && (
-        <div style={{ padding: '8px 16px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {pendingImages.map((url, idx) => (
-            <div key={idx} style={{ position: 'relative' }}>
-              <img src={url} alt="" style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }} />
-              <button
-                onClick={() => removePendingImage(idx)}
-                style={{
-                  position: 'absolute', top: '-6px', right: '-6px',
-                  width: '18px', height: '18px', borderRadius: '50%',
-                  background: '#ef4444', border: 'none', color: '#fff',
-                  fontSize: '10px', fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Input */}
       <div style={{ padding: '12px 16px', paddingBottom: 'calc(12px + var(--peg-safe-bottom))', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          style={{ display: 'none' }}
-          onChange={handleImageUpload}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '10px', color: uploading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)',
-            padding: '8px 10px',
-            cursor: uploading ? 'wait' : 'pointer',
-            display: 'flex', alignItems: 'center', flexShrink: 0,
-          }}
-          title="Joindre une image"
-        >
-          <MdImage size={18} />
-        </button>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -767,11 +758,12 @@ const PreviewPanel = ({ config }: { config: ChatbotConfig | null }) => {
         />
         <button
           onClick={send}
-          disabled={loading || (!input.trim() && pendingImages.length === 0)}
+          disabled={loading || !input.trim()}
+          aria-label="Envoyer"
           style={{
-            background: loading || (!input.trim() && pendingImages.length === 0) ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
+            background: loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
             border: 'none', borderRadius: '10px', color: '#fff', padding: '8px 14px',
-            cursor: loading || (!input.trim() && pendingImages.length === 0) ? 'not-allowed' : 'pointer',
+            cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', flexShrink: 0,
           }}
         >
@@ -792,13 +784,17 @@ const HistoryPanel = () => {
   const [selected, setSelected] = useState<any | null>(null);
   const [loadingConv, setLoadingConv] = useState(false);
   const [filterDate, setFilterDate] = useState('');
+  const [error, setError] = useState('');
 
   const load = async (dateFrom?: string) => {
     setLoading(true);
+    setError('');
     try {
       const res = await apiGetChatHistory({ page: 1, pageSize: 50, dateFrom });
       setConversations(res.data.conversations);
       setTotal(res.data.total);
+    } catch (e) {
+      setError(errMsg(e, "Impossible de charger l'historique."));
     } finally { setLoading(false); }
   };
 
@@ -806,16 +802,23 @@ const HistoryPanel = () => {
 
   const openConversation = async (id: string) => {
     setLoadingConv(true);
+    setError('');
     try { const res = await apiGetConversation(id); setSelected(res.data.conversation); }
+    catch (e) { setError(errMsg(e, 'Impossible d\'ouvrir la conversation.')); }
     finally { setLoadingConv(false); }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    await apiDeleteConversation(id);
-    if (selected?._id === id) setSelected(null);
-    setConversations((prev) => prev.filter((c) => c._id !== id));
-    setTotal((t) => t - 1);
+    if (!confirm('Supprimer cette conversation ?')) return;
+    try {
+      await apiDeleteConversation(id);
+      if (selected?._id === id) setSelected(null);
+      setConversations((prev) => prev.filter((c) => c._id !== id));
+      setTotal((t) => t - 1);
+    } catch (err) {
+      setError(errMsg(err, 'Suppression impossible.'));
+    }
   };
 
   return (
@@ -831,6 +834,7 @@ const HistoryPanel = () => {
           onChange={(e) => { setFilterDate(e.target.value); load(e.target.value || undefined); }}
           style={{ ...inputStyle, marginBottom: '10px' }}
         />
+        {error && <div style={{ color: '#f87171', fontSize: '12px', marginBottom: '8px' }}>{error}</div>}
         {loading ? (
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', textAlign: 'center', marginTop: '32px' }}>Chargement...</div>
         ) : conversations.length === 0 ? (
@@ -851,7 +855,7 @@ const HistoryPanel = () => {
                 <div>
                   <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{c.userName}</div>
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '2px' }}>
-                    {c.messageCount} messages · {new Date(c.createdAt).toLocaleDateString('fr-FR')}
+                    {c.messageCount} messages · {new Date(c.updatedAt || c.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -880,9 +884,17 @@ const HistoryPanel = () => {
             <div style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MdChat size={18} color="#6b9eff" /> {selected.userName}
               <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: 400 }}>
-                {new Date(selected.createdAt).toLocaleString('fr-FR')}
+                {new Date(selected.updatedAt || selected.createdAt).toLocaleString('fr-FR')}
               </span>
             </div>
+            {selected.meta && (
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '10px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {selected.meta.model && <span>Modèle : {selected.meta.model}</span>}
+                {typeof selected.meta.latencyMs === 'number' && <span>Dernière réponse : {(selected.meta.latencyMs / 1000).toFixed(1)} s</span>}
+                {Array.isArray(selected.meta.tools) && selected.meta.tools.length > 0 && <span>Outils : {selected.meta.tools.join(', ')}</span>}
+                {selected.meta.branch && selected.meta.branch !== 'llm' && <span style={{ color: '#fcd34d' }}>Mode dégradé : {selected.meta.branch}</span>}
+              </div>
+            )}
             <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {selected.messages.map((msg: any, i: number) => (
                 <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
@@ -892,8 +904,9 @@ const HistoryPanel = () => {
                     border: `1px solid ${msg.role === 'user' ? 'rgba(47,111,237,0.3)' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                     padding: '10px 14px', color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', minWidth: 0,
                   }}>
-                    {msg.content}
+                    {msg.role === 'assistant' ? renderChatMarkdown(String(msg.content ?? '')) : msg.content}
                   </div>
                 </div>
               ))}
@@ -923,6 +936,7 @@ const ChatbotPage = () => {
   const [loading, setLoading] = useState(true);
   const [backendError, setBackendError] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState<string | null>(null);
 
   useEffect(() => {
     apiGetChatbotConfig()
@@ -992,8 +1006,8 @@ const ChatbotPage = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 'var(--peg-gap-16)', flexWrap: 'wrap', flex: 1, minHeight: 0, height: 'calc(100dvh - 130px)' }}>
-          <ConfigPanel config={config} onUpdate={setConfig} />
-          <PreviewPanel config={config} />
+          <ConfigPanel config={config} onUpdate={setConfig} onDraftChange={setDraftPrompt} />
+          <PreviewPanel config={config} draftPrompt={draftPrompt} />
         </div>
       )}
     </div>

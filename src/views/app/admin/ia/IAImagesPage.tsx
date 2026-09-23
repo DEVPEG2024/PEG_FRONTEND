@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { apiGenerateImageAdvanced } from '@/services/ChatbotServices';
-import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+import { apiUploadFile } from '@/services/FileServices';
 import {
   MdOutlineImage,
   MdOutlineUploadFile,
@@ -94,18 +94,21 @@ const ReferenceUpload = ({
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [uploadError, setUploadError] = useState('');
+
+  // Upload authentifié via Strapi (/upload-single → S3). Avant : fetch brut sans
+  // JWT vers une route « /upload » inexistante, échec ignoré en silence — la photo
+  // de référence n'arrivait jamais au générateur.
   const handleFiles = async (files: FileList) => {
     setUploading(true);
+    setUploadError('');
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
       try {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch(`${EXPRESS_BACKEND_URL}/upload`, { method: 'POST', body: form });
-        const data = await res.json();
-        if (data.fileUrl) onAdd(data.fileUrl, file.name);
-      } catch {
-        // ignore failed upload
+        const uploaded = await apiUploadFile(file);
+        if (uploaded?.url) onAdd(uploaded.url, file.name);
+      } catch (e: any) {
+        setUploadError(e?.response?.data?.message ?? `Échec de l'envoi : ${file.name}`);
       }
     }
     setUploading(false);
@@ -172,6 +175,7 @@ const ReferenceUpload = ({
           {uploading ? 'Upload en cours...' : 'Glissez des images ici ou cliquez'}
         </div>
       </div>
+      {uploadError && <div style={{ color: '#f87171', fontSize: '11.5px', marginTop: '6px' }}>{uploadError}</div>}
     </div>
   );
 };
