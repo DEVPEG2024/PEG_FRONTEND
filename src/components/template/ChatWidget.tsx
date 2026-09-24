@@ -8,13 +8,15 @@ import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatCard } from '@/components/template/ChatCardView';
+import ChatOfferAction from '@/components/template/ChatOfferAction';
+import { isChatOffer, type ChatOffer, type ChatPrefill } from '@/components/template/chatOffer';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[] };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
@@ -58,6 +60,7 @@ const loadSaved = (key: string): { conversationId: string; messages: Message[] }
         const x = m as Partial<Message> | null;
         return !!x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string';
       })
+      .map((m) => (m.offer && !isChatOffer(m.offer) ? { ...m, offer: undefined } : m))
       .slice(-40);
     return { conversationId: parsed.conversationId, messages };
   } catch {
@@ -70,7 +73,7 @@ const saveConversation = (key: string, conversationId: string, messages: Message
 
 // ── Transport ────────────────────────────────────────────────────────────────
 
-type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[] };
+type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[]; offer?: unknown };
 type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void; onCards: (cards: ChatCard[]) => void };
 
 class StreamUnavailableError extends Error {}
@@ -116,7 +119,7 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
     if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
     else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
     else if (event === 'cards' && Array.isArray(data?.cards)) { lastCards = data.cards; h.onCards(data.cards); }
-    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined }; }
+    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined, offer: data.offer }; }
     else if (event === 'error') { throw new Error(data?.message || 'stream error'); }
   };
 
@@ -259,7 +262,9 @@ const ChatWidget = () => {
         // Seules les cartes citées dans la réponse sont conservées (le serveur les filtre ; la route
         // JSON d'un backend antérieur n'en renvoie pas → liens simples).
         const cards = (result.cards || []).filter((c) => reply.includes(`](${c.url})`));
-        setMessages([...history, { role: 'assistant', content: reply, ...(cards.length ? { cards } : {}) }]);
+        // Offre chiffrée → bouton « Ajouter au panier » sous la réponse.
+        const offer = isChatOffer(result.offer) ? result.offer : undefined;
+        setMessages([...history, { role: 'assistant', content: reply, ...(cards.length ? { cards } : {}), ...(offer ? { offer } : {}) }]);
         // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
         setAuthWarn(Boolean(token) && result.authenticated === false);
         if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
@@ -331,6 +336,17 @@ const ChatWidget = () => {
   if (!open && FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
+
+  /** Met à jour l'état du bouton panier d'un message (conservé avec la conversation). */
+  const updateOffer = (index: number, offer: ChatOffer) =>
+    setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, offer } : m)));
+
+  // Le panier et la fiche produit sont sous la fenêtre du chat (en bas à droite,
+  // là où se trouvent « Ajouter au panier » et « Payer ») : on la referme.
+  const goFromOffer = (path: string, state?: { chatOffer: ChatPrefill }) => {
+    setOpen(false);
+    navigate(path, state ? { state } : undefined);
+  };
 
   // Une carte interne navigue dans l'application sans recharger (la conversation reste ouverte).
   const renderContent = (content: string, cards?: ChatCard[]) => renderChatMarkdown(content, { cards, onNavigate: navigate });
@@ -473,6 +489,9 @@ const ChatWidget = () => {
                 {msg.role === 'assistant' && botAvatar}
                 <div style={bubble(msg.role, msg.error)}>
                   {msg.role === 'assistant' && !msg.error ? renderContent(msg.content, msg.cards) : msg.content}
+                  {msg.role === 'assistant' && !msg.error && msg.offer && (
+                    <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} />
+                  )}
                   {msg.error && i === messages.length - 1 && (
                     <div style={{ marginTop: '6px' }}>
                       <button

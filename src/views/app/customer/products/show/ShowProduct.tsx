@@ -3,7 +3,7 @@ import {
   RootState,
   useAppSelector as useRootAppSelector,
 } from '@/store';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import reducer, {
   clearState,
@@ -36,6 +36,7 @@ import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
+import { readChatPrefill } from '@/components/template/chatOffer';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 
 const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
@@ -157,6 +158,28 @@ const ShowProduct = () => {
     }
   }, [sizeAndColorsSelected, formCompleted, product, m2Width, m2Height, m2Quantity, isM2Pricing]);
 
+  // Offre préparée par l'assistant (bouton « Ajouter au panier » du chat) : la
+  // fiche arrive pré-remplie (quantité, taille/couleur, dimensions) et s'ouvre sur
+  // l'étape qui reste — le plus souvent la personnalisation. Appliqué une fois.
+  const location = useLocation();
+  const chatPrefill = onEdition ? null : readChatPrefill(location.state);
+  const chatPrefillApplied = useRef(false);
+  useEffect(() => {
+    if (!chatPrefill || chatPrefillApplied.current || !product || product.documentId !== documentId) return;
+    chatPrefillApplied.current = true;
+    if (isM2Pricing) {
+      if (chatPrefill.width) setM2Width(Math.round(chatPrefill.width * 100));
+      if (chatPrefill.height) setM2Height(Math.round(chatPrefill.height * 100));
+      setM2Quantity(chatPrefill.quantity);
+      if (chatPrefill.width && chatPrefill.height) setWizardStep(hasForm ? formStepIndex : recapStepIndex);
+      return;
+    }
+    if (chatPrefill.sizeAndColors.length) {
+      dispatch(setSizeAndColorsSelected(chatPrefill.sizeAndColors));
+      setWizardStep(hasForm ? formStepIndex : recapStepIndex);
+    }
+  }, [chatPrefill, product, documentId, isM2Pricing, hasForm, formStepIndex, recapStepIndex, dispatch]);
+
   const isAtLeastOneItemWanted = (): boolean =>
     sizeAndColorsSelected.reduce((qty, s) => qty + s.quantity, 0) > 0;
 
@@ -176,7 +199,9 @@ const ShowProduct = () => {
       } as CartItem)
     );
     toast.success('Article ajouté au panier');
-    navigate(-1);
+    // Venu du chat : on enchaîne sur le panier (paiement) plutôt que de revenir en arrière.
+    if (chatPrefill) navigate('/customer/cart');
+    else navigate(-1);
   };
 
   const handleFormSubmit = (submission: any) => {
@@ -325,6 +350,24 @@ const ShowProduct = () => {
       >
         ← {wizardStep > 0 ? 'Étape précédente' : 'Retour'}
       </button>
+
+      {chatPrefill && (
+        <div role="status" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '14px', padding: '12px 16px', borderRadius: '14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', color: 'rgba(220,252,231,0.9)', fontSize: '13px', lineHeight: 1.5 }}>
+          <HiShoppingCart size={18} style={{ color: '#4ade80', flexShrink: 0, marginTop: '1px' }} />
+          <span>
+            <strong style={{ color: '#fff' }}>
+              Votre offre : {chatPrefill.quantity} × {product.name}
+              {chatPrefill.colorName ? ` · ${chatPrefill.colorName}` : ''}
+              {chatPrefill.sizeName ? ` · ${chatPrefill.sizeName}` : ''}
+            </strong>
+            <br />
+            {isM2Pricing
+              ? (chatPrefill.width && chatPrefill.height ? 'Dimensions reprises de l’offre. ' : 'Indiquez les dimensions. ')
+              : chatPrefill.sizeAndColors.length ? '' : `Répartissez vos ${chatPrefill.quantity} pièces par taille${(product.colors?.length ?? 0) > 1 && !chatPrefill.colorName ? ' et couleur' : ''}. `}
+            {hasForm ? 'Ajoutez votre personnalisation, puis « Ajouter au panier ».' : 'Vérifiez, puis « Ajouter au panier ».'}
+          </span>
+        </div>
+      )}
 
       {/* Card — overflow visible pour laisser la galerie sticky suivre le scroll */}
       <div style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
