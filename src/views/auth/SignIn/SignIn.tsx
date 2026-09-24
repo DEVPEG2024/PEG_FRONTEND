@@ -27,12 +27,12 @@ import {
 
    • AU-DESSUS DE 920px : `DesktopSignIn`, l'arbre historique (.si-card /
      .si-left / .si-form) rendu tel quel. Rien n'y a bougé.
-   • EN DESSOUS : `PhoneAtelier`, « La Plaque de verre ». Un univers
-     bleu-noir presque vide — le logo PEG au centre et cinq objets du métier
-     en suspension — et une grande plaque de verre ivoire qui entre par la
-     droite en perspective quand on tire « Se connecter » : l'univers recule,
-     les objets filent à trois vitesses, un liseré mauve suit la tranche, le
-     verre trouble le logo au passage, puis le formulaire se construit.
+   • EN DESSOUS : `PhoneAtelier`, « La Plaque de verre ». L'accueil est la
+     scène PEG de la maquette de référence (image), et une grande plaque de
+     verre ivoire entre par la droite en perspective quand on tire « Se
+     connecter » : la scène recule sur deux plans, un liseré mauve suit la
+     tranche, le verre floute ce qu'il recouvre, puis le formulaire se
+     construit.
 
    Le choix se fait en JS (matchMedia) et non en CSS : au-dessus du seuil le
    DOM est LITTÉRALEMENT celui d'avant, aucune règle mobile n'existe pour le
@@ -40,7 +40,7 @@ import {
 
    Le discours (pastille, accroche, les deux cartes de compte) est repris MOT
    POUR MOT : il est verrouillé par les tests de terminologie. Sur téléphone,
-   le premier écran n'en garde que le logo (l'accroche reste le titre de la page
+   le premier écran n'en garde que la scène (l'accroche reste le titre de la page
    pour les lecteurs d'écran) ; sous-titre, catégories et gages restent sur le
    bureau.
    Seuls les libellés de l'interaction elle-même sont neufs.
@@ -132,13 +132,14 @@ const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) =>
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LA PLAQUE DE VERRE — l'accueil téléphone
-   Un univers bleu-noir presque vide : le logo PEG au centre, et cinq objets du
-   métier en suspension — hoodie, casquette, roll-up, mug, écran web. Ils ne
-   sont pas là comme une publicité : ils fabriquent la PROFONDEUR du geste.
-   On tire « Se connecter » : l'univers recule, les objets filent à trois
-   vitesses, et une grande plaque de verre ivoire entre par la droite en
-   perspective, un liseré mauve sur la tranche. Quand elle passe devant le
-   logo, le verre le trouble un instant — on traverse l'identité PEG pour
+   L'accueil est la scène PEG de la maquette de référence : le logo en volume
+   entouré des métiers (hoodie, casquette, mug, roll-up, écran web, téléphone,
+   plaque acrylique) et de rubans de verre violet. Des objets dessinés en code
+   n'approchaient pas ce rendu 3D : on montre l'image elle-même, sur deux plans
+   (un fond flou qui prolonge la scène, la scène nette par-dessus).
+   On tire « Se connecter » : la scène recule, et une grande plaque de verre
+   ivoire entre par la droite en perspective, un liseré mauve sur la tranche ;
+   le verre floute la scène qu'il recouvre — on traverse l'identité PEG pour
    entrer dans son espace. Le formulaire se construit ensuite, bloc par bloc.
    TOUT est fonction d'une seule progression p (0 → 1), pilotée au doigt.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -153,8 +154,10 @@ const MARK_PATHS = [
   'M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z',
 ];
 const MARK_DOT = { cx: 1027.8, cy: 331.5, r: 82 } as const;
-/** Couleur du point du logo — celle du fichier d'origine. */
-const MARK_DOT_COLOR = '#db6b67';
+/** Couleur du point du logo : le violet-magenta de la scène de référence
+    (relevé dans l'image), pour que le logo du formulaire lui réponde. Le
+    fichier d'origine du logo a un point corail (#db6b67). */
+const MARK_DOT_COLOR = '#d341f4';
 /** Le mauve du verre : liseré de la plaque, poignée, halo. */
 const VIOLET = '#8b5cf6';
 
@@ -184,175 +187,14 @@ const MarkSvg = ({
   </svg>
 );
 
-/* Le logo du centre, en volume : huit copies décalées vers le bas-droite font
-   la tranche (du fond vers la face), la face est un blanc qui tire vers le
-   lavande. Pas de néon : une ombre violette douce et c'est tout. */
-const HERO_DEPTH = 8;
-const HeroMark = () => (
-  <svg viewBox={MARK_VB} className="pa-hero__svg" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-hero-face" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="1" stopColor="#ddd8f6" />
-      </linearGradient>
-      <linearGradient id="pa-hero-side" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#6c5ad8" />
-        <stop offset="1" stopColor="#1e1745" />
-      </linearGradient>
-      <radialGradient id="pa-hero-dot" cx="0.36" cy="0.3" r="0.78">
-        <stop offset="0" stopColor="#f2a9a6" />
-        <stop offset="0.5" stopColor={MARK_DOT_COLOR} />
-        <stop offset="1" stopColor="#9c3f3b" />
-      </radialGradient>
-    </defs>
-    {Array.from({ length: HERO_DEPTH }, (_, i) => HERO_DEPTH - i).map((n) => (
-      <g key={n} transform={`translate(${n * 2.4} ${n * 3.2})`} fill="url(#pa-hero-side)" fillRule="evenodd">
-        {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
-        <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} />
-      </g>
-    ))}
-    <g fill="url(#pa-hero-face)" fillRule="evenodd">
-      {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
-    </g>
-    <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} fill="url(#pa-hero-dot)" />
-  </svg>
-);
-
-/* ── Les cinq objets du métier ──────────────────────────────────────────────
-   Très stylisés, même éclairage pour tous : lumière haute à gauche, liseré
-   lavande à contre-jour. Chacun porte le logo, petit. */
-const ObjHoodie = () => (
-  <svg viewBox="0 0 200 190" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-h-body" x1="0.15" y1="0" x2="0.85" y2="1">
-        <stop offset="0" stopColor="#30344c" />
-        <stop offset="0.55" stopColor="#181b2a" />
-        <stop offset="1" stopColor="#0e1019" />
-      </linearGradient>
-      <linearGradient id="pa-h-rim" x1="1" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#c4b5ff" stopOpacity="0.6" />
-        <stop offset="0.5" stopColor={VIOLET} stopOpacity="0.14" />
-        <stop offset="1" stopColor={VIOLET} stopOpacity="0" />
-      </linearGradient>
-    </defs>
-    <path d="M76 46C72 26 86 14 100 14s28 12 24 32c-8 8-40 8-48 0Z" fill="url(#pa-h-body)" />
-    <path
-      d="M78 44C68 46 57 50 48 58 35 70 27 100 21 146l19 8c6-30 12-50 20-64l2 86c26 5 50 5 76 0l2-86c8 14 14 34 20 64l19-8c-6-46-14-76-27-88-9-8-20-12-30-14-6 8-38 8-44 0Z"
-      fill="url(#pa-h-body)"
-    />
-    <path
-      d="M78 44C68 46 57 50 48 58 35 70 27 100 21 146l19 8c6-30 12-50 20-64l2 86c26 5 50 5 76 0l2-86c8 14 14 34 20 64l19-8c-6-46-14-76-27-88-9-8-20-12-30-14-6 8-38 8-44 0Z"
-      fill="none"
-      stroke="url(#pa-h-rim)"
-      strokeWidth="1.3"
-    />
-    <path d="M48 58C35 70 27 100 21 146l8 3c5-40 12-66 22-84Z" fill="#fff" opacity="0.07" />
-    <path d="M86 44c2-12 26-12 28 0-6 7-22 7-28 0Z" fill="#07080e" />
-    <path d="M94 50l-2 26M106 50l2 26" stroke="#d6cff4" strokeWidth="1.7" strokeLinecap="round" opacity="0.8" />
-    <path d="M73 128h54l6 30H67Z" fill="none" stroke="#000" strokeOpacity="0.4" strokeWidth="1.2" />
-    <path d="M22 142l19 8M160 150l19-8M62 170c26 5 50 5 76 0" stroke="#000" strokeOpacity="0.45" strokeWidth="1.4" fill="none" />
-    <MarkSvg fill="#fff" x={83} y={80} width={34} />
-  </svg>
-);
-
-const ObjCap = () => (
-  <svg viewBox="0 0 200 140" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-c-crown" x1="0.2" y1="0" x2="0.8" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.6" stopColor="#e4e1ef" />
-        <stop offset="1" stopColor="#aaa4c1" />
-      </linearGradient>
-      <linearGradient id="pa-c-brim" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#dad6e8" />
-        <stop offset="1" stopColor="#8a84a4" />
-      </linearGradient>
-    </defs>
-    <path d="M72 96C52 95 24 99 12 107c-6 5 1 12 20 12 34 0 70-7 88-19Z" fill="url(#pa-c-brim)" />
-    <path d="M62 98C58 56 86 26 124 26c36 0 60 26 58 70-38 8-82 9-120 2Z" fill="url(#pa-c-crown)" />
-    <path d="M124 27c-10 20-18 44-22 71M124 27c10 22 16 46 18 71" stroke="#8f89a8" strokeOpacity="0.5" strokeWidth="1.1" fill="none" />
-    <path d="M62 98c38 7 82 6 120-2" stroke="#6d6788" strokeOpacity="0.55" strokeWidth="1.4" fill="none" />
-    <circle cx="124" cy="27" r="3.4" fill="#cfcae0" />
-    <MarkSvg fill="#12142b" x={76} y={58} width={36} />
-  </svg>
-);
-
-const ObjMug = () => (
-  <svg viewBox="0 0 160 170" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-m-body" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stopColor="#0b0c14" />
-        <stop offset="0.22" stopColor="#373c58" />
-        <stop offset="0.45" stopColor="#161927" />
-        <stop offset="1" stopColor="#07080d" />
-      </linearGradient>
-    </defs>
-    <path d="M108 56c40-2 40 66 0 64v-15c20 1 20-36 0-35Z" fill="#131521" stroke={VIOLET} strokeOpacity="0.4" strokeWidth="1.2" />
-    <path d="M28 34v104c0 13 82 13 82 0V34Z" fill="url(#pa-m-body)" />
-    <path d="M110 40v98c0 6-10 9-22 11" stroke="#c4b5ff" strokeOpacity="0.4" strokeWidth="1.2" fill="none" />
-    <ellipse cx="69" cy="34" rx="41" ry="9" fill="#2c3047" />
-    <ellipse cx="69" cy="34.6" rx="36.5" ry="6.8" fill="#050609" />
-    <rect x="40" y="46" width="5" height="84" rx="2.5" fill="#fff" opacity="0.17" />
-    <MarkSvg fill="#fff" x={47} y={80} width={46} />
-  </svg>
-);
-
-const ObjRollup = () => (
-  <svg viewBox="0 0 110 256" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-r-ban" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#24283d" />
-        <stop offset="1" stopColor="#0c0e17" />
-      </linearGradient>
-      <linearGradient id="pa-r-base" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#d7d9e5" />
-        <stop offset="1" stopColor="#737790" />
-      </linearGradient>
-    </defs>
-    <rect x="12" y="8" width="86" height="6" rx="3" fill="#aeb2c4" />
-    <rect x="17" y="12" width="76" height="214" rx="2" fill="url(#pa-r-ban)" stroke={VIOLET} strokeOpacity="0.3" />
-    <MarkSvg fill="#fff" x={27} y={36} width={56} />
-    <path
-      d="M17 148c20-8 38 6 76-6M17 166c24-8 40 8 76-4M17 184c22-6 42 6 76-6M17 202c20-6 44 8 76-4"
-      stroke="#b3a6ff"
-      strokeOpacity="0.2"
-      fill="none"
-    />
-    <rect x="6" y="224" width="98" height="14" rx="6" fill="url(#pa-r-base)" />
-    <path d="M14 238l-4 8M96 238l4 8" stroke="#737790" strokeWidth="3" strokeLinecap="round" />
-  </svg>
-);
-
-const ObjLaptop = () => (
-  <svg viewBox="0 0 240 150" aria-hidden focusable="false">
-    <defs>
-      <linearGradient id="pa-l-alu" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#e6e8f1" />
-        <stop offset="1" stopColor="#868aa0" />
-      </linearGradient>
-      <linearGradient id="pa-l-scr" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#171a2a" />
-        <stop offset="1" stopColor="#090a12" />
-      </linearGradient>
-    </defs>
-    <rect x="30" y="6" width="180" height="120" rx="9" fill="#1a1d2b" stroke="#c4bde2" strokeOpacity="0.4" />
-    <rect x="37" y="13" width="166" height="106" rx="3" fill="url(#pa-l-scr)" />
-    <MarkSvg fill="#fff" x={44} y={20} width={26} />
-    <rect x="44" y="38" width="28" height="3" rx="1.5" fill="#fff" opacity="0.2" />
-    <rect x="44" y="46" width="22" height="3" rx="1.5" fill="#fff" opacity="0.14" />
-    <rect x="44" y="54" width="26" height="3" rx="1.5" fill="#fff" opacity="0.14" />
-    <rect x="44" y="62" width="18" height="3" rx="1.5" fill="#fff" opacity="0.14" />
-    <rect x="82" y="34" width="66" height="78" rx="5" fill="#20243a" />
-    <path d="M104 56c4-6 20-6 24 0l10 8-4 10-5-2v28h-26V72l-5 2-4-10Z" fill="#ebe7f7" />
-    <rect x="156" y="34" width="40" height="6" rx="3" fill={VIOLET} />
-    <rect x="156" y="46" width="34" height="3" rx="1.5" fill="#fff" opacity="0.16" />
-    <rect x="156" y="54" width="28" height="3" rx="1.5" fill="#fff" opacity="0.16" />
-    <rect x="156" y="62" width="32" height="3" rx="1.5" fill="#fff" opacity="0.16" />
-    <rect x="156" y="98" width="40" height="12" rx="6" fill="#7c5cff" />
-    <path d="M8 126h224l6 12c1 4-2 7-6 7H8c-4 0-7-3-6-7Z" fill="url(#pa-l-alu)" />
-    <rect x="100" y="126" width="40" height="4" rx="2" fill="#6f7388" opacity="0.6" />
-  </svg>
-);
+/* L'image de l'accueil : la scène de la maquette de référence, recadrée avant
+   le formulaire de la maquette (sa tranche lumineuse commence vers x = 615 sur
+   1086), agrandie ×2 (Lanczos + accentuation). WebP 188 Ko, JPEG en repli.
+   Proportions : 1216 × 2896. Le sujet (du haut du hoodie au bas de la plaque
+   acrylique) occupe 72,9 % de la hauteur, centré à 48,2 % — d'où les
+   constantes 1,74 et 1,148 de PHONE_CSS (.pa-scene / .pa-drift). */
+const SCENE_WEBP = '/img/signin/accueil-peg.webp';
+const SCENE_JPG = '/img/signin/accueil-peg.jpg';
 
 /* Un bloc du formulaire : il se construit sur sa fenêtre de p, [a ; a + d]
    (voir .pa-st). */
@@ -458,9 +300,8 @@ const useHaptic = () => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** Géométrie mesurée (offsetLeft/Width, jamais getBoundingClientRect) : le
-    logo du centre (pour savoir quand le verre passe devant), le rail et sa
-    poignée. */
-type PaGeo = { hx: number; hw: number; railL: number; railW: number; knobL: number; knobW: number };
+    rail et sa poignée. */
+type PaGeo = { railL: number; railW: number; knobL: number; knobW: number };
 
 /* Arrivées : au doigt, un ressort sans oscillation qui repart à la vitesse du
    geste (ζ ≈ 1) ; au bouton, au clavier et au « Retour », la courbe du cahier
@@ -512,11 +353,13 @@ const PhoneAtelier = ({
   const bodyRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLButtonElement>(null);
   const knobRef = useRef<HTMLSpanElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLImageElement>(null);
+  /* L'image n'apparaît qu'une fois décodée : pas de dévoilement par bandes. */
+  const [photoReady, setPhotoReady] = useState(false);
   const signUpRef = useRef(signUpOpen);
   signUpRef.current = signUpOpen;
 
-  const geo = useRef<PaGeo>({ hx: 0, hw: 0, railL: 0, railW: 0, knobL: 0, knobW: 0 });
+  const geo = useRef<PaGeo>({ railL: 0, railW: 0, knobL: 0, knobW: 0 });
   const geoTick = useMotionValue(0);
 
   /* ── Progression 0 → 1 ── */
@@ -534,16 +377,10 @@ const PhoneAtelier = ({
   const worldS = useTransform(p, (v) => 1 - 0.04 * v * k);
   const veilO = useTransform(p, (v) => 0.45 * v);
 
-  /* 2. Parallaxe : premier plan −120px, second −70px, fond −25px, et une
-     rotation de 2 à 5° propre à chaque objet. */
+  /* 2. Parallaxe sur deux plans : le fond flou recule à −25px, la scène nette
+     à −70px. */
   const backX = useTransform(p, (v) => -25 * v * k);
   const midX = useTransform(p, (v) => -70 * v * k);
-  const foreX = useTransform(p, (v) => -120 * v * k);
-  const rotRollup = useTransform(p, (v) => -2 * v * k);
-  const rotHoodie = useTransform(p, (v) => -3 * v * k);
-  const rotCap = useTransform(p, (v) => 4 * v * k);
-  const rotMug = useTransform(p, (v) => 5 * v * k);
-  const rotLaptop = useTransform(p, (v) => -3 * v * k);
 
   /* 3-4. La plaque : translateX(105 %) · rotateY(−6°) · scale(0,97) → neutre.
      Pivot sur son bord gauche : c'est la tranche qui mène. Posée, on rend
@@ -560,6 +397,15 @@ const PhoneAtelier = ({
     return `perspective(1400px) translate3d(${tx.toFixed(2)}px,0,0) rotateY(${ry.toFixed(3)}deg) scale(${s.toFixed(4)})`;
   });
 
+  /* Le dépoli du verre est SIMULÉ : la plaque porte une copie floue de la
+     scène, contre-translatée pour tomber sur ce qu'elle recouvre (la scène
+     recule entre −25 et −70px : on vise la moyenne, −55px — c'est flou, l'écart
+     ne se voit pas). Un backdrop-filter vivant ne tenait pas : Chrome le casse
+     sous la rotation 3D de la plaque (seul un carré était flouté), et le moteur
+     de Safari ne le rendait pas en test. Ici, une image floutée UNE fois, que
+     le compositeur déplace : ça marche partout, et ça ne coûte rien. */
+  const frostX = useTransform(x, (xv) => -edgeOf(xv) - 55 * clamp(-xv / W.current, 0, 1) * k);
+
   /* Verre pendant le passage, ivoire franc une fois posée : une couche ivoire
      monte en opacité sur la fin (opacité seule : rien à repeindre). */
   const fillO = useTransform(p, (v) => (reduced ? 1 : 0.85 * smooth(0.55, 1, v)));
@@ -567,26 +413,8 @@ const PhoneAtelier = ({
   /* 5. Le liseré mauve de la tranche : visible pendant le passage seulement. */
   const glowO = useTransform(p, (v) => (reduced ? 0 : smooth(0.004, 0.05, v) * (1 - smooth(0.8, 1, v))));
 
-  /* 6. Le verre trouble le logo quand sa tranche passe sur son MILIEU : 0 → 1
-     → 0 sur ±17 % de sa largeur, soit un quart de la course : un passage, pas
-     un état. (Le logo est si large que, mesuré sur toute sa largeur, il restait
-     flou pendant presque toute la transition.) */
-  const lens = useTransform([x, geoTick] as MotionValue<number>[], ([xv]: number[]) => {
-    const g = geo.current;
-    if (reduced || !g.hw) return 0;
-    const w = W.current;
-    const v = clamp(-xv / w, 0, 1);
-    const s = 1 - 0.04 * v;
-    const cx = w / 2 + (g.hx - w / 2) * s - 40 * v;
-    const u = (edgeOf(xv) - cx) / (g.hw * s * 0.17);
-    return u <= -1 || u >= 1 ? 0 : Math.pow(1 - u * u, 1.5);
-  });
-  const heroFilter = useTransform(lens, (d) => (d > 0.01 ? `blur(${(5 * d).toFixed(2)}px)` : 'none'));
-  const heroShift = useTransform(lens, (d) => -4 * d);
-  /* aberration chromatique : rouge et bleu séparés de 1,8px au plus */
-  const abR = useTransform(lens, (d) => -1.8 * d);
-  const abB = useTransform(lens, (d) => 1.8 * d);
-  const abO = useTransform(lens, (d) => 0.85 * d);
+  /* 6. Le logo fait partie de l'image : c'est le flou de fond de la plaque
+     (backdrop-filter) qui le trouble quand le verre passe dessus. */
 
   /* Le rail : ses libellés s'effacent, la poignée est poussée par la tranche
      (6px devant elle) jusqu'à buter à gauche du rail. */
@@ -752,10 +580,8 @@ const PhoneAtelier = ({
     const measure = () => {
       const g = geo.current;
       const stage = stageRef.current;
-      const h = heroRef.current;
       const rl = railRef.current;
       const kn = knobRef.current;
-      if (h) { g.hw = h.offsetWidth; g.hx = offsetIn(h, stage) + g.hw / 2; }
       if (rl) { g.railL = offsetIn(rl, stage); g.railW = rl.offsetWidth; }
       if (kn) { g.knobL = offsetIn(kn, rl); g.knobW = kn.offsetWidth; }
       geoTick.set(geoTick.get() + 1);
@@ -770,7 +596,7 @@ const PhoneAtelier = ({
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
       ro = new ResizeObserver(() => measure());
-      [heroRef.current, railRef.current].forEach((el) => { if (el) ro?.observe(el); });
+      [railRef.current].forEach((el) => { if (el) ro?.observe(el); });
     }
     let alive = true;
     document.fonts?.ready?.then(() => { if (alive) measure(); }).catch(() => {});
@@ -808,6 +634,12 @@ const PhoneAtelier = ({
     link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@800&display=swap';
     document.head.appendChild(link);
     return () => { link.remove(); };
+  }, []);
+
+  /* Image déjà en cache : `load` a pu partir avant le rendu. */
+  useLayoutEffect(() => {
+    const img = photoRef.current;
+    if (img?.complete && img.naturalWidth > 0) setPhotoReady(true);
   }, []);
 
   /* ── Arrêt de toute animation en cours au démontage ── */
@@ -858,62 +690,34 @@ const PhoneAtelier = ({
           onPointerCancel={onPointerUp}
         >
           <motion.div className="pa-world" style={{ x: worldX, scale: worldS }}>
+            {/* Plan de fond : la même image, très floue et assombrie — elle
+                prolonge la scène jusqu'aux bords (et sous le rail). */}
+            <motion.div className="pa-ambient" style={{ x: backX }} aria-hidden>
+              <picture>
+                <source type="image/webp" srcSet={SCENE_WEBP} />
+                <img src={SCENE_JPG} alt="" decoding="async" />
+              </picture>
+            </motion.div>
+            {/* La scène nette, bords fondus. Trois enveloppes : la parallaxe
+                (framer-motion), le flottement (CSS), l'apparition au
+                chargement (transition sur l'image) — chacune garde seule la
+                main sur SON transform. */}
             <div className="pa-scene" aria-hidden>
-              {/* Origine = centre du logo ; tout se place en unités --u. Trois
-                  enveloppes par objet : la parallaxe (framer-motion), l'entrée
-                  (CSS, fill-mode backwards) et le flottement (CSS) — chacune
-                  garde seule la main sur SON transform. */}
-              <div className="pa-orbit">
-                <span className="pa-halo" />
-                <motion.div className="pa-obj pa-obj--rollup pa-obj--back" style={{ x: backX, rotate: rotRollup }}>
-                  <div className="pa-in pa-in--o1">
-                    <div className="pa-float" style={{ ['--dur' as string]: '8.4s', ['--sway' as string]: '-1deg' } as React.CSSProperties}>
-                      <ObjRollup />
-                    </div>
-                  </div>
-                </motion.div>
-                <motion.div className="pa-obj pa-obj--hoodie pa-obj--mid" style={{ x: midX, rotate: rotHoodie }}>
-                  <div className="pa-in pa-in--o2">
-                    <div className="pa-float" style={{ ['--dur' as string]: '7.2s', ['--del' as string]: '-2s' } as React.CSSProperties}>
-                      <ObjHoodie />
-                    </div>
-                  </div>
-                </motion.div>
-                <motion.div className="pa-obj pa-obj--cap pa-obj--mid" style={{ x: midX, rotate: rotCap }}>
-                  <div className="pa-in pa-in--o3">
-                    <div className="pa-float" style={{ ['--dur' as string]: '6.6s', ['--del' as string]: '-4s', ['--sway' as string]: '-1.5deg' } as React.CSSProperties}>
-                      <ObjCap />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div className="pa-hero" ref={heroRef} style={{ x: heroShift, filter: heroFilter }}>
-                  <div className="pa-in pa-in--hero">
-                    <motion.div className="pa-ab" style={{ x: abR, opacity: abO }}>
-                      <MarkSvg fill="#ff2d55" dot="#ff2d55" />
-                    </motion.div>
-                    <motion.div className="pa-ab" style={{ x: abB, opacity: abO }}>
-                      <MarkSvg fill="#2d6bff" dot="#2d6bff" />
-                    </motion.div>
-                    <HeroMark />
-                  </div>
-                </motion.div>
-
-                <motion.div className="pa-obj pa-obj--mug pa-obj--fore" style={{ x: foreX, rotate: rotMug }}>
-                  <div className="pa-in pa-in--o4">
-                    <div className="pa-float" style={{ ['--dur' as string]: '6.2s', ['--del' as string]: '-1s', ['--sway' as string]: '1.5deg' } as React.CSSProperties}>
-                      <ObjMug />
-                    </div>
-                  </div>
-                </motion.div>
-                <motion.div className="pa-obj pa-obj--laptop pa-obj--fore" style={{ x: foreX, rotate: rotLaptop }}>
-                  <div className="pa-in pa-in--o5">
-                    <div className="pa-float" style={{ ['--dur' as string]: '7.8s', ['--del' as string]: '-3s', ['--sway' as string]: '-.8deg' } as React.CSSProperties}>
-                      <ObjLaptop />
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
+              <motion.div className="pa-photo" style={{ x: midX }}>
+                <div className="pa-drift">
+                  <picture>
+                    <source type="image/webp" srcSet={SCENE_WEBP} />
+                    <img
+                      ref={photoRef}
+                      className={`pa-photo__img${photoReady ? ' is-ready' : ''}`}
+                      src={SCENE_JPG}
+                      alt=""
+                      decoding="async"
+                      onLoad={() => setPhotoReady(true)}
+                    />
+                  </picture>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -952,6 +756,19 @@ const PhoneAtelier = ({
         aria-label="Connexion"
         onFocus={onDrawerFocus}
       >
+        <span className="pa-frostclip" aria-hidden>
+          <motion.span className="pa-frost" style={{ x: frostX }}>
+            <span className="pa-scene">
+              <span className="pa-drift">
+                <picture>
+                  <source type="image/webp" srcSet={SCENE_WEBP} />
+                  <img className="pa-photo__img is-ready" src={SCENE_JPG} alt="" decoding="async" />
+                </picture>
+              </span>
+            </span>
+          </motion.span>
+        </span>
+        <span className="pa-tint" aria-hidden />
         <motion.span className="pa-fill" style={{ opacity: fillO }} aria-hidden />
         <span className="pa-sheen" aria-hidden />
         <motion.span className="pa-glow" style={{ opacity: glowO }} aria-hidden />
@@ -1029,12 +846,9 @@ const PHONE_CSS = `
   --pa-rail-h: 68px;
   --pa-knob: 52px;
   --pa-knob-in: 8px;
-  /* Unité de la composition : suit la largeur, plafonnée sur tablette et
-     rétrécie par un écran court (paysage). 402px de large → 4,02px. */
-  --u: min(1vw, 4.6px, .46dvh);
   position: fixed; inset: 0; height: 100dvh;
   overflow: hidden; isolation: isolate;
-  background: #070a12; color: #fff;
+  background: #070711; color: #fff;
   font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
@@ -1045,46 +859,38 @@ const PHONE_CSS = `
 .pa-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
   clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-/* ── L'ACCUEIL : bleu-noir, un seul voile de lumière sous le logo ── */
-.pa-stage{ position:absolute; inset:0; overflow:hidden;
-  background:radial-gradient(120% 70% at 50% 56%, #0f1224 0%, #070a12 64%); }
+/* ── L'ACCUEIL : le fond de l'image (#070711, relevé dans ses coins) ── */
+.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#070711; }
 .pa-veil{ position:absolute; inset:0; background:#010208; opacity:0; pointer-events:none; display:block; }
 .pa-wrap{ position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; }
 .pa-world{ position:absolute; inset:0; transform-origin:50% 50%; will-change:transform; }
 .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); pointer-events:none;
   bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
-/* origine de la composition = centre du logo, un peu sous le milieu */
-.pa-orbit{ position:absolute; left:50%; top:56%; width:0; height:0; }
-.pa-halo{ position:absolute; display:block;
-  left:calc(var(--u) * -64); top:calc(var(--u) * -44); width:calc(var(--u) * 128); height:calc(var(--u) * 88);
-  background:radial-gradient(closest-side, rgba(124,92,255,.24), rgba(124,92,255,0)); }
-
-/* ── Les objets : carte en unités --u, depuis le centre du logo ── */
-.pa-obj{ position:absolute; will-change:transform; }
-.pa-obj svg{ display:block; width:100%; height:auto; overflow:visible; }
-.pa-obj--hoodie{ left:calc(var(--u) * -48); top:calc(var(--u) * -72); width:calc(var(--u) * 40); z-index:2; }
-.pa-obj--cap{ left:calc(var(--u) * 12); top:calc(var(--u) * -63); width:calc(var(--u) * 32); z-index:2; }
-.pa-obj--cap .pa-float > svg{ transform:rotate(-8deg); }
-.pa-obj--rollup{ left:calc(var(--u) * -50); top:calc(var(--u) * -30); width:calc(var(--u) * 16); z-index:1; }
-.pa-obj--mug{ left:calc(var(--u) * 27); top:calc(var(--u) * -36); width:calc(var(--u) * 23); z-index:4; }
-.pa-obj--laptop{ left:calc(var(--u) * -42); top:calc(var(--u) * 23); width:calc(var(--u) * 46); z-index:4; }
-.pa-float{ animation:paFloat var(--dur, 7s) ease-in-out infinite var(--del, 0s);
-  filter:drop-shadow(0 14px 20px rgba(0,0,0,.55)); }
-/* profondeur : le fond est flou et plus sombre, le second plan un peu éteint */
-.pa-obj--back .pa-float{ filter:blur(1.5px); opacity:.7; }
-.pa-obj--mid .pa-float{ opacity:.93; }
-@keyframes paFloat{
-  0%,100%{ transform:translate3d(0,0,0) rotate(0deg) }
-  50%{ transform:translate3d(0,-7px,0) rotate(var(--sway, 1deg)) }
-}
-
-/* ── Le logo du centre ── */
-.pa-hero{ position:absolute; z-index:3; will-change:transform, filter;
-  left:calc(var(--u) * -39); top:calc(var(--u) * -16.1); width:calc(var(--u) * 78); }
-.pa-in--hero{ position:relative; }
-.pa-hero svg{ display:block; width:100%; height:auto; overflow:visible; }
-.pa-hero__svg{ position:relative; filter:drop-shadow(0 18px 30px rgba(76,52,190,.38)); }
-.pa-ab{ position:absolute; inset:0; opacity:0; will-change:transform, opacity; }
+/* Largeur de la scène nette : toute la largeur de l'écran, 460px au plus
+   (tablette), et assez étroite pour que le SUJET (1,74 × la largeur) tienne
+   entre la barre d'état et le rail. En vw et dvh, jamais en % : --pw sert aussi
+   au calcul de « top », où un % se lirait sur la hauteur. */
+.pa-scene{ --pw: min(100vw, 460px,
+  calc((100dvh - var(--pa-safe-top) - var(--pa-safe-bottom) - var(--pa-rail-h) - 34px) / 1.74)); }
+.pa-photo{ position:absolute; inset:0; will-change:transform; }
+/* le sujet (centré à 48,2 % de l'image) posé au milieu de la zone utile */
+.pa-drift{ position:absolute; width:var(--pw); left:calc(50% - var(--pw) / 2);
+  top:calc(50% - var(--pw) * 1.148); animation:paDrift 9s ease-in-out infinite; }
+@keyframes paDrift{ 0%,100%{ transform:translate3d(0,0,0) } 50%{ transform:translate3d(0,-6px,0) } }
+.pa-photo__img{ display:block; width:100%; height:auto; opacity:0; transform:scale(1.035);
+  transition:opacity .9s ease, transform 1.4s cubic-bezier(.16,1,.3,1);
+  /* bords fondus dans le plan de fond : aucune couture visible */
+  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 6%, #000 90%, transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 6%, #000 90%, transparent 100%);
+  mask-composite:intersect; }
+.pa-photo__img.is-ready{ opacity:1; transform:none; }
+/* le plan de fond : l'image très floue, un peu plus grande que l'écran */
+.pa-ambient{ position:absolute; inset:-8%; will-change:transform; pointer-events:none; }
+.pa-ambient img{ width:100%; height:100%; object-fit:cover; display:block;
+  filter:blur(38px) saturate(1.25) brightness(.5); }
 
 /* ── Le rail : chemin explicite et curseur ── */
 .pa-railwrap{ position:absolute; left:var(--pa-pad); right:var(--pa-pad);
@@ -1113,9 +919,18 @@ const PHONE_CSS = `
 .pa-plate{ position:absolute; left:0; top:0; width:100%; height:100%; z-index:5;
   transform-origin:0% 50%; will-change:transform;
   border-radius:44px; color:#0f172a;
-  background:rgba(247,244,239,.8);
-  -webkit-backdrop-filter:blur(24px) saturate(1.35); backdrop-filter:blur(24px) saturate(1.35);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.85), -22px 0 60px rgba(0,0,0,.34), 0 40px 100px rgba(0,0,0,.3); }
+/* le dépoli : la scène, floutée une fois, dans la forme de la plaque */
+.pa-frostclip{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; display:block; }
+.pa-frost{ position:absolute; left:0; top:0; width:100vw; height:100%; display:block; background:#070711;
+  filter:blur(22px) saturate(1.3); will-change:transform; }
+.pa-frost .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); display:block;
+  bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
+.pa-frost .pa-drift{ display:block; animation:none; }
+.pa-frost .pa-photo__img{ opacity:1; transform:none; transition:none; -webkit-mask-image:none; mask-image:none; }
+/* la teinte ivoire du verre, par-dessus le dépoli */
+.pa-tint{ position:absolute; inset:0; border-radius:inherit; background:rgba(247,244,239,.78);
+  pointer-events:none; display:block; }
 /* l'ivoire franc de la plaque posée */
 .pa-fill{ position:absolute; inset:0; border-radius:inherit; background:#f7f4ef; opacity:0;
   pointer-events:none; display:block; will-change:opacity; }
@@ -1188,12 +1003,6 @@ const PHONE_CSS = `
 
 /* ── ENTRÉE (fill-mode BACKWARDS, voir l'avertissement plus haut) ── */
 @keyframes paRise{ from{ opacity:0; transform:translate3d(0,16px,0) scale(.97) } to{ opacity:1; transform:none } }
-.pa-anim .pa-in--hero{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 80ms; }
-.pa-anim .pa-in--o1{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 240ms; }
-.pa-anim .pa-in--o2{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 320ms; }
-.pa-anim .pa-in--o3{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 400ms; }
-.pa-anim .pa-in--o4{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 480ms; }
-.pa-anim .pa-in--o5{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 560ms; }
 .pa-anim .pa-in--rail{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 640ms; }
 /* L'invitation au repos : la poignée fait signe vers la gauche (élément
    INTERNE, pour ne pas écraser le x de framer-motion). */
@@ -1217,7 +1026,7 @@ const PHONE_CSS = `
 }
 
 /* ── TABLETTE EN PORTRAIT (≥ 560px sous le seuil des 920px) : une colonne de
-   460px ; la composition est déjà plafonnée par --u. ── */
+   460px ; la scène nette est déjà plafonnée à 460px par --pw. ── */
 @media (min-width: 560px){
   .pa-root{ --pa-pad: max(22px, calc((100vw - 460px) / 2)); }
 }
@@ -1234,12 +1043,14 @@ const PHONE_CSS = `
 
 /* ── Transparence réduite : une plaque pleine, sans flou ── */
 @media (prefers-reduced-transparency: reduce){
-  .pa-plate{ background:#f7f4ef; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .pa-frostclip{ display:none; }
+  .pa-tint{ background:#f7f4ef; }
   .pa-rail{ background:#151827; -webkit-backdrop-filter:none; backdrop-filter:none; }
 }
 
 @media (prefers-reduced-motion: reduce){
   .pa-root *{ animation:none !important; }
+  .pa-photo__img{ transition:none; transform:none; }
 }
 `;
 
