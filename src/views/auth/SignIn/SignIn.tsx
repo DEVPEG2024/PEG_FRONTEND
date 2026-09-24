@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   motion,
   animate,
@@ -27,18 +27,22 @@ import {
 
    • AU-DESSUS DE 920px : `DesktopSignIn`, l'arbre historique (.si-card /
      .si-left / .si-form) rendu tel quel. Rien n'y a bougé.
-   • EN DESSOUS : `PhoneAtelier`, le diptyque « L'Atelier ». La vitrine PEG,
-     puis on tire l'écran vers la gauche comme un tiroir d'établi pour amener
-     le formulaire.
+   • EN DESSOUS : `PhoneAtelier`, « Le Repérage ». Un seul objet à l'écran :
+     le logo PEG. en très grand, tiré en trois plaques cyan / magenta / jaune
+     hors repérage ; on tire la feuille de papier vers la gauche, son bord
+     coupe le logo (lumière à gauche, encre à droite) et le geste ramène les
+     plaques en repérage pendant que le logo monte se poser en tête du
+     formulaire. La page passe de l'écran à l'impression.
 
    Le choix se fait en JS (matchMedia) et non en CSS : au-dessus du seuil le
    DOM est LITTÉRALEMENT celui d'avant, aucune règle mobile n'existe pour le
    contrarier. C'est la garantie la plus forte que le bureau est intact.
 
-   Le discours (pastille, accroche, sous-titre, les six catégories, les trois
-   gages, les deux cartes de compte) est repris MOT POUR MOT : il est verrouillé
-   par les tests de terminologie. Seuls les libellés de l'interaction elle-même
-   sont neufs.
+   Le discours (pastille, accroche, les deux cartes de compte) est repris MOT
+   POUR MOT : il est verrouillé par les tests de terminologie. Sur téléphone,
+   le premier écran n'en garde que le strict nécessaire (surtitre, accroche) ;
+   le sous-titre, les six catégories et les trois gages restent sur le bureau.
+   Seuls les libellés de l'interaction elle-même sont neufs.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Outils de courbe ────────────────────────────────────────────────────── */
@@ -48,208 +52,24 @@ const smooth = (e0: number, e1: number, v: number) => {
   const t = clamp((v - e0) / (e1 - e0), 0, 1);
   return t * t * (3 - 2 * t);
 };
-const smoothstep = (t: number) => {
-  const c = clamp(t, 0, 1);
-  return c * c * (3 - 2 * c);
-};
-const withAlpha = (hex: string, a: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
-};
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/* ═══════════ LES SIX ENCRES ═══════════
-   Une encre par famille. Elles servent DEUX fois : l'accent de l'échantillon
-   de matière, et un segment de la jauge de tête. Six teintes réellement
-   distinctes (violet / ambre / bleu / magenta / sarcelle / brique) — deux
-   segments d'un même violet, comme dans le prototype d'origine, ne se lisent
-   pas comme deux encres. L'ambre est celle de la haute visibilité. */
-const INK = {
-  violet: '#6d5dfc',
-  ambre: '#f0a531',
-  bleu: '#2f6fed',
-  magenta: '#e0338c',
-  sarcelle: '#0ea5a3',
-  brique: '#db6b67',
-} as const;
-
-/* ── Échantillons de matière ──────────────────────────────────────────────
-   Les six catégories ne sont pas des emoji mais des bandeaux de matière :
-   on doit reconnaître le produit en un dixième de seconde. Les identifiants
-   de <pattern> sont uniques car chaque échantillon n'est rendu qu'une fois
-   (les deux arbres, bureau et téléphone, ne coexistent jamais). */
-
-const SampleTextile = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <defs>
-      {/* sergé : côtes en diagonale, l'armure réelle d'un textile */}
-      <pattern id="pa-twill" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <rect width="7" height="7" fill="#151b2e" />
-        <rect width="7" height="3" fill="#212a45" />
-        <rect y="2.6" width="7" height=".8" fill="rgba(255,255,255,.055)" />
-      </pattern>
-    </defs>
-    <rect width="170" height="42" fill="url(#pa-twill)" />
-    <path
-      d="M18 30 C46 8, 78 36, 106 16 S150 22, 158 12"
-      fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="5" strokeLinecap="round"
-      strokeDasharray="5 4.5" transform="translate(0,1.6)" opacity=".5"
-    />
-    {/* la couture, dans l'encre de la famille */}
-    <path
-      d="M18 30 C46 8, 78 36, 106 16 S150 22, 158 12"
-      fill="none" stroke="#8b7dff" strokeWidth="2.4" strokeLinecap="round" strokeDasharray="5 4.5"
-    />
-  </svg>
-);
-
-const SampleHiVis = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <defs>
-      <linearGradient id="pa-refl" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#7d8798" /><stop offset=".42" stopColor="#eef2f8" />
-        <stop offset=".58" stopColor="#d3dae3" /><stop offset="1" stopColor="#6f7a89" />
-      </linearGradient>
-      <linearGradient id="pa-fluo" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#b4c322" /><stop offset="1" stopColor="#8d9a1a" />
-      </linearGradient>
-    </defs>
-    {/* Fond sombre comme ses voisines : le fluo est RENTRÉ dans une bande
-        rétroréfléchissante étroite (12 des 42px) et sa valeur descendue, au
-        lieu de l'aplat lime pleine largeur qui aspirait tout le regard de la
-        grille — le jaune de sécurité reste la vérité du produit, il ne fait
-        simplement plus de l'ombre à ses cinq voisines. */}
-    <rect width="170" height="42" fill="#151b2e" />
-    <rect y="15" width="170" height="12" fill="url(#pa-fluo)" />
-    <rect y="15" width="170" height="12" fill="#0b0f1c" opacity=".1" />
-    <g transform="skewX(-16)">
-      <rect x="30" y="13" width="11" height="16" fill="url(#pa-refl)" />
-      <rect x="45" y="13" width="4" height="16" fill="url(#pa-refl)" opacity=".7" />
-      <rect x="116" y="13" width="11" height="16" fill="url(#pa-refl)" />
-      <rect x="131" y="13" width="4" height="16" fill="url(#pa-refl)" opacity=".7" />
-    </g>
-    <rect y="14" width="170" height="1" fill="rgba(0,0,0,.4)" />
-    <rect y="27" width="170" height="1" fill="rgba(0,0,0,.4)" />
-  </svg>
-);
-
-const SampleCaps = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <defs>
-      <pattern id="pa-knit" width="12" height="11" patternUnits="userSpaceOnUse">
-        <rect width="12" height="11" fill="#141a2c" />
-        <path d="M0 11 L6 3.5 L12 11" fill="none" stroke="#2e3859" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M0 5.5 L6 -2 L12 5.5" fill="none" stroke="#242c47" strokeWidth="1.5" strokeLinecap="round" />
-      </pattern>
-    </defs>
-    <rect width="170" height="42" fill="url(#pa-knit)" />
-    {/* Une CASQUETTE de profil : calotte + visière qui dépasse + bouton.
-        (La trame chevron seule, dans le prototype, ne se lisait pas.) */}
-    <g>
-      <path d="M22 33 A 24 21 0 0 1 70 33 Z" fill="#dbe2ee" />
-      <path d="M22 33 A 24 21 0 0 1 70 33 Z" fill="#0b0f1c" opacity=".08" />
-      <path d="M68 32.4 C 84 32 96 34.4 100 37 C 95 38.9 84 39.4 66 38.4 Z" fill="#b9c3d6" />
-      <circle cx="46" cy="12.6" r="2.2" fill="#b9c3d6" />
-      <path d="M24 31.5 H 68" stroke="#0b0f1c" strokeWidth="1" opacity=".22" />
-      {/* la broderie, dans l'encre de la famille */}
-      <path d="M36 24 h 14 M36 27.6 h 9" stroke={INK.bleu} strokeWidth="2.4" strokeLinecap="round" />
-    </g>
-    {/* Un BONNET à pompon : « bonnets, accessoires hiver » */}
-    <g>
-      <circle cx="137" cy="9.5" r="4.2" fill="#b9c3d6" />
-      <path d="M120 31 A 17 16 0 0 1 154 31 Z" fill="#c9d2e2" />
-      <rect x="117" y="30" width="40" height="8" rx="3" fill="#e3e9f3" />
-      <rect x="117" y="30" width="40" height="2.4" fill="#0b0f1c" opacity=".12" />
-    </g>
-  </svg>
-);
-
-const SamplePrint = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <rect width="170" height="42" fill="#101627" />
-    <g transform="rotate(-3 85 21)">
-      <rect x="14" y="2" width="142" height="42" rx="2" fill="#efe9dd" />
-      <rect x="14" y="2" width="142" height="42" rx="2" fill="#0b0f1c" opacity=".06" />
-      <rect x="24" y="10" width="62" height="3" rx="1.5" fill="#b9b0a0" />
-      <rect x="24" y="17" width="44" height="3" rx="1.5" fill="#cdc5b6" />
-      <rect x="24" y="24" width="54" height="3" rx="1.5" fill="#cdc5b6" />
-      {/* la gamme CMJN d'une épreuve d'imprimeur */}
-      <rect x="100" y="9" width="12" height="19" fill="#00b3d6" />
-      <rect x="112" y="9" width="12" height="19" fill={INK.magenta} />
-      <rect x="124" y="9" width="12" height="19" fill="#f2d024" />
-      <rect x="136" y="9" width="12" height="19" fill="#1b1b21" />
-    </g>
-  </svg>
-);
-
-const SampleGoodies = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <defs>
-      <linearGradient id="pa-obj" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stopColor="#3d4767" /><stop offset=".45" stopColor="#5b6688" />
-        <stop offset="1" stopColor="#333c59" />
-      </linearGradient>
-    </defs>
-    <rect width="170" height="42" fill="#0f1424" />
-    {/* MUG : corps + anse — les trois blocs abstraits du prototype ne
-        laissaient reconnaître aucun objet. */}
-    <path d="M46 16 a 7.5 7.5 0 0 1 0 14" fill="none" stroke="#7d88a3" strokeWidth="3.4" />
-    <rect x="14" y="8" width="30" height="28" rx="3.5" fill="url(#pa-obj)" />
-    <rect x="14" y="18" width="30" height="7" fill={INK.sarcelle} />
-    <rect x="14" y="8" width="30" height="3" rx="1.5" fill="#8792ad" opacity=".8" />
-    {/* STYLO en diagonale, avec sa pointe et son clip */}
-    <g transform="rotate(24 88 22)">
-      <rect x="80" y="6" width="9" height="26" rx="2" fill="url(#pa-obj)" />
-      <rect x="80" y="6" width="9" height="5" rx="2" fill={INK.sarcelle} />
-      <path d="M80 32 h9 l-4.5 6 Z" fill="#8792ad" />
-      <rect x="88.4" y="9" width="2" height="10" rx="1" fill="#8792ad" />
-    </g>
-    {/* TOTE BAG avec ses anses et sa marque */}
-    <path d="M124 17 C124 7, 146 7, 146 17" fill="none" stroke="#7d88a3" strokeWidth="2.2" />
-    <rect x="118" y="16" width="34" height="22" rx="2.5" fill="url(#pa-obj)" />
-    <rect x="127" y="23" width="16" height="8" rx="1.5" fill={INK.sarcelle} opacity=".9" />
-  </svg>
-);
-
-const SampleBat = () => (
-  <svg className="pa-band" viewBox="0 0 170 42" preserveAspectRatio="xMidYMid slice" aria-hidden>
-    <rect width="170" height="42" fill="#0f1526" />
-    <g stroke="rgba(255,255,255,.09)" strokeWidth="1">
-      <path d="M0 14h170M0 28h170M42 0v42M85 0v42M128 0v42" />
-    </g>
-    <g stroke="#a99bff" strokeWidth="1.4" fill="none">
-      <path d="M20 10h-8M20 10v-8M150 32h8M150 32v8" />
-    </g>
-    <g transform="translate(56,21)">
-      <circle r="11" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="1.3" />
-      <path d="M-15 0h30M0 -15v30" stroke="rgba(255,255,255,.5)" strokeWidth="1.3" />
-      <circle r="4" fill="none" stroke={INK.brique} strokeWidth="1.6" />
-    </g>
-    <g transform="translate(118,21)">
-      <circle r="13" fill={withAlpha(INK.brique, 0.16)} stroke={INK.brique} strokeWidth="1.6" />
-      <path d="M-5.5 .5 L-1.5 4.5 L5.5 -4" fill="none" stroke="#f0908c" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </g>
-  </svg>
-);
-
-/* ── Vitrine de l'offre PEG : tuiles produits/services ──
-   `emoji`, `label` et `sub` sont inchangés (l'emoji reste utilisé par le
-   panneau bureau) ; `ink` et `sample` sont les deux champs ajoutés pour
-   l'échantillon de matière et la jauge à six encres. */
+/* ── Vitrine de l'offre PEG : tuiles produits/services (bureau uniquement) ──
+   `emoji`, `label` et `sub` sont inchangés. Le téléphone ne montre plus ces
+   six catégories sur son premier écran (direction « Le Repérage » : un seul
+   objet à l'écran) ; les échantillons de matière et leurs encres, qui
+   n'existaient que pour lui, ont été retirés avec la grille. */
 const OFFER_TILES: {
   emoji: string;
   label: string;
   sub: string;
-  ink: string;
-  sample: () => JSX.Element;
 }[] = [
-  { emoji: '👕', label: 'Textile personnalisé', sub: 'T-shirts, polos, vestes à votre image', ink: INK.violet, sample: SampleTextile },
-  { emoji: '🦺', label: 'Haute visibilité & EPI', sub: 'Vêtements de travail, chaussures de sécurité', ink: INK.ambre, sample: SampleHiVis },
-  { emoji: '🧢', label: 'Casquettes & accessoires', sub: 'Bonnets, accessoires hiver…', ink: INK.bleu, sample: SampleCaps },
-  { emoji: '🖨️', label: 'Print & supports', sub: 'Affiches, flyers, signalétique', ink: INK.magenta, sample: SamplePrint },
-  { emoji: '🎁', label: 'Objets publicitaires', sub: 'Goodies et cadeaux d’entreprise', ink: INK.sarcelle, sample: SampleGoodies },
-  { emoji: '🎨', label: 'Création & BAT', sub: 'Maquettes validées avant production', ink: INK.brique, sample: SampleBat },
+  { emoji: '👕', label: 'Textile personnalisé', sub: 'T-shirts, polos, vestes à votre image' },
+  { emoji: '🦺', label: 'Haute visibilité & EPI', sub: 'Vêtements de travail, chaussures de sécurité' },
+  { emoji: '🧢', label: 'Casquettes & accessoires', sub: 'Bonnets, accessoires hiver…' },
+  { emoji: '🖨️', label: 'Print & supports', sub: 'Affiches, flyers, signalétique' },
+  { emoji: '🎁', label: 'Objets publicitaires', sub: 'Goodies et cadeaux d’entreprise' },
+  { emoji: '🎨', label: 'Création & BAT', sub: 'Maquettes validées avant production' },
 ];
 
 const OfferShowcase = () => (
@@ -312,50 +132,118 @@ const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) =>
   </div>
 );
 
-/* ── Logo PEG vectoriel (tracés de public/img/logo/logo_svg.svg) ──
-   Intégré plutôt que chargé en <img> pour pouvoir le teindre : blanc sur la
-   vitrine, violet sur le papier du tiroir. Le point garde son #db6b67 —
-   c'est LUI l'accent chaud de toute la direction. */
-const PegWordmark = ({ fill, className }: { fill: string; className?: string }) => (
-  <svg className={className} viewBox="0 0 1130 467" role="img" aria-label={APP_NAME}>
-    <g fill={fill}>
-      <path d="M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z" />
-      <path d="M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z" />
-      <path d="M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z" />
-    </g>
-    <circle cx="1027.8" cy="331.5" r="82" fill="#db6b67" />
-  </svg>
-);
-
 /* ═══════════════════════════════════════════════════════════════════════════
-   PANNEAU 1 — un échantillon du nuancier
-   Chaque tuile a sa PROPRE fenêtre de sortie, décalée de 4,5 % de course :
-   les six ne partent jamais d'un bloc, et c'est ce décalage qui fabrique la
-   profondeur pendant le geste.
+   LE REPÉRAGE — le logo PEG. tiré en plaques d'imprimeur
    ═══════════════════════════════════════════════════════════════════════════ */
-const Tile = ({
-  index, tile, p, still,
+
+/* Tracés du logo (public/img/logo/logo_svg.svg), viewBox 1130×467. */
+const PEG_PATHS = [
+  'M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z',
+  'M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z',
+  'M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z',
+];
+
+/* Décalages des plaques AU REPOS, en unités du viewBox (1130 de large).
+   À 358px de logo, 1px ≈ 3,16u : cyan −4,4/−2,5px, magenta +3,8/+3,2,
+   jaune +1,9/−4,1, noir (papier seulement) −1,3/+1,9. Directions volontairement
+   non colinéaires : trois franges distinctes d'une épreuve mal calée, jamais
+   un simple dédoublement horizontal. Le point corail n'est PAS une plaque :
+   c'est une couleur d'accompagnement, toujours nette — c'est lui qui fixe l'œil. */
+const PLATE_OFF = { c: [-14, -8], m: [12, 10], y: [6, -13], k: [-4, 6] } as const;
+const PLATE_INK = { c: '#00a0e3', m: '#e6007e', y: '#ffe500', k: '#1b1d2e' } as const;
+type PlateKey = keyof typeof PLATE_OFF;
+
+/* Une plaque = un calque HTML qui porte un SVG monochrome. Son décalage est
+   une TRANSLATION CSS en % de sa propre boîte (x en % de 1130, y en % de 467) :
+   le compositeur la déplace sans repeindre, et aucune mesure n'est nécessaire.
+   (Un attribut `transform` SVG réécrit à chaque image forçait une repeinture.) */
+const Plate = ({
+  plate, r, blend,
 }: {
-  index: number;
-  tile: (typeof OFFER_TILES)[number];
-  p: MotionValue<number>;
-  still: boolean;
+  plate: PlateKey;
+  r: MotionValue<number>;
+  blend: 'screen' | 'multiply';
 }) => {
-  const opacity = useTransform(p, (v) => (still ? 1 : 1 - smooth(0.1 + index * 0.045, 0.7 + index * 0.045, v)));
-  const x = useTransform(p, (v) => (still ? 0 : -(8 + index * 9) * v));
-  const Sample = tile.sample;
+  const x = useTransform(r, (v) => `${((PLATE_OFF[plate][0] * v) / 11.3).toFixed(3)}%`);
+  const y = useTransform(r, (v) => `${((PLATE_OFF[plate][1] * v) / 4.67).toFixed(3)}%`);
   return (
-    <motion.article className="pa-tile" style={{ opacity, x }}>
-      <Sample />
-      <b>{tile.label}</b>
-      <i>{tile.sub}</i>
-    </motion.article>
+    <motion.div className="pa-plate" style={{ x, y, mixBlendMode: blend }}>
+      <svg viewBox="0 0 1130 467" aria-hidden>
+        <g fill={PLATE_INK[plate]}>
+          {PEG_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
+        </g>
+      </svg>
+    </motion.div>
   );
 };
 
-/* Un bloc du tiroir : il se compose PENDANT le geste, sur sa propre fenêtre
-   décalée de 7 % de course. À mi-course l'en-tête est net, les champs à 40 %,
-   les cartes de compte encore fantômes. */
+/* Le logo en plaques, en deux exemplaires qui suivent le MÊME trajet :
+   • `light` vit sur la vitrine (sous le papier) : C + M + J en `screen` —
+     sur le noir, les encres s'additionnent en lumière et donnent un blanc
+     chaud une fois calées ;
+   • `ink` vit dans le corps du tiroir : C + M + J + N en `multiply` — sur le
+     papier, elles se multiplient en noir quadri.
+   `isolation:isolate` (dans .pa-plates) borne le mélange au groupe : les
+   plaques se mélangent ENTRE ELLES, jamais avec le fond. */
+const PlateWordmark = ({
+  variant, r, x, y, scale, opacity, width,
+}: {
+  variant: 'light' | 'ink';
+  r: MotionValue<number>;
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
+  opacity?: MotionValue<number>;
+  width: number;
+}) => {
+  const plates: PlateKey[] = variant === 'ink' ? ['c', 'm', 'y', 'k'] : ['c', 'm', 'y'];
+  const blend = variant === 'ink' ? 'multiply' : 'screen';
+  return (
+    <motion.div
+      className={`pa-plates pa-plates--${variant}`}
+      style={{ x, y, scale, opacity, width }}
+      aria-hidden
+    >
+      {plates.map((k) => <Plate key={k} plate={k} r={r} blend={blend} />)}
+      <div className="pa-plate">
+        <svg viewBox="0 0 1130 467" aria-hidden>
+          <circle cx="1027.8" cy="331.5" r="82" fill="#db6b67" />
+        </svg>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ── La poignée : une pastille de papier portant une croix de repérage ──
+   Quatre tirages de la même croix, décalés par le MÊME r(p) que le logo : ils
+   se calent ensemble. Le bras gauche de la croix porte une pointe de flèche —
+   la croix seule ne disait ni « bouton » ni « vers la gauche ». */
+const REG_OFF = { c: [-2.6, -1.6], m: [2.4, 1.9], y: [1.3, -2.6], k: [0, 0] } as const;
+const REG_INK = { c: '#00a0e3', m: '#e6007e', y: '#ffd400', k: '#12142b' } as const;
+
+const RegPlate = ({ plate, r }: { plate: PlateKey; r: MotionValue<number> }) => {
+  const x = useTransform(r, (v) => REG_OFF[plate][0] * v);
+  const y = useTransform(r, (v) => REG_OFF[plate][1] * v);
+  return (
+    <motion.g style={{ x, y, mixBlendMode: 'multiply' }} stroke={REG_INK[plate]}>
+      <circle r="8.5" />
+      <path d="M-15 0H15M0 -15V15M-10 -5L-15 0L-10 5" />
+    </motion.g>
+  );
+};
+
+const RegistrationMark = ({ r }: { r: MotionValue<number> }) => (
+  <svg viewBox="-26 -26 52 52" aria-hidden>
+    <circle r="26" fill="#fbf9f5" />
+    <g fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {(['c', 'm', 'y', 'k'] as PlateKey[]).map((k) => <RegPlate key={k} plate={k} r={r} />)}
+    </g>
+  </svg>
+);
+
+/* Un bloc du tiroir : il ne se compose qu'APRÈS le passage du logo (p > 0,62),
+   chacun sur sa propre fenêtre. À mi-geste le papier ne porte donc que
+   l'impression du logo — c'est l'image du geste. */
 const Reveal = ({
   index, p, still, className, children,
 }: {
@@ -365,25 +253,13 @@ const Reveal = ({
   className?: string;
   children: React.ReactNode;
 }) => {
-  const t = useTransform(p, (v) => (still ? 1 : smooth(0.2 + index * 0.07, 0.74 + index * 0.07, v)));
-  const x = useTransform(t, (v) => (1 - v) * 26);
-  const y = useTransform(t, (v) => (1 - v) * 10);
+  const t = useTransform(p, (v) => (still ? 1 : smooth(0.62 + index * 0.06, 0.94 + index * 0.02, v)));
+  const x = useTransform(t, (v) => (1 - v) * 24);
+  const y = useTransform(t, (v) => (1 - v) * 8);
   return (
     <motion.div className={className} style={{ opacity: t, x, y }}>
       {children}
     </motion.div>
-  );
-};
-
-/* Un segment de la jauge à six encres : il se remplit sur son sixième de
-   course. La jauge est le seul objet qui traverse la transition — repère de
-   course sur la vitrine, bandeau de tête sur le papier du formulaire. */
-const GaugeSegment = ({ index, ink, p }: { index: number; ink: string; p: MotionValue<number> }) => {
-  const scaleX = useTransform(p, (v) => clamp((v - index / 6) * 6, 0, 1));
-  return (
-    <i style={{ background: withAlpha(ink, 0.16) }}>
-      <motion.b style={{ scaleX, background: ink }} />
-    </i>
   );
 };
 
@@ -458,6 +334,16 @@ const isTypingTarget = (node: EventTarget | null) => {
 /* ═══════════════════════════════════════════════════════════════════════════
    LE DIPTYQUE — téléphone uniquement
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Géométrie mesurée (offsetLeft/Top/Width, jamais getBoundingClientRect) :
+    le fantôme du logo sur la vitrine (0), sa place d'arrivée dans le tiroir (1),
+    le rail et sa poignée. */
+type PaGeo = {
+  x0: number; y0: number; w0: number;
+  x1: number; y1: number; w1: number;
+  railL: number; railW: number; knobL: number; knobW: number;
+};
+
 const PhoneAtelier = ({
   openSignUp, signUpOpen, year,
 }: {
@@ -496,86 +382,93 @@ const PhoneAtelier = ({
   /** Le ressort est-il en train de courir ? (filet de sécurité d'`onPointerUp`) */
   const settlingRef = useRef(false);
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLButtonElement>(null);
-  /* Largeur RÉELLE du rail. Au-dessus de 560px la vitrine est bornée à une
-     colonne de 460px : le bouton rond ne parcourt plus la largeur de l'écran
-     mais celle de son rail, sinon il sort par la gauche et se fait rogner. */
-  const railW = useRef(0);
+  const knobRef = useRef<HTMLSpanElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const focusRef = useRef<HTMLDivElement>(null);
+  const landRef = useRef<HTMLDivElement>(null);
   const signUpRef = useRef(signUpOpen);
   signUpRef.current = signUpOpen;
 
+  /* Géométrie : rangée dans un ref ; `geoTick` est incrémenté à chaque mesure
+     pour que les transformations qui en dépendent se recalculent (un
+     `x.set(x.get())` ne notifie pas : la valeur n'a pas changé). */
+  const geo = useRef<PaGeo>({ x0: 0, y0: 0, w0: 0, x1: 0, y1: 0, w1: 0, railL: 0, railW: 0, knobL: 0, knobW: 0 });
+  const geoTick = useMotionValue(0);
+  const [logoW, setLogoW] = useState(0);
+
+  /* « entrée » : 0 → 1 une seule fois au chargement — les plaques arrivent de
+     3,2 fois leur décalage de repos et se calent. Sautée pour le client qui
+     revient (tiroir déjà posé) et en mouvement réduit. */
+  const entry = useMotionValue(reduced || startOpen ? 1 : 0);
+
   /* ── Progression du geste, 0 → 1 ── */
   const p = useTransform(x, (v) => clamp(-v / W.current, 0, 1));
-
-  /* ── PARALLAXE, cinq vitesses ──
-     Chaque couche recule à sa propre fraction de W. Comme p·W = −x, la
-     translation d'une couche vaut simplement x · vitesse : aucune mesure,
-     aucune dépendance à la largeur. Le rail, lui, reste FIXE (vitesse 0) :
-     le tiroir glisse PAR-DESSUS, et c'est ce qui donne la lecture « tiroir »
-     plutôt que « page qui coulisse ». */
   const k = reduced ? 0 : 1;
-  const inkX = useTransform(x, (v) => v * 0.06 * k);
-  const screenX = useTransform(x, (v) => v * 0.15 * k);
-  const screenScale = useTransform(p, (v) => 1 + 0.07 * v * k);
-  const headerX = useTransform(x, (v) => v * 0.24 * k);
-  const speechX = useTransform(x, (v) => v * 0.34 * k);
-  const speechO = useTransform(p, (v) => (reduced ? 1 : 1 - smooth(0.14, 0.86, v)));
-  const tilesX = useTransform(x, (v) => v * 0.46 * k);
-  const tilesScale = useTransform(p, (v) => 1 - 0.06 * v * k);
-  const badgesO = useTransform(p, (v) => (reduced ? 1 : 1 - smooth(0.24, 0.72, v)));
-  const veilO = useTransform(p, (v) => 0.5 * v);
 
-  /* ── Ombre du chant : DEUX couches pré-rendues dont seule l'opacité varie.
-     Un box-shadow recalculé à chaque image (flou 24 → 72px sur un élément
-     pleine hauteur) faisait saccader la mécanique la mieux notée du lot.
+  /* ── LE REPÉRAGE ─────────────────────────────────────────────────────────
+     r = part du décalage de repos encore appliquée aux plaques.
+     Le décalage tient jusqu'à p ≈ 0,3 puis se résorbe pendant que le bord du
+     papier balaie le logo (≈ 77 % à mi-geste, 0 à l'ouverture) : le moment du
+     calage se LIT, au lieu d'être déjà acquis quand le papier arrive.
+     En mouvement réduit les plaques sont calées d'emblée : un logo décalé
+     immobile se lirait comme un défaut d'affichage. */
+  const r = useTransform([p, entry] as MotionValue<number>[], ([v, e]: number[]) =>
+    reduced ? 0 : (1 - smooth(0.3, 0.94, v)) * lerp(3.2, 1, e),
+  );
+  const plateO = useTransform(entry, (e) => smooth(0, 0.55, e));
 
-     ⚠ Elles vivent HORS du tiroir (`.pa-shadewrap`, frère de `.pa-drawer`,
-     translaté du même x). Posées dans le tiroir en `right:100%`, elles
-     tombaient intégralement à GAUCHE de sa boîte de rembourrage : son
-     `overflow:hidden` les découpait entièrement et l'ombre — la profondeur
-     revendiquée du moment fort — n'a jamais été peinte une seule fois.
-
-     Le facteur `smooth(0, .06, v)` les allume dès que le geste commence : au
-     repos le tiroir est hors écran, il n'a rien à ombrer, et la vitrine au
-     repos reste exactement celle qui a été jugée. */
-  const shadeNear = useTransform(p, (v) => (1 - 0.6 * v) * smooth(0, 0.06, v));
-  const shadeFar = useTransform(p, (v) => v);
-
-  /* ── Rail : remplissage en scaleX (jamais en % de width).
-     transform-origin à DROITE et non à gauche : le remplissage est la trace
-     laissée derrière le bouton rond, qui part de la droite vers la gauche. */
-  const railFill = p;
-  const knobX = useTransform(p, (v) => -v * Math.max(0, (railW.current || W.current - 40) - 98));
-  const labelAO = useTransform(p, (v) => 1 - smooth(0.3, 0.55, v));
-  const labelBO = useTransform(p, (v) => smooth(0.42, 0.68, v));
-  const labelBX = useTransform(p, (v) => (1 - smooth(0.42, 0.68, v)) * 10);
-  const chevronsO = useTransform(p, (v) => 1 - smooth(0, 0.25, v));
-
-  /* ── L'ACCROCHE IMPRIMÉE PAR LA TRANCHE ──────────────────────────────────
-     Deux exemplaires du MÊME texte, une seule transformation :
-       • l'exemplaire blanc vit sur la vitrine, découpé à GAUCHE de la tranche ;
-       • l'exemplaire encre vit DANS le corps du tiroir — c'est le débord du
-         papier (overflow) qui le découpe à DROITE de la tranche, exactement
-         sur le chant de bois.
-     Les deux portent la même position d'écran V(t) : l'exemplaire encre est
-     contre-translaté de −x, donc la coupe tombe au pixel près quelle que soit
-     la largeur de l'écran. Aucun getBoundingClientRect.
-     Et comme la copie encre est un élément RÉEL du corps du tiroir, elle
-     défile ensuite avec le formulaire — le défaut non traité de la Signature.
-     Les 11px sont l'épaisseur du chant : le texte passe de la marge de la
-     vitrine (20px) à la colonne du papier (11 + 20). */
-  const markT = useTransform(p, (v) => smoothstep(v));
-  const markScale = useTransform(p, (v) => 1 - 0.3 * Math.pow(v, 1.45));
-  const markWhiteX = useTransform(markT, (t) => 11 * t);
-  const markInkX = useTransform(x, (v) => {
-    const vc = clamp(v, -W.current, 0);
-    const t = smoothstep(-vc / W.current);
-    return -vc - 11 * (1 - t);
+  /* ── TRAJET DU LOGO (identique pour les deux exemplaires) ──
+     Le logo monte tôt (position sur [0,04 ; 0,86]) et garde sa taille plus
+     longtemps (échelle sur [0,20 ; 1]) : à mi-geste il mesure encore ~280px
+     et le bord du papier coupe le G. transform-origin 0 0. */
+  const logoX = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) =>
+    lerp(geo.current.x0, geo.current.x1, smooth(0.04, 0.86, v)),
+  );
+  const logoY = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) =>
+    lerp(geo.current.y0, geo.current.y1, smooth(0.04, 0.86, v)),
+  );
+  const logoS = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) => {
+    const g = geo.current;
+    return g.w0 > 0 ? lerp(1, g.w1 / g.w0, smooth(0.2, 1, v)) : 1;
   });
-  const markClip = useTransform(x, (v) => `inset(0 ${Math.max(0, -clamp(v, -W.current, 0)).toFixed(2)}px 0 0)`);
+  /* L'exemplaire ENCRE vit dans le corps du tiroir, dont l'origine est à
+     l'écran en W + x : il est contre-translaté d'autant, donc il tombe au
+     pixel sur l'exemplaire lumière et c'est le débord du papier qui le découpe
+     exactement sur son bord. Aucun clip-path. Au-delà de l'ouverture
+     (élastique), il suit le papier : il est imprimé dessus. */
+  const inkX = useTransform([x, geoTick] as MotionValue<number>[], ([xv]: number[]) => {
+    const v = clamp(-xv / W.current, 0, 1);
+    return lerp(geo.current.x0, geo.current.x1, smooth(0.04, 0.86, v)) - (W.current + Math.max(xv, -W.current));
+  });
+
+  /* ── La vitrine recule : surtitre et accroche à 0,22 de la vitesse ── */
+  const speechX = useTransform(x, (v) => v * 0.22 * k);
+  const speechO = useTransform(p, (v) => (reduced ? (v > 0.5 ? 0 : 1) : 1 - smooth(0.04, 0.46, v)));
+  const labelO = useTransform(p, (v) => 1 - smooth(0, 0.28, v));
+  const veilO = useTransform(p, (v) => 0.55 * v);
+
+  /* ── Ombre du bord du papier : UNE couche pré-rendue dont seule l'opacité
+     varie (un box-shadow recalculé à chaque image faisait saccader le geste).
+     Elle vit HORS du tiroir (`.pa-shadewrap`, translaté du même x) : posée
+     dedans en `right:100%`, l'overflow du tiroir la découpait entièrement.
+     Le logo lumière est peint AU-DESSUS d'elle : l'ombre creuse la vitrine
+     sans délaver en gris les lettres blanches près du bord. */
+  const shadeO = useTransform(p, (v) => (1 - 0.5 * v) * smooth(0, 0.05, v));
+
+  /* ── La poignée est TIRÉE par le bord du papier : 6px devant lui dès
+     p ≈ 0,055, et elle bute à gauche du rail vers p ≈ 0,8. */
+  const knobX = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) => {
+    const g = geo.current;
+    if (!g.railW) return 0;
+    const inset = g.knobL > 0 ? g.railW - g.knobL - g.knobW : 9;
+    const restL = g.railL + g.knobL;
+    return Math.max(g.railL + inset, Math.min(restL, W.current * (1 - v) - 6 - g.knobW)) - restL;
+  });
 
   /* ── Aimantation ───────────────────────────────────────────────────────
      Ressort ζ = 0,975 : il POSE le tiroir sans rebond visible (~520 ms).
@@ -717,20 +610,96 @@ const PhoneAtelier = ({
     glideTo(target, d.vel);                        // le ressort repart à la vitesse du doigt
   };
 
-  /* ── Recalage à la rotation / au clavier virtuel iOS ──
-     On ne mesure QUE la largeur, et on recale x sur la position d'équilibre.
-     Aucune hauteur figée, aucun getBoundingClientRect. */
-  useEffect(() => {
-    const measureRail = () => { railW.current = railRef.current?.offsetWidth ?? 0; };
-    measureRail();
+  /* ── Mesure + recalage à la rotation / au clavier virtuel iOS ──
+     On recale x sur la position d'équilibre, et on relit la géométrie du
+     logo et du rail par offsetLeft/offsetTop/offsetWidth. Aucune hauteur
+     figée, aucun getBoundingClientRect.
+     En layout effect : la première mesure tombe AVANT la première peinture,
+     le logo n'apparaît jamais en haut à gauche le temps d'une image. */
+  useLayoutEffect(() => {
+    /* Position d'un élément DANS un ancêtre donné, en remontant la chaîne des
+       offsetParent. ⚠ Ne pas lire offsetLeft seul : pendant l'entrée, un
+       enveloppant animé porte un transform et Chromium en fait l'offsetParent
+       (le rail se mesurait alors à 0 au lieu de 22px, et la poignée passait
+       SOUS le papier au lieu de rester 6px devant lui). */
+    const offsetIn = (el: HTMLElement, root: HTMLElement | null) => {
+      let left = 0;
+      let top = 0;
+      let node: HTMLElement | null = el;
+      while (node && node !== root) {
+        left += node.offsetLeft;
+        top += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
+      }
+      return { left, top };
+    };
+    const measure = () => {
+      const g = geo.current;
+      const gh = ghostRef.current;
+      const ld = landRef.current;
+      const rl = railRef.current;
+      const kn = knobRef.current;
+      /* repères : la vitrine (plein écran, non transformée) et le corps du tiroir */
+      const stage = stageRef.current;
+      const body = bodyRef.current;
+      if (gh) { const o = offsetIn(gh, stage); g.x0 = o.left; g.y0 = o.top; g.w0 = gh.offsetWidth; }
+      if (ld) { const o = offsetIn(ld, body); g.x1 = o.left; g.y1 = o.top; g.w1 = ld.offsetWidth; }
+      if (rl) { g.railL = offsetIn(rl, stage).left; g.railW = rl.offsetWidth; }
+      if (kn) { g.knobL = offsetIn(kn, rl).left; g.knobW = kn.offsetWidth; }
+      setLogoW(g.w0);
+      geoTick.set(geoTick.get() + 1);
+    };
+    measure();
     const onResize = () => {
       W.current = window.innerWidth;
-      measureRail();
+      measure();
       x.set(openRef.current ? -W.current : 0);
     };
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [x]);
+    /* Le bloc logo + accroche est calé en BAS : la hauteur de l'accroche (donc
+       l'arrivée de la police) déplace le fantôme. On remesure quand ce bloc,
+       le rail ou le corps du tiroir changent de taille, et une fois les
+       polices prêtes. */
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => measure());
+      [focusRef.current, railRef.current, bodyRef.current].forEach((el) => { if (el) ro?.observe(el); });
+    }
+    let alive = true;
+    document.fonts?.ready?.then(() => { if (alive) measure(); }).catch(() => {});
+    return () => {
+      alive = false;
+      window.removeEventListener('resize', onResize);
+      ro?.disconnect();
+    };
+  }, [x, geoTick]);
+
+  /* ── Entrée des plaques : une seule fois, 1 100 ms, easeOutCubic, 180 ms ── */
+  useEffect(() => {
+    if (entry.get() >= 1) return undefined;
+    const ctl = animate(entry, 1, { duration: 1.1, delay: 0.18, ease: [0.33, 1, 0.68, 1] });
+    return () => ctl.stop();
+  }, [entry]);
+
+  /* ── L'invitation au repos (la poignée qui fait signe) s'arrête dès que le
+     papier bouge. Classe posée à la main : c'est de l'habillage, pas un état. */
+  useEffect(() => p.on('change', (v) => {
+    rootRef.current?.classList.toggle('pa-moving', v > 0.002);
+  }), [p]);
+
+  /* ── Graisse 800 d'Inter : l'impact vient de l'échelle et de la graisse.
+     Chargée d'ici SEULEMENT (jamais dans app.css : le bureau demande 800 et
+     changerait de rendu), et retirée au démontage. */
+  useEffect(() => {
+    const id = 'pa-inter-800';
+    if (document.getElementById(id)) return undefined;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@800&display=swap';
+    document.head.appendChild(link);
+    return () => { link.remove(); };
+  }, []);
 
   /* ── Clavier ── */
   useEffect(() => {
@@ -767,57 +736,13 @@ const PhoneAtelier = ({
   };
 
   return (
-    <div className={`pa-root${reduced || startOpen ? '' : ' pa-anim'}${opened ? ' pa-opened' : ''}`}>
+    <div ref={rootRef} className={`pa-root${reduced || startOpen ? '' : ' pa-anim'}${opened ? ' pa-opened' : ''}`}>
       <style>{PHONE_CSS}</style>
 
-      {/* ═════════ PANNEAU 1 — LA VITRINE ═════════ */}
+      {/* ═════════ PANNEAU 1 — LA VITRINE ═════════
+          Quatre choses, pas une de plus : le surtitre, le logo (peint par la
+          couche partagée plus bas), l'accroche, le rail. */}
       <section className="pa-stage" ref={stageRef} aria-label="Découvrir PEG">
-        {/* couche 0 — halos d'encre (la plus lointaine) */}
-        <motion.div className="pa-lyr pa-lyr--wide" style={{ x: inkX }}>
-          <span className="pa-glow pa-glow--a" />
-          <span className="pa-glow pa-glow--b" />
-          <span className="pa-glow pa-glow--c" />
-        </motion.div>
-
-        {/* couche 1 — similigravure : la matière imprimée, pas un aplat */}
-        <motion.div className="pa-lyr pa-lyr--wide pa-screen" style={{ x: screenX, scale: screenScale }}>
-          <svg viewBox="0 0 530 844" preserveAspectRatio="xMidYMid slice" aria-hidden>
-            <defs>
-              <pattern id="pa-ht1" width="23" height="23" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
-                <circle cx="11.5" cy="11.5" r="2.3" fill="#fff" />
-              </pattern>
-              <pattern id="pa-ht2" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">
-                <circle cx="4.5" cy="4.5" r="1" fill="#c8b8ff" />
-              </pattern>
-              <radialGradient id="pa-fd1" cx=".78" cy=".13" r=".95">
-                <stop offset="0" stopColor="#fff" stopOpacity=".62" />
-                <stop offset=".48" stopColor="#fff" stopOpacity=".16" />
-                <stop offset="1" stopColor="#fff" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient id="pa-fd2" cx=".12" cy=".92" r=".8">
-                <stop offset="0" stopColor="#fff" stopOpacity=".45" />
-                <stop offset="1" stopColor="#fff" stopOpacity="0" />
-              </radialGradient>
-              <mask id="pa-mk1"><rect width="530" height="844" fill="url(#pa-fd1)" /></mask>
-              <mask id="pa-mk2"><rect width="530" height="844" fill="url(#pa-fd2)" /></mask>
-            </defs>
-            <rect width="530" height="844" fill="url(#pa-ht1)" mask="url(#pa-mk1)" opacity=".26" />
-            <rect width="530" height="844" fill="url(#pa-ht2)" mask="url(#pa-mk2)" opacity=".5" />
-          </svg>
-        </motion.div>
-
-        {/* grain : il appartient au verre, pas à la scène — donc FIXE, hors
-            des couches animées (sinon il « nage » pendant le geste). */}
-        <svg className="pa-grain" aria-hidden>
-          <filter id="pa-grain-f">
-            <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" stitchTiles="stitch" />
-            <feColorMatrix type="saturate" values="0" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#pa-grain-f)" />
-        </svg>
-
-        {/* l'établi : sans ce plan de travail, le tiers inférieur flotte */}
-        <span className="pa-bench" />
         <motion.span className="pa-veil" style={{ opacity: veilO }} />
 
         <div
@@ -827,46 +752,28 @@ const PhoneAtelier = ({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          <motion.div className="pa-header" style={{ x: headerX }}>
-            <PegWordmark className="pa-logo" fill="#fff" />
-            {/* folio : deux temps annoncés sans un mot de plus */}
-            <p className="pa-folio"><span className="pa-folio__cur">01</span><span>—</span><span>02</span></p>
-          </motion.div>
+          {/* L'entrée CSS est portée par un enveloppant : framer-motion garde
+              seul la main sur le transform de l'élément lui-même. */}
+          <div className="pa-in pa-in--kicker">
+            <motion.p className="pa-kicker" style={{ x: speechX, opacity: speechO }}>
+              Plateforme professionnelle
+            </motion.p>
+          </div>
 
-          <motion.div className="pa-speech" style={{ x: speechX, opacity: speechO }}>
-            <div className="pa-pillrow">
-              <span className="pa-pill">
-                <HiLockClosed size={11} color="#b9aeff" />
-                <span>Plateforme professionnelle</span>
-              </span>
+          <div className="pa-focus" ref={focusRef}>
+            {/* Fantôme : il réserve la boîte du logo, que peint la couche
+                partagée (PlateWordmark « light »). C'est lui qu'on mesure. */}
+            <div className="pa-logo-ghost" ref={ghostRef} aria-hidden />
+            <div className="pa-in pa-in--mark">
+              <motion.h1 className="pa-mark" style={{ x: speechX, opacity: speechO }}>
+                Votre image, sur <em>tous vos supports</em>
+              </motion.h1>
             </div>
-            {/* Fantôme : il réserve exactement la boîte de l'accroche, qui est
-                peinte par la couche partagée (voir .pa-mark). Même police,
-                même largeur → même césure. */}
-            <p className="pa-mark-ghost" aria-hidden>Votre image, sur <em>tous vos supports</em></p>
-            <p className="pa-sub">
-              Textile personnalisé, haute visibilité, objets publicitaires, print…
-              Commandez vos produits, suivez vos projets et validez vos BAT dans un seul espace.
-            </p>
-          </motion.div>
+          </div>
 
-          <motion.div className="pa-tiles" style={{ x: tilesX, scale: tilesScale }}>
-            {OFFER_TILES.map((tile, i) => (
-              <Tile key={tile.label} index={i} tile={tile} p={p} still={reduced} />
-            ))}
-          </motion.div>
-
-          <motion.div className="pa-badges" style={{ opacity: badgesO }}>
-            <span className="pa-gage"><HiOutlineShieldCheck size={15} /><span>Connexion sécurisée</span></span>
-            <span className="pa-gage"><HiOutlineLightningBolt size={15} /><span>Accès instantané</span></span>
-            <span className="pa-gage"><HiOutlineUsers size={15} /><span>Données en France</span></span>
-          </motion.div>
-
-          {/* Le rail est à la fois l'invitation au geste, son retour visuel ET
-              le chemin explicite : plein écran en bas, dans la zone du pouce —
-              le bouton d'avant était en haut à droite, le pire coin. Son
-              libellé annonce les deux façons de faire. */}
-          <div className="pa-railwrap">
+          {/* Le rail : le chemin explicite, pleine largeur, dans la zone du
+              pouce. La pastille de papier est la poignée du geste. */}
+          <div className="pa-railwrap pa-in pa-in--rail">
             <button
               type="button"
               className="pa-rail"
@@ -874,41 +781,33 @@ const PhoneAtelier = ({
               onClick={() => { if (!drag.current.moved) openDrawer(true); }}
               aria-label="Se connecter : appuyez, ou glissez vers la gauche"
             >
-              <motion.span className="pa-rail__fill" style={{ scaleX: railFill }} />
-              <span className="pa-rail__kicker">Se connecter</span>
-              <span className="pa-rail__labels">
-                <motion.span style={{ opacity: labelAO }}>Glissez ou appuyez pour ouvrir</motion.span>
-                <motion.span style={{ opacity: labelBO, x: labelBX }}>Relâchez pour ouvrir</motion.span>
-              </span>
-              <motion.span className="pa-chevs" style={{ opacity: chevronsO }} aria-hidden>
-                <i /><i /><i />
+              <motion.span className="pa-rail__labels" style={{ opacity: labelO }}>
+                <span className="pa-rail__kicker">Se connecter</span>
+                <span className="pa-rail__sub">Appuyez, ou glissez vers la gauche</span>
               </motion.span>
-              <motion.span className="pa-knob" style={{ x: knobX }} aria-hidden />
+              <motion.span className="pa-knob" ref={knobRef} style={{ x: knobX }} aria-hidden>
+                <span className="pa-knob__in">
+                  <RegistrationMark r={r} />
+                </span>
+              </motion.span>
             </button>
           </div>
         </div>
-
-        {/* Exemplaire BLANC de l'accroche. La découpe est portée par le
-            conteneur (non transformé, donc calé sur le viewport) et non par le
-            texte, qui lui est mis à l'échelle. */}
-        <motion.div className="pa-mark-clip" style={{ clipPath: markClip }} aria-hidden={false}>
-          <motion.h1 className="pa-mark pa-mark--white" style={{ x: markWhiteX, scale: markScale }}>
-            Votre image, sur <em>tous vos supports</em>
-          </motion.h1>
-        </motion.div>
       </section>
 
-      {/* ═════════ L'OMBRE PORTÉE DU CHANT ═════════
+      {/* ═════════ L'OMBRE PORTÉE DU BORD DU PAPIER ═════════
           Frère du tiroir, translaté du MÊME x : son bord droit tombe donc
-          exactement sur le chant, et rien ne la découpe. Placée entre la
-          vitrine et le tiroir dans le DOM, elle assombrit la première sans
-          jamais passer par-dessus le second. */}
+          exactement sur le bord du papier, et rien ne la découpe. */}
       <motion.div className="pa-shadewrap" style={{ x }} aria-hidden>
-        <motion.span className="pa-shade pa-shade--far" style={{ opacity: shadeFar }} />
-        <motion.span className="pa-shade pa-shade--near" style={{ opacity: shadeNear }} />
+        <motion.span className="pa-shade" style={{ opacity: shadeO }} />
       </motion.div>
 
-      {/* ═════════ PANNEAU 2 — LE TIROIR ═════════
+      {/* ═════════ LE LOGO, EXEMPLAIRE LUMIÈRE ═════════
+          Entre l'ombre et le tiroir : le papier le recouvre à droite de son
+          bord, l'ombre ne le délave pas. */}
+      <PlateWordmark variant="light" r={r} x={logoX} y={logoY} scale={logoS} opacity={plateO} width={logoW} />
+
+      {/* ═════════ PANNEAU 2 — LE TIROIR DE PAPIER ═════════
           Il est posé à left:100% et translaté de x : il suit le doigt au 1:1
           sans qu'on ait à connaître la largeur de l'écran. */}
       <motion.section
@@ -918,10 +817,6 @@ const PhoneAtelier = ({
         aria-label="Connexion"
         onFocus={onDrawerFocus}
       >
-        {/* le chant de bois clair raboté : c'est lui qui rend le geste crédible */}
-        <div className="pa-edge" aria-hidden>
-          <span className="pa-notches"><i /><i /><i /></span>
-        </div>
         <div
           className="pa-grip"
           aria-hidden
@@ -932,6 +827,10 @@ const PhoneAtelier = ({
         />
 
         <div className="pa-body" ref={bodyRef}>
+          {/* Exemplaire ENCRE du logo : élément réel du corps du tiroir, il
+              défile avec le formulaire une fois le tiroir posé. */}
+          <PlateWordmark variant="ink" r={r} x={inkX} y={logoY} scale={logoS} width={logoW} />
+
           <Reveal index={0} p={p} still={reduced}>
             <div className="pa-dhead">
               <button type="button" className="pa-back" onClick={() => closeDrawer(true)}>
@@ -940,16 +839,11 @@ const PhoneAtelier = ({
                 </svg>
                 Retour
               </button>
-              <PegWordmark className="pa-dlogo" fill="#5b4de0" />
-            </div>
-            <div className="pa-folio-row">
-              <span className="pa-rule" />
-              <p className="pa-folio pa-folio--ink"><span>01</span><span>—</span><span className="pa-folio__cur">02</span></p>
             </div>
           </Reveal>
 
-          {/* réserve la place de l'accroche imprimée (voir .pa-mark--ink) */}
-          <div className="pa-markbox" aria-hidden />
+          {/* La place où le logo encre vient se poser, net et noir. */}
+          <div className="pa-land" ref={landRef} role="img" aria-label={APP_NAME} />
 
           <Reveal index={1} p={p} still={reduced} className="pa-formwrap">
             <SignInForm disableSubmit={false} />
@@ -959,8 +853,8 @@ const PhoneAtelier = ({
             <div className="pa-sep">
               <span /><span className="pa-sep__t">Pas encore de compte ?</span><span />
             </div>
-            {/* Lignes filetées à réglette de couleur : la retenue éditoriale
-                de la Signature, au lieu de deux cartes flottantes. */}
+            {/* Lignes filetées à réglette de couleur, plutôt que deux cartes
+                flottantes. */}
             <button type="button" className="pa-acct" onClick={() => openSignUp('customer')}>
               <span className="pa-acct__key" style={{ background: '#6d5dfc' }} />
               <span className="pa-acct__txt">
@@ -977,32 +871,13 @@ const PhoneAtelier = ({
               </span>
               <HiArrowNarrowRight size={16} color="#a3a79f" />
             </button>
-          </Reveal>
-
-          <Reveal index={3} p={p} still={reduced}>
-            {/* Les gages fondus en une seule ligne pointée : la carte SSL, le
-                drapeau et le copyright centré encombraient le panneau. */}
+            {/* Les gages fondus en une seule ligne pointée. */}
             <p className="pa-foot">
               Connexion sécurisée<i />Hébergé en France<i />© {year} {APP_NAME}
             </p>
           </Reveal>
-
-          {/* Exemplaire ENCRE de l'accroche : élément réel du corps du tiroir,
-              donc il défile avec le formulaire une fois le tiroir posé. */}
-          <motion.p className="pa-mark pa-mark--ink" style={{ x: markInkX, scale: markScale }} aria-hidden>
-            Votre image, sur <em>tous vos supports</em>
-          </motion.p>
         </div>
       </motion.section>
-
-      {/* La jauge à six encres : jauge de course du geste sur la vitrine, puis
-          bandeau de tête du formulaire. Un seul objet traverse la transition —
-          et il signe le métier d'imprimeur. */}
-      <div className="pa-gauge" aria-hidden>
-        {OFFER_TILES.map((tile, i) => (
-          <GaugeSegment key={tile.label} index={i} ink={tile.ink} p={p} />
-        ))}
-      </div>
     </div>
   );
 };
@@ -1010,32 +885,22 @@ const PhoneAtelier = ({
 /* ═══════════════════════════════════════════════════════════════════════════
    FEUILLE DU DIPTYQUE
    ⚠ PIÈGE : les animations d'entrée sont en fill-mode BACKWARDS, jamais
-   `both`. En `both`, l'état final de l'animation écrase en permanence les
-   transformations inline posées par framer-motion et la parallaxe ne bouge
-   plus. En `backwards`, l'élément reprend son style propre dès la fin.
+   `both`, et portées par des ENVELOPPANTS (.pa-in) : l'élément animé par
+   framer-motion garde seul la main sur son transform. En `both`, l'état final
+   de l'animation écraserait en permanence les transformations inline.
    ═══════════════════════════════════════════════════════════════════════════ */
 const PHONE_CSS = `
 .pa-root{
   --pa-safe-top: env(safe-area-inset-top, 0px);
   --pa-safe-bottom: env(safe-area-inset-bottom, 0px);
-  --pa-pad: 20px;
-  --pa-edge-w: 11px;
-  --pa-band-h: clamp(32px, 5.2dvh, 48px);
-  --pa-mark-fs: clamp(25px, 7.6vw, 31px);
-  /* Décalage vertical de la colonne. 0 sur téléphone — la vitrine remplit son
-     écran. Au-dessus de 560px de large ET sur un écran haut (tablette en
-     portrait), il recentre la colonne au lieu de laisser un tiers de vide
-     noir sous les carreaux. Il entre DANS --pa-mark-top : la coupe de
-     l'accroche sur le chant reste exacte, c'est la condition non négociable. */
+  --pa-pad: 22px;
+  /* Décalage vertical de la colonne : 0 sur téléphone, recentre la colonne
+     sur une tablette en portrait. */
   --pa-vpad: 0px;
-  /* Position de l'accroche, IDENTIQUE dans les deux panneaux : c'est ce qui
-     rend la coupe exacte sans mesurer quoi que ce soit.
-     18 (marge haute vitrine) + 44 (en-tête) + 26 (marge du discours)
-     + 26 (pastille) + 14 (marge de l'accroche) = 128. */
-  --pa-mark-top: calc(var(--pa-safe-top) + 128px + var(--pa-vpad));
-  --pa-mark-h: 78px;
+  --pa-rail-h: 72px;
+  --pa-knob: 52px;
+  --pa-knob-in: 9px;
   --pa-papier: #fbf9f5;
-  --pa-brique: #db6b67;
   position: fixed; inset: 0; height: 100dvh;
   overflow: hidden; isolation: isolate;
   background: #06080f; color: #fff;
@@ -1048,344 +913,155 @@ const PHONE_CSS = `
    deux lignes de compte repartiraient dans la police du navigateur */
 .pa-root button{ font-family:inherit; font-size:inherit; color:inherit; }
 
-/* ── PANNEAU 1 ─────────────────────────────────────────────────────────── */
+/* ── PANNEAU 1 : un noir franc, rien d'autre (ni halo, ni trame, ni grain) ── */
 .pa-stage{ position:absolute; inset:0; overflow:hidden; background:#070c1a; }
-.pa-lyr{ position:absolute; inset:0; pointer-events:none; will-change:transform; }
-.pa-lyr--wide{ left:-18%; width:136%; }
-.pa-screen svg{ width:100%; height:100%; display:block; }
-.pa-glow{ position:absolute; border-radius:50%; display:block; }
-.pa-glow--a{ top:-190px; right:-120px; width:430px; height:430px;
-  background:radial-gradient(circle, rgba(109,93,252,.30) 0%, rgba(109,93,252,.07) 48%, transparent 68%); }
-.pa-glow--b{ bottom:-40px; left:-160px; width:400px; height:400px;
-  background:radial-gradient(circle, rgba(219,107,103,.20) 0%, rgba(219,107,103,.05) 46%, transparent 66%); }
-.pa-glow--c{ top:300px; right:-180px; width:340px; height:340px;
-  background:radial-gradient(circle, rgba(47,111,237,.16) 0%, transparent 62%); }
-.pa-grain{ position:absolute; inset:0; width:100%; height:100%;
-  opacity:.055; mix-blend-mode:overlay; pointer-events:none; }
-.pa-bench{ position:absolute; left:0; right:0; bottom:0; height:162px; pointer-events:none; display:block;
-  background:linear-gradient(180deg, transparent 0%, rgba(219,107,103,.045) 34%, rgba(4,6,13,.78) 100%); }
-.pa-bench::before{ content:""; position:absolute; left:0; right:0; top:0; height:1px;
-  background:linear-gradient(90deg, transparent, rgba(219,107,103,.42) 22%, rgba(169,155,255,.30) 62%, transparent); }
-.pa-veil{ position:absolute; inset:0; background:#03050b; pointer-events:none; display:block; }
+.pa-veil{ position:absolute; inset:0; background:#02040a; opacity:0; pointer-events:none; display:block; }
 
 .pa-wrap{ position:absolute; inset:0; display:flex; flex-direction:column;
-  padding: calc(var(--pa-safe-top) + 18px + var(--pa-vpad)) var(--pa-pad)
-           calc(var(--pa-safe-bottom) + 20px + var(--pa-vpad));
+  padding: calc(var(--pa-safe-top) + 26px + var(--pa-vpad)) var(--pa-pad)
+           calc(var(--pa-safe-bottom) + 22px + var(--pa-vpad));
   touch-action:none; -webkit-user-select:none; user-select:none; }
 
-.pa-header{ height:44px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex:none; }
-.pa-logo{ width:74px; height:auto; display:block; }
-.pa-folio{ margin:0; display:flex; align-items:baseline; gap:7px;
-  font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric:tabular-nums;
-  font-size:11px; letter-spacing:.14em; color:#7b839a; }
-.pa-folio__cur{ color:#b9aeff; font-weight:700; }
-.pa-folio--ink{ color:#8b8577; }
-.pa-folio--ink .pa-folio__cur{ color:#5b4de0; }
+/* surtitre : 11px en capitales, blanc 64 % sur #070c1a ≈ 7,9:1 */
+.pa-kicker{ margin:0; font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
+  line-height:1.3; color:rgba(255,255,255,.64); will-change:transform, opacity; }
 
-.pa-speech{ margin-top:26px; flex:none; }
-.pa-pillrow{ display:flex; }
-.pa-pill{ height:26px; display:inline-flex; align-items:center; gap:8px; padding:0 13px; border-radius:100px;
-  background:rgba(124,107,255,.14); border:1px solid rgba(124,107,255,.34); }
-.pa-pill > span{ color:#b9aeff; font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
-.pa-sub{ margin:11px 0 0; font-size:12.8px; line-height:1.58; color:rgba(255,255,255,.68); max-width:34ch; }
+/* Le bloc logo + accroche est calé en BAS, posé sur le rail comme une affiche,
+   et non centré : le vide est au-dessus, assumé, et la masse tombe dans la
+   zone du pouce. */
+.pa-focus{ margin-top:auto; padding:2vh 0 clamp(24px, 6.5dvh, 64px); flex:none; }
+.pa-logo-ghost{ width:min(100%, 440px); aspect-ratio:1130/467; }
+.pa-mark{ margin:clamp(20px, 3.8dvh, 34px) 0 0; font-size:clamp(28px, 8.4vw, 36px); line-height:1.06;
+  font-weight:800; letter-spacing:-.038em; color:rgba(255,255,255,.58); max-width:13ch;
+  will-change:transform, opacity; }
+.pa-mark em{ font-style:normal; color:#fff; white-space:nowrap; }
 
-/* Les rangées partagent la hauteur disponible (minmax(0,1fr)) : sur un petit
-   écran ce sont les bandeaux qui se resserrent, la grille n'est jamais
-   tronquée. Surtout PAS d'overflow:hidden sur la grille — les tuiles doivent
-   pouvoir filer vers la gauche pendant le geste ; c'est chaque tuile qui
-   découpe son propre échantillon. */
-.pa-tiles{ margin-top:22px; display:grid; grid-template-columns:1fr 1fr;
-  grid-auto-rows:minmax(0, 1fr); gap:10px; flex:0 1 auto; min-height:0; }
-.pa-tile{ display:flex; flex-direction:column; min-height:0;
-  background:rgba(255,255,255,.038); border:1px solid rgba(255,255,255,.085);
-  border-radius:14px; overflow:hidden; will-change:transform, opacity; }
-.pa-band{ display:block; width:100%; flex:1 1 var(--pa-band-h); min-height:24px; }
-.pa-tile b{ display:block; margin:9px 11px 0; font-size:11.6px; font-weight:700; line-height:1.25; letter-spacing:-.01em; flex:none; }
-.pa-tile i{ display:block; margin:3px 11px 11px; font-size:10.2px; font-style:normal; line-height:1.35; color:rgba(255,255,255,.62); flex:none; }
+/* ── Le logo en plaques ── */
+.pa-plates{ position:absolute; left:0; top:0; aspect-ratio:1130/467; transform-origin:0 0;
+  isolation:isolate; pointer-events:none; will-change:transform; }
+.pa-plate{ position:absolute; inset:0; will-change:transform; }
+.pa-plate svg{ width:100%; height:100%; display:block; overflow:visible; }
 
-.pa-badges{ margin-top:auto; padding-top:16px; display:flex; justify-content:space-between; align-items:center; gap:6px; flex:none; }
-.pa-gage{ display:flex; align-items:center; gap:5px; min-width:0; color:#9d8fff; }
-.pa-gage > span{ font-size:10px; font-weight:600; color:rgba(255,255,255,.72); letter-spacing:-.012em; white-space:nowrap; }
-
-/* ── Le rail : geste, retour visuel ET chemin explicite ── */
+/* ── Le rail : chemin explicite, dans la zone du pouce ── */
 .pa-railwrap{ margin-top:12px; flex:none; }
-.pa-rail{ position:relative; display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
-  width:100%; min-height:62px; padding:9px 74px 10px 18px;
-  border-radius:16px; cursor:pointer; text-align:left; overflow:hidden;
-  background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.13); color:#fff; }
-.pa-rail__fill{ position:absolute; inset:0; transform-origin:right center; display:block;
-  background:linear-gradient(270deg, rgba(219,107,103,.32), rgba(219,107,103,.03)); }
-.pa-rail__kicker{ position:relative; display:block; font-size:11.5px; font-weight:800;
-  letter-spacing:.17em; text-transform:uppercase; color:#fff; }
-.pa-rail__labels{ position:relative; display:block; height:17px; margin-top:3px; }
-.pa-rail__labels > span{ position:absolute; left:0; top:0; white-space:nowrap;
-  font-size:12.2px; font-weight:500; color:rgba(255,255,255,.62); }
-.pa-chevs{ position:absolute; right:64px; top:0; bottom:0; display:flex; align-items:center; gap:2px; }
-.pa-chevs i{ display:block; width:8px; height:8px; border-left:2px solid #f0908c; border-bottom:2px solid #f0908c;
-  transform:rotate(45deg); opacity:.25; animation:paChev 1.9s cubic-bezier(.65,.02,.28,1) infinite; }
-.pa-chevs i:nth-child(2){ animation-delay:.13s; }
-.pa-chevs i:nth-child(3){ animation-delay:.26s; }
-@keyframes paChev{ 0%,60%,100%{ opacity:.22 } 30%{ opacity:1 } }
-.pa-knob{ position:absolute; right:8px; top:50%; margin-top:-21px; width:42px; height:42px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(152deg, #f0908c 0%, #d1615d 52%, #b74a46 100%);
-  box-shadow:0 6px 18px rgba(183,74,70,.42), inset 0 1px 0 rgba(255,255,255,.35); }
-.pa-knob::after{ content:""; width:8px; height:8px; border-left:2px solid #fff; border-bottom:2px solid #fff;
-  transform:rotate(45deg) translate(1px,-1px); }
+.pa-rail{ position:relative; display:flex; align-items:center; width:100%; height:var(--pa-rail-h);
+  padding:0 calc(var(--pa-knob) + var(--pa-knob-in) + 14px) 0 26px;
+  border-radius:calc(var(--pa-rail-h) / 2); cursor:pointer; text-align:left;
+  background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.15); color:#fff; }
+.pa-rail__labels{ display:flex; flex-direction:column; min-width:0; will-change:opacity; }
+.pa-rail__kicker{ display:block; font-size:17px; font-weight:800; letter-spacing:-.015em; line-height:1.2; }
+/* sous-libellé : blanc 66 % ≈ 8:1 sur le rail */
+.pa-rail__sub{ display:block; margin-top:3px; font-size:13px; font-weight:500; line-height:1.3;
+  color:rgba(255,255,255,.66); white-space:nowrap; }
+.pa-knob{ position:absolute; right:var(--pa-knob-in); top:50%; width:var(--pa-knob); height:var(--pa-knob);
+  margin-top:calc(var(--pa-knob) / -2); display:block; will-change:transform; }
+.pa-knob__in{ display:block; width:100%; height:100%; border-radius:50%;
+  box-shadow:0 6px 18px rgba(0,0,0,.38); }
+.pa-knob svg{ width:100%; height:100%; display:block; isolation:isolate; }
 
-/* ── L'accroche partagée ── */
-.pa-mark-clip{ position:absolute; inset:0; pointer-events:none; }
-.pa-mark, .pa-mark-ghost{
-  margin:0; font-size:var(--pa-mark-fs); line-height:1.1; font-weight:800; letter-spacing:-.032em;
-}
-.pa-mark{ position:absolute; top:var(--pa-mark-top); left:0; width:100%;
-  max-width:calc(15ch + 2 * var(--pa-pad)); padding:0 var(--pa-pad);
-  transform-origin:0 0; will-change:transform; }
-.pa-mark--white{ color:#fff; }
-.pa-mark--ink{ color:#12142b; left:-100vw; width:100vw; }
-.pa-mark-ghost{ visibility:hidden; margin-top:14px; max-width:15ch; }
-/* aplat d'encre brique sous le membre de phrase, posé DERRIÈRE le texte */
-.pa-mark em, .pa-mark-ghost em{ font-style:normal; white-space:nowrap;
-  background-image:linear-gradient(90deg, rgba(219,107,103,.85), rgba(219,107,103,.22));
-  background-repeat:no-repeat; background-size:100% 7px; background-position:0 calc(100% - 3px); }
-
-/* ── PANNEAU 2 — le tiroir ── */
-.pa-drawer{ position:absolute; top:0; left:100%; width:100%; height:100%;
-  display:flex; overflow:hidden; will-change:transform; color:#0f172a;
-  background-color:var(--pa-papier);
-  background-image:radial-gradient(rgba(28,22,14,.05) 1px, transparent 1px);
-  background-size:22px 22px; }
-/* ── L'ombre portée du chant ──
-   Le conteneur fait la largeur de l'écran et porte le MÊME x que le tiroir :
-   son bord droit coïncide donc en permanence avec le chant. Les deux couches
-   sont collées à ce bord droit, à l'intérieur — c'est ce qui les sauve du
-   « overflow:hidden » du tiroir, qui les découpait intégralement quand elles
-   vivaient dedans en « right:100% » (elles n'ont jamais été peintes).
-   Deux ombres PRÉ-RENDUES : seule leur opacité varie pendant le geste. */
+/* ── L'ombre portée du bord du papier : une seule couche, 72px à .30 ── */
 .pa-shadewrap{ position:absolute; top:0; bottom:0; left:0; width:100%;
   pointer-events:none; will-change:transform; }
-.pa-shade{ position:absolute; top:0; bottom:0; right:0; display:block; pointer-events:none; }
-.pa-shade--near{ width:52px; background:linear-gradient(to left, rgba(0,0,0,.34), rgba(0,0,0,0)); }
-/* .62 → .46 : l'ombre tombe aussi sur l'accroche blanche, dont les dernières
-   lettres se raccordent AU PIXEL avec la copie encre de l'autre côté du
-   chant. C'est le geste le mieux noté de la page ; l'ombre doit creuser la
-   profondeur sans éteindre le raccord. */
-.pa-shade--far{ width:120px; background:linear-gradient(to left, rgba(0,0,0,.46), rgba(0,0,0,0)); }
-.pa-edge{ position:relative; flex:0 0 var(--pa-edge-w);
-  background:linear-gradient(90deg, #a9a094 0%, #efe8dc 34%, #d9d0c1 62%, #b6ac9d 100%);
-  box-shadow:inset -1px 0 0 rgba(0,0,0,.10); }
-.pa-edge::before{ content:""; position:absolute; inset:0; opacity:.45;
-  background:repeating-linear-gradient(180deg, rgba(0,0,0,.05) 0 1px, transparent 1px 5px); }
-.pa-notches{ position:absolute; left:2px; right:2px; top:50%; transform:translateY(-50%);
-  display:flex; flex-direction:column; gap:4px; }
-.pa-notches i{ display:block; height:2px; border-radius:1px; background:rgba(0,0,0,.22);
-  box-shadow:0 1px 0 rgba(255,255,255,.55); }
+.pa-shade{ position:absolute; top:0; bottom:0; right:0; width:72px; display:block; pointer-events:none;
+  opacity:0; background:linear-gradient(to left, rgba(0,0,0,.30), rgba(0,0,0,0)); }
+
+/* ── PANNEAU 2 — le tiroir de papier ── */
+.pa-drawer{ position:absolute; top:0; left:100%; width:100%; height:100%;
+  display:flex; overflow:hidden; will-change:transform; color:#0f172a;
+  background:var(--pa-papier); box-shadow:inset 1px 0 0 #fff; }
 .pa-grip{ position:absolute; left:0; top:0; bottom:0; width:26px; z-index:5; touch-action:none; }
 
 .pa-body{ position:relative; flex:1; min-width:0;
   overflow-x:hidden; overflow-y:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
-  padding: calc(var(--pa-safe-top) + 14px + var(--pa-vpad)) var(--pa-pad) calc(var(--pa-safe-bottom) + 26px); }
+  padding: calc(var(--pa-safe-top) + 12px + var(--pa-vpad)) var(--pa-pad) calc(var(--pa-safe-bottom) + 28px); }
 /* le défilement n'est rendu qu'une fois le tiroir posé : pendant le geste,
-   l'accroche encre doit rester calée sur la tranche */
+   le logo encre doit rester calé sur l'exemplaire lumière */
 .pa-opened .pa-body{ overflow-y:auto; }
-.pa-dhead{ height:44px; display:flex; align-items:center; justify-content:space-between; }
+.pa-dhead{ height:44px; display:flex; align-items:center; }
 .pa-back{ display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 12px 0 8px;
   margin-left:-8px; border-radius:12px; border:none; background:none; cursor:pointer;
-  color:#5b6478; font-size:13px; font-weight:600; }
-.pa-dlogo{ width:62px; height:auto; display:block; }
-.pa-folio-row{ height:30px; display:flex; align-items:center; gap:12px; }
-.pa-rule{ flex:1; height:1px; background:#e7e2d8; }
-/* réserve : marque haute + hauteur de l'accroche mise à l'échelle, moins le
-   flux déjà consommé (14 de marge + 44 d'en-tête + 30 de folio).
-   --pa-vpad est retranché parce qu'il est DÉJÀ dans la marge haute du corps :
-   sur tablette la feuille descend en bloc — en-tête, folio et accroche —
-   au lieu de laisser l'en-tête collé en haut et 400px de vide sous lui. */
-.pa-markbox{ height:calc(var(--pa-mark-top) + var(--pa-mark-h) + 18px - var(--pa-safe-top) - var(--pa-vpad) - 88px); }
+  color:#555d70; font-size:14px; font-weight:600; }
+/* la place d'arrivée du logo encre */
+.pa-land{ width:132px; aspect-ratio:1130/467; margin:14px 0 30px; }
 
 .pa-formwrap input:not([type='checkbox']):not([type='radio']){ font-size:16px !important; }
-.pa-sep{ display:flex; align-items:center; gap:12px; margin:26px 0 4px; }
-.pa-sep > span:not(.pa-sep__t){ flex:1; height:1px; background:#e7e2d8; }
-.pa-sep__t{ color:#7d8698; font-size:10.5px; font-weight:800; letter-spacing:.09em;
+.pa-sep{ display:flex; align-items:center; gap:12px; margin:30px 0 4px; }
+.pa-sep > span:not(.pa-sep__t){ flex:1; height:1px; background:#e4dfd4; }
+.pa-sep__t{ color:#6f7789; font-size:10.5px; font-weight:800; letter-spacing:.1em;
   text-transform:uppercase; white-space:nowrap; }
-.pa-acct{ display:flex; align-items:center; gap:13px; width:100%; min-height:58px; text-align:left;
-  background:none; border:0; border-bottom:1px solid #e7e2d8; padding:15px 2px; cursor:pointer; }
+.pa-acct{ display:flex; align-items:center; gap:13px; width:100%; min-height:60px; text-align:left;
+  background:none; border:0; border-bottom:1px solid #e4dfd4; padding:14px 2px; cursor:pointer; }
 .pa-acct__key{ width:3px; align-self:stretch; border-radius:2px; flex:none; }
 .pa-acct > svg{ flex:none; }
 .pa-acct__txt{ flex:1; min-width:0; }
-.pa-acct b{ display:block; font-size:13.5px; font-weight:700; color:#12142b; letter-spacing:-.01em; }
-.pa-acct em{ display:block; font-style:normal; font-size:11.5px; line-height:1.45; color:#5b6273; margin-top:3px; }
+.pa-acct b{ display:block; font-size:14px; font-weight:700; color:#12142b; letter-spacing:-.01em; }
+.pa-acct em{ display:block; font-style:normal; font-size:12px; line-height:1.45; color:#5b6273; margin-top:3px; }
 /* Le parcours Générateur est le moins connu : sa réglette se signale, sans
    agiter toute la ligne. */
 .pa-acct--gen .pa-acct__key{ animation:paKey 2.1s ease-in-out infinite; }
 @keyframes paKey{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
 .pa-foot{ margin:22px 0 0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;
-  font-size:11px; color:#5b6273; }
+  font-size:11.5px; color:#5b6273; }
 .pa-foot i{ display:block; width:3px; height:3px; border-radius:50%; background:#b6b1a4; }
 
-/* ── La jauge à six encres, au-dessus des deux panneaux ── */
-.pa-gauge{ position:absolute; top:var(--pa-safe-top); left:0; right:0; height:5px;
-  display:flex; gap:2px; z-index:30; pointer-events:none; }
-.pa-gauge i{ flex:1; position:relative; overflow:hidden; }
-.pa-gauge b{ position:absolute; inset:0; transform-origin:left center; display:block; }
-
 /* ── Focus visible ── */
-.pa-rail:focus-visible, .pa-back:focus-visible, .pa-acct:focus-visible{
-  outline:2px solid #a99bff; outline-offset:3px; }
-.pa-acct:focus-visible{ outline-color:#6d5dfc; }
+.pa-rail:focus-visible{ outline:2px solid #a99bff; outline-offset:4px; }
+.pa-back:focus-visible, .pa-acct:focus-visible{ outline:2px solid #6d5dfc; outline-offset:3px; }
 
 /* ── ENTRÉE (fill-mode BACKWARDS, voir l'avertissement plus haut) ── */
-@keyframes paRise{ from{ opacity:0; transform:translate3d(0,18px,0) } to{ opacity:1; transform:none } }
-@keyframes paRiseTile{ from{ opacity:0; transform:translate3d(0,22px,0) scale(.955) } to{ opacity:1; transform:none } }
-@keyframes paScreenIn{ from{ opacity:0; transform:scale(1.08) } to{ opacity:1; transform:scale(1) } }
-@keyframes paUnderline{ from{ background-size:0% 7px } to{ background-size:100% 7px } }
-.pa-anim .pa-screen{ animation:paScreenIn 1100ms cubic-bezier(.16,1,.3,1) backwards; }
-.pa-anim .pa-header{ animation:paRise 620ms cubic-bezier(.16,1,.3,1) backwards 60ms; }
-.pa-anim .pa-pillrow{ animation:paRise 620ms cubic-bezier(.16,1,.3,1) backwards 150ms; }
-.pa-anim .pa-mark--white{ animation:paRise 680ms cubic-bezier(.16,1,.3,1) backwards 215ms; }
-.pa-anim .pa-mark--white em{ animation:paUnderline 620ms cubic-bezier(.65,.02,.28,1) backwards 700ms; }
-.pa-anim .pa-sub{ animation:paRise 660ms cubic-bezier(.16,1,.3,1) backwards 285ms; }
-.pa-anim .pa-tile{ animation:paRiseTile 640ms cubic-bezier(.16,1,.3,1) backwards; }
-.pa-anim .pa-tile:nth-child(1){ animation-delay:360ms }
-.pa-anim .pa-tile:nth-child(2){ animation-delay:415ms }
-.pa-anim .pa-tile:nth-child(3){ animation-delay:470ms }
-.pa-anim .pa-tile:nth-child(4){ animation-delay:525ms }
-.pa-anim .pa-tile:nth-child(5){ animation-delay:580ms }
-.pa-anim .pa-tile:nth-child(6){ animation-delay:635ms }
-.pa-anim .pa-badges{ animation:paRise 620ms cubic-bezier(.16,1,.3,1) backwards 700ms; }
-.pa-anim .pa-railwrap{ animation:paRise 700ms cubic-bezier(.16,1,.3,1) backwards 770ms; }
+@keyframes paRise{ from{ opacity:0; transform:translate3d(0,14px,0) } to{ opacity:1; transform:none } }
+.pa-anim .pa-in--kicker{ animation:paRise 700ms cubic-bezier(.16,1,.3,1) backwards 120ms; }
+.pa-anim .pa-in--mark{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 520ms; }
+.pa-anim .pa-in--rail{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 700ms; }
+/* L'invitation au repos : la poignée fait signe vers la gauche. Sur un
+   élément INTERNE, pour ne pas écraser le x de framer-motion ; coupée dès que
+   le papier bouge (.pa-moving) et tiroir ouvert. */
+@keyframes paNudge{ 0%,78%,100%{ transform:translateX(0) } 86%{ transform:translateX(-7px) } 93%{ transform:translateX(0) } }
+.pa-knob__in{ animation:paNudge 3.6s cubic-bezier(.65,.02,.28,1) infinite 2.2s; }
+.pa-moving .pa-knob__in, .pa-opened .pa-knob__in{ animation:none; }
 
-/* ── ÉCRANS COURTS (iPhone SE, 8, écrans avec barre d'URL déployée) ──
-   La vitrine ne défile jamais : c'est le nuancier qui se resserre. On retire
-   le sous-titre des tuiles, dont l'échantillon et le libellé disent déjà
-   l'essentiel, plutôt que de laisser une ligne coupée en deux.
-   ⚠ Rien ici ne touche à ce qui précède l'accroche (marge du wrap, hauteur de
-   l'en-tête, marge du discours, hauteur de la pastille, marge de l'accroche) :
-   ces cinq valeurs sont la définition de --pa-mark-top, donc de la coupe. */
-@media (max-height: 745px){
-  .pa-root{ --pa-band-h: clamp(26px, 4.6dvh, 40px); }
-  .pa-sub{ font-size:12px; margin-top:9px; }
-  .pa-tiles{ margin-top:14px; gap:8px; }
-  .pa-tile i{ display:none; }
-  .pa-tile b{ margin:8px 10px; font-size:11px; }
-  .pa-badges{ padding-top:12px; }
-  .pa-railwrap{ margin-top:10px; }
+/* ── ÉCRANS COURTS (iPhone SE, barre d'URL déployée) ── */
+@media (max-height: 700px){
+  .pa-root{ --pa-rail-h: 64px; --pa-knob: 46px; }
+  .pa-wrap{ padding-top: calc(var(--pa-safe-top) + 20px + var(--pa-vpad));
+    padding-bottom: calc(var(--pa-safe-bottom) + 16px + var(--pa-vpad)); }
+  .pa-land{ margin:8px 0 20px; }
 }
 
-/* ── TÉLÉPHONES ÉTROITS (≤ 340px : iPhone SE 1re gén., 320×568) ──────────
-   Sur un écran à la fois étroit ET court, la grille se faisait comprimer par
-   le conteneur en colonne, et comme la tuile est en overflow:hidden (elle
-   DOIT l'être, elle découpe son échantillon), c'est le libellé qui sautait :
-   « Casquettes & accessoires » s'affichait « Casquettes & », deuxième ligne
-   tranchée net. Or ces libellés sont de la terminologie verrouillée.
-   On ne rogne donc pas le texte : on lui REND la place, en dessous de
-   l'accroche uniquement (le sous-titre respire sur toute la largeur au lieu
-   d'une mesure de 34ch, les interlignes et le rail se resserrent). Les cinq
-   valeurs qui définissent --pa-mark-top restent intouchées : la coupe de
-   l'accroche sur le chant ne bouge pas d'un pixel.
-   ⚠ APRÈS le bloc max-height:745px : à spécificité égale, c'est l'ordre qui
-   tranche, et ces valeurs-ci doivent gagner. */
-@media (max-width: 340px){
-  .pa-root{ --pa-pad:16px; }
-  .pa-sub{ font-size:11px; line-height:1.4; margin-top:8px; max-width:none; }
-  .pa-tiles{ margin-top:10px; gap:7px; }
-  .pa-tile b{ margin:7px 8px; font-size:10.2px; line-height:1.2; }
-  .pa-band{ min-height:16px; }
-  .pa-badges{ padding-top:8px; }
-  .pa-gage{ gap:4px; }
-  .pa-gage > span{ font-size:9.2px; }
-  .pa-railwrap{ margin-top:8px; }
-  .pa-rail{ min-height:56px; padding:8px 62px 9px 14px; }
-  .pa-rail__kicker{ font-size:10.8px; letter-spacing:.14em; }
-  .pa-rail__labels > span{ font-size:11.4px; }
-  .pa-knob{ width:38px; height:38px; margin-top:-19px; right:7px; }
-  .pa-chevs{ right:54px; }
+/* ── TÉLÉPHONES ÉTROITS (≤ 360px) : le sous-libellé du rail tient sur une ligne ── */
+@media (max-width: 360px){
+  .pa-root{ --pa-pad: 16px; }
+  .pa-rail{ padding-left:20px; padding-right:calc(var(--pa-knob) + var(--pa-knob-in) + 10px); }
+  .pa-rail__kicker{ font-size:16px; }
+  .pa-rail__sub{ font-size:11.5px; }
 }
 
-/* ── TABLETTE EN PORTRAIT (≥ 560px sous le seuil des 920px) ──────────────
-   La vitrine est une composition de TÉLÉPHONE : étirée à 820px de large, ses
-   carreaux devenaient des bandeaux de 400px de large sur 48 de haut et les
-   échantillons — viewBox 170×42 en « slice » — étaient rognés de moitié (la
-   casquette n'était plus qu'un dôme gris) ; et comme les gages sont poussés
-   en bas par « margin-top:auto », un tiers de la hauteur restait en vide noir.
-   Trois bornes suffisent, sans toucher à un seul nœud :
-   • --pa-pad grandit jusqu'à recentrer une colonne de 460px ;
-   • --pa-vpad recentre cette colonne verticalement et absorbe le vide ;
-   • --pa-band-h rend au bandeau la hauteur que sa largeur réclame.
-   Mesuré après coup : vide résiduel 0px et proportion d'échantillon 3,6:1 à
-   820×1180, 4,05:1 à 768×1024 (le tracé natif vaut 4,05:1) — contre un vide
-   de ~560px et une proportion de 8,4:1 avant.
-   L'accroche suit automatiquement : elle est peinte avec le MÊME --pa-pad et
-   le MÊME --pa-vpad que le fantôme qui lui réserve sa boîte. */
+/* ── TABLETTE EN PORTRAIT (≥ 560px sous le seuil des 920px) ──
+   Une colonne de 460px recentrée, horizontalement et verticalement. Le logo
+   est borné à 440px par son fantôme. */
 @media (min-width: 560px){
   .pa-root{
-    --pa-pad: max(20px, calc((100vw - 460px) / 2));
-    --pa-vpad: clamp(0px, calc((100dvh - 780px) / 2), 190px);
-    /* Le carreau est deux fois plus large que sur téléphone : l'échantillon a
-       besoin de hauteur pour ne pas être tranché. Cette règle passe APRÈS le
-       bloc max-height:745px et le remplace au-dessus de 560px — le minimum de
-       26px garde le téléphone en paysage tel qu'il était. */
-    --pa-band-h: clamp(26px, 7dvh, 56px);
+    --pa-pad: max(22px, calc((100vw - 460px) / 2));
+    --pa-vpad: clamp(0px, calc((100dvh - 860px) / 2), 180px);
   }
 }
 
-/* ── TÉLÉPHONE EN PAYSAGE (≥ 560px de large, ≤ 480px de haut) ────────────
-   Défaut PRÉEXISTANT, de la même famille que celui des écrans étroits : à
-   390px de haut, la colonne demandait ~66px de plus que l'écran, la grille se
-   faisait comprimer et les SIX libellés étaient tranchés (mesuré : 6/6 rognés,
-   rail 4px sous le bord). On rend la place là où le paysage en a : la grille
-   passe à TROIS colonnes sur deux rangs (−80px), le sous-titre reprend toute
-   la largeur de la colonne au lieu d'une mesure de 34ch (−38px), l'accroche
-   se met à la mesure de la hauteur.
-   ⚠ --pa-mark-fs vaut pour les DEUX exemplaires de l'accroche (blanc et
-   encre) : ils gardent la même taille, donc la même césure et la même coupe
-   sur le chant. --pa-mark-top, lui, n'est pas touché. */
+/* ── TÉLÉPHONE EN PAYSAGE (≥ 560px de large, ≤ 480px de haut) ──
+   Le logo se borne à la hauteur, l'accroche et le rail se resserrent. */
 @media (min-width: 560px) and (max-height: 480px){
-  .pa-root{
-    --pa-mark-fs: clamp(20px, 3.6vh, 25px);
-    --pa-mark-h: 52px;
-    --pa-band-h: clamp(20px, 9dvh, 44px);
-    /* La cinquième valeur du haut de page est recomposée EN ENTIER, et
-       --pa-mark-top avec elle : 10 + 32 + 12 + 22 + 8 = 84. C'est la seule
-       façon légitime de toucher à ces cinq valeurs — les changer ensemble.
-       Le harnais vérifie Δ(accroche, fantôme) = (0,0) à cette taille. */
-    --pa-mark-top: calc(var(--pa-safe-top) + 84px + var(--pa-vpad));
-  }
-  .pa-wrap{ padding-top: calc(var(--pa-safe-top) + 10px + var(--pa-vpad)); }
-  .pa-header{ height:32px; }
-  .pa-logo{ width:64px; }
-  .pa-speech{ margin-top:12px; }
-  .pa-pill{ height:22px; }
-  .pa-mark-ghost{ margin-top:8px; }
-  .pa-sub{ max-width:none; font-size:11.4px; line-height:1.4; margin-top:7px; }
-  .pa-tiles{ margin-top:10px; grid-template-columns:repeat(3, 1fr); gap:8px; }
-  .pa-tile b{ margin:6px 9px; font-size:11px; line-height:1.25; }
-  /* Priorité au LIBELLÉ : s'il reste trop juste, c'est l'échantillon qui cède
-     jusqu'à disparaître, jamais la terminologie qui se fait trancher. */
-  .pa-band{ min-height:0; }
-  .pa-badges{ padding-top:6px; }
-  .pa-railwrap{ margin-top:8px; }
-  .pa-rail{ min-height:50px; padding:7px 68px 8px 16px; }
-  .pa-knob{ width:38px; height:38px; margin-top:-19px; }
-  /* Le tiroir suit : sans cela l'accroche encre, remontée à 84px, passerait
-     par-dessus l'en-tête et le folio du formulaire. */
-  .pa-dhead{ height:34px; }
-  .pa-folio-row{ height:22px; }
-  .pa-markbox{ height:calc(var(--pa-mark-top) + var(--pa-mark-h) + 14px - var(--pa-safe-top) - var(--pa-vpad) - 70px); }
-}
-/* 320px de haut (iPhone SE 1re génération couché) : même à échantillon nul il
-   manquait 34px. Le sous-titre cède — comme le sous-titre des carreaux cède
-   déjà sous 745px — pour que les six libellés restent entiers. Le texte n'est
-   ni réécrit ni supprimé du fichier, il n'est pas peint sur ce format. */
-@media (min-width: 560px) and (max-height: 360px){
-  .pa-sub{ display:none; }
-  .pa-rail{ min-height:44px; }
-  .pa-knob{ width:34px; height:34px; margin-top:-17px; }
+  .pa-root{ --pa-rail-h: 56px; --pa-knob: 42px; --pa-knob-in: 7px; }
+  .pa-wrap{ padding-top: calc(var(--pa-safe-top) + 12px); padding-bottom: calc(var(--pa-safe-bottom) + 12px); }
+  .pa-logo-ghost{ width:min(100%, 440px, 70dvh); }
+  .pa-focus{ padding:0 0 14px; }
+  .pa-mark{ margin-top:12px; font-size:clamp(20px, 6dvh, 26px); max-width:none; }
+  .pa-rail__kicker{ font-size:15px; }
+  .pa-rail__sub{ font-size:12px; margin-top:1px; }
+  .pa-dhead{ height:36px; }
+  .pa-land{ margin:6px 0 16px; }
 }
 
 @media (prefers-reduced-motion: reduce){
   .pa-root *{ animation:none !important; }
-  .pa-chevs i{ opacity:.7; }
-  .pa-mark em, .pa-mark-ghost em{ background-size:100% 7px; }
 }
 `;
 
