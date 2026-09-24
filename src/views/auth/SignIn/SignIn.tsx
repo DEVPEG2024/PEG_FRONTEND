@@ -28,7 +28,7 @@ import {
    • AU-DESSUS DE 920px : `DesktopSignIn`, l'arbre historique (.si-card /
      .si-left / .si-form) rendu tel quel. Rien n'y a bougé.
    • EN DESSOUS : `PhoneAtelier`, « Le Repérage ». Un seul objet à l'écran :
-     le logo PEG. en très grand, tiré en trois plaques cyan / magenta / jaune
+     le logo PEG en très grand, tiré en trois plaques cyan / magenta / jaune
      hors repérage ; on tire la feuille de papier vers la gauche, son bord
      coupe le logo (lumière à gauche, encre à droite) et le geste ramène les
      plaques en repérage pendant que le logo monte se poser en tête du
@@ -133,28 +133,33 @@ const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) =>
 );
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LE REPÉRAGE — le logo PEG. tiré en plaques d'imprimeur
+   LE REPÉRAGE — le logo PEG tiré en plaques d'imprimeur
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tracés du logo (public/img/logo/logo_svg.svg), viewBox 1130×467. */
+/* Tracés du logo PEG (public/img/logo/peg-logo-*.svg, logo du 24/09/2026),
+   viewBox 566,9×170,1. Le P a un contre-poinçon : remplissage evenodd. */
+const PEG_VB = { w: 566.9, h: 170.1 } as const;
 const PEG_PATHS = [
-  'M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z',
-  'M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z',
-  'M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z',
+  'M16.5,5.9h120.2c32.3,0,49.9,18.8,49.9,46.9s-20.5,46.9-49.9,46.9H42.9v64.5h-26.4V5.9ZM42.9,37.5h85.6c15.2,0,24.6,6.2,24.6,15.2s-9.4,15.2-24.6,15.2H42.9v-30.5Z',
+  'M209.4,5.9h152.5v30.5h-152.5V5.9ZM209.4,127.9h152.5v30.5h-152.5v-30.5Z',
+  'M556.1,5.9h-105.6c-45.2,0-70.4,29.9-70.4,79.2s25.2,79.2,70.4,79.2h105.6v-75.1h-65.7v28.7h32.3v14.1h-70.4c-22.9,0-36.9-16.4-36.9-46.9s14.1-46.9,36.9-46.9h103.8V5.9Z',
 ];
+/* La barre violette du E : couleur d'accompagnement, jamais une plaque. */
+const PEG_BAR = { x: 216.7, y: 65.1, w: 137.8, h: 28.2, r: 2.1, fill: '#7c2bff' } as const;
 
-/* Décalages des plaques AU REPOS, en unités du viewBox (1130 de large).
-   À 358px de logo, 1px ≈ 3,16u : cyan −4,4/−2,5px, magenta +3,8/+3,2,
+/* Décalages des plaques AU REPOS, en unités du viewBox (566,9 de large ; mêmes
+   décalages en pixels que sur l'ancien logo de 1130 u : ×0,5017).
+   À 358px de logo, 1px ≈ 1,58u : cyan −4,4/−2,5px, magenta +3,8/+3,2,
    jaune +1,9/−4,1, noir (papier seulement) −1,3/+1,9. Directions volontairement
    non colinéaires : trois franges distinctes d'une épreuve mal calée, jamais
-   un simple dédoublement horizontal. Le point corail n'est PAS une plaque :
-   c'est une couleur d'accompagnement, toujours nette — c'est lui qui fixe l'œil. */
-const PLATE_OFF = { c: [-14, -8], m: [12, 10], y: [6, -13], k: [-4, 6] } as const;
+   un simple dédoublement horizontal. La barre violette n'est PAS une plaque :
+   c'est une couleur d'accompagnement, toujours nette — c'est elle qui fixe l'œil. */
+const PLATE_OFF = { c: [-7.02, -4.01], m: [6.02, 5.02], y: [3.01, -6.52], k: [-2.01, 3.01] } as const;
 const PLATE_INK = { c: '#00a0e3', m: '#e6007e', y: '#ffe500', k: '#1b1d2e' } as const;
 type PlateKey = keyof typeof PLATE_OFF;
 
 /* Une plaque = un calque HTML qui porte un SVG monochrome. Son décalage est
-   une TRANSLATION CSS en % de sa propre boîte (x en % de 1130, y en % de 467) :
+   une TRANSLATION CSS en % de sa propre boîte (x en % de la largeur, y de la hauteur du viewBox) :
    le compositeur la déplace sans repeindre, et aucune mesure n'est nécessaire.
    (Un attribut `transform` SVG réécrit à chaque image forçait une repeinture.) */
 const Plate = ({
@@ -164,12 +169,12 @@ const Plate = ({
   r: MotionValue<number>;
   blend: 'screen' | 'multiply';
 }) => {
-  const x = useTransform(r, (v) => `${((PLATE_OFF[plate][0] * v) / 11.3).toFixed(3)}%`);
-  const y = useTransform(r, (v) => `${((PLATE_OFF[plate][1] * v) / 4.67).toFixed(3)}%`);
+  const x = useTransform(r, (v) => `${((PLATE_OFF[plate][0] * v * 100) / PEG_VB.w).toFixed(3)}%`);
+  const y = useTransform(r, (v) => `${((PLATE_OFF[plate][1] * v * 100) / PEG_VB.h).toFixed(3)}%`);
   return (
     <motion.div className="pa-plate" style={{ x, y, mixBlendMode: blend }}>
-      <svg viewBox="0 0 1130 467" aria-hidden>
-        <g fill={PLATE_INK[plate]}>
+      <svg viewBox={`0 0 ${PEG_VB.w} ${PEG_VB.h}`} aria-hidden>
+        <g fill={PLATE_INK[plate]} fillRule="evenodd">
           {PEG_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
         </g>
       </svg>
@@ -206,8 +211,8 @@ const PlateWordmark = ({
     >
       {plates.map((k) => <Plate key={k} plate={k} r={r} blend={blend} />)}
       <div className="pa-plate">
-        <svg viewBox="0 0 1130 467" aria-hidden>
-          <circle cx="1027.8" cy="331.5" r="82" fill="#db6b67" />
+        <svg viewBox={`0 0 ${PEG_VB.w} ${PEG_VB.h}`} aria-hidden>
+          <rect x={PEG_BAR.x} y={PEG_BAR.y} width={PEG_BAR.w} height={PEG_BAR.h} rx={PEG_BAR.r} fill={PEG_BAR.fill} />
         </svg>
       </div>
     </motion.div>
@@ -930,14 +935,14 @@ const PHONE_CSS = `
    et non centré : le vide est au-dessus, assumé, et la masse tombe dans la
    zone du pouce. */
 .pa-focus{ margin-top:auto; padding:2vh 0 clamp(24px, 6.5dvh, 64px); flex:none; }
-.pa-logo-ghost{ width:min(100%, 440px); aspect-ratio:1130/467; }
+.pa-logo-ghost{ width:min(100%, 440px); aspect-ratio:566.9/170.1; }
 .pa-mark{ margin:clamp(20px, 3.8dvh, 34px) 0 0; font-size:clamp(28px, 8.4vw, 36px); line-height:1.06;
   font-weight:800; letter-spacing:-.038em; color:rgba(255,255,255,.58); max-width:13ch;
   will-change:transform, opacity; }
 .pa-mark em{ font-style:normal; color:#fff; white-space:nowrap; }
 
 /* ── Le logo en plaques ── */
-.pa-plates{ position:absolute; left:0; top:0; aspect-ratio:1130/467; transform-origin:0 0;
+.pa-plates{ position:absolute; left:0; top:0; aspect-ratio:566.9/170.1; transform-origin:0 0;
   isolation:isolate; pointer-events:none; will-change:transform; }
 .pa-plate{ position:absolute; inset:0; will-change:transform; }
 .pa-plate svg{ width:100%; height:100%; display:block; overflow:visible; }
@@ -982,7 +987,7 @@ const PHONE_CSS = `
   margin-left:-8px; border-radius:12px; border:none; background:none; cursor:pointer;
   color:#555d70; font-size:14px; font-weight:600; }
 /* la place d'arrivée du logo encre */
-.pa-land{ width:132px; aspect-ratio:1130/467; margin:14px 0 30px; }
+.pa-land{ width:132px; aspect-ratio:566.9/170.1; margin:14px 0 30px; }
 
 .pa-formwrap input:not([type='checkbox']):not([type='radio']){ font-size:16px !important; }
 .pa-sep{ display:flex; align-items:center; gap:12px; margin:30px 0 4px; }
@@ -1154,7 +1159,7 @@ const DesktopSignIn = ({
 
         {/* haut : logo + texte */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <Logo mode="light" logoWidth="auto" imgStyle={{ maxWidth: '128px', display: 'block' }} />
+          <Logo mode="dark" logoWidth="auto" imgStyle={{ maxWidth: '128px', display: 'block' }} />
 
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',

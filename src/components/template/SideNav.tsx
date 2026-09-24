@@ -185,11 +185,13 @@ const SideNav = () => {
                         <Logo
                             mode={logoMode()}
                             type={sideNavCollapse ? 'streamline' : 'full'}
-                            className={
+                            className={classNames(
                                 sideNavCollapse
                                     ? SIDE_NAV_CONTENT_GUTTER
-                                    : LOGO_X_GUTTER
-                            }
+                                    : LOGO_X_GUTTER,
+                                // l'ancien PNG portait sa marge transparente
+                                'py-5'
+                            )}
                         />
                     </div>
                     {sideNavCollapse ? (
