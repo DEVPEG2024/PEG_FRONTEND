@@ -375,9 +375,14 @@ const IARelecturePage = () => {
             {status?.running
               ? `En cours… (${status.queued} en file)`
               : summary
-                ? `${fmtDate(status?.lastRunAt || null)} · ${summary.relus} relus, ${summary.appliquees} corrigés, ${summary.propositions} propositions, ${summary.signalements} signalements`
+                ? `${fmtDate(status?.lastRunAt || null)} · ${summary.relus} relus, ${summary.appliquees} corrigés, ${summary.propositions} propositions, ${summary.signalements} signalements${summary.arret ? ` · arrêtée : ${summary.arret} (reprise la nuit suivante)` : ''}`
                 : 'Jamais lancée'}
           </div>
+          {status && (
+            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>
+              Budget IA du jour : {Math.round((status.tokensToday / Math.max(status.tokensBudget, 1)) * 100)} % · modèle {status.model}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button style={btn('#60a5fa')} disabled={!status || status.running} onClick={runAll}>
               <MdPlayArrow size={16} /> Lancer maintenant

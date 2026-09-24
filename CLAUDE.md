@@ -277,7 +277,8 @@ Agent qui relit les **fiches produit** : corrige l'orthographe (appliqué d'offi
 
 ### Déclenchement & quota
 - Désactivé par défaut (interrupteur dans l'écran). Actif → relecture 30 s après chaque création/modification de produit (middleware document service) + passe complète à **3 h** (`config/cron-tasks.ts`, `RELECTEUR_CRON`).
-- Groq palier gratuit partagé avec le chatbot : **un appel toutes les 20 s** (`RELECTEUR_GAP_MS`), file unique.
+- **Modèle dédié** `RELECTEUR_MODEL` (défaut `qwen/qwen3.8-27b`, raisonnement coupé ≈ 1 100 tokens/produit) — **jamais** celui du chatbot (`gpt-oss-120b`) ni son secours (`gpt-oss-20b`) : Groq plafonne **par modèle ET par jour**, et la clé est **la même en int et en prod**. ⚠️ Incident 24/09/2026 : une relecture de test sur gpt-oss-120b a épuisé son plafond journalier (200 000 tokens) → le chatbot client a basculé sur son secours pendant plusieurs heures.
+- Budget quotidien `RELECTEUR_DAILY_TOKENS` (défaut 120 000) : au-delà, la passe s'arrête et reprend la nuit suivante. Un appel toutes les 20 s (`RELECTEUR_GAP_MS`), file unique.
 - Le générateur IA de fiche (`chatbot.aiFillProduct`, « Agent Produit ») utilise le **même gabarit** (`FICHE_RULES` / `renderFiche`) : une fiche générée naît uniforme. Avant, il imposait tutoiement + emojis.
 - ⚠️ L'éditeur du front (TipTap) réécrit les puces en `<li><p>…</p></li>` : `isSoberFiche` le tolère — ne pas durcir la regex.
 

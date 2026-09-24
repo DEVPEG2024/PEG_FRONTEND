@@ -48,6 +48,8 @@ export type RelecteurRunSummary = {
   bloquees: number;
   erreurs: number;
   dureeSecondes: number;
+  /** Motif d'arrêt anticipé (budget du jour atteint, quota). */
+  arret?: string;
 };
 
 export type RelecteurStatus = {
@@ -55,6 +57,9 @@ export type RelecteurStatus = {
   autoApply: boolean;
   lastRunAt: string | null;
   lastRunSummary: RelecteurRunSummary | null;
+  /** Tokens consommés aujourd'hui / plafond (le compte Groq gratuit plafonne aussi par jour). */
+  tokensToday: number;
+  tokensBudget: number;
   running: boolean;
   queued: number;
   groqConfigured: boolean;
