@@ -9,8 +9,8 @@ const ProductCategoryListContent = ({
   return (
     <div id="catalogue-grid" style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(min(330px, 100%), 1fr))',
-      gap: '20px',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(min(230px, 100%), 1fr))',
+      gap: '18px',
     }}>
       {productCategories.map((productCategory) => (
         <GridItem key={productCategory.documentId} data={productCategory} />

@@ -18,7 +18,7 @@ const SkeletonCard = () => (
   <div style={{
     borderRadius: '16px',
     overflow: 'hidden',
-    aspectRatio: '3 / 2',
+    aspectRatio: '4 / 5',
     background: 'linear-gradient(160deg, #1a1530 0%, #0c0d10 100%)',
     border: '1px solid rgba(255,255,255,0.07)',
     animation: 'pulse 1.5s ease-in-out infinite',
@@ -107,8 +107,8 @@ const Categories = () => {
       {loading ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(330px, 100%), 1fr))',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(230px, 100%), 1fr))',
+          gap: '18px',
         }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
