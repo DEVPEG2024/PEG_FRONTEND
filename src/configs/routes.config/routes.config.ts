@@ -250,6 +250,12 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/ia/IAProductAgentPage")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  {
+    key: "admin.ia.relecture",
+    path: "/admin/ia/relecture",
+    component: lazy(() => import("@/views/app/admin/ia/IARelecturePage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
 ];
 const protectedCustomersRoutes = [
   {

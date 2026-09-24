@@ -260,6 +260,37 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 
 ---
 
+## ✍️ Relecteur PEG — orthographe & fiches produit (ajout 24/09/2026)
+
+### Concept
+Agent qui relit les **fiches produit** : corrige l'orthographe (appliqué d'office, annulable) et propose de remettre chaque description au **gabarit sobre** (validé par un admin). Écran : `/admin/ia/relecture`. Décision du 24/09/2026 : **vouvoiement, fiches sobres** (accroche d'une phrase + 3 à 5 puces « Libellé : valeur » + « Idéal pour … » facultatif, sans emoji).
+
+### Périmètre = LISTE BLANCHE (côté serveur)
+- Lit/écrit **uniquement** `product.description` et `product.name` (nom : nettoyage d'espaces d'office, orthographe **proposée**).
+- **Jamais** : commentaires projet, tickets, messages, devis, factures, **descriptions de projet** — ces dernières sont des notes admin qui contiennent du texte à imprimer mot pour mot (dédicaces, logos), des adresses et des prix (audit du 24/09/2026).
+- Produits Imbretex (image `imbretex-*`) exclus.
+
+### Garde-fous (le modèle propose, le code décide — `peg_strapi/src/services/relecteur-text.ts`)
+- Une correction d'orthographe est refusée si elle modifie un chiffre, une marque en MAJUSCULES ou ®, ne porte que sur la casse/les tirets, ressemble à une réécriture, ou si son extrait est ambigu/introuvable.
+- Une fiche uniformisée est **bloquée** si elle contient un nombre absent de la source ou du tutoiement.
+- Jamais d'écrasement : écriture seulement si le champ vaut encore le texte relu (sinon « périmée »). Texte déjà relu (empreinte) → pas relu à nouveau, donc une correction refusée ou annulée n'est jamais re-proposée.
+
+### Déclenchement & quota
+- Désactivé par défaut (interrupteur dans l'écran). Actif → relecture 30 s après chaque création/modification de produit (middleware document service) + passe complète à **3 h** (`config/cron-tasks.ts`, `RELECTEUR_CRON`).
+- Groq palier gratuit partagé avec le chatbot : **un appel toutes les 20 s** (`RELECTEUR_GAP_MS`), file unique.
+- Le générateur IA de fiche (`chatbot.aiFillProduct`, « Agent Produit ») utilise le **même gabarit** (`FICHE_RULES` / `renderFiche`) : une fiche générée naît uniforme. Avant, il imposait tutoiement + emojis.
+- ⚠️ L'éditeur du front (TipTap) réécrit les puces en `<li><p>…</p></li>` : `isSoberFiche` le tolère — ne pas durcir la regex.
+
+### Fichiers clés
+- Back : `src/services/relecteur.service.ts`, `src/services/relecteur-text.ts` (+ `src/__tests__/relecteurText.test.ts`), `src/services/groq.service.ts` (client Groq partagé), `src/api/relecteur/`, `src/index.ts` (middleware + bootstrap), `config/cron-tasks.ts`
+- Front : `src/services/RelecteurServices.ts`, `src/views/app/admin/ia/IARelecturePage.tsx`
+- Tables : `relecteur_review` (journal), `relecteur_state` (empreintes), `relecteur_settings`
+
+### ⚠️ Ordre de déploiement
+**Backend Strapi d'abord** (le bootstrap crée les tables). Front avant back → l'écran affiche « Relecteur indisponible », rien d'autre ne casse.
+
+---
+
 ## 👁️ Tracking des vues projet (mise à jour 03/04/2026)
 
 ### Endpoints (peg-backend Express)
