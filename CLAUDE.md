@@ -254,6 +254,14 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - **Cartes** : chaque produit / projet / facture / devis lu par un outil est inscrit dans un registre serveur indexé par **son lien** (`registerCard`). SSE `cards` après chaque outil + `cards` dans `done` / réponse JSON (seulement les cartes citées). Le widget rend en carte (`ChatCardView.tsx`) tout lien `[Nom](url)` **seul sur sa ligne** dont l'url est dans les cartes (`renderChatMarkdown(content, { cards, onNavigate })`). **Le modèle choisit quelle carte montrer, jamais son contenu.**
 - Rétro-compatible dans les deux sens (backend sans cartes → liens simples).
 
+### Offre → panier en un clic (24/09/2026)
+- `preparer_offre` accepte `taille` / `couleur` (résolues sur le produit par `matchOption`, jamais inventées) et remplit une **offre panier** (`CartOffer` : produit, quantité, dimensions m², taille/couleur) renvoyée dans `done` / la réponse JSON — **hors contexte du modèle** (aucun token). Pas d'offre sous un message d'erreur/saturation.
+- Widget : bouton **« Ajouter au panier »** sous la réponse (`ChatOfferAction.tsx`, logique `chatOffer.ts`). Ligne sans choix (ni `product.form`, ni taille/couleur à répartir) → `addToCart` direct + ouverture du panier. Sinon → **fiche produit pré-remplie** via `navigate(..., { state: { chatOffer } })` : `ShowProduct` lit `readChatPrefill(location.state)`, applique quantité/sélection/dimensions **une fois**, ouvre l'étape restante (en pratique la personnalisation), affiche le bandeau « Votre offre », et après ajout **va au panier** au lieu de `navigate(-1)`.
+- Sélection construite **exactement comme la fiche** (`DEFAULT_CHOICE` quand le produit n'a pas de tailles/couleurs, `{}` + largeur/hauteur en mètres pour le m²) — sinon panier et paiement divergent. Tests : `src/__tests__/chatOffer.test.ts`.
+- ⚠️ Un produit avec formulaire ne va **jamais** directement au panier : `PaymentContent.createFormAnswer` échouerait (formAnswer manquant) et la commande serait perdue en silence.
+- Quantité écrite par le client (« 20 casquettes ») : `quantityInMessage` la détecte (dimensions/grammages exclus) et le serveur injecte la consigne de chiffrage dans le résultat de `rechercher_catalogue` — sinon gpt-oss répondait « Combien de pièces ? ». Après chiffrage, le dernier appel part **sans schémas d'outils** (~1 400 tokens de moins).
+- Prix de l'offre = indicatif : le checkout recalcule (`serverLinePriceHT`).
+
 ### ⚠️ Ordre de déploiement
 - **Backend Strapi d'abord** (int → prod) pour que les outils existent. Changements mutuellement rétro-compatibles, mais feature active seulement une fois le back **redéployé** (peg-prod = déploiement Heroku manuel). Nécessite `GROQ_API_KEY` (déjà présent).
 - Nouveaux outils = **lecture seule**. Actions d'écriture (créer un devis/ticket) volontairement **non implémentées** (décision produit).
