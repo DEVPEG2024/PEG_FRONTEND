@@ -11,6 +11,7 @@ import { apiGetBanners, apiCreateBanner, apiUpdateBanner } from '@/services/Bann
 import { apiUploadFile } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import useResponsive from '@/utils/hooks/useResponsive';
+import { buildImageSources, StrapiImage } from '@/utils/strapiImage';
 
 const CatalogueBanner = ({
   bannerName = 'Bannière catalogue',
@@ -37,6 +38,7 @@ const CatalogueBanner = ({
 
   const [bannerDocId, setBannerDocId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [srcSet, setSrcSet] = useState<string | undefined>();
   // Proportions réelles de l'image (largeur / hauteur).
   const [ratio, setRatio] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -61,6 +63,7 @@ const CatalogueBanner = ({
       if (banner) {
         setBannerDocId(banner.documentId);
         setImageUrl(banner.image?.url || '');
+        setSrcSet(buildImageSources(banner.image as StrapiImage)?.srcSet);
         const { width, height } = banner.image || {};
         setRatio(width && height ? width / height : null);
       }
@@ -131,6 +134,12 @@ const CatalogueBanner = ({
       {imageUrl ? (
         <img
           src={imageUrl}
+          // Versions allégées sous lg seulement (téléphone, tablette) : sur un écran
+          // d'ordinateur Retina, Chrome retenait la version 1000px pour 1083px
+          // affichés — bannière moins nette. Au-delà, l'original, comme avant.
+          srcSet={larger.lg ? undefined : srcSet}
+          // Largeur réelle : écran moins les marges, moins la barre latérale (290px) dès md
+          sizes={larger.lg || !srcSet ? undefined : '(max-width: 767px) calc(100vw - 32px), calc(100vw - 354px)'}
           alt={title || 'Bannière'}
           // Repli si Strapi n'a pas renseigné les dimensions de l'image
           onLoad={(e) => {

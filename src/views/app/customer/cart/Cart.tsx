@@ -986,6 +986,8 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Prenom</label>
                     <input
+                      name="firstName"
+                      autoComplete="shipping given-name"
                       style={inputStyle}
                       placeholder="Jean"
                       value={shipping.firstName}
@@ -995,6 +997,8 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Nom</label>
                     <input
+                      name="lastName"
+                      autoComplete="shipping family-name"
                       style={inputStyle}
                       placeholder="Dupont"
                       value={shipping.lastName}
@@ -1004,6 +1008,8 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Entreprise</label>
                     <input
+                      name="company"
+                      autoComplete="shipping organization"
                       style={inputStyle}
                       placeholder="Societe (optionnel)"
                       value={shipping.company ?? ''}
@@ -1013,6 +1019,10 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Telephone</label>
                     <input
+                      name="phone"
+                      autoComplete="shipping tel"
+                      type="tel"
+                      inputMode="tel"
                       style={inputStyle}
                       placeholder="+33 6 00 00 00 00"
                       value={shipping.phone ?? ''}
@@ -1023,6 +1033,8 @@ function Cart() {
                 <div>
                   <label style={labelStyle}>Adresse</label>
                   <input
+                    name="address"
+                    autoComplete="shipping address-line1"
                     style={inputStyle}
                     placeholder="12 rue de la Paix"
                     value={shipping.address}
@@ -1032,6 +1044,8 @@ function Cart() {
                 <div>
                   <label style={labelStyle}>Complement</label>
                   <input
+                    name="addressLine2"
+                    autoComplete="shipping address-line2"
                     style={inputStyle}
                     placeholder="Batiment, etage... (optionnel)"
                     value={shipping.addressLine2 ?? ''}
@@ -1049,6 +1063,8 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Code postal</label>
                     <input
+                      name="zipCode"
+                      autoComplete="shipping postal-code"
                       style={inputStyle}
                       placeholder="75001"
                       value={shipping.zipCode}
@@ -1058,6 +1074,8 @@ function Cart() {
                   <div>
                     <label style={labelStyle}>Ville</label>
                     <input
+                      name="city"
+                      autoComplete="shipping address-level2"
                       style={inputStyle}
                       placeholder="Paris"
                       value={shipping.city}
@@ -1068,6 +1086,8 @@ function Cart() {
                 <div>
                   <label style={labelStyle}>Pays</label>
                   <input
+                    name="country"
+                    autoComplete="shipping country-name"
                     style={inputStyle}
                     placeholder="France"
                     value={shipping.country}

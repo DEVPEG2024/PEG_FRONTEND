@@ -3,6 +3,9 @@ import { useAppSelector } from '@/store';
 import { RootState } from '@/store';
 import { fetchPreferences, updatePreferences } from '@/services/NotificationService';
 import { toast } from 'react-toastify';
+import usePushPermission from '@/utils/hooks/usePushPermission';
+import { enablePush, isAppleMobile } from '@/utils/webPush';
+import { isStandalone } from '@/utils/pwa';
 
 interface ChannelPref {
   push: boolean;
@@ -46,6 +49,77 @@ const toggleDotStyle = (enabled: boolean): React.CSSProperties => ({
   left: enabled ? '21px' : '3px',
   transition: 'left 0.2s',
 });
+
+/**
+ * Notifications push sur CET appareil : les interrupteurs « Push » ci-dessous
+ * choisissent les événements, mais rien n'arrive tant que l'appareil n'a pas
+ * donné son autorisation. Sur iPhone, elle ne peut être demandée que par un
+ * toucher, et seulement dans l'app installée.
+ */
+const DevicePushStatus = ({ userId }: { userId: string }) => {
+  const permission = usePushPermission();
+  const [busy, setBusy] = useState(false);
+  const iphoneBrowser = permission === 'unsupported' && isAppleMobile() && !isStandalone();
+  if (permission === 'unsupported' && !iphoneBrowser) return null;
+
+  const activate = () => {
+    setBusy(true);
+    enablePush(userId)
+      .then((result) => {
+        if (result === 'granted') toast.success('Notifications activées sur cet appareil');
+      })
+      .catch(() => toast.error("Les notifications n'ont pas pu être activées"))
+      .finally(() => setBusy(false));
+  };
+
+  const status =
+    permission === 'granted'
+      ? { color: '#4ade80', text: 'Activées sur cet appareil' }
+      : permission === 'denied'
+        ? { color: '#f87171', text: "Bloquées sur cet appareil : autorisez MyPEG dans les réglages de notifications de l'appareil ou du navigateur." }
+        : permission === 'default'
+          ? { color: '#fbbf24', text: 'Pas encore activées sur cet appareil' }
+          : { color: 'rgba(255,255,255,0.4)', text: "Sur iPhone, les notifications arrivent dans l'app installée : Partager, puis « Sur l'écran d'accueil »." };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 14px',
+        marginBottom: '20px',
+        borderRadius: '12px',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: status.color, flexShrink: 0 }} />
+      <span style={{ flex: 1, minWidth: 0, color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>{status.text}</span>
+      {permission === 'default' && (
+        <button
+          type="button"
+          className="peg-tap-target"
+          onClick={activate}
+          disabled={busy}
+          style={{
+            flexShrink: 0,
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(47,111,237,0.55)',
+            background: 'rgba(47,111,237,0.28)',
+            color: '#e8eefc',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Activer
+        </button>
+      )}
+    </div>
+  );
+};
 
 const NotificationPreferences = () => {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
@@ -127,6 +201,8 @@ const NotificationPreferences = () => {
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '20px' }}>
         Choisissez comment recevoir vos notifications pour chaque type d'événement.
       </p>
+
+      {userId && <DevicePushStatus userId={userId} />}
 
       {/* Table header */}
       <div

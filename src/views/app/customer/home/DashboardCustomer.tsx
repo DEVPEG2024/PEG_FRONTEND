@@ -278,7 +278,7 @@ const DashboardCustomer = () => {
       >
         <div style={{ width: '46px', height: '46px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {product.images?.[0]?.url
-            ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ? <img loading="lazy" decoding="async" src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <HiOutlineCube size={20} color="rgba(255,255,255,0.25)" />}
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -505,7 +505,7 @@ const DashboardCustomer = () => {
                         >
                           <div style={{ width: '46px', height: '46px', flexShrink: 0, borderRadius: '11px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {img
-                              ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                              ? <img loading="lazy" decoding="async" src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                               : <HiOutlineCube size={20} color="rgba(255,255,255,0.25)" />}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
@@ -609,7 +609,7 @@ const DashboardCustomer = () => {
                         >
                           <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {product.images?.[0]?.url
-                              ? <img
+                              ? <img loading="lazy" decoding="async"
                                   src={product.images[0].url}
                                   alt=""
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}

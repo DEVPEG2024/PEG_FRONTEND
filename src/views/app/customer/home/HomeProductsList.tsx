@@ -57,7 +57,7 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
               justifyContent: 'center',
             }}>
               {imageUrl ? (
-                <img
+                <img loading="lazy" decoding="async"
                   src={imageUrl}
                   alt={product.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}

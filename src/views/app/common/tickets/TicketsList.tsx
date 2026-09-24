@@ -561,7 +561,7 @@ const TicketsList = () => {
       </div>
       <div style={{ position: 'relative', flex: 1, minWidth: '180px', maxWidth: '340px' }}>
         <HiOutlineSearch size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)', pointerEvents: 'none' }} />
-        <input type="text" placeholder="Rechercher..." value={searchTerm}
+        <input type="text" enterKeyHint="search" placeholder="Rechercher..." value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
           style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '8px 14px 8px 33px', color: '#fff', fontSize: '13px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
         />

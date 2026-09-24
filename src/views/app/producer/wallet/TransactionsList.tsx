@@ -319,7 +319,7 @@ const TransactionsList = () => {
 
             <div className="mb-3">
               <Input
-                placeholder="Rechercher un projet, un type…"
+                enterKeyHint="search" placeholder="Rechercher un projet, un type…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

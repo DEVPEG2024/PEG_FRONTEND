@@ -35,6 +35,8 @@ export async function apiGetBanners(data: GetBannersRequest = {pagination: {page
                     url
                     width
                     height
+                    size
+                    formats
                 }
                 name
                 customer {

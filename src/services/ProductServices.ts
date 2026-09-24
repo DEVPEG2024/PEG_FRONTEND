@@ -155,7 +155,11 @@ export async function apiGetProductsByCategory(data: GetProductsByCategoryReques
                     # medium/large), scalaire JSON. Sert à construire un srcset sur
                     # les cartes produit. Si le champ est absent ou vide dans la
                     # réponse, l'affichage retombe sur url (original) — voir
-                    # buildImageSources dans CustomerProductCard.
+                    # buildImageSources (utils/strapiImage.ts). width et size de
+                    # l'original écartent les miniatures plus lourdes que lui.
+                    width
+                    height
+                    size
                     formats
                 }
             }
@@ -474,6 +478,9 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
             nodes {
                 images {
                     url
+                    width
+                    height
+                    size
                     formats
                 }
                 description
@@ -601,6 +608,9 @@ export async function apiGetProductInputFields(): Promise<Set<string> | null> {
 const SUGGESTED_PRODUCT_FIELDS = `
                 images {
                     url
+                    width
+                    height
+                    size
                     formats
                 }
                 description

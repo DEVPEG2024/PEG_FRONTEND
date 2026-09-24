@@ -491,7 +491,7 @@ const MyFiles = () => {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un fichier"
+                enterKeyHint="search" placeholder="Rechercher un fichier"
                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 transition"
               />
             </div>

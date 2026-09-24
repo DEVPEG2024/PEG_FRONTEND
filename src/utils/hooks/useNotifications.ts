@@ -14,28 +14,20 @@ import {
 import {
   fetchNotifications,
   fetchUnreadCount,
-  subscribePush,
 } from '@/services/NotificationService';
 import { PEG_BACKEND_BASE } from '@/services/PegBackendClient';
-
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+import {
+  enablePush,
+  isPushSupported,
+  permissionNeedsGesture,
+  subscribeThisDevice,
+} from '@/utils/webPush';
 
 // Socket.io activé en dev uniquement — le backend Express est sur Vercel serverless (pas de WebSocket)
 const SOCKET_ENABLED = import.meta.env.DEV;
 
 const POLL_INTERVAL = 5_000;
 const RECONNECT_DELAY = 5_000;
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
 
 function playNotificationSound() {
   try {
@@ -187,47 +179,19 @@ export default function useNotifications() {
     };
   }, [userId, dispatch, loadNotifications]);
 
-  // Register service worker + Web Push subscription
+  // Web Push de cet appareil. Autorisation déjà accordée → abonnement
+  // resynchronisé sans rien demander. Sinon, demande à l'ouverture là où elle
+  // fonctionne ; sur Safari / iPhone elle exige un toucher → bandeau
+  // « Activer les notifications » et Réglages → Notifications (utils/webPush.ts).
   useEffect(() => {
-    if (!userId || !VAPID_PUBLIC_KEY) return;
-    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
-
-    let cancelled = false;
-
-    async function registerPush() {
-      try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted' || cancelled) return;
-
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-          } as PushSubscriptionOptionsInit);
-        }
-
-        const subJson = subscription.toJSON();
-        await subscribePush({
-          userId: userId!,
-          type: 'web',
-          endpoint: subJson.endpoint!,
-          keys: {
-            p256dh: subJson.keys!.p256dh!,
-            auth: subJson.keys!.auth!,
-          },
-        });
-      } catch (err) {
-        console.warn('[useNotifications] Push registration failed:', err);
-      }
+    if (!userId || !isPushSupported()) return;
+    const onError = (err: unknown) =>
+      console.warn('[useNotifications] Push registration failed:', err);
+    if (Notification.permission === 'granted') {
+      subscribeThisDevice(userId).catch(onError);
+    } else if (Notification.permission === 'default' && !permissionNeedsGesture()) {
+      enablePush(userId).catch(onError);
     }
-
-    registerPush();
-
-    return () => {
-      cancelled = true;
-    };
   }, [userId]);
 
   return { loadNotifications, loadMore };

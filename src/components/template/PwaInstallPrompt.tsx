@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { MdClose, MdInstallMobile, MdIosShare, MdRefresh } from 'react-icons/md'
+import { MdClose, MdInstallMobile, MdIosShare, MdNotificationsActive, MdRefresh } from 'react-icons/md'
 import { useLocation } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { useAppSelector } from '@/store'
 import useResponsive from '@/utils/hooks/useResponsive'
+import usePushPermission from '@/utils/hooks/usePushPermission'
 import { isStandalone } from '@/utils/pwa'
+import { enablePush } from '@/utils/webPush'
 import { clearDeferredInstallPrompt, getDeferredInstallPrompt } from '@/main'
 
 /**
@@ -20,25 +24,30 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+const DAY = 1000 * 60 * 60 * 24
 const DISMISS_KEY = 'peg_pwa_install_dismissed'
 // Un refus met le bandeau en sommeil 90 jours : assez long pour ne pas harceler,
 // assez court pour ne pas perdre definitivement l'acces a l'installation.
-const DISMISS_DURATION = 1000 * 60 * 60 * 24 * 90
+const DISMISS_DURATION = 90 * DAY
+// Invitation aux notifications : 30 jours (elle reste accessible dans
+// Réglages → Notifications).
+const PUSH_DISMISS_KEY = 'peg_push_prompt_dismissed'
+const PUSH_DISMISS_DURATION = 30 * DAY
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 15
 
-const isRecentlyDismissed = (): boolean => {
+const isRecentlyDismissed = (key = DISMISS_KEY, duration = DISMISS_DURATION): boolean => {
   try {
-    const raw = window.localStorage.getItem(DISMISS_KEY)
+    const raw = window.localStorage.getItem(key)
     if (!raw) return false
-    return Date.now() - (Number(raw) || 0) < DISMISS_DURATION
+    return Date.now() - (Number(raw) || 0) < duration
   } catch {
     return false
   }
 }
 
-const rememberDismiss = () => {
+const rememberDismiss = (key = DISMISS_KEY) => {
   try {
-    window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    window.localStorage.setItem(key, String(Date.now()))
   } catch {
     /* stockage indisponible (navigation privee) : on ne bloque pas */
   }
@@ -128,6 +137,16 @@ const PwaInstallPrompt = () => {
   const [showIosHint, setShowIosHint] = useState(false)
   const [updateReady, setUpdateReady] = useState(false)
   const [updateHidden, setUpdateHidden] = useState(false)
+  const pushPermission = usePushPermission()
+  const [pushDismissed, setPushDismissed] = useState(() =>
+    isRecentlyDismissed(PUSH_DISMISS_KEY, PUSH_DISMISS_DURATION)
+  )
+  const [pushBusy, setPushBusy] = useState(false)
+  const userId = useAppSelector((state) => {
+    const u = state.auth.user.user
+    const raw = u?.documentId || u?.id || u?._id || null
+    return raw != null ? String(raw) : null
+  })
 
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null)
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
@@ -277,7 +296,33 @@ const PwaInstallPrompt = () => {
   // produit à valider, pas un effet de bord du chantier mobile).
   const showUpdate = smaller.md && updateReady && !updateHidden
   const showInstall = smaller.md && pathname === INSTALL_ROUTE && (canInstall || showIosHint)
-  const barVisible = showUpdate || showInstall
+  // Notifications : même emplacement, jamais en même temps que l'installation.
+  // Sur iPhone, seule l'app installée peut notifier (isPushSupported le reflète).
+  const showPush =
+    smaller.md &&
+    pathname === INSTALL_ROUTE &&
+    !showInstall &&
+    !!userId &&
+    pushPermission === 'default' &&
+    !pushDismissed
+  const barVisible = showUpdate || showInstall || showPush
+
+  // Appelé directement par le toucher : iOS n'ouvre la demande qu'à cette condition
+  const activatePush = () => {
+    if (!userId || pushBusy) return
+    setPushBusy(true)
+    enablePush(userId)
+      .then((permission) => {
+        if (permission === 'granted') toast.success('Notifications activées sur ce téléphone')
+      })
+      .catch(() => toast.error("Les notifications n'ont pas pu être activées"))
+      .finally(() => setPushBusy(false))
+  }
+
+  const dismissPush = () => {
+    rememberDismiss(PUSH_DISMISS_KEY)
+    setPushDismissed(true)
+  }
 
   // Le bandeau est en position fixed en bas : sans réserve de place, il masque
   // en permanence le dernier contrôle de la page (mesuré sur la fiche produit,
@@ -349,6 +394,34 @@ const PwaInstallPrompt = () => {
             style={closeStyle}
             aria-label="Fermer"
             onClick={dismissInstall}
+          >
+            <MdClose size={16} />
+          </button>
+        </div>
+      )}
+
+      {showPush && (
+        <div style={cardStyle} role="status">
+          <MdNotificationsActive size={20} style={{ flex: '0 0 auto', opacity: 0.85 }} />
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+            <div style={titleStyle}>Activer les notifications</div>
+            <div style={hintStyle}>Soyez prévenu dès qu&apos;il y a du nouveau</div>
+          </div>
+          <button
+            type="button"
+            className="peg-tap-target"
+            style={actionStyle}
+            onClick={activatePush}
+            disabled={pushBusy}
+          >
+            Activer
+          </button>
+          <button
+            type="button"
+            className="peg-tap-target"
+            style={closeStyle}
+            aria-label="Fermer"
+            onClick={dismissPush}
           >
             <MdClose size={16} />
           </button>

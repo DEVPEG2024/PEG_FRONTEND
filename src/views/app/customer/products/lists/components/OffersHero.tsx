@@ -173,7 +173,7 @@ const OffersHero = ({
             ref={inputRef}
             value={searchTerm}
             onChange={onSearchChange}
-            placeholder="Rechercher un produit…"
+            enterKeyHint="search" placeholder="Rechercher un produit…"
             aria-label="Rechercher dans mes offres"
             style={{
               width: '100%',

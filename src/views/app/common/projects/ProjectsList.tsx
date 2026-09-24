@@ -495,7 +495,7 @@ const ProjectsList = () => {
           }} />
           <input
             type="text"
-            placeholder="Rechercher un projet…"
+            enterKeyHint="search" placeholder="Rechercher un projet…"
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
             style={{

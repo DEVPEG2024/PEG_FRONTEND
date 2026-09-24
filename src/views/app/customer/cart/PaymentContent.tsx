@@ -403,6 +403,13 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
+                // Un code n'est pas un mot : ni correction ni majuscules automatiques
+                // (iOS « corrigeait » le code), touche Entrée = « OK »
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                enterKeyHint="done"
                 value={promoInput}
                 onChange={(e) => {
                   setPromoInput(e.target.value.toUpperCase());

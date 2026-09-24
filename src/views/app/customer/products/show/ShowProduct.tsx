@@ -438,21 +438,21 @@ const ShowProduct = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px', marginBottom: '14px' }}>
                         <div>
                           <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Largeur (cm)</label>
-                          <input type="number" value={m2Width} min={1} step={1}
+                          <input type="number" inputMode="numeric" value={m2Width} min={1} step={1}
                             onChange={(e) => setM2Width(Math.max(1, parseFloat(e.target.value) || 0))}
                             style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
                           />
                         </div>
                         <div>
                           <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Hauteur (cm)</label>
-                          <input type="number" value={m2Height} min={1} step={1}
+                          <input type="number" inputMode="numeric" value={m2Height} min={1} step={1}
                             onChange={(e) => setM2Height(Math.max(1, parseFloat(e.target.value) || 0))}
                             style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
                           />
                         </div>
                         <div>
                           <label style={{ display: 'block', color: 'rgba(160,185,220,0.5)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Quantité</label>
-                          <input type="number" value={m2Quantity} min={1} step={1}
+                          <input type="number" inputMode="numeric" value={m2Quantity} min={1} step={1}
                             onChange={(e) => setM2Quantity(Math.max(1, parseInt(e.target.value) || 1))}
                             style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, padding: '12px 14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', textAlign: 'center' }}
                           />

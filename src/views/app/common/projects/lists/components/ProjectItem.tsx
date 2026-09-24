@@ -118,13 +118,13 @@ const ProjectItem = ({
         padding: '8px',
       }}>
         {project.orderItem?.product?.images?.[0]?.url ? (
-          <img
+          <img loading="lazy" decoding="async"
             src={resolveUrl(project.orderItem.product.images[0].url)}
             alt={project.name}
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}
           />
         ) : project.images?.[0]?.url ? (
-          <img
+          <img loading="lazy" decoding="async"
             src={resolveUrl(project.images[0].url)}
             alt={project.name}
             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', display: 'block' }}

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
 import { HiArrowRight } from 'react-icons/hi';
 import { RootState, useAppSelector } from '@/store';
+import { buildImageSources } from '@/utils/strapiImage';
 
 const getShortSentence = (desc: string): string => {
   const text = desc.replace(/<[^>]*>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -14,33 +15,6 @@ const getShortSentence = (desc: string): string => {
   const sentence = match ? match[0].trim() : text;
   if (sentence.length <= 80) return sentence;
   return sentence.slice(0, 80).replace(/\s+\S*$/, '') + '…';
-};
-
-type StrapiImageFormat = { url?: string; width?: number };
-
-/**
- * Construit un srcset à partir des miniatures générées par Strapi (`formats`).
- * REPLI EXPLICITE : si `formats` est absent (schéma Strapi plus ancien,
- * permission, image sans variantes) ou inexploitable, on renvoie uniquement
- * `src` = l'original — soit exactement le comportement précédent. Aucune image
- * ne peut disparaître à cause de ce chemin.
- */
-const buildImageSources = (
-  image?: { url?: string; formats?: unknown }
-): { src: string; srcSet?: string } | null => {
-  const src = image?.url;
-  if (!src) return null;
-  const formats = image?.formats;
-  if (!formats || typeof formats !== 'object') return { src };
-  const seenWidths = new Set<number>();
-  const candidates: string[] = [];
-  for (const format of Object.values(formats as Record<string, StrapiImageFormat>)) {
-    const width = format?.width;
-    if (!format?.url || typeof width !== 'number' || width <= 0 || seenWidths.has(width)) continue;
-    seenWidths.add(width);
-    candidates.push(`${format.url} ${width}w`);
-  }
-  return candidates.length > 0 ? { src, srcSet: candidates.join(', ') } : { src };
 };
 
 const CustomerProductCard = ({
@@ -58,7 +32,14 @@ const CustomerProductCard = ({
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const isPremium = !!customer?.premium;
 
-  const imageSources = buildImageSources(product.images[0]);
+  const image = product.images[0];
+  const imageSources = buildImageSources(image);
+  // Largeur réellement affichée : l'image est contenue dans un cadre de 200px de
+  // haut moins 2×16px de marge, soit 168px de haut au plus. Un produit carré
+  // occupe donc ~168px de large, même sur une carte de 370px (téléphone).
+  // L'ancien « 100vw » faisait télécharger la plus grande miniature.
+  const ratio = image?.width && image?.height ? image.width / image.height : 1;
+  const imageSizes = `${Math.round(Math.min(340, 168 * ratio))}px`;
   const shortDesc = product.description ? getShortSentence(product.description) : null;
   const isM2 = product.pricingMode === 'm2';
   const fullPriceHT = isM2 ? (product.pricePerM2 || 0) : getProductBasePrice(product);
@@ -113,7 +94,7 @@ const CustomerProductCard = ({
             ref={imgRef}
             src={imageSources.src}
             srcSet={imageSources.srcSet}
-            sizes="(max-width: 640px) 100vw, 220px"
+            sizes={imageSizes}
             alt={product.name}
             // Dimensions du cadre réel : la boîte reste pilotée par le CSS
             // ci-dessous (200px de haut), les attributs ne servent qu'à donner

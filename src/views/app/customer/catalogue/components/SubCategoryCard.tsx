@@ -50,7 +50,7 @@ const SubCategoryCard = ({ data }: { data: ProductCategory }) => {
           un dégradé grisâtre disgracieux. */}
       <div style={{ position: 'relative', height: '195px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {image?.url ? (
-          <img
+          <img loading="lazy" decoding="async"
             ref={imgRef}
             src={image.url}
             alt={name}
