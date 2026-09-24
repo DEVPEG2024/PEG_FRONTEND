@@ -19,7 +19,7 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       cardRef.current.style.transform = 'translateY(-4px)';
       cardRef.current.style.borderColor = 'rgba(139,92,246,0.5)';
     }
-    if (imgRef.current) imgRef.current.style.transform = 'scale(1.06)';
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1.03)';
   };
 
   const handleMouseLeave = () => {
@@ -41,7 +41,8 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         borderRadius: '16px',
         overflow: 'hidden',
         cursor: 'pointer',
-        aspectRatio: '3 / 2',
+        display: 'flex',
+        flexDirection: 'column',
         background: '#0c0d10',
         border: '1px solid rgba(255,255,255,0.07)',
         boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
@@ -49,30 +50,26 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* Photo de fond (ou fond dégradé si absente) */}
-      {image?.url ? (
-        <img
-          ref={imgRef}
-          src={image.url}
-          alt={name}
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', display: 'block', transition: 'transform 0.5s ease',
-          }}
-        />
-      ) : (
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at 30% 30%, #1c1830 0%, #0c0d10 75%)',
-        }} />
-      )}
-
-      {/* Dégradé sombre pour la lisibilité */}
+      {/* Photo ENTIÈRE (contain, jamais rognée) au-dessus du texte : le texte
+          n'est plus superposé à l'image, rien ne la masque. */}
       <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.6) 38%, rgba(0,0,0,0.12) 72%, transparent 100%)',
-        pointerEvents: 'none',
-      }} />
+        position: 'relative', aspectRatio: '3 / 2', overflow: 'hidden',
+        background: image?.url ? '#ffffff' : 'radial-gradient(circle at 30% 30%, #1c1830 0%, #0c0d10 75%)',
+      }}>
+        {image?.url && (
+          <img
+            ref={imgRef}
+            src={image.url}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'contain', display: 'block', transition: 'transform 0.5s ease',
+            }}
+          />
+        )}
+      </div>
 
       {/* Pastille icône en haut à gauche */}
       <div style={{
@@ -86,16 +83,16 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         <Icon size={22} color={PURPLE} strokeWidth={1.7} />
       </div>
 
-      {/* Contenu en bas */}
+      {/* Contenu sous la photo */}
       <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0,
-        padding: '0 22px 20px',
-        display: 'flex', flexDirection: 'column', gap: '8px',
+        padding: '14px 20px 18px',
+        display: 'flex', flexDirection: 'column', gap: '6px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
         <p style={{
           color: '#fff', fontWeight: 700, fontSize: '17px',
           letterSpacing: '0.02em', textTransform: 'uppercase',
-          margin: 0, lineHeight: 1.2, textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+          margin: 0, lineHeight: 1.2,
         }}>
           {name}
         </p>

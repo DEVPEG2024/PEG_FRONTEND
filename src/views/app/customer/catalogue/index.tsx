@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pagination, Select } from '@/components/ui';
 import ProductCategoryListContent from './components/CategoryList';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
@@ -12,15 +11,8 @@ import SuggestionsTab from './components/SuggestionsTab';
 
 injectReducer('catalogue', reducer);
 
-type Option = {
-  value: number;
-  label: string;
-};
-const options: Option[] = [
-  { value: 16, label: '16 / page' },
-  { value: 24, label: '24 / page' },
-  { value: 32, label: '32 / page' },
-];
+// Toutes les catégories sur une seule page (pas de pagination côté client).
+const ALL = { page: 1, pageSize: 1000 };
 
 const SkeletonCard = () => (
   <div style={{
@@ -40,39 +32,31 @@ const TABS: { key: 'categories' | 'suggestions'; label: string; icon: JSX.Elemen
 
 const Categories = () => {
   const [activeTab, setActiveTab] = useState<'categories' | 'suggestions'>('categories');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const dispatch = useAppDispatch();
-  const { total, productCategories, loading } = useAppSelector(
+  const { productCategories, loading } = useAppSelector(
     (state) => state.catalogue.data
   );
 
-  const fetchProductCategories = (page: number, size: number, term: string) => {
+  const fetchProductCategories = (term: string) => {
     dispatch(
       getCatalogueProductCategories({
-        pagination: { page, pageSize: size },
+        pagination: ALL,
         searchTerm: term,
       })
     );
   };
 
   useEffect(() => {
-    fetchProductCategories(currentPage, pageSize, searchTerm);
-  }, [currentPage, pageSize]);
+    fetchProductCategories(searchTerm);
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    setCurrentPage(1);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchProductCategories(1, pageSize, value), 400);
-  };
-
-  const onPageSelect = ({ value }: Option) => {
-    setPageSize(value);
-    setCurrentPage(1);
+    debounceRef.current = setTimeout(() => fetchProductCategories(value), 400);
   };
 
   // Filter out inactive categories for clients
@@ -80,8 +64,6 @@ const Categories = () => {
     () => productCategories.filter((c) => c.active !== false && !c.parent?.documentId),
     [productCategories]
   );
-
-  const showPagination = total > pageSize;
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -165,27 +147,6 @@ const Categories = () => {
         </div>
       ) : (
         <ProductCategoryListContent productCategories={activeCategories} />
-      )}
-
-      {/* Pagination */}
-      {showPagination && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginTop: '28px' }}>
-          <Pagination
-            total={total}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            onChange={(page) => setCurrentPage(page)}
-          />
-          <div style={{ minWidth: 120 }}>
-            <Select
-              size="sm"
-              isSearchable={false}
-              defaultValue={options[0]}
-              options={options}
-              onChange={(selected) => onPageSelect(selected as Option)}
-            />
-          </div>
-        </div>
       )}
       </>
       )}

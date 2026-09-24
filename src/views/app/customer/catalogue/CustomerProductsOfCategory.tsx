@@ -6,7 +6,7 @@ import reducer, {
   getCatalogueProductCategoryById,
   clearStateSpecificCategory,
 } from './store';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { isEmpty } from 'lodash';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Product } from '@/@types/product';
@@ -46,9 +46,6 @@ const CustomerProductsOfCategory = () => {
     (state) => state.catalogue.data
   );
   const { larger } = useResponsive();
-  const PAGE_SIZE = 20;
-  const [page, setPage] = useState(1);
-  const pageCount = Math.ceil(total / PAGE_SIZE);
 
   const activeSubs = (productCategory?.subcategories ?? []).filter((s) => s.active !== false);
   const subProductsTotal = activeSubs.reduce((sum, s) => sum + (s.products?.length ?? 0), 0);
@@ -67,18 +64,18 @@ const CustomerProductsOfCategory = () => {
     dispatch(getCatalogueProductCategoryById(documentId));
   }, [dispatch, documentId]);
 
+  // Tous les produits de la catégorie sur une seule page (pas de pagination).
   useEffect(() => {
     dispatch(
       getCatalogueProductsByCategory({
-        pagination: { page, pageSize: PAGE_SIZE },
+        pagination: { page: 1, pageSize: 1000 },
         searchTerm: '',
         productCategoryDocumentId: documentId,
       })
     );
-  }, [dispatch, documentId, page]);
+  }, [dispatch, documentId]);
 
   useEffect(() => {
-    setPage(1);
     return () => {
       dispatch(clearStateSpecificCategory());
     };
@@ -222,70 +219,6 @@ const CustomerProductsOfCategory = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {!loading && pageCount > 1 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
-          <button
-            className="peg-tap-target"
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: page === 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)',
-              color: page === 1 ? 'rgba(160,185,220,0.3)' : '#a0b9dc',
-              cursor: page === 1 ? 'default' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-              transition: 'all 0.15s',
-            }}
-          >
-            ← Précédent
-          </button>
-
-          {Array.from({ length: pageCount }, (_, i) => i + 1).map(p => (
-            <button
-              key={p}
-              className="peg-tap-target"
-              onClick={() => setPage(p)}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                border: p === page ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                background: p === page ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.04)',
-                color: p === page ? '#fff' : '#a0b9dc',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: p === page ? 700 : 400,
-                transition: 'all 0.15s',
-              }}
-            >
-              {p}
-            </button>
-          ))}
-
-          <button
-            className="peg-tap-target"
-            onClick={() => setPage(p => Math.min(pageCount, p + 1))}
-            disabled={page === pageCount}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: page === pageCount ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.07)',
-              color: page === pageCount ? 'rgba(160,185,220,0.3)' : '#a0b9dc',
-              cursor: page === pageCount ? 'default' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-              transition: 'all 0.15s',
-            }}
-          >
-            Suivant →
-          </button>
-        </div>
-      )}
     </div>
   );
 };
