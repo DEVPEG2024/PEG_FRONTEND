@@ -638,31 +638,6 @@ Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permi
 
 ---
 
-## 🎨 Logos PEG (refonte 24/09/2026)
-
-### Règle
-**Logo SOMBRE sur fond CLAIR, logo BLANC sur fond SOMBRE.** La barre du E est toujours violette `#7c2bff` ; l'encre sombre est `#211042`.
-
-### Fichiers (`public/img/logo/`)
-| Fichier | Usage |
-|---|---|
-| `peg-logo-white.svg` / `.png` | fonds sombres (menu, connexion, écran de chargement) |
-| `peg-logo-dark.svg` / `.png` | fonds clairs (papier, documents) |
-| `peg-logo-violet.svg` / `.png` | version monochrome violette |
-| `picto.svg.png` | décor vertical du bas du menu (`.side-nav::after`) |
-| `logo-*.png`, `logo.png`, `logo-white.png`, `logo-sm*.png` | compatibilité (anciennes URL), régénérés avec le nouveau logo : `light` = sombre, `dark`/`white` = blanc |
-
-### Composant `Logo`
-`mode` décrit **le fond**, pas la couleur du logo : `mode="dark"` → logo blanc, `mode="light"` → logo sombre, `variant="violet"` → violet. ⚠️ Toujours passer le `mode` du fond RÉEL (les pages de connexion sont sombres → `mode="dark"`).
-
-### Ailleurs
-- Écran de chargement : SVG inline dans `index.html`.
-- Connexion téléphone (« Le Repérage ») : tracés du logo dans `SignIn.tsx` (`PEG_PATHS`, `PEG_BAR`).
-- Icônes d'app (favicon, `apple-touch-icon`, `android-chrome-*` = aussi l'image de partage `og:image`) : logo blanc sur `#211042`, dans la zone sûre des icônes maskable.
-- Le logo des factures (`logo-nova.png`) est celui de **NOVA**, pas de PEG : ne pas le remplacer.
-
----
-
 ## 🔒 Terminologie & composants protégés (ajout 18/04/2026)
 
 ### Règle absolue

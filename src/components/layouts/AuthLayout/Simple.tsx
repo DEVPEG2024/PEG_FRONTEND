@@ -2,7 +2,6 @@ import { cloneElement } from 'react'
 import Container from '@/components/shared/Container'
 import Card from '@/components/ui/Card'
 import Logo from '@/components/template/Logo'
-import { useAppSelector } from '@/store'
 import type { ReactNode, ReactElement } from 'react'
 import type { CommonProps } from '@/@types/common'
 
@@ -11,9 +10,6 @@ interface SimpleProps extends CommonProps {
 }
 
 const Simple = ({ children, content, ...rest }: SimpleProps) => {
-    // Carte blanche en thème clair, grise en thème sombre : le logo suit le thème.
-    const mode = useAppSelector((state) => state.theme.mode)
-
     return (
         <div className="h-full">
             <Container className="flex flex-col flex-auto items-center justify-center min-w-0 h-full">
@@ -22,7 +18,7 @@ const Simple = ({ children, content, ...rest }: SimpleProps) => {
                     bodyClass="md:p-10"
                 >
                     <div className="text-center">
-                        <Logo type="streamline" mode={mode} imgClass="mx-auto" />
+                        <Logo type="streamline" imgClass="mx-auto" />
                     </div>
                     <div className="text-center">
                         {content}
