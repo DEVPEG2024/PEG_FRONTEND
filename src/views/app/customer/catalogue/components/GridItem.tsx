@@ -83,31 +83,30 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         )}
       </div>
 
-      {/* Pastille icône en haut à gauche */}
-      <div style={{
-        position: 'absolute', top: '10px', left: '10px',
-        width: '34px', height: '34px', borderRadius: '50%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(12,13,16,0.55)',
-        border: '1px solid rgba(139,92,246,0.45)',
-        backdropFilter: 'blur(6px)',
-      }}>
-        <Icon size={17} color={PURPLE} strokeWidth={1.7} />
-      </div>
-
       {/* Contenu sous la photo */}
       <div style={{
         padding: '12px 16px 16px',
         display: 'flex', flexDirection: 'column', gap: '6px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
-        <p style={{
-          color: '#fff', fontWeight: 700, fontSize: '15px',
-          letterSpacing: '0.02em', textTransform: 'uppercase',
-          margin: 0, lineHeight: 1.2,
-        }}>
-          {name}
-        </p>
+        {/* Icône à côté du nom, jamais sur la photo (elle masquait le logo) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(139,92,246,0.16)',
+            border: '1px solid rgba(139,92,246,0.35)',
+          }}>
+            <Icon size={16} color={PURPLE} strokeWidth={1.7} />
+          </div>
+          <p style={{
+            color: '#fff', fontWeight: 700, fontSize: '15px',
+            letterSpacing: '0.02em', textTransform: 'uppercase',
+            margin: 0, lineHeight: 1.2,
+          }}>
+            {name}
+          </p>
+        </div>
 
         {tagline && (
           <p style={{
