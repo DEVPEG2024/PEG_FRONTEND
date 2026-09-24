@@ -298,15 +298,14 @@ const DashboardCustomer = () => {
             <img
               src={customer.banner.image.url}
               alt="Banner"
-              // Seul ajout : une classe. Aucun style ni aucune logique de
-              // sélection de bannière n'est modifié. Une bannière large mise à
-              // 100% de largeur retombe à ~80px de haut sur un écran de 390px et
-              // se lit comme un bandeau écrasé ; sous md la classe lui impose une
-              // hauteur minimale et laisse « objectFit: cover » recadrer.
+              // Seul ajout : des classes. Aucun style ni aucune logique de
+              // sélection de bannière n'est modifié. Sous md, la bannière
+              // s'affiche entière (jamais rognée) et son fondu est ramené à
+              // la même proportion qu'en desktop — voir _mobile.css.
               className="peg-banner-mobile"
               style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />
-            <div style={{
+            <div className="peg-banner-fade" style={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
               height: '80px',
               background: 'linear-gradient(to top, #0a1628, transparent)',
@@ -318,15 +317,14 @@ const DashboardCustomer = () => {
             <img
               src={defaultBannerUrl}
               alt="Banner"
-              // Seul ajout : une classe. Aucun style ni aucune logique de
-              // sélection de bannière n'est modifié. Une bannière large mise à
-              // 100% de largeur retombe à ~80px de haut sur un écran de 390px et
-              // se lit comme un bandeau écrasé ; sous md la classe lui impose une
-              // hauteur minimale et laisse « objectFit: cover » recadrer.
+              // Seul ajout : des classes. Aucun style ni aucune logique de
+              // sélection de bannière n'est modifié. Sous md, la bannière
+              // s'affiche entière (jamais rognée) et son fondu est ramené à
+              // la même proportion qu'en desktop — voir _mobile.css.
               className="peg-banner-mobile"
               style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
             />
-            <div style={{
+            <div className="peg-banner-fade" style={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
               height: '80px',
               background: 'linear-gradient(to top, #0a1628, transparent)',

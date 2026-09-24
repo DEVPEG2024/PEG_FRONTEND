@@ -4,6 +4,9 @@ export type PegFile = {
   url: string;
   name: string;
   file: File;
+  // Dimensions d'origine (Strapi les renseigne pour les images), si la requête les demande
+  width?: number | null;
+  height?: number | null;
 };
 
 /**

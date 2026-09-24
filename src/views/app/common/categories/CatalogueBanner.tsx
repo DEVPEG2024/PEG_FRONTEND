@@ -10,6 +10,7 @@ import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import { apiGetBanners, apiCreateBanner, apiUpdateBanner } from '@/services/BannerServices';
 import { apiUploadFile } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 const CatalogueBanner = ({
   bannerName = 'Bannière catalogue',
@@ -32,10 +33,21 @@ const CatalogueBanner = ({
 }) => {
   const user = useSelector((state: any) => state.auth?.user?.user) as User | undefined;
   const isAdmin = !!user && hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const { larger } = useResponsive();
 
   const [bannerDocId, setBannerDocId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
+  // Proportions réelles de l'image (largeur / hauteur).
+  const [ratio, setRatio] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Sous lg, le cadre adopte les proportions de l'image : elle s'affiche
+  // ENTIÈRE. Le cadre desktop (aspect + 220px minimum) rognait les visuels
+  // 2764×676 : 40 % visibles sur téléphone (« CRÉATIVITÉ. » devenait
+  // « IVITÉ. »), 52 % sur iPad portrait, dont la zone de contenu (~470px,
+  // barre latérale déduite) est aussi étroite. Dès 1024px il ne rogne plus
+  // que les bords (≥ 74 % visibles, texte intact) : desktop inchangé.
+  const whole = !!imageUrl && !!ratio && !larger.lg;
   const fileRef = useRef<HTMLInputElement>(null);
 
   const loadBanner = async () => {
@@ -49,6 +61,8 @@ const CatalogueBanner = ({
       if (banner) {
         setBannerDocId(banner.documentId);
         setImageUrl(banner.image?.url || '');
+        const { width, height } = banner.image || {};
+        setRatio(width && height ? width / height : null);
       }
     } catch {
       // Lecture impossible (permissions / réseau) — on n'affiche pas de bannière
@@ -101,13 +115,14 @@ const CatalogueBanner = ({
     <div style={{
       position: 'relative',
       width: '100%',
-      aspectRatio: aspect,
-      minHeight,
-      maxHeight,
+      aspectRatio: whole && ratio ? ratio : aspect,
+      minHeight: whole ? 0 : minHeight,
+      maxHeight: whole ? 'none' : maxHeight,
       borderRadius: '16px',
       overflow: 'hidden',
       marginBottom: '24px',
-      border: '1px solid rgba(255,255,255,0.08)',
+      // Cadre entier : le filet de 1px décalerait les proportions (≈2 % rognés)
+      border: whole ? 0 : '1px solid rgba(255,255,255,0.08)',
       background: imageUrl
         ? '#0c0d10'
         : 'linear-gradient(135deg, #131720 0%, #0c0d10 100%)',
@@ -117,6 +132,11 @@ const CatalogueBanner = ({
         <img
           src={imageUrl}
           alt={title || 'Bannière'}
+          // Repli si Strapi n'a pas renseigné les dimensions de l'image
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget;
+            if (naturalWidth && naturalHeight) setRatio(naturalWidth / naturalHeight);
+          }}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
@@ -141,7 +161,7 @@ const CatalogueBanner = ({
             background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 45%, transparent 75%)',
             pointerEvents: 'none',
           }} />
-          <div style={{
+          <div className="peg-banner-caption" style={{
             position: 'absolute', left: '32px', bottom: '28px',
             zIndex: 1, maxWidth: '60%',
           }}>
