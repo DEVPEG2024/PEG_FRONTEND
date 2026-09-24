@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { isChunkLoadError } from '@/utils/chunkLoadError'
 
 interface Props {
   children: ReactNode
@@ -28,13 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo: info.componentStack || '' })
 
     // Auto-reload on stale chunk errors (after deploy)
-    const isChunkError =
-      error.message.includes('Failed to fetch dynamically imported module') ||
-      error.message.includes('Loading chunk') ||
-      error.message.includes('Loading CSS chunk') ||
-      error.name === 'ChunkLoadError'
-
-    if (isChunkError) {
+    if (isChunkLoadError(error)) {
       const reloadKey = 'chunk-reload-' + window.location.pathname
       const lastReload = sessionStorage.getItem(reloadKey)
       const now = Date.now()

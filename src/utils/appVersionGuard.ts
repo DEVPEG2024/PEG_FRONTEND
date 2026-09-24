@@ -14,6 +14,8 @@
  * Garde anti-boucle : on ne recharge pas plus d'une fois toutes les 10 s.
  */
 
+import { isChunkLoadError } from './chunkLoadError';
+
 const RELOAD_GUARD_KEY = 'peg_version_reload_ts';
 const POLL_INTERVAL_MS = 60_000;
 
@@ -44,10 +46,7 @@ function safeReload(): void {
 }
 
 function isChunkError(message: unknown): boolean {
-  const msg = String(message ?? '');
-  return /dynamically imported module|Importing a module script failed|ChunkLoadError|Failed to fetch dynamically|error loading dynamically imported module/i.test(
-    msg,
-  );
+  return isChunkLoadError({ message: String(message ?? '') });
 }
 
 export function initAppVersionGuard(): void {
@@ -57,8 +56,12 @@ export function initAppVersionGuard(): void {
   const loadedEntry = getLoadedEntry();
 
   // 1) Vite émet cet événement quand un import dynamique (lazy chunk) échoue → on recharge.
-  window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault?.();
+  // ⚠️ NE PAS appeler event.preventDefault() : pour Vite, cela signifie « erreur traitée » et
+  // l'import dynamique se résout alors à `undefined` au lieu d'échouer. React.lazy plante sur
+  // « Cannot read properties of undefined (reading 'default') » et, si l'anti-boucle bloque le
+  // rechargement, l'utilisateur reste sur l'écran d'erreur. On laisse l'erreur remonter :
+  // l'ErrorBoundary la reconnaît et recharge.
+  window.addEventListener('vite:preloadError', () => {
     safeReload();
   });
 

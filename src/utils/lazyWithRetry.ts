@@ -1,4 +1,5 @@
 import { lazy, ComponentType } from 'react'
+import { isChunkLoadError } from './chunkLoadError'
 
 /**
  * Wrapper around React.lazy that auto-reloads the page once
@@ -10,13 +11,7 @@ function lazyWithRetry<T extends ComponentType<any>>(
 ) {
   return lazy(() =>
     importFn().catch((error: Error) => {
-      const isChunkError =
-        error.message.includes('Failed to fetch dynamically imported module') ||
-        error.message.includes('Loading chunk') ||
-        error.message.includes('Loading CSS chunk') ||
-        error.name === 'ChunkLoadError'
-
-      if (isChunkError) {
+      if (isChunkLoadError(error)) {
         const reloadKey = 'chunk-reload-' + window.location.pathname
         const lastReload = sessionStorage.getItem(reloadKey)
         const now = Date.now()
