@@ -28,6 +28,7 @@ import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
 } from './store';
+import { isOffersReserved } from '@/views/app/customer/products/lists/offersView';
 
 injectReducer('dashboardCustomer', reducer);
 
@@ -105,6 +106,10 @@ const DashboardCustomer = () => {
     (state: RootState) => state.auth.user!
   );
   const catalogAccess = user.customer?.catalogAccess !== false;
+  // « Mes offres » est réservé aux Premium (décision du 24/09/2026) : un client
+  // Standard ne voit ni le chiffre ni le bloc de ses offres. Même règle que la
+  // page (isOffersReserved) : un client sans accès catalogue les garde.
+  const offersReserved = isOffersReserved(user.customer?.premium, user.customer?.catalogAccess);
   // Carrousel de suggestions : une piste animée en boucle ne se saisit pas au
   // doigt (le :hover qui la met en pause n'existe pas au tactile) et ignore
   // prefers-reduced-motion. Dans ces deux cas elle devient une piste défilante.
@@ -252,7 +257,9 @@ const DashboardCustomer = () => {
     { icon: <HiOutlineShoppingCart size={22} />, label: 'Commandes', value: ordersCount, to: '/common/projects', link: "Voir l'historique", color: '#a99bff', bg: 'rgba(124,107,255,0.16)' },
     { icon: <HiOutlineDocumentText size={22} />, label: 'Devis en attente', value: devisCount, to: '/customer/devis', link: 'Voir mes devis', color: '#6b9eff', bg: 'rgba(47,111,237,0.16)' },
     { icon: <HiOutlineDocumentDownload size={22} />, label: 'Factures disponibles', value: invoicesCount, to: '/customer/invoices', link: 'Voir mes factures', color: '#4ade80', bg: 'rgba(34,197,94,0.16)' },
-    { icon: <HiOutlineCollection size={22} />, label: 'Offres personnalisées', value: offersCount, to: '/customer/products', link: 'Voir toutes les offres', color: '#fbbf24', bg: 'rgba(234,179,8,0.16)' },
+    ...(offersReserved ? [] : [
+      { icon: <HiOutlineCollection size={22} />, label: 'Offres personnalisées', value: offersCount, to: '/customer/products', link: 'Voir toutes les offres', color: '#fbbf24', bg: 'rgba(234,179,8,0.16)' },
+    ]),
   ];
 
 
@@ -643,7 +650,7 @@ const DashboardCustomer = () => {
                 recommandation sans différence lisible. Le titre reprend le
                 libellé déjà employé plus haut dans la page. */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
-              {recommendedProducts.length > 0 && (
+              {!offersReserved && recommendedProducts.length > 0 && (
                 <SectionCard>
                   <SectionHeader icon={<HiOutlineCube size={18} />} title="Vos offres personnalisées" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>

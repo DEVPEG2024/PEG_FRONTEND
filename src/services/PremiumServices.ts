@@ -11,6 +11,23 @@ export const PREMIUM_PRICE_HT = 250;
 // Engagement minimum de l'abonnement Premium (en mois) — aligné avec le backend.
 export const PREMIUM_MIN_MONTHS = 6;
 
+// Avantages Premium — source unique des textes (PremiumPage, « Mes offres »).
+// Sans JSX : chaque écran associe ses propres icônes par index.
+export const PREMIUM_ADVANTAGES: { title: string; desc: string }[] = [
+  {
+    title: '-15 % sur tout le catalogue',
+    desc: 'Remise automatique appliquée sur l’ensemble des produits standard.',
+  },
+  {
+    title: 'Offres personnalisées',
+    desc: 'Accès à « Mes offres » : des propositions sur-mesure préparées par notre équipe.',
+  },
+  {
+    title: 'Accompagnement prioritaire',
+    desc: 'Un suivi dédié pour vos projets.',
+  },
+];
+
 // Enregistre la preuve d'acceptation du contrat Premium (trace juridique horodatée côté peg-backend).
 // Route authentifiée (JWT via pegBackendFetch) : le serveur vérifie que `customerId`
 // est bien le client de l'appelant. Best-effort : on ne bloque pas le paiement si la

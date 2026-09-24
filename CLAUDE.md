@@ -500,6 +500,13 @@ Agent qui relit les **fiches produit** : corrige l'orthographe (appliqué d'offi
 - Appliquée au **prix facturé** : `PaymentContent.tsx` (le champ `orderItem.price`). **C'est le point critique** : le backend `recalculateFromDB` recalcule le montant Stripe à partir de `oi.price` en BDD — donc la remise doit être figée à la création de l'order-item.
 - Non appliquée à `ShowOrderItem.tsx` / `CartColumns.tsx` (vues commande/legacy : la remise serait basée sur le spectateur, pas sur le client de la commande).
 
+### Page « Mes offres » (`/customer/products`) — refonte 24/09/2026
+- **Réservée aux Premium** (décision du 24/09/2026) : `isOffersReserved(premium, catalogAccess)` (`lists/offersView.ts`). Un client Standard voit la présentation Premium, **aucune requête d'offres n'est envoyée** ; le tableau de bord client masque aussi le chiffre et le bloc « Vos offres personnalisées ».
+- **Exception** : un client `catalogAccess = false` garde toujours ses offres (seul canal de commande — le bouton « Commander » du dashboard l'y envoie). Statut Premium inconnu → on ne masque rien.
+- **Bug corrigé** : `/users/me` ne peuple pas `customer.customerCategory` → la page envoyait un secteur vide et **les offres de secteur n'apparaissaient jamais**. Le contexte est relu par `apiGetCustomerOffersContext` (repli : requête du dashboard, puis store) — `lists/offersContext.ts`.
+- Vues : `resolveOffersView` (list / standard / preparing / premium / noCatalogue / unknown / error / noResult). « En préparation » exige `premiumSince` (posé seulement par le webhook : les clients migrés n'en ont pas).
+- ⚠️ Ne **jamais** demander `productRef` dans `apiGetCustomerProducts` (référence fournisseur Imbretex, masquée seulement à l'affichage), ni `cost` / `customers` / `customerCategories`.
+
 ### Suivi admin — onglet « Premium »
 - Nav `admin.premium` → `/admin/premium` (`PremiumAdminList.tsx`), icône `premium` (`TbCrown`).
 - Liste les clients `premium=true` via **GraphQL** (`customers_connection`, `PremiumServices.ts`), séparés en **« Nouveaux — à traiter »** (`premiumProcessed=false`) et **« Traités »**.

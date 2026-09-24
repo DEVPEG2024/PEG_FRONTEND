@@ -1,231 +1,358 @@
-import { injectReducer } from '@/store';
+import { injectReducer, setOwnUser } from '@/store';
 import reducer, {
   getCustomerProducts,
   useAppDispatch,
   useAppSelector,
   setProduct,
 } from '../store';
-import { useEffect, useRef, useState } from 'react';
-import { isEmpty } from 'lodash';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import CustomerProductCard from './CustomerProductCard';
 import { User } from '@/@types/user';
-import { HiSearch } from 'react-icons/hi';
+import { Customer } from '@/@types/customer';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
+import { loadOffersContext, OffersContext } from './offersContext';
+import { isOffersReserved, resolveOffersView } from './offersView';
+import OffersHero from './components/OffersHero';
+import OffersEmptyState from './components/OffersEmptyState';
+import OffersErrorState from './components/OffersErrorState';
+import OffersNoResult from './components/OffersNoResult';
+import OffersHelpStrip from './components/OffersHelpStrip';
+import {
+  OFFERS_PAGE_CSS,
+  PRODUCT_GRID_STYLE,
+  SR_ONLY_STYLE,
+  SkeletonCard,
+} from './components/offersUi';
 
 injectReducer('customerProducts', reducer);
 
-const SkeletonCard = () => (
-  <div style={{
-    background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-    borderRadius: '18px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-  }}>
-    <div style={{ height: '200px', background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-    <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <div style={{ height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.07)', width: '75%' }} />
-      <div style={{ height: '10px', borderRadius: '6px', background: 'rgba(255,255,255,0.04)', width: '55%' }} />
-      <div style={{ height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)', marginTop: '8px' }} />
-    </div>
-  </div>
-);
+// Chargement par tranches : 100 produits d'un coup, c'était 100 images
+// pleine taille sur mobile. On charge 24 puis on étend à la demande.
+// Le slice remplace la liste à chaque réponse (il n'accumule pas) : on
+// redemande donc la même page avec un pageSize plus grand.
+const PAGE_SIZE = 24;
+
+/** Champs du client que la page relit et qui peuvent être périmés dans le store. */
+const SYNCED_FIELDS = [
+  'premium',
+  'premiumProcessed',
+  'premiumSince',
+  'catalogAccess',
+] as const;
 
 const CustomerProducts = () => {
   const { user }: { user?: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
-  const { products, loading } = useAppSelector(
-    (state) => state.customerProducts.data
-  );
-  const [searchTerm, setSearchTerm] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  // Chargement par tranches : 100 produits d'un coup, c'était 100 images
-  // pleine taille sur mobile. On charge 24 puis on étend à la demande.
-  // Le slice remplace la liste à chaque réponse (il n'accumule pas) : on
-  // redemande donc la même page avec un pageSize plus grand.
-  const PAGE_SIZE = 24;
-  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const { products, loading, loadingMore, loadMoreError, error, total } =
+    useAppSelector((state) => state.customerProducts.data);
 
-  const fetchProducts = (term: string, size: number = PAGE_SIZE) => {
-    dispatch(
-      getCustomerProducts({
-        page: 1,
-        pageSize: size,
-        searchTerm: term,
-        customerDocumentId: user?.customer?.documentId || '',
-        customerCategoryDocumentId: user?.customer?.customerCategory?.documentId || '',
-      })
+  const storeCustomer = user?.customer;
+  const customerId = storeCustomer?.documentId || '';
+  const hasCustomer = !!customerId;
+  // Toujours la dernière version du client du store (bootstrap, « Réessayer »).
+  const storeCustomerRef = useRef(storeCustomer);
+  storeCustomerRef.current = storeCustomer;
+
+  // Contexte client relu à part : /users/me ne peuple pas customerCategory,
+  // sans lui les offres rattachées au secteur du client n'apparaissaient pas.
+  const [context, setContext] = useState<OffersContext | null>(null);
+  const contextRef = useRef<OffersContext | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  // Terme de la dernière requête envoyée (le champ, lui, est débouncé).
+  const [appliedTerm, setAppliedTerm] = useState('');
+  // Total de la dernière réponse SANS recherche : ne bouge pas pendant une recherche.
+  const [baseTotal, setBaseTotal] = useState<number | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef(true);
+  // Dernière requête produits envoyée : seule sa réponse fait foi (le slice
+  // ignore déjà les réponses périmées ; ceci protège baseTotal).
+  const lastRequestIdRef = useRef<string | null>(null);
+  // Dernier chargement de contexte lancé : un contexte périmé (client changé,
+  // « Réessayer » doublé) n'enchaîne jamais sur une requête produits.
+  const bootstrapRunRef = useRef(0);
+
+  const fetchProducts = useCallback(
+    (
+      ctx: OffersContext,
+      term: string,
+      size: number = PAGE_SIZE,
+      loadMore = false
+    ) => {
+      setAppliedTerm(term);
+      const request = dispatch(
+        getCustomerProducts({
+          page: 1,
+          pageSize: size,
+          searchTerm: term,
+          customerDocumentId: ctx.customerDocumentId,
+          customerCategoryDocumentId: ctx.customerCategoryDocumentId,
+          loadMore,
+        })
+      );
+      lastRequestIdRef.current = request.requestId;
+      request.then((action) => {
+        if (!mountedRef.current) return;
+        if (action.meta.requestId !== lastRequestIdRef.current) return;
+        if (getCustomerProducts.fulfilled.match(action) && term.trim() === '') {
+          setBaseTotal(action.payload.total);
+        }
+      });
+    },
+    [dispatch]
+  );
+
+  // Le contexte est relu en GraphQL à chaque ouverture ; le store (/users/me)
+  // n'est pas rafraîchi après un paiement Stripe. On l'aligne pour que les prix
+  // des cartes, le panier et le menu suivent le même statut Premium que la page.
+  const syncStoreCustomer = useCallback(
+    (ctx: OffersContext) => {
+      const current = storeCustomerRef.current;
+      if (!current?.documentId || current.documentId !== ctx.customerDocumentId)
+        return;
+      const patch: Partial<Customer> = {};
+      SYNCED_FIELDS.forEach((field) => {
+        const fresh = ctx[field];
+        if (fresh === undefined || fresh === null) return;
+        if (fresh !== current[field]) {
+          (patch as Record<string, unknown>)[field] = fresh;
+        }
+      });
+      if (Object.keys(patch).length === 0) return;
+      dispatch(setOwnUser({ customer: { ...current, ...patch } as Customer }));
+    },
+    [dispatch]
+  );
+
+  // Contexte d'abord, produits ensuite (même enchaînement que le dashboard).
+  const bootstrap = useCallback(
+    (term: string) => {
+      const run = ++bootstrapRunRef.current;
+      setContext(null);
+      contextRef.current = null;
+      loadOffersContext(storeCustomerRef.current).then((ctx) => {
+        if (!mountedRef.current || run !== bootstrapRunRef.current) return;
+        contextRef.current = ctx;
+        setContext(ctx);
+        syncStoreCustomer(ctx);
+        // Réservé aux Premium : un client Standard ne charge pas les offres.
+        if (isOffersReserved(ctx.premium, ctx.catalogAccess)) return;
+        fetchProducts(ctx, term, PAGE_SIZE);
+      });
+    },
+    [fetchProducts, syncStoreCustomer]
+  );
+
+  // Relancé quand le client du store change : le profil persisté peut être
+  // affiché avant la réponse de /users/me (useAuthBootstrap), et un compte
+  // rattaché à une fiche après coup doit charger ses offres sans navigation.
+  useEffect(() => {
+    mountedRef.current = true;
+    if (customerId) {
+      dispatch(setProduct(null));
+      setBaseTotal(null);
+      bootstrap('');
+    }
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(debounceRef.current);
+    };
+  }, [dispatch, bootstrap, customerId]);
+
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (contextRef.current) fetchProducts(contextRef.current, value);
+    }, 400);
+  };
+
+  const handleClearSearch = () => {
+    clearTimeout(debounceRef.current);
+    setSearchTerm('');
+    if (contextRef.current) fetchProducts(contextRef.current, '');
+    inputRef.current?.focus();
+  };
+
+  // Taille calculée depuis la liste affichée : un « Voir plus » en échec puis
+  // relancé redemande la même tranche (pas de saut).
+  const handleLoadMore = () => {
+    if (!contextRef.current) return;
+    fetchProducts(
+      contextRef.current,
+      appliedTerm,
+      products.length + PAGE_SIZE,
+      true
     );
   };
 
-  useEffect(() => {
-    dispatch(setProduct(null));
-    fetchProducts('');
-    // Nettoyage : annule le debounce en cours au démontage (évite un fetch
-    // après démontage)
-    return () => clearTimeout(debounceRef.current);
-  }, [dispatch]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    setPageSize(PAGE_SIZE);
+  const handleRetry = () => {
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchProducts(value), 400);
+    bootstrap(searchTerm);
   };
 
-  const handleLoadMore = () => {
-    const next = pageSize + PAGE_SIZE;
-    setPageSize(next);
-    fetchProducts(searchTerm, next);
-  };
+  const view = resolveOffersView({
+    hasCustomer,
+    loading,
+    contextLoaded: context !== null,
+    error,
+    searchTerm: appliedTerm,
+    total,
+    catalogAccess: context?.catalogAccess,
+    premium: context?.premium,
+    premiumProcessed: context?.premiumProcessed,
+    premiumSince: context?.premiumSince,
+  });
 
-  // Le service ne renvoie pas le total au slice : on déduit qu'il reste des
-  // produits tant que la réponse remplit exactement la tranche demandée.
-  const hasMore = !loading && products.length >= pageSize;
+  const customerName =
+    context?.customerName || storeCustomer?.name || undefined;
+  const showSelection = context?.catalogAccess !== false;
+  const remaining = Math.max(0, total - products.length);
+
+  const renderContent = () => {
+    switch (view) {
+      case 'loading':
+        return (
+          <div aria-busy="true">
+            <p className="sr-only" role="status" style={SR_ONLY_STYLE}>
+              Chargement de vos offres…
+            </p>
+            <div style={PRODUCT_GRID_STYLE}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'error':
+        return <OffersErrorState onRetry={handleRetry} />;
+
+      case 'noResult':
+        return (
+          <OffersNoResult
+            searchTerm={appliedTerm}
+            onClearSearch={handleClearSearch}
+          />
+        );
+
+      case 'list':
+        return (
+          <>
+            {appliedTerm && (
+              <p
+                aria-live="polite"
+                className="peg-text-caption"
+                style={{ margin: '0 0 14px', fontSize: '13px' }}
+              >
+                {total} résultat(s) pour « {appliedTerm} »
+              </p>
+            )}
+            <div style={PRODUCT_GRID_STYLE}>
+              {products.map((product, index) => (
+                <CustomerProductCard
+                  key={product.documentId}
+                  product={product}
+                  priority={index < 4}
+                />
+              ))}
+            </div>
+            {products.length < total && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginTop: '28px',
+                }}
+              >
+                <button
+                  type="button"
+                  className="peg-tap-target"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore || undefined}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#a0b9dc',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    fontFamily: 'Inter, sans-serif',
+                    cursor: loadingMore ? 'default' : 'pointer',
+                    opacity: loadingMore ? 0.7 : 1,
+                  }}
+                >
+                  {loadingMore
+                    ? 'Chargement…'
+                    : `Afficher plus d'offres (${remaining} restante(s))`}
+                </button>
+                {loadMoreError && (
+                  <p
+                    role="alert"
+                    className="peg-text-secondary"
+                    style={{ margin: 0, fontSize: '13px', textAlign: 'center' }}
+                  >
+                    Impossible de charger plus d&apos;offres. Réessayez.
+                  </p>
+                )}
+              </div>
+            )}
+            <OffersHelpStrip />
+          </>
+        );
+
+      case 'standard':
+      case 'preparing':
+      case 'premium':
+      case 'noCatalogue':
+      case 'unknown':
+      case 'noCustomer':
+      default:
+        return (
+          <OffersEmptyState
+            variant={view}
+            customerName={customerName}
+            premiumSince={context?.premiumSince}
+            showSelection={showSelection}
+            excludeIds={products.map((p) => p.documentId)}
+          />
+        );
+    }
+  };
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-      }}>
-        <div>
-          <h3 style={{ margin: 0, color: '#fff', fontSize: '20px', fontWeight: 700 }}>
-            Mes offres personnalisées
-          </h3>
-          {!loading && !isEmpty(products) && (
-            <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
-              {products.length} produit{products.length > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
+      {/* Animation des squelettes et de la frise (coupée si mouvement réduit) */}
+      <style>{OFFERS_PAGE_CSS}</style>
 
-        {/* Search */}
-        <div style={{ position: 'relative', minWidth: '240px', maxWidth: '360px', flex: 1 }}>
-          <HiSearch
-            size={16}
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'rgba(255,255,255,0.55)',
-              pointerEvents: 'none',
-            }}
-          />
-          <input
-            value={searchTerm}
-            onChange={handleSearchChange}
-            placeholder="Rechercher un produit…"
-            style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
-              padding: '9px 14px 9px 36px',
-              color: '#fff',
-              fontSize: '13px',
-              fontFamily: 'Inter, sans-serif',
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.15s',
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-          />
-        </div>
-      </div>
+      <OffersHero
+        customerName={customerName}
+        baseTotal={baseTotal}
+        premium={context?.premium}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        onClearSearch={handleClearSearch}
+        inputRef={inputRef}
+      />
 
-      {/* Bannière */}
-      <div style={{ marginBottom: '24px' }}>
-        <CatalogueBanner bannerName="Bannière offres" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
-      </div>
-
-      {/* Grid */}
-      {loading ? (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '20px',
-        }}>
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      ) : isEmpty(products) ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '80px 20px',
-          gap: '16px',
-          textAlign: 'center',
-        }}>
-          <div style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '20px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <HiSearch size={28} style={{ color: 'rgba(255,255,255,0.2)' }} />
-          </div>
-          <div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '16px', fontWeight: 600, margin: 0 }}>
-              {searchTerm ? 'Aucun résultat' : 'Aucune offre personnalisée'}
-            </p>
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: '6px 0 0' }}>
-              {searchTerm
-                ? `Aucun produit ne correspond à « ${searchTerm} »`
-                : 'Vos offres personnalisées apparaîtront ici'}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: '20px',
-          }}>
-            {products.map((product, index) => (
-              <CustomerProductCard
-                key={product.documentId}
-                product={product}
-                priority={index < 4}
-              />
-            ))}
-          </div>
-          {hasMore && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
-              <button
-                className="peg-tap-target"
-                onClick={handleLoadMore}
-                style={{
-                  padding: '10px 22px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: '#a0b9dc',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                  cursor: 'pointer',
-                }}
-              >
-                Voir plus de produits
-              </button>
-            </div>
-          )}
-        </>
+      {/* Bannière : uniquement au-dessus d'une liste (jamais sur une page vide).
+          Elle porte déjà sa marge basse de 24px. */}
+      {view === 'list' && (
+        <CatalogueBanner
+          bannerName="Bannière offres"
+          aspect="3.4 / 1"
+          minHeight="220px"
+          maxHeight="380px"
+        />
       )}
+
+      {renderContent()}
     </div>
   );
 };

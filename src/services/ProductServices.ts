@@ -486,6 +486,27 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
             minM2
                 inCatalogue
                 # catalogPrice                         — activer après déploiement Strapi
+                # Champs lus par CustomerProductCard (badge catégorie, tailles,
+                # couleurs) — déjà lus côté client ailleurs (fiche produit,
+                # suggestions). Ne JAMAIS ajouter cost / customers / customerCategories.
+                # Ni productRef : la référence interne (référence FOURNISSEUR pour
+                # un produit Imbretex) partirait dans la réponse réseau même quand
+                # refVisibleToCustomer = false (le masquage n'existe qu'à l'affichage).
+                # À n'ajouter qu'après un masquage côté serveur pour les non-admins.
+                productCategory {
+                    documentId
+                    name
+                }
+                sizes {
+                    documentId
+                    name
+                    value
+                }
+                colors {
+                    documentId
+                    name
+                    value
+                }
             }
             pageInfo {
                 page

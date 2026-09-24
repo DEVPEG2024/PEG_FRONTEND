@@ -12,6 +12,7 @@ import {
   apiRecordPremiumContractAcceptance,
   PREMIUM_PRICE_HT,
   PREMIUM_MIN_MONTHS,
+  PREMIUM_ADVANTAGES,
   canCancelPremium,
   premiumCancellableFrom,
 } from '@/services/PremiumServices';
@@ -24,11 +25,12 @@ import {
 
 const GOLD = '#eab308';
 
-const ADVANTAGES = [
-  { icon: <TbDiscount size={20} color={GOLD} />, title: '-15 % sur tout le catalogue', desc: 'Remise automatique appliquée sur l’ensemble des produits standard.' },
-  { icon: <TbGift size={20} color={GOLD} />, title: 'Offres personnalisées', desc: 'Accès à « Mes offres » : des propositions sur-mesure préparées par notre équipe.' },
-  { icon: <TbCrown size={20} color={GOLD} />, title: 'Accompagnement prioritaire', desc: 'Un suivi dédié pour vos projets.' },
-];
+// Textes : PREMIUM_ADVANTAGES (PremiumServices), partagés avec « Mes offres ».
+const ADVANTAGE_ICONS = [TbDiscount, TbGift, TbCrown];
+const ADVANTAGES = PREMIUM_ADVANTAGES.map((a, i) => {
+  const Icon = ADVANTAGE_ICONS[i] ?? TbCrown;
+  return { ...a, icon: <Icon size={20} color={GOLD} /> };
+});
 
 const PremiumPage = () => {
   const navigate = useNavigate();
