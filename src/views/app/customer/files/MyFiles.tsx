@@ -31,6 +31,13 @@ import {
   HiOutlineInformationCircle,
   HiOutlineLink,
   HiOutlineLockClosed,
+  HiOutlinePhotograph,
+  HiOutlineColorSwatch,
+  HiOutlineClipboardList,
+  HiOutlineCollection,
+  HiOutlineRefresh,
+  HiOutlineCheckCircle,
+  HiOutlinePlus,
 } from 'react-icons/hi'
 
 /*
@@ -177,6 +184,12 @@ const MyFiles = () => {
   }
 
   const [showUpload, setShowUpload] = useState(false)
+  // Type choisi depuis une carte « Logo », « Charte graphique »… : appliqué aux fichiers ajoutés.
+  const [presetCategory, setPresetCategory] = useState<Category | null>(null)
+  const openUpload = (category?: Category) => {
+    setPresetCategory(category ?? null)
+    setShowUpload(true)
+  }
   const [queue, setQueue] = useState<QueuedFile[]>([])
   const [sending, setSending] = useState(false)
   const [pageDrag, setPageDrag] = useState(false)
@@ -221,6 +234,21 @@ const MyFiles = () => {
     files.forEach((f) => { c[f.category || 'autre'] = (c[f.category || 'autre'] ?? 0) + 1 })
     return c
   }, [files])
+
+  const dossier = useMemo(() => {
+    const logos = files.filter((f) => f.category === 'logo')
+    return [
+      { key: 'logo', label: 'Un logo', hint: 'Indispensable pour tout marquage', done: logos.length > 0, category: 'logo' as Category },
+      {
+        key: 'vector',
+        label: 'Un logo vectoriel',
+        hint: 'AI, EPS, SVG ou PDF : net à toutes les tailles',
+        done: logos.some((f) => qualityOf(f)?.level === 'vector'),
+        category: 'logo' as Category,
+      },
+      { key: 'charte', label: 'Votre charte graphique', hint: 'Couleurs (Pantone, HEX) et typographies', done: !!counts.charte, category: 'charte' as Category },
+    ]
+  }, [files, counts])
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -273,7 +301,7 @@ const MyFiles = () => {
         key: `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         name: stripExt(file.name),
-        category: guessCategory(file),
+        category: presetCategory ?? guessCategory(file),
         status: 'waiting' as const,
       })),
     ])
@@ -287,6 +315,7 @@ const MyFiles = () => {
     if (sending) return
     setShowUpload(false)
     setQueue([])
+    setPresetCategory(null)
   }
 
   const sendAll = async () => {
@@ -322,6 +351,7 @@ const MyFiles = () => {
       toast.success(toSend.length > 1 ? `${toSend.length} fichiers envoyés` : 'Fichier envoyé')
       setShowUpload(false)
       setQueue([])
+      setPresetCategory(null)
     } else {
       toast.error(`${failed} fichier${failed > 1 ? 's' : ''} n'${failed > 1 ? 'ont' : 'a'} pas pu être envoyé${failed > 1 ? 's' : ''}. Réessayez.`)
       setQueue((q) => q.filter((x) => x.status !== 'done'))
@@ -405,7 +435,7 @@ const MyFiles = () => {
             </p>
           </div>
           <button
-            onClick={() => setShowUpload(true)}
+            onClick={() => openUpload()}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition shadow-lg shadow-blue-600/25"
           >
             <HiOutlineUpload className="w-4 h-4" />
@@ -446,6 +476,11 @@ const MyFiles = () => {
               sub={summary.last?.name ?? ''}
             />
           </div>
+        )}
+
+        {/* DOSSIER : CE QUI MANQUE */}
+        {!loading && files.length > 0 && dossier.some((d) => !d.done) && (
+          <DossierPanel items={dossier} onAdd={openUpload} />
         )}
 
         {/* RECHERCHE + FILTRES */}
@@ -499,16 +534,7 @@ const MyFiles = () => {
             ))}
           </div>
         ) : files.length === 0 ? (
-          <button
-            onClick={() => setShowUpload(true)}
-            className="w-full flex flex-col items-center justify-center text-center gap-3 py-16 rounded-2xl border-2 border-dashed border-white/15 hover:border-indigo-400/50 hover:bg-indigo-500/[0.04] transition"
-          >
-            <span className="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-300">
-              <HiOutlineUpload className="w-7 h-7" />
-            </span>
-            <span className="text-base font-bold text-white">Aucun fichier pour le moment</span>
-            <span className="text-sm text-white/40">Cliquez ou glissez vos fichiers ici pour les envoyer</span>
-          </button>
+          <EmptyState onUpload={openUpload} />
         ) : visible.length === 0 ? (
           <p className="text-center text-sm text-white/40 py-12">Aucun fichier ne correspond à votre recherche.</p>
         ) : view === 'list' ? (
@@ -552,6 +578,7 @@ const MyFiles = () => {
           onRemove={(key) => setQueue((q) => q.filter((x) => x.key !== key))}
           onSend={sendAll}
           onClose={closeUpload}
+          preset={presetCategory}
         />
       )}
 
@@ -592,6 +619,160 @@ const MyFiles = () => {
 }
 
 /* ---------- Sous-composants ---------- */
+
+/* Ce que PEG attend du client, type par type — sert de guide quand la bibliothèque est vide. */
+const STARTERS: { category: Category; icon: React.ReactNode; title: string; text: string; formats: string }[] = [
+  {
+    category: 'logo',
+    icon: <HiOutlinePhotograph className="w-5 h-5" />,
+    title: 'Logo',
+    text: 'La base de tout marquage : broderie, impression, gravure.',
+    formats: 'Idéal : AI, EPS, SVG, PDF · sinon PNG HD sur fond transparent',
+  },
+  {
+    category: 'charte',
+    icon: <HiOutlineColorSwatch className="w-5 h-5" />,
+    title: 'Charte graphique',
+    text: 'Vos couleurs (Pantone, HEX) et typographies, pour un rendu fidèle.',
+    formats: 'PDF de préférence',
+  },
+  {
+    category: 'brief',
+    icon: <HiOutlineClipboardList className="w-5 h-5" />,
+    title: 'Brief',
+    text: 'Maquette, emplacement et taille du marquage, quantités souhaitées.',
+    formats: 'PDF, Word, image',
+  },
+  {
+    category: 'asset',
+    icon: <HiOutlineCollection className="w-5 h-5" />,
+    title: 'Asset',
+    text: 'Photos, pictogrammes, slogans et autres visuels complémentaires.',
+    formats: 'Tous formats',
+  },
+]
+
+const EmptyState = ({ onUpload }: { onUpload: (category?: Category) => void }) => (
+  <div className="space-y-5">
+    {/* Invitation principale */}
+    <button
+      onClick={() => onUpload()}
+      className="w-full rounded-2xl border-2 border-dashed border-white/15 hover:border-indigo-400/50 hover:bg-indigo-500/[0.04] transition p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left"
+      style={{ background: 'radial-gradient(120% 140% at 0% 0%, rgba(99,102,241,0.12) 0%, transparent 60%)' }}
+    >
+      <span className="flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/15 text-indigo-300 shrink-0">
+        <HiOutlineUpload className="w-8 h-8" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-lg font-bold text-white">Constituez votre dossier graphique</span>
+        <span className="block text-sm text-white/50 mt-1 leading-relaxed">
+          Envoyez une fois vos logos et votre charte : ils serviront à toutes vos commandes, sans avoir à
+          les renvoyer. Cliquez ici ou glissez vos fichiers n’importe où sur la page.
+        </span>
+      </span>
+      <span className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm font-semibold shadow-lg shadow-blue-600/25">
+        <HiOutlineUpload className="w-4 h-4" /> Choisir des fichiers
+      </span>
+    </button>
+
+    {/* Ce dont PEG a besoin */}
+    <div>
+      <h2 className="text-base font-bold text-white mb-1">Ce dont nous avons besoin</h2>
+      <p className="text-xs text-white/40 mb-3">Choisissez un type : vos fichiers seront classés directement.</p>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))' }}>
+        {STARTERS.map((st) => {
+          const c = categoryOf(st.category)
+          return (
+            <button
+              key={st.category}
+              onClick={() => onUpload(st.category)}
+              className="group rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20 transition p-4 text-left flex flex-col gap-2"
+            >
+              <span className="flex items-center justify-between">
+                <span
+                  className="flex items-center justify-center w-10 h-10 rounded-xl"
+                  style={{ background: `${c.color}1f`, color: c.color }}
+                >
+                  {st.icon}
+                </span>
+                <span className="flex items-center gap-1 text-xs font-semibold text-white/40 group-hover:text-white/80 transition">
+                  <HiOutlinePlus className="w-3.5 h-3.5" /> Ajouter
+                </span>
+              </span>
+              <span className="text-sm font-bold text-white">{st.title}</span>
+              <span className="text-xs text-white/50 leading-relaxed">{st.text}</span>
+              <span className="mt-auto pt-1 text-[11px] text-white/35">{st.formats}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+
+    {/* Repères */}
+    <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))' }}>
+      {[
+        { icon: <HiOutlineRefresh className="w-5 h-5" />, color: '#a78bfa', title: 'Réutilisables', text: 'Vos fichiers restent disponibles pour toutes vos prochaines commandes.' },
+        { icon: <HiOutlineShare className="w-5 h-5" />, color: '#34d399', title: 'Partagés avec l’atelier', text: 'Les producteurs de vos projets y accèdent directement, sans échange d’e-mails.' },
+        { icon: <HiOutlineCloud className="w-5 h-5" />, color: '#60a5fa', title: '10 Go d’espace', text: 'Envoyez plusieurs fichiers d’un coup, jusqu’aux fichiers sources volumineux.' },
+      ].map((r) => (
+        <div key={r.title} className="flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4">
+          <span className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0" style={{ background: `${r.color}1f`, color: r.color }}>
+            {r.icon}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-white/85">{r.title}</span>
+            <span className="block text-xs text-white/40 mt-0.5 leading-relaxed">{r.text}</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
+const DossierPanel = ({
+  items,
+  onAdd,
+}: {
+  items: { key: string; label: string; hint: string; done: boolean; category: Category }[]
+  onAdd: (category?: Category) => void
+}) => {
+  const done = items.filter((i) => i.done).length
+  return (
+    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4 mb-5">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-sm font-bold text-white">
+          Votre dossier graphique <span className="text-white/40 font-medium">· {done}/{items.length} complet</span>
+        </p>
+        <div className="h-1.5 w-24 rounded-full bg-white/10 overflow-hidden shrink-0">
+          <div className="h-full rounded-full bg-amber-400" style={{ width: `${(done / items.length) * 100}%` }} />
+        </div>
+      </div>
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))' }}>
+        {items.map((i) => (
+          <div key={i.key} className="flex items-center gap-2.5 rounded-xl bg-black/15 px-3 py-2.5 min-w-0">
+            {i.done ? (
+              <HiOutlineCheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+            ) : (
+              <span className="w-5 h-5 rounded-full border-2 border-dashed border-amber-300/60 shrink-0" />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className={`block text-xs font-semibold ${i.done ? 'text-white/50 line-through' : 'text-white/85'}`}>{i.label}</span>
+              {!i.done && <span className="block text-[11px] text-white/40 truncate">{i.hint}</span>}
+            </span>
+            {!i.done && (
+              <button
+                onClick={() => onAdd(i.category)}
+                className="shrink-0 text-xs font-semibold text-amber-200 hover:text-amber-100 px-2 py-1 rounded-lg hover:bg-amber-400/10 transition"
+              >
+                Ajouter
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const FilterChip = ({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) => (
   <button
@@ -879,7 +1060,9 @@ const UploadWindow = ({
   onRemove,
   onSend,
   onClose,
+  preset,
 }: {
+  preset: Category | null
   queue: QueuedFile[]
   sending: boolean
   onAdd: (list: FileList | null) => void
@@ -901,7 +1084,14 @@ const UploadWindow = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 pb-4">
-          <h3 className="text-lg font-bold text-white">Envoyer des fichiers</h3>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-white">Envoyer des fichiers</h3>
+            {preset && (
+              <p className="text-xs text-white/40 mt-0.5">
+                Classés comme <strong style={{ color: categoryOf(preset).color }}>{categoryOf(preset).label}</strong> — modifiable pour chaque fichier
+              </p>
+            )}
+          </div>
           <button onClick={onClose} disabled={sending} aria-label="Fermer" className="text-white/30 hover:text-white/70 transition peg-tap-target disabled:opacity-30">
             <HiOutlineX className="w-5 h-5" />
           </button>
