@@ -27,12 +27,12 @@ import {
 
    • AU-DESSUS DE 920px : `DesktopSignIn`, l'arbre historique (.si-card /
      .si-left / .si-form) rendu tel quel. Rien n'y a bougé.
-   • EN DESSOUS : `PhoneAtelier`, « Le Repérage ». Un seul objet à l'écran :
-     le logo PEG. en très grand, tiré en trois plaques cyan / magenta / jaune
-     hors repérage ; on tire la feuille de papier vers la gauche, son bord
-     coupe le logo (lumière à gauche, encre à droite) et le geste ramène les
-     plaques en repérage pendant que le logo monte se poser en tête du
-     formulaire. La page passe de l'écran à l'impression.
+   • EN DESSOUS : `PhoneAtelier`, « La Plaque de verre ». Un univers
+     bleu-noir presque vide — le logo PEG au centre et cinq objets du métier
+     en suspension — et une grande plaque de verre ivoire qui entre par la
+     droite en perspective quand on tire « Se connecter » : l'univers recule,
+     les objets filent à trois vitesses, un liseré mauve suit la tranche, le
+     verre trouble le logo au passage, puis le formulaire se construit.
 
    Le choix se fait en JS (matchMedia) et non en CSS : au-dessus du seuil le
    DOM est LITTÉRALEMENT celui d'avant, aucune règle mobile n'existe pour le
@@ -40,8 +40,9 @@ import {
 
    Le discours (pastille, accroche, les deux cartes de compte) est repris MOT
    POUR MOT : il est verrouillé par les tests de terminologie. Sur téléphone,
-   le premier écran n'en garde que le strict nécessaire (surtitre, accroche) ;
-   le sous-titre, les six catégories et les trois gages restent sur le bureau.
+   le premier écran n'en garde que le logo (l'accroche reste le titre de la page
+   pour les lecteurs d'écran) ; sous-titre, catégories et gages restent sur le
+   bureau.
    Seuls les libellés de l'interaction elle-même sont neufs.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -52,13 +53,10 @@ const smooth = (e0: number, e1: number, v: number) => {
   const t = clamp((v - e0) / (e1 - e0), 0, 1);
   return t * t * (3 - 2 * t);
 };
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /* ── Vitrine de l'offre PEG : tuiles produits/services (bureau uniquement) ──
    `emoji`, `label` et `sub` sont inchangés. Le téléphone ne montre plus ces
-   six catégories sur son premier écran (direction « Le Repérage » : un seul
-   objet à l'écran) ; les échantillons de matière et leurs encres, qui
-   n'existaient que pour lui, ont été retirés avec la grille. */
+   six catégories sur son premier écran (il les montre par des objets). */
 const OFFER_TILES: {
   emoji: string;
   label: string;
@@ -133,135 +131,232 @@ const LeftBadge = ({ icon, label }: { icon: React.ReactNode; label: string }) =>
 );
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LE REPÉRAGE — le logo PEG. tiré en plaques d'imprimeur
+   LA PLAQUE DE VERRE — l'accueil téléphone
+   Un univers bleu-noir presque vide : le logo PEG au centre, et cinq objets du
+   métier en suspension — hoodie, casquette, roll-up, mug, écran web. Ils ne
+   sont pas là comme une publicité : ils fabriquent la PROFONDEUR du geste.
+   On tire « Se connecter » : l'univers recule, les objets filent à trois
+   vitesses, et une grande plaque de verre ivoire entre par la droite en
+   perspective, un liseré mauve sur la tranche. Quand elle passe devant le
+   logo, le verre le trouble un instant — on traverse l'identité PEG pour
+   entrer dans son espace. Le formulaire se construit ensuite, bloc par bloc.
+   TOUT est fonction d'une seule progression p (0 → 1), pilotée au doigt.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tracés du logo (public/img/logo/logo_svg.svg), viewBox 1130×467. */
-const PEG_PATHS = [
+/* Le logo PEG « historique » (P, E, G et le point rond), viewBox 1130×467 —
+   c'est celui que PEG conserve. Le P a un contre-poinçon : evenodd. */
+const MARK_VB = '0 0 1130 467';
+const MARK_RATIO = 1130 / 467;
+const MARK_PATHS = [
   'M20.2,50h133c83.1,0,151,28,151,115.7s-69.1,122.8-148.7,122.8h-44.7v118.4H20.2V50ZM150.3,221.1c44.7,0,65.6-19.7,65.6-55.4s-23.8-48.2-68-48.2h-37.2v103.6h39.5Z',
   'M336.5,50h239.3v71.3h-148.7v66.9h127.2v71.3h-127.2v76.2h154.5v71.3h-245.1V50Z',
   'M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z',
 ];
+const MARK_DOT = { cx: 1027.8, cy: 331.5, r: 82 } as const;
+/** Couleur du point du logo — celle du fichier d'origine. */
+const MARK_DOT_COLOR = '#db6b67';
+/** Le mauve du verre : liseré de la plaque, poignée, halo. */
+const VIOLET = '#8b5cf6';
 
-/* Décalages des plaques AU REPOS, en unités du viewBox (1130 de large).
-   À 358px de logo, 1px ≈ 3,16u : cyan −4,4/−2,5px, magenta +3,8/+3,2,
-   jaune +1,9/−4,1, noir (papier seulement) −1,3/+1,9. Directions volontairement
-   non colinéaires : trois franges distinctes d'une épreuve mal calée, jamais
-   un simple dédoublement horizontal. Le point corail n'est PAS une plaque :
-   c'est une couleur d'accompagnement, toujours nette — c'est lui qui fixe l'œil. */
-const PLATE_OFF = { c: [-14, -8], m: [12, 10], y: [6, -13], k: [-4, 6] } as const;
-const PLATE_INK = { c: '#00a0e3', m: '#e6007e', y: '#ffe500', k: '#1b1d2e' } as const;
-type PlateKey = keyof typeof PLATE_OFF;
-
-/* Une plaque = un calque HTML qui porte un SVG monochrome. Son décalage est
-   une TRANSLATION CSS en % de sa propre boîte (x en % de 1130, y en % de 467) :
-   le compositeur la déplace sans repeindre, et aucune mesure n'est nécessaire.
-   (Un attribut `transform` SVG réécrit à chaque image forçait une repeinture.) */
-const Plate = ({
-  plate, r, blend,
+/** Le logo à plat. `x / y / width` permettent de l'imbriquer dans un autre SVG. */
+const MarkSvg = ({
+  fill, dot = MARK_DOT_COLOR, x, y, width,
 }: {
-  plate: PlateKey;
-  r: MotionValue<number>;
-  blend: 'screen' | 'multiply';
-}) => {
-  const x = useTransform(r, (v) => `${((PLATE_OFF[plate][0] * v) / 11.3).toFixed(3)}%`);
-  const y = useTransform(r, (v) => `${((PLATE_OFF[plate][1] * v) / 4.67).toFixed(3)}%`);
-  return (
-    <motion.div className="pa-plate" style={{ x, y, mixBlendMode: blend }}>
-      <svg viewBox="0 0 1130 467" aria-hidden>
-        <g fill={PLATE_INK[plate]}>
-          {PEG_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
-        </g>
-      </svg>
-    </motion.div>
-  );
-};
-
-/* Le logo en plaques, en deux exemplaires qui suivent le MÊME trajet :
-   • `light` vit sur la vitrine (sous le papier) : C + M + J en `screen` —
-     sur le noir, les encres s'additionnent en lumière et donnent un blanc
-     chaud une fois calées ;
-   • `ink` vit dans le corps du tiroir : C + M + J + N en `multiply` — sur le
-     papier, elles se multiplient en noir quadri.
-   `isolation:isolate` (dans .pa-plates) borne le mélange au groupe : les
-   plaques se mélangent ENTRE ELLES, jamais avec le fond. */
-const PlateWordmark = ({
-  variant, r, x, y, scale, opacity, width,
-}: {
-  variant: 'light' | 'ink';
-  r: MotionValue<number>;
-  x: MotionValue<number>;
-  y: MotionValue<number>;
-  scale: MotionValue<number>;
-  opacity?: MotionValue<number>;
-  width: number;
-}) => {
-  const plates: PlateKey[] = variant === 'ink' ? ['c', 'm', 'y', 'k'] : ['c', 'm', 'y'];
-  const blend = variant === 'ink' ? 'multiply' : 'screen';
-  return (
-    <motion.div
-      className={`pa-plates pa-plates--${variant}`}
-      style={{ x, y, scale, opacity, width }}
-      aria-hidden
-    >
-      {plates.map((k) => <Plate key={k} plate={k} r={r} blend={blend} />)}
-      <div className="pa-plate">
-        <svg viewBox="0 0 1130 467" aria-hidden>
-          <circle cx="1027.8" cy="331.5" r="82" fill="#db6b67" />
-        </svg>
-      </div>
-    </motion.div>
-  );
-};
-
-/* ── La poignée : une pastille de papier portant une croix de repérage ──
-   Quatre tirages de la même croix, décalés par le MÊME r(p) que le logo : ils
-   se calent ensemble. Le bras gauche de la croix porte une pointe de flèche —
-   la croix seule ne disait ni « bouton » ni « vers la gauche ». */
-const REG_OFF = { c: [-2.6, -1.6], m: [2.4, 1.9], y: [1.3, -2.6], k: [0, 0] } as const;
-const REG_INK = { c: '#00a0e3', m: '#e6007e', y: '#ffd400', k: '#12142b' } as const;
-
-const RegPlate = ({ plate, r }: { plate: PlateKey; r: MotionValue<number> }) => {
-  const x = useTransform(r, (v) => REG_OFF[plate][0] * v);
-  const y = useTransform(r, (v) => REG_OFF[plate][1] * v);
-  return (
-    <motion.g style={{ x, y, mixBlendMode: 'multiply' }} stroke={REG_INK[plate]}>
-      <circle r="8.5" />
-      <path d="M-15 0H15M0 -15V15M-10 -5L-15 0L-10 5" />
-    </motion.g>
-  );
-};
-
-const RegistrationMark = ({ r }: { r: MotionValue<number> }) => (
-  <svg viewBox="-26 -26 52 52" aria-hidden>
-    <circle r="26" fill="#fbf9f5" />
-    <g fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {(['c', 'm', 'y', 'k'] as PlateKey[]).map((k) => <RegPlate key={k} plate={k} r={r} />)}
+  fill: string;
+  dot?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+}) => (
+  <svg
+    viewBox={MARK_VB}
+    x={x}
+    y={y}
+    width={width}
+    height={width ? width / MARK_RATIO : undefined}
+    aria-hidden
+    focusable="false"
+  >
+    <g fill={fill} fillRule="evenodd">
+      {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
     </g>
+    <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} fill={dot} />
   </svg>
 );
 
-/* Un bloc du tiroir : il ne se compose qu'APRÈS le passage du logo (p > 0,62),
-   chacun sur sa propre fenêtre. À mi-geste le papier ne porte donc que
-   l'impression du logo — c'est l'image du geste. */
-const Reveal = ({
-  index, p, still, className, children,
-}: {
-  index: number;
-  p: MotionValue<number>;
-  still: boolean;
-  className?: string;
-  children: React.ReactNode;
-}) => {
-  const t = useTransform(p, (v) => (still ? 1 : smooth(0.62 + index * 0.06, 0.94 + index * 0.02, v)));
-  const x = useTransform(t, (v) => (1 - v) * 24);
-  const y = useTransform(t, (v) => (1 - v) * 8);
-  return (
-    <motion.div className={className} style={{ opacity: t, x, y }}>
-      {children}
-    </motion.div>
-  );
-};
+/* Le logo du centre, en volume : huit copies décalées vers le bas-droite font
+   la tranche (du fond vers la face), la face est un blanc qui tire vers le
+   lavande. Pas de néon : une ombre violette douce et c'est tout. */
+const HERO_DEPTH = 8;
+const HeroMark = () => (
+  <svg viewBox={MARK_VB} className="pa-hero__svg" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-hero-face" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#ffffff" />
+        <stop offset="1" stopColor="#ddd8f6" />
+      </linearGradient>
+      <linearGradient id="pa-hero-side" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#6c5ad8" />
+        <stop offset="1" stopColor="#1e1745" />
+      </linearGradient>
+      <radialGradient id="pa-hero-dot" cx="0.36" cy="0.3" r="0.78">
+        <stop offset="0" stopColor="#f2a9a6" />
+        <stop offset="0.5" stopColor={MARK_DOT_COLOR} />
+        <stop offset="1" stopColor="#9c3f3b" />
+      </radialGradient>
+    </defs>
+    {Array.from({ length: HERO_DEPTH }, (_, i) => HERO_DEPTH - i).map((n) => (
+      <g key={n} transform={`translate(${n * 2.4} ${n * 3.2})`} fill="url(#pa-hero-side)" fillRule="evenodd">
+        {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
+        <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} />
+      </g>
+    ))}
+    <g fill="url(#pa-hero-face)" fillRule="evenodd">
+      {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
+    </g>
+    <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} fill="url(#pa-hero-dot)" />
+  </svg>
+);
+
+/* ── Les cinq objets du métier ──────────────────────────────────────────────
+   Très stylisés, même éclairage pour tous : lumière haute à gauche, liseré
+   lavande à contre-jour. Chacun porte le logo, petit. */
+const ObjHoodie = () => (
+  <svg viewBox="0 0 200 190" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-h-body" x1="0.15" y1="0" x2="0.85" y2="1">
+        <stop offset="0" stopColor="#30344c" />
+        <stop offset="0.55" stopColor="#181b2a" />
+        <stop offset="1" stopColor="#0e1019" />
+      </linearGradient>
+      <linearGradient id="pa-h-rim" x1="1" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#c4b5ff" stopOpacity="0.6" />
+        <stop offset="0.5" stopColor={VIOLET} stopOpacity="0.14" />
+        <stop offset="1" stopColor={VIOLET} stopOpacity="0" />
+      </linearGradient>
+    </defs>
+    <path d="M76 46C72 26 86 14 100 14s28 12 24 32c-8 8-40 8-48 0Z" fill="url(#pa-h-body)" />
+    <path
+      d="M78 44C68 46 57 50 48 58 35 70 27 100 21 146l19 8c6-30 12-50 20-64l2 86c26 5 50 5 76 0l2-86c8 14 14 34 20 64l19-8c-6-46-14-76-27-88-9-8-20-12-30-14-6 8-38 8-44 0Z"
+      fill="url(#pa-h-body)"
+    />
+    <path
+      d="M78 44C68 46 57 50 48 58 35 70 27 100 21 146l19 8c6-30 12-50 20-64l2 86c26 5 50 5 76 0l2-86c8 14 14 34 20 64l19-8c-6-46-14-76-27-88-9-8-20-12-30-14-6 8-38 8-44 0Z"
+      fill="none"
+      stroke="url(#pa-h-rim)"
+      strokeWidth="1.3"
+    />
+    <path d="M48 58C35 70 27 100 21 146l8 3c5-40 12-66 22-84Z" fill="#fff" opacity="0.07" />
+    <path d="M86 44c2-12 26-12 28 0-6 7-22 7-28 0Z" fill="#07080e" />
+    <path d="M94 50l-2 26M106 50l2 26" stroke="#d6cff4" strokeWidth="1.7" strokeLinecap="round" opacity="0.8" />
+    <path d="M73 128h54l6 30H67Z" fill="none" stroke="#000" strokeOpacity="0.4" strokeWidth="1.2" />
+    <path d="M22 142l19 8M160 150l19-8M62 170c26 5 50 5 76 0" stroke="#000" strokeOpacity="0.45" strokeWidth="1.4" fill="none" />
+    <MarkSvg fill="#fff" x={83} y={80} width={34} />
+  </svg>
+);
+
+const ObjCap = () => (
+  <svg viewBox="0 0 200 140" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-c-crown" x1="0.2" y1="0" x2="0.8" y2="1">
+        <stop offset="0" stopColor="#ffffff" />
+        <stop offset="0.6" stopColor="#e4e1ef" />
+        <stop offset="1" stopColor="#aaa4c1" />
+      </linearGradient>
+      <linearGradient id="pa-c-brim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#dad6e8" />
+        <stop offset="1" stopColor="#8a84a4" />
+      </linearGradient>
+    </defs>
+    <path d="M72 96C52 95 24 99 12 107c-6 5 1 12 20 12 34 0 70-7 88-19Z" fill="url(#pa-c-brim)" />
+    <path d="M62 98C58 56 86 26 124 26c36 0 60 26 58 70-38 8-82 9-120 2Z" fill="url(#pa-c-crown)" />
+    <path d="M124 27c-10 20-18 44-22 71M124 27c10 22 16 46 18 71" stroke="#8f89a8" strokeOpacity="0.5" strokeWidth="1.1" fill="none" />
+    <path d="M62 98c38 7 82 6 120-2" stroke="#6d6788" strokeOpacity="0.55" strokeWidth="1.4" fill="none" />
+    <circle cx="124" cy="27" r="3.4" fill="#cfcae0" />
+    <MarkSvg fill="#12142b" x={76} y={58} width={36} />
+  </svg>
+);
+
+const ObjMug = () => (
+  <svg viewBox="0 0 160 170" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-m-body" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#0b0c14" />
+        <stop offset="0.22" stopColor="#373c58" />
+        <stop offset="0.45" stopColor="#161927" />
+        <stop offset="1" stopColor="#07080d" />
+      </linearGradient>
+    </defs>
+    <path d="M108 56c40-2 40 66 0 64v-15c20 1 20-36 0-35Z" fill="#131521" stroke={VIOLET} strokeOpacity="0.4" strokeWidth="1.2" />
+    <path d="M28 34v104c0 13 82 13 82 0V34Z" fill="url(#pa-m-body)" />
+    <path d="M110 40v98c0 6-10 9-22 11" stroke="#c4b5ff" strokeOpacity="0.4" strokeWidth="1.2" fill="none" />
+    <ellipse cx="69" cy="34" rx="41" ry="9" fill="#2c3047" />
+    <ellipse cx="69" cy="34.6" rx="36.5" ry="6.8" fill="#050609" />
+    <rect x="40" y="46" width="5" height="84" rx="2.5" fill="#fff" opacity="0.17" />
+    <MarkSvg fill="#fff" x={47} y={80} width={46} />
+  </svg>
+);
+
+const ObjRollup = () => (
+  <svg viewBox="0 0 110 256" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-r-ban" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#24283d" />
+        <stop offset="1" stopColor="#0c0e17" />
+      </linearGradient>
+      <linearGradient id="pa-r-base" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#d7d9e5" />
+        <stop offset="1" stopColor="#737790" />
+      </linearGradient>
+    </defs>
+    <rect x="12" y="8" width="86" height="6" rx="3" fill="#aeb2c4" />
+    <rect x="17" y="12" width="76" height="214" rx="2" fill="url(#pa-r-ban)" stroke={VIOLET} strokeOpacity="0.3" />
+    <MarkSvg fill="#fff" x={27} y={36} width={56} />
+    <path
+      d="M17 148c20-8 38 6 76-6M17 166c24-8 40 8 76-4M17 184c22-6 42 6 76-6M17 202c20-6 44 8 76-4"
+      stroke="#b3a6ff"
+      strokeOpacity="0.2"
+      fill="none"
+    />
+    <rect x="6" y="224" width="98" height="14" rx="6" fill="url(#pa-r-base)" />
+    <path d="M14 238l-4 8M96 238l4 8" stroke="#737790" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
+const ObjLaptop = () => (
+  <svg viewBox="0 0 240 150" aria-hidden focusable="false">
+    <defs>
+      <linearGradient id="pa-l-alu" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#e6e8f1" />
+        <stop offset="1" stopColor="#868aa0" />
+      </linearGradient>
+      <linearGradient id="pa-l-scr" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#171a2a" />
+        <stop offset="1" stopColor="#090a12" />
+      </linearGradient>
+    </defs>
+    <rect x="30" y="6" width="180" height="120" rx="9" fill="#1a1d2b" stroke="#c4bde2" strokeOpacity="0.4" />
+    <rect x="37" y="13" width="166" height="106" rx="3" fill="url(#pa-l-scr)" />
+    <MarkSvg fill="#fff" x={44} y={20} width={26} />
+    <rect x="44" y="38" width="28" height="3" rx="1.5" fill="#fff" opacity="0.2" />
+    <rect x="44" y="46" width="22" height="3" rx="1.5" fill="#fff" opacity="0.14" />
+    <rect x="44" y="54" width="26" height="3" rx="1.5" fill="#fff" opacity="0.14" />
+    <rect x="44" y="62" width="18" height="3" rx="1.5" fill="#fff" opacity="0.14" />
+    <rect x="82" y="34" width="66" height="78" rx="5" fill="#20243a" />
+    <path d="M104 56c4-6 20-6 24 0l10 8-4 10-5-2v28h-26V72l-5 2-4-10Z" fill="#ebe7f7" />
+    <rect x="156" y="34" width="40" height="6" rx="3" fill={VIOLET} />
+    <rect x="156" y="46" width="34" height="3" rx="1.5" fill="#fff" opacity="0.16" />
+    <rect x="156" y="54" width="28" height="3" rx="1.5" fill="#fff" opacity="0.16" />
+    <rect x="156" y="62" width="32" height="3" rx="1.5" fill="#fff" opacity="0.16" />
+    <rect x="156" y="98" width="40" height="12" rx="6" fill="#7c5cff" />
+    <path d="M8 126h224l6 12c1 4-2 7-6 7H8c-4 0-7-3-6-7Z" fill="url(#pa-l-alu)" />
+    <rect x="100" y="126" width="40" height="4" rx="2" fill="#6f7388" opacity="0.6" />
+  </svg>
+);
+
+/* Un bloc du formulaire : il se construit sur sa fenêtre de p, [a ; a + d]
+   (voir .pa-st). */
+const st = (a: number, d: number) => ({ ['--a' as string]: a, ['--d' as string]: d } as React.CSSProperties);
 
 /* ── Qui saute la vitrine ? UNE seule raison ──────────────────────────────
    La vitrine EST la demande du propriétaire : elle se rejoue à chaque
@@ -269,19 +364,9 @@ const Reveal = ({
    est celui où la montrer serait absurde : le navigateur porte DÉJÀ une
    session PEG (jeton persisté par `peg_auth`, lu sans toucher au store) —
    typiquement un utilisateur connecté qui retombe sur /sign-in.
-
-   ⚠ Ce qui existait ici et qui a été RETIRÉ, volontairement :
-   • un drapeau d'onglet posé DÈS LE MONTAGE (sessionStorage) — il survivait
-     au rechargement, donc « j'ouvre la page, je recharge pour revoir
-     l'animation » suffisait à la perdre définitivement ;
-   • un drapeau durable (localStorage) posé au SUBMIT, même quand la connexion
-     échouait — « vue une fois dans une vie ».
-   Aucun des deux n'avait été demandé, et tous deux effaçaient précisément ce
-   qu'on nous demandait de montrer. NE PAS LES RÉINTRODUIRE sans validation
-   explicite du propriétaire.
-
-   Les deux échappatoires d'URL restent : ?form=1 ouvre le tiroir d'emblée
-   (client pressé, capture de vérification), ?vitrine=1 force la scène. */
+   ⚠ NE PAS réintroduire de drapeau « déjà vu » (sessionStorage au montage,
+   localStorage au submit) : les deux effaçaient précisément la scène
+   demandée. ?form=1 ouvre la plaque d'emblée, ?vitrine=1 force la scène. */
 const readReturningVisitor = (): boolean => {
   try {
     return !!getPersistedAuthToken();
@@ -299,10 +384,10 @@ const FOCUSABLE = 'a[href],button,input,select,textarea,[tabindex]';
 
 /**
  * Masque un panneau aux technologies d'assistance et au clavier.
- * @param useInert `false` pour le tiroir fermé : on veut qu'un gestionnaire de
+ * @param useInert `false` pour la plaque fermée : on veut qu'un gestionnaire de
  * mots de passe puisse toujours viser le champ e-mail (`focus()` programmatique
  * reste permis avec `tabindex="-1"`, il est bloqué par `inert`) — c'est ce
- * focus qui ouvre le tiroir tout seul.
+ * focus qui ouvre la plaque toute seule.
  */
 const setPanelHidden = (el: HTMLElement | null, hidden: boolean, useInert: boolean) => {
   if (!el) return;
@@ -331,18 +416,59 @@ const isTypingTarget = (node: EventTarget | null) => {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || node.isContentEditable;
 };
 
+/* ── Tic haptique au franchissement du point de validation (35 %) ──
+   Android : navigator.vibrate. iOS n'a pas d'API de vibration dans Safari ;
+   depuis iOS 18, basculer une case `<input type="checkbox" switch>` produit
+   le tic natif du système — on en garde une, invisible, hors écran. Confort
+   pur : toute erreur est ignorée, jamais bloquante. */
+const useHaptic = () => {
+  const labelRef = useRef<HTMLLabelElement | null>(null);
+  useEffect(() => () => {
+    labelRef.current?.remove();
+    labelRef.current = null;
+  }, []);
+  return useCallback(() => {
+    try {
+      if (typeof navigator.vibrate === 'function') {
+        navigator.vibrate(8);
+        return;
+      }
+      let label = labelRef.current;
+      if (!label) {
+        label = document.createElement('label');
+        label.setAttribute('aria-hidden', 'true');
+        label.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.setAttribute('switch', '');
+        input.tabIndex = -1;
+        label.appendChild(input);
+        document.body.appendChild(label);
+        labelRef.current = label;
+      }
+      label.click();
+    } catch {
+      /* confort : jamais bloquant */
+    }
+  }, []);
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LE DIPTYQUE — téléphone uniquement
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Géométrie mesurée (offsetLeft/Top/Width, jamais getBoundingClientRect) :
-    le fantôme du logo sur la vitrine (0), sa place d'arrivée dans le tiroir (1),
-    le rail et sa poignée. */
-type PaGeo = {
-  x0: number; y0: number; w0: number;
-  x1: number; y1: number; w1: number;
-  railL: number; railW: number; knobL: number; knobW: number;
-};
+/** Géométrie mesurée (offsetLeft/Width, jamais getBoundingClientRect) : le
+    logo du centre (pour savoir quand le verre passe devant), le rail et sa
+    poignée. */
+type PaGeo = { hx: number; hw: number; railL: number; railW: number; knobL: number; knobW: number };
+
+/* Arrivées : au doigt, un ressort sans oscillation qui repart à la vitesse du
+   geste (ζ ≈ 1) ; au bouton, au clavier et au « Retour », la courbe du cahier
+   des charges, 750 ms — la cascade du formulaire a le temps de se lire. */
+const SPRING = { type: 'spring' as const, stiffness: 300, damping: 35, mass: 1 };
+const GLIDE = { duration: 0.75, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
+/** Point de validation : relâché avant, on revient à l'accueil ; après, on ouvre. */
+const THRESHOLD = 0.35;
 
 const PhoneAtelier = ({
   openSignUp, signUpOpen, year,
@@ -352,10 +478,8 @@ const PhoneAtelier = ({
   year: number;
 }) => {
   const reduced = useReducedMotion() === true;
+  const haptic = useHaptic();
 
-  /* Départ : vitrine, sauf si le visiteur est connu ou si l'URL le demande.
-     (?vitrine=1 force la scène, ?form=1 force le formulaire — utile aux
-     captures de vérification.) */
   const startOpen = useMemo(() => {
     let forced: string | null = null;
     let vitrine: string | null = null;
@@ -372,14 +496,14 @@ const PhoneAtelier = ({
   }, []);
 
   const W = useRef(typeof window === 'undefined' ? 390 : window.innerWidth);
-  /* x : 0 = vitrine, -W = tiroir ouvert. TOUT le reste en est fonction —
-     aucune minuterie — c'est pourquoi le tiroir se compose PENDANT le geste. */
+  /* x : 0 = accueil, -W = plaque posée. TOUT le reste en est fonction —
+     aucune minuterie — c'est pourquoi la transition suit le doigt. */
   const x = useMotionValue(startOpen ? -W.current : 0);
   const [opened, setOpened] = useState(startOpen);
   const openRef = useRef(startOpen);
   const targetOpenRef = useRef(startOpen);
   const runningRef = useRef<{ stop: () => void } | null>(null);
-  /** Le ressort est-il en train de courir ? (filet de sécurité d'`onPointerUp`) */
+  /** L'animation d'arrivée est-elle en cours ? (filet de sécurité d'`onPointerUp`) */
   const settlingRef = useRef(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -388,94 +512,92 @@ const PhoneAtelier = ({
   const bodyRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLButtonElement>(null);
   const knobRef = useRef<HTMLSpanElement>(null);
-  const ghostRef = useRef<HTMLDivElement>(null);
-  const focusRef = useRef<HTMLDivElement>(null);
-  const landRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
   const signUpRef = useRef(signUpOpen);
   signUpRef.current = signUpOpen;
 
-  /* Géométrie : rangée dans un ref ; `geoTick` est incrémenté à chaque mesure
-     pour que les transformations qui en dépendent se recalculent (un
-     `x.set(x.get())` ne notifie pas : la valeur n'a pas changé). */
-  const geo = useRef<PaGeo>({ x0: 0, y0: 0, w0: 0, x1: 0, y1: 0, w1: 0, railL: 0, railW: 0, knobL: 0, knobW: 0 });
+  const geo = useRef<PaGeo>({ hx: 0, hw: 0, railL: 0, railW: 0, knobL: 0, knobW: 0 });
   const geoTick = useMotionValue(0);
-  const [logoW, setLogoW] = useState(0);
 
-  /* « entrée » : 0 → 1 une seule fois au chargement — les plaques arrivent de
-     3,2 fois leur décalage de repos et se calent. Sautée pour le client qui
-     revient (tiroir déjà posé) et en mouvement réduit. */
-  const entry = useMotionValue(reduced || startOpen ? 1 : 0);
-
-  /* ── Progression du geste, 0 → 1 ── */
+  /* ── Progression 0 → 1 ── */
   const p = useTransform(x, (v) => clamp(-v / W.current, 0, 1));
   const k = reduced ? 0 : 1;
+  /** Bord gauche de la plaque, à l'écran. Elle part de 105 % ; au-delà de
+      l'ouverture (élastique), elle suit simplement le doigt. */
+  const edgeOf = (xv: number) => {
+    const w = W.current;
+    return xv >= -w ? 1.05 * (w + xv) : w + xv;
+  };
 
-  /* ── LE REPÉRAGE ─────────────────────────────────────────────────────────
-     r = part du décalage de repos encore appliquée aux plaques.
-     Le décalage tient jusqu'à p ≈ 0,3 puis se résorbe pendant que le bord du
-     papier balaie le logo (≈ 77 % à mi-geste, 0 à l'ouverture) : le moment du
-     calage se LIT, au lieu d'être déjà acquis quand le papier arrive.
-     En mouvement réduit les plaques sont calées d'emblée : un logo décalé
-     immobile se lirait comme un défaut d'affichage. */
-  const r = useTransform([p, entry] as MotionValue<number>[], ([v, e]: number[]) =>
-    reduced ? 0 : (1 - smooth(0.3, 0.94, v)) * lerp(3.2, 1, e),
-  );
-  const plateO = useTransform(entry, (e) => smooth(0, 0.55, e));
+  /* 1. L'univers sombre recule : échelle 1 → 0,96, −40px, lumière qui baisse. */
+  const worldX = useTransform(p, (v) => -40 * v * k);
+  const worldS = useTransform(p, (v) => 1 - 0.04 * v * k);
+  const veilO = useTransform(p, (v) => 0.45 * v);
 
-  /* ── TRAJET DU LOGO (identique pour les deux exemplaires) ──
-     Le logo monte tôt (position sur [0,04 ; 0,86]) et garde sa taille plus
-     longtemps (échelle sur [0,20 ; 1]) : à mi-geste il mesure encore ~280px
-     et le bord du papier coupe le G. transform-origin 0 0. */
-  const logoX = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) =>
-    lerp(geo.current.x0, geo.current.x1, smooth(0.04, 0.86, v)),
-  );
-  const logoY = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) =>
-    lerp(geo.current.y0, geo.current.y1, smooth(0.04, 0.86, v)),
-  );
-  const logoS = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) => {
+  /* 2. Parallaxe : premier plan −120px, second −70px, fond −25px, et une
+     rotation de 2 à 5° propre à chaque objet. */
+  const backX = useTransform(p, (v) => -25 * v * k);
+  const midX = useTransform(p, (v) => -70 * v * k);
+  const foreX = useTransform(p, (v) => -120 * v * k);
+  const rotRollup = useTransform(p, (v) => -2 * v * k);
+  const rotHoodie = useTransform(p, (v) => -3 * v * k);
+  const rotCap = useTransform(p, (v) => 4 * v * k);
+  const rotMug = useTransform(p, (v) => 5 * v * k);
+  const rotLaptop = useTransform(p, (v) => -3 * v * k);
+
+  /* 3-4. La plaque : translateX(105 %) · rotateY(−6°) · scale(0,97) → neutre.
+     Pivot sur son bord gauche : c'est la tranche qui mène. Posée, on rend
+     `none` — une transformation 3D résiduelle garderait le texte dans un
+     calque et l'adoucirait. */
+  const plateT = useTransform(x, (xv) => {
+    const w = W.current;
+    const v = clamp(-xv / w, 0, 1);
+    const tx = edgeOf(xv);
+    if (Math.abs(tx) < 0.01) return 'none';
+    if (reduced) return `translate3d(${tx.toFixed(2)}px,0,0)`;
+    const ry = -6 * (1 - v);
+    const s = 0.97 + 0.03 * v;
+    return `perspective(1400px) translate3d(${tx.toFixed(2)}px,0,0) rotateY(${ry.toFixed(3)}deg) scale(${s.toFixed(4)})`;
+  });
+
+  /* Verre pendant le passage, ivoire franc une fois posée : une couche ivoire
+     monte en opacité sur la fin (opacité seule : rien à repeindre). */
+  const fillO = useTransform(p, (v) => (reduced ? 1 : 0.85 * smooth(0.55, 1, v)));
+
+  /* 5. Le liseré mauve de la tranche : visible pendant le passage seulement. */
+  const glowO = useTransform(p, (v) => (reduced ? 0 : smooth(0.004, 0.05, v) * (1 - smooth(0.8, 1, v))));
+
+  /* 6. Le verre trouble le logo quand sa tranche passe sur son MILIEU : 0 → 1
+     → 0 sur ±17 % de sa largeur, soit un quart de la course : un passage, pas
+     un état. (Le logo est si large que, mesuré sur toute sa largeur, il restait
+     flou pendant presque toute la transition.) */
+  const lens = useTransform([x, geoTick] as MotionValue<number>[], ([xv]: number[]) => {
     const g = geo.current;
-    return g.w0 > 0 ? lerp(1, g.w1 / g.w0, smooth(0.2, 1, v)) : 1;
+    if (reduced || !g.hw) return 0;
+    const w = W.current;
+    const v = clamp(-xv / w, 0, 1);
+    const s = 1 - 0.04 * v;
+    const cx = w / 2 + (g.hx - w / 2) * s - 40 * v;
+    const u = (edgeOf(xv) - cx) / (g.hw * s * 0.17);
+    return u <= -1 || u >= 1 ? 0 : Math.pow(1 - u * u, 1.5);
   });
-  /* L'exemplaire ENCRE vit dans le corps du tiroir, dont l'origine est à
-     l'écran en W + x : il est contre-translaté d'autant, donc il tombe au
-     pixel sur l'exemplaire lumière et c'est le débord du papier qui le découpe
-     exactement sur son bord. Aucun clip-path. Au-delà de l'ouverture
-     (élastique), il suit le papier : il est imprimé dessus. */
-  const inkX = useTransform([x, geoTick] as MotionValue<number>[], ([xv]: number[]) => {
-    const v = clamp(-xv / W.current, 0, 1);
-    return lerp(geo.current.x0, geo.current.x1, smooth(0.04, 0.86, v)) - (W.current + Math.max(xv, -W.current));
-  });
+  const heroFilter = useTransform(lens, (d) => (d > 0.01 ? `blur(${(5 * d).toFixed(2)}px)` : 'none'));
+  const heroShift = useTransform(lens, (d) => -4 * d);
+  /* aberration chromatique : rouge et bleu séparés de 1,8px au plus */
+  const abR = useTransform(lens, (d) => -1.8 * d);
+  const abB = useTransform(lens, (d) => 1.8 * d);
+  const abO = useTransform(lens, (d) => 0.85 * d);
 
-  /* ── La vitrine recule : surtitre et accroche à 0,22 de la vitesse ── */
-  const speechX = useTransform(x, (v) => v * 0.22 * k);
-  const speechO = useTransform(p, (v) => (reduced ? (v > 0.5 ? 0 : 1) : 1 - smooth(0.04, 0.46, v)));
+  /* Le rail : ses libellés s'effacent, la poignée est poussée par la tranche
+     (6px devant elle) jusqu'à buter à gauche du rail. */
   const labelO = useTransform(p, (v) => 1 - smooth(0, 0.28, v));
-  const veilO = useTransform(p, (v) => 0.55 * v);
-
-  /* ── Ombre du bord du papier : UNE couche pré-rendue dont seule l'opacité
-     varie (un box-shadow recalculé à chaque image faisait saccader le geste).
-     Elle vit HORS du tiroir (`.pa-shadewrap`, translaté du même x) : posée
-     dedans en `right:100%`, l'overflow du tiroir la découpait entièrement.
-     Le logo lumière est peint AU-DESSUS d'elle : l'ombre creuse la vitrine
-     sans délaver en gris les lettres blanches près du bord. */
-  const shadeO = useTransform(p, (v) => (1 - 0.5 * v) * smooth(0, 0.05, v));
-
-  /* ── La poignée est TIRÉE par le bord du papier : 6px devant lui dès
-     p ≈ 0,055, et elle bute à gauche du rail vers p ≈ 0,8. */
-  const knobX = useTransform([p, geoTick] as MotionValue<number>[], ([v]: number[]) => {
+  const knobX = useTransform([x, geoTick] as MotionValue<number>[], ([xv]: number[]) => {
     const g = geo.current;
     if (!g.railW) return 0;
-    const inset = g.knobL > 0 ? g.railW - g.knobL - g.knobW : 9;
+    const inset = g.knobL > 0 ? g.railW - g.knobL - g.knobW : 8;
     const restL = g.railL + g.knobL;
-    return Math.max(g.railL + inset, Math.min(restL, W.current * (1 - v) - 6 - g.knobW)) - restL;
+    return Math.max(g.railL + inset, Math.min(restL, edgeOf(xv) - 6 - g.knobW)) - restL;
   });
-
-  /* ── Aimantation ───────────────────────────────────────────────────────
-     Ressort ζ = 0,975 : il POSE le tiroir sans rebond visible (~520 ms).
-     Le tap et le lancer jouent la MÊME courbe — au clic on injecte la vitesse
-     d'un glissement décidé (∓1050 px/s) — donc l'habitué apprend le geste en
-     regardant son propre clic. */
-  const SPRING = { type: 'spring' as const, stiffness: 380, damping: 38, mass: 1 };
 
   const settle = useCallback(() => {
     settlingRef.current = false;
@@ -485,8 +607,9 @@ const PhoneAtelier = ({
     if (!isOpen && bodyRef.current) bodyRef.current.scrollTop = 0;
   }, [x]);
 
+  /** `velocity` : celle du doigt (ressort) ; `null` : courbe du cahier des charges. */
   const glideTo = useCallback(
-    (target: number, velocity: number) => {
+    (target: number, velocity: number | null) => {
       runningRef.current?.stop();
       targetOpenRef.current = target !== 0;
       if (reduced) {
@@ -495,22 +618,23 @@ const PhoneAtelier = ({
         return;
       }
       settlingRef.current = true;
-      runningRef.current = animate(x, target, { ...SPRING, velocity, onComplete: settle });
+      runningRef.current = velocity === null
+        ? animate(x, target, { ...GLIDE, onComplete: settle })
+        : animate(x, target, { ...SPRING, velocity, onComplete: settle });
     },
     [reduced, settle, x],
   );
 
-  /* Le focus est posé APRÈS l'aimantation, jamais sur une minuterie : tant que
-     le panneau d'arrivée n'a pas récupéré ses cibles de tabulation (inert /
-     tabindex retirés à la fin du ressort), un focus() serait purement et
-     simplement ignoré et l'utilisateur clavier se retrouverait sur <body>. */
+  /* Le focus est posé APRÈS l'arrivée, jamais sur une minuterie : tant que le
+     panneau d'arrivée n'a pas récupéré ses cibles de tabulation (inert /
+     tabindex retirés à la fin), un focus() serait ignoré. */
   const focusWish = useRef<'email' | 'rail' | null>(null);
 
   const openDrawer = useCallback(
     (focusField: boolean) => {
       if (targetOpenRef.current && openRef.current) return;
       if (focusField) focusWish.current = 'email';
-      glideTo(-W.current, -1050);
+      glideTo(-W.current, null);
     },
     [glideTo],
   );
@@ -518,22 +642,20 @@ const PhoneAtelier = ({
   const closeDrawer = useCallback(
     (focusRail: boolean) => {
       if (focusRail) focusWish.current = 'rail';
-      glideTo(0, 1050);
+      glideTo(0, null);
     },
     [glideTo],
   );
 
   /* ── LE GESTE ──────────────────────────────────────────────────────────── */
-  const drag = useRef({ active: false, startX: 0, startY: 0, base: 0, axis: '' as '' | 'x' | 'y', vel: 0, lastX: 0, lastT: 0, moved: false });
+  const drag = useRef({
+    active: false, startX: 0, startY: 0, base: 0, axis: '' as '' | 'x' | 'y',
+    vel: 0, lastX: 0, lastT: 0, moved: false, above: false,
+  });
 
-  /* ⚠ On ne touche PAS au ressort ici. Le faire à l'appui figeait le tiroir à
-     mi-course au moindre tapotement impatient pendant l'aimantation : le
-     ressort était arrêté, `onPointerUp` sortait avant tout `glideTo` faute de
-     déplacement, et plus rien ne le relançait — écran coupé en deux,
-     formulaire à demi composé, défilement verrouillé (`.pa-opened` jamais
-     posé). Le ressort n'est interrompu qu'une fois l'axe horizontal décidé,
-     dans `onPointerMove` : un appui simple cesse d'interférer avec
-     l'aimantation, ce qui est le comportement attendu. */
+  /* ⚠ On ne touche PAS à l'animation ici : un simple appui pendant une arrivée
+     la figeait à mi-course. Elle n'est interrompue qu'une fois l'axe
+     horizontal décidé, dans `onPointerMove`. */
   const onPointerDown = (e: React.PointerEvent) => {
     if (signUpRef.current) return; // la modale d'inscription est au-dessus
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -542,6 +664,7 @@ const PhoneAtelier = ({
     d.active = true; d.moved = false; d.axis = '';
     d.startX = e.clientX; d.startY = e.clientY; d.base = x.get();
     d.lastX = e.clientX; d.lastT = performance.now(); d.vel = 0;
+    d.above = clamp(-x.get() / W.current, 0, 1) > THRESHOLD;
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -551,21 +674,18 @@ const PhoneAtelier = ({
     const dy = e.clientY - d.startY;
     if (d.axis === '') {
       if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-      // Verrouillage d'axe : au-delà de 5px, si le geste est franchement
-      // horizontal on le prend ; sinon on le rend au défilement vertical.
+      // Verrouillage d'axe : franchement horizontal → on le prend ; sinon on
+      // le rend au défilement vertical.
       d.axis = Math.abs(dx) > Math.abs(dy) * 1.1 ? 'x' : 'y';
       if (d.axis === 'y') { d.active = false; return; }
-      /* C'est ICI, et seulement ici, que le doigt reprend la main sur le
-         ressort. On re-cale la base sur la position COURANTE de x (le ressort
-         a pu courir entre l'appui et la décision d'axe) : `d.base + dx` reste
-         alors continu, sans saut à la prise en main. */
+      /* Le doigt reprend la main ICI, sur la position COURANTE de x : pas de
+         saut à la prise en main si une arrivée était en cours. */
       runningRef.current?.stop();
       settlingRef.current = false;
       focusWish.current = null; // plus de focus différé : le geste décide
       d.base = x.get() - dx;
-      /* La capture n'est prise QU'ICI, une fois l'axe horizontal décidé.
-         La prendre dès le pointerdown retargetait aussi les événements souris
-         de compatibilité : le `click` partait vers la surface de geste et le
+      /* La capture n'est prise qu'une fois l'axe horizontal décidé : prise dès
+         le pointerdown, elle retargetait le `click` de compatibilité et le
          rail ne s'ouvrait plus à l'appui simple. */
       try {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -585,6 +705,12 @@ const PhoneAtelier = ({
     if (raw > 0) raw = Math.pow(raw, 0.82) * 0.34;
     else if (raw < -W.current) raw = -W.current - Math.pow(-(raw + W.current), 0.82) * 0.34;
     x.set(raw);
+    // Le tic haptique marque le franchissement du point de validation.
+    const above = clamp(-raw / W.current, 0, 1) > THRESHOLD;
+    if (above !== d.above) {
+      d.above = above;
+      haptic();
+    }
   };
 
   const onPointerUp = () => {
@@ -592,61 +718,46 @@ const PhoneAtelier = ({
     if (!d.active) return;
     d.active = false;
     if (!d.moved) {
-      /* Simple appui : c'est le bouton qui décide. Filet de sécurité — si le
-         tiroir se retrouvait malgré tout arrêté à mi-course sans ressort en
-         cours, on le repose sur sa cible plutôt que de laisser l'écran coupé
-         en deux. */
+      /* Simple appui : c'est le bouton qui décide. Filet de sécurité — si la
+         plaque se retrouvait arrêtée à mi-course sans animation en cours, on
+         la repose sur sa cible. */
       const cur = x.get();
       if (!settlingRef.current && cur < -0.5 && cur > -W.current + 0.5) {
-        glideTo(targetOpenRef.current ? -W.current : 0, 0);
+        glideTo(targetOpenRef.current ? -W.current : 0, null);
       }
       return;
     }
     const prog = clamp(-x.get() / W.current, 0, 1);
     let target: number;
-    if (d.vel < -520) target = -W.current;        // lancé vers la gauche → ouvre
-    else if (d.vel > 520) target = 0;             // lancé vers la droite → referme
-    else target = prog > 0.35 ? -W.current : 0;   // sinon, seuil de course
-    glideTo(target, d.vel);                        // le ressort repart à la vitesse du doigt
+    if (d.vel < -520) target = -W.current;          // lancé vers la gauche → ouvre
+    else if (d.vel > 520) target = 0;               // lancé vers la droite → referme
+    else target = prog > THRESHOLD ? -W.current : 0; // sinon, point de validation
+    glideTo(target, d.vel);                          // repart à la vitesse du doigt
   };
 
-  /* ── Mesure + recalage à la rotation / au clavier virtuel iOS ──
-     On recale x sur la position d'équilibre, et on relit la géométrie du
-     logo et du rail par offsetLeft/offsetTop/offsetWidth. Aucune hauteur
-     figée, aucun getBoundingClientRect.
-     En layout effect : la première mesure tombe AVANT la première peinture,
-     le logo n'apparaît jamais en haut à gauche le temps d'une image. */
+  /* ── Mesure + recalage à la rotation / au clavier virtuel iOS ── */
   useLayoutEffect(() => {
     /* Position d'un élément DANS un ancêtre donné, en remontant la chaîne des
-       offsetParent. ⚠ Ne pas lire offsetLeft seul : pendant l'entrée, un
-       enveloppant animé porte un transform et Chromium en fait l'offsetParent
-       (le rail se mesurait alors à 0 au lieu de 22px, et la poignée passait
-       SOUS le papier au lieu de rester 6px devant lui). */
+       offsetParent (les transformations n'y entrent pas : c'est la position
+       de repos qu'on veut). */
     const offsetIn = (el: HTMLElement, root: HTMLElement | null) => {
       let left = 0;
-      let top = 0;
       let node: HTMLElement | null = el;
       while (node && node !== root) {
         left += node.offsetLeft;
-        top += node.offsetTop;
         node = node.offsetParent as HTMLElement | null;
       }
-      return { left, top };
+      return left;
     };
     const measure = () => {
       const g = geo.current;
-      const gh = ghostRef.current;
-      const ld = landRef.current;
+      const stage = stageRef.current;
+      const h = heroRef.current;
       const rl = railRef.current;
       const kn = knobRef.current;
-      /* repères : la vitrine (plein écran, non transformée) et le corps du tiroir */
-      const stage = stageRef.current;
-      const body = bodyRef.current;
-      if (gh) { const o = offsetIn(gh, stage); g.x0 = o.left; g.y0 = o.top; g.w0 = gh.offsetWidth; }
-      if (ld) { const o = offsetIn(ld, body); g.x1 = o.left; g.y1 = o.top; g.w1 = ld.offsetWidth; }
-      if (rl) { g.railL = offsetIn(rl, stage).left; g.railW = rl.offsetWidth; }
-      if (kn) { g.knobL = offsetIn(kn, rl).left; g.knobW = kn.offsetWidth; }
-      setLogoW(g.w0);
+      if (h) { g.hw = h.offsetWidth; g.hx = offsetIn(h, stage) + g.hw / 2; }
+      if (rl) { g.railL = offsetIn(rl, stage); g.railW = rl.offsetWidth; }
+      if (kn) { g.knobL = offsetIn(kn, rl); g.knobW = kn.offsetWidth; }
       geoTick.set(geoTick.get() + 1);
     };
     measure();
@@ -656,14 +767,10 @@ const PhoneAtelier = ({
       x.set(openRef.current ? -W.current : 0);
     };
     window.addEventListener('resize', onResize);
-    /* Le bloc logo + accroche est calé en BAS : la hauteur de l'accroche (donc
-       l'arrivée de la police) déplace le fantôme. On remesure quand ce bloc,
-       le rail ou le corps du tiroir changent de taille, et une fois les
-       polices prêtes. */
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
       ro = new ResizeObserver(() => measure());
-      [focusRef.current, railRef.current, bodyRef.current].forEach((el) => { if (el) ro?.observe(el); });
+      [heroRef.current, railRef.current].forEach((el) => { if (el) ro?.observe(el); });
     }
     let alive = true;
     document.fonts?.ready?.then(() => { if (alive) measure(); }).catch(() => {});
@@ -674,22 +781,24 @@ const PhoneAtelier = ({
     };
   }, [x, geoTick]);
 
-  /* ── Entrée des plaques : une seule fois, 1 100 ms, easeOutCubic, 180 ms ── */
-  useEffect(() => {
-    if (entry.get() >= 1) return undefined;
-    const ctl = animate(entry, 1, { duration: 1.1, delay: 0.18, ease: [0.33, 1, 0.68, 1] });
-    return () => ctl.stop();
-  }, [entry]);
+  /* ── La construction du formulaire lit p en CSS (--pp) : chaque bloc a sa
+     fenêtre (voir .pa-st). Au retour, p décroît : ils partent dans l'ordre
+     inverse, sans code de plus. ── */
+  useLayoutEffect(() => {
+    const el = drawerRef.current;
+    const apply = (v: number) => el?.style.setProperty('--pp', v.toFixed(4));
+    apply(p.get());
+    return p.on('change', apply);
+  }, [p]);
 
-  /* ── L'invitation au repos (la poignée qui fait signe) s'arrête dès que le
-     papier bouge. Classe posée à la main : c'est de l'habillage, pas un état. */
+  /* ── L'invitation au repos (la poignée qui fait signe) s'arrête dès que la
+     plaque bouge. ── */
   useEffect(() => p.on('change', (v) => {
     rootRef.current?.classList.toggle('pa-moving', v > 0.002);
   }), [p]);
 
-  /* ── Graisse 800 d'Inter : l'impact vient de l'échelle et de la graisse.
-     Chargée d'ici SEULEMENT (jamais dans app.css : le bureau demande 800 et
-     changerait de rendu), et retirée au démontage. */
+  /* ── Graisse 800 d'Inter, chargée d'ici SEULEMENT (jamais dans app.css : le
+     bureau demande 800 et changerait de rendu), retirée au démontage. ── */
   useEffect(() => {
     const id = 'pa-inter-800';
     if (document.getElementById(id)) return undefined;
@@ -701,12 +810,14 @@ const PhoneAtelier = ({
     return () => { link.remove(); };
   }, []);
 
+  /* ── Arrêt de toute animation en cours au démontage ── */
+  useEffect(() => () => runningRef.current?.stop(), []);
+
   /* ── Clavier ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (signUpRef.current) return;
-      // Flèche droite pendant la saisie de l'e-mail refermait le tiroir ET
-      // arrachait le focus : on ignore l'événement dans un champ de saisie.
+      // Dans un champ de saisie, les flèches déplacent le curseur : on ignore.
       if (isTypingTarget(document.activeElement)) return;
       if (e.key === 'Escape' && openRef.current) closeDrawer(true);
       else if (e.key === 'ArrowLeft' && !openRef.current) openDrawer(true);
@@ -716,9 +827,7 @@ const PhoneAtelier = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeDrawer, openDrawer]);
 
-  /* ── inert / aria-hidden : posés À LA FIN de l'aimantation seulement ──
-     et c'est seulement une fois le panneau d'arrivée redevenu focalisable
-     qu'on y pose le focus. */
+  /* ── inert / aria-hidden posés À LA FIN de l'arrivée, puis le focus ── */
   useEffect(() => {
     setPanelHidden(stageRef.current, opened, true);
     setPanelHidden(drawerRef.current, !opened, false);
@@ -729,8 +838,7 @@ const PhoneAtelier = ({
   }, [opened]);
 
   /* Un gestionnaire de mots de passe (ou une tabulation) qui vise le champ
-     e-mail alors que le tiroir est fermé l'ouvre : c'est le cas d'usage le
-     plus fréquent chez un client qui revient. */
+     e-mail alors que la plaque est fermée l'ouvre. */
   const onDrawerFocus = () => {
     if (!targetOpenRef.current) openDrawer(false);
   };
@@ -739,12 +847,9 @@ const PhoneAtelier = ({
     <div ref={rootRef} className={`pa-root${reduced || startOpen ? '' : ' pa-anim'}${opened ? ' pa-opened' : ''}`}>
       <style>{PHONE_CSS}</style>
 
-      {/* ═════════ PANNEAU 1 — LA VITRINE ═════════
-          Quatre choses, pas une de plus : le surtitre, le logo (peint par la
-          couche partagée plus bas), l'accroche, le rail. */}
+      {/* ═════════ L'ACCUEIL — l'univers sombre ═════════ */}
       <section className="pa-stage" ref={stageRef} aria-label="Découvrir PEG">
-        <motion.span className="pa-veil" style={{ opacity: veilO }} />
-
+        <h1 className="pa-sr">Votre image, sur tous vos supports</h1>
         <div
           className="pa-wrap"
           onPointerDown={onPointerDown}
@@ -752,27 +857,68 @@ const PhoneAtelier = ({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          {/* L'entrée CSS est portée par un enveloppant : framer-motion garde
-              seul la main sur le transform de l'élément lui-même. */}
-          <div className="pa-in pa-in--kicker">
-            <motion.p className="pa-kicker" style={{ x: speechX, opacity: speechO }}>
-              Plateforme professionnelle
-            </motion.p>
-          </div>
+          <motion.div className="pa-world" style={{ x: worldX, scale: worldS }}>
+            <div className="pa-scene" aria-hidden>
+              {/* Origine = centre du logo ; tout se place en unités --u. Trois
+                  enveloppes par objet : la parallaxe (framer-motion), l'entrée
+                  (CSS, fill-mode backwards) et le flottement (CSS) — chacune
+                  garde seule la main sur SON transform. */}
+              <div className="pa-orbit">
+                <span className="pa-halo" />
+                <motion.div className="pa-obj pa-obj--rollup pa-obj--back" style={{ x: backX, rotate: rotRollup }}>
+                  <div className="pa-in pa-in--o1">
+                    <div className="pa-float" style={{ ['--dur' as string]: '8.4s', ['--sway' as string]: '-1deg' } as React.CSSProperties}>
+                      <ObjRollup />
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div className="pa-obj pa-obj--hoodie pa-obj--mid" style={{ x: midX, rotate: rotHoodie }}>
+                  <div className="pa-in pa-in--o2">
+                    <div className="pa-float" style={{ ['--dur' as string]: '7.2s', ['--del' as string]: '-2s' } as React.CSSProperties}>
+                      <ObjHoodie />
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div className="pa-obj pa-obj--cap pa-obj--mid" style={{ x: midX, rotate: rotCap }}>
+                  <div className="pa-in pa-in--o3">
+                    <div className="pa-float" style={{ ['--dur' as string]: '6.6s', ['--del' as string]: '-4s', ['--sway' as string]: '-1.5deg' } as React.CSSProperties}>
+                      <ObjCap />
+                    </div>
+                  </div>
+                </motion.div>
 
-          <div className="pa-focus" ref={focusRef}>
-            {/* Fantôme : il réserve la boîte du logo, que peint la couche
-                partagée (PlateWordmark « light »). C'est lui qu'on mesure. */}
-            <div className="pa-logo-ghost" ref={ghostRef} aria-hidden />
-            <div className="pa-in pa-in--mark">
-              <motion.h1 className="pa-mark" style={{ x: speechX, opacity: speechO }}>
-                Votre image, sur <em>tous vos supports</em>
-              </motion.h1>
+                <motion.div className="pa-hero" ref={heroRef} style={{ x: heroShift, filter: heroFilter }}>
+                  <div className="pa-in pa-in--hero">
+                    <motion.div className="pa-ab" style={{ x: abR, opacity: abO }}>
+                      <MarkSvg fill="#ff2d55" dot="#ff2d55" />
+                    </motion.div>
+                    <motion.div className="pa-ab" style={{ x: abB, opacity: abO }}>
+                      <MarkSvg fill="#2d6bff" dot="#2d6bff" />
+                    </motion.div>
+                    <HeroMark />
+                  </div>
+                </motion.div>
+
+                <motion.div className="pa-obj pa-obj--mug pa-obj--fore" style={{ x: foreX, rotate: rotMug }}>
+                  <div className="pa-in pa-in--o4">
+                    <div className="pa-float" style={{ ['--dur' as string]: '6.2s', ['--del' as string]: '-1s', ['--sway' as string]: '1.5deg' } as React.CSSProperties}>
+                      <ObjMug />
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div className="pa-obj pa-obj--laptop pa-obj--fore" style={{ x: foreX, rotate: rotLaptop }}>
+                  <div className="pa-in pa-in--o5">
+                    <div className="pa-float" style={{ ['--dur' as string]: '7.8s', ['--del' as string]: '-3s', ['--sway' as string]: '-.8deg' } as React.CSSProperties}>
+                      <ObjLaptop />
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Le rail : le chemin explicite, pleine largeur, dans la zone du
-              pouce. La pastille de papier est la poignée du geste. */}
+          {/* Le rail : le chemin explicite, dans la zone du pouce — et un
+              curseur qu'on peut glisser. */}
           <div className="pa-railwrap pa-in pa-in--rail">
             <button
               type="button"
@@ -787,36 +933,28 @@ const PhoneAtelier = ({
               </motion.span>
               <motion.span className="pa-knob" ref={knobRef} style={{ x: knobX }} aria-hidden>
                 <span className="pa-knob__in">
-                  <RegistrationMark r={r} />
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
+                    <path d="M14.5 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </span>
               </motion.span>
             </button>
           </div>
         </div>
+        <motion.span className="pa-veil" style={{ opacity: veilO }} />
       </section>
 
-      {/* ═════════ L'OMBRE PORTÉE DU BORD DU PAPIER ═════════
-          Frère du tiroir, translaté du MÊME x : son bord droit tombe donc
-          exactement sur le bord du papier, et rien ne la découpe. */}
-      <motion.div className="pa-shadewrap" style={{ x }} aria-hidden>
-        <motion.span className="pa-shade" style={{ opacity: shadeO }} />
-      </motion.div>
-
-      {/* ═════════ LE LOGO, EXEMPLAIRE LUMIÈRE ═════════
-          Entre l'ombre et le tiroir : le papier le recouvre à droite de son
-          bord, l'ombre ne le délave pas. */}
-      <PlateWordmark variant="light" r={r} x={logoX} y={logoY} scale={logoS} opacity={plateO} width={logoW} />
-
-      {/* ═════════ PANNEAU 2 — LE TIROIR DE PAPIER ═════════
-          Il est posé à left:100% et translaté de x : il suit le doigt au 1:1
-          sans qu'on ait à connaître la largeur de l'écran. */}
+      {/* ═════════ LA PLAQUE DE VERRE — la connexion ═════════ */}
       <motion.section
-        className="pa-drawer"
+        className="pa-plate"
         ref={drawerRef}
-        style={{ x }}
+        style={{ transform: plateT }}
         aria-label="Connexion"
         onFocus={onDrawerFocus}
       >
+        <motion.span className="pa-fill" style={{ opacity: fillO }} aria-hidden />
+        <span className="pa-sheen" aria-hidden />
+        <motion.span className="pa-glow" style={{ opacity: glowO }} aria-hidden />
         <div
           className="pa-grip"
           aria-hidden
@@ -827,34 +965,28 @@ const PhoneAtelier = ({
         />
 
         <div className="pa-body" ref={bodyRef}>
-          {/* Exemplaire ENCRE du logo : élément réel du corps du tiroir, il
-              défile avec le formulaire une fois le tiroir posé. */}
-          <PlateWordmark variant="ink" r={r} x={inkX} y={logoY} scale={logoS} width={logoW} />
+          <div className="pa-st pa-dhead" style={st(0.62, 0.1)}>
+            <button type="button" className="pa-back" onClick={() => closeDrawer(true)}>
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden>
+                <path d="M12 4l-5 6 5 6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Retour
+            </button>
+          </div>
 
-          <Reveal index={0} p={p} still={reduced}>
-            <div className="pa-dhead">
-              <button type="button" className="pa-back" onClick={() => closeDrawer(true)}>
-                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path d="M12 4l-5 6 5 6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Retour
-              </button>
-            </div>
-          </Reveal>
+          <div className="pa-st pa-flogo" style={st(0.65, 0.1)} role="img" aria-label={APP_NAME}>
+            <MarkSvg fill="#12142b" />
+          </div>
 
-          {/* La place où le logo encre vient se poser, net et noir. */}
-          <div className="pa-land" ref={landRef} role="img" aria-label={APP_NAME} />
-
-          <Reveal index={1} p={p} still={reduced} className="pa-formwrap">
+          {/* Les champs se construisent un par un (.pa-formwrap form > div > *). */}
+          <div className="pa-formwrap">
             <SignInForm disableSubmit={false} />
-          </Reveal>
+          </div>
 
-          <Reveal index={2} p={p} still={reduced}>
+          <div className="pa-st pa-accts" style={st(0.972, 0.026)}>
             <div className="pa-sep">
               <span /><span className="pa-sep__t">Pas encore de compte ?</span><span />
             </div>
-            {/* Lignes filetées à réglette de couleur, plutôt que deux cartes
-                flottantes. */}
             <button type="button" className="pa-acct" onClick={() => openSignUp('customer')}>
               <span className="pa-acct__key" style={{ background: '#6d5dfc' }} />
               <span className="pa-acct__txt">
@@ -871,11 +1003,11 @@ const PhoneAtelier = ({
               </span>
               <HiArrowNarrowRight size={16} color="#a3a79f" />
             </button>
-            {/* Les gages fondus en une seule ligne pointée. */}
-            <p className="pa-foot">
-              Connexion sécurisée<i />Hébergé en France<i />© {year} {APP_NAME}
-            </p>
-          </Reveal>
+          </div>
+
+          <p className="pa-st pa-foot" style={st(0.978, 0.022)}>
+            Connexion sécurisée<i />Hébergé en France<i />© {year} {APP_NAME}
+          </p>
         </div>
       </motion.section>
     </div>
@@ -884,70 +1016,86 @@ const PhoneAtelier = ({
 
 /* ═══════════════════════════════════════════════════════════════════════════
    FEUILLE DU DIPTYQUE
-   ⚠ PIÈGE : les animations d'entrée sont en fill-mode BACKWARDS, jamais
-   `both`, et portées par des ENVELOPPANTS (.pa-in) : l'élément animé par
-   framer-motion garde seul la main sur son transform. En `both`, l'état final
-   de l'animation écraserait en permanence les transformations inline.
+   ⚠ PIÈGE : les animations CSS (entrée, flottement) sont portées par des
+   ENVELOPPANTS, jamais par l'élément que framer-motion transforme, et
+   l'entrée est en fill-mode BACKWARDS, jamais `both` : sinon leur état final
+   écraserait en permanence les transformations pilotées par le doigt.
    ═══════════════════════════════════════════════════════════════════════════ */
 const PHONE_CSS = `
 .pa-root{
   --pa-safe-top: env(safe-area-inset-top, 0px);
   --pa-safe-bottom: env(safe-area-inset-bottom, 0px);
   --pa-pad: 22px;
-  /* Décalage vertical de la colonne : 0 sur téléphone, recentre la colonne
-     sur une tablette en portrait. */
-  --pa-vpad: 0px;
-  --pa-rail-h: 72px;
+  --pa-rail-h: 68px;
   --pa-knob: 52px;
-  --pa-knob-in: 9px;
-  --pa-papier: #fbf9f5;
+  --pa-knob-in: 8px;
+  /* Unité de la composition : suit la largeur, plafonnée sur tablette et
+     rétrécie par un écran court (paysage). 402px de large → 4,02px. */
+  --u: min(1vw, 4.6px, .46dvh);
   position: fixed; inset: 0; height: 100dvh;
   overflow: hidden; isolation: isolate;
-  background: #06080f; color: #fff;
+  background: #070a12; color: #fff;
   font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
 .pa-root *{ -webkit-tap-highlight-color: transparent; }
-/* un <button> n'hérite pas de la police : sans ceci, rail, « Retour » et les
-   deux lignes de compte repartiraient dans la police du navigateur */
+/* un <button> n'hérite pas de la police */
 .pa-root button{ font-family:inherit; font-size:inherit; color:inherit; }
+.pa-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-/* ── PANNEAU 1 : un noir franc, rien d'autre (ni halo, ni trame, ni grain) ── */
-.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#070c1a; }
-.pa-veil{ position:absolute; inset:0; background:#02040a; opacity:0; pointer-events:none; display:block; }
+/* ── L'ACCUEIL : bleu-noir, un seul voile de lumière sous le logo ── */
+.pa-stage{ position:absolute; inset:0; overflow:hidden;
+  background:radial-gradient(120% 70% at 50% 56%, #0f1224 0%, #070a12 64%); }
+.pa-veil{ position:absolute; inset:0; background:#010208; opacity:0; pointer-events:none; display:block; }
+.pa-wrap{ position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; }
+.pa-world{ position:absolute; inset:0; transform-origin:50% 50%; will-change:transform; }
+.pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); pointer-events:none;
+  bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
+/* origine de la composition = centre du logo, un peu sous le milieu */
+.pa-orbit{ position:absolute; left:50%; top:56%; width:0; height:0; }
+.pa-halo{ position:absolute; display:block;
+  left:calc(var(--u) * -64); top:calc(var(--u) * -44); width:calc(var(--u) * 128); height:calc(var(--u) * 88);
+  background:radial-gradient(closest-side, rgba(124,92,255,.24), rgba(124,92,255,0)); }
 
-.pa-wrap{ position:absolute; inset:0; display:flex; flex-direction:column;
-  padding: calc(var(--pa-safe-top) + 26px + var(--pa-vpad)) var(--pa-pad)
-           calc(var(--pa-safe-bottom) + 22px + var(--pa-vpad));
-  touch-action:none; -webkit-user-select:none; user-select:none; }
+/* ── Les objets : carte en unités --u, depuis le centre du logo ── */
+.pa-obj{ position:absolute; will-change:transform; }
+.pa-obj svg{ display:block; width:100%; height:auto; overflow:visible; }
+.pa-obj--hoodie{ left:calc(var(--u) * -48); top:calc(var(--u) * -72); width:calc(var(--u) * 40); z-index:2; }
+.pa-obj--cap{ left:calc(var(--u) * 12); top:calc(var(--u) * -63); width:calc(var(--u) * 32); z-index:2; }
+.pa-obj--cap .pa-float > svg{ transform:rotate(-8deg); }
+.pa-obj--rollup{ left:calc(var(--u) * -50); top:calc(var(--u) * -30); width:calc(var(--u) * 16); z-index:1; }
+.pa-obj--mug{ left:calc(var(--u) * 27); top:calc(var(--u) * -36); width:calc(var(--u) * 23); z-index:4; }
+.pa-obj--laptop{ left:calc(var(--u) * -42); top:calc(var(--u) * 23); width:calc(var(--u) * 46); z-index:4; }
+.pa-float{ animation:paFloat var(--dur, 7s) ease-in-out infinite var(--del, 0s);
+  filter:drop-shadow(0 14px 20px rgba(0,0,0,.55)); }
+/* profondeur : le fond est flou et plus sombre, le second plan un peu éteint */
+.pa-obj--back .pa-float{ filter:blur(1.5px); opacity:.7; }
+.pa-obj--mid .pa-float{ opacity:.93; }
+@keyframes paFloat{
+  0%,100%{ transform:translate3d(0,0,0) rotate(0deg) }
+  50%{ transform:translate3d(0,-7px,0) rotate(var(--sway, 1deg)) }
+}
 
-/* surtitre : 11px en capitales, blanc 64 % sur #070c1a ≈ 7,9:1 */
-.pa-kicker{ margin:0; font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
-  line-height:1.3; color:rgba(255,255,255,.64); will-change:transform, opacity; }
+/* ── Le logo du centre ── */
+.pa-hero{ position:absolute; z-index:3; will-change:transform, filter;
+  left:calc(var(--u) * -39); top:calc(var(--u) * -16.1); width:calc(var(--u) * 78); }
+.pa-in--hero{ position:relative; }
+.pa-hero svg{ display:block; width:100%; height:auto; overflow:visible; }
+.pa-hero__svg{ position:relative; filter:drop-shadow(0 18px 30px rgba(76,52,190,.38)); }
+.pa-ab{ position:absolute; inset:0; opacity:0; will-change:transform, opacity; }
 
-/* Le bloc logo + accroche est calé en BAS, posé sur le rail comme une affiche,
-   et non centré : le vide est au-dessus, assumé, et la masse tombe dans la
-   zone du pouce. */
-.pa-focus{ margin-top:auto; padding:2vh 0 clamp(24px, 6.5dvh, 64px); flex:none; }
-.pa-logo-ghost{ width:min(100%, 440px); aspect-ratio:1130/467; }
-.pa-mark{ margin:clamp(20px, 3.8dvh, 34px) 0 0; font-size:clamp(28px, 8.4vw, 36px); line-height:1.06;
-  font-weight:800; letter-spacing:-.038em; color:rgba(255,255,255,.58); max-width:13ch;
-  will-change:transform, opacity; }
-.pa-mark em{ font-style:normal; color:#fff; white-space:nowrap; }
-
-/* ── Le logo en plaques ── */
-.pa-plates{ position:absolute; left:0; top:0; aspect-ratio:1130/467; transform-origin:0 0;
-  isolation:isolate; pointer-events:none; will-change:transform; }
-.pa-plate{ position:absolute; inset:0; will-change:transform; }
-.pa-plate svg{ width:100%; height:100%; display:block; overflow:visible; }
-
-/* ── Le rail : chemin explicite, dans la zone du pouce ── */
-.pa-railwrap{ margin-top:12px; flex:none; }
+/* ── Le rail : chemin explicite et curseur ── */
+.pa-railwrap{ position:absolute; left:var(--pa-pad); right:var(--pa-pad);
+  bottom:calc(var(--pa-safe-bottom) + 22px); }
 .pa-rail{ position:relative; display:flex; align-items:center; width:100%; height:var(--pa-rail-h);
-  padding:0 calc(var(--pa-knob) + var(--pa-knob-in) + 14px) 0 26px;
-  border-radius:calc(var(--pa-rail-h) / 2); cursor:pointer; text-align:left;
-  background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.15); color:#fff; }
+  padding:0 calc(var(--pa-knob) + var(--pa-knob-in) + 14px) 0 24px;
+  border-radius:calc(var(--pa-rail-h) / 2); cursor:pointer; text-align:left; color:#fff;
+  background:linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.04));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
 .pa-rail__labels{ display:flex; flex-direction:column; min-width:0; will-change:opacity; }
 .pa-rail__kicker{ display:block; font-size:17px; font-weight:800; letter-spacing:-.015em; line-height:1.2; }
 /* sous-libellé : blanc 66 % ≈ 8:1 sur le rail */
@@ -955,49 +1103,79 @@ const PHONE_CSS = `
   color:rgba(255,255,255,.66); white-space:nowrap; }
 .pa-knob{ position:absolute; right:var(--pa-knob-in); top:50%; width:var(--pa-knob); height:var(--pa-knob);
   margin-top:calc(var(--pa-knob) / -2); display:block; will-change:transform; }
-.pa-knob__in{ display:block; width:100%; height:100%; border-radius:50%;
-  box-shadow:0 6px 18px rgba(0,0,0,.38); }
-.pa-knob svg{ width:100%; height:100%; display:block; isolation:isolate; }
+.pa-knob__in{ display:flex; align-items:center; justify-content:center; width:100%; height:100%;
+  border-radius:50%; color:#fff;
+  background:radial-gradient(circle at 34% 28%, #c2a8ff 0%, #8b5cf6 46%, #6536dc 100%);
+  box-shadow:0 8px 22px rgba(124,58,237,.45), inset 0 1px 0 rgba(255,255,255,.35); }
+.pa-knob__in svg{ width:22px; height:22px; display:block; }
 
-/* ── L'ombre portée du bord du papier : une seule couche, 72px à .30 ── */
-.pa-shadewrap{ position:absolute; top:0; bottom:0; left:0; width:100%;
-  pointer-events:none; will-change:transform; }
-.pa-shade{ position:absolute; top:0; bottom:0; right:0; width:72px; display:block; pointer-events:none;
-  opacity:0; background:linear-gradient(to left, rgba(0,0,0,.30), rgba(0,0,0,0)); }
-
-/* ── PANNEAU 2 — le tiroir de papier ── */
-.pa-drawer{ position:absolute; top:0; left:100%; width:100%; height:100%;
-  display:flex; overflow:hidden; will-change:transform; color:#0f172a;
-  background:var(--pa-papier); box-shadow:inset 1px 0 0 #fff; }
+/* ── LA PLAQUE DE VERRE ── */
+.pa-plate{ position:absolute; left:0; top:0; width:100%; height:100%; z-index:5;
+  transform-origin:0% 50%; will-change:transform;
+  border-radius:44px; color:#0f172a;
+  background:rgba(247,244,239,.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.35); backdrop-filter:blur(24px) saturate(1.35);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), -22px 0 60px rgba(0,0,0,.34), 0 40px 100px rgba(0,0,0,.3); }
+/* l'ivoire franc de la plaque posée */
+.pa-fill{ position:absolute; inset:0; border-radius:inherit; background:#f7f4ef; opacity:0;
+  pointer-events:none; display:block; will-change:opacity; }
+/* le reflet de la tranche : un filet de lumière, puis un dégradé qui s'éteint */
+.pa-sheen{ position:absolute; inset:0; border-radius:inherit; pointer-events:none; display:block;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.95) 0, rgba(255,255,255,0) 1.5px),
+    linear-gradient(90deg, rgba(255,255,255,.5) 0, rgba(255,255,255,0) 64px); }
+/* la réfraction mauve : collée au bord, elle le suit exactement */
+.pa-glow{ position:absolute; left:-1px; top:44px; bottom:44px; width:2px; border-radius:2px;
+  display:block; opacity:0; pointer-events:none; z-index:2;
+  background:linear-gradient(180deg, rgba(168,85,247,0), #a855f7 16%, #7257ff 50%, #a855f7 84%, rgba(168,85,247,0));
+  box-shadow:0 0 12px 2px rgba(139,92,246,.8), 0 0 34px 10px rgba(114,87,255,.35); }
 .pa-grip{ position:absolute; left:0; top:0; bottom:0; width:26px; z-index:5; touch-action:none; }
-
-.pa-body{ position:relative; flex:1; min-width:0;
-  overflow-x:hidden; overflow-y:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
-  padding: calc(var(--pa-safe-top) + 12px + var(--pa-vpad)) var(--pa-pad) calc(var(--pa-safe-bottom) + 28px); }
-/* le défilement n'est rendu qu'une fois le tiroir posé : pendant le geste,
-   le logo encre doit rester calé sur l'exemplaire lumière */
+.pa-body{ position:absolute; inset:0; border-radius:inherit; overflow-x:hidden; overflow-y:hidden;
+  overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  padding:calc(var(--pa-safe-top) + 14px) var(--pa-pad) calc(var(--pa-safe-bottom) + 28px); }
+/* le défilement n'est rendu qu'une fois la plaque posée */
 .pa-opened .pa-body{ overflow-y:auto; }
+
+/* ── La construction : chaque bloc se révèle (fondu + 10px) sur sa fenêtre
+   [a ; a + d] de p. Les fenêtres sont calées sur la courbe d'arrivée au
+   bouton (cubic-bezier(.22,1,.36,1), 750 ms) pour tomber sur le rythme du
+   cahier des charges — logo à ~70 % de course, puis e-mail +60 ms, mot de
+   passe +60, options +60, bouton +80, comptes +80 : cette courbe freine fort,
+   d'où des fenêtres de plus en plus serrées près de 1. Au doigt, le même
+   ordre se lit dans l'espace. « translate » et non « transform » : le bouton
+   du formulaire écrit son propre transform au survol. ── */
+.pa-st, .pa-formwrap form > div > *{
+  --t: clamp(0, calc((var(--pp, 1) - var(--a, 0)) / var(--d, .1)), 1);
+  opacity:var(--t); translate:0 calc((1 - var(--t)) * 10px); }
+.pa-formwrap form > div > :nth-child(1){ --a:.79; --d:.1; }
+.pa-formwrap form > div > :nth-child(2){ --a:.87; --d:.08; }
+.pa-formwrap form > div > :nth-child(3){ --a:.92; --d:.06; }
+.pa-formwrap form > div > :nth-child(4){ --a:.953; --d:.04; }
+/* Le bouton de SignInForm porte en ligne « transition: all .15s » : elle
+   retardait de 150 ms son fondu et son glissement — il arrivait en retard et
+   partait en DERNIER au retour. On la borne à ce qu'elle servait (couleur,
+   ombre, survol) ; !important est le seul moyen de primer sur un style en
+   ligne, sans toucher au composant partagé. */
+.pa-formwrap form > div > button{ transition:background .15s, box-shadow .15s, transform .15s !important; }
+
 .pa-dhead{ height:44px; display:flex; align-items:center; }
 .pa-back{ display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 12px 0 8px;
   margin-left:-8px; border-radius:12px; border:none; background:none; cursor:pointer;
   color:#555d70; font-size:14px; font-weight:600; }
-/* la place d'arrivée du logo encre */
-.pa-land{ width:132px; aspect-ratio:1130/467; margin:14px 0 30px; }
-
+.pa-flogo{ width:120px; margin:12px 0 28px; }
+.pa-flogo svg{ display:block; width:100%; height:auto; }
 .pa-formwrap input:not([type='checkbox']):not([type='radio']){ font-size:16px !important; }
 .pa-sep{ display:flex; align-items:center; gap:12px; margin:30px 0 4px; }
-.pa-sep > span:not(.pa-sep__t){ flex:1; height:1px; background:#e4dfd4; }
+.pa-sep > span:not(.pa-sep__t){ flex:1; height:1px; background:#e2ddd3; }
 .pa-sep__t{ color:#6f7789; font-size:10.5px; font-weight:800; letter-spacing:.1em;
   text-transform:uppercase; white-space:nowrap; }
 .pa-acct{ display:flex; align-items:center; gap:13px; width:100%; min-height:60px; text-align:left;
-  background:none; border:0; border-bottom:1px solid #e4dfd4; padding:14px 2px; cursor:pointer; }
+  background:none; border:0; border-bottom:1px solid #e2ddd3; padding:14px 2px; cursor:pointer; }
 .pa-acct__key{ width:3px; align-self:stretch; border-radius:2px; flex:none; }
 .pa-acct > svg{ flex:none; }
 .pa-acct__txt{ flex:1; min-width:0; }
 .pa-acct b{ display:block; font-size:14px; font-weight:700; color:#12142b; letter-spacing:-.01em; }
 .pa-acct em{ display:block; font-style:normal; font-size:12px; line-height:1.45; color:#5b6273; margin-top:3px; }
-/* Le parcours Générateur est le moins connu : sa réglette se signale, sans
-   agiter toute la ligne. */
 .pa-acct--gen .pa-acct__key{ animation:paKey 2.1s ease-in-out infinite; }
 @keyframes paKey{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
 .pa-foot{ margin:22px 0 0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;
@@ -1009,23 +1187,25 @@ const PHONE_CSS = `
 .pa-back:focus-visible, .pa-acct:focus-visible{ outline:2px solid #6d5dfc; outline-offset:3px; }
 
 /* ── ENTRÉE (fill-mode BACKWARDS, voir l'avertissement plus haut) ── */
-@keyframes paRise{ from{ opacity:0; transform:translate3d(0,14px,0) } to{ opacity:1; transform:none } }
-.pa-anim .pa-in--kicker{ animation:paRise 700ms cubic-bezier(.16,1,.3,1) backwards 120ms; }
-.pa-anim .pa-in--mark{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 520ms; }
-.pa-anim .pa-in--rail{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 700ms; }
-/* L'invitation au repos : la poignée fait signe vers la gauche. Sur un
-   élément INTERNE, pour ne pas écraser le x de framer-motion ; coupée dès que
-   le papier bouge (.pa-moving) et tiroir ouvert. */
+@keyframes paRise{ from{ opacity:0; transform:translate3d(0,16px,0) scale(.97) } to{ opacity:1; transform:none } }
+.pa-anim .pa-in--hero{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 80ms; }
+.pa-anim .pa-in--o1{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 240ms; }
+.pa-anim .pa-in--o2{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 320ms; }
+.pa-anim .pa-in--o3{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 400ms; }
+.pa-anim .pa-in--o4{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 480ms; }
+.pa-anim .pa-in--o5{ animation:paRise 900ms cubic-bezier(.16,1,.3,1) backwards 560ms; }
+.pa-anim .pa-in--rail{ animation:paRise 760ms cubic-bezier(.16,1,.3,1) backwards 640ms; }
+/* L'invitation au repos : la poignée fait signe vers la gauche (élément
+   INTERNE, pour ne pas écraser le x de framer-motion). */
 @keyframes paNudge{ 0%,78%,100%{ transform:translateX(0) } 86%{ transform:translateX(-7px) } 93%{ transform:translateX(0) } }
 .pa-knob__in{ animation:paNudge 3.6s cubic-bezier(.65,.02,.28,1) infinite 2.2s; }
 .pa-moving .pa-knob__in, .pa-opened .pa-knob__in{ animation:none; }
 
 /* ── ÉCRANS COURTS (iPhone SE, barre d'URL déployée) ── */
 @media (max-height: 700px){
-  .pa-root{ --pa-rail-h: 64px; --pa-knob: 46px; }
-  .pa-wrap{ padding-top: calc(var(--pa-safe-top) + 20px + var(--pa-vpad));
-    padding-bottom: calc(var(--pa-safe-bottom) + 16px + var(--pa-vpad)); }
-  .pa-land{ margin:8px 0 20px; }
+  .pa-root{ --pa-rail-h: 62px; --pa-knob: 46px; }
+  .pa-railwrap{ bottom:calc(var(--pa-safe-bottom) + 16px); }
+  .pa-flogo{ margin:8px 0 20px; }
 }
 
 /* ── TÉLÉPHONES ÉTROITS (≤ 360px) : le sous-libellé du rail tient sur une ligne ── */
@@ -1036,28 +1216,26 @@ const PHONE_CSS = `
   .pa-rail__sub{ font-size:11.5px; }
 }
 
-/* ── TABLETTE EN PORTRAIT (≥ 560px sous le seuil des 920px) ──
-   Une colonne de 460px recentrée, horizontalement et verticalement. Le logo
-   est borné à 440px par son fantôme. */
+/* ── TABLETTE EN PORTRAIT (≥ 560px sous le seuil des 920px) : une colonne de
+   460px ; la composition est déjà plafonnée par --u. ── */
 @media (min-width: 560px){
-  .pa-root{
-    --pa-pad: max(22px, calc((100vw - 460px) / 2));
-    --pa-vpad: clamp(0px, calc((100dvh - 860px) / 2), 180px);
-  }
+  .pa-root{ --pa-pad: max(22px, calc((100vw - 460px) / 2)); }
 }
 
-/* ── TÉLÉPHONE EN PAYSAGE (≥ 560px de large, ≤ 480px de haut) ──
-   Le logo se borne à la hauteur, l'accroche et le rail se resserrent. */
+/* ── TÉLÉPHONE EN PAYSAGE (≥ 560px de large, ≤ 480px de haut) ── */
 @media (min-width: 560px) and (max-height: 480px){
   .pa-root{ --pa-rail-h: 56px; --pa-knob: 42px; --pa-knob-in: 7px; }
-  .pa-wrap{ padding-top: calc(var(--pa-safe-top) + 12px); padding-bottom: calc(var(--pa-safe-bottom) + 12px); }
-  .pa-logo-ghost{ width:min(100%, 440px, 70dvh); }
-  .pa-focus{ padding:0 0 14px; }
-  .pa-mark{ margin-top:12px; font-size:clamp(20px, 6dvh, 26px); max-width:none; }
+  .pa-railwrap{ bottom:calc(var(--pa-safe-bottom) + 12px); }
   .pa-rail__kicker{ font-size:15px; }
   .pa-rail__sub{ font-size:12px; margin-top:1px; }
   .pa-dhead{ height:36px; }
-  .pa-land{ margin:6px 0 16px; }
+  .pa-flogo{ width:96px; margin:6px 0 16px; }
+}
+
+/* ── Transparence réduite : une plaque pleine, sans flou ── */
+@media (prefers-reduced-transparency: reduce){
+  .pa-plate{ background:#f7f4ef; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .pa-rail{ background:#151827; -webkit-backdrop-filter:none; backdrop-filter:none; }
 }
 
 @media (prefers-reduced-motion: reduce){
