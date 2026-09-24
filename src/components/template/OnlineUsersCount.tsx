@@ -129,7 +129,8 @@ const OnlineUsersCount = () => {
       </button>
 
       {open && (
-        <div style={{
+        // peg-header-sheet : pleine largeur sous l'en-tête sur téléphone
+        <div className="peg-header-sheet" style={{
           position: 'absolute',
           right: 0,
           marginTop: '8px',

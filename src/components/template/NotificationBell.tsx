@@ -225,7 +225,9 @@ const NotificationBell = () => {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-[calc(100vw_-_1rem)] max-w-[24rem] md:w-96 md:max-w-none bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-[fadeInDown_0.15s_ease-out]">
+        // peg-notif-panel : sur téléphone, feuille pleine largeur sous l'en-tête
+        // (accroché à la cloche, le panneau débordait de 82px à gauche de l'écran)
+        <div className="peg-notif-panel absolute right-0 mt-2 w-[calc(100vw_-_1rem)] max-w-[24rem] md:w-96 md:max-w-none bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-[fadeInDown_0.15s_ease-out]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
             <div className="flex items-center gap-2">
@@ -242,7 +244,7 @@ const NotificationBell = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="flex items-center gap-1 text-[11px] text-blue-500 hover:text-blue-700 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  className="peg-tap-target flex items-center gap-1 text-[11px] text-blue-500 hover:text-blue-700 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                   title="Tout marquer comme lu"
                 >
                   <HiOutlineCheckCircle className="text-sm" />
@@ -252,7 +254,7 @@ const NotificationBell = () => {
               {notifications.length > 0 && (
                 <button
                   onClick={handleDeleteAll}
-                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-colors ${
+                  className={`peg-tap-target flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-colors ${
                     confirmDeleteAll
                       ? 'text-red-600 bg-red-50 dark:bg-red-900/20 font-medium'
                       : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
@@ -267,7 +269,7 @@ const NotificationBell = () => {
           </div>
 
           {/* List */}
-          <div ref={listRef} className="max-h-[420px] overflow-y-auto overscroll-contain">
+          <div ref={listRef} className="peg-notif-list max-h-[420px] overflow-y-auto overscroll-contain">
             {notifications.length === 0 ? (
               <div className="px-4 py-12 text-center">
                 <div className="text-3xl mb-2">🔔</div>
@@ -295,14 +297,16 @@ const NotificationBell = () => {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {/* Titre et texte EN ENTIER : tronqués (« … », 2 lignes), les
+                          notifications étaient coupées à la lecture */}
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words min-w-0">
                         {notif.title}
                       </span>
                       {!notif.read && (
                         <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 animate-pulse" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-words">
                       {getMetadataPreview(notif)}
                     </p>
                     <span className="text-[10px] text-gray-400 mt-1 block">

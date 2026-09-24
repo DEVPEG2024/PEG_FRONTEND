@@ -883,6 +883,34 @@
     transform: scale(0.97);
   }
 
+  /* Panneau des notifications : sur téléphone, feuille pleine largeur sous
+     l'en-tête. Accroché au bord droit de la cloche (qui n'est pas au bord de
+     l'écran), il débordait de 82px à gauche : titres et textes coupés à la
+     lecture. Hauteur bornée à l'espace libre au-dessus de la barre d'onglets,
+     la liste défile dedans (titres et textes y sont affichés en entier). */
+  /* Même feuille pour les autres panneaux de l'en-tête (utilisateurs en ligne :
+     accroché à son bouton, il débordait de 5 à 20px sur un écran de 360-375px). */
+  .peg-notif-panel,
+  .peg-header-sheet {
+    position: fixed !important;
+    top: calc(64px + var(--peg-safe-top) + 6px) !important;
+    left: max(8px, var(--peg-safe-left)) !important;
+    right: max(8px, var(--peg-safe-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin-top: 0 !important;
+  }
+  .peg-notif-panel {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 64px - var(--peg-safe-top) - var(--peg-dock-lift, 0px) - var(--peg-safe-bottom) - 18px);
+  }
+  .peg-notif-panel .peg-notif-list {
+    max-height: none !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   /* Menu complet (tiroir « Navigation ») : cibles tactiles de 44px. */
   .peg-dock-menu .peg-nav-row {
     min-height: var(--peg-tap);
