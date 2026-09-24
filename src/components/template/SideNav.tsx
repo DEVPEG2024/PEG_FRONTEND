@@ -1,5 +1,4 @@
 import classNames from 'classnames'
-import ScrollBar from '@/components/ui/ScrollBar'
 import {
     SIDE_NAV_WIDTH,
     SIDE_NAV_COLLAPSED_WIDTH,
@@ -59,7 +58,7 @@ const PremiumCard = () => (
 )
 
 const QuoteCard = () => (
-    <div style={{ padding: '12px 16px 240px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ padding: '12px 16px 0', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
             background: 'linear-gradient(160deg, rgba(139,92,246,0.12) 0%, rgba(255,255,255,0.03) 100%)',
             border: '1px solid rgba(139,92,246,0.25)',
@@ -98,9 +97,19 @@ const QuoteCard = () => (
     </div>
 )
 
+/**
+ * Espace laissé sous les cartes pour le logo PEG vertical (`.side-nav::after`). Il est
+ * compressible : sur un écran bas, c'est lui qui cède — jamais les liens du menu. Avant, ces
+ * 240 px étaient un padding fixe et la liste des liens, seule élément compressible, se
+ * retrouvait rognée (« Paramètres » coupé sous la carte devis, barre de défilement masquée).
+ */
+const LOGO_RESERVE = 240
+
 const sideNavStyle = {
     width: SIDE_NAV_WIDTH,
     minWidth: SIDE_NAV_WIDTH,
+    display: 'flex',
+    flexDirection: 'column' as const,
 }
 
 const sideNavCollapseStyle = {
@@ -115,7 +124,6 @@ const SideNav = () => {
     )
     const navMode = useAppSelector((state) => state.theme.navMode)
     const mode = useAppSelector((state) => state.theme.mode)
-    const direction = useAppSelector((state) => state.theme.direction)
     const sideNavCollapse = useAppSelector(
         (state) => state.theme.layout.sideNavCollapse
     )
@@ -173,7 +181,7 @@ const SideNav = () => {
                         !sideNavCollapse && 'side-nav-expand'
                     )}
                 >
-                    <div className="side-nav-header">
+                    <div className="side-nav-header" style={{ flexShrink: 0 }}>
                         <Logo
                             mode={logoMode()}
                             type={sideNavCollapse ? 'streamline' : 'full'}
@@ -187,17 +195,34 @@ const SideNav = () => {
                     {sideNavCollapse ? (
                         menuContent
                     ) : (
+                        // Une seule colonne qui défile en entier si l'écran est trop bas : les
+                        // liens gardent leur hauteur, les cartes restent sous les liens, et seul
+                        // l'espace réservé au logo se comprime. Hauteur prise par flex (et non
+                        // `calc(100dvh - 4rem)`) pour ne pas dépendre de la hauteur de l'en-tête.
                         <div
                             className="side-nav-content"
-                            style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                            style={{
+                                flex: 1,
+                                minHeight: 0,
+                                height: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflowX: 'hidden',
+                                overflowY: 'auto',
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+                            }}
                         >
-                            <div style={{ flex: 1, minHeight: 0 }}>
-                                <ScrollBar autoHide direction={direction}>
-                                    {menuContent}
-                                </ScrollBar>
-                            </div>
-                            {customer && !customer.premium && <PremiumCard />}
-                            {customer && <QuoteCard />}
+                            <div style={{ flex: '1 0 auto' }}>{menuContent}</div>
+                            {customer && !customer.premium && (
+                                <div style={{ flexShrink: 0 }}><PremiumCard /></div>
+                            )}
+                            {customer && (
+                                <>
+                                    <div style={{ flexShrink: 0 }}><QuoteCard /></div>
+                                    <div style={{ flex: `0 1 ${LOGO_RESERVE}px`, minHeight: 16 }} />
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
