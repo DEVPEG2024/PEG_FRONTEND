@@ -187,14 +187,15 @@ const MarkSvg = ({
   </svg>
 );
 
-/* L'image de l'accueil : la scène de la maquette de référence, recadrée avant
-   le formulaire de la maquette (sa tranche lumineuse commence vers x = 615 sur
-   1086), agrandie ×2 (Lanczos + accentuation). WebP 188 Ko, JPEG en repli.
-   Proportions : 1216 × 2896. Le sujet (du haut du hoodie au bas de la plaque
-   acrylique) occupe 72,9 % de la hauteur, centré à 48,2 % — d'où les
-   constantes 1,74 et 1,148 de PHONE_CSS (.pa-scene / .pa-drift). */
-const SCENE_WEBP = '/img/signin/accueil-peg.webp';
-const SCENE_JPG = '/img/signin/accueil-peg.jpg';
+/* L'image de l'accueil : la scène PEG fournie par le propriétaire (900 × 1600,
+   9:16), agrandie ×1,5 (Lanczos + légère accentuation) pour les écrans 3x :
+   1350 × 2400, WebP 285 Ko, JPEG en repli. Le SUJET — du haut du hoodie
+   (y ≈ 165) au bas de la plaque acrylique (y ≈ 1530) — mesure 1,52 fois la
+   largeur de l'image, son centre est à 0,942 largeur du haut et son bas à
+   1,70 : d'où les constantes 1,52 / 0,942 / 1,70 de PHONE_CSS (.pa-scene /
+   .pa-drift). Le sol lumineux, en dessous, passe sous le rail. */
+const SCENE_WEBP = '/img/signin/accueil-peg-v2.webp';
+const SCENE_JPG = '/img/signin/accueil-peg-v2.jpg';
 
 /* Un bloc du formulaire : il se construit sur sa fenêtre de p, [a ; a + d]
    (voir .pa-st). */
@@ -848,7 +849,7 @@ const PHONE_CSS = `
   --pa-knob-in: 8px;
   position: fixed; inset: 0; height: 100dvh;
   overflow: hidden; isolation: isolate;
-  background: #070711; color: #fff;
+  background: #05040f; color: #fff;
   font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
@@ -859,38 +860,43 @@ const PHONE_CSS = `
 .pa-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
   clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-/* ── L'ACCUEIL : le fond de l'image (#070711, relevé dans ses coins) ── */
-.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#070711; }
+/* ── L'ACCUEIL : le fond de l'image (#05040f, relevé dans ses coins) ── */
+.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#05040f; }
 .pa-veil{ position:absolute; inset:0; background:#010208; opacity:0; pointer-events:none; display:block; }
 .pa-wrap{ position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; }
 .pa-world{ position:absolute; inset:0; transform-origin:50% 50%; will-change:transform; }
 .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); pointer-events:none;
   bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
-/* Largeur de la scène nette : toute la largeur de l'écran, 460px au plus
-   (tablette), et assez étroite pour que le SUJET (1,74 × la largeur) tienne
+/* Largeur de la scène nette : toute la largeur de l'écran, 680px au plus
+   (tablette), et assez étroite pour que le SUJET (1,52 × la largeur) tienne
    entre la barre d'état et le rail. En vw et dvh, jamais en % : --pw sert aussi
    au calcul de « top », où un % se lirait sur la hauteur. */
-.pa-scene{ --pw: min(100vw, 460px,
-  calc((100dvh - var(--pa-safe-top) - var(--pa-safe-bottom) - var(--pa-rail-h) - 34px) / 1.74)); }
+.pa-scene{ --pw: min(100vw, 680px,
+  calc((100dvh - var(--pa-safe-top) - var(--pa-safe-bottom) - var(--pa-rail-h) - 34px) / 1.52)); }
 .pa-photo{ position:absolute; inset:0; will-change:transform; }
-/* le sujet (centré à 48,2 % de l'image) posé au milieu de la zone utile */
+/* Le sujet est POSÉ sur le bas de la zone utile (son bas, à 1,70 largeur du
+   haut de l'image, rejoint le bas de .pa-scene) : le sol lumineux file sous le
+   rail, sans bande vide entre les deux. Sur un écran bien plus haut que le
+   sujet (tablette), on ne descend pas à plus de 90px sous le centrage, pour ne
+   pas laisser un grand vide en haut. */
 .pa-drift{ position:absolute; width:var(--pw); left:calc(50% - var(--pw) / 2);
-  top:calc(50% - var(--pw) * 1.148); animation:paDrift 9s ease-in-out infinite; }
+  top:min(calc(100% - var(--pw) * 1.70), calc(50% - var(--pw) * 0.942 + 90px));
+  animation:paDrift 9s ease-in-out infinite; }
 @keyframes paDrift{ 0%,100%{ transform:translate3d(0,0,0) } 50%{ transform:translate3d(0,-6px,0) } }
 .pa-photo__img{ display:block; width:100%; height:auto; opacity:0; transform:scale(1.035);
   transition:opacity .9s ease, transform 1.4s cubic-bezier(.16,1,.3,1);
   /* bords fondus dans le plan de fond : aucune couture visible */
-  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 6%, #000 90%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 5%, #000 97%, transparent 100%);
   -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 6%, #000 90%, transparent 100%);
+  mask-image:linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 5%, #000 97%, transparent 100%);
   mask-composite:intersect; }
 .pa-photo__img.is-ready{ opacity:1; transform:none; }
 /* le plan de fond : l'image très floue, un peu plus grande que l'écran */
 .pa-ambient{ position:absolute; inset:-8%; will-change:transform; pointer-events:none; }
 .pa-ambient img{ width:100%; height:100%; object-fit:cover; display:block;
-  filter:blur(38px) saturate(1.25) brightness(.5); }
+  filter:blur(38px) saturate(1.25) brightness(.38); }
 
 /* ── Le rail : chemin explicite et curseur ── */
 .pa-railwrap{ position:absolute; left:var(--pa-pad); right:var(--pa-pad);
@@ -922,7 +928,7 @@ const PHONE_CSS = `
   box-shadow:inset 0 1px 0 rgba(255,255,255,.85), -22px 0 60px rgba(0,0,0,.34), 0 40px 100px rgba(0,0,0,.3); }
 /* le dépoli : la scène, floutée une fois, dans la forme de la plaque */
 .pa-frostclip{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; display:block; }
-.pa-frost{ position:absolute; left:0; top:0; width:100vw; height:100%; display:block; background:#070711;
+.pa-frost{ position:absolute; left:0; top:0; width:100vw; height:100%; display:block; background:#05040f;
   filter:blur(22px) saturate(1.3); will-change:transform; }
 .pa-frost .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); display:block;
   bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
@@ -1029,6 +1035,13 @@ const PHONE_CSS = `
    460px ; la scène nette est déjà plafonnée à 460px par --pw. ── */
 @media (min-width: 560px){
   .pa-root{ --pa-pad: max(22px, calc((100vw - 460px) / 2)); }
+  /* la scène ne remplit plus la largeur : ses bords se fondent plus
+     largement dans le plan de fond, pour qu'aucun cadre ne se lise */
+  .pa-stage .pa-photo__img{
+    -webkit-mask-image:linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 10%, #000 97%, transparent 100%);
+    mask-image:linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 10%, #000 97%, transparent 100%); }
 }
 
 /* ── TÉLÉPHONE EN PAYSAGE (≥ 560px de large, ≤ 480px de haut) ── */
