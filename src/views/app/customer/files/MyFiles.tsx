@@ -1,38 +1,45 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import Container from '@/components/shared/Container'
-import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel'
 import { useAppSelector } from '@/store'
 import { User } from '@/@types/user'
 import { env } from '@/configs/env.config'
 import {
   apiGetCustomerVisibleFiles,
   apiCreateClientFile,
+  apiDeleteClientFile,
   apiUploadFile,
   ClientFile,
 } from '@/services/ClientFileServices'
 import {
   HiOutlineUpload,
-  HiOutlineCloud,
-  HiOutlineFolder,
-  HiOutlineFolderOpen,
-  HiOutlineChartPie,
-  HiOutlineShare,
-  HiOutlineClock,
-  HiOutlinePhotograph,
-  HiOutlineColorSwatch,
-  HiOutlineVideoCamera,
-  HiOutlineDocument,
-  HiOutlineDocumentText,
+  HiOutlineDownload,
+  HiOutlineTrash,
+  HiOutlineEye,
+  HiOutlineSearch,
   HiOutlineX,
-  HiOutlineChevronRight,
-  HiOutlineInbox,
+  HiOutlineCheck,
+  HiOutlineExclamation,
 } from 'react-icons/hi'
-import { TbActivity } from 'react-icons/tb'
+
+/*
+ * « Mes fichiers » côté client — volontairement simple : les fichiers d'abord, et une fenêtre
+ * d'envoi (plusieurs fichiers d'un coup, glisser-déposer n'importe où sur la page).
+ */
 
 /* ---------- Helpers ---------- */
 
-const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024 * 1024 // 10 Go
+type Category = ClientFile['category']
+
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: 'logo', label: 'Logo' },
+  { value: 'charte', label: 'Charte graphique' },
+  { value: 'brief', label: 'Brief' },
+  { value: 'asset', label: 'Asset' },
+  { value: 'autre', label: 'Autre' },
+]
+
+const categoryLabel = (c?: string) => CATEGORIES.find((x) => x.value === c)?.label ?? 'Autre'
 
 function fileUrl(file: ClientFile['file']): string {
   if (!file?.url) return ''
@@ -40,53 +47,29 @@ function fileUrl(file: ClientFile['file']): string {
   return (env?.API_ENDPOINT_URL ?? '') + file.url
 }
 
-function isImage(file: ClientFile['file']): boolean {
-  return file?.mime?.startsWith('image/') ?? false
-}
+const isImage = (file: ClientFile['file']) => file?.mime?.startsWith('image/') ?? false
 
-function isVideo(file: ClientFile['file']): boolean {
-  return file?.mime?.startsWith('video/') ?? false
-}
-
+// Strapi stocke la taille des médias en kilo-octets.
 function formatSize(bytes: number): string {
   if (!bytes || bytes < 1024) return `${bytes || 0} o`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`
 }
 
-// Strapi stocke la taille des médias en kilo-octets (KB) — on convertit en octets.
-function clientFileBytes(file: ClientFile['file']): number {
-  return (file?.size ?? 0) * 1024
-}
+const formatDate = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 
-// Affichage adaptatif Ko/Mo/Go — évite d'arrondir quelques Mo à « 0 Go »
-function formatStorage(bytes: number): string {
-  if (!bytes || bytes <= 0) return '0 o'
-  const KB = 1024, MB = KB * 1024, GB = MB * 1024
-  if (bytes < MB) return `${Math.round(bytes / KB)} Ko`
-  if (bytes < GB) return `${(bytes / MB).toFixed(1).replace('.', ',')} Mo`
-  return `${(bytes / GB).toFixed(2).replace('.', ',')} Go`
-}
+const guessCategory = (f: File): Category => (f.type.startsWith('image/') ? 'logo' : 'autre')
 
-function timeAgo(iso?: string): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const now = new Date()
-  const diff = Math.floor((now.getTime() - d.getTime()) / 1000)
-  if (diff < 60) return "à l'instant"
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`
-  if (diff < 604800) return `il y a ${Math.floor(diff / 86400)} j`
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
+const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
-const UPLOAD_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'logo', label: 'Logo' },
-  { value: 'charte', label: 'Charte graphique' },
-  { value: 'brief', label: 'Brief' },
-  { value: 'asset', label: 'Asset' },
-  { value: 'autre', label: 'Autre' },
-]
+type QueuedFile = {
+  key: string
+  file: File
+  name: string
+  category: Category
+  status: 'waiting' | 'sending' | 'done' | 'error'
+}
 
 /* ---------- Page ---------- */
 
@@ -96,16 +79,15 @@ const MyFiles = () => {
 
   const [files, setFiles] = useState<ClientFile[]>([])
   const [loading, setLoading] = useState(true)
-  const [showLibrary, setShowLibrary] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<Category | 'all'>('all')
+  const [preview, setPreview] = useState<ClientFile | null>(null)
 
-  // Upload modal
   const [showUpload, setShowUpload] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [uploadName, setUploadName] = useState('')
-  const [uploadCategory, setUploadCategory] = useState('autre')
-  const [dragOver, setDragOver] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [queue, setQueue] = useState<QueuedFile[]>([])
+  const [sending, setSending] = useState(false)
+  const [pageDrag, setPageDrag] = useState(false)
+  const dragDepth = useRef(0)
 
   const fetchFiles = async () => {
     if (!customerDocumentId) return
@@ -126,113 +108,144 @@ const MyFiles = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerDocumentId])
 
-  /* ---------- Derived stats ---------- */
+  const sorted = useMemo(
+    () => [...files].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [files],
+  )
 
-  const stats = useMemo(() => {
-    const totalBytes = files.reduce((s, f) => s + clientFileBytes(f.file), 0)
-    const shared = files.filter((f) => f.shared).length
-    const sorted = [...files].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {}
+    files.forEach((f) => { c[f.category || 'autre'] = (c[f.category || 'autre'] ?? 0) + 1 })
+    return c
+  }, [files])
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return sorted.filter(
+      (f) =>
+        (filter === 'all' || (f.category || 'autre') === filter) &&
+        (!q || f.name.toLowerCase().includes(q) || f.file?.name?.toLowerCase().includes(q)),
     )
-    const last = sorted[0]
-    const usedPct = Math.min(100, (totalBytes / STORAGE_LIMIT_BYTES) * 100)
-    return {
-      total: files.length,
-      totalBytes,
-      shared,
-      last,
-      recent: sorted.slice(0, 5),
-      usedPct,
-    }
-  }, [files])
+  }, [sorted, filter, search])
 
-  const quickAccess = useMemo(() => {
-    const logos = files.filter((f) => f.category === 'logo').length
-    const chartes = files.filter((f) => f.category === 'charte').length
-    const photos = files.filter((f) => isImage(f.file) && f.category !== 'logo').length
-    const videos = files.filter((f) => isVideo(f.file)).length
-    const documents = files.filter(
-      (f) => !isImage(f.file) && !isVideo(f.file)
-    ).length
-    return [
-      { key: 'logos', label: 'Logos', count: logos, icon: <HiOutlineFolder className="w-6 h-6" />, color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-      { key: 'chartes', label: 'Chartes graphiques', count: chartes, icon: <HiOutlineColorSwatch className="w-6 h-6" />, color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
-      { key: 'photos', label: 'Photos', count: photos, icon: <HiOutlinePhotograph className="w-6 h-6" />, color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-      { key: 'videos', label: 'Vidéos', count: videos, icon: <HiOutlineVideoCamera className="w-6 h-6" />, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-      { key: 'documents', label: 'Documents', count: documents, icon: <HiOutlineDocument className="w-6 h-6" />, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-    ]
-  }, [files])
+  /* ---------- Envoi ---------- */
 
-  /* ---------- Upload ---------- */
-
-  const openUploadWith = (f?: File) => {
-    if (f) {
-      setUploadFile(f)
-      setUploadName(f.name.replace(/\.[^.]+$/, ''))
-      if (f.type.startsWith('image/')) setUploadCategory('logo')
-    }
+  const addToQueue = (list: FileList | File[] | null) => {
+    const picked = Array.from(list ?? [])
+    if (picked.length === 0) return
+    setQueue((q) => [
+      ...q,
+      ...picked.map((file) => ({
+        key: `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        name: stripExt(file.name),
+        category: guessCategory(file),
+        status: 'waiting' as const,
+      })),
+    ])
     setShowUpload(true)
   }
 
-  const resetUpload = () => {
+  const updateQueued = (key: string, patch: Partial<QueuedFile>) =>
+    setQueue((q) => q.map((x) => (x.key === key ? { ...x, ...patch } : x)))
+
+  const closeUpload = () => {
+    if (sending) return
     setShowUpload(false)
-    setUploadFile(null)
-    setUploadName('')
-    setUploadCategory('autre')
-    setUploading(false)
+    setQueue([])
   }
 
-  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setUploadFile(f)
-    if (!uploadName.trim()) setUploadName(f.name.replace(/\.[^.]+$/, ''))
-    if (f.type.startsWith('image/')) setUploadCategory('logo')
-  }
-
-  const handleUpload = async () => {
-    if (!uploadFile || !uploadName.trim()) {
-      toast.warning('Nom et fichier requis')
-      return
-    }
-    try {
-      setUploading(true)
-      const uploadRes = await apiUploadFile(uploadFile)
-      const uploadData = (uploadRes as any)?.data
-      const fileEntry = Array.isArray(uploadData) ? uploadData[0] : uploadData
-      const fileId = fileEntry?.id
-      if (!fileId) {
-        toast.error("Erreur lors de l'upload du fichier")
-        return
+  const sendAll = async () => {
+    const toSend = queue.filter((x) => x.status === 'waiting' || x.status === 'error')
+    if (toSend.length === 0 || !customerDocumentId) return
+    setSending(true)
+    let failed = 0
+    for (const item of toSend) {
+      updateQueued(item.key, { status: 'sending' })
+      try {
+        const uploadRes = await apiUploadFile(item.file)
+        const uploaded: any = (uploadRes as any)?.data
+        const fileId = (Array.isArray(uploaded) ? uploaded[0] : uploaded)?.id
+        if (!fileId) throw new Error('upload sans identifiant')
+        await apiCreateClientFile({
+          name: item.name.trim() || stripExt(item.file.name),
+          category: item.category,
+          shared: true,
+          visibleToCustomer: true,
+          notes: '',
+          customer: customerDocumentId,
+          fileId,
+        })
+        updateQueued(item.key, { status: 'done' })
+      } catch {
+        failed++
+        updateQueued(item.key, { status: 'error' })
       }
-      await apiCreateClientFile({
-        name: uploadName.trim(),
-        category: uploadCategory,
-        shared: true,
-        visibleToCustomer: true,
-        notes: '',
-        customer: customerDocumentId!,
-        fileId,
-      })
-      toast.success('Fichier ajouté !')
-      resetUpload()
-      fetchFiles()
-    } catch (err: any) {
-      const msg = err?.response?.data?.error?.message || err?.message || ''
-      toast.error(msg ? `Erreur upload : ${msg}` : "Erreur lors de l'ajout du fichier")
-    } finally {
-      setUploading(false)
+    }
+    setSending(false)
+    fetchFiles()
+    if (failed === 0) {
+      toast.success(toSend.length > 1 ? `${toSend.length} fichiers envoyés` : 'Fichier envoyé')
+      setShowUpload(false)
+      setQueue([])
+    } else {
+      toast.error(`${failed} fichier${failed > 1 ? 's' : ''} n'${failed > 1 ? 'ont' : 'a'} pas pu être envoyé${failed > 1 ? 's' : ''}. Réessayez.`)
+      setQueue((q) => q.filter((x) => x.status !== 'done'))
     }
   }
 
-  const onDropFile = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const f = e.dataTransfer.files?.[0]
-    if (f) openUploadWith(f)
+  /* ---------- Actions fichier ---------- */
+
+  const handleDelete = async (cf: ClientFile) => {
+    if (!confirm(`Supprimer « ${cf.name} » ?`)) return
+    try {
+      await apiDeleteClientFile(cf.documentId)
+      setFiles((prev) => prev.filter((f) => f.documentId !== cf.documentId))
+      toast.success('Fichier supprimé')
+    } catch {
+      toast.error('Erreur lors de la suppression')
+    }
   }
 
-  /* ---------- Guard ---------- */
+  const handleDownload = (cf: ClientFile) => {
+    const url = fileUrl(cf.file)
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = cf.file?.name ?? cf.name
+    a.target = '_blank'
+    a.rel = 'noopener'
+    a.click()
+  }
+
+  /* ---------- Glisser-déposer sur toute la page ---------- */
+
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files')
+  const dragHandlers = {
+    onDragEnter: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      dragDepth.current++
+      setPageDrag(true)
+    },
+    onDragOver: (e: React.DragEvent) => {
+      if (hasFiles(e)) e.preventDefault()
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return
+      dragDepth.current = Math.max(0, dragDepth.current - 1)
+      if (dragDepth.current === 0) setPageDrag(false)
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return
+      e.preventDefault()
+      dragDepth.current = 0
+      setPageDrag(false)
+      if (!sending) addToQueue(e.dataTransfer.files)
+    },
+  }
+
+  /* ---------- Rendu ---------- */
 
   if (!customerDocumentId) {
     return (
@@ -244,412 +257,121 @@ const MyFiles = () => {
     )
   }
 
-  const isEmpty = !loading && files.length === 0
-
   return (
     <Container className="pb-10">
-      {/* HEADER */}
-      <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Mes fichiers</h1>
-          <p className="text-sm text-white/40 mt-1 max-w-xl">
-            Gérez vos logos, chartes graphiques et documents. Les fichiers partagés
-            seront accessibles par les producteurs assignés à vos projets.
-          </p>
-        </div>
-        <button
-          onClick={() => openUploadWith()}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition shadow-lg shadow-blue-600/25"
-        >
-          <HiOutlineUpload className="w-4 h-4" />
-          Ajouter un fichier
-        </button>
-      </div>
-
-      {/* HERO + STORAGE */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
-        {/* Hero */}
-        <div
-          className="xl:col-span-2 relative overflow-hidden rounded-2xl border border-white/10 p-5 md:p-8"
-          style={{
-            background:
-              'radial-gradient(120% 140% at 80% 10%, rgba(99,102,241,0.28) 0%, rgba(79,70,229,0.10) 35%, rgba(15,18,32,0.4) 70%), linear-gradient(160deg, #14172a 0%, #0d1020 100%)',
-          }}
-        >
-          <div className="relative z-10 max-w-md">
-            <p className="text-[11px] font-bold tracking-[0.18em] text-indigo-300 mb-3">
-              VOS FICHIERS
-            </p>
-            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-white">
-              CENTRALISÉS.{' '}
-              <span className="text-indigo-400">SÉCURISÉS.</span>
-            </h2>
-            <p className="text-sm text-white/50 mt-4 leading-relaxed">
-              Logos, chartes graphiques, photos, vidéos et documents accessibles à
-              tout moment.
+      <div {...dragHandlers} className="relative min-h-[60vh]">
+        {/* EN-TÊTE */}
+        <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Mes fichiers</h1>
+            <p className="text-sm text-white/40 mt-1 max-w-xl">
+              Logos, chartes graphiques et documents à utiliser pour vos commandes.
             </p>
           </div>
-          {/* Decorative folder illustration */}
-          <FolderArt />
-        </div>
-
-        {/* Storage */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 flex flex-col">
-          <div className="flex items-center gap-2.5 mb-4">
-            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-300">
-              <HiOutlineCloud className="w-5 h-5" />
-            </span>
-            <span className="text-sm font-semibold text-white/80">Stockage utilisé</span>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <Donut pct={stats.usedPct} />
-            <div className="mt-4 text-center">
-              <p className="text-base font-bold text-white">
-                {formatStorage(stats.totalBytes)}{' '}
-                <span className="text-white/30 font-medium">/ 10 Go</span>
-              </p>
-              <p className="text-[11px] text-white/35 mt-0.5">
-                Espace disponible : {formatStorage(STORAGE_LIMIT_BYTES - stats.totalBytes)}
-              </p>
-            </div>
-          </div>
-
           <button
-            onClick={() => setShowLibrary(true)}
-            className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-sm text-white/70 font-medium transition"
-          >
-            Gérer le stockage <HiOutlineChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* STAT CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
-        <StatCard
-          icon={<HiOutlineFolder className="w-5 h-5" />}
-          color="#a78bfa"
-          bg="rgba(167,139,250,0.12)"
-          label="Total fichiers"
-          value={loading ? '—' : String(stats.total)}
-          sub="Fichiers au total"
-        />
-        <StatCard
-          icon={<HiOutlineChartPie className="w-5 h-5" />}
-          color="#60a5fa"
-          bg="rgba(96,165,250,0.12)"
-          label="Taille utilisée"
-          value={loading ? '—' : formatStorage(stats.totalBytes)}
-          sub="Sur 10 Go"
-        />
-        <StatCard
-          icon={<HiOutlineShare className="w-5 h-5" />}
-          color="#4ade80"
-          bg="rgba(74,222,128,0.12)"
-          label="Partagés"
-          value={loading ? '—' : String(stats.shared)}
-          sub="Fichiers partagés"
-        />
-        <StatCard
-          icon={<HiOutlineClock className="w-5 h-5" />}
-          color="#fbbf24"
-          bg="rgba(251,191,36,0.12)"
-          label="Dernier ajout"
-          value={loading ? '—' : stats.last ? timeAgo(stats.last.createdAt) : 'Aucun'}
-          sub={stats.last ? stats.last.name : 'Aucun fichier ajouté'}
-        />
-      </div>
-
-      {/* QUICK ACCESS + EMPTY/PREVIEW */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
-        {/* Accès rapide */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-bold text-white">Accès rapide</h3>
-            <button
-              onClick={() => setShowLibrary(true)}
-              className="text-white/40 hover:text-white/80 transition peg-tap-target"
-            >
-              <HiOutlineChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            {quickAccess.map((q) => (
-              <button
-                key={q.key}
-                onClick={() => setShowLibrary(true)}
-                className="flex flex-col items-center text-center gap-2 p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 transition"
-              >
-                <span
-                  className="flex items-center justify-center w-11 h-11 rounded-xl"
-                  style={{ background: q.bg, color: q.color }}
-                >
-                  {q.icon}
-                </span>
-                <span className="text-[12px] font-semibold text-white/80 leading-tight">
-                  {q.label}
-                </span>
-                <span className="text-[10px] text-white/35">
-                  {q.count} fichier{q.count > 1 ? 's' : ''}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Empty / drop zone */}
-        <div
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragOver(true)
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDropFile}
-          className={`rounded-2xl border border-dashed p-6 flex flex-col items-center justify-center text-center transition ${
-            dragOver
-              ? 'border-indigo-400/60 bg-indigo-500/[0.06]'
-              : 'border-white/15 bg-white/[0.01]'
-          }`}
-        >
-          <span className="flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-300 mb-4">
-            <HiOutlineInbox className="w-8 h-8" />
-          </span>
-          <p className="text-base font-bold text-white">
-            {isEmpty ? 'Vos fichiers apparaîtront ici' : `${stats.total} fichier${stats.total > 1 ? 's' : ''} dans votre bibliothèque`}
-          </p>
-          <p className="text-xs text-white/40 mt-1.5 max-w-xs">
-            {isEmpty
-              ? 'Ajoutez votre premier fichier pour commencer à constituer votre bibliothèque.'
-              : 'Ajoutez un nouveau fichier ou parcourez votre bibliothèque.'}
-          </p>
-          <button
-            onClick={() => openUploadWith()}
-            className="mt-4 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition shadow-lg shadow-blue-600/25"
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition shadow-lg shadow-blue-600/25"
           >
             <HiOutlineUpload className="w-4 h-4" />
-            Ajouter un fichier
+            Envoyer des fichiers
           </button>
-          <p className="text-[11px] text-white/30 mt-3">
-            ou glisser-déposer un fichier ici
-          </p>
-        </div>
-      </div>
-
-      {/* RECENT FILES + ACTIVITY */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {/* Fichiers récents */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">Fichiers récents</h3>
-            <button
-              onClick={() => setShowLibrary(true)}
-              className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition"
-            >
-              Voir tout
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03]">
-                  <div className="w-10 h-10 rounded-lg bg-white/[0.06]" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-32 rounded bg-white/[0.06]" />
-                    <div className="h-2 w-20 rounded bg-white/[0.04]" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : stats.recent.length === 0 ? (
-            <div className="text-center py-12">
-              <HiOutlineFolderOpen className="w-10 h-10 text-white/10 mx-auto mb-3" />
-              <p className="text-sm text-white/50 font-medium">Aucun fichier pour le moment.</p>
-              <p className="text-xs text-white/30 mt-1">
-                Ajoutez votre premier fichier ou explorez votre bibliothèque.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {stats.recent.map((f) => {
-                const url = fileUrl(f.file)
-                return (
-                  <div
-                    key={f.documentId}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition"
-                  >
-                    {isImage(f.file) ? (
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] shrink-0">
-                        <img src={url} alt={f.name} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
-                        <HiOutlineDocumentText className="w-5 h-5 text-white/30" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-white/80 truncate">{f.name}</div>
-                      <div className="flex items-center gap-2 text-[10px] text-white/30">
-                        <span>{f.file?.ext?.replace('.', '').toUpperCase()}</span>
-                        <span>·</span>
-                        <span>{formatSize(clientFileBytes(f.file))}</span>
-                        <span>·</span>
-                        <span>{timeAgo(f.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
 
-        {/* Activité récente */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">Activité récente</h3>
-            <button
-              onClick={() => setShowLibrary(true)}
-              className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition"
-            >
-              Voir tout
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2].map((i) => (
-                <div key={i} className="animate-pulse h-10 rounded-xl bg-white/[0.03]" />
-              ))}
-            </div>
-          ) : stats.recent.length === 0 ? (
-            <div className="text-center py-12">
-              <TbActivity className="w-10 h-10 text-white/10 mx-auto mb-3" />
-              <p className="text-sm text-white/50 font-medium">Aucune activité récente</p>
-              <p className="text-xs text-white/30 mt-1">
-                Les dernières actions sur vos fichiers apparaîtront ici.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {stats.recent.map((f) => (
-                <div key={f.documentId} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/12 text-emerald-400 shrink-0">
-                    <HiOutlineUpload className="w-4 h-4" />
-                  </span>
-                  <div className="flex-1 min-w-0 text-sm text-white/70">
-                    <span className="text-white/85 font-medium">{f.name}</span> ajouté
-                  </div>
-                  <span className="text-[10px] text-white/30 shrink-0">{timeAgo(f.createdAt)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* UPLOAD MODAL */}
-      {showUpload && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={resetUpload}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#11141f] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-white">Ajouter un fichier</h3>
-              <button onClick={resetUpload} className="text-white/30 hover:text-white/70 transition peg-tap-target">
-                <HiOutlineX className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault()
-                setDragOver(true)
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDropFile}
-              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-8 cursor-pointer transition ${
-                dragOver ? 'border-indigo-400/60 bg-indigo-500/[0.05]' : 'border-white/10 hover:border-indigo-500/30'
-              }`}
-            >
-              {uploadFile ? (
-                <div className="flex items-center gap-2 text-sm text-white/70">
-                  <HiOutlineDocumentText className="w-5 h-5 text-indigo-400" />
-                  {uploadFile.name}
-                  <span className="text-[10px] text-white/30">({formatSize(uploadFile.size)})</span>
-                </div>
-              ) : (
-                <>
-                  <HiOutlineUpload className="w-7 h-7 text-white/20" />
-                  <span className="text-xs text-white/40">Cliquer ou glisser-déposer un fichier</span>
-                </>
-              )}
-            </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={onFileSelect} />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        {/* RECHERCHE + FILTRES */}
+        {files.length > 0 && (
+          <div className="flex items-center flex-wrap gap-2 mb-5">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
               <input
-                type="text"
-                value={uploadName}
-                onChange={(e) => setUploadName(e.target.value)}
-                placeholder="Nom du fichier"
-                className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-indigo-500/40 transition"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un fichier"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 transition"
               />
-              <select
-                value={uploadCategory}
-                onChange={(e) => setUploadCategory(e.target.value)}
-                className="bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500/40 transition"
-              >
-                {UPLOAD_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value} className="bg-gray-900">
-                    {c.label}
-                  </option>
-                ))}
-              </select>
             </div>
-
-            <button
-              onClick={handleUpload}
-              disabled={uploading || !uploadFile || !uploadName.trim()}
-              className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-blue-600/25"
-            >
-              {uploading ? 'Envoi…' : 'Enregistrer le fichier'}
-            </button>
+            <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label="Tous" count={files.length} />
+            {CATEGORIES.filter((c) => counts[c.value]).map((c) => (
+              <FilterChip
+                key={c.value}
+                active={filter === c.value}
+                onClick={() => setFilter(c.value)}
+                label={c.label}
+                count={counts[c.value]}
+              />
+            ))}
           </div>
-        </div>
+        )}
+
+        {/* FICHIERS */}
+        {loading ? (
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.02] h-[210px]" />
+            ))}
+          </div>
+        ) : files.length === 0 ? (
+          <button
+            onClick={() => setShowUpload(true)}
+            className="w-full flex flex-col items-center justify-center text-center gap-3 py-16 rounded-2xl border-2 border-dashed border-white/15 hover:border-indigo-400/50 hover:bg-indigo-500/[0.04] transition"
+          >
+            <span className="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-300">
+              <HiOutlineUpload className="w-7 h-7" />
+            </span>
+            <span className="text-base font-bold text-white">Aucun fichier pour le moment</span>
+            <span className="text-sm text-white/40">Cliquez ou glissez vos fichiers ici pour les envoyer</span>
+          </button>
+        ) : visible.length === 0 ? (
+          <p className="text-center text-sm text-white/40 py-12">Aucun fichier ne correspond à votre recherche.</p>
+        ) : (
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))' }}>
+            {visible.map((f) => (
+              <FileCard
+                key={f.documentId}
+                file={f}
+                onPreview={() => setPreview(f)}
+                onDownload={() => handleDownload(f)}
+                onDelete={() => handleDelete(f)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* VOILE DE DÉPÔT */}
+        {pageDrag && !showUpload && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-400/70 bg-indigo-500/10 backdrop-blur-[2px]">
+            <p className="text-lg font-bold text-white">Déposez vos fichiers pour les envoyer</p>
+          </div>
+        )}
+      </div>
+
+      {/* FENÊTRE D'ENVOI */}
+      {showUpload && (
+        <UploadWindow
+          queue={queue}
+          sending={sending}
+          onAdd={addToQueue}
+          onChange={updateQueued}
+          onRemove={(key) => setQueue((q) => q.filter((x) => x.key !== key))}
+          onSend={sendAll}
+          onClose={closeUpload}
+        />
       )}
 
-      {/* LIBRARY MODAL (gestion complète) */}
-      {showLibrary && (
+      {/* APERÇU */}
+      {preview && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
-          onClick={() => {
-            setShowLibrary(false)
-            fetchFiles()
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setPreview(null)}
         >
-          <div
-            className="w-full max-w-3xl my-8 rounded-2xl border border-white/10 bg-[#11141f] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-white">Ma bibliothèque</h3>
-              <button
-                onClick={() => {
-                  setShowLibrary(false)
-                  fetchFiles()
-                }}
-                className="text-white/30 hover:text-white/70 transition peg-tap-target"
-              >
-                <HiOutlineX className="w-5 h-5" />
-              </button>
-            </div>
-            <ClientFilesPanel customerDocumentId={customerDocumentId} mode="customer" />
+          <div className="relative max-w-3xl max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreview(null)}
+              aria-label="Fermer l'aperçu"
+              className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+            >
+              <HiOutlineX className="w-5 h-5" />
+            </button>
+            <img src={fileUrl(preview.file)} alt={preview.name} className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" />
           </div>
         </div>
       )}
@@ -657,125 +379,219 @@ const MyFiles = () => {
   )
 }
 
-/* ---------- Sub components ---------- */
+/* ---------- Sous-composants ---------- */
 
-const StatCard = ({
-  icon,
-  color,
-  bg,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ReactNode
-  color: string
-  bg: string
-  label: string
-  value: string
-  sub: string
-}) => (
-  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex items-center gap-4">
-    <span
-      className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0"
-      style={{ background: bg, color }}
-    >
-      {icon}
-    </span>
-    <div className="min-w-0">
-      <p className="text-[11px] text-white/40 font-medium">{label}</p>
-      <p className="text-2xl font-bold text-white leading-tight truncate">{value}</p>
-      <p className="text-[11px] text-white/30 truncate">{sub}</p>
-    </div>
-  </div>
+const FilterChip = ({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) => (
+  <button
+    onClick={onClick}
+    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+      active ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-200' : 'bg-white/[0.03] border-white/10 text-white/50 hover:text-white/80'
+    }`}
+  >
+    {label} <span className="opacity-60">{count}</span>
+  </button>
 )
 
-const Donut = ({ pct }: { pct: number }) => {
-  const r = 52
-  const c = 2 * Math.PI * r
-  const offset = c - (pct / 100) * c
+const FileCard = ({
+  file: f,
+  onPreview,
+  onDownload,
+  onDelete,
+}: {
+  file: ClientFile
+  onPreview: () => void
+  onDownload: () => void
+  onDelete: () => void
+}) => {
+  const img = isImage(f.file)
+  const ext = f.file?.ext?.replace('.', '').toUpperCase() || 'FICHIER'
   return (
-    <div className="relative w-[130px] h-[130px]">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 130 130">
-        <circle cx="65" cy="65" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
-        <circle
-          cx="65"
-          cy="65"
-          r={r}
-          fill="none"
-          stroke="url(#donutGrad)"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-        />
-        <defs>
-          <linearGradient id="donutGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#818cf8" />
-            <stop offset="100%" stopColor="#60a5fa" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold text-white">{pct > 0 && pct < 1 ? '<1' : Math.round(pct)}%</span>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden flex flex-col hover:border-white/20 transition">
+      <button
+        onClick={img ? onPreview : onDownload}
+        title={img ? 'Aperçu' : 'Ouvrir'}
+        className="h-[120px] flex items-center justify-center bg-white/[0.03] border-b border-white/[0.06] overflow-hidden"
+      >
+        {img ? (
+          <img src={fileUrl(f.file)} alt={f.name} className="w-full h-full object-contain p-2" loading="lazy" />
+        ) : (
+          <span className="flex items-center justify-center w-14 h-14 rounded-xl bg-indigo-500/15 text-indigo-200 text-xs font-bold">
+            {ext.slice(0, 4)}
+          </span>
+        )}
+      </button>
+      <div className="p-3 flex-1 flex flex-col gap-1 min-w-0">
+        <p className="text-sm font-semibold text-white/90 truncate" title={f.name}>{f.name}</p>
+        <p className="text-[11px] text-white/35 truncate">
+          {categoryLabel(f.category)} · {ext} · {formatSize((f.file?.size ?? 0) * 1024)} · {formatDate(f.createdAt)}
+        </p>
+        <div className="flex items-center gap-1 mt-auto pt-1">
+          {img && (
+            <IconAction label="Aperçu" onClick={onPreview}><HiOutlineEye className="w-4 h-4" /></IconAction>
+          )}
+          <IconAction label="Télécharger" onClick={onDownload}><HiOutlineDownload className="w-4 h-4" /></IconAction>
+          <span className="flex-1" />
+          <IconAction label="Supprimer" onClick={onDelete} danger><HiOutlineTrash className="w-4 h-4" /></IconAction>
+        </div>
       </div>
     </div>
   )
 }
 
-const FolderArt = () => (
-  <div className="hidden md:block absolute right-6 top-1/2 -translate-y-1/2 w-[260px] h-[200px] z-0 pointer-events-none">
-    {/* Folder body */}
-    <div
-      className="absolute right-6 bottom-4 w-[170px] h-[120px] rounded-2xl"
-      style={{
-        background: 'linear-gradient(160deg, #6366f1 0%, #4338ca 100%)',
-        boxShadow: '0 20px 50px rgba(79,70,229,0.4)',
-      }}
-    />
-    <div
-      className="absolute right-6 bottom-[104px] w-[80px] h-[24px] rounded-t-xl"
-      style={{ background: 'linear-gradient(160deg, #818cf8 0%, #6366f1 100%)' }}
-    />
-    {/* File badges */}
-    <Badge label="PNG" color="#7c3aed" style={{ right: 150, top: 30 }} />
-    <Badge label="Ai" color="#1f2937" accent="#f59e0b" style={{ right: 120, bottom: 18 }} />
-    <Badge label="PDF" color="#dc2626" style={{ right: 0, top: 10 }} />
-    <Badge label="DOC" color="#2563eb" style={{ right: 56, top: -4 }} />
-    {/* Check */}
-    <div
-      className="absolute flex items-center justify-center w-8 h-8 rounded-full text-white text-sm"
-      style={{ right: 24, bottom: 8, background: '#3b82f6', boxShadow: '0 6px 16px rgba(59,130,246,0.5)' }}
-    >
-      ✓
-    </div>
-  </div>
-)
-
-const Badge = ({
+const IconAction = ({
   label,
-  color,
-  accent,
-  style,
+  onClick,
+  danger,
+  children,
 }: {
   label: string
-  color: string
-  accent?: string
-  style: React.CSSProperties
+  onClick: () => void
+  danger?: boolean
+  children: React.ReactNode
 }) => (
-  <div
-    className="absolute flex items-center justify-center rounded-xl text-white text-[11px] font-bold"
-    style={{
-      width: 44,
-      height: 44,
-      background: color,
-      boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
-      ...(accent ? { color: accent } : {}),
-      ...style,
-    }}
+  <button
+    onClick={onClick}
+    title={label}
+    aria-label={label}
+    className={`peg-tap-target p-1.5 rounded-lg text-white/40 transition ${
+      danger ? 'hover:text-rose-400 hover:bg-rose-500/10' : 'hover:text-white hover:bg-white/[0.06]'
+    }`}
   >
-    {label}
-  </div>
+    {children}
+  </button>
 )
+
+const UploadWindow = ({
+  queue,
+  sending,
+  onAdd,
+  onChange,
+  onRemove,
+  onSend,
+  onClose,
+}: {
+  queue: QueuedFile[]
+  sending: boolean
+  onAdd: (list: FileList | null) => void
+  onChange: (key: string, patch: Partial<QueuedFile>) => void
+  onRemove: (key: string) => void
+  onSend: () => void
+  onClose: () => void
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [over, setOver] = useState(false)
+  const pending = queue.filter((x) => x.status !== 'done').length
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-label="Envoyer des fichiers"
+        className="w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl border border-white/10 bg-[#11141f] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 pb-4">
+          <h3 className="text-lg font-bold text-white">Envoyer des fichiers</h3>
+          <button onClick={onClose} disabled={sending} aria-label="Fermer" className="text-white/30 hover:text-white/70 transition peg-tap-target disabled:opacity-30">
+            <HiOutlineX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-5 overflow-y-auto">
+          <div
+            onClick={() => !sending && inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true) }}
+            onDragLeave={() => setOver(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setOver(false)
+              if (!sending) onAdd(e.dataTransfer.files)
+            }}
+            className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-8 cursor-pointer transition ${
+              over ? 'border-indigo-400/60 bg-indigo-500/[0.06]' : 'border-white/15 hover:border-indigo-500/40'
+            }`}
+          >
+            <HiOutlineUpload className="w-7 h-7 text-indigo-300" />
+            <span className="text-sm font-semibold text-white/80">Cliquez ou glissez vos fichiers ici</span>
+            <span className="text-[11px] text-white/35">Plusieurs fichiers possibles</span>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              onAdd(e.target.files)
+              e.target.value = ''
+            }}
+          />
+
+          {queue.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {queue.map((q) => (
+                <div key={q.key} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={q.name}
+                      onChange={(e) => onChange(q.key, { name: e.target.value })}
+                      disabled={sending || q.status === 'done'}
+                      aria-label="Nom du fichier"
+                      className="flex-1 min-w-0 bg-transparent text-sm text-white outline-none border-b border-transparent focus:border-indigo-500/50"
+                    />
+                    <StatusIcon status={q.status} />
+                    {!sending && q.status !== 'done' && (
+                      <button onClick={() => onRemove(q.key)} aria-label={`Retirer ${q.file.name}`} className="text-white/30 hover:text-white/70">
+                        <HiOutlineX className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <span className="text-[11px] text-white/35 truncate">
+                      {q.file.name} · {formatSize(q.file.size)}
+                    </span>
+                    <select
+                      value={q.category}
+                      onChange={(e) => onChange(q.key, { category: e.target.value as Category })}
+                      disabled={sending || q.status === 'done'}
+                      aria-label="Type de fichier"
+                      className="bg-white/[0.05] border border-white/10 rounded-lg px-2 py-1 text-xs text-white outline-none"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value} className="bg-gray-900">{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 pt-4">
+          <button
+            onClick={onSend}
+            disabled={sending || pending === 0}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-blue-600/25"
+          >
+            {sending
+              ? 'Envoi en cours…'
+              : pending > 1
+                ? `Envoyer ${pending} fichiers`
+                : 'Envoyer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const StatusIcon = ({ status }: { status: QueuedFile['status'] }) => {
+  if (status === 'sending')
+    return <span className="w-4 h-4 rounded-full border-2 border-indigo-300 border-t-transparent animate-spin shrink-0" aria-label="Envoi" />
+  if (status === 'done') return <HiOutlineCheck className="w-4 h-4 text-emerald-400 shrink-0" aria-label="Envoyé" />
+  if (status === 'error') return <HiOutlineExclamation className="w-4 h-4 text-rose-400 shrink-0" aria-label="Échec" />
+  return null
+}
 
 export default MyFiles
