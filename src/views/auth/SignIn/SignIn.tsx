@@ -197,15 +197,17 @@ const MarkSvg = ({
   </svg>
 );
 
-/* L'image de l'accueil : la scène PEG fournie par le propriétaire (900 × 1600,
-   9:16), agrandie ×1,5 (Lanczos + légère accentuation) pour les écrans 3x :
-   1350 × 2400, WebP 285 Ko, JPEG en repli. Le SUJET — du haut du hoodie
-   (y ≈ 165) au bas de la plaque acrylique (y ≈ 1530) — mesure 1,52 fois la
-   largeur de l'image, son centre est à 0,942 largeur du haut et son bas à
-   1,70 : d'où les constantes 1,52 / 0,942 / 1,70 de PHONE_CSS (.pa-scene /
-   .pa-drift). Le sol lumineux, en dessous, passe sous le rail. */
-const SCENE_WEBP = '/img/signin/accueil-peg-v2.webp';
-const SCENE_JPG = '/img/signin/accueil-peg-v2.jpg';
+/* L'image de l'accueil : la scène PEG fournie par le propriétaire (1086 × 1448,
+   3:4, PNG sans perte), agrandie ×1,25 (Lanczos + légère accentuation) pour
+   les écrans 3x et les tablettes : 1358 × 1810, WebP 251 Ko, JPEG en repli.
+   Mesures, en largeurs d'image : le SUJET (du haut du hoodie, y ≈ 75, au bas
+   de la plaque acrylique, y ≈ 1360) mesure 1,183 ; son centre est à 0,661 ;
+   l'image entière à 1,333 ; le sol sous le sujet ne fait que 0,081 — d'où les
+   constantes 1,19 et 1,333 de PHONE_CSS (.pa-scene / .pa-drift).
+   Son contenu touche les deux bords (rouleau de vinyle, mug, téléphone) : elle
+   n'est jamais agrandie au-delà de la largeur de l'écran. */
+const SCENE_WEBP = '/img/signin/accueil-peg-v3.webp';
+const SCENE_JPG = '/img/signin/accueil-peg-v3.jpg';
 
 /* Un bloc du formulaire : il se construit sur sa fenêtre de p, [a ; a + d]
    (voir .pa-st). */
@@ -859,7 +861,7 @@ const PHONE_CSS = `
   --pa-knob-in: 8px;
   position: fixed; inset: 0; height: 100dvh;
   overflow: hidden; isolation: isolate;
-  background: #05040f; color: #fff;
+  background: #040612; color: #fff;
   font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
@@ -870,36 +872,37 @@ const PHONE_CSS = `
 .pa-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
   clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-/* ── L'ACCUEIL : le fond de l'image (#05040f, relevé dans ses coins) ── */
-.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#05040f; }
+/* ── L'ACCUEIL : le fond de l'image (#040612, relevé dans ses coins) ── */
+.pa-stage{ position:absolute; inset:0; overflow:hidden; background:#040612; }
 .pa-veil{ position:absolute; inset:0; background:#010208; opacity:0; pointer-events:none; display:block; }
 .pa-wrap{ position:absolute; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; }
 .pa-world{ position:absolute; inset:0; transform-origin:50% 50%; will-change:transform; }
 .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); pointer-events:none;
   bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
 /* Largeur de la scène nette : toute la largeur de l'écran, 680px au plus
-   (tablette), et assez étroite pour que le SUJET (1,52 × la largeur) tienne
+   (tablette), et assez étroite pour que le SUJET (1,19 × la largeur) tienne
    entre la barre d'état et le rail. En vw et dvh, jamais en % : --pw sert aussi
    au calcul de « top », où un % se lirait sur la hauteur. */
 .pa-scene{ --pw: min(100vw, 680px,
-  calc((100dvh - var(--pa-safe-top) - var(--pa-safe-bottom) - var(--pa-rail-h) - 34px) / 1.52)); }
+  calc((100dvh - var(--pa-safe-top) - var(--pa-safe-bottom) - var(--pa-rail-h) - 34px) / 1.19)); }
 .pa-photo{ position:absolute; inset:0; will-change:transform; }
-/* Le sujet est POSÉ sur le bas de la zone utile (son bas, à 1,70 largeur du
-   haut de l'image, rejoint le bas de .pa-scene) : le sol lumineux file sous le
-   rail, sans bande vide entre les deux. Sur un écran bien plus haut que le
-   sujet (tablette), on ne descend pas à plus de 90px sous le centrage, pour ne
-   pas laisser un grand vide en haut. */
+/* L'image est POSÉE : son bas descend 32px sous la zone utile, donc sous le
+   bord haut du rail (12px plus bas) — le sol lumineux, court dans cette image,
+   file sous le bouton sans bande vide, et le bas de la plaque acrylique
+   (0,081 largeur au-dessus du bas de l'image) tombe au ras de la zone. Toujours
+   posée, jamais centrée : le haut de l'image est un ciel sombre, un vide y est
+   naturel — alors qu'entre la scène et le bouton il se lisait comme une bande. */
 .pa-drift{ position:absolute; width:var(--pw); left:calc(50% - var(--pw) / 2);
-  top:min(calc(100% - var(--pw) * 1.70), calc(50% - var(--pw) * 0.942 + 90px));
+  top:calc(100% + 32px - var(--pw) * 1.333);
   animation:paDrift 9s ease-in-out infinite; }
 @keyframes paDrift{ 0%,100%{ transform:translate3d(0,0,0) } 50%{ transform:translate3d(0,-6px,0) } }
 .pa-photo__img{ display:block; width:100%; height:auto; opacity:0; transform:scale(1.035);
   transition:opacity .9s ease, transform 1.4s cubic-bezier(.16,1,.3,1);
   /* bords fondus dans le plan de fond : aucune couture visible */
-  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%),
+  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 2.5%, #000 97.5%, transparent 100%),
     linear-gradient(to bottom, transparent 0, #000 5%, #000 97%, transparent 100%);
   -webkit-mask-composite:source-in;
-  mask-image:linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%),
+  mask-image:linear-gradient(to right, transparent 0, #000 2.5%, #000 97.5%, transparent 100%),
     linear-gradient(to bottom, transparent 0, #000 5%, #000 97%, transparent 100%);
   mask-composite:intersect; }
 .pa-photo__img.is-ready{ opacity:1; transform:none; }
@@ -938,7 +941,7 @@ const PHONE_CSS = `
   box-shadow:inset 0 1px 0 rgba(255,255,255,.85), -22px 0 60px rgba(0,0,0,.34), 0 40px 100px rgba(0,0,0,.3); }
 /* le dépoli : la scène, floutée une fois, dans la forme de la plaque */
 .pa-frostclip{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; display:block; }
-.pa-frost{ position:absolute; left:0; top:0; width:100vw; height:100%; display:block; background:#05040f;
+.pa-frost{ position:absolute; left:0; top:0; width:100vw; height:100%; display:block; background:#040612;
   filter:blur(22px) saturate(1.3); will-change:transform; }
 .pa-frost .pa-scene{ position:absolute; left:0; right:0; top:var(--pa-safe-top); display:block;
   bottom:calc(var(--pa-safe-bottom) + var(--pa-rail-h) + 34px); }
