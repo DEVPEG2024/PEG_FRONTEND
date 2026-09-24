@@ -8,6 +8,7 @@ import {
   apiGetCustomerVisibleFiles,
   apiCreateClientFile,
   apiDeleteClientFile,
+  apiUpdateClientFile,
   apiUploadFile,
   ClientFile,
 } from '@/services/ClientFileServices'
@@ -27,6 +28,8 @@ import {
   HiOutlineClock,
   HiOutlineShare,
   HiOutlineLightBulb,
+  HiOutlineInformationCircle,
+  HiOutlineLink,
 } from 'react-icons/hi'
 
 /*
@@ -93,6 +96,49 @@ function formatSize(bytes: number): string {
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 
+const formatDateTime = (iso?: string) =>
+  iso
+    ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : ''
+
+const extOf = (f: ClientFile) => f.file?.ext?.replace('.', '').toUpperCase() || 'FICHIER'
+
+/*
+ * Qualité d'impression, pour guider le client : un format vectoriel s'imprime à toute taille ;
+ * une image matricielle s'imprime nettement jusqu'à (pixels / 300 dpi). Seuil « haute déf. » :
+ * 10 cm de large à 300 dpi, la taille d'un marquage cœur/poitrine courant.
+ */
+const VECTOR_EXTS = ['SVG', 'AI', 'EPS', 'PDF']
+type Quality = { level: 'vector' | 'hd' | 'ld'; label: string; detail: string; color: string }
+function qualityOf(f: ClientFile): Quality | null {
+  const ext = extOf(f)
+  if (VECTOR_EXTS.includes(ext)) {
+    return {
+      level: 'vector',
+      label: 'Vectoriel',
+      detail: ext === 'PDF' ? 'Généralement vectoriel : s’imprime à toute taille sans perte' : 'S’imprime à toute taille sans perte de qualité',
+      color: '#34d399',
+    }
+  }
+  const w = f.file?.width
+  const h = f.file?.height
+  if (!isImage(f.file) || !w || !h) return null
+  const cmW = (w / 300) * 2.54
+  const cmH = (h / 300) * 2.54
+  const size = `${Math.round(cmW)} × ${Math.round(cmH)} cm à 300 dpi`
+  return cmW >= 10
+    ? { level: 'hd', label: 'Haute déf.', detail: `Impression nette jusqu’à ${size}`, color: '#60a5fa' }
+    : { level: 'ld', label: 'Basse déf.', detail: `Seulement ${size} : privilégiez un fichier vectoriel ou plus grand`, color: '#f59e0b' }
+}
+
+type SortKey = 'recent' | 'old' | 'name' | 'size'
+const SORTS: { value: SortKey; label: string }[] = [
+  { value: 'recent', label: 'Plus récents' },
+  { value: 'old', label: 'Plus anciens' },
+  { value: 'name', label: 'Nom (A → Z)' },
+  { value: 'size', label: 'Taille' },
+]
+
 const guessCategory = (f: File): Category => (f.type.startsWith('image/') ? 'logo' : 'autre')
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
@@ -116,6 +162,9 @@ const MyFiles = () => {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Category | 'all'>('all')
   const [preview, setPreview] = useState<ClientFile | null>(null)
+  const [sort, setSort] = useState<SortKey>('recent')
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const detail = files.find((f) => f.documentId === detailId) ?? null
   const [view, setViewState] = useState<'grid' | 'list'>(readView)
   const setView = (v: 'grid' | 'list') => {
     setViewState(v)
@@ -174,12 +223,43 @@ const MyFiles = () => {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return sorted.filter(
+    const list = sorted.filter(
       (f) =>
         (filter === 'all' || (f.category || 'autre') === filter) &&
-        (!q || f.name.toLowerCase().includes(q) || f.file?.name?.toLowerCase().includes(q)),
+        (!q ||
+          f.name.toLowerCase().includes(q) ||
+          f.file?.name?.toLowerCase().includes(q) ||
+          f.notes?.toLowerCase().includes(q)),
     )
-  }, [sorted, filter, search])
+    if (sort === 'old') return [...list].reverse()
+    if (sort === 'name') return [...list].sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+    if (sort === 'size') return [...list].sort((a, b) => fileBytes(b) - fileBytes(a))
+    return list
+  }, [sorted, filter, search, sort])
+
+  const handleSave = async (
+    cf: ClientFile,
+    patch: { name: string; category: Category; notes: string; shared: boolean },
+  ): Promise<boolean> => {
+    try {
+      await apiUpdateClientFile(cf.documentId, patch)
+      setFiles((prev) => prev.map((f) => (f.documentId === cf.documentId ? { ...f, ...patch } : f)))
+      toast.success('Modifications enregistrées')
+      return true
+    } catch {
+      toast.error("Les modifications n'ont pas pu être enregistrées")
+      return false
+    }
+  }
+
+  const copyLink = async (cf: ClientFile) => {
+    try {
+      await navigator.clipboard.writeText(fileUrl(cf.file))
+      toast.success('Lien copié')
+    } catch {
+      toast.error('Impossible de copier le lien')
+    }
+  }
 
   /* ---------- Envoi ---------- */
 
@@ -254,6 +334,7 @@ const MyFiles = () => {
     try {
       await apiDeleteClientFile(cf.documentId)
       setFiles((prev) => prev.filter((f) => f.documentId !== cf.documentId))
+      if (detailId === cf.documentId) setDetailId(null)
       toast.success('Fichier supprimé')
     } catch {
       toast.error('Erreur lors de la suppression')
@@ -388,7 +469,17 @@ const MyFiles = () => {
                 count={counts[c.value]}
               />
             ))}
-            <div className="ml-auto flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-0.5">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              aria-label="Trier les fichiers"
+              className="ml-auto bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-white/70 outline-none focus:border-indigo-500/40"
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value} className="bg-gray-900">{s.label}</option>
+              ))}
+            </select>
+            <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-0.5">
               <ViewButton active={view === 'grid'} onClick={() => setView('grid')} label="Vue en grille">
                 <HiOutlineViewGrid className="w-4 h-4" />
               </ViewButton>
@@ -422,6 +513,7 @@ const MyFiles = () => {
         ) : view === 'list' ? (
           <FileList
             files={visible}
+            onOpen={(f) => setDetailId(f.documentId)}
             onPreview={setPreview}
             onDownload={handleDownload}
             onDelete={handleDelete}
@@ -432,6 +524,7 @@ const MyFiles = () => {
               <FileCard
                 key={f.documentId}
                 file={f}
+                onOpen={() => setDetailId(f.documentId)}
                 onPreview={() => setPreview(f)}
                 onDownload={() => handleDownload(f)}
                 onDelete={() => handleDelete(f)}
@@ -458,6 +551,20 @@ const MyFiles = () => {
           onRemove={(key) => setQueue((q) => q.filter((x) => x.key !== key))}
           onSend={sendAll}
           onClose={closeUpload}
+        />
+      )}
+
+      {/* FICHE DÉTAILLÉE */}
+      {detail && (
+        <FileDetail
+          key={detail.documentId}
+          file={detail}
+          onClose={() => setDetailId(null)}
+          onPreview={() => setPreview(detail)}
+          onDownload={() => handleDownload(detail)}
+          onCopyLink={() => copyLink(detail)}
+          onDelete={() => handleDelete(detail)}
+          onSave={(patch) => handleSave(detail, patch)}
         />
       )}
 
@@ -574,63 +681,87 @@ const ViewButton = ({
   </button>
 )
 
+const QualityBadge = ({ file }: { file: ClientFile }) => {
+  const q = qualityOf(file)
+  if (!q) return null
+  return (
+    <span
+      title={q.detail}
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+      style={{ color: q.color, background: `${q.color}14`, borderColor: `${q.color}40` }}
+    >
+      {q.label}
+    </span>
+  )
+}
+
+const dimensionsOf = (f: ClientFile) =>
+  f.file?.width && f.file?.height ? `${f.file.width} × ${f.file.height} px` : null
+
 const FileList = ({
   files,
+  onOpen,
   onPreview,
   onDownload,
   onDelete,
 }: {
   files: ClientFile[]
+  onOpen: (f: ClientFile) => void
   onPreview: (f: ClientFile) => void
   onDownload: (f: ClientFile) => void
   onDelete: (f: ClientFile) => void
 }) => (
   <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
     {/* En-têtes de colonnes — masqués sur petit écran, où chaque ligne s'empile */}
-    <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_130px_90px_110px_120px] gap-3 px-4 py-2.5 border-b border-white/[0.06] text-[11px] font-semibold uppercase tracking-wide text-white/35">
+    <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_150px_130px_110px_150px] gap-3 px-4 py-2.5 border-b border-white/[0.06] text-[11px] font-semibold uppercase tracking-wide text-white/35">
       <span>Nom</span>
-      <span>Type</span>
-      <span>Taille</span>
+      <span>Type · qualité</span>
+      <span>Format · taille</span>
       <span>Ajouté le</span>
       <span className="text-right">Actions</span>
     </div>
     {files.map((f) => {
       const img = isImage(f.file)
-      const ext = f.file?.ext?.replace('.', '').toUpperCase() || 'FICHIER'
+      const ext = extOf(f)
+      const dims = dimensionsOf(f)
       return (
         <div
           key={f.documentId}
-          className="grid grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_130px_90px_110px_120px] gap-x-3 gap-y-1 items-center px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition"
+          className="grid grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_150px_130px_110px_150px] gap-x-3 gap-y-1 items-center px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => (img ? onPreview(f) : onDownload(f))}
-              title={img ? 'Aperçu' : 'Ouvrir'}
-              className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0"
-            >
+          <button onClick={() => onOpen(f)} title="Voir le détail" className="flex items-center gap-3 min-w-0 text-left">
+            <span className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
               {img ? (
-                <img src={fileUrl(f.file)} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
+                <img src={fileUrl(f.file)} alt="" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <span className="text-[9px] font-bold text-indigo-200">{ext.slice(0, 4)}</span>
               )}
-            </button>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white/90 truncate" title={f.name}>{f.name}</p>
-              <p className="text-[11px] text-white/35 truncate">
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-white/90 truncate">{f.name}</span>
+              <span className="block text-[11px] text-white/35 truncate">
                 {f.file?.name ?? ext}
                 {f.shared && <span className="text-emerald-300/80"> · Partagé</span>}
                 {f.notes && <span className="italic"> · « {f.notes} »</span>}
-              </p>
+              </span>
               {/* Détails repliés sous le nom sur petit écran */}
-              <p className="xl:hidden text-[11px] text-white/40 mt-0.5">
-                {categoryOf(f.category).label} · {ext} · {formatSize(fileBytes(f))} · {formatDate(f.createdAt)}
-              </p>
-            </div>
-          </div>
-          <span className="hidden xl:block"><CategoryBadge category={f.category} /></span>
-          <span className="hidden xl:block text-xs text-white/60">{ext} · {formatSize(fileBytes(f))}</span>
+              <span className="xl:hidden flex items-center gap-1.5 flex-wrap text-[11px] text-white/40 mt-0.5">
+                <span>{categoryOf(f.category).label} · {ext} · {formatSize(fileBytes(f))} · {formatDate(f.createdAt)}</span>
+                <QualityBadge file={f} />
+              </span>
+            </span>
+          </button>
+          <span className="hidden xl:flex flex-col items-start gap-1">
+            <CategoryBadge category={f.category} />
+            <QualityBadge file={f} />
+          </span>
+          <span className="hidden xl:block text-xs text-white/60">
+            {ext} · {formatSize(fileBytes(f))}
+            {dims && <span className="block text-[11px] text-white/35">{dims}</span>}
+          </span>
           <span className="hidden xl:block text-xs text-white/60">{formatDate(f.createdAt)}</span>
           <div className="flex items-center justify-end gap-0.5">
+            <IconAction label="Détails" onClick={() => onOpen(f)}><HiOutlineInformationCircle className="w-4 h-4" /></IconAction>
             {img && (
               <IconAction label="Aperçu" onClick={() => onPreview(f)}><HiOutlineEye className="w-4 h-4" /></IconAction>
             )}
@@ -645,22 +776,25 @@ const FileList = ({
 
 const FileCard = ({
   file: f,
+  onOpen,
   onPreview,
   onDownload,
   onDelete,
 }: {
   file: ClientFile
+  onOpen: () => void
   onPreview: () => void
   onDownload: () => void
   onDelete: () => void
 }) => {
   const img = isImage(f.file)
-  const ext = f.file?.ext?.replace('.', '').toUpperCase() || 'FICHIER'
+  const ext = extOf(f)
+  const dims = dimensionsOf(f)
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden flex flex-col hover:border-white/20 transition">
       <button
-        onClick={img ? onPreview : onDownload}
-        title={img ? 'Aperçu' : 'Ouvrir'}
+        onClick={onOpen}
+        title="Voir le détail"
         className="h-[120px] flex items-center justify-center bg-white/[0.03] border-b border-white/[0.06] overflow-hidden"
       >
         {img ? (
@@ -674,20 +808,25 @@ const FileCard = ({
       <div className="p-3 flex-1 flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <CategoryBadge category={f.category} />
+          <QualityBadge file={f} />
           {f.shared && <SharedBadge />}
         </div>
-        <p className="text-sm font-semibold text-white/90 truncate" title={f.name}>{f.name}</p>
+        <button onClick={onOpen} className="text-left text-sm font-semibold text-white/90 truncate hover:text-white" title={f.name}>
+          {f.name}
+        </button>
         {f.file?.name && f.file.name !== f.name && (
           <p className="text-[11px] text-white/30 truncate" title={f.file.name}>{f.file.name}</p>
         )}
         <p className="text-[11px] text-white/40">
           {ext} · {formatSize(fileBytes(f))}
+          {dims && <> · {dims}</>}
         </p>
         <p className="text-[11px] text-white/40">Ajouté le {formatDate(f.createdAt)}</p>
         {f.notes && (
           <p className="text-[11px] text-white/55 italic line-clamp-2" title={f.notes}>« {f.notes} »</p>
         )}
         <div className="flex items-center gap-1 mt-auto pt-1">
+          <IconAction label="Détails" onClick={onOpen}><HiOutlineInformationCircle className="w-4 h-4" /></IconAction>
           {img && (
             <IconAction label="Aperçu" onClick={onPreview}><HiOutlineEye className="w-4 h-4" /></IconAction>
           )}
@@ -851,6 +990,229 @@ const UploadWindow = ({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Fiche d'un fichier : aperçu, toutes les informations connues, qualité d'impression, et
+ * modification du nom, du type, de la note et du partage (la garde Strapi n'autorise un client
+ * qu'à modifier ses propres fichiers).
+ */
+const FileDetail = ({
+  file: f,
+  onClose,
+  onPreview,
+  onDownload,
+  onCopyLink,
+  onDelete,
+  onSave,
+}: {
+  file: ClientFile
+  onClose: () => void
+  onPreview: () => void
+  onDownload: () => void
+  onCopyLink: () => void
+  onDelete: () => void
+  onSave: (patch: { name: string; category: Category; notes: string; shared: boolean }) => Promise<boolean>
+}) => {
+  const [name, setName] = useState(f.name)
+  const [category, setCategory] = useState<Category>(f.category || 'autre')
+  const [notes, setNotes] = useState(f.notes ?? '')
+  const [shared, setShared] = useState(!!f.shared)
+  const [saving, setSaving] = useState(false)
+
+  const img = isImage(f.file)
+  const ext = extOf(f)
+  const q = qualityOf(f)
+  const dims = dimensionsOf(f)
+  const dirty =
+    name.trim() !== f.name || category !== (f.category || 'autre') || notes !== (f.notes ?? '') || shared !== !!f.shared
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const save = async () => {
+    if (!name.trim()) {
+      toast.warning('Le nom ne peut pas être vide')
+      return
+    }
+    setSaving(true)
+    await onSave({ name: name.trim(), category, notes, shared })
+    setSaving(false)
+  }
+
+  const rows: [string, React.ReactNode][] = [
+    ['Fichier d’origine', f.file?.name ?? '—'],
+    ['Format', `${ext}${f.file?.mime ? ` (${f.file.mime})` : ''}`],
+    ['Taille', formatSize(fileBytes(f))],
+    ...(dims ? [['Dimensions', dims] as [string, React.ReactNode]] : []),
+    ['Ajouté le', formatDateTime(f.createdAt)],
+    ...(f.updatedAt && f.updatedAt !== f.createdAt
+      ? [['Modifié le', formatDateTime(f.updatedAt)] as [string, React.ReactNode]]
+      : []),
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <aside
+        role="dialog"
+        aria-label={`Détail du fichier ${f.name}`}
+        className="h-full w-full max-w-[480px] flex flex-col bg-[#11141f] border-l border-white/10 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 p-5 pb-4 border-b border-white/[0.06]">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35">Détail du fichier</p>
+            <h3 className="text-lg font-bold text-white truncate">{f.name}</h3>
+          </div>
+          <button onClick={onClose} aria-label="Fermer" className="text-white/30 hover:text-white/70 transition peg-tap-target">
+            <HiOutlineX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Aperçu */}
+          <button
+            onClick={img ? onPreview : onDownload}
+            title={img ? 'Agrandir' : 'Ouvrir le fichier'}
+            className="w-full h-[220px] rounded-2xl border border-white/10 flex items-center justify-center overflow-hidden"
+            style={{ background: 'repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%, transparent 0% 50%) 50% / 20px 20px' }}
+          >
+            {img ? (
+              <img src={fileUrl(f.file)} alt={f.name} className="max-w-full max-h-full object-contain p-3" />
+            ) : (
+              <span className="flex flex-col items-center gap-2">
+                <span className="flex items-center justify-center w-20 h-20 rounded-2xl bg-indigo-500/15 text-indigo-200 text-base font-bold">
+                  {ext.slice(0, 4)}
+                </span>
+                <span className="text-xs text-white/40">Cliquer pour ouvrir le fichier</span>
+              </span>
+            )}
+          </button>
+
+          {/* Badges + qualité */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <CategoryBadge category={f.category} />
+            <QualityBadge file={f} />
+            {f.shared && <SharedBadge />}
+          </div>
+          {q && (
+            <div
+              className="rounded-xl border p-3 text-xs leading-relaxed"
+              style={{ borderColor: `${q.color}40`, background: `${q.color}0f`, color: 'rgba(255,255,255,0.7)' }}
+            >
+              <strong style={{ color: q.color }}>Qualité d’impression — {q.label}</strong>
+              <br />
+              {q.detail}.
+            </div>
+          )}
+
+          {/* Informations */}
+          <dl className="rounded-xl border border-white/10 divide-y divide-white/[0.06]">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex items-start justify-between gap-4 px-3 py-2.5">
+                <dt className="text-xs text-white/40 shrink-0">{k}</dt>
+                <dd className="text-xs text-white/80 text-right break-all">{v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {/* Modification */}
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-white/35">Modifier</p>
+            <label className="block">
+              <span className="text-xs text-white/50">Nom</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500/40"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-white/50">Type</span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as Category)}
+                className="mt-1 w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500/40"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value} className="bg-gray-900">{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-white/50">Note / consigne d’utilisation</span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Ex. : version blanche à utiliser sur les textiles foncés"
+                className="mt-1 w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/25 outline-none focus:border-indigo-500/40 resize-y"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setShared(!shared)}
+              aria-pressed={shared}
+              className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                shared ? 'border-emerald-400/30 bg-emerald-400/[0.06]' : 'border-white/10 bg-white/[0.02]'
+              }`}
+            >
+              <span
+                className={`w-9 h-5 rounded-full relative shrink-0 transition ${shared ? 'bg-emerald-500' : 'bg-white/15'}`}
+              >
+                <span
+                  className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
+                  style={{ left: shared ? 18 : 2 }}
+                />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-white/85">Partagé avec l’atelier</span>
+                <span className="block text-[11px] text-white/40">
+                  {shared
+                    ? 'Les producteurs de vos projets peuvent utiliser ce fichier.'
+                    : 'Seuls vous et l’équipe PEG voyez ce fichier.'}
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={save}
+              disabled={!dirty || saving}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
+            </button>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 p-4 border-t border-white/[0.06]">
+          <button
+            onClick={onDownload}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-semibold text-white/80 transition"
+          >
+            <HiOutlineDownload className="w-4 h-4" /> Télécharger
+          </button>
+          <button
+            onClick={onCopyLink}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-sm font-semibold text-white/80 transition"
+          >
+            <HiOutlineLink className="w-4 h-4" /> Copier le lien
+          </button>
+          <button
+            onClick={onDelete}
+            aria-label="Supprimer le fichier"
+            title="Supprimer"
+            className="flex items-center justify-center w-11 h-11 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] hover:bg-rose-500/15 text-rose-300 transition"
+          >
+            <HiOutlineTrash className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
     </div>
   )
 }

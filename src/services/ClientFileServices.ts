@@ -12,6 +12,9 @@ export type ClientFile = {
     mime: string
     size: number
     ext: string
+    /** Dimensions en pixels — renseignées par Strapi pour les images uniquement. */
+    width?: number | null
+    height?: number | null
   }
   shared: boolean
   visibleToCustomer: boolean
