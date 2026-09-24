@@ -1,6 +1,5 @@
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useRef, useState } from 'react';
-import { Pagination, Select } from '@/components/ui';
 import { HiOutlineSearch, HiPlus, HiPhotograph } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import { MdDragIndicator } from 'react-icons/md';
@@ -21,18 +20,18 @@ import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
 injectReducer('productCategories', reducer);
 
-type PageOption = { value: number; label: string };
-const pageOptions: PageOption[] = [
-  { value: 16, label: '16 / page' },
-  { value: 24, label: '24 / page' },
-  { value: 32, label: '32 / page' },
-];
+// Toutes les catégories sur une seule page (une vingtaine en production).
+// Paginer côté serveur découpait aussi les sous-catégories, masquées ensuite :
+// des catégories racines se retrouvaient en page 2 ou 3.
+const ALL_CATEGORIES = { page: 1, pageSize: 1000 };
+
+/** En recherche : tout montrer. Sinon : uniquement les catégories racines. */
+const visibleCategories = (list: ProductCategory[], searchTerm: string) =>
+  searchTerm.trim() ? list : list.filter((c) => !c.parent?.documentId);
 
 const Categories = () => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(16);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -51,22 +50,17 @@ const Categories = () => {
   );
 
   useEffect(() => {
-    dispatch(getProductCategories({ pagination: { page: currentPage, pageSize }, searchTerm }));
-  }, [dispatch, searchTerm, currentPage, pageSize]);
+    dispatch(getProductCategories({ pagination: ALL_CATEGORIES, searchTerm }));
+  }, [dispatch, searchTerm]);
 
   useEffect(() => {
     if (isSavingOrder.current) return;
-    // En recherche : montrer tout. Sinon : uniquement les catégories racines
-    const filtered = searchTerm.trim()
-      ? productCategories
-      : productCategories.filter((c) => !c.parent?.documentId);
-    setOrderedCategories([...filtered]);
+    setOrderedCategories(visibleCategories(productCategories, searchTerm));
     setOrderChanged(false);
   }, [productCategories, searchTerm]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
   const handleEditProductCategory = (cat: ProductCategory) => {
@@ -140,7 +134,7 @@ const Categories = () => {
       );
       setOrderChanged(false);
       // Re-fetch pour récupérer les catégories triées par order:asc depuis le backend
-      dispatch(getProductCategories({ pagination: { page: currentPage, pageSize }, searchTerm }));
+      dispatch(getProductCategories({ pagination: ALL_CATEGORIES, searchTerm }));
     } catch (e) {
       // Error handled silently
     } finally {
@@ -150,7 +144,9 @@ const Categories = () => {
   };
 
   const handleCancelOrder = () => {
-    setOrderedCategories([...productCategories]);
+    // Même filtre qu'à l'affichage : sinon « Annuler » faisait remonter les
+    // sous-catégories au rang de catégories.
+    setOrderedCategories(visibleCategories(productCategories, searchTerm));
     setOrderChanged(false);
   };
 
@@ -297,18 +293,7 @@ const Categories = () => {
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', fontWeight: 600 }}>Aucune catégorie</p>
           </div>
         )}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-          gap: '12px', marginTop: '32px', paddingBottom: '32px', flexWrap: 'wrap',
-        }}>
-          <Pagination total={total} currentPage={currentPage} pageSize={pageSize} onChange={(page) => setCurrentPage(page)} />
-          <div style={{ minWidth: '120px' }}>
-            <Select
-              size="sm" isSearchable={false} defaultValue={pageOptions[0]} options={pageOptions}
-              onChange={(selected) => selected && setPageSize((selected as PageOption).value)}
-            />
-          </div>
-        </div>
+        <div style={{ paddingBottom: '32px' }} />
       </Loading>
 
       {isOpen && (
