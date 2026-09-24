@@ -325,7 +325,10 @@ const ChatWidget = () => {
 
   // Masqué aussi pendant une commande sur grand écran : le bouton recouvrait
   // les actions de ligne du panier et le lien « Voir tout » du tableau de bord.
-  if (FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
+  // Sauf si la conversation est OUVERTE : un clic sur une carte produit mène à
+  // /customer/product/… et faisait disparaître le chat au milieu de l'échange.
+  // Une fois refermé, le bouton s'efface comme avant.
+  if (!open && FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
 
