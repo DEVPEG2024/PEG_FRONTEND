@@ -26,10 +26,11 @@ const btn = (primary: boolean): React.CSSProperties => ({
 });
 
 /**
- * « Ajouter au panier » sous une offre de l'assistant. Les lignes sans choix à
- * faire (ni formulaire, ni taille/couleur à répartir) entrent directement au
- * panier ; les autres ouvrent la fiche produit PRÉ-REMPLIE (quantité, taille,
- * couleur, dimensions) sur l'étape qui reste — en pratique la personnalisation.
+ * « Ajouter au panier » sous une offre de l'assistant. Toute ligne dont la
+ * sélection est connue (taille/couleur précisées ou uniques, dimensions m²)
+ * entre DIRECTEMENT au panier — y compris un produit à personnaliser : sa
+ * personnalisation (logo…) se complète ensuite depuis le panier. Seules les
+ * lignes dont les tailles sont à répartir ouvrent la fiche pré-remplie.
  */
 const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
   const dispatch = useAppDispatch();
@@ -71,13 +72,14 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
         dispatch(addToCart({
           id,
           product: r.product,
-          formAnswer: null,
+          formAnswer: r.formAnswer,
           sizeAndColors: r.sizeAndColors,
           userDocumentId: user.documentId,
         } as unknown as CartItem));
       }
+      const toPersonalize = ready.some((r) => r.kind === 'ready' && r.formAnswer);
       if (!todo.length) {
-        toast.success(ready.length > 1 ? 'Offre ajoutée au panier' : 'Article ajouté au panier');
+        toast.success(`${ready.length > 1 ? 'Offre ajoutée au panier' : 'Article ajouté au panier'}${toPersonalize ? ' — ajoutez votre logo depuis le panier' : ''}`);
         const remaining = lineIds ? (offer.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : [];
         onChange(remaining.length ? { ...offer, pendingIds: remaining } : { ...offer, status: 'added', pendingIds: [] });
         onGo('/customer/cart');
@@ -124,7 +126,7 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
         </>
       ) : offer.status === 'completing' && pendingLines.length ? (
         <>
-          <div style={{ fontSize: '12px', color: '#fcd34d' }}>Plus qu’une étape sur la fiche : personnalisation (logo, tailles…).</div>
+          <div style={{ fontSize: '12px', color: '#fcd34d' }}>Plus qu’une étape sur la fiche : répartir les tailles.</div>
           {pendingLines.map((l) => (
             <button key={l.productDocumentId} type="button" style={btn(true)} disabled={busy} onClick={() => run([l.productDocumentId])}>
               Finaliser {l.productName} <MdArrowForward size={15} />

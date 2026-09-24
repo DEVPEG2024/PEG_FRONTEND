@@ -19,6 +19,7 @@ import {
   MdShoppingCart,
   MdOutlineShoppingBag,
   MdLocationOn,
+  MdBrush,
 } from 'react-icons/md';
 import {
   HiOutlinePencil,
@@ -32,6 +33,7 @@ import { ShippingAddress } from '@/@types/checkout';
 import { User } from '@/@types/user';
 import PaymentContent from './PaymentContent';
 import useUserCart from '@/utils/hooks/useUserCart';
+import { personalizationStatus } from '@/components/template/chatOffer';
 
 /* ── Shared styles ── */
 const inputStyle: React.CSSProperties = {
@@ -156,12 +158,17 @@ function CartItemCard({
   index,
   onEdit,
   onDelete,
+  onPersonalize,
 }: {
   item: CartItem;
   index: number;
   onEdit: () => void;
   onDelete: () => void;
+  onPersonalize: () => void;
 }) {
+  // Article ajouté depuis l'assistant sans sa personnalisation (logo, zones…).
+  const personalization = personalizationStatus(item);
+  const toPersonalize = personalization === 'optional' || personalization === 'required';
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const unitPrice = applyPremiumDiscount(
     getProductPriceForSizeAndColors(item.product, item.sizeAndColors),
@@ -310,6 +317,24 @@ function CartItemCard({
               </span>
             ))}
         </div>
+        {toPersonalize && (
+          <button
+            type="button"
+            onClick={onPersonalize}
+            className="peg-tap-target"
+            style={{
+              marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 700,
+              fontFamily: 'Inter, sans-serif',
+              background: personalization === 'required' ? 'rgba(248,113,113,0.1)' : 'rgba(251,191,36,0.08)',
+              border: `1px solid ${personalization === 'required' ? 'rgba(248,113,113,0.35)' : 'rgba(251,191,36,0.3)'}`,
+              color: personalization === 'required' ? '#fca5a5' : '#fcd34d',
+            }}
+          >
+            <MdBrush size={14} />
+            {personalization === 'required' ? 'Personnalisation requise — ajouter votre logo' : 'Ajouter votre logo / personnalisation'}
+          </button>
+        )}
       </div>
 
       {/* Price + Actions (stacked on mobile) */}
@@ -524,6 +549,20 @@ function Cart() {
     dispatch(editItem(item));
     navigate('/customer/product/' + item.product.documentId + '/edit');
   };
+
+  // Ouvre directement l'étape « personnalisation » de l'article ; la fiche revient
+  // au panier dès le formulaire validé (sans repasser par « Ajouter au panier »,
+  // qui créerait un doublon en mode modification).
+  const handlePersonalize = (item: CartItem) => {
+    dispatch(editItem(item));
+    navigate('/customer/product/' + item.product.documentId + '/edit', { state: { openForm: true } });
+  };
+
+  // Personnalisation OBLIGATOIRE manquante → paiement bloqué (la commande
+  // partirait en production sans le fichier exigé).
+  const missingRequired = cart
+    .filter((item) => personalizationStatus(item) === 'required')
+    .map((item) => item.product.name);
 
   const handleDelete = (item: CartItem) => {
     dispatch(removeFromCart(item));
@@ -763,6 +802,7 @@ function Cart() {
               index={index}
               onEdit={() => handleEdit(item)}
               onDelete={() => handleDelete(item)}
+              onPersonalize={() => handlePersonalize(item)}
             />
           ))}
 
@@ -1109,6 +1149,7 @@ function Cart() {
             shipping={shipping}
             hasAddress={hasAddress}
             onMissingAddress={scrollToShipping}
+            missingPersonalization={missingRequired}
           />
         </div>
       </div>

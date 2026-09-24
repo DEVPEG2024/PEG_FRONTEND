@@ -33,7 +33,10 @@ import { toast } from 'react-toastify';
 // est réinstancié à chaque render.
 const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
 
-function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void }) {
+function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
+  // Articles dont la personnalisation OBLIGATOIRE n'est pas faite (ajoutés depuis
+  // l'assistant) : la commande partirait sans le fichier exigé.
+  const personalizationMissing = missingPersonalization.length > 0;
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
   const { token } = useAppSelector((state) => state.auth.session);
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
@@ -186,6 +189,10 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
   const validateCart = async () => {
     if (!user?.customer) {
       toast.error('Profil client introuvable. Reconnectez-vous puis réessayez.');
+      return;
+    }
+    if (personalizationMissing) {
+      toast.error(`Ajoutez la personnalisation requise : ${missingPersonalization.join(', ')}`);
       return;
     }
     setSubmitting(true);
@@ -543,20 +550,30 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
         </button>
       )}
 
+      {personalizationMissing && (
+        <div role="alert" style={{
+          width: '100%', padding: '10px 12px', marginBottom: '8px', boxSizing: 'border-box',
+          background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.25)',
+          borderRadius: '12px', color: '#fca5a5', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
+        }}>
+          Personnalisation requise : {missingPersonalization.join(', ')}
+        </div>
+      )}
+
       {/* Payment button */}
       <button
-        disabled={!user.customer || isSubmitting || !hasAddress}
+        disabled={!user.customer || isSubmitting || !hasAddress || personalizationMissing}
         onClick={hasAddress ? validateCart : onMissingAddress}
         style={{
           width: '100%', padding: '12px',
-          background: !user.customer || isSubmitting || !hasAddress
+          background: !user.customer || isSubmitting || !hasAddress || personalizationMissing
             ? 'rgba(47,111,237,0.2)'
             : 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 50%, #2f6fed 100%)',
           border: 'none', borderRadius: '14px',
-          color: !hasAddress ? 'rgba(255,255,255,0.4)' : '#fff',
+          color: !hasAddress || personalizationMissing ? 'rgba(255,255,255,0.4)' : '#fff',
           fontSize: '14px', fontWeight: 700,
-          cursor: !user.customer || isSubmitting || !hasAddress ? 'not-allowed' : 'pointer',
-          boxShadow: !hasAddress || isSubmitting ? 'none' : '0 4px 20px rgba(47,111,237,0.35)',
+          cursor: !user.customer || isSubmitting || !hasAddress || personalizationMissing ? 'not-allowed' : 'pointer',
+          boxShadow: !hasAddress || isSubmitting || personalizationMissing ? 'none' : '0 4px 20px rgba(47,111,237,0.35)',
           fontFamily: 'Inter, sans-serif',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           transition: 'all 0.2s ease',
@@ -565,20 +582,20 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress }: { cart
           overflow: 'hidden',
         }}
         onMouseEnter={(e) => {
-          if (user.customer && !isSubmitting && hasAddress) {
+          if (user.customer && !isSubmitting && hasAddress && !personalizationMissing) {
             e.currentTarget.style.boxShadow = '0 6px 28px rgba(47,111,237,0.5)';
             e.currentTarget.style.transform = 'translateY(-1px)';
           }
         }}
         onMouseLeave={(e) => {
-          if (user.customer && !isSubmitting && hasAddress) {
+          if (user.customer && !isSubmitting && hasAddress && !personalizationMissing) {
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(47,111,237,0.35)';
             e.currentTarget.style.transform = 'translateY(0)';
           }
         }}
       >
         <HiShieldCheck size={16} />
-        {isSubmitting ? 'Traitement en cours...' : !hasAddress ? 'Adresse requise' : 'Valider la commande'}
+        {isSubmitting ? 'Traitement en cours...' : !hasAddress ? 'Adresse requise' : personalizationMissing ? 'Personnalisation requise' : 'Valider la commande'}
       </button>
 
       {/* Security badge */}

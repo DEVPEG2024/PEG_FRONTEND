@@ -1,4 +1,6 @@
 import type { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
+import type { CartItem } from '@/@types/cart';
+import type { FormAnswer } from '@/@types/formAnswer';
 import { apiGetProductForShowById } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { isProductM2Pricing } from '@/utils/productHelpers';
@@ -38,8 +40,8 @@ export type ChatOffer = {
 
 /**
  * Pré-remplissage transmis à la fiche produit (state de navigation) quand une
- * ligne ne peut pas aller seule au panier : formulaire de personnalisation à
- * remplir, tailles à répartir ou dimensions manquantes.
+ * ligne ne peut pas aller seule au panier : tailles/couleurs à répartir ou
+ * dimensions manquantes (la personnalisation, elle, se complète depuis le panier).
  */
 export type ChatPrefill = {
   offerId: string;
@@ -53,7 +55,7 @@ export type ChatPrefill = {
 };
 
 export type PlannedLine =
-  | { kind: 'ready'; line: ChatOfferLine; product: Product; sizeAndColors: SizeAndColorSelection[] }
+  | { kind: 'ready'; line: ChatOfferLine; product: Product; sizeAndColors: SizeAndColorSelection[]; formAnswer: Partial<FormAnswer> | null }
   | { kind: 'complete'; line: ChatOfferLine; product: Product; prefill: ChatPrefill; missing: string[] };
 
 const DEFAULT_SIZE = DEFAULT_CHOICE as Size;
@@ -96,8 +98,58 @@ export const missingSteps = (product: Product, line: ChatOfferLine, selection: S
     }
     if (!missing.length) missing.push('votre sélection');
   }
-  if (product.form) missing.push('votre personnalisation (logo, texte…)');
   return missing;
+};
+
+// ── Personnalisation différée ────────────────────────────────────────────────
+//
+// Décision du 24/09/2026 : l'offre du chat entre DIRECTEMENT au panier, même
+// quand le produit a un formulaire de personnalisation (logo, zones, texte). La
+// ligne porte alors une réponse « en attente » (state 'pending') que le client
+// complète depuis le panier (« Personnaliser »). Une réponse remplie par le
+// formulaire a state 'submitted' (WizardShowForm).
+// Le paiement n'est bloqué que si le formulaire a un champ OBLIGATOIRE : sinon
+// PEG accepte déjà une commande sans fichier (8 formulaires sur 9 en prod).
+
+const PENDING_STATE = 'pending';
+
+/** Réponse de formulaire « à compléter », valide pour apiCreateFormAnswer. */
+export const pendingFormAnswer = (product: Product): Partial<FormAnswer> | null =>
+  product.form
+    ? ({ form: product.form, answer: { data: {}, metadata: { source: 'assistant' }, state: PENDING_STATE } } as unknown as Partial<FormAnswer>)
+    : null;
+
+type FormioComponent = { type?: string; input?: boolean; required?: boolean; validate?: { required?: boolean }; components?: FormioComponent[]; columns?: { components?: FormioComponent[] }[] };
+
+/** Le formulaire Form.io exige-t-il au moins un champ ? (fields : tableau, chaîne JSON ou { components }). */
+export const formRequiresInput = (fields: unknown): boolean => {
+  let data: unknown = fields;
+  if (typeof data === 'string') { try { data = JSON.parse(data); } catch { return false; } }
+  if (data && !Array.isArray(data)) {
+    const o = data as { components?: unknown; fields?: unknown };
+    data = o.components ?? o.fields ?? [];
+  }
+  if (!Array.isArray(data)) return false;
+  const walk = (list: FormioComponent[], depth: number): boolean => list.some((c) => {
+    if (!c || typeof c !== 'object') return false;
+    if (c.input !== false && (c.validate?.required || c.required)) return true;
+    if (depth < 4 && Array.isArray(c.components) && walk(c.components, depth + 1)) return true;
+    return depth < 4 && Array.isArray(c.columns) && c.columns.some((col) => Array.isArray(col?.components) && walk(col.components, depth + 1));
+  });
+  return walk(data as FormioComponent[], 0);
+};
+
+export type PersonalizationStatus = 'none' | 'done' | 'optional' | 'required';
+
+/**
+ * État de la personnalisation d'une ligne de panier : sans formulaire, remplie,
+ * à compléter (facultative) ou à compléter (obligatoire → paiement bloqué).
+ */
+export const personalizationStatus = (item: Pick<CartItem, 'product' | 'formAnswer'>): PersonalizationStatus => {
+  if (!item.product?.form) return 'none';
+  const answer = (item.formAnswer as Partial<FormAnswer> | null | undefined)?.answer as { state?: string } | undefined;
+  if (answer && answer.state !== PENDING_STATE) return 'done';
+  return formRequiresInput(item.product.form.fields) ? 'required' : 'optional';
 };
 
 /**
@@ -113,7 +165,7 @@ export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
     const selection = selectionForLine(product, line);
     const missing = missingSteps(product, line, selection);
     if (!missing.length && selection) {
-      planned.push({ kind: 'ready', line, product, sizeAndColors: selection });
+      planned.push({ kind: 'ready', line, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
     } else {
       planned.push({
         kind: 'complete',

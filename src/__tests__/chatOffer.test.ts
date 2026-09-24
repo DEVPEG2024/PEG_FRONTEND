@@ -1,7 +1,10 @@
 import type { Product } from '@/@types/product';
 import {
+  formRequiresInput,
   isChatOffer,
   missingSteps,
+  pendingFormAnswer,
+  personalizationStatus,
   readChatPrefill,
   selectionForLine,
   type ChatOfferLine,
@@ -72,9 +75,9 @@ describe('missingSteps', () => {
     expect(missingSteps(p, line(), selectionForLine(p, line()))).toEqual([]);
   });
 
-  it('formulaire de personnalisation → étape sur la fiche', () => {
+  it('formulaire de personnalisation : ne bloque PAS l’ajout (complété depuis le panier)', () => {
     const p = product({ form: { documentId: 'f' } as never });
-    expect(missingSteps(p, line(), selectionForLine(p, line()))).toEqual(['votre personnalisation (logo, texte…)']);
+    expect(missingSteps(p, line(), selectionForLine(p, line()))).toEqual([]);
   });
 
   it('tailles à répartir + couleur connue', () => {
@@ -96,5 +99,36 @@ describe('validation des données reçues', () => {
     expect(readChatPrefill(null)).toBeNull();
     expect(readChatPrefill({ from: '/home' })).toBeNull();
     expect(readChatPrefill({ chatOffer: { offerId: 'o', quantity: 3, sizeAndColors: [] } })?.quantity).toBe(3);
+  });
+});
+
+describe('personnalisation différée (panier)', () => {
+  const optionalForm = { documentId: 'f1', fields: JSON.stringify([{ type: 'file', label: 'Logo', input: true }]) };
+  const requiredForm = { documentId: 'f2', fields: [{ type: 'panel', components: [{ type: 'file', label: 'Logo', input: true, validate: { required: true } }] }] };
+
+  it('formRequiresInput lit les champs obligatoires (chaîne JSON, imbrication, { components })', () => {
+    expect(formRequiresInput(optionalForm.fields)).toBe(false);
+    expect(formRequiresInput(requiredForm.fields)).toBe(true);
+    expect(formRequiresInput({ components: [{ type: 'textfield', required: true }] })).toBe(true);
+    expect(formRequiresInput('pas du json')).toBe(false);
+    expect(formRequiresInput(undefined)).toBe(false);
+  });
+
+  it('personalizationStatus : sans formulaire / à compléter (facultatif ou requis) / fait', () => {
+    expect(personalizationStatus({ product: product(), formAnswer: null } as never)).toBe('none');
+    const pOpt = product({ form: optionalForm as never });
+    const pReq = product({ form: requiredForm as never });
+    expect(personalizationStatus({ product: pOpt, formAnswer: pendingFormAnswer(pOpt) } as never)).toBe('optional');
+    expect(personalizationStatus({ product: pReq, formAnswer: pendingFormAnswer(pReq) } as never)).toBe('required');
+    const done = { form: requiredForm, answer: { data: { logo: 'x' }, metadata: {}, state: 'submitted' } };
+    expect(personalizationStatus({ product: pReq, formAnswer: done } as never)).toBe('done');
+  });
+
+  it('pendingFormAnswer : valide pour apiCreateFormAnswer (form.documentId + answer)', () => {
+    const p = product({ form: optionalForm as never });
+    const fa = pendingFormAnswer(p) as { form: { documentId: string }; answer: { state: string } };
+    expect(fa.form.documentId).toBe('f1');
+    expect(fa.answer.state).toBe('pending');
+    expect(pendingFormAnswer(product())).toBeNull();
   });
 });
