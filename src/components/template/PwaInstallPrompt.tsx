@@ -65,7 +65,8 @@ const isIosSafari = (): boolean => {
 const wrapStyle: CSSProperties = {
   position: 'fixed',
   left: '12px',
-  bottom: 'calc(12px + var(--peg-safe-bottom, 0px))',
+  // --peg-dock-lift : hauteur de la barre d'onglets du téléphone (0 sans elle)
+  bottom: 'calc(12px + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))',
   width: 'min(420px, calc(100vw - 24px))',
   zIndex: 20,
   display: 'flex',

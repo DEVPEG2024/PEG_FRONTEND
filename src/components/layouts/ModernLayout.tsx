@@ -1,8 +1,9 @@
 import Header from "@/components/template/Header";
 import UserDropdown from "@/components/template/UserDropdown";
 import SideNavToggle from "@/components/template/SideNavToggle";
-import MobileNav from "@/components/template/MobileNav";
+import MobileDock from "@/components/template/MobileDock";
 import SideNav from "@/components/template/SideNav";
+import Logo from "@/components/template/Logo";
 import View from "@/views";
 import LanguageSelector from "../template/LanguageSelector";
 import OnlineUsersCount, { OnlinePing } from "../template/OnlineUsersCount";
@@ -14,11 +15,20 @@ import { RootState, useAppSelector } from "@/store";
 import { AuthorityCheck } from "../shared";
 import { Link } from "react-router-dom";
 import useUserCart from "@/utils/hooks/useUserCart";
+import useResponsive from "@/utils/hooks/useResponsive";
 
+// Téléphone : le logo remplace le bouton de menu, passé dans la barre d'onglets
+// (MobileDock). Au-delà de md, la barre latérale porte le logo.
 const HeaderActionsStart = () => {
+  const { smaller } = useResponsive();
+  const mode = useAppSelector((state) => state.theme.mode);
   return (
     <>
-      <MobileNav />
+      {smaller.md && (
+        <Link to="/home" className="peg-header-brand" aria-label="Accueil">
+          <Logo mode={mode} imgStyle={{ height: 26, width: 'auto', display: 'block' }} />
+        </Link>
+      )}
       <SideNavToggle />
     </>
   );
@@ -28,22 +38,35 @@ const HeaderActionsEnd = () => {
   const { documentId } = useAppSelector((state: RootState) => state.auth.user.user);
   const cart = useUserCart(documentId);
   const userAuthority = useAppSelector((state) => state.auth.user.user.authority)
+  const { smaller } = useResponsive();
   return (
     <>
       <AuthorityCheck
         userAuthority={userAuthority as string[]}
         authority={["customer"]}
       >
-        <Link to="/customer/cart">
-          <Alert
-            showIcon
-            type="success"
-            customIcon={<MdShoppingCart size={20} />}
-            className="bg-slate-600"
+        {smaller.md ? (
+          // Téléphone : l'icône et son compteur, comme dans une app
+          <Link
+            to="/customer/cart"
+            className="header-action-item peg-header-cart"
+            aria-label={`Mon panier (${cart.length})`}
           >
-            <span >{cart.length} | Mon panier</span>
-          </Alert>
-        </Link>
+            <MdShoppingCart size={22} />
+            {cart.length > 0 && <span className="peg-header-cart-count">{cart.length}</span>}
+          </Link>
+        ) : (
+          <Link to="/customer/cart">
+            <Alert
+              showIcon
+              type="success"
+              customIcon={<MdShoppingCart size={20} />}
+              className="bg-slate-600"
+            >
+              <span >{cart.length} | Mon panier</span>
+            </Alert>
+          </Link>
+        )}
       </AuthorityCheck>
       <AuthorityCheck
         userAuthority={userAuthority as string[]}
@@ -64,7 +87,7 @@ const ModernLayout = () => {
     <div className="app-layout-modern flex flex-auto flex-col">
       <div className="flex flex-auto min-w-0">
         <SideNav />
-        <div className="flex flex-col flex-auto min-h-screen min-w-0 relative w-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
+        <div className="peg-app-main flex flex-col flex-auto min-h-screen min-w-0 relative w-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
           <Header
             className="border-b border-gray-200 dark:border-gray-700"
             headerEnd={<HeaderActionsEnd />}
@@ -73,6 +96,7 @@ const ModernLayout = () => {
           <View />
         </div>
       </div>
+      <MobileDock />
       <PwaInstallPrompt />
     </div>
   );

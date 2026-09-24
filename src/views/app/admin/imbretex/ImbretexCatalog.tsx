@@ -892,7 +892,7 @@ const ImbretexCatalog = () => {
       {/* Floating action bar */}
       {selectedRefs.size > 0 && (
         <div style={{
-          position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom))', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom) + var(--peg-dock-lift, 0px))', left: '50%', transform: 'translateX(-50%)',
           zIndex: 900,
           background: 'linear-gradient(160deg, #1a2f4a 0%, #111e30 100%)',
           border: '1.5px solid rgba(47,111,237,0.3)',

@@ -415,7 +415,8 @@
    -------------------------------------------------------------------------- */
 @media (max-width: 767.98px) {
   /* En-tête : on resserre au lieu de retirer. Aucune action n'est masquée —
-     burger, panier, présence, cloche, langue et compte restent atteignables. */
+     panier, présence, cloche, langue et compte restent atteignables ; le menu
+     est passé dans la barre d'onglets (section 8), le logo prend sa place. */
   .header {
     padding-top: var(--peg-safe-top);
     padding-left: var(--peg-safe-left);
@@ -445,15 +446,32 @@
     justify-content: center;
   }
 
-  /* Panier : l'icône ET le compteur restent visibles, seul le libellé est
-     resserré pour tenir sur 360px. Aucun texte n'est supprimé. */
-  .header-action-end .alert {
-    padding: 4px 8px;
-    font-size: 11px;
-    line-height: 1.25;
-    min-height: var(--peg-tap);
+  .peg-header-brand {
+    display: flex;
     align-items: center;
-    min-width: 0;
+    min-height: var(--peg-tap);
+    padding: 0 6px;
+  }
+
+  /* Panier : icône + compteur, le libellé « Mon panier » passe en aria-label. */
+  .peg-header-cart {
+    position: relative;
+    color: inherit;
+  }
+  .peg-header-cart-count {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
   }
 
 }
@@ -590,5 +608,158 @@
   /* Sélecteur de date : jamais plus large que l'écran. */
   .date-picker {
     max-width: min(20rem, calc(100vw - 24px));
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   8. BARRE D'ONGLETS ET SENSATION « APPLICATION » (< md)
+   La navigation d'une app native : onglets en bas d'écran (MobileDock.tsx),
+   à portée du pouce, au lieu d'un menu hamburger en haut. Posée sur le body
+   tant que la barre est affichée, la classe `peg-has-dock` définit
+   --peg-dock-lift : les éléments flottants (bulle d'aide, retour en haut,
+   bandeau d'installation, notifications, boutons d'action) l'ajoutent à leur
+   `bottom` et passent au-dessus. Sans barre, la variable n'existe pas et vaut
+   0 : aucun de ces éléments ne bouge sur tablette ni sur ordinateur.
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  /* Plus de flash gris au toucher ni de délai de double-tap (le zoom à deux
+     doigts reste possible) : les boutons ont leur propre état `:active`. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body.peg-has-dock {
+    --peg-dock-lift: 60px;
+  }
+  /* La fin de chaque page (et son pied) défile au-dessus de la barre. */
+  body.peg-has-dock .peg-app-main {
+    padding-bottom: calc(var(--peg-dock-lift) + var(--peg-safe-bottom));
+  }
+  body.peg-has-dock .Toastify__toast-container--bottom-left,
+  body.peg-has-dock .Toastify__toast-container--bottom-center,
+  body.peg-has-dock .Toastify__toast-container--bottom-right {
+    bottom: calc(var(--peg-dock-lift) + var(--peg-safe-bottom) + 8px) !important;
+  }
+
+  .peg-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Sous les modales et tiroirs (z-30) : ils la recouvrent, elle ne les coupe pas. */
+    z-index: 29;
+    display: flex;
+    align-items: stretch;
+    height: calc(60px + var(--peg-safe-bottom));
+    padding: 0 max(4px, var(--peg-safe-right)) var(--peg-safe-bottom) max(4px, var(--peg-safe-left));
+    background: rgba(24, 32, 46, 0.88);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: Inter, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    transition: transform 0.22s ease;
+  }
+  /* Clavier ouvert : la barre s'efface pour laisser la place au champ. */
+  .peg-dock--hidden {
+    transform: translateY(100%);
+  }
+
+  .peg-dock-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px 5px;
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .peg-dock-item.is-active {
+    color: #fff;
+  }
+  .peg-dock-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 30px;
+    border-radius: 15px;
+    font-size: 21px;
+    transition: background 0.18s ease, transform 0.12s ease;
+  }
+  .peg-dock-item.is-active .peg-dock-icon {
+    background: rgba(47, 111, 237, 0.24);
+    color: #8fb4ff;
+  }
+  .peg-dock-item:active .peg-dock-icon {
+    transform: scale(0.9);
+  }
+  .peg-dock-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .peg-dock-item.is-active .peg-dock-label {
+    font-weight: 700;
+  }
+  .peg-dock-badge {
+    position: absolute;
+    top: -3px;
+    right: 5px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+    box-shadow: 0 0 0 2px rgb(24, 32, 46);
+  }
+  .peg-dock-dot {
+    position: absolute;
+    top: 2px;
+    right: 12px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgb(24, 32, 46);
+  }
+
+  /* Menu complet (tiroir « Navigation ») : cibles tactiles de 44px. */
+  .peg-dock-menu .peg-nav-row {
+    min-height: var(--peg-tap);
+  }
+}
+
+@media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  .peg-dock,
+  .peg-dock-icon {
+    transition: none;
+  }
+}
+
+/* Application installée (écran d'accueil) : la page ne « rebondit » plus au-delà
+   de ses bords — l'effet élastique trahit le site web sous l'app. */
+@media (max-width: 767.98px) and (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior-y: none;
   }
 }

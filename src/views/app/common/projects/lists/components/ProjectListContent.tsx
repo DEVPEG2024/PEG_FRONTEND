@@ -68,7 +68,10 @@ const ProjectListContent = ({
   }, [projects]);
 
   return (
-    <div className={classNames('mt-6 h-full flex flex-col')} style={{ gap: '32px' }}>
+    // Hauteur = contenu (pas de `h-full`) : à 100 % de la page, la liste réservait
+    // toute la hauteur de l'écran en plus de ses cartes et rejetait la pagination
+    // 500 à 700px sous le pied de page, dans un vide.
+    <div className={classNames('mt-6 flex flex-col')} style={{ gap: '32px' }}>
       {statusSections.map((section) => {
         const sectionProjects = grouped[section.key];
         if (!sectionProjects || sectionProjects.length === 0) return null;

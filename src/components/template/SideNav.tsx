@@ -16,8 +16,10 @@ import { useAppSelector } from '@/store'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { TbSparkles, TbArrowRight, TbCrown } from 'react-icons/tb'
+import { filterNavForCatalogAccess } from '@/utils/navMenu'
 
-const PremiumCard = () => (
+// Cartes aussi affichées dans le menu du téléphone (MobileDock)
+export const PremiumCard = () => (
     <div style={{ padding: '12px 16px 0', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
             background: 'linear-gradient(160deg, rgba(234,179,8,0.14) 0%, rgba(255,255,255,0.03) 100%)',
@@ -57,7 +59,7 @@ const PremiumCard = () => (
     </div>
 )
 
-const QuoteCard = () => (
+export const QuoteCard = () => (
     <div style={{ padding: '12px 16px 0', fontFamily: 'Inter, sans-serif' }}>
         <div style={{
             background: 'linear-gradient(160deg, rgba(139,92,246,0.12) 0%, rgba(255,255,255,0.03) 100%)',
@@ -132,14 +134,10 @@ const SideNav = () => {
 
     const { larger } = useResponsive()
 
-    const filteredNav = useMemo(() => {
-        if (customer && customer.catalogAccess === false) {
-            return navigationConfig.filter(
-                (item) => item.key !== 'customer.catalogue' && item.key !== 'customer.products'
-            )
-        }
-        return navigationConfig
-    }, [customer])
+    const filteredNav = useMemo(
+        () => filterNavForCatalogAccess(navigationConfig, customer),
+        [customer]
+    )
 
     const sideNavColor = () => {
         if (navMode === NAV_MODE_THEMED) {

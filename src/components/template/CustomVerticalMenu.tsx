@@ -11,67 +11,18 @@ import navigationIcon from '@/configs/navigation-icon.config';
 import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { MdDragIndicator } from 'react-icons/md';
 import { useAppSelector } from '@/store';
-import type { NotificationItem } from '@/store/slices/base/notificationSlice';
-import { apiGetQuotes, apiGetCustomerQuotes } from '@/services/QuoteServices';
-import { apiGetPremiumCustomers } from '@/services/PremiumServices';
-import { apiGetPayoutRequests } from '@/services/GeneratorServices';
-import { unwrapData } from '@/utils/serviceHelper';
+import {
+  hasNavAuthority as hasAuthority,
+  getVisibleNavItems,
+  getNavBadge,
+  saveNavOrder,
+} from '@/utils/navMenu';
+import useNavActivity from '@/utils/hooks/useNavActivity';
+import useNavCounters from '@/utils/hooks/useNavCounters';
 
-const STORAGE_KEY = 'peg_nav_order_v2';
 // Renommage supprimé — les labels sont figés (cf. GLOSSARY.md)
-
-// Pastilles « du nouveau » : chaque section du menu écoute les notifications
-// (state.base.notification, alimenté par le polling de la cloche) selon ses
-// types d'événements. La pastille disparaît à la visite de la section
-// (timestamp « vu » par chemin, stocké en localStorage).
-const NAV_ACTIVITY_EVENTS: Record<string, string[]> = {
-  '/support': ['new_ticket'],
-  '/common/projects': [
-    'project_status_change',
-    'new_comment',
-    'new_file',
-    'new_task',
-    'task_status_change',
-  ],
-  '/admin/invoices': ['new_invoice', 'payment_received'],
-  '/customer/invoices': ['new_invoice', 'payment_received'],
-  '/admin/store/orders': ['new_order'],
-  '/customer/files': ['new_file'],
-};
-const ACTIVITY_SEEN_KEY = 'peg_nav_activity_seen';
-// Référence stable pour le sélecteur Redux (évite un re-rendu à chaque poll)
-const EMPTY_NOTIFICATIONS: NotificationItem[] = [];
-
-function getStoredActivitySeen(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(ACTIVITY_SEEN_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function getStoredOrder(items: NavigationTree[]): NavigationTree[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return items;
-    const order: string[] = JSON.parse(stored);
-    const itemMap: Record<string, NavigationTree> = {};
-    items.forEach((item) => {
-      itemMap[item.key] = item;
-    });
-    const reordered = order.filter((k) => itemMap[k]).map((k) => itemMap[k]);
-    items.forEach((item) => {
-      if (!order.includes(item.key)) reordered.push(item);
-    });
-    return reordered;
-  } catch {
-    return items;
-  }
-}
-
-function saveOrder(items: NavigationTree[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map((i) => i.key)));
-}
+// Visibilité, ordre et pastilles : règles partagées avec le menu du téléphone
+// (utils/navMenu.ts, useNavActivity, useNavCounters).
 
 // Labels custom supprimés — nettoyage localStorage au mount
 function clearLegacyLabels() {
@@ -80,21 +31,19 @@ function clearLegacyLabels() {
   } catch {}
 }
 
-function hasAuthority(authority: string[], userAuthority: string[]): boolean {
-  if (!authority || authority.length === 0) return true;
-  return authority.some((a) => userAuthority.includes(a));
-}
-
 type Props = {
   navigationTree: NavigationTree[];
   userAuthority: string[];
   collapsed?: boolean;
+  /** Appelé après chaque navigation depuis le menu (fermeture du tiroir du téléphone). */
+  onNavigate?: () => void;
 };
 
 const CustomVerticalMenu = ({
   navigationTree,
   userAuthority,
   collapsed,
+  onNavigate,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -105,141 +54,20 @@ const CustomVerticalMenu = ({
     userAuthority.includes('admin') || userAuthority.includes('super_admin');
   const user = useAppSelector((state) => state.auth.user.user);
   const customerDocumentId = user?.customer?.documentId;
-  const [quoteCount, setQuoteCount] = useState(0);
-  const [premiumCount, setPremiumCount] = useState(0);
-  const [payoutRequestCount, setPayoutRequestCount] = useState(0);
-  const notifications = useAppSelector(
-    (state) => state.base?.notification?.notifications ?? EMPTY_NOTIFICATIONS
-  );
-  const [activitySeen, setActivitySeen] = useState<Record<string, string>>(
-    getStoredActivitySeen
-  );
-
-  const getActivityCount = (path: string): number => {
-    const events = NAV_ACTIVITY_EVENTS[path];
-    if (!events || notifications.length === 0) return 0;
-    const lastSeen = activitySeen[path];
-    return notifications.filter(
-      (n) =>
-        !n.read &&
-        events.includes(n.eventType) &&
-        (!lastSeen || n.createdAt > lastSeen)
-    ).length;
-  };
-
-  const markActivitySeen = (path: string) => {
-    if (!NAV_ACTIVITY_EVENTS[path]) return;
-    const next = { ...activitySeen, [path]: new Date().toISOString() };
-    setActivitySeen(next);
-    try {
-      localStorage.setItem(ACTIVITY_SEEN_KEY, JSON.stringify(next));
-    } catch {}
-  };
-
-  // La section actuellement visitée est toujours considérée « vue »
-  useEffect(() => {
-    const path = Object.keys(NAV_ACTIVITY_EVENTS).find((p) =>
-      location.pathname.startsWith(p)
-    );
-    if (path && getActivityCount(path) > 0) {
-      markActivitySeen(path);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, notifications]);
+  const counters = useNavCounters(isAdmin, customerDocumentId);
+  const { getActivityCount, markActivitySeen } = useNavActivity();
 
   // Nettoyer les anciens labels custom au mount
   useEffect(() => {
     clearLegacyLabels();
   }, []);
 
-  // Compteur de devis en attente (admin : demandes reçues ; client : propositions à valider)
-  useEffect(() => {
-    let stopped = false;
-    const fetchCount = async () => {
-      try {
-        const res = isAdmin
-          ? await unwrapData(
-              apiGetQuotes({
-                pagination: { page: 1, pageSize: 1000 },
-                searchTerm: '',
-              })
-            )
-          : customerDocumentId
-            ? await unwrapData(apiGetCustomerQuotes(customerDocumentId))
-            : null;
-        if (!res || stopped) return;
-        const nodes = (res as any).quotes_connection?.nodes || [];
-        const pending = nodes.filter((q: any) =>
-          isAdmin ? q.status === 'requested' : q.status === 'proposed'
-        ).length;
-        if (!stopped) setQuoteCount(pending);
-      } catch {
-        // silencieux (collection devis pas encore déployée / permissions)
-      }
-    };
-    fetchCount();
-    const id = setInterval(fetchCount, 60000);
-    return () => {
-      stopped = true;
-      clearInterval(id);
-    };
-  }, [isAdmin, customerDocumentId]);
-
-  // Compteur de clients Premium non traités (admin) → badge sur l'onglet "Premium"
-  useEffect(() => {
-    if (!isAdmin) return;
-    let stopped = false;
-    const fetchPremium = async () => {
-      try {
-        const list = await apiGetPremiumCustomers();
-        if (stopped) return;
-        setPremiumCount(list.filter((c) => !c.premiumProcessed).length);
-      } catch {
-        // silencieux
-      }
-    };
-    fetchPremium();
-    const id = setInterval(fetchPremium, 60000);
-    return () => {
-      stopped = true;
-      clearInterval(id);
-    };
-  }, [isAdmin]);
-
-  // Demandes de retrait en attente (admin) → pastille sur l'onglet "Générateurs".
-  // Un parrain qui demande un virement attend une action humaine : sans cette
-  // pastille, sa demande peut dormir jusqu'à ce qu'un admin ouvre l'écran.
-  useEffect(() => {
-    if (!isAdmin) return;
-    let stopped = false;
-    const fetchPayoutRequests = async () => {
-      try {
-        const list = await apiGetPayoutRequests('pending');
-        if (!stopped) setPayoutRequestCount(list.length);
-      } catch {
-        // silencieux (backend pas encore déployé / route absente)
-      }
-    };
-    fetchPayoutRequests();
-    const id = setInterval(fetchPayoutRequests, 60000);
-    return () => {
-      stopped = true;
-      clearInterval(id);
-    };
-  }, [isAdmin]);
-
-  // "Mes offres" (offres personnalisées) est réservé aux clients Premium (abonnement).
-  // Les clients Standard (inscription autonome) ne le voient pas.
   const isCustomerPremium = !!user?.customer?.premium;
 
   useEffect(() => {
-    const filtered = navigationTree.filter((item) => {
-      if (!hasAuthority(item.authority, userAuthority)) return false;
-      if (item.key === 'customer.products' && !isAdmin && !isCustomerPremium)
-        return false;
-      return true;
-    });
-    setItems(getStoredOrder(filtered));
+    setItems(
+      getVisibleNavItems(navigationTree, { userAuthority, isAdmin, isCustomerPremium })
+    );
   }, [navigationTree, userAuthority, isAdmin, isCustomerPremium]);
 
   const onDragEnd = (result: DropResult) => {
@@ -248,7 +76,7 @@ const CustomVerticalMenu = ({
     const [moved] = next.splice(result.source.index, 1);
     next.splice(result.destination.index, 0, moved);
     setItems(next);
-    saveOrder(next);
+    saveNavOrder(next);
   };
 
   const toggleExpand = (key: string) => {
@@ -290,40 +118,16 @@ const CustomVerticalMenu = ({
     if (!hasAuthority(nav.authority, userAuthority)) return null;
     const active = isActive(nav.path);
     const isHovered = hoveredKey === nav.key;
-    const isPremiumNav = nav.path === '/admin/premium';
-    // Retraits en attente : orange, la même couleur que « en attente » dans les
-    // wallets — un montant à verser, pas une simple nouveauté à consulter.
-    const isGeneratorsNav = nav.path === '/admin/generators';
-    const activityCount = getActivityCount(nav.path);
-    const isActivityBadge =
-      nav.path !== '/common/quotes' && !isPremiumNav && !isGeneratorsNav && activityCount > 0;
-    const badgeCount =
-      nav.path === '/common/quotes'
-        ? quoteCount
-        : isPremiumNav
-          ? premiumCount
-          : isGeneratorsNav
-            ? payoutRequestCount
-            : activityCount;
-    const showBadge = badgeCount > 0;
-    const badgeColor = isPremiumNav
-      ? '#eab308'
-      : isGeneratorsNav
-        ? '#fb923c'
-        : isActivityBadge
-          ? '#ef4444'
-          : '#8b5cf6';
-    const badgeGlow = isPremiumNav
-      ? 'rgba(234,179,8,0.6)'
-      : isGeneratorsNav
-        ? 'rgba(251,146,60,0.6)'
-        : isActivityBadge
-          ? 'rgba(239,68,68,0.6)'
-          : 'rgba(139,92,246,0.6)';
+    const badge = getNavBadge(nav.path, getActivityCount(nav.path), counters);
+    const showBadge = !!badge;
+    const badgeCount = badge?.count ?? 0;
+    const badgeColor = badge?.color;
+    const badgeGlow = badge?.glow;
 
     return (
       <div
         key={nav.key}
+        className="peg-nav-row"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -347,6 +151,7 @@ const CustomVerticalMenu = ({
           if (!nav.path) return;
           markActivitySeen(nav.path);
           navigate(nav.path);
+          onNavigate?.();
         }}
         onMouseEnter={() => setHoveredKey(nav.key)}
         onMouseLeave={() => setHoveredKey(null)}
@@ -480,6 +285,7 @@ const CustomVerticalMenu = ({
       <div key={nav.key} style={{ marginBottom: '2px' }}>
         {/* Group header */}
         <div
+          className="peg-nav-row"
           style={{
             display: 'flex',
             alignItems: 'center',

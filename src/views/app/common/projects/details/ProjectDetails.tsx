@@ -126,7 +126,7 @@ const ProjectDetails = () => {
             <button
               onClick={() => setDeliveryWizardOpen(true)}
               style={{
-                position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom))', right: '24px', zIndex: 100,
+                position: 'fixed', bottom: 'calc(24px + var(--peg-safe-bottom) + var(--peg-dock-lift, 0px))', right: '24px', zIndex: 100,
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '14px 24px', borderRadius: '14px',
                 background: 'linear-gradient(90deg, #22c55e, #16a34a)',

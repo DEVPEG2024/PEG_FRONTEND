@@ -363,7 +363,7 @@ const ChatWidget = () => {
   });
 
   return (
-    <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
       <style>{`
         @keyframes peg-chat-pulse {
           0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }

@@ -19,7 +19,9 @@ const ScrollToTop = () => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 shadow-lg hover:shadow-xl transition-shadow"
+          // au-dessus de la barre d'onglets du téléphone (--peg-dock-lift, 0 sans elle)
+          style={{ bottom: 'calc(1.5rem + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))' }}
+          className="fixed right-6 z-50 p-3 rounded-full bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 shadow-lg hover:shadow-xl transition-shadow"
           aria-label="Retour en haut"
         >
           <HiArrowUp className="w-5 h-5" />
