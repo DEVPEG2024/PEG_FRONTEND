@@ -29,6 +29,8 @@ import { PegFile, UploadImage } from '@/@types/pegFile';
 import { apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { BannerForm } from '@/@types/banner';
 import { Loading } from '@/components/shared';
+import { isBannerMobileSupported } from '@/services/BannerServices';
+import MobileImageField from './MobileImageField';
 
 type Option = {
   value: string;
@@ -49,6 +51,9 @@ function ModalEditBanner() {
   const [imageModified, setImageModified] = useState<boolean>(false);
   const [image, setImage] = useState<UploadImage | undefined>(undefined);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [mobileImageModified, setMobileImageModified] = useState<boolean>(false);
+  const [mobileImage, setMobileImage] = useState<UploadImage | undefined>(undefined);
+  const mobileSupported = isBannerMobileSupported();
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState<BannerForm>({
     documentId: selectedBanner?.documentId || '',
@@ -107,6 +112,10 @@ function ModalEditBanner() {
 
         setImage(imageLoaded);
       }
+      if (selectedBanner?.mobileImage) {
+        const [mobileLoaded] = await apiLoadPegFilesAndFiles([selectedBanner.mobileImage]);
+        setMobileImage(mobileLoaded);
+      }
     } catch (error) {
       console.error('Erreur chargement image bannière:', error);
     } finally {
@@ -122,8 +131,9 @@ function ModalEditBanner() {
       customerCategory:
         formData.customerCategory !== '' ? formData.customerCategory : null,
       image,
+      mobileImage,
     };
-    dispatch(updateBanner({ banner: bannerToUpdate, imageModified }));
+    dispatch(updateBanner({ banner: bannerToUpdate, imageModified, mobileImageModified }));
     setFormData({
       name: '',
       customer: '',
@@ -141,6 +151,11 @@ function ModalEditBanner() {
   const updateImage = (image: UploadImage | undefined) => {
     setImage(image);
     setImageModified(true);
+  };
+
+  const updateMobileImage = (image: UploadImage | undefined) => {
+    setMobileImage(image);
+    setMobileImageModified(true);
   };
 
   if (!editBannerDialog) return null;
@@ -236,9 +251,14 @@ function ModalEditBanner() {
           </div>
 
           <Loading loading={imageLoading}>
-            <div>
-              <span style={labelStyle}>Image</span>
-              <FileUplaodCustom image={image} setImage={updateImage} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <span style={labelStyle}>{mobileSupported ? 'Image principale' : 'Image'}</span>
+                <FileUplaodCustom image={image} setImage={updateImage} />
+              </div>
+              {mobileSupported && (
+                <MobileImageField image={mobileImage} setImage={updateMobileImage} labelStyle={labelStyle} />
+              )}
             </div>
           </Loading>
         </div>

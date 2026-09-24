@@ -48,6 +48,11 @@ export const createBanner = createAsyncThunk(
     if (data.image?.file) {
       imageUploaded = await apiUploadFile(data.image.file);
     }
+    // Version téléphone (facultative) — même traitement que l'image principale
+    let mobileImageUploaded: PegFile | undefined = undefined;
+    if (data.mobileImage?.file) {
+      mobileImageUploaded = await apiUploadFile(data.mobileImage.file);
+    }
     // Extract customer documentId before API call (banner.customer is mappedBy in Strapi)
     const customerDocumentId = typeof data.customer === 'string' && data.customer !== '' ? data.customer : null;
 
@@ -57,6 +62,7 @@ export const createBanner = createAsyncThunk(
       apiCreateBanner({
         ...dataWithoutCustomer,
         image: imageUploaded?.id ?? null,
+        mobileImage: mobileImageUploaded?.id ?? null,
       } as unknown as CreateBannerRequest)
     );
 
@@ -84,6 +90,7 @@ export const deleteBanner = createAsyncThunk(
 export type UpdateBanner = {
   banner: BannerForm;
   imageModified: boolean;
+  mobileImageModified?: boolean;
 };
 
 export const updateBanner = createAsyncThunk(
@@ -92,6 +99,10 @@ export const updateBanner = createAsyncThunk(
     let imageUploaded: PegFile | undefined = undefined;
     if (data.imageModified && data.banner.image?.file) {
       imageUploaded = await apiUploadFile(data.banner.image.file);
+    }
+    let mobileImageUploaded: PegFile | undefined = undefined;
+    if (data.mobileImageModified && data.banner.mobileImage?.file) {
+      mobileImageUploaded = await apiUploadFile(data.banner.mobileImage.file);
     }
 
     // Detect customer change (banner.customer is mappedBy in Strapi)
@@ -106,6 +117,7 @@ export const updateBanner = createAsyncThunk(
       apiUpdateBanner({
         ...bannerWithoutCustomer,
         image: data.imageModified ? (imageUploaded?.id ?? null) : undefined,
+        mobileImage: data.mobileImageModified ? (mobileImageUploaded?.id ?? null) : undefined,
       } as unknown as Partial<Banner>)
     );
 

@@ -7,11 +7,18 @@ import { Banner } from '@/@types/banner';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
-import { apiGetBanners, apiCreateBanner, apiUpdateBanner } from '@/services/BannerServices';
+import {
+  apiGetBanners,
+  apiCreateBanner,
+  apiUpdateBanner,
+  BannerSlot,
+  isBannerMobileSupported,
+} from '@/services/BannerServices';
 import { apiUploadFile } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import useResponsive from '@/utils/hooks/useResponsive';
-import { buildImageSources, StrapiImage } from '@/utils/strapiImage';
+import { buildImageSources } from '@/utils/strapiImage';
+import { BannerImage, MOBILE_BANNER_FORMAT } from '@/utils/bannerVisual';
 
 const CatalogueBanner = ({
   bannerName = 'Bannière catalogue',
@@ -34,14 +41,27 @@ const CatalogueBanner = ({
 }) => {
   const user = useSelector((state: any) => state.auth?.user?.user) as User | undefined;
   const isAdmin = !!user && hasRole(user, [ADMIN, SUPER_ADMIN]);
-  const { larger } = useResponsive();
+  const { larger, smaller } = useResponsive();
 
   const [bannerDocId, setBannerDocId] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [srcSet, setSrcSet] = useState<string | undefined>();
-  // Proportions réelles de l'image (largeur / hauteur).
-  const [ratio, setRatio] = useState<number | null>(null);
+  const [image, setImage] = useState<BannerImage | null>(null);
+  const [mobileImage, setMobileImage] = useState<BannerImage | null>(null);
+  // Proportions lues au chargement, quand Strapi n'a pas renseigné les dimensions
+  const [loadedRatio, setLoadedRatio] = useState<{ src: string; ratio: number } | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Téléphone : la version téléphone de la bannière si elle existe, entière.
+  const phone = smaller.md;
+  const shown = phone && mobileImage?.url ? mobileImage : image;
+  const imageUrl = shown?.url || '';
+  const srcSet = buildImageSources(shown)?.srcSet;
+  // Proportions réelles de l'image (largeur / hauteur).
+  const ratio =
+    shown?.width && shown?.height
+      ? shown.width / shown.height
+      : loadedRatio?.src === imageUrl ? loadedRatio.ratio : null;
+  // L'admin change l'image qu'il voit : sur téléphone, la version téléphone.
+  const uploadSlot: BannerSlot = phone && isBannerMobileSupported() ? 'mobileImage' : 'image';
 
   // Sous lg, le cadre adopte les proportions de l'image : elle s'affiche
   // ENTIÈRE. Le cadre desktop (aspect + 220px minimum) rognait les visuels
@@ -62,10 +82,8 @@ const CatalogueBanner = ({
       );
       if (banner) {
         setBannerDocId(banner.documentId);
-        setImageUrl(banner.image?.url || '');
-        setSrcSet(buildImageSources(banner.image as StrapiImage)?.srcSet);
-        const { width, height } = banner.image || {};
-        setRatio(width && height ? width / height : null);
+        setImage(banner.image ?? null);
+        setMobileImage(banner.mobileImage ?? null);
       }
     } catch {
       // Lecture impossible (permissions / réseau) — on n'affiche pas de bannière
@@ -97,9 +115,9 @@ const CatalogueBanner = ({
     try {
       const uploaded = await apiUploadFile(file);
       if (bannerDocId) {
-        await unwrapData(apiUpdateBanner({ documentId: bannerDocId, image: uploaded.id as any, name: bannerName, active: true } as any));
+        await unwrapData(apiUpdateBanner({ documentId: bannerDocId, [uploadSlot]: uploaded.id as any, name: bannerName, active: true } as any));
       } else {
-        await unwrapData(apiCreateBanner({ name: bannerName, image: uploaded.id as any, active: true } as any));
+        await unwrapData(apiCreateBanner({ name: bannerName, [uploadSlot]: uploaded.id as any, active: true } as any));
       }
       await loadBanner();
       toast.success('Bannière mise à jour');
@@ -144,7 +162,7 @@ const CatalogueBanner = ({
           // Repli si Strapi n'a pas renseigné les dimensions de l'image
           onLoad={(e) => {
             const { naturalWidth, naturalHeight } = e.currentTarget;
-            if (naturalWidth && naturalHeight) setRatio(naturalWidth / naturalHeight);
+            if (naturalWidth && naturalHeight) setLoadedRatio({ src: imageUrl, ratio: naturalWidth / naturalHeight });
           }}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
@@ -158,7 +176,11 @@ const CatalogueBanner = ({
         }}>
           <HiOutlinePhotograph size={28} />
           <span style={{ fontSize: '13px', fontWeight: 600 }}>Ajouter une image de bannière</span>
-          <span style={{ fontSize: '11px', opacity: 0.7 }}>Format conseillé : 1600 × 320 px (paysage)</span>
+          <span style={{ fontSize: '11px', opacity: 0.7 }}>
+            {uploadSlot === 'mobileImage'
+              ? `Format conseillé : ${MOBILE_BANNER_FORMAT} (téléphone)`
+              : 'Format conseillé : 1600 × 320 px (paysage)'}
+          </span>
         </div>
       )}
 
@@ -223,7 +245,11 @@ const CatalogueBanner = ({
             }}
           >
             <HiOutlinePhotograph size={15} />
-            {uploading ? 'Envoi…' : imageUrl ? "Changer l'image" : "Ajouter l'image"}
+            {uploading
+              ? 'Envoi…'
+              : uploadSlot === 'mobileImage'
+                ? mobileImage?.url ? "Changer l'image mobile" : "Ajouter l'image mobile"
+                : imageUrl ? "Changer l'image" : "Ajouter l'image"}
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFile} />
         </>

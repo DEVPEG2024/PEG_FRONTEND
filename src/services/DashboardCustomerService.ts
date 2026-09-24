@@ -3,9 +3,13 @@ import ApiService from './ApiService'
 import { AxiosResponse } from 'axios';
 import { ApiResponse } from '@/utils/serviceHelper';
 import { Customer } from '@/@types/customer';
+import { fetchBannerGraphQL } from './BannerServices';
 
 export async function apiGetDashboardCustomerInformations(documentId: string): Promise<AxiosResponse<ApiResponse<{customer: Customer}>>> {
-  const query = `
+  // La bannière porte une image téléphone depuis le 25/09/2026 : fetchBannerGraphQL
+  // rejoue la requête sans elle si le backend n'est pas encore redéployé.
+  return fetchBannerGraphQL<ApiResponse<{customer: Customer}>>((withMobile) => ({
+    query: `
     query DashboardCustomerInformationsQuery($documentId: ID!) {
       customer(documentId: $documentId) {
         documentId
@@ -20,22 +24,13 @@ export async function apiGetDashboardCustomerInformations(documentId: string): P
             documentId
             url
           }
+          ${withMobile ? 'mobileImage { documentId url width height size formats }' : ''}
         }
       }
     }
   `,
-  variables = {
-    documentId
-  }
-
-  return ApiService.fetchData<ApiResponse<{customer: Customer}>>({
-    url: API_GRAPHQL_URL,
-    method: 'post',
-    data: {
-      query,
-      variables
-    }
-  })
+    variables: { documentId },
+  }))
 }
 
 // ─── Contexte de la page « Mes offres » (/customer/products) ────────────────

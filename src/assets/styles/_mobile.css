@@ -214,22 +214,9 @@
     padding: 6px 12px !important;
   }
 
-  /* Bannières sur téléphone : TOUJOURS ENTIÈRES (bannières catalogue /
-     projets / offres : voir CatalogueBanner.tsx, qui couvre aussi la tablette).
-     Une hauteur minimale + `object-fit: cover` rognait les côtés, là où les
-     visuels placent le logo du client : 47 % seulement d'une bannière client
-     (2836×442) restait visible. Une bannière plus basse mais complète vaut
-     mieux qu'un logo coupé. */
-
-  /* Accueil client : <img> dans le flux, elle reprend sa hauteur naturelle. */
-  .peg-banner-mobile {
-    max-height: none !important;
-  }
-  /* Le fondu de 80px sous l'image la recouvrirait entièrement à ~60px de
-     haut : on le ramène à la même proportion qu'en desktop. */
-  .peg-banner-fade {
-    height: 45% !important;
-  }
+  /* Bannières sur téléphone : jamais rognées sur le logo du client. Accueil
+     client : CustomerHomeBanner.tsx ; catalogue / projets / offres :
+     CatalogueBanner.tsx (qui couvre aussi la tablette). */
 
   /* Largeur plancher des lignes d'un tableau en grille placé dans
      .peg-table-wrap : les colonnes gardent leur largeur et le conteneur défile,

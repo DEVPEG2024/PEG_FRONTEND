@@ -4,6 +4,7 @@ import ApiService from './ApiService';
 import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { pegBackendFetch } from './PegBackendClient';
+import { CustomerBanner, fetchBannerGraphQL } from './BannerServices';
 
 // Tarif Premium (HT mensuel) — doit rester aligné avec PREMIUM_PRICE_HT côté backend.
 export const PREMIUM_PRICE_HT = 250;
@@ -79,6 +80,8 @@ export type PremiumCustomer = {
     phoneNumber?: string;
     city?: string;
   } | null;
+  /** Bannière propre du client (accueil) — modifiable depuis l'onglet Premium. */
+  banner?: CustomerBanner | null;
 };
 
 // Démarre la session Stripe d'abonnement Premium → renvoie l'id de session
@@ -111,7 +114,7 @@ export async function apiCancelPremium(
 
 // Liste des clients Premium (admin) — GraphQL (fiable en prod, le REST /api/* peut renvoyer 500)
 export async function apiGetPremiumCustomers(): Promise<PremiumCustomer[]> {
-  const query = `
+  const query = (withMobile: boolean) => `
     query GetPremiumCustomers {
       customers_connection(
         filters: { premium: { eq: true } }
@@ -126,15 +129,17 @@ export async function apiGetPremiumCustomers(): Promise<PremiumCustomer[]> {
           premiumSince
           logo { url }
           companyInformations { email phoneNumber city }
+          banner {
+            documentId
+            image { url }
+            ${withMobile ? 'mobileImage { url }' : ''}
+          }
         }
       }
     }
   `;
-  const res: any = await ApiService.fetchData({
-    url: API_GRAPHQL_URL,
-    method: 'post',
-    data: { query },
-  });
+  // fetchBannerGraphQL : rejoue sans l'image téléphone si le backend ne la connaît pas
+  const res: any = await fetchBannerGraphQL((withMobile) => ({ query: query(withMobile) }));
   if (res?.data?.errors?.length) {
     console.error('[Premium] Erreurs GraphQL apiGetPremiumCustomers:', res.data.errors);
   }

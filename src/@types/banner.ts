@@ -11,6 +11,8 @@ export type Banner = {
   customer: Customer;
   customerCategory: CustomerCategory;
   image: PegFile;
+  /** Image dédiée au téléphone (facultative) — voir utils/bannerVisual.ts. */
+  mobileImage?: PegFile | null;
   active: boolean;
 }
 
@@ -26,5 +28,6 @@ export type BannerForm = {
   customer: string | null;
   customerCategory: string | null;
   image?: UploadImage;
+  mobileImage?: UploadImage;
   active: boolean;
 }

@@ -10,6 +10,7 @@ import {
   premiumCancellableFrom,
   canCancelPremium,
 } from '@/services/PremiumServices';
+import PremiumBannerEditor from './PremiumBannerEditor';
 
 const GOLD = '#eab308';
 
@@ -153,6 +154,16 @@ const PremiumAdminList = () => {
             <TbCheck size={14} /> Marquer comme traité
           </button>
         )}
+
+        {/* Bannière de l'accueil du client : ordinateur + téléphone */}
+        <PremiumBannerEditor
+          customerDocumentId={c.documentId}
+          customerName={c.name}
+          banner={c.banner}
+          onChange={(banner) =>
+            setCustomers((prev) => prev.map((x) => (x.documentId === c.documentId ? { ...x, banner } : x)))
+          }
+        />
       </div>
     );
   };

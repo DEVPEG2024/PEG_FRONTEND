@@ -621,6 +621,31 @@ Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permi
 
 ---
 
+## 📱 Bannières — version téléphone (ajout 25/09/2026)
+
+### Concept
+- Chaque bannière (client, catégorie, NEW CUSTOMER, catalogue, projets, offres) porte une **image principale** (`image`) et une **image téléphone** facultative (`mobileImage`, champ media Strapi).
+- Accueil client sur téléphone (< 768px) : cadre **3× plus haut** qu'avant (demande Nova) — 188px au lieu de 63px sur un iPhone de 402px pour une bannière client 2836 × 442.
+  - image téléphone → affichée entière ; **format conseillé 1280 × 600 px** (`MOBILE_BANNER_FORMAT`) ;
+  - sinon → image d'ordinateur **entière** au milieu du cadre, sur une copie floutée d'elle-même. **Jamais rognée** : les visuels clients placent leur logo sur les bords.
+- Bureau et tablette : **inchangés au pixel** (vérifié 1440 et 820).
+
+### Choix de l'image (`src/utils/bannerVisual.ts`)
+Chaîne de priorité inchangée : `customer.banner` → bannière de la catégorie → NEW CUSTOMER. Ordinateur = première image principale de la chaîne. Téléphone = **première bannière qui a une image**, sa version téléphone si elle existe — la bannière propre d'un client prime sur une version téléphone générique.
+
+### Où la modifier
+- Onglet **Bannières** : champ « Image téléphone (facultative) » dans les modales, indicateur « Mobile » sur chaque carte.
+- Onglet **Premium** : chaque client a un bloc « Bannière de l'espace client » (Ordinateur / Téléphone) qui écrit **sa bannière propre**, créée à la volée et rattachée par la fiche client (`updateCustomer { banner }`) — `PremiumBannerEditor.tsx`.
+- Bannières catalogue/projets/offres : sur téléphone, le bouton admin change l'**image téléphone**.
+
+### ⚠️ Rétro-compatibilité (`fetchBannerGraphQL`, `BannerServices.ts`)
+Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute** la requête (400). Toute requête qui le mentionne passe par `fetchBannerGraphQL(build)` : on rejoue `build(false)` sans le champ (sélection **et** données écrites) et on s'en souvient pour la session ; les écrans masquent alors la version téléphone. **Ne jamais ajouter `mobileImage` à une requête sans ce helper.** Tests : `src/__tests__/bannerVisual.test.ts`.
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (champ `mobileImage` du schéma `banner`, aucune migration). Front avant back = sans risque : tout fonctionne comme avant, sans version téléphone.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

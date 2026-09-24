@@ -3,7 +3,9 @@ import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { apiGetSuggestedProducts } from '@/services/ProductServices';
-import { apiGetFallbackBannerUrl } from '@/services/BannerServices';
+import { apiGetFallbackBanners } from '@/services/BannerServices';
+import { BannerVisual, pickDesktopImage, pickPhoneImage } from '@/utils/bannerVisual';
+import CustomerHomeBanner from './CustomerHomeBanner';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -127,8 +129,8 @@ const DashboardCustomer = () => {
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  // Bannière de repli (gérée dans l'admin) : catégorie du client, sinon par défaut
-  const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(null);
+  // Bannières de repli (gérées dans l'admin) : catégorie du client, puis NEW CUSTOMER
+  const [fallbackBanners, setFallbackBanners] = useState<BannerVisual[]>([]);
 
   useEffect(() => {
     if (user.customer?.documentId) {
@@ -136,12 +138,13 @@ const DashboardCustomer = () => {
     }
   }, [dispatch, user.customer?.documentId]);
 
-  // Si le client n'a pas de bannière propre : bannière de sa catégorie, sinon par défaut
+  // Bannière propre sans image d'ordinateur (absente, ou seulement une version
+  // téléphone) : on charge la bannière de sa catégorie, sinon NEW CUSTOMER.
   useEffect(() => {
-    if (customer && !customer.banner) {
-      apiGetFallbackBannerUrl(customer.customerCategory?.documentId).then(setDefaultBannerUrl);
+    if (customer && !customer.banner?.image?.url) {
+      apiGetFallbackBanners(customer.customerCategory?.documentId).then(setFallbackBanners);
     } else {
-      setDefaultBannerUrl(null);
+      setFallbackBanners([]);
     }
   }, [customer?.documentId, customer?.banner, customer?.customerCategory?.documentId]);
 
@@ -266,6 +269,10 @@ const DashboardCustomer = () => {
 
   const recommendedProducts = products.slice(0, 5);
 
+  const bannerChain: BannerVisual[] = [customer.banner, ...fallbackBanners];
+  const desktopBanner = pickDesktopImage(bannerChain);
+  const phoneBanner = pickPhoneImage(bannerChain);
+
 
   const ProductRow = ({ product }: { product: Product }) => {
     const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
@@ -293,87 +300,10 @@ const DashboardCustomer = () => {
   return (
     customer && (
       <Suspense fallback={<></>}>
-        {/* Banner — NE PAS MODIFIER (système customer.banner) */}
-        {customer.banner ? (
-          <div style={{ position: 'relative' }}>
-            <img
-              src={customer.banner.image.url}
-              alt="Banner"
-              // Seul ajout : des classes. Aucun style ni aucune logique de
-              // sélection de bannière n'est modifié. Sous md, la bannière
-              // s'affiche entière (jamais rognée) et son fondu est ramené à
-              // la même proportion qu'en desktop — voir _mobile.css.
-              className="peg-banner-mobile"
-              style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
-            />
-            <div className="peg-banner-fade" style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: '80px',
-              background: 'linear-gradient(to top, #0a1628, transparent)',
-            }} />
-          </div>
-        ) : defaultBannerUrl ? (
-          /* Bannière de repli (admin) : catégorie du client, sinon par défaut */
-          <div style={{ position: 'relative' }}>
-            <img
-              src={defaultBannerUrl}
-              alt="Banner"
-              // Seul ajout : des classes. Aucun style ni aucune logique de
-              // sélection de bannière n'est modifié. Sous md, la bannière
-              // s'affiche entière (jamais rognée) et son fondu est ramené à
-              // la même proportion qu'en desktop — voir _mobile.css.
-              className="peg-banner-mobile"
-              style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
-            />
-            <div className="peg-banner-fade" style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: '80px',
-              background: 'linear-gradient(to top, #0a1628, transparent)',
-            }} />
-          </div>
-        ) : (
-          /* Bannière standard des nouveaux comptes — design épuré, sans texte.
-             (« NEW CUSTOMER » dans l'admin : si une image y est définie, elle
-             remplace ce visuel via la branche defaultBannerUrl ci-dessus.) */
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            height: '180px',
-            background: 'radial-gradient(120% 160% at 82% 8%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 46%, rgba(10,12,22,0.2) 76%), linear-gradient(160deg, #14152a 0%, #0a0c16 100%)',
-            overflow: 'hidden',
-          }}>
-            {/* Halo décoratif */}
-            <div style={{
-              position: 'absolute', top: '-70px', right: '-30px',
-              width: '280px', height: '280px', borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(124,107,255,0.22), transparent 70%)',
-            }} />
-            <div style={{
-              position: 'absolute', bottom: '-90px', right: '22%',
-              width: '200px', height: '200px', borderRadius: '50%',
-              background: 'rgba(124,107,255,0.06)',
-              border: '1px solid rgba(124,107,255,0.12)',
-            }} />
-            <div style={{
-              position: 'absolute', top: '26px', left: '6%',
-              width: '90px', height: '90px', borderRadius: '50%',
-              background: 'rgba(169,155,255,0.05)',
-              border: '1px solid rgba(169,155,255,0.08)',
-            }} />
-            {/* Grille de points */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',
-              backgroundSize: '28px 28px',
-            }} />
-            {/* Dégradé bas (raccord avec le contenu) */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: '80px',
-              background: 'linear-gradient(to top, #0a0c16, transparent)',
-            }} />
-          </div>
-        )}
+        {/* Bannière : celle du client (customer.banner), puis celle de sa
+            catégorie, puis NEW CUSTOMER — choisie image par image et appareil
+            par appareil (utils/bannerVisual.ts). */}
+        <CustomerHomeBanner desktop={desktopBanner} phone={phoneBanner} />
 
         <Container style={{ fontFamily: FONT }}>
           <div style={{ paddingTop: '28px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>

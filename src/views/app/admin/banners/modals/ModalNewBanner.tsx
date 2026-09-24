@@ -23,6 +23,8 @@ import {
 } from '@/services/CustomerCategoryServices';
 import { UploadImage } from '@/@types/pegFile';
 import { BannerForm } from '@/@types/banner';
+import { isBannerMobileSupported } from '@/services/BannerServices';
+import MobileImageField from './MobileImageField';
 
 type Option = {
   value: string;
@@ -37,6 +39,8 @@ const labelStyle: React.CSSProperties = {
 function ModalNewBanner() {
   const { newBannerDialog, newBannerPreset } = useAppSelector((state) => state.banners.data);
   const [image, setImage] = useState<UploadImage | undefined>(undefined);
+  const [mobileImage, setMobileImage] = useState<UploadImage | undefined>(undefined);
+  const mobileSupported = isBannerMobileSupported();
   const [customers, setCustomers] = useState<Option[]>([]);
   const [customerCategories, setCustomerCategories] = useState<Option[]>([]);
   const dispatch = useAppDispatch();
@@ -90,6 +94,7 @@ function ModalNewBanner() {
       customerCategory:
         formData.customerCategory !== '' ? formData.customerCategory : null,
       image,
+      mobileImage,
     };
     dispatch(createBanner(bannerToCreate));
     setFormData({
@@ -191,9 +196,13 @@ function ModalNewBanner() {
           </div>
 
           <div>
-            <span style={labelStyle}>Image</span>
+            <span style={labelStyle}>{mobileSupported ? 'Image principale' : 'Image'}</span>
             <FileUplaodCustom setImage={setImage} />
           </div>
+
+          {mobileSupported && (
+            <MobileImageField image={mobileImage} setImage={setMobileImage} labelStyle={labelStyle} />
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>

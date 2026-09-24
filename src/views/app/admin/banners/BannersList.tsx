@@ -6,7 +6,7 @@
  */
 import { Container, Loading } from '@/components/shared';
 import { useEffect, useState } from 'react';
-import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiPhotograph } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiPencil, HiTrash, HiPhotograph, HiOutlineDeviceMobile } from 'react-icons/hi';
 import { injectReducer, useAppDispatch } from '@/store';
 import reducer, {
   deleteBanner,
@@ -20,7 +20,7 @@ import reducer, {
 import ModalNewBanner from './modals/ModalNewBanner';
 import { Banner } from '@/@types/banner';
 import ModalEditBanner from './modals/ModalEditBanner';
-import { isNewCustomerBanner, NEW_CUSTOMER_BANNER_NAME } from '@/services/BannerServices';
+import { isBannerMobileSupported, isNewCustomerBanner, NEW_CUSTOMER_BANNER_NAME } from '@/services/BannerServices';
 
 injectReducer('banners', reducer);
 
@@ -149,6 +149,30 @@ const BannerCard = ({
             }}>
               {banner.customerCategory.name}
             </span>
+          </div>
+        )}
+        {/* Version téléphone (image dédiée) — sinon l'image principale, entière */}
+        {isBannerMobileSupported() && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', minWidth: '52px' }}>Mobile</span>
+            {banner.mobileImage?.url ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.28)',
+                borderRadius: '100px', padding: '2px 9px 2px 3px',
+                color: '#4ade80', fontSize: '11px', fontWeight: 600,
+              }}>
+                <img src={banner.mobileImage.url} alt="" style={{ width: '34px', height: '16px', objectFit: 'cover', borderRadius: '100px', display: 'block' }} />
+                Version téléphone
+              </span>
+            ) : (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: 600,
+              }}>
+                <HiOutlineDeviceMobile size={13} /> Image principale
+              </span>
+            )}
           </div>
         )}
       </div>
