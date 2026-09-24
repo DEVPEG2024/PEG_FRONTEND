@@ -30,6 +30,7 @@ import {
   HiOutlineLightBulb,
   HiOutlineInformationCircle,
   HiOutlineLink,
+  HiOutlineLockClosed,
 } from 'react-icons/hi'
 
 /*
@@ -41,12 +42,12 @@ import {
 
 type Category = ClientFile['category']
 
-const CATEGORIES: { value: Category; label: string; color: string }[] = [
-  { value: 'logo', label: 'Logo', color: '#22d3ee' },
-  { value: 'charte', label: 'Charte graphique', color: '#a78bfa' },
-  { value: 'brief', label: 'Brief', color: '#fbbf24' },
-  { value: 'asset', label: 'Asset', color: '#34d399' },
-  { value: 'autre', label: 'Autre', color: '#94a3b8' },
+const CATEGORIES: { value: Category; label: string; plural: string; color: string }[] = [
+  { value: 'logo', label: 'Logo', plural: 'logos', color: '#22d3ee' },
+  { value: 'charte', label: 'Charte graphique', plural: 'chartes graphiques', color: '#a78bfa' },
+  { value: 'brief', label: 'Brief', plural: 'briefs', color: '#fbbf24' },
+  { value: 'asset', label: 'Asset', plural: 'assets', color: '#34d399' },
+  { value: 'autre', label: 'Autre', plural: 'autres', color: '#94a3b8' },
 ]
 
 const categoryOf = (c?: string) => CATEGORIES.find((x) => x.value === c) ?? CATEGORIES[4]
@@ -392,7 +393,7 @@ const MyFiles = () => {
   }
 
   return (
-    <Container className="pb-10">
+    <Container className="pb-28">
       <div {...dragHandlers} className="relative min-h-[60vh]">
         {/* EN-TÊTE */}
         <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
@@ -414,13 +415,13 @@ const MyFiles = () => {
 
         {/* RÉSUMÉ */}
         {!loading && files.length > 0 && (
-          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 210px), 1fr))' }}>
+          <div className="grid gap-2 sm:gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))' }}>
             <SummaryItem
               icon={<HiOutlineFolder className="w-5 h-5" />}
               color="#a78bfa"
               label="Fichiers"
               value={String(files.length)}
-              sub={CATEGORIES.filter((c) => counts[c.value]).map((c) => `${counts[c.value]} ${c.label.toLowerCase()}`).join(' · ')}
+              sub={CATEGORIES.filter((c) => counts[c.value]).map((c) => `${counts[c.value]} ${counts[c.value] > 1 ? c.plural : c.label.toLowerCase()}`).join(' · ')}
             />
             <SummaryItem
               icon={<HiOutlineCloud className="w-5 h-5" />}
@@ -571,7 +572,7 @@ const MyFiles = () => {
       {/* APERÇU */}
       {preview && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           onClick={() => setPreview(null)}
         >
           <div className="relative max-w-3xl max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
@@ -618,9 +619,9 @@ const SummaryItem = ({
   sub: string
   bar?: number
 }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex items-center gap-3 min-w-0">
+  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 sm:p-4 flex items-center gap-3 min-w-0">
     <span
-      className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+      className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
       style={{ background: `${color}1f`, color }}
     >
       {icon}
@@ -650,14 +651,22 @@ const CategoryBadge = ({ category }: { category?: string }) => {
   )
 }
 
-const SharedBadge = () => (
-  <span
-    title="Accessible à l'équipe PEG et aux producteurs de vos projets"
-    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] text-emerald-300"
-  >
-    <HiOutlineShare className="w-3 h-3" /> Partagé
-  </span>
-)
+const SharedBadge = ({ shared }: { shared: boolean }) =>
+  shared ? (
+    <span
+      title="Accessible à l'équipe PEG et aux producteurs de vos projets"
+      className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] text-emerald-300"
+    >
+      <HiOutlineShare className="w-3 h-3" /> Partagé
+    </span>
+  ) : (
+    <span
+      title="Visible par vous et l'équipe PEG uniquement — les producteurs ne le voient pas"
+      className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/15 bg-white/[0.04] text-white/50"
+    >
+      <HiOutlineLockClosed className="w-3 h-3" /> Non partagé
+    </span>
+  )
 
 const ViewButton = ({
   active,
@@ -732,7 +741,7 @@ const FileList = ({
           <button onClick={() => onOpen(f)} title="Voir le détail" className="flex items-center gap-3 min-w-0 text-left">
             <span className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
               {img ? (
-                <img src={fileUrl(f.file)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={fileUrl(f.file)} alt="" className="w-full h-full object-contain p-0.5" loading="lazy" />
               ) : (
                 <span className="text-[9px] font-bold text-indigo-200">{ext.slice(0, 4)}</span>
               )}
@@ -741,7 +750,7 @@ const FileList = ({
               <span className="block text-sm font-semibold text-white/90 truncate">{f.name}</span>
               <span className="block text-[11px] text-white/35 truncate">
                 {f.file?.name ?? ext}
-                {f.shared && <span className="text-emerald-300/80"> · Partagé</span>}
+                {f.shared ? <span className="text-emerald-300/80"> · Partagé</span> : <span> · Non partagé</span>}
                 {f.notes && <span className="italic"> · « {f.notes} »</span>}
               </span>
               {/* Détails repliés sous le nom sur petit écran */}
@@ -809,7 +818,7 @@ const FileCard = ({
         <div className="flex items-center gap-1.5 flex-wrap">
           <CategoryBadge category={f.category} />
           <QualityBadge file={f} />
-          {f.shared && <SharedBadge />}
+          <SharedBadge shared={f.shared} />
         </div>
         <button onClick={onOpen} className="text-left text-sm font-semibold text-white/90 truncate hover:text-white" title={f.name}>
           {f.name}
@@ -884,7 +893,7 @@ const UploadWindow = ({
   const pending = queue.filter((x) => x.status !== 'done').length
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-label="Envoyer des fichiers"
@@ -1057,7 +1066,7 @@ const FileDetail = ({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[10000] flex justify-end bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <aside
         role="dialog"
         aria-label={`Détail du fichier ${f.name}`}
@@ -1098,7 +1107,7 @@ const FileDetail = ({
           <div className="flex items-center gap-1.5 flex-wrap">
             <CategoryBadge category={f.category} />
             <QualityBadge file={f} />
-            {f.shared && <SharedBadge />}
+            <SharedBadge shared={f.shared} />
           </div>
           {q && (
             <div
