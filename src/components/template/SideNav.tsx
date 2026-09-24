@@ -180,15 +180,21 @@ const SideNav = () => {
                     )}
                 >
                     <div className="side-nav-header" style={{ flexShrink: 0 }}>
-                        <Logo
-                            mode={logoMode()}
-                            type={sideNavCollapse ? 'streamline' : 'full'}
-                            className={
-                                sideNavCollapse
-                                    ? SIDE_NAV_CONTENT_GUTTER
-                                    : LOGO_X_GUTTER
-                            }
-                        />
+                        {sideNavCollapse ? (
+                            <Logo
+                                mode={logoMode()}
+                                type="streamline"
+                                className={SIDE_NAV_CONTENT_GUTTER}
+                            />
+                        ) : (
+                            // Même hauteur d'en-tête qu'avec l'ancien PNG (84 px) : le menu ne bouge pas
+                            <Logo
+                                mode={logoMode()}
+                                type="wordmark"
+                                className={`${LOGO_X_GUTTER} py-2.5`}
+                                imgStyle={{ height: 64, width: 'auto', display: 'block' }}
+                            />
+                        )}
                     </div>
                     {sideNavCollapse ? (
                         menuContent

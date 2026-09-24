@@ -25,7 +25,7 @@ const HeaderActionsStart = () => {
     <>
       {smaller.md && (
         <Link to="/home" className="peg-header-brand" aria-label="Accueil">
-          <Logo mode={mode} imgStyle={{ height: 26, width: 'auto', display: 'block' }} />
+          <Logo mode={mode} type="wordmark" imgStyle={{ height: 28, width: 'auto', display: 'block' }} />
         </Link>
       )}
       <SideNavToggle />

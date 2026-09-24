@@ -3,7 +3,9 @@ import { APP_NAME } from '@/constants/app.constant'
 import type { CommonProps } from '@/@types/common'
 
 interface LogoProps extends CommonProps {
-    type?: 'full' | 'streamline'
+    // wordmark : « PEG. » vectoriel sans marge transparente, net à toutes les
+    // tailles (menu latéral, en-tête téléphone). Les PNG gardent leur cadrage.
+    type?: 'full' | 'streamline' | 'wordmark'
     mode?: 'light' | 'dark'
     imgClass?: string
     imgStyle?: React.CSSProperties
@@ -34,7 +36,11 @@ const Logo = (props: LogoProps) => {
             <img
                 className={imgClass}
                 style={imgStyle}
-                src={`${LOGO_SRC_PATH}logo-${mode}-${type}.png`}
+                src={
+                    type === 'wordmark'
+                        ? `${LOGO_SRC_PATH}logo-wordmark.svg`
+                        : `${LOGO_SRC_PATH}logo-${mode}-${type}.png`
+                }
                 alt={`${APP_NAME} logo`}
             />
         </div>
