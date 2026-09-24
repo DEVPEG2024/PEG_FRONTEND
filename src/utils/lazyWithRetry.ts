@@ -1,5 +1,5 @@
 import { lazy, ComponentType } from 'react'
-import { isChunkLoadError } from './chunkLoadError'
+import { isChunkLoadError, reloadForStaleBuild } from './chunkLoadError'
 
 /**
  * Wrapper around React.lazy that auto-reloads the page once
@@ -11,17 +11,8 @@ function lazyWithRetry<T extends ComponentType<any>>(
 ) {
   return lazy(() =>
     importFn().catch((error: Error) => {
-      if (isChunkLoadError(error)) {
-        const reloadKey = 'chunk-reload-' + window.location.pathname
-        const lastReload = sessionStorage.getItem(reloadKey)
-        const now = Date.now()
-
-        // Avoid infinite reload loops: only reload once per path per 30s
-        if (!lastReload || now - Number(lastReload) > 30_000) {
-          sessionStorage.setItem(reloadKey, String(now))
-          window.location.reload()
-        }
-      }
+      // Anti-boucle partagé : plafond par fenêtre, une panne ne compte qu'une fois
+      if (isChunkLoadError(error)) reloadForStaleBuild()
 
       throw error
     })

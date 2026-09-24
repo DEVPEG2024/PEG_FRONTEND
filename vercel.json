@@ -35,7 +35,7 @@
       "destination": "https://peg-backend.vercel.app/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/"
     }
   ]

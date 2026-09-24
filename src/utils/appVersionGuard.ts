@@ -11,12 +11,11 @@
  *     → rechargement quand l'onglet est en arrière-plan ou au retour sur l'onglet, sans interrompre
  *     un travail en cours.
  *
- * Garde anti-boucle : on ne recharge pas plus d'une fois toutes les 10 s.
+ * Garde anti-boucle : reloadForStaleBuild (chunkLoadError.ts), partagé avec l'ErrorBoundary.
  */
 
-import { isChunkLoadError } from './chunkLoadError';
+import { isChunkLoadError, reloadForStaleBuild } from './chunkLoadError';
 
-const RELOAD_GUARD_KEY = 'peg_version_reload_ts';
 const POLL_INTERVAL_MS = 60_000;
 
 /** Hash du script d'entrée actuellement exécuté (la version que l'utilisateur fait tourner). */
@@ -38,11 +37,9 @@ async function getDeployedEntry(): Promise<string | null> {
   }
 }
 
+// Anti-boucle partagé (chunkLoadError.ts) : plafond de rechargements par fenêtre, dédoublonné.
 function safeReload(): void {
-  const last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY) || 0);
-  if (Date.now() - last < 10_000) return; // évite les boucles de rechargement
-  sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()));
-  window.location.reload();
+  reloadForStaleBuild();
 }
 
 function isChunkError(message: unknown): boolean {

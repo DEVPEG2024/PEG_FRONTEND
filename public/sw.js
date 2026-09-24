@@ -12,7 +12,9 @@
 // passent au réseau sans jamais être interceptés.
 // ---------------------------------------------------------------------------
 
-const CACHE_VERSION = 'peg-v1';
+// peg-v2 (24/09/2026) : purge d'éventuelles pages HTML mises en cache à la place d'un chunk
+// (un chunk absent était servi en index.html, statut 200, par la réécriture SPA).
+const CACHE_VERSION = 'peg-v2';
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const KEEP_CACHES = [ASSET_CACHE];
 
@@ -54,7 +56,10 @@ async function cacheFirst(request) {
   const hit = await cache.match(request);
   if (hit) return hit;
   const response = await fetch(request);
-  if (response && response.status === 200 && response.type === 'basic') {
+  // Jamais de HTML sous /assets/ : ce serait la coque SPA à la place d'un chunk, mise en cache
+  // « immuable » pour toujours sous le nom du chunk.
+  const type = response.headers.get('Content-Type') || '';
+  if (response && response.status === 200 && response.type === 'basic' && !type.includes('text/html')) {
     cache.put(request, response.clone());
   }
   return response;
