@@ -5,7 +5,6 @@ import MobileDock from "@/components/template/MobileDock";
 import SideNav from "@/components/template/SideNav";
 import Logo from "@/components/template/Logo";
 import View from "@/views";
-import LanguageSelector from "../template/LanguageSelector";
 import OnlineUsersCount, { OnlinePing } from "../template/OnlineUsersCount";
 import NotificationBell from "../template/NotificationBell";
 import PwaInstallPrompt from "../template/PwaInstallPrompt";
@@ -76,7 +75,6 @@ const HeaderActionsEnd = () => {
       </AuthorityCheck>
       <OnlinePing />
       <NotificationBell />
-      <LanguageSelector />
       <UserDropdown hoverable={false} />
     </>
   );

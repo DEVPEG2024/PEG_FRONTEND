@@ -29,7 +29,14 @@ const persistConfig = {
     storage,
     // `auth` n'est plus persisté ici (localStorage partagé entre onglets) :
     // il a sa propre persistance PAR ONGLET dans rootReducer (tabSessionStorage)
-    whitelist: ['locale', 'base'],
+    whitelist: ['base'],
+    // La langue n'est plus modifiable (sélecteur retiré) : on écarte celle
+    // mémorisée par les anciennes sessions, sinon un compte passé en anglais
+    // y resterait bloqué.
+    migrate: (state: any) => {
+        if (state) delete state.locale
+        return Promise.resolve(state)
+    },
 }
 
 interface CustomStore extends Store<RootState, AnyAction> {
