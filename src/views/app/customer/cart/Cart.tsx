@@ -597,7 +597,10 @@ function Cart() {
         50% { box-shadow: 0 0 20px 4px rgba(251,191,36,0.15), inset 0 0 12px rgba(251,191,36,0.03); border-color: rgba(251,191,36,0.55); }
       }
       @media (max-width: 860px) {
-        .cart-grid { grid-template-columns: 1fr !important; }
+        /* minmax(0, 1fr) et non 1fr (= minmax(auto, 1fr)) : la colonne
+           s'élargissait jusqu'au contenu le plus large (408px sur un écran de
+           402px) et le panier débordait à droite, montant et étapes coupés. */
+        .cart-grid { grid-template-columns: minmax(0, 1fr) !important; }
         .cart-sidebar { position: static !important; }
       }
       @media (max-width: 560px) {

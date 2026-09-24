@@ -27,11 +27,13 @@ import Container from '@/components/shared/Container';
 
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
-import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price, applyPremiumDiscount } from '@/utils/productHelpers';
+import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price, applyPremiumDiscount, getTotalPriceForCartItem } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
 import { CartItem } from '@/@types/cart';
 import { FormAnswer } from '@/@types/formAnswer';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
+import ProductActionBar from './ProductActionBar';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
@@ -66,6 +68,8 @@ const ShowProduct = () => {
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
   const [sizeAndColorsChanged, setSizeAndColorsChanged] = useState<boolean>(false);
+  // Téléphone : nom et prix remontés sous la photo, barre d'action fixe (ProductActionBar)
+  const { smaller } = useResponsive();
 
   // Wizard state
   const hasForm = !!product?.form;
@@ -106,10 +110,15 @@ const ShowProduct = () => {
   // m² pricing calculation
   const m2Data = isM2Pricing && product ? getM2Price(product, m2Width / 100, m2Height / 100, m2Quantity) : null;
 
-  // Total price based on mode
+  // Total price based on mode — même calcul que le panier (Cart.tsx) et que le
+  // montant débité (checkout.ts) : remise Premium appliquée UNE fois sur le
+  // total de la ligne, arrondie une fois. « quantité × prix unitaire remisé »
+  // affichait 101,84 € là où le panier (et Stripe) disaient 101,83 €.
   const totalPrice = isM2Pricing && m2Data
     ? applyPremiumDiscount(m2Data.total, user?.customer)
-    : isPackPricing ? unitPrice : amountSelected * unitPrice;
+    : product
+      ? applyPremiumDiscount(getTotalPriceForCartItem(product, sizeAndColorsSelected), user?.customer)
+      : 0;
 
   useEffect(() => {
     if (onEdition && !product) {
@@ -351,6 +360,18 @@ const ShowProduct = () => {
     ? (isM2Pricing ? (m2Width > 0 && m2Height > 0 && m2Quantity > 0) : isAtLeastOneItemWanted())
     : true;
 
+  const goNext = () => {
+    if (!canGoNext) { toast.error('Sélectionnez au moins une quantité'); return; }
+    setWizardStep(hasForm ? 1 : recapStepIndex);
+  };
+  const nextLabel = hasForm ? 'Remplir le formulaire' : 'Récapitulatif';
+  // Résumé de la sélection pour la barre d'action du téléphone
+  const selectionSummary = isM2Pricing
+    ? (m2Data ? `${m2Data.area.toFixed(2)} m²${m2Quantity > 1 ? ` × ${m2Quantity}` : ''}` : null)
+    : amountSelected > 0
+      ? (isPackPricing ? `Pack ${amountSelected}` : `${amountSelected} pièce${amountSelected > 1 ? 's' : ''}`)
+      : null;
+
   // ─── Main render ─────────────────────────────────────────────────────────────
   return (
     <Container>
@@ -360,6 +381,7 @@ const ShowProduct = () => {
 
       {/* Back */}
       <button
+        className="peg-tap-target"
         onClick={() => wizardStep > 0 ? setWizardStep(wizardStep - 1) : navigate(-1)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(160,185,220,0.5)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px', padding: 0 }}
       >
@@ -442,6 +464,25 @@ const ShowProduct = () => {
                   <ProductImageCarousel images={product.images ?? []} alt={product.name} maxImageHeight={420} lensSize={200} zoomFactor={2.5} />
                 </div>
 
+                {/* Téléphone : ce qu'on commande et son prix AVANT les quantités
+                    (sinon ils n'arrivaient qu'après la liste des tailles) */}
+                {smaller.md && (
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                      {product.name}
+                    </h1>
+                    <div style={{ marginTop: '6px', display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{fmtHT(unitPrice)}</span>
+                      <span style={{ fontSize: '12px', color: 'rgba(160,185,220,0.6)' }}>
+                        {isPackPricing ? '/ pack' : '/ pièce'} · {fmtTTC(toTTC(unitPrice))}
+                      </span>
+                      {isPremium && rawUnitPrice > unitPrice && (
+                        <span style={{ fontSize: '12px', color: '#eab308', fontWeight: 700 }}>⭐ -15% Premium</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Choix des tailles / dimensions — sous la photo */}
                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: 'var(--peg-pad-20)' }}>
                   <p style={{ margin: '0 0 14px', fontSize: '11px', color: 'rgba(160,185,220,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
@@ -511,8 +552,8 @@ const ShowProduct = () => {
             {/* Info panel */}
             <div className="peg-pad-mobile" style={{ flex: '1 1 380px', minWidth: 0, padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
-              {/* Name + ref */}
-              <div style={{ marginBottom: '16px' }}>
+              {/* Name + ref (sous md : affichés sous la photo) */}
+              <div className="peg-hide-mobile" style={{ marginBottom: '16px' }}>
                 <h1 style={{ margin: 0, fontSize: 'var(--peg-fs-24)', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                   {product.name}
                 </h1>
@@ -523,8 +564,8 @@ const ShowProduct = () => {
                 )}
               </div>
 
-              {/* Price + tier badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              {/* Price + tier badge (sous md : prix sous la photo) */}
+              <div className="peg-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'inline-flex', flexDirection: 'column', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                     <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
@@ -640,7 +681,7 @@ const ShowProduct = () => {
 
               {/* Résumé rapide + bouton Suivant */}
               {(isM2Pricing ? m2Data && m2Data.total > 0 : amountSelected > 0) && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(47,111,237,0.1) 0%, rgba(31,75,182,0.06) 100%)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div className={onEdition ? undefined : 'peg-hide-mobile'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, rgba(47,111,237,0.1) 0%, rgba(31,75,182,0.06) 100%)', border: '1px solid rgba(47,111,237,0.25)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.7)' }}>
                     {isM2Pricing && m2Data ? (
                       <>
@@ -669,8 +710,8 @@ const ShowProduct = () => {
                 </div>
               )}
 
-              {/* Navigation step 0 */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              {/* Navigation step 0 (sous md, hors édition : barre d'action fixe) */}
+              <div className={onEdition ? undefined : 'peg-hide-mobile'} style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 {onEdition && (
                   <Button
                     style={{ background: sizeAndColorsChanged ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)' : 'rgba(255,255,255,0.05)', color: sizeAndColorsChanged ? '#fff' : 'rgba(160,185,220,0.35)', border: 'none', borderRadius: '10px', padding: '13px 20px', fontWeight: 700, fontSize: '14px', cursor: sizeAndColorsChanged ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
@@ -682,10 +723,7 @@ const ShowProduct = () => {
                 )}
                 {!onEdition && (
                   <button
-                    onClick={() => {
-                      if (!canGoNext) { toast.error('Sélectionnez au moins une quantité'); return; }
-                      setWizardStep(hasForm ? 1 : recapStepIndex);
-                    }}
+                    onClick={goNext}
                     disabled={!canGoNext}
                     style={{
                       padding: '13px 28px', borderRadius: '10px', border: 'none', color: '#fff',
@@ -697,12 +735,25 @@ const ShowProduct = () => {
                       transition: 'all 0.2s',
                     }}
                   >
-                    {hasForm ? 'Remplir le formulaire' : 'Récapitulatif'} <HiArrowRight size={14} />
+                    {nextLabel} <HiArrowRight size={14} />
                   </button>
                 )}
               </div>
             </div>
           </div>
+        )}
+
+        {/* Hors du bloc animé : son `transform` d'entrée déplacerait un élément fixé */}
+        {wizardStep === 0 && !onEdition && (
+          <ProductActionBar
+            canGoNext={canGoNext}
+            onNext={goNext}
+            label={nextLabel}
+            unitPrice={unitPrice}
+            unitLabel={isPackPricing ? '/ pack' : '/ pièce'}
+            total={totalPrice}
+            summary={selectionSummary}
+          />
         )}
 
         {/* ── Step 1: Formulaire (si product.form) ───────────────────────── */}

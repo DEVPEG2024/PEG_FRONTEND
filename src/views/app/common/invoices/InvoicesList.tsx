@@ -502,7 +502,7 @@ const InvoicesList = () => {
         </Panel>
 
         {/* Activité financière */}
-        <Panel title="Activité financière" action={<a onClick={(e) => { e.preventDefault(); setActiveTab('all') }} href="#" style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Voir tout</a>}>
+        <Panel title="Activité financière" action={<a className="peg-tap-target" onClick={(e) => { e.preventDefault(); setActiveTab('all') }} href="#" style={{ whiteSpace: 'nowrap', color: '#6b9eff', fontSize: '13px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Voir tout</a>}>
           {activity.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px 8px' }}>
               {/* colonne d'icônes déco */}

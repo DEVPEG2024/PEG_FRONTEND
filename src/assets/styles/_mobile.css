@@ -332,6 +332,44 @@
   }
 }
 
+/* Catalogue client : deux colonnes de catégories sur téléphone. En une seule
+   colonne, chaque carte (photo 4:5 pleine largeur) mesurait ~540px : 10
+   catégories = 5 400px de défilement. Les visuels gardent leur format portrait ;
+   le texte se resserre (nom plus petit, accroche sur deux lignes au plus). */
+@media (max-width: 767.98px) {
+  .peg-cat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .peg-cat-card-body {
+    padding: 10px 10px 12px !important;
+    gap: 4px !important;
+  }
+  .peg-cat-card-body > div:first-child {
+    gap: 7px !important;
+  }
+  .peg-cat-card-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .peg-cat-card-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+  .peg-cat-card-name {
+    font-size: 12.5px !important;
+    letter-spacing: 0.01em !important;
+    overflow-wrap: anywhere;
+  }
+  .peg-cat-card-tagline {
+    font-size: 11.5px !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
 /* Légende des bannières catalogue (CatalogueBanner) : sous md la bannière
    s'affiche entière, donc plus basse — la légende se resserre d'autant. */
 @media (max-width: 767.98px) {
@@ -652,7 +690,17 @@
   }
 
   body.peg-has-dock {
+    --peg-dock-h: 60px;
     --peg-dock-lift: 60px;
+  }
+  /* Barre d'action fixée au-dessus des onglets (fiche produit) : la réserve
+     couvre les deux barres, tout ce qui flotte passe au-dessus d'elles.
+     Clavier ouvert, les onglets s'effacent mais la barre d'action reste. */
+  body.peg-has-actionbar {
+    --peg-dock-lift: 68px;
+  }
+  body.peg-has-dock.peg-has-actionbar {
+    --peg-dock-lift: 128px;
   }
   /* La fin de chaque page (et son pied) défile au-dessus de la barre. */
   body.peg-has-dock .peg-app-main {
@@ -762,6 +810,77 @@
     border-radius: 50%;
     background: #ef4444;
     box-shadow: 0 0 0 2px rgb(24, 32, 46);
+  }
+
+  /* Barre d'action de la fiche produit (ProductActionBar.tsx) : total en
+     direct + étape suivante, juste au-dessus de la barre d'onglets. Clavier
+     ouvert (plus de barre d'onglets) : elle descend au bord de l'écran. */
+  .peg-product-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--peg-dock-h, 0px) + var(--peg-safe-bottom));
+    z-index: 28;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 68px;
+    padding: 10px max(16px, var(--peg-safe-right)) 10px max(16px, var(--peg-safe-left));
+    background: rgba(20, 28, 44, 0.96);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: Inter, sans-serif;
+  }
+  .peg-product-bar-sum {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+  .peg-product-bar-sum strong {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .peg-product-bar-sum strong small {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .peg-product-bar-sum span {
+    color: rgba(160, 185, 220, 0.75);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .peg-product-bar-cta {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--peg-tap);
+    padding: 0 18px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #2f6fed, #1f4bb6);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(47, 111, 237, 0.3);
+    cursor: pointer;
+  }
+  .peg-product-bar-cta:disabled {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(160, 185, 220, 0.45);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .peg-product-bar-cta:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   /* Menu complet (tiroir « Navigation ») : cibles tactiles de 44px. */

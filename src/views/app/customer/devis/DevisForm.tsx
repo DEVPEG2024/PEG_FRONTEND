@@ -112,7 +112,7 @@ const DevisForm = () => {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '760px', margin: '0 auto', padding: '24px 20px 48px' }}>
-      <button onClick={() => navigate(-1)} style={{
+      <button className="peg-tap-target" onClick={() => navigate(-1)} style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none',
         color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
         fontFamily: 'Inter, sans-serif', marginBottom: '20px', padding: 0,

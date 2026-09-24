@@ -677,7 +677,7 @@ const QuotesList = () => {
         </Panel>
 
         {/* Activité récente */}
-        <Panel title="Activité récente" action={<a onClick={(e) => { e.preventDefault(); setActiveTab('all'); setSearchTerm('') }} href="#" style={{ color: '#a78bfa', fontSize: '13px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Voir tout</a>}>
+        <Panel title="Activité récente" action={<a className="peg-tap-target" onClick={(e) => { e.preventDefault(); setActiveTab('all'); setSearchTerm('') }} href="#" style={{ whiteSpace: 'nowrap', color: '#a78bfa', fontSize: '13px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Voir tout</a>}>
           {activity.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '24px 8px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>

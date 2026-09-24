@@ -105,7 +105,7 @@ const Categories = () => {
       <>
       {/* Grid */}
       {loading ? (
-        <div style={{
+        <div className="peg-cat-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(min(230px, 100%), 1fr))',
           gap: '18px',

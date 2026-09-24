@@ -514,17 +514,19 @@ const ProjectsList = () => {
             onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.09)'; }}
           />
         </div>
-        {/* Filtre client */}
-        <div style={{ flex: 1, minWidth: '180px' }}>
-          <Select
-            isMulti
-            size="md"
-            placeholder="Filtrer par client"
-            isSearchable
-            options={customerOptions}
-            onChange={(selected) => handleFilterByCustomers(selected.map((c) => c.value))}
-          />
-        </div>
+        {/* Filtre client — pas pour un client : il n'y verrait que lui-même */}
+        {!hasRole(user, [CUSTOMER]) && (
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <Select
+              isMulti
+              size="md"
+              placeholder="Filtrer par client"
+              isSearchable
+              options={customerOptions}
+              onChange={(selected) => handleFilterByCustomers(selected.map((c) => c.value))}
+            />
+          </div>
+        )}
         {/* Sort */}
         <div style={{ minWidth: '180px' }}>
           <Select
@@ -581,8 +583,10 @@ const ProjectsList = () => {
         <CatalogueBanner bannerName="Bannière projets" aspect="3.4 / 1" minHeight="220px" maxHeight="380px" />
       </div>
 
-      {/* Aperçu — cartes de synthèse par statut (sous la bannière) */}
-      <div style={{ marginBottom: 'var(--peg-pad-24)' }}>
+      {/* Aperçu — cartes de synthèse par statut (sous la bannière). Masquées sur
+          téléphone : elles répètent les compteurs des onglets ci-dessus et
+          repoussaient la liste des projets de ~800px. */}
+      <div className="peg-hide-mobile" style={{ marginBottom: 'var(--peg-pad-24)' }}>
         <div style={{ display: 'flex', gap: 'var(--peg-gap-12)', flexWrap: 'wrap' }}>
           {([
             { key: 'all',       label: 'Total projets', sub: 'Tous statuts confondus', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', icon: <HiOutlineFolder size={20} /> },

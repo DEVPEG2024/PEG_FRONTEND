@@ -490,7 +490,7 @@ const DashboardCustomer = () => {
                 <SectionHeader
                   icon={<HiOutlineShoppingCart size={18} />}
                   title="Mes commandes en cours"
-                  action={ongoingProjects.length > 0 ? <Link to="/common/projects" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link> : undefined}
+                  action={ongoingProjects.length > 0 ? <Link to="/common/projects" className="peg-tap-target" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link> : undefined}
                 />
                 {ongoingProjects.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -556,7 +556,7 @@ const DashboardCustomer = () => {
               <SectionCard>
                 <SectionHeader
                   title="Activité récente"
-                  action={<Link to="/common/projects" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link>}
+                  action={<Link to="/common/projects" className="peg-tap-target" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link>}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {recentActivity.map((a, i) => (

@@ -7,7 +7,8 @@ const ProductCategoryListContent = ({
   productCategories: ProductCategory[];
 }) => {
   return (
-    <div id="catalogue-grid" style={{
+    // peg-cat-grid : deux colonnes sur téléphone (_mobile.css)
+    <div id="catalogue-grid" className="peg-cat-grid" style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(min(230px, 100%), 1fr))',
       gap: '18px',

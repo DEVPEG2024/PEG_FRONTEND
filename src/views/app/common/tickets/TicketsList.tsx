@@ -130,7 +130,7 @@ const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: an
 );
 
 const SeeAll = ({ onClick, label = 'Voir tout' }: { onClick: () => void; label?: string }) => (
-  <button onClick={onClick} style={{ background: 'none', border: 'none', color: '#8b7dff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>{label}</button>
+  <button className="peg-tap-target" onClick={onClick} style={{ whiteSpace: 'nowrap', background: 'none', border: 'none', color: '#8b7dff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>{label}</button>
 );
 
 const BarRow = ({ label, count, total, color }: { label: string; count: number; total: number; color: string }) => {

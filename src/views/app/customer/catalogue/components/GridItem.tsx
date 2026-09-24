@@ -97,14 +97,14 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
       </div>
 
       {/* Contenu sous la photo */}
-      <div style={{
+      <div className="peg-cat-card-body" style={{
         padding: '12px 16px 16px',
         display: 'flex', flexDirection: 'column', gap: '6px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
         {/* Icône à côté du nom, jamais sur la photo (elle masquait le logo) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
+          <div className="peg-cat-card-icon" style={{
             width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(139,92,246,0.16)',
@@ -112,7 +112,7 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
           }}>
             <Icon size={16} color={PURPLE} strokeWidth={1.7} />
           </div>
-          <p style={{
+          <p className="peg-cat-card-name" style={{
             color: '#fff', fontWeight: 700, fontSize: '15px',
             letterSpacing: '0.02em', textTransform: 'uppercase',
             margin: 0, lineHeight: 1.2,
@@ -122,7 +122,7 @@ const GridItem = ({ data }: { data: ProductCategory }) => {
         </div>
 
         {tagline && (
-          <p style={{
+          <p className="peg-cat-card-tagline" style={{
             color: 'rgba(255,255,255,0.6)', fontSize: '12.5px',
             fontWeight: 400, margin: 0, lineHeight: 1.35,
           }}>
