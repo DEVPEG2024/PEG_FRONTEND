@@ -20,6 +20,13 @@ import {
   HiOutlineX,
   HiOutlineCheck,
   HiOutlineExclamation,
+  HiOutlineViewGrid,
+  HiOutlineViewList,
+  HiOutlineFolder,
+  HiOutlineCloud,
+  HiOutlineClock,
+  HiOutlineShare,
+  HiOutlineLightBulb,
 } from 'react-icons/hi'
 
 /*
@@ -31,15 +38,42 @@ import {
 
 type Category = ClientFile['category']
 
-const CATEGORIES: { value: Category; label: string }[] = [
-  { value: 'logo', label: 'Logo' },
-  { value: 'charte', label: 'Charte graphique' },
-  { value: 'brief', label: 'Brief' },
-  { value: 'asset', label: 'Asset' },
-  { value: 'autre', label: 'Autre' },
+const CATEGORIES: { value: Category; label: string; color: string }[] = [
+  { value: 'logo', label: 'Logo', color: '#22d3ee' },
+  { value: 'charte', label: 'Charte graphique', color: '#a78bfa' },
+  { value: 'brief', label: 'Brief', color: '#fbbf24' },
+  { value: 'asset', label: 'Asset', color: '#34d399' },
+  { value: 'autre', label: 'Autre', color: '#94a3b8' },
 ]
 
-const categoryLabel = (c?: string) => CATEGORIES.find((x) => x.value === c)?.label ?? 'Autre'
+const categoryOf = (c?: string) => CATEGORIES.find((x) => x.value === c) ?? CATEGORIES[4]
+
+const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024 * 1024 // 10 Go
+const fileBytes = (f: ClientFile) => (f.file?.size ?? 0) * 1024
+
+function formatStorage(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2).replace('.', ',')} Go`
+  return formatSize(bytes)
+}
+
+function timeAgo(iso?: string): string {
+  if (!iso) return ''
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (diff < 60) return "à l'instant"
+  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`
+  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`
+  if (diff < 604800) return `il y a ${Math.floor(diff / 86400)} j`
+  return `le ${formatDate(iso)}`
+}
+
+const VIEW_KEY = 'peg_myfiles_view'
+const readView = (): 'grid' | 'list' => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
 
 function fileUrl(file: ClientFile['file']): string {
   if (!file?.url) return ''
@@ -82,6 +116,15 @@ const MyFiles = () => {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Category | 'all'>('all')
   const [preview, setPreview] = useState<ClientFile | null>(null)
+  const [view, setViewState] = useState<'grid' | 'list'>(readView)
+  const setView = (v: 'grid' | 'list') => {
+    setViewState(v)
+    try {
+      localStorage.setItem(VIEW_KEY, v)
+    } catch {
+      /* stockage indisponible : préférence non retenue */
+    }
+  }
 
   const [showUpload, setShowUpload] = useState(false)
   const [queue, setQueue] = useState<QueuedFile[]>([])
@@ -112,6 +155,16 @@ const MyFiles = () => {
     () => [...files].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [files],
   )
+
+  const summary = useMemo(() => {
+    const totalBytes = files.reduce((s, f) => s + fileBytes(f), 0)
+    return {
+      totalBytes,
+      usedPct: Math.min(100, (totalBytes / STORAGE_LIMIT_BYTES) * 100),
+      shared: files.filter((f) => f.shared).length,
+      last: sorted[0],
+    }
+  }, [files, sorted])
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {}
@@ -265,7 +318,8 @@ const MyFiles = () => {
           <div>
             <h1 className="text-3xl font-bold text-white">Mes fichiers</h1>
             <p className="text-sm text-white/40 mt-1 max-w-xl">
-              Logos, chartes graphiques et documents à utiliser pour vos commandes.
+              Logos, chartes graphiques et documents à utiliser pour vos commandes. Les fichiers
+              partagés sont accessibles à l’équipe PEG et aux producteurs de vos projets.
             </p>
           </div>
           <button
@@ -276,6 +330,41 @@ const MyFiles = () => {
             Envoyer des fichiers
           </button>
         </div>
+
+        {/* RÉSUMÉ */}
+        {!loading && files.length > 0 && (
+          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 210px), 1fr))' }}>
+            <SummaryItem
+              icon={<HiOutlineFolder className="w-5 h-5" />}
+              color="#a78bfa"
+              label="Fichiers"
+              value={String(files.length)}
+              sub={CATEGORIES.filter((c) => counts[c.value]).map((c) => `${counts[c.value]} ${c.label.toLowerCase()}`).join(' · ')}
+            />
+            <SummaryItem
+              icon={<HiOutlineCloud className="w-5 h-5" />}
+              color="#60a5fa"
+              label="Espace utilisé"
+              value={formatStorage(summary.totalBytes)}
+              sub={`sur 10 Go`}
+              bar={summary.usedPct}
+            />
+            <SummaryItem
+              icon={<HiOutlineShare className="w-5 h-5" />}
+              color="#34d399"
+              label="Partagés avec l'atelier"
+              value={`${summary.shared} / ${files.length}`}
+              sub="Accessibles aux producteurs"
+            />
+            <SummaryItem
+              icon={<HiOutlineClock className="w-5 h-5" />}
+              color="#fbbf24"
+              label="Dernier ajout"
+              value={summary.last ? timeAgo(summary.last.createdAt) : '—'}
+              sub={summary.last?.name ?? ''}
+            />
+          </div>
+        )}
 
         {/* RECHERCHE + FILTRES */}
         {files.length > 0 && (
@@ -299,6 +388,14 @@ const MyFiles = () => {
                 count={counts[c.value]}
               />
             ))}
+            <div className="ml-auto flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-0.5">
+              <ViewButton active={view === 'grid'} onClick={() => setView('grid')} label="Vue en grille">
+                <HiOutlineViewGrid className="w-4 h-4" />
+              </ViewButton>
+              <ViewButton active={view === 'list'} onClick={() => setView('list')} label="Vue en liste">
+                <HiOutlineViewList className="w-4 h-4" />
+              </ViewButton>
+            </div>
           </div>
         )}
 
@@ -322,6 +419,13 @@ const MyFiles = () => {
           </button>
         ) : visible.length === 0 ? (
           <p className="text-center text-sm text-white/40 py-12">Aucun fichier ne correspond à votre recherche.</p>
+        ) : view === 'list' ? (
+          <FileList
+            files={visible}
+            onPreview={setPreview}
+            onDownload={handleDownload}
+            onDelete={handleDelete}
+          />
         ) : (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))' }}>
             {visible.map((f) => (
@@ -392,6 +496,153 @@ const FilterChip = ({ active, onClick, label, count }: { active: boolean; onClic
   </button>
 )
 
+const SummaryItem = ({
+  icon,
+  color,
+  label,
+  value,
+  sub,
+  bar,
+}: {
+  icon: React.ReactNode
+  color: string
+  label: string
+  value: string
+  sub: string
+  bar?: number
+}) => (
+  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex items-center gap-3 min-w-0">
+    <span
+      className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+      style={{ background: `${color}1f`, color }}
+    >
+      {icon}
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] text-white/40 font-medium">{label}</p>
+      <p className="text-lg font-bold text-white leading-tight truncate">{value}</p>
+      {bar !== undefined && (
+        <div className="h-1 rounded-full bg-white/[0.07] mt-1.5 overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${Math.max(bar, bar > 0 ? 2 : 0)}%`, background: color }} />
+        </div>
+      )}
+      {sub && <p className="text-[11px] text-white/30 truncate mt-0.5" title={sub}>{sub}</p>}
+    </div>
+  </div>
+)
+
+const CategoryBadge = ({ category }: { category?: string }) => {
+  const c = categoryOf(category)
+  return (
+    <span
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+      style={{ color: c.color, background: `${c.color}14`, borderColor: `${c.color}40` }}
+    >
+      {c.label}
+    </span>
+  )
+}
+
+const SharedBadge = () => (
+  <span
+    title="Accessible à l'équipe PEG et aux producteurs de vos projets"
+    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] text-emerald-300"
+  >
+    <HiOutlineShare className="w-3 h-3" /> Partagé
+  </span>
+)
+
+const ViewButton = ({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+  children: React.ReactNode
+}) => (
+  <button
+    onClick={onClick}
+    title={label}
+    aria-label={label}
+    aria-pressed={active}
+    className={`p-1.5 rounded-lg transition ${active ? 'bg-indigo-500/25 text-indigo-200' : 'text-white/40 hover:text-white/80'}`}
+  >
+    {children}
+  </button>
+)
+
+const FileList = ({
+  files,
+  onPreview,
+  onDownload,
+  onDelete,
+}: {
+  files: ClientFile[]
+  onPreview: (f: ClientFile) => void
+  onDownload: (f: ClientFile) => void
+  onDelete: (f: ClientFile) => void
+}) => (
+  <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+    {/* En-têtes de colonnes — masqués sur petit écran, où chaque ligne s'empile */}
+    <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_130px_90px_110px_120px] gap-3 px-4 py-2.5 border-b border-white/[0.06] text-[11px] font-semibold uppercase tracking-wide text-white/35">
+      <span>Nom</span>
+      <span>Type</span>
+      <span>Taille</span>
+      <span>Ajouté le</span>
+      <span className="text-right">Actions</span>
+    </div>
+    {files.map((f) => {
+      const img = isImage(f.file)
+      const ext = f.file?.ext?.replace('.', '').toUpperCase() || 'FICHIER'
+      return (
+        <div
+          key={f.documentId}
+          className="grid grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_130px_90px_110px_120px] gap-x-3 gap-y-1 items-center px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => (img ? onPreview(f) : onDownload(f))}
+              title={img ? 'Aperçu' : 'Ouvrir'}
+              className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0"
+            >
+              {img ? (
+                <img src={fileUrl(f.file)} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <span className="text-[9px] font-bold text-indigo-200">{ext.slice(0, 4)}</span>
+              )}
+            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white/90 truncate" title={f.name}>{f.name}</p>
+              <p className="text-[11px] text-white/35 truncate">
+                {f.file?.name ?? ext}
+                {f.shared && <span className="text-emerald-300/80"> · Partagé</span>}
+                {f.notes && <span className="italic"> · « {f.notes} »</span>}
+              </p>
+              {/* Détails repliés sous le nom sur petit écran */}
+              <p className="xl:hidden text-[11px] text-white/40 mt-0.5">
+                {categoryOf(f.category).label} · {ext} · {formatSize(fileBytes(f))} · {formatDate(f.createdAt)}
+              </p>
+            </div>
+          </div>
+          <span className="hidden xl:block"><CategoryBadge category={f.category} /></span>
+          <span className="hidden xl:block text-xs text-white/60">{ext} · {formatSize(fileBytes(f))}</span>
+          <span className="hidden xl:block text-xs text-white/60">{formatDate(f.createdAt)}</span>
+          <div className="flex items-center justify-end gap-0.5">
+            {img && (
+              <IconAction label="Aperçu" onClick={() => onPreview(f)}><HiOutlineEye className="w-4 h-4" /></IconAction>
+            )}
+            <IconAction label="Télécharger" onClick={() => onDownload(f)}><HiOutlineDownload className="w-4 h-4" /></IconAction>
+            <IconAction label="Supprimer" onClick={() => onDelete(f)} danger><HiOutlineTrash className="w-4 h-4" /></IconAction>
+          </div>
+        </div>
+      )
+    })}
+  </div>
+)
+
 const FileCard = ({
   file: f,
   onPreview,
@@ -420,11 +671,22 @@ const FileCard = ({
           </span>
         )}
       </button>
-      <div className="p-3 flex-1 flex flex-col gap-1 min-w-0">
+      <div className="p-3 flex-1 flex flex-col gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <CategoryBadge category={f.category} />
+          {f.shared && <SharedBadge />}
+        </div>
         <p className="text-sm font-semibold text-white/90 truncate" title={f.name}>{f.name}</p>
-        <p className="text-[11px] text-white/35 truncate">
-          {categoryLabel(f.category)} · {ext} · {formatSize((f.file?.size ?? 0) * 1024)} · {formatDate(f.createdAt)}
+        {f.file?.name && f.file.name !== f.name && (
+          <p className="text-[11px] text-white/30 truncate" title={f.file.name}>{f.file.name}</p>
+        )}
+        <p className="text-[11px] text-white/40">
+          {ext} · {formatSize(fileBytes(f))}
         </p>
+        <p className="text-[11px] text-white/40">Ajouté le {formatDate(f.createdAt)}</p>
+        {f.notes && (
+          <p className="text-[11px] text-white/55 italic line-clamp-2" title={f.notes}>« {f.notes} »</p>
+        )}
         <div className="flex items-center gap-1 mt-auto pt-1">
           {img && (
             <IconAction label="Aperçu" onClick={onPreview}><HiOutlineEye className="w-4 h-4" /></IconAction>
@@ -515,6 +777,13 @@ const UploadWindow = ({
             <HiOutlineUpload className="w-7 h-7 text-indigo-300" />
             <span className="text-sm font-semibold text-white/80">Cliquez ou glissez vos fichiers ici</span>
             <span className="text-[11px] text-white/35">Plusieurs fichiers possibles</span>
+          </div>
+          <div className="flex gap-2 mt-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3">
+            <HiOutlineLightBulb className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-white/55 leading-relaxed">
+              Pour un marquage net, privilégiez un logo <strong className="text-white/80">vectoriel</strong>{' '}
+              (AI, EPS, SVG ou PDF). À défaut, un PNG en haute définition, idéalement sur fond transparent.
+            </p>
           </div>
           <input
             ref={inputRef}
