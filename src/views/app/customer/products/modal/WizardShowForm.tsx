@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { JSONValue } from '@/@types/form';
 import { FormAnswer } from '@/@types/formAnswer';
-import { HiArrowRight, HiArrowLeft, HiCheck } from 'react-icons/hi';
+import { HiArrowRight, HiArrowLeft, HiCheck, HiUpload, HiX, HiPaperClip } from 'react-icons/hi';
 import { toast } from 'react-toastify';
+import { apiUploadFile } from '@/services/FileServices';
+import { env } from '@/configs/env.config';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +18,22 @@ type NormalizedField = {
   defaultValue?: any;
   options?: { label: string; value: string }[];
   content?: string;
+  /** Champ fichier : extensions acceptées (`filePattern` Formio) et envoi multiple. */
+  accept?: string;
+  multiple?: boolean;
+};
+
+/**
+ * Valeur d'un champ fichier, au format natif Formio (`storage: 'url'`) : la fiche commande
+ * côté admin relit la réponse avec Formio, qui affiche ces entrées comme des liens.
+ */
+type FormFileValue = {
+  storage: 'url';
+  name: string;
+  originalName: string;
+  url: string;
+  size: number;
+  type: string;
 };
 
 type FieldGroup = {
@@ -71,6 +89,8 @@ function extractFields(components: any[]): NormalizedField[] {
       defaultValue: c.defaultValue ?? '',
       options: c.options ?? c.data?.values ?? c.values ?? undefined,
       content: c.content ?? undefined,
+      accept: c.filePattern && c.filePattern !== '*' ? c.filePattern : undefined,
+      multiple: !!c.multiple,
     });
   }
   return result;
@@ -159,13 +179,19 @@ function mapFieldType(type: string): string {
 }
 
 /**
- * Types hérités qu'aucune interaction ne peut remplir : le champ « Fichier » ne téléversait rien
- * (seul le nom du fichier était retenu) et le champ « Signature » n'écrivait aucune valeur. Ils
- * sont retirés du constructeur, mais des formulaires les contiennent déjà en base — un tel champ
- * marqué obligatoire enfermerait le client dans le tunnel. On ne les compte donc jamais comme
- * obligatoires et on ne leur affiche plus d'astérisque.
+ * Type hérité qu'aucune interaction ne peut remplir : le champ « Signature » n'écrit aucune
+ * valeur. Il est retiré du constructeur, mais des formulaires le contiennent déjà en base — marqué
+ * obligatoire, il enfermerait le client dans le tunnel. On ne le compte donc jamais comme
+ * obligatoire et on ne lui affiche pas d'astérisque.
  */
-const NON_FILLABLE_TYPES = ['file', 'signature'];
+const NON_FILLABLE_TYPES = ['signature'];
+
+/** Fichiers réellement téléversés d'un champ (une ancienne réponse peut ne contenir qu'un nom). */
+function uploadedFiles(value: any): FormFileValue[] {
+  return Array.isArray(value) ? value.filter((f) => f && typeof f.url === 'string') : [];
+}
+
+const resolveFileUrl = (url: string) => (url.startsWith('http') ? url : env.API_ENDPOINT_URL + url);
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
@@ -205,6 +231,8 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
         init[f.id] = false;
       } else if (f.type === 'checkboxgroup') {
         init[f.id] = {};
+      } else if (f.type === 'file') {
+        init[f.id] = [];
       } else {
         init[f.id] = f.defaultValue ?? '';
       }
@@ -213,6 +241,8 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
   });
 
   const [currentStep, setCurrentStep] = useState(0);
+  // Envois de fichiers en cours : on ne valide pas l'étape tant qu'un fichier n'est pas arrivé.
+  const [uploading, setUploading] = useState(0);
   const totalSteps = groups.length;
 
   if (totalSteps === 0) {
@@ -234,12 +264,17 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
       const v = values[f.id];
       if (f.type === 'checkbox' && !v) return false;
       if (f.type === 'checkboxgroup' && !Object.values(v || {}).some(Boolean)) return false;
+      if (f.type === 'file' && uploadedFiles(v).length === 0) return false;
       if (v === '' || v === undefined || v === null) return false;
     }
     return true;
   };
 
   const handleNext = () => {
+    if (uploading > 0) {
+      toast.info('Envoi du fichier en cours, patientez un instant…');
+      return;
+    }
     if (!isGroupValid()) {
       toast.error('Veuillez remplir les champs obligatoires');
       return;
@@ -313,7 +348,17 @@ export default function WizardShowForm({ fields, formAnswer, readOnly, onSubmit 
                 {field.description}
               </p>
             )}
-            {renderInput(field, values[field.id], (v: any) => setFieldValue(field.id, v), readOnly)}
+            {field.type === 'file' ? (
+              <FileInput
+                field={field}
+                value={values[field.id]}
+                setValue={(update) => setValues((prev) => ({ ...prev, [field.id]: update(prev[field.id]) }))}
+                readOnly={readOnly}
+                onUploadingChange={(delta) => setUploading((n) => n + delta)}
+              />
+            ) : (
+              renderInput(field, values[field.id], (v: any) => setFieldValue(field.id, v), readOnly)
+            )}
           </div>
         ))}
       </div>
@@ -377,6 +422,136 @@ function UnavailableField({ text }: { text: string }) {
       <p style={{ color: 'rgba(253,224,71,0.85)', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
         {text}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Champ fichier : le fichier est réellement téléversé (`/upload-single`, S3 direct au-delà de
+ * 5 Mo) et la réponse garde son URL — plus seulement son nom, comme l'ancien rendu.
+ */
+function FileInput({
+  field,
+  value,
+  setValue,
+  readOnly,
+  onUploadingChange,
+}: {
+  field: NormalizedField;
+  value: any;
+  setValue: (update: (prev: any) => any) => void;
+  readOnly: boolean;
+  onUploadingChange: (delta: number) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<string[]>([]);
+  const files = uploadedFiles(value);
+  // Ancienne réponse qui n'a retenu qu'un nom de fichier : on l'affiche sans lien.
+  const legacyName = typeof value === 'string' && value ? value : null;
+
+  const handleFiles = async (list: FileList | null) => {
+    const picked = Array.from(list ?? []);
+    if (inputRef.current) inputRef.current.value = '';
+    if (picked.length === 0) return;
+    const toSend = field.multiple ? picked : picked.slice(0, 1);
+
+    for (const file of toSend) {
+      setPending((p) => [...p, file.name]);
+      onUploadingChange(1);
+      try {
+        const uploaded = await apiUploadFile(file);
+        if (!uploaded?.url) throw new Error('Réponse sans URL');
+        const entry: FormFileValue = {
+          storage: 'url',
+          name: uploaded.name ?? file.name,
+          originalName: file.name,
+          url: resolveFileUrl(uploaded.url),
+          size: file.size,
+          type: file.type,
+        };
+        setValue((prev) => (field.multiple ? [...uploadedFiles(prev), entry] : [entry]));
+      } catch {
+        toast.error(`L'envoi de « ${file.name} » a échoué. Réessayez.`);
+      } finally {
+        setPending((p) => {
+          const i = p.indexOf(file.name);
+          return i === -1 ? p : [...p.slice(0, i), ...p.slice(i + 1)];
+        });
+        onUploadingChange(-1);
+      }
+    }
+  };
+
+  const remove = (url: string) => setValue((prev) => uploadedFiles(prev).filter((f) => f.url !== url));
+
+  const canAdd = !readOnly && (field.multiple || (files.length === 0 && pending.length === 0));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {files.map((f) => (
+        <div key={f.url} style={{
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px',
+          borderRadius: '10px', background: 'rgba(34,197,94,0.08)', border: '1.5px solid rgba(34,197,94,0.3)',
+        }}>
+          <HiPaperClip size={16} style={{ color: '#4ade80', flexShrink: 0 }} />
+          <a href={f.url} target="_blank" rel="noreferrer" style={{
+            color: '#4ade80', fontSize: '13px', fontWeight: 600, flex: 1, minWidth: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {f.originalName || f.name}
+          </a>
+          {!readOnly && (
+            <button type="button" onClick={() => remove(f.url)} aria-label={`Retirer ${f.originalName || f.name}`} style={{
+              background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+              display: 'flex', padding: '4px',
+            }}>
+              <HiX size={16} />
+            </button>
+          )}
+        </div>
+      ))}
+
+      {pending.map((name, i) => (
+        <div key={`${name}-${i}`} style={{
+          padding: '10px 14px', borderRadius: '10px', fontSize: '13px',
+          background: 'rgba(47,111,237,0.08)', border: '1.5px solid rgba(47,111,237,0.3)', color: '#a0c4ff',
+        }}>
+          Envoi de « {name} »…
+        </div>
+      ))}
+
+      {legacyName && files.length === 0 && (
+        <p style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px', margin: 0 }}>
+          Fichier indiqué précédemment : {legacyName} (non transmis — merci de le joindre à nouveau)
+        </p>
+      )}
+
+      {canAdd && (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={field.accept}
+            multiple={field.multiple}
+            onChange={(e) => handleFiles(e.target.files)}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            className="peg-tap-target"
+            onClick={() => inputRef.current?.click()}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '14px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit',
+              background: 'rgba(0,0,0,0.3)', border: '1.5px dashed rgba(255,255,255,0.18)',
+              color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+            }}
+          >
+            <HiUpload size={16} />
+            {files.length > 0 ? 'Ajouter un autre fichier' : 'Choisir un fichier'}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -516,12 +691,8 @@ function renderInput(
         </div>
       );
 
-    // Champs hérités inertes : on l'annonce au lieu de simuler une réussite. L'ancien rendu
-    // « 📎 <nom du fichier> » laissait croire que le fichier était transmis alors que seul son
-    // nom était enregistré ; la zone de signature, elle, n'écrivait jamais rien.
-    case 'file':
-      return <UnavailableField text="L'import de fichier n'est pas disponible ici. Transmettez votre fichier à votre contact PEG, qui le rattachera à votre commande." />;
-
+    // Champ hérité inerte : on l'annonce au lieu de simuler une réussite — la zone de signature
+    // n'écrivait jamais rien.
     case 'signature':
       return <UnavailableField text="La signature en ligne n'est pas disponible. Ce champ n'est pas nécessaire pour valider votre demande." />;
 
