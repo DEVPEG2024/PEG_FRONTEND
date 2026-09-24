@@ -183,6 +183,7 @@ const DashboardCustomer = () => {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         minHeight: '60vh', fontFamily: FONT, flexDirection: 'column', gap: '12px',
+        padding: '0 24px', textAlign: 'center',
       }}>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px' }}>
           Bienvenue, {user?.firstName || user?.email} 👋

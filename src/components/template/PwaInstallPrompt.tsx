@@ -3,15 +3,17 @@ import type { CSSProperties } from 'react'
 import { MdClose, MdInstallMobile, MdIosShare, MdRefresh } from 'react-icons/md'
 import { useLocation } from 'react-router-dom'
 import useResponsive from '@/utils/hooks/useResponsive'
+import { isStandalone } from '@/utils/pwa'
 import { clearDeferredInstallPrompt, getDeferredInstallPrompt } from '@/main'
 
 /**
- * Le bandeau est en position fixed en bas de l'écran. Sur les écrans du tunnel
- * de commande, il recouvre les contrôles qui s'y trouvent — mesuré sur la fiche
- * produit, où il masquait tour à tour le sélecteur de couleur et une taille.
- * On ne propose donc pas l'installation pendant une commande en cours.
+ * L'invitation à installer n'est proposée que sur l'accueil. Le bandeau est fixé
+ * en bas de l'écran : partout ailleurs il recouvrait des contrôles (mesuré sur la
+ * fiche produit : sélecteur de couleur, tailles) et mangeait 70px au-dessus de la
+ * barre d'onglets sur chaque page. L'accueil est vu à chaque ouverture : c'est
+ * assez pour inviter, sans encombrer le reste de l'app.
  */
-const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment']
+const INSTALL_ROUTE = '/home'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -40,15 +42,6 @@ const rememberDismiss = () => {
   } catch {
     /* stockage indisponible (navigation privee) : on ne bloque pas */
   }
-}
-
-const isStandalone = (): boolean => {
-  try {
-    if (window.matchMedia?.('(display-mode: standalone)').matches) return true
-  } catch {
-    /* matchMedia indisponible */
-  }
-  return (window.navigator as Navigator & { standalone?: boolean }).standalone === true
 }
 
 // Sur iOS, l'API beforeinstallprompt n'existe pas : seule une consigne visuelle
@@ -283,8 +276,7 @@ const PwaInstallPrompt = () => {
   // aussi sur ordinateur (utile contre les builds périmés, mais c'est un choix
   // produit à valider, pas un effet de bord du chantier mobile).
   const showUpdate = smaller.md && updateReady && !updateHidden
-  const inFunnel = FUNNEL_ROUTES.some((r) => pathname.startsWith(r))
-  const showInstall = smaller.md && !inFunnel && (canInstall || showIosHint)
+  const showInstall = smaller.md && pathname === INSTALL_ROUTE && (canInstall || showIosHint)
   const barVisible = showUpdate || showInstall
 
   // Le bandeau est en position fixed en bas : sans réserve de place, il masque

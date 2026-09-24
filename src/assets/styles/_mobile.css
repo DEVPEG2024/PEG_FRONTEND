@@ -316,6 +316,22 @@
   }
 }
 
+/* Accueils (admin, client, producteur) : la route /home est sans marge pour que
+   les bannières touchent les bords, mais le contenu vit dans un `Container` sans
+   marge intérieure — cartes et titres collaient à l'écran (mesuré à 1px).
+   Même gouttière de 16px que les autres pages (`px-4` du conteneur de page) ;
+   l'en-tête de bienvenue du producteur s'aligne dessus. Le générateur a la sienne. */
+@media (max-width: 767.98px) {
+  .peg-home .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .peg-home .peg-pad-mobile {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
 /* Légende des bannières catalogue (CatalogueBanner) : sous md la bannière
    s'affiche entière, donc plus basse — la légende se resserre d'autant. */
 @media (max-width: 767.98px) {
@@ -629,6 +645,12 @@
     touch-action: manipulation;
   }
 
+  /* Le filet gauche de la colonne principale sépare la barre latérale du
+     contenu ; sans barre latérale, il ne reste qu'un trait au bord de l'écran. */
+  .peg-app-main {
+    border-left-width: 0;
+  }
+
   body.peg-has-dock {
     --peg-dock-lift: 60px;
   }
@@ -746,11 +768,49 @@
   .peg-dock-menu .peg-nav-row {
     min-height: var(--peg-tap);
   }
+
+  /* Tirer pour rafraîchir (PullToRefresh.tsx, app installée seulement) : la
+     pastille sort de sous l'en-tête (z-30) et descend avec le doigt. */
+  .peg-ptr {
+    position: fixed;
+    top: calc(64px + var(--peg-safe-top));
+    left: 50%;
+    z-index: 29;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #26324a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    color: #8fb4ff;
+    font-size: 20px;
+    pointer-events: none;
+  }
+  .peg-ptr--settle {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .peg-ptr-icon {
+    display: flex;
+    transition: transform 0.15s ease;
+  }
+  .peg-ptr-icon.is-spinning {
+    animation: peg-ptr-spin 0.8s linear infinite;
+  }
+  @keyframes peg-ptr-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 @media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
   .peg-dock,
-  .peg-dock-icon {
+  .peg-dock-icon,
+  .peg-ptr--settle,
+  .peg-ptr-icon {
     transition: none;
   }
 }

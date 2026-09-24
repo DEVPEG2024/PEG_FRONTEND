@@ -26,10 +26,15 @@ const Home = () => {
 
   return (
     <Suspense fallback={null}>
-      {isAdmin && <DashboardAdmin />}
-      {isCustomer && <DashboardCustomer />}
-      {isProducer && <DashboardProducer />}
-      {isGenerator && <DashboardGenerator />}
+      {/* `peg-home` : sur téléphone, marge latérale du contenu des accueils (la
+          route est sans marge pour laisser les bannières toucher les bords) —
+          voir _mobile.css. `display: contents` : aucune boîte, rien ne bouge au-delà. */}
+      <div className="peg-home" style={{ display: 'contents' }}>
+        {isAdmin && <DashboardAdmin />}
+        {isCustomer && <DashboardCustomer />}
+        {isProducer && <DashboardProducer />}
+        {isGenerator && <DashboardGenerator />}
+      </div>
       {/* Repli : rôle inconnu/non configuré → message plutôt qu'une page blanche */}
       {!isKnownRole && (
         <div style={{

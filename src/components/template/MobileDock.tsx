@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { HiOutlineMenu } from 'react-icons/hi';
 import Drawer from '@/components/ui/Drawer';
 import CustomVerticalMenu from '@/components/template/CustomVerticalMenu';
+import PullToRefresh from '@/components/template/PullToRefresh';
 import { PremiumCard, QuoteCard } from '@/components/template/SideNav';
 import navigationConfig from '@/configs/navigation.config';
 import navigationIcon from '@/configs/navigation-icon.config';
@@ -16,6 +17,7 @@ import { useAppSelector } from '@/store';
 import useResponsive from '@/utils/hooks/useResponsive';
 import useNavActivity from '@/utils/hooks/useNavActivity';
 import useNavCounters from '@/utils/hooks/useNavCounters';
+import usePageFade from '@/utils/hooks/usePageFade';
 import {
   filterNavForCatalogAccess,
   getNavBadge,
@@ -79,6 +81,7 @@ const Dock = () => {
   const direction = useAppSelector((state) => state.theme.direction);
 
   const counters = useNavCounters(isAdmin, customer?.documentId);
+  usePageFade();
   const { getActivityCount, markActivitySeen } = useNavActivity();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -261,6 +264,8 @@ const Dock = () => {
           </div>
         )}
       </Drawer>
+
+      <PullToRefresh disabled={menuOpen || keyboardOpen} />
     </>
   );
 };
