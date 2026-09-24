@@ -154,16 +154,18 @@ const MARK_PATHS = [
   'M587.9,230.9c0-119,84.8-187.5,185.9-187.5s104.2,30.5,130.4,56.3l-51.8,44.3c-18.6-15.9-43.8-27.1-75.7-27.1-55.8,0-96.4,41.7-96.4,110.7s34.3,112.4,104.5,112.4,27.9-3.3,36-9.3v-57.6h-60.4v-35.5l40.2-34.1h100.3v166.7c-26.1,24.1-72.6,43.3-126,43.3-104.5,0-187-61.9-187-182.5Z',
 ];
 const MARK_DOT = { cx: 1027.8, cy: 331.5, r: 82 } as const;
-/** Couleur du point du logo : le violet-magenta de la scène de référence
-    (relevé dans l'image), pour que le logo du formulaire lui réponde. Le
-    fichier d'origine du logo a un point corail (#db6b67). */
-const MARK_DOT_COLOR = '#d341f4';
+/** Point du logo : le MAUVE de la marque, exactement celui du bouton « Se
+    connecter » (dégradé #6d5dfc → #4f3fd1, voir SignInForm). Demande du
+    propriétaire : jamais le rose-magenta de l'image d'accueil. */
+const MARK_DOT_FROM = '#6d5dfc';
+const MARK_DOT_TO = '#4f3fd1';
 /** Le mauve du verre : liseré de la plaque, poignée, halo. */
 const VIOLET = '#8b5cf6';
 
-/** Le logo à plat. `x / y / width` permettent de l'imbriquer dans un autre SVG. */
+/** Le logo à plat. `x / y / width` permettent de l'imbriquer dans un autre SVG.
+    Sans `dot`, le point porte le dégradé mauve du bouton « Se connecter ». */
 const MarkSvg = ({
-  fill, dot = MARK_DOT_COLOR, x, y, width,
+  fill, dot, x, y, width,
 }: {
   fill: string;
   dot?: string;
@@ -183,7 +185,15 @@ const MarkSvg = ({
     <g fill={fill} fillRule="evenodd">
       {MARK_PATHS.map((d) => <path key={d.slice(0, 12)} d={d} />)}
     </g>
-    <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} fill={dot} />
+    {!dot && (
+      <defs>
+        <linearGradient id="pa-mark-dot" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={MARK_DOT_FROM} />
+          <stop offset="1" stopColor={MARK_DOT_TO} />
+        </linearGradient>
+      </defs>
+    )}
+    <circle cx={MARK_DOT.cx} cy={MARK_DOT.cy} r={MARK_DOT.r} fill={dot ?? 'url(#pa-mark-dot)'} />
   </svg>
 );
 
