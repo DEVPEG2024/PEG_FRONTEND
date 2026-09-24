@@ -46,17 +46,20 @@ type RenderOptions = {
   onNavigate?: (path: string) => void;
 };
 
-// Lien seul sur sa ligne, éventuellement en gras ou suivi d'une ponctuation.
-const SOLO_LINK_RE = /^(?:\*\*)?\[[^\]]+\]\((https?:\/\/[^)\s]+)\)(?:\*\*)?\s*[.,;:!]?$/;
+// Lien en tête de ligne, éventuellement en gras, suivi au plus d'une ponctuation
+// ou d'un complément après un séparateur (« [T-shirt](url) – dès 10,63 € HT »,
+// constaté malgré la consigne) : le complément reste affiché sous la carte.
+const SOLO_LINK_RE = /^(?:\*\*)?\[[^\]]+\]\((https?:\/\/[^)\s]+)\)(?:\*\*)?\s*(?:[–—:·|-]\s*(.*?))?\s*[.,;:!]?$/;
 
 export const renderChatMarkdown = (content: string, opts: RenderOptions = {}): JSX.Element[] => {
   const lines = (content || '').split('\n');
   const blocks: JSX.Element[] = [];
   const cardByUrl = new Map((opts.cards || []).map((c) => [c.url, c]));
-  const soloCard = (text: string): ChatCard | null => {
+  const soloCard = (text: string): { card: ChatCard; rest: string } | null => {
     if (!cardByUrl.size) return null;
     const m = SOLO_LINK_RE.exec(text.trim());
-    return m ? cardByUrl.get(m[1]) ?? null : null;
+    const card = m ? cardByUrl.get(m[1]) : undefined;
+    return card ? { card, rest: (m?.[2] || '').trim() } : null;
   };
   let list: { ordered: boolean; items: JSX.Element[] } | null = null;
   const flushList = () => {
@@ -94,10 +97,11 @@ export const renderChatMarkdown = (content: string, opts: RenderOptions = {}): J
 
     const bullet = /^(?:[-*•])\s+(.*)$/.exec(t);
     const numbered = /^(\d+)[.)]\s+(.*)$/.exec(t);
-    const card = soloCard(bullet ? bullet[1] : numbered ? numbered[2] : t);
-    if (card) {
+    const solo = soloCard(bullet ? bullet[1] : numbered ? numbered[2] : t);
+    if (solo) {
       flushList();
-      blocks.push(<ChatCardView key={`card-${idx}`} card={card} onNavigate={opts.onNavigate} />);
+      blocks.push(<ChatCardView key={`card-${idx}`} card={solo.card} onNavigate={opts.onNavigate} />);
+      if (solo.rest) blocks.push(<div key={`card-rest-${idx}`} style={{ margin: '-2px 0 4px', fontSize: '12px', opacity: 0.8 }}>{renderInline(solo.rest, `card-rest-${idx}`)}</div>);
       continue;
     }
     if (bullet || numbered) {

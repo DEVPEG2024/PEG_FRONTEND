@@ -77,6 +77,12 @@ describe('renderChatMarkdown', () => {
       }
     });
 
+    it('rend en carte un lien suivi d’un complément, et garde le complément', () => {
+      const out = withCards(`[Casquette](${card.url}) – en blanc et noir`);
+      expect(out).toContain('Dès 8,50 € HT');
+      expect(out).toContain('en blanc et noir');
+    });
+
     it('laisse un simple lien si le lien est dans une phrase ou inconnu', () => {
       expect(withCards(`Voir [Casquette](${card.url}) ici`)).not.toContain('Dès 8,50');
       expect(withCards('[Autre](https://app.mypeg.fr/customer/product/zzz)')).not.toContain('Dès 8,50');
