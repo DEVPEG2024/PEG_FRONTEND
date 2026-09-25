@@ -46,7 +46,12 @@ const HeaderActionsEnd = () => {
         authority={["customer"]}
       >
         {smaller.md ? (
-          // Téléphone : l'icône et son compteur, comme dans une app
+          <>
+          {/* Emplacement du bouton de l'assistant (ChatWidget y rend son bouton par
+              portail, à gauche du panier). `display: contents` : aucune boîte, rien
+              ne bouge tant que le bouton est replié. */}
+          <span id="peg-chat-header-slot" style={{ display: 'contents' }} />
+          {/* Téléphone : l'icône et son compteur, comme dans une app */}
           <Link
             to="/customer/cart"
             className="header-action-item peg-header-cart"
@@ -55,6 +60,7 @@ const HeaderActionsEnd = () => {
             <MdShoppingCart size={22} />
             {cart.length > 0 && <span className="peg-header-cart-count">{cart.length}</span>}
           </Link>
+          </>
         ) : (
           <Link to="/customer/cart">
             <Alert

@@ -9,8 +9,9 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import cartReducer from '@/store/slices/base/cartSlice';
 import ChatWidget from '@/components/template/ChatWidget';
 
-// Assistant client sur TÉLÉPHONE (demande du 25/09/2026) : le bouton apparaît en
-// pulsant 5 s toutes les 15 s, et le chat s'ouvre en plein écran.
+// Assistant client sur TÉLÉPHONE (demande du 25/09/2026) : petit bouton dans
+// l'en-tête, à gauche du panier, qui apparaît en pulsant 7 s toutes les 30 s ;
+// le chat s'ouvre en plein écran.
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -61,58 +62,92 @@ const launcher = () => container.querySelector('button[aria-label="Ouvrir le cha
 const launcherShown = () => (launcher()?.parentElement as HTMLElement | null)?.style.opacity === '1';
 const advance = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
 
-describe('ChatWidget — téléphone', () => {
-  it('le bouton apparaît 5 s toutes les 15 s', () => {
+const addHeaderSlot = () => {
+  const slot = document.createElement('span');
+  slot.id = 'peg-chat-header-slot';
+  document.body.appendChild(slot);
+  return slot;
+};
+const slotWrapperWidth = (slot: HTMLElement) =>
+  ((slot.querySelector('button[aria-label="Ouvrir le chat assistant"]')?.parentElement as HTMLElement | null)?.style.width);
+
+describe('ChatWidget — téléphone, bouton dans l’en-tête (à gauche du panier)', () => {
+  afterEach(() => document.getElementById('peg-chat-header-slot')?.remove());
+
+  it('se place dans l’en-tête et apparaît 7 s toutes les 30 s', () => {
+    const slot = addHeaderSlot();
     render();
-    expect(launcher()).not.toBeNull();
-    expect(launcherShown()).toBe(true);          // 0 s : visible
-    advance(4_900);
-    expect(launcherShown()).toBe(true);          // 4,9 s : encore visible
+    expect(slot.querySelector('button[aria-label="Ouvrir le chat assistant"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Ouvrir le chat assistant"]')).toBeNull(); // pas de bouton flottant
+    expect(slotWrapperWidth(slot)).toBe('40px');   // 0 s : déplié
+    advance(6_900);
+    expect(slotWrapperWidth(slot)).toBe('40px');   // 6,9 s
     advance(200);
-    expect(launcherShown()).toBe(false);         // 5,1 s : masqué
-    advance(9_800);
-    expect(launcherShown()).toBe(false);         // 14,9 s : toujours masqué
+    expect(slotWrapperWidth(slot)).toBe('0px');    // 7,1 s : replié
+    advance(22_800);
+    expect(slotWrapperWidth(slot)).toBe('0px');    // 29,9 s
     advance(200);
-    expect(launcherShown()).toBe(true);          // 15,1 s : réapparaît
-    advance(5_000);
-    expect(launcherShown()).toBe(false);         // 20,1 s : masqué à nouveau
+    expect(slotWrapperWidth(slot)).toBe('40px');   // 30,1 s : réapparaît
   });
 
-  it('pulse pendant son apparition et n’est pas cliquable masqué', () => {
+  it('pulse, s’ouvre en plein écran, et reste disponible pendant la commande', () => {
+    const slot = addHeaderSlot();
+    render('/customer/cart');
+    const btn = slot.querySelector('button[aria-label="Ouvrir le chat assistant"]') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    expect(btn.style.animation).toContain('peg-chat-halo');
+    act(() => { btn.click(); });
+    const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.style.position).toBe('fixed');
+    expect(dialog.style.width).toBe('100vw');
+  });
+
+  it('replié : ni cliquable ni atteignable au clavier', () => {
+    const slot = addHeaderSlot();
     render();
-    expect(launcher()!.style.animation).toContain('peg-chat-pop');
-    advance(5_100);
-    expect((launcher()!.parentElement as HTMLElement).style.pointerEvents).toBe('none');
-    expect(launcher()!.tabIndex).toBe(-1);
+    advance(7_100);
+    const btn = slot.querySelector('button[aria-label="Ouvrir le chat assistant"]') as HTMLButtonElement;
+    expect(btn.style.pointerEvents).toBe('none');
+    expect(btn.tabIndex).toBe(-1);
+  });
+});
+
+describe('ChatWidget — téléphone sans en-tête (repli flottant)', () => {
+  it('bouton flottant, même cycle 7 s / 30 s', () => {
+    render();
+    expect(launcherShown()).toBe(true);
+    advance(7_100);
+    expect(launcherShown()).toBe(false);
+    advance(23_000);
+    expect(launcherShown()).toBe(true);
   });
 
   it('ouvre le chat en plein écran et fige la page derrière', () => {
     render();
     act(() => { launcher()!.click(); });
     const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
-    expect(dialog).not.toBeNull();
     expect(dialog.style.position).toBe('fixed');
-    expect(dialog.style.width).toBe('100vw');
     expect(document.body.style.overflow).toBe('hidden');
-    // le bouton flottant laisse la place : on ferme par la croix de l'en-tête
-    expect(launcher()).toBeNull();
     act(() => { (container.querySelector('button[aria-label="Fermer le chat"]') as HTMLButtonElement).click(); });
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(document.body.style.overflow).toBe('');
-    expect(launcherShown()).toBe(true);          // réapparaît aussitôt refermé
   });
 
-  it('reste masqué sur les pages de commande (fiche, panier)', () => {
+  it('masqué pendant la commande (il recouvrirait les boutons)', () => {
     render('/customer/cart');
     expect(launcher()).toBeNull();
   });
+});
 
-  it('ordinateur : bouton toujours visible, fenêtre flottante inchangée', () => {
+describe('ChatWidget — ordinateur', () => {
+  it('bouton flottant toujours visible, fenêtre inchangée', () => {
     phone = false;
+    addHeaderSlot(); // l'emplacement n'existe que sur téléphone, mais ne doit rien changer ici
     render();
-    advance(10_000);
+    advance(40_000);
     expect(launcherShown()).toBe(true);
     act(() => { launcher()!.click(); });
     expect((container.querySelector('[role="dialog"]') as HTMLElement).style.position).toBe('absolute');
+    document.getElementById('peg-chat-header-slot')?.remove();
   });
 });

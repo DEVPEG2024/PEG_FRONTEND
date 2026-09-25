@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { MdSmartToy, MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -37,13 +38,16 @@ const SUGGESTIONS = ['Où en est ma commande ?', 'Je cherche un produit', 'Ai-je
 const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment'];
 
 /**
- * Téléphone (< md) : un bouton flottant permanent recouvrait les contrôles de la
- * page (il chevauchait le « + » des tailles). Il apparaît donc en pulsant
- * PEEK_VISIBLE_MS toutes les PEEK_PERIOD_MS (demande du 25/09/2026), et reste
- * affiché tant qu'une réponse est en cours ou non lue.
+ * Téléphone (< md) : petit bouton dans l'EN-TÊTE, à gauche du panier (demande du
+ * 25/09/2026) — un bouton flottant recouvrait les contrôles de la page. Il
+ * apparaît en pulsant PEEK_VISIBLE_MS toutes les PEEK_PERIOD_MS et reste affiché
+ * tant qu'une réponse est en cours ou non lue.
+ * L'en-tête (ModernLayout) fournit l'emplacement HEADER_SLOT_ID ; sans lui (autre
+ * mise en page), repli sur le bouton flottant en bas à droite.
  */
-const PEEK_VISIBLE_MS = 5_000;
-const PEEK_PERIOD_MS = 15_000;
+const PEEK_VISIBLE_MS = 7_000;
+const PEEK_PERIOD_MS = 30_000;
+const HEADER_SLOT_ID = 'peg-chat-header-slot';
 
 const prefersReducedMotion = (): boolean => {
   try { return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
@@ -339,8 +343,8 @@ const ChatWidget = () => {
   const isPhone = smaller.md;
   const [reducedMotion] = useState(prefersReducedMotion);
 
-  // Cycle d'apparition du bouton sur téléphone : visible 5 s, puis masqué jusqu'au
-  // tour suivant (toutes les 15 s). Suspendu pendant que le chat est ouvert.
+  // Cycle d'apparition du bouton sur téléphone : visible PEEK_VISIBLE_MS, puis
+  // masqué jusqu'au tour suivant (toutes les PEEK_PERIOD_MS). Suspendu chat ouvert.
   const [peek, setPeek] = useState(true);
   useEffect(() => {
     if (!isPhone || open) return;
@@ -373,12 +377,30 @@ const ChatWidget = () => {
     };
   }, [isPhone, open]);
 
+  // Emplacement du bouton dans l'en-tête du téléphone. L'en-tête peut se monter
+  // après ce composant (ou être remplacé) : on le suit jusqu'à le trouver.
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!isPhone) { setHeaderSlot(null); return; }
+    const find = () => {
+      const el = document.getElementById(HEADER_SLOT_ID);
+      setHeaderSlot((prev) => (prev === el ? prev : el));
+    };
+    find();
+    const observer = new MutationObserver(find);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [isPhone]);
+  const inHeader = isPhone && !!headerSlot;
+
   // Masqué aussi pendant une commande sur grand écran : le bouton recouvrait
   // les actions de ligne du panier et le lien « Voir tout » du tableau de bord.
   // Sauf si la conversation est OUVERTE : un clic sur une carte produit mène à
   // /customer/product/… et faisait disparaître le chat au milieu de l'échange.
   // Une fois refermé, le bouton s'efface comme avant.
-  if (!open && FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
+  // Dans l'en-tête du téléphone, le bouton ne recouvre rien : il reste disponible
+  // pendant la commande aussi.
+  if (!inHeader && !open && FUNNEL_ROUTES.some((r) => pathname.startsWith(r))) return null;
 
   const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
 
@@ -446,6 +468,11 @@ const ChatWidget = () => {
           50% { box-shadow: 0 8px 32px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.12); }
         }
         @keyframes peg-chat-pop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes peg-chat-halo {
+          0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.65); }
+          70% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
         @keyframes peg-chat-dot { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) { .peg-chat-anim { animation: none !important; } }
       `}</style>
@@ -678,9 +705,52 @@ const ChatWidget = () => {
         </div>
       )}
 
-      {/* Bouton flottant — sur téléphone, masqué pendant que le chat occupe l'écran
-          (fermeture par la croix de l'en-tête). */}
-      {!(isPhone && open) && (
+      {/* Téléphone : petit bouton dans l'en-tête, à gauche du panier. Il se déplie
+          (le panier glisse) pendant sa fenêtre d'apparition, puis se replie. */}
+      {inHeader && headerSlot && createPortal(
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            width: launcherVisible ? '40px' : '0px',
+            transition: reducedMotion ? 'none' : 'width 0.35s ease',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Ouvrir le chat assistant"
+            aria-hidden={!launcherVisible}
+            tabIndex={launcherVisible ? 0 : -1}
+            title="Une question ? Assistant PEG"
+            className="peg-chat-anim"
+            style={{
+              width: '32px', height: '32px', padding: 0, borderRadius: '50%', border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
+              opacity: launcherVisible ? 1 : 0,
+              transform: launcherVisible ? 'scale(1)' : 'scale(0.3)',
+              pointerEvents: launcherVisible ? 'auto' : 'none',
+              transition: reducedMotion ? 'none' : 'opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              animation: launcherVisible ? 'peg-chat-halo 1.4s ease-out infinite' : 'none',
+            }}
+          >
+            <span className="peg-chat-anim" style={{ display: 'flex', animation: launcherVisible ? 'peg-chat-pop 1.4s ease-in-out infinite' : 'none' }}>
+              <MdChatBubble size={16} color="#fff" />
+            </span>
+            {unread > 0 && (
+              <span aria-label={`${unread} réponse${unread > 1 ? 's' : ''} non lue${unread > 1 ? 's' : ''}`} style={{
+                position: 'absolute', top: '-2px', right: '-2px', width: '11px', height: '11px',
+                borderRadius: '50%', background: '#22c55e', border: '2px solid #0b0f14',
+              }} />
+            )}
+          </button>
+        </span>,
+        headerSlot,
+      )}
+
+      {/* Bouton flottant (ordinateur, ou téléphone sans emplacement d'en-tête) —
+          sur téléphone, masqué pendant que le chat occupe l'écran. */}
+      {!inHeader && !(isPhone && open) && (
       <div
         style={{
           position: 'relative',
