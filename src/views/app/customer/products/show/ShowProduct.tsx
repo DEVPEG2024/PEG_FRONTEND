@@ -181,15 +181,6 @@ const ShowProduct = () => {
     ? selectionForLines(product, prefillLines)
     : null;
   const prefillComplete = isM2Pricing ? !!(prefillM2?.width && prefillM2?.height) : !!prefillSelection;
-  // « Personnaliser » depuis le panier (article ajouté par l'assistant sans son
-  // logo) : la fiche s'ouvre sur le formulaire et revient au panier une fois validé.
-  const personalizeOnly = onEdition && !!(location.state as { openForm?: boolean } | null)?.openForm;
-  const personalizeApplied = useRef(false);
-  useEffect(() => {
-    if (!personalizeOnly || personalizeApplied.current || !product?.form || product.documentId !== documentId) return;
-    personalizeApplied.current = true;
-    setWizardStep(formStepIndex);
-  }, [personalizeOnly, product, documentId, formStepIndex]);
   useEffect(() => {
     if (!chatPrefill || chatPrefillApplied.current || !product || product.documentId !== documentId) return;
     chatPrefillApplied.current = true;
@@ -230,13 +221,7 @@ const ShowProduct = () => {
     const answer: Partial<FormAnswer> = { form: product!.form!, answer: submission };
     if (onEdition) {
       dispatch(editFormAnswerCartItem({ cartItemId, formAnswer: answer } as CartItemFormAnswerEdition));
-      toast.success(personalizeOnly ? 'Personnalisation enregistrée' : 'Formulaire modifié');
-      // Le récapitulatif en mode modification propose « Ajouter au panier », qui
-      // créerait un DOUBLON de l'article : on revient directement au panier.
-      if (personalizeOnly) {
-        navigate('/customer/cart');
-        return;
-      }
+      toast.success('Formulaire modifié');
     }
     dispatch(setFormAnswer(answer));
     dispatch(setFormCompleted(true));

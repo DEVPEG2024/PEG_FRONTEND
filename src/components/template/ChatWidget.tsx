@@ -10,7 +10,7 @@ import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatCard } from '@/components/template/ChatCardView';
 import ChatOfferAction from '@/components/template/ChatOfferAction';
-import { isChatOffer, prefillForProduct, type ChatOffer, type ChatPrefill } from '@/components/template/chatOffer';
+import { isChatOffer, prefillForProduct, type ChatNavState, type ChatOffer } from '@/components/template/chatOffer';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
@@ -539,7 +539,7 @@ const ChatWidget = () => {
 
   // Le panier et la fiche produit sont sous la fenêtre du chat (en bas à droite,
   // là où se trouvent « Ajouter au panier » et « Payer ») : on la referme.
-  const goFromOffer = (path: string, state?: { chatOffer: ChatPrefill }) => {
+  const goFromOffer = (path: string, state?: ChatNavState) => {
     setOpen(false);
     navigate(path, state ? { state } : undefined);
   };

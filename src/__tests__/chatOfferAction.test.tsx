@@ -90,7 +90,8 @@ describe('ChatOfferAction — l’offre entre dans le panier', () => {
     expect(cart[0].userDocumentId).toBe('u1');
     expect(cart[0].sizeAndColors).toEqual([expect.objectContaining({ quantity: 10, size: expect.objectContaining({ name: 'TU' }), color: expect.objectContaining({ name: 'NOIR' }) })]);
     expect((cart[0].formAnswer as unknown as { answer: { state: string } }).answer.state).toBe('pending');
-    expect(onGo).toHaveBeenCalledWith('/customer/cart');
+    // Bonnet à personnaliser : le panier ouvrira directement la pop-up « Ajoutez votre logo ».
+    expect(onGo).toHaveBeenCalledWith('/customer/cart', { openPersonalization: true });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'added' }));
   });
 

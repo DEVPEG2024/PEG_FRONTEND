@@ -5,14 +5,14 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { addToCart } from '@/store/slices/base/cartSlice';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
-import { planOffer, type ChatOffer, type ChatPrefill } from './chatOffer';
+import { planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
 
 type Props = {
   offer: ChatOffer;
   /** Mémorise l'état du bouton dans le message (conservé avec la conversation). */
   onChange: (offer: ChatOffer) => void;
   /** Ferme le chat puis navigue : la fenêtre recouvrait le bouton « Ajouter au panier » de la fiche. */
-  onGo: (path: string, state?: { chatOffer: ChatPrefill }) => void;
+  onGo: (path: string, state?: ChatNavState) => void;
 };
 
 const fmt = (n: number) => `${(Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
@@ -79,10 +79,12 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
       }
       const toPersonalize = ready.some((r) => r.kind === 'ready' && r.formAnswer);
       if (!todo.length) {
-        toast.success(`${ready.length > 1 ? 'Offre ajoutée au panier' : 'Article ajouté au panier'}${toPersonalize ? ' — ajoutez votre logo depuis le panier' : ''}`);
+        // La pop-up « Ajoutez votre logo » s'ouvre d'elle-même au panier si besoin.
+        toast.success(ready.length > 1 ? 'Offre ajoutée au panier' : 'Article ajouté au panier');
         const remaining = lineIds ? (offer.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : [];
         onChange(remaining.length ? { ...offer, pendingIds: remaining } : { ...offer, status: 'added', pendingIds: [] });
-        onGo('/customer/cart');
+        // Article à personnaliser : le panier ouvre directement la pop-up « Ajoutez votre logo ».
+        onGo('/customer/cart', toPersonalize ? { openPersonalization: true } : undefined);
         return;
       }
       const first = todo[0];

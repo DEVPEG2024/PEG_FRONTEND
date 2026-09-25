@@ -54,6 +54,9 @@ export type ChatPrefill = {
   lines: ChatOfferLine[];
 };
 
+/** State de navigation posé par le chat : fiche pré-remplie ou pop-up logo du panier. */
+export type ChatNavState = { chatOffer?: ChatPrefill; openPersonalization?: boolean };
+
 export type PlannedLine =
   | { kind: 'ready'; line: ChatOfferLine; lines: ChatOfferLine[]; product: Product; sizeAndColors: SizeAndColorSelection[]; formAnswer: Partial<FormAnswer> | null }
   | { kind: 'complete'; line: ChatOfferLine; lines: ChatOfferLine[]; product: Product; prefill: ChatPrefill; missing: string[] };

@@ -1,8 +1,9 @@
 import { CartItem } from '@/@types/cart';
+import type { FormAnswer } from '@/@types/formAnswer';
 import { Product } from '@/@types/product';
 import { Container } from '@/components/shared';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
-import { editItem, removeFromCart } from '@/store/slices/base/cartSlice';
+import { editFormAnswerCartItem, editItem, removeFromCart, type CartItemFormAnswerEdition } from '@/store/slices/base/cartSlice';
 import { apiGetProducts } from '@/services/ProductServices';
 import { apiGetCustomerCompanyInfo } from '@/services/CustomerServices';
 import {
@@ -14,7 +15,8 @@ import {
 } from '@/utils/productHelpers';
 import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   MdShoppingCart,
   MdOutlineShoppingBag,
@@ -34,6 +36,7 @@ import { User } from '@/@types/user';
 import PaymentContent from './PaymentContent';
 import useUserCart from '@/utils/hooks/useUserCart';
 import { personalizationStatus } from '@/components/template/chatOffer';
+import PersonalizeDialog from './PersonalizeDialog';
 import { optionKey } from '@/utils/optionKey';
 
 /* ── Shared styles ── */
@@ -435,6 +438,24 @@ function Cart() {
   const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Pop-up « Ajoutez votre logo » : article entré au panier sans sa personnalisation
+  // (offre de l'assistant). Ouverte d'elle-même en arrivant du chat, ou depuis le
+  // bouton de l'article.
+  const needsPersonalization = (item: CartItem) => {
+    const status = personalizationStatus(item);
+    return status === 'optional' || status === 'required';
+  };
+  const [personalizingId, setPersonalizingId] = useState<string | null>(null);
+  const personalizing = cart.find((item) => item.id === personalizingId) ?? null;
+  useEffect(() => {
+    if (!(location.state as { openPersonalization?: boolean } | null)?.openPersonalization) return;
+    // Consommé une seule fois : ni un rafraîchissement ni un retour ne la rouvrent.
+    navigate(location.pathname, { replace: true, state: null });
+    const first = cart.find(needsPersonalization);
+    if (first) setPersonalizingId(first.id);
+  }, [location.state]); // volontairement : ne réagit qu'à l'arrivée depuis le chat
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isPausedRef = useRef(false);
@@ -551,12 +572,15 @@ function Cart() {
     navigate('/customer/product/' + item.product.documentId + '/edit');
   };
 
-  // Ouvre directement l'étape « personnalisation » de l'article ; la fiche revient
-  // au panier dès le formulaire validé (sans repasser par « Ajouter au panier »,
-  // qui créerait un doublon en mode modification).
-  const handlePersonalize = (item: CartItem) => {
-    dispatch(editItem(item));
-    navigate('/customer/product/' + item.product.documentId + '/edit', { state: { openForm: true } });
+  const handlePersonalize = (item: CartItem) => setPersonalizingId(item.id);
+
+  // Logo enregistré sur la ligne de panier (fichiers déjà téléversés) ; on enchaîne
+  // sur l'article suivant qui attend encore sa personnalisation, s'il y en a un.
+  const handlePersonalized = (item: CartItem, formAnswer: Partial<FormAnswer>) => {
+    dispatch(editFormAnswerCartItem({ cartItemId: item.id, formAnswer } as CartItemFormAnswerEdition));
+    toast.success('Personnalisation enregistrée');
+    const next = cart.find((other) => other.id !== item.id && needsPersonalization(other));
+    setPersonalizingId(next ? next.id : null);
   };
 
   // Personnalisation OBLIGATOIRE manquante → paiement bloqué (la commande
@@ -701,6 +725,14 @@ function Cart() {
   return (
     <Container className="h-full" style={{ fontFamily: 'Inter, sans-serif' }}>
       {styleTag}
+      {personalizing && (
+        <PersonalizeDialog
+          item={personalizing}
+          required={personalizationStatus(personalizing) === 'required'}
+          onClose={() => setPersonalizingId(null)}
+          onSaved={(formAnswer) => handlePersonalized(personalizing, formAnswer)}
+        />
+      )}
 
       {/* Header */}
       <div style={{ paddingTop: 'var(--peg-pad-32)', paddingBottom: '8px' }}>
