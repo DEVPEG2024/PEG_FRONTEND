@@ -48,6 +48,26 @@ export const CTA_PRESETS: { label: string; url: string }[] = [
   { label: 'Parrainage', url: '/customer/referral' },
 ];
 
+// ── Destination du bouton : produit / catégorie du catalogue ────────────────
+
+/** Fiche produit et page de catégorie de l'espace client (routes existantes). */
+export const productLink = (documentId: string) => `/customer/product/${documentId}`;
+export const categoryLink = (documentId: string) => `/customer/catalogue/categories/${documentId}`;
+
+export type CtaMode = 'preset' | 'product' | 'category' | 'custom' | 'none';
+
+/** Reconnaît le type de destination d'un lien de bouton (pour réafficher l'éditeur). */
+export function ctaTargetOf(url: string): { mode: CtaMode; id: string | null } {
+  const u = (url || '').trim();
+  if (!u) return { mode: 'none', id: null };
+  if (CTA_PRESETS.some((p) => p.url === u)) return { mode: 'preset', id: null };
+  const product = u.match(/^\/customer\/product\/([A-Za-z0-9_-]+)\/?$/);
+  if (product) return { mode: 'product', id: product[1] };
+  const category = u.match(/^\/customer\/catalogue\/categories\/([A-Za-z0-9_-]+)\/?$/);
+  if (category) return { mode: 'category', id: category[1] };
+  return { mode: 'custom', id: null };
+}
+
 export const emptyAudience = (): CampaignAudience => ({
   type: 'all', premium: 'any', categories: [], customers: [], users: [], label: '',
 });

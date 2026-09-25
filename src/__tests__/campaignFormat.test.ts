@@ -1,4 +1,6 @@
 import {
+  categoryLink,
+  ctaTargetOf,
   excerpt,
   filterRecipients,
   fromLocalInput,
@@ -6,6 +8,7 @@ import {
   isSafeCtaUrl,
   parseMessage,
   pct,
+  productLink,
   recipientsToCsv,
   toLocalInput,
 } from '@/utils/campaignFormat';
@@ -57,6 +60,25 @@ describe('bouton d’action', () => {
   test('chemin interne reconnu, hôte relatif refusé', () => {
     expect(isInternalLink('/customer/devis')).toBe(true);
     expect(isInternalLink('//x.fr')).toBe(false);
+  });
+});
+
+describe('destination du bouton : produit, catégorie', () => {
+  test('liens construits vers les routes client existantes, et sûrs', () => {
+    expect(productLink('abc123')).toBe('/customer/product/abc123');
+    expect(categoryLink('cat9')).toBe('/customer/catalogue/categories/cat9');
+    expect(isSafeCtaUrl(productLink('abc123'))).toBe(true);
+    expect(isInternalLink(categoryLink('cat9'))).toBe(true);
+  });
+
+  test('un lien enregistré est reconnu à la réouverture de la campagne', () => {
+    expect(ctaTargetOf('/customer/product/abc123')).toEqual({ mode: 'product', id: 'abc123' });
+    expect(ctaTargetOf('/customer/catalogue/categories/cat9')).toEqual({ mode: 'category', id: 'cat9' });
+    expect(ctaTargetOf('/customer/catalogue')).toEqual({ mode: 'preset', id: null });
+    expect(ctaTargetOf('https://mypeg.fr/x')).toEqual({ mode: 'custom', id: null });
+    expect(ctaTargetOf('')).toEqual({ mode: 'none', id: null });
+    // Sous-page d'une fiche (édition) : pas une destination « produit »
+    expect(ctaTargetOf('/customer/product/abc123/edit').mode).toBe('custom');
   });
 });
 

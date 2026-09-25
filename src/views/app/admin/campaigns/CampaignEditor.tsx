@@ -13,8 +13,9 @@ import {
   apiUnscheduleCampaign,
   apiUpdateCampaign,
 } from '@/services/CampaignServices';
-import { CAMPAIGN_TAGS, CTA_PRESETS, LIMITS, TAG_META, emptyCampaign, fmtDateTime, fmtInt, fromLocalInput, isSafeCtaUrl, toLocalInput } from '@/utils/campaignFormat';
+import { CAMPAIGN_TAGS, CTA_PRESETS, CtaMode, LIMITS, TAG_META, categoryLink, ctaTargetOf, emptyCampaign, fmtDateTime, fmtInt, fromLocalInput, isSafeCtaUrl, productLink, toLocalInput } from '@/utils/campaignFormat';
 import AudiencePicker from './components/AudiencePicker';
+import { CategoryPicker, ProductPicker } from './components/CtaTargetPicker';
 import ImagesField from './components/ImagesField';
 import PreviewPanel from './components/PreviewPanel';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -66,7 +67,8 @@ const sendProblems = (form: CampaignInput, preview: AudiencePreview | null, late
   const out: string[] = [];
   if (!form.title.trim()) out.push('Ajoutez un titre.');
   if (!form.message.trim() && form.images.length === 0) out.push('Ajoutez un message ou une photo.');
-  if ((form.ctaLabel && !form.ctaUrl) || (!form.ctaLabel && form.ctaUrl)) out.push('Complétez le bouton (libellé et lien) ou retirez-le.');
+  if (form.ctaLabel && !form.ctaUrl) out.push('Choisissez la destination du bouton (page, produit, catégorie ou lien) ou retirez-le.');
+  if (!form.ctaLabel && form.ctaUrl) out.push('Donnez un libellé au bouton ou retirez-le.');
   if (form.ctaUrl && !isSafeCtaUrl(form.ctaUrl)) out.push('Le lien du bouton doit être un chemin de l’espace client (/…) ou une adresse https://.');
   if (form.audience.type === 'selection' && form.audience.customers.length === 0) out.push('Sélectionnez au moins un client.');
   if (preview && preview.users === 0) out.push('Aucun destinataire ne correspond à ce ciblage.');
@@ -97,6 +99,8 @@ const CampaignEditor = () => {
   const [sendAt, setSendAt] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [missing, setMissing] = useState(false);
+  // Destination choisie dans la liste ; null = déduite du lien enregistré.
+  const [ctaMode, setCtaMode] = useState<CtaMode | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   // Téléphone : barre d'actions sur une ligne, libellés courts.
   const compact = useResponsive().smaller.sm;
@@ -118,6 +122,7 @@ const CampaignEditor = () => {
           return;
         }
         setCampaign(c);
+        setCtaMode(null);
         setForm({
           title: c.title, message: c.message, tag: c.tag, images: c.images, ctaLabel: c.ctaLabel, ctaUrl: c.ctaUrl,
           channelPopup: c.channelPopup, channelEmail: c.channelEmail, audience: c.audience, expiresAt: c.expiresAt,
@@ -248,8 +253,17 @@ const CampaignEditor = () => {
 
   if (loading) return <div style={{ padding: '24px 16px', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>Chargement…</div>;
 
-  const presetValue = CTA_PRESETS.find((p) => p.url === form.ctaUrl)?.url ?? (form.ctaUrl ? 'custom' : '');
+  const target = ctaTargetOf(form.ctaUrl);
+  const mode: CtaMode = ctaMode ?? (target.mode === 'none' ? 'preset' : target.mode);
+  const selectValue = mode === 'preset' ? form.ctaUrl : mode;
   const hasCta = !!(form.ctaLabel || form.ctaUrl);
+  const onDestination = (value: string) => {
+    if (value === 'product' || value === 'category') { setCtaMode(value); update({ ctaUrl: '' }); return; }
+    if (value === 'custom') { setCtaMode('custom'); update({ ctaUrl: 'https://' }); return; }
+    setCtaMode('preset');
+    update({ ctaUrl: value });
+  };
+  const generic = (label: string) => !label || label === 'Découvrir';
   const channels = ['cloche + push', form.channelPopup && 'pop-up', form.channelEmail && 'e-mail'].filter(Boolean).join(' + ');
   const sandbox = !!directory?.sandbox;
 
@@ -329,10 +343,10 @@ const CampaignEditor = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Toggle on={hasCta} label="Bouton d’action" onChange={(v) => update(v ? { ctaLabel: 'Découvrir', ctaUrl: '/customer/catalogue' } : { ctaLabel: '', ctaUrl: '' })} />
+                <Toggle on={hasCta} label="Bouton d’action" onChange={(v) => { setCtaMode(null); update(v ? { ctaLabel: 'Découvrir', ctaUrl: '/customer/catalogue' } : { ctaLabel: '', ctaUrl: '' }); }} />
                 <div>
                   <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Bouton d’action</div>
-                  <div style={hintStyle}>Mène le client vers une page de son espace ou un lien externe — ses clics sont comptés.</div>
+                  <div style={hintStyle}>Mène le client vers un produit, une catégorie, une page de son espace ou un lien externe — ses clics sont comptés.</div>
                 </div>
               </div>
               {hasCta && (
@@ -342,15 +356,39 @@ const CampaignEditor = () => {
                   </Field>
                   <Field label="Destination">
                     <select
-                      value={presetValue}
-                      onChange={(e) => update({ ctaUrl: e.target.value === 'custom' ? 'https://' : e.target.value })}
+                      value={selectValue}
+                      onChange={(e) => onDestination(e.target.value)}
                       style={{ ...inputStyle, appearance: 'auto' }}
                     >
-                      {CTA_PRESETS.map((p) => <option key={p.url} value={p.url} style={{ color: '#000' }}>{p.label}</option>)}
+                      <option value="product" style={{ color: '#000' }}>Un produit…</option>
+                      <option value="category" style={{ color: '#000' }}>Une catégorie du catalogue…</option>
+                      <optgroup label="Pages de l’espace client">
+                        {CTA_PRESETS.map((p) => <option key={p.url} value={p.url} style={{ color: '#000' }}>{p.label}</option>)}
+                      </optgroup>
                       <option value="custom" style={{ color: '#000' }}>Autre lien…</option>
                     </select>
                   </Field>
-                  {presetValue === 'custom' && (
+                  {mode === 'product' && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <ProductPicker
+                        selectedId={target.mode === 'product' ? target.id : null}
+                        onPick={(p) => update({ ctaUrl: productLink(p.documentId), ctaLabel: generic(form.ctaLabel) ? 'Voir le produit' : form.ctaLabel })}
+                        hasPhoto={(url) => form.images.some((i) => i.url === url)}
+                        onUsePhoto={form.images.length < LIMITS.images
+                          ? (p) => p.imageUrl && update({ images: [...form.images, { id: null, url: p.imageUrl, width: null, height: null, name: p.name }] })
+                          : null}
+                      />
+                    </div>
+                  )}
+                  {mode === 'category' && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <CategoryPicker
+                        selectedId={target.mode === 'category' ? target.id : null}
+                        onPick={(c) => update({ ctaUrl: categoryLink(c.documentId), ctaLabel: form.ctaLabel || 'Découvrir' })}
+                      />
+                    </div>
+                  )}
+                  {mode === 'custom' && (
                     <div style={{ gridColumn: '1 / -1' }}>
                       <Field label="Lien" hint={form.ctaUrl && !isSafeCtaUrl(form.ctaUrl) ? <span style={{ color: '#fca5a5' }}>Chemin interne (/customer/…) ou adresse https:// uniquement.</span> : 'Chemin de l’espace client (/customer/…) ou adresse https://'}>
                         <input value={form.ctaUrl} onChange={(e) => update({ ctaUrl: e.target.value.trim() })} placeholder="https://" style={inputStyle} />

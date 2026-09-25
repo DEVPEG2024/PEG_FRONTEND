@@ -168,3 +168,21 @@ export type ClientCampaign = {
   popup: boolean;
   isTest: boolean;
 };
+
+/** Produit proposé comme destination du bouton d'action (sélecteur de l'éditeur). */
+export type CampaignProductOption = {
+  documentId: string;
+  name: string;
+  price: number | null;
+  imageUrl: string | null;
+  categoryName: string;
+  inCatalogue: boolean;
+  /** Hors catalogue mais attribué à des clients ou secteurs (offre dédiée). */
+  restricted: boolean;
+};
+
+export type CampaignCategoryOption = {
+  documentId: string;
+  name: string;
+  imageUrl: string | null;
+};
