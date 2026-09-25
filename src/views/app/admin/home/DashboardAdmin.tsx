@@ -3,6 +3,9 @@
  * Contient : banniere admin (hero), pense-bete (TodoListWidget), layout widgets
  * Derniere validation : 2026-04-18
  * Ajout 2026-09-02 (demande Nova) : detail du widget « Reste a encaisser » (PendingBreakdownModal)
+ * Ajout 2026-09-25 (demande explicite) : rendu TELEPHONE (< md) style « app de paiement »
+ *   → DashboardAdminMobile, composant d'affichage : memes calculs (ceux de ce fichier), memes
+ *   libelles, banniere / pense-bete / widgets conserves. Rendu ordinateur inchange.
  * Reference : GLOSSARY.md + PROTECTED_COMPONENTS.md
  */
 import Container from '@/components/shared/Container'
@@ -16,6 +19,7 @@ import { env } from '@/configs/env.config'
 import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
 import { statusTextData } from '@/views/app/common/projects/lists/constants'
 import useResponsive from '@/utils/hooks/useResponsive'
+import DashboardAdminMobile from './DashboardAdminMobile'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
@@ -346,6 +350,7 @@ function PendingBreakdownModal({ open, onClose, breakdown, displayed, onOpenProj
 
 export default function DashboardAdmin() {
   const navigate = useNavigate()
+  const { smaller } = useResponsive()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const { user } = useAppSelector((state) => state.auth.user)
 
@@ -617,6 +622,48 @@ export default function DashboardAdmin() {
     }
   }
 
+  const pendingModal = <PendingBreakdownModal open={showPendingDetails} onClose={() => setShowPendingDetails(false)} breakdown={pendingBreakdown} displayed={invoicePending} onOpenProject={(documentId) => { if (documentId) { setShowPendingDetails(false); navigate(`/common/projects/details/${documentId}`) } }} onOpenInvoices={() => { setShowPendingDetails(false); navigate('/admin/invoices') }} />
+
+  /* ── Téléphone : rendu « app de paiement » (DashboardAdminMobile), mêmes valeurs et libellés ── */
+  if (smaller.md) {
+    return (
+      <>
+        <DashboardAdminMobile
+          greeting={`${greeting}${firstName ? `, ${firstName}` : ''}`}
+          status={`${attentionCount > 0 ? `${attentionCount} point${attentionCount > 1 ? 's' : ''} d'attention` : 'Tout est en ordre'} — ${dayjs().format('dddd D MMMM')}`}
+          bannerUrl={bannerUrl}
+          onPickBanner={onPickBanner}
+          hidePrices={hidePrices}
+          onTogglePrices={() => togglePricesHidden()}
+          onRefresh={() => setRefreshTick(t => t + 1)}
+          refreshing={loading}
+          error={error}
+          dataReady={dataReady}
+          balance={{ label: 'CA total TTC', value: eur(invoiceTotal), sub: `${eur(toHT(invoiceTotal))} HT`, delta: <DeltaBadge current={invoiceTotal} previous={caLastMonth} />, deltaNote: caLastMonth > 0 ? 'vs mois préc.' : undefined }}
+          tiles={[
+            { key: 'paid', label: 'Encaissé TTC', value: eur(invoicePaid), sub: `${eur(toHT(invoicePaid))} HT`, icon: <HiOutlineCheckCircle />, tone: 'lime', onClick: () => navigate('/admin/invoices') },
+            { key: 'pending', label: 'Reste à encaisser', value: eur(invoicePending), sub: `${eur(toHT(invoicePending))} HT`, icon: <HiOutlineClock />, tone: invoicePending > 0 ? 'amber' : 'lime', onClick: () => setShowPendingDetails(true) },
+            { key: 'margin', label: 'Marge brute', value: `${margePct}%`, sub: `${eur(margeBrute)} TTC`, icon: <HiOutlineChartBar />, tone: margePct >= 30 ? 'lime' : margePct >= 15 ? 'amber' : 'rose' },
+            { key: 'net', label: 'Bénéfice net estimé', value: eur(beneficeNet), sub: `Impôt 15% : -${eur(impotEstime)}`, icon: <HiOutlineCurrencyEuro />, tone: 'mint' },
+            { key: 'sales', label: 'Ventes add.', value: eur(totalAdditionalSales), sub: `${allAdditionalSales.length} vente(s)`, icon: <HiOutlineLightningBolt />, tone: 'sky' },
+            { key: 'expenses', label: 'Dépenses totales', value: eur(totalExpensesGlobal), sub: `${eur(toHT(totalExpensesGlobal))} HT`, icon: <HiOutlineSwitchHorizontal />, tone: 'rose' },
+          ]}
+          stats={[
+            { key: 'projects', label: 'Projets', value: String(projectsTotal), icon: <HiOutlineCube />, onClick: () => navigate('/common/projects') },
+            { key: 'risk', label: 'Projets à risque', value: String(atRiskProjects), icon: <HiOutlineExclamation />, alert: atRiskProjects > 0, onClick: () => navigate('/common/projects') },
+            { key: 'orders', label: 'Commandes', value: String(orderItemsTotal), icon: <HiOutlineShoppingCart />, onClick: () => navigate('/admin/order-items') },
+            { key: 'delay', label: 'Délai moyen', value: `${avgDeliveryDays}j`, icon: <HiOutlineClock /> },
+            { key: 'tickets', label: 'Tickets', value: `${openTickets}/${ticketsTotal}`, icon: <HiOutlineTicket />, alert: openTickets > 0, onClick: () => navigate('/support') },
+          ]}
+          activity={visibleWidgets.includes('activity') ? { title: 'Activité récente', subtitle: 'Projets & factures', items: activity } : null}
+          widgets={visibleWidgets.filter(w => w !== 'activity').map(id => ({ id, content: renderWidget(id) }))}
+        />
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => onBannerFile(e.target.files?.[0])} />
+        {pendingModal}
+      </>
+    )
+  }
+
   return (
     <div className="relative">
       <MeshBackground />
@@ -786,7 +833,7 @@ export default function DashboardAdmin() {
 
         </div>
       </Container>
-      <PendingBreakdownModal open={showPendingDetails} onClose={() => setShowPendingDetails(false)} breakdown={pendingBreakdown} displayed={invoicePending} onOpenProject={(documentId) => { if (documentId) { setShowPendingDetails(false); navigate(`/common/projects/details/${documentId}`) } }} onOpenInvoices={() => { setShowPendingDetails(false); navigate('/admin/invoices') }} />
+      {pendingModal}
     </div>
   )
 }
