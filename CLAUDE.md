@@ -687,7 +687,7 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 - Carte « Votre équipe PEG » : **Appeler** (`PEG_TEAM_PHONE`, le numéro que l'assistant IA donne déjà) et **Écrire** (ticket).
 
 ### Factures de l'accueil (correctif du même jour, bureau compris)
-- La requête des projets client **ne ramène pas `invoices`** : « Factures disponibles », les factures du bloc « À faire » et de l'activité restaient à zéro. Elles sont désormais lues à part (`apiGetCustomerInvoiceSummaries`), **jamais bloquant** (échec → accueil sans factures ; le grand chiffre devient « Commandes en cours »).
+- La requête des projets client **ne ramène pas `invoices`** : « Factures disponibles », les factures du bloc « À faire » et de l'activité restaient à zéro. Elles sont désormais lues à part (`apiGetCustomerInvoiceSummaries`), **jamais bloquant** (échec → accueil sans factures).
 - `totalAmount` = **TTC** (l'activité l'affichait en « HT »).
 - Règle « à régler » unique : `src/utils/invoiceStatus.ts` (non annulée et non « Payé », virement déclaré compris) — utilisée aussi par les totaux de la page Factures. Une facture en « virement en attente » compte dans le montant mais ne redemande pas « Régler ».
 - ⚠️ `devis` n'est pas non plus demandé par cette requête : « Devis en attente » reste à 0 (non traité).
