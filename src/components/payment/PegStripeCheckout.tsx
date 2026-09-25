@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { StripeCheckout, StripeCheckoutSession, StripePaymentElement } from '@stripe/stripe-js';
 import { HiChevronDown, HiLockClosed, HiShieldCheck, HiX } from 'react-icons/hi';
+import Logo from '@/components/template/Logo';
 import { getStripe } from '@/utils/stripeClient';
 import { accentVars, readAccent } from '@/utils/mobileShell';
 import { pegAppearance, summarizeCheckout } from './checkoutSummary';
@@ -39,7 +40,9 @@ const isPhoneScreen = () =>
 const CSS = `
 .pco-scrim { position: fixed; inset: 0; z-index: 10060; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(4, 8, 15, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: pco-fade 0.2s ease-out; }
 .pco { position: relative; width: min(940px, 100%); height: min(700px, calc(100dvh - 48px)); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; outline: none; border-radius: 24px; background: #0e1a2c; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(47, 111, 237, 0.06); font-family: Inter, system-ui, sans-serif; color: #fff; animation: pco-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.pco-close { position: absolute; top: 16px; right: 16px; z-index: 2; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.75); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+.pco-corner { position: absolute; top: 16px; right: 16px; z-index: 2; display: flex; align-items: center; gap: 14px; }
+.pco-logo { flex-shrink: 0; opacity: 0.92; pointer-events: none; }
+.pco-close { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.75); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
 .pco-close:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .pco-close:disabled { opacity: 0.35; cursor: not-allowed; }
 .pco-close:focus { outline: none; }
@@ -66,7 +69,7 @@ const CSS = `
 .pco-total-amount small, .pco-hero-total small { margin-left: 5px; font-size: 13px; font-weight: 600; letter-spacing: 0; color: rgba(255, 255, 255, 0.5); }
 
 .pco-pay { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 32px 30px 0; }
-.pco-pay-head { margin: 0 48px 20px 0; }
+.pco-pay-head { margin: 0 124px 20px 0; }
 .pco-pay-title { margin: 0; color: #fff; font-size: 16px; font-weight: 800; letter-spacing: -0.015em; }
 .pco-pay-sub { margin: 4px 0 0; font-size: 12px; color: rgba(255, 255, 255, 0.4); }
 .pco-card { position: relative; min-height: 200px; }
@@ -94,7 +97,8 @@ const CSS = `
 @media (max-width: 767.98px) {
   .pco-scrim { padding: 0; align-items: stretch; background: #070a08; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .pco { width: 100%; height: 100dvh; max-height: none; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border: none; border-radius: 0; box-shadow: none; background: radial-gradient(90% 38% at 88% 0%, rgba(var(--pdm-accent-rgb, 47, 111, 237), 0.3) 0%, rgba(var(--pdm-accent-rgb, 47, 111, 237), 0) 70%), radial-gradient(70% 30% at 0% 34%, rgba(var(--pdm-accent-rgb, 47, 111, 237), 0.12) 0%, rgba(var(--pdm-accent-rgb, 47, 111, 237), 0) 70%), #070a08; animation: pco-up 0.34s cubic-bezier(0.2, 0.8, 0.2, 1); }
-  .pco-close { top: calc(12px + var(--peg-safe-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+  .pco-corner { top: calc(12px + var(--peg-safe-top, 0px)); right: 14px; gap: 12px; }
+  .pco-close { width: 40px; height: 40px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
   .pco-summary { flex-shrink: 0; overflow: visible; gap: 14px; padding: calc(20px + var(--peg-safe-top, 0px)) 20px 6px; background: none; border-right: none; }
   .pco-title { margin-top: 18px; font-size: 14px; font-weight: 700; letter-spacing: 0; color: rgba(255, 255, 255, 0.6); }
   .pco-subtitle { font-size: 12px; }
@@ -255,15 +259,18 @@ function PegStripeCheckout({ clientSecret, title, subtitle, email, onComplete, o
         aria-labelledby="pco-title"
         style={accentStyle}
       >
-        <button
-          type="button"
-          className="pco-close"
-          aria-label="Fermer le paiement"
-          disabled={paying}
-          onClick={() => onCloseRef.current()}
-        >
-          <HiX size={18} />
-        </button>
+        <div className="pco-corner">
+          <Logo type="wordmark" className="pco-logo" imgStyle={{ height: 20, width: 'auto', display: 'block' }} />
+          <button
+            type="button"
+            className="pco-close"
+            aria-label="Fermer le paiement"
+            disabled={paying}
+            onClick={() => onCloseRef.current()}
+          >
+            <HiX size={18} />
+          </button>
+        </div>
 
         <section className="pco-summary" aria-label="Récapitulatif">
           <div>
