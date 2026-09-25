@@ -2,17 +2,17 @@ import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { env } from '@/configs/env.config';
 
 // Stripe.js est chargé une seule fois, au premier paiement : aucune page qui ne
-// paie pas ne télécharge le script Stripe.
+// paie pas ne télécharge le script Stripe. Champs carte et messages en français.
 let stripePromise: Promise<Stripe | null> | null = null;
 
 export function getStripe(): Promise<Stripe | null> {
-  if (!stripePromise) stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
+  if (!stripePromise) stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string, { locale: 'fr' });
   return stripePromise;
 }
 
 /**
  * Réponse des routes `/checkout/*` (commande, devis, Premium).
- * `clientSecret` présent = paiement intégré à PEG (Embedded Checkout) ;
+ * `clientSecret` présent = paiement dans la fenêtre PEG (session `custom`) ;
  * absent = backend plus ancien → page Stripe hébergée.
  */
 export type StripeSessionResponse = { id?: string; clientSecret?: string };

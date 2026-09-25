@@ -20,7 +20,7 @@ import {
   PREMIUM_CONTRACT_VERSION,
   downloadPremiumContract,
 } from './contract';
-import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout } from '@/utils/stripeClient';
 
 const GOLD = '#eab308';
@@ -44,7 +44,7 @@ const PremiumPage = () => {
   const [accepted, setAccepted] = useState(false);
   const [showContract, setShowContract] = useState(false);
   const paidHandledRef = useRef<string | null>(null);
-  // Abonnement en cours de paiement dans la fenêtre Stripe intégrée
+  // Abonnement en cours de paiement dans la fenêtre de paiement PEG
   const [paymentSecret, setPaymentSecret] = useState<string | null>(null);
 
   const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
@@ -89,7 +89,7 @@ const PremiumPage = () => {
       });
       const { id, clientSecret } = await apiStartPremiumCheckout(customerDocumentId, token as string);
       if (!id) throw new Error('stripe');
-      // Fenêtre Stripe intégrée à PEG ; repli sur la page hébergée par Stripe
+      // Fenêtre de paiement PEG ; repli sur la page hébergée par Stripe
       // si le backend ne renvoie pas de `clientSecret`.
       if (clientSecret) {
         setPaymentSecret(clientSecret);
@@ -312,9 +312,11 @@ const PremiumPage = () => {
       )}
 
       {paymentSecret && (
-        <StripeEmbeddedCheckout
+        <PegStripeCheckout
           clientSecret={paymentSecret}
           title="Abonnement Premium"
+          subtitle={`Mensuel · engagement de ${PREMIUM_MIN_MONTHS} mois`}
+          email={user?.email}
           // Même traitement qu'au retour de l'ancienne redirection (?paid=) :
           // l'activation Premium est faite par le webhook.
           onComplete={() => {

@@ -16,7 +16,7 @@ import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote, apiRejectQuoteAsCustomer } from '@/services/QuoteServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
-import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 
 const fmtDate = (d?: string | null) => {
@@ -362,8 +362,8 @@ const QuotesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const paidHandledRef = useRef<string | null>(null);
-  // Devis en cours de paiement dans la fenêtre Stripe intégrée
-  const [quotePayment, setQuotePayment] = useState<{ quoteDocumentId: string; clientSecret: string } | null>(null);
+  // Devis en cours de paiement dans la fenêtre de paiement PEG
+  const [quotePayment, setQuotePayment] = useState<{ quoteDocumentId: string; clientSecret: string; title: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -497,7 +497,7 @@ const QuotesList = () => {
     }
   };
 
-  // Paiement immédiat : fenêtre Stripe intégrée à PEG ; repli sur la page
+  // Paiement immédiat : fenêtre de paiement PEG ; repli sur la page
   // hébergée par Stripe si le backend ne renvoie pas de `clientSecret`.
   const startQuotePayment = async (q: Quote) => {
     setBusyId(q.documentId);
@@ -505,13 +505,17 @@ const QuotesList = () => {
       const res = await fetch(API_BASE_URL + '/checkout/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
-        body: JSON.stringify({ quoteDocumentId: q.documentId, uiMode: 'embedded' }),
+        body: JSON.stringify({ quoteDocumentId: q.documentId, uiMode: 'custom' }),
       });
       if (!res.ok) throw new Error('session');
       const { id, clientSecret }: StripeSessionResponse = await res.json();
       if (!id) throw new Error('stripe');
       if (clientSecret) {
-        setQuotePayment({ quoteDocumentId: q.documentId, clientSecret });
+        setQuotePayment({
+          quoteDocumentId: q.documentId,
+          clientSecret,
+          title: `Devis — ${q.title || q.projectType || 'Projet'}`,
+        });
         setBusyId(null);
         return;
       }
@@ -770,8 +774,11 @@ const QuotesList = () => {
       </div>
 
       {quotePayment && (
-        <StripeEmbeddedCheckout
+        <PegStripeCheckout
           clientSecret={quotePayment.clientSecret}
+          title={quotePayment.title}
+          subtitle="Votre projet démarre dès le paiement confirmé"
+          email={user?.email}
           // Même traitement qu'au retour de l'ancienne redirection (?paid=) :
           // le projet est créé par le webhook, la liste se rafraîchit.
           onComplete={() => {

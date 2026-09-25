@@ -91,13 +91,16 @@ FRONTEND :
 - Le webhook gère la redirection après paiement (succès ou échec)
 - `STRIPE_WEBHOOK_SECRET` : permet au PEG de retrouver les infos de paiement côté Stripe
 
-### Paiement intégré — le client ne quitte plus PEG (ajout 25/09/2026)
-- Les trois paiements (commande du panier, devis, abonnement Premium) s'affichent dans une **fenêtre PEG** (`src/components/payment/StripeEmbeddedCheckout.tsx`) au lieu d'une redirection vers checkout.stripe.com : **Stripe Embedded Checkout**. Même session Checkout, mêmes metadata, **même webhook** `checkout.session.completed` — rien ne change côté facture/projet.
-- Le front envoie `uiMode: 'embedded'` ; Strapi (`checkoutUi()` dans `checkout.ts`) crée alors la session en `ui_mode: 'embedded'`, `redirect_on_completion: 'if_required'`, `locale: 'fr'`, et renvoie `{ id, clientSecret }`. **Sans `clientSecret`** (Strapi pas encore redéployé), le front **retombe sur la redirection** (`redirectToHostedCheckout`, `src/utils/stripeClient.ts`) : rétro-compatible dans les deux sens.
-- Fin de paiement : `onComplete` → navigation interne vers les mêmes pages qu'avant (`/customer/checkout/success?session_id=…`, `/common/quotes?paid=…`, `/customer/premium?paid=…`).
-- Fenêtre fermée (panier) → `POST /checkout/cancel` : le serveur **expire d'abord la session** (plus payable ensuite) ; une session **déjà payée n'est jamais annulée** (Stripe refuse d'expirer une session `complete`).
-- CSP (`index.html`) : `*.js.stripe.com`, `checkout.stripe.com`, images `*.stripe.com`, Link (`link.com`). Apparence du formulaire = réglages **Branding** du tableau de bord Stripe.
-- Vérifié en mode test le 25/09/2026 (carte, 3-D Secure, abonnement) : paiement dans la page, aucune erreur CSP.
+### Paiement intégré — fenêtre de paiement PEG (25/09/2026)
+- Les trois paiements (commande du panier, devis, abonnement Premium) s'ouvrent dans **la fenêtre de paiement PEG** (`src/components/payment/PegStripeCheckout.tsx`), sans redirection vers checkout.stripe.com. **Tout est dessiné par PEG** ; Stripe ne fournit que les champs carte (session Checkout en **`ui_mode: 'custom'`**, Stripe Elements). Même session, mêmes metadata, **même webhook** `checkout.session.completed` — rien ne change côté facture/projet.
+- Design (demande Nova : « le design ne va pas du tout avec le PEG ») : **ordinateur** = récapitulatif bleu nuit à gauche (dégradé du panier), carte à droite, bouton « Payer … € » bleu PEG collé en bas ; **téléphone** = style « app » des tableaux de bord (fond `#070a08`, halo et bouton de la couleur choisie — `readAccent()` —, montant en grand, « Voir le détail », bouton collé en bas). Champs carte habillés par `pegAppearance()` (`checkoutSummary.ts`, thème `night`, Inter).
+- **Récapitulatif lu dans la session Stripe** (`summarizeCheckout`) : lignes, remise, total = exactement le montant débité, jamais un calcul du navigateur.
+- Le front envoie `uiMode: 'custom'` ; Strapi (`checkoutUi()` dans `checkout.ts`) crée la session en `ui_mode: 'custom'` avec l'**e-mail du compte (tiré du JWT)** en `customer_email`, et renvoie `{ id, clientSecret }`. **Sans `clientSecret`** (Strapi plus ancien), repli sur la redirection (`redirectToHostedCheckout`, `src/utils/stripeClient.ts`). `uiMode: 'embedded'` reste accepté par Strapi (front en cache de la première version).
+- Paiement : `checkout.confirm({ redirect: 'if_required' })` — carte et 3-D Secure sans quitter la page (le défi de la banque s'ouvre par-dessus). Bouton actif **seulement quand la carte est complète** ; un **refus bancaire est affiché par Stripe sous le numéro de carte** (pas de doublon PEG), les autres erreurs au-dessus du bouton.
+- Fin de paiement → mêmes pages qu'avant (`/customer/checkout/success?session_id=…`, `/common/quotes?paid=…`, `/customer/premium?paid=…`). Fenêtre fermée (panier) → `POST /checkout/cancel` : le serveur **expire d'abord la session** ; une session **déjà payée n'est jamais annulée** (Stripe refuse d'expirer une session `complete`).
+- CSP (`index.html`) : `*.js.stripe.com`, `checkout.stripe.com`, images `*.stripe.com`, Link (`link.com`), `fonts.googleapis.com` en `connect-src` (police Inter des champs carte).
+- Le bloc « Link » (enregistrer ses informations) n'apparaît que si Link est activé sur le compte Stripe — **désactivé en live**, activé sur le compte de test.
+- Vérifié le 25/09/2026 avec le vrai composant et de vraies sessions Stripe de test : carte, 3-D Secure (téléphone), abonnement, refus puis nouvelle carte ; aucune erreur CSP. Tests : `src/__tests__/pegStripeCheckout.test.tsx`.
 
 ---
 

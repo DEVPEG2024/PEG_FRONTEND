@@ -26,7 +26,7 @@ import { apiValidatePromoCode } from '@/services/PromoCodeServices';
 import { apiGetReferralCredit } from '@/services/GeneratorServices';
 import { PromoCodeValidation } from '@/@types/promoCode';
 import { toast } from 'react-toastify';
-import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
@@ -284,7 +284,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     navigate('/common/projects');
   };
 
-  // Paiement par carte DANS PEG (fenêtre Stripe intégrée). Si le backend ne
+  // Paiement par carte DANS PEG (fenêtre de paiement PEG). Si le backend ne
   // renvoie pas de `clientSecret` (Strapi pas encore redéployé), repli sur la
   // page hébergée par Stripe, comme avant.
   const startStripeCheckout = async (
@@ -296,7 +296,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
         'Content-Type': 'application/json',
         Authorization: `${TOKEN_TYPE}${token}`,
       },
-      body: JSON.stringify({ ...createCheckout(orderItems), uiMode: 'embedded' }),
+      body: JSON.stringify({ ...createCheckout(orderItems), uiMode: 'custom' }),
     });
 
     if (!response.ok) {
@@ -646,8 +646,11 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
       </div>
 
       {stripePayment && (
-        <StripeEmbeddedCheckout
+        <PegStripeCheckout
           clientSecret={stripePayment.clientSecret}
+          title="Votre commande"
+          subtitle={`${itemCount} article${itemCount > 1 ? 's' : ''} · livraison incluse`}
+          email={user.email}
           onComplete={handleStripeComplete}
           onClose={handleStripeClose}
         />

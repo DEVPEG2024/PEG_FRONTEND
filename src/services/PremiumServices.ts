@@ -86,7 +86,7 @@ export type PremiumCustomer = {
 };
 
 // Démarre la session Stripe d'abonnement Premium → id de session, et
-// `clientSecret` quand le backend sait l'afficher dans PEG (paiement intégré)
+// `clientSecret` quand le backend sait l'afficher dans la fenêtre de paiement PEG
 export async function apiStartPremiumCheckout(
   customerDocumentId: string,
   token: string
@@ -94,7 +94,7 @@ export async function apiStartPremiumCheckout(
   const res = await fetch(API_BASE_URL + '/checkout/premium', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
-    body: JSON.stringify({ customerDocumentId, uiMode: 'embedded' }),
+    body: JSON.stringify({ customerDocumentId, uiMode: 'custom' }),
   });
   if (!res.ok) throw new Error('Échec création session premium');
   return res.json();
