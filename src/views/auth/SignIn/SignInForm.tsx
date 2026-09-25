@@ -68,7 +68,9 @@ const SignInForm = (props: SignInFormProps) => {
     forgotPasswordUrl = '/forgot-password',
   } = props;
 
-  const [message, setMessage] = useTimeOutMessage();
+  // 15 s et non 3 s (défaut) : « mot de passe incorrect » s'effaçait avant d'être lu, et
+  // la connexion semblait ne rien faire (« je n'arrive pas à me connecter », 25/09/2026).
+  const [message, setMessage] = useTimeOutMessage(15_000);
   const [showPassword, setShowPassword] = useState(false);
   const { signIn } = useAuth();
 
