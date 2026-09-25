@@ -141,6 +141,30 @@ export async function apiGetInvoices(data: GetInvoicesRequest = {pagination: {pa
     })
 }
 
+// Factures d'un client, version légère pour son accueil (montant à régler,
+// « À faire », activité). La page Factures garde apiGetCustomerInvoices.
+export type CustomerInvoiceSummary = Pick<Invoice, 'documentId' | 'name' | 'state' | 'paymentState' | 'totalAmount' | 'date' | 'dueDate'>;
+
+export async function apiGetCustomerInvoiceSummaries(customerDocumentId: string): Promise<CustomerInvoiceSummary[]> {
+    const query = `
+    query CustomerInvoiceSummaries($customerDocumentId: ID!) {
+        invoices_connection(
+            filters: { customer: { documentId: { eq: $customerDocumentId } } }
+            pagination: { page: 1, pageSize: 200 }
+            sort: ["date:desc"]
+        ) {
+            nodes { documentId name state paymentState totalAmount date dueDate }
+        }
+    }
+  `;
+    const res = await ApiService.fetchData<ApiResponse<{ invoices_connection: { nodes: CustomerInvoiceSummary[] } }>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { customerDocumentId } },
+    });
+    return res.data?.data?.invoices_connection?.nodes ?? [];
+}
+
 // get customer invoices
 export type GetCustomerInvoicesRequest = {
     customerDocumentId: string;

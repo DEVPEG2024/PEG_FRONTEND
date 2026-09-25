@@ -1,0 +1,618 @@
+/**
+ * Accueil client — rendu TÉLÉPHONE uniquement (< md), même langage que le
+ * tableau de bord admin sur téléphone (DashboardAdminMobile, demande Nova du
+ * 25/09/2026) : fond noir, montant en grand, tuiles vitrées, raccourcis ronds,
+ * listes façon transactions, couleur d'accent au choix.
+ *
+ * Composant d'AFFICHAGE : DashboardCustomer calcule tout (mêmes valeurs et
+ * mêmes libellés que l'ordinateur) et passe des données prêtes à afficher.
+ * La bannière du client reste en tête, pleine largeur et 3× plus haute.
+ *
+ * Mêmes variables `--pdm-*` et même classe `peg-dash-dark` sur le body que
+ * l'admin : en-tête et barre d'onglets se fondent dans le même noir.
+ */
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+  HiOutlineChevronRight,
+  HiOutlineColorSwatch,
+  HiOutlineCube,
+  HiOutlineRefresh,
+} from 'react-icons/hi';
+
+export const PCM_DARK = '#070a08';
+
+export type PcmTile = {
+  key: string;
+  label: string;
+  value: string;
+  icon: ReactNode;
+  tone?: 'accent' | 'amber' | 'sky' | 'mint';
+  onClick: () => void;
+};
+
+export type PcmShortcut = { key: string; label: string; icon: ReactNode; onClick: () => void };
+
+export type PcmRow = {
+  key: string;
+  title: string;
+  sub?: string;
+  /** Pastille d'état avant le sous-titre (ex. « En cours ») */
+  pill?: { label: string; color: string };
+  icon?: ReactNode;
+  image?: string;
+  /** Couleur de la pastille d'icône (et du bouton d'action) */
+  color?: string;
+  /** Montant à droite, et sa précision en dessous */
+  right?: string;
+  rightSub?: string;
+  /** Bouton d'action à droite (« Valider », « Régler »…) */
+  cta?: string;
+  onClick?: () => void;
+};
+
+export type PcmProduct = { key: string; name: string; price: string; image?: string; onClick: () => void };
+
+type Props = {
+  banner: ReactNode;
+  greeting: string;
+  status: string;
+  onRefresh: () => void;
+  refreshing: boolean;
+  balance: {
+    label: string;
+    value: string;
+    sub: string;
+    cta?: { label: string; onClick: () => void };
+  } | null;
+  todos: PcmRow[];
+  tiles: PcmTile[];
+  shortcuts: PcmShortcut[];
+  orders: PcmRow[];
+  onSeeAllOrders: () => void;
+  onOrder: () => void;
+  activity: PcmRow[];
+  suggestions: PcmProduct[];
+  onSeeCatalogue?: () => void;
+  offers: PcmProduct[];
+  onSeeOffers?: () => void;
+  onSupport: () => void;
+};
+
+const CSS = `
+.pcm {
+  --pdm-text: #f3f7ec;
+  --pdm-muted: rgba(232, 242, 220, 0.55);
+  --pdm-faint: rgba(232, 242, 220, 0.32);
+  --pdm-card: rgba(255, 255, 255, 0.045);
+  --pdm-line: rgba(255, 255, 255, 0.08);
+  position: relative;
+  min-height: calc(100dvh - 64px);
+  color: var(--pdm-text);
+  font-family: Inter, sans-serif;
+  background:
+    radial-gradient(130% 50% at 100% 12%, rgba(var(--pdm-accent-rgb), 0.24) 0%, rgba(var(--pdm-accent-rgb), 0.08) 40%, transparent 70%),
+    radial-gradient(90% 40% at 0% 45%, rgba(var(--pdm-accent-rgb), 0.06) 0%, transparent 60%),
+    ${PCM_DARK};
+  overflow: hidden;
+}
+.pcm-body { position: relative; padding: 16px 16px 28px; }
+.pcm-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pcm-hello { min-width: 0; }
+.pcm-hello h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--pdm-text); }
+.pcm-hello p { margin: 3px 0 0; font-size: 12px; color: var(--pdm-muted); }
+.pcm-icons { display: flex; gap: 6px; flex-shrink: 0; }
+.pcm-icon-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--pdm-line);
+  color: var(--pdm-text); font-size: 18px; cursor: pointer;
+}
+.pcm-icon-btn.is-on { color: var(--pdm-on-accent); background: var(--pdm-accent); border-color: transparent; }
+.pcm-icon-btn:active { transform: scale(0.94); }
+.pcm-spin { animation: pcm-spin 0.9s linear infinite; }
+@keyframes pcm-spin { to { transform: rotate(360deg); } }
+
+.pcm-balance { margin-top: 22px; padding: 6px 0 4px; text-align: center; }
+.pcm-balance-label { font-size: 12.5px; color: var(--pdm-muted); letter-spacing: 0.02em; }
+.pcm-balance-value {
+  margin-top: 8px; font-size: 42px; line-height: 1.05; font-weight: 800;
+  letter-spacing: -0.03em; color: #fff; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 40px rgba(var(--pdm-accent-rgb), 0.18);
+}
+.pcm-balance-sub { margin-top: 8px; font-size: 12.5px; color: var(--pdm-muted); }
+.pcm-cta {
+  margin-top: 16px; display: inline-flex; align-items: center; gap: 6px;
+  border: 0; border-radius: 100px; padding: 11px 20px; cursor: pointer;
+  background: var(--pdm-accent); color: var(--pdm-on-accent);
+  font: inherit; font-size: 13.5px; font-weight: 700;
+  box-shadow: 0 8px 24px rgba(var(--pdm-accent-rgb), 0.25);
+}
+.pcm-cta:active { transform: scale(0.97); }
+
+.pcm-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 26px 0 12px; }
+.pcm-section-head h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--pdm-text); letter-spacing: -0.01em; }
+.pcm-link { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--pdm-accent); cursor: pointer; }
+.pcm-count {
+  min-width: 22px; height: 22px; padding: 0 7px; border-radius: 100px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--pdm-accent); color: var(--pdm-on-accent); font-size: 11.5px; font-weight: 800;
+}
+
+.pcm-shortcuts {
+  display: flex; gap: 14px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.pcm-shortcuts::-webkit-scrollbar { display: none; }
+.pcm-shortcut {
+  flex: 1 0 70px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  background: none; border: 0; padding: 0; color: var(--pdm-text); font: inherit; cursor: pointer; text-align: center;
+}
+.pcm-shortcut-ring {
+  width: 58px; height: 58px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 23px; color: var(--pdm-accent);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 70%);
+  border: 1.5px solid rgba(var(--pdm-accent-rgb), 0.35);
+  box-shadow: 0 0 18px rgba(var(--pdm-accent-rgb), 0.10);
+}
+.pcm-shortcut:active .pcm-shortcut-ring { transform: scale(0.94); }
+.pcm-shortcut-label { font-size: 11px; line-height: 1.2; color: var(--pdm-muted); }
+
+.pcm-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pcm-tile {
+  position: relative; text-align: left; border-radius: 22px; padding: 14px 14px 15px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.025) 100%);
+  border: 1px solid var(--pdm-line); color: var(--pdm-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  cursor: pointer; font: inherit;
+}
+.pcm-tile:active { transform: scale(0.98); }
+/* Nombre impair de tuiles (client Standard : pas d'offres) : la dernière prend la rangée */
+.pcm-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.pcm-tile-icon {
+  width: 36px; height: 36px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--pdm-accent); background: rgba(var(--pdm-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--pdm-accent-rgb), 0.22);
+}
+.pcm-tile[data-tone="amber"] .pcm-tile-icon { color: #fbbf24; background: rgba(251, 191, 36, 0.10); border-color: rgba(251, 191, 36, 0.25); }
+.pcm-tile[data-tone="mint"] .pcm-tile-icon { color: #5eead4; background: rgba(94, 234, 212, 0.10); border-color: rgba(94, 234, 212, 0.25); }
+.pcm-tile[data-tone="sky"] .pcm-tile-icon { color: #7dd3fc; background: rgba(125, 211, 252, 0.10); border-color: rgba(125, 211, 252, 0.25); }
+.pcm-tile-label { font-size: 12px; color: var(--pdm-muted); line-height: 1.25; }
+.pcm-tile-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #fff; font-variant-numeric: tabular-nums; }
+.pcm-tile-go { position: absolute; top: 16px; right: 12px; color: var(--pdm-faint); font-size: 16px; }
+
+.pcm-list { border-radius: 22px; background: var(--pdm-card); border: 1px solid var(--pdm-line); padding: 4px 14px; }
+.pcm-row {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: none;
+  color: inherit; font: inherit; text-align: left;
+}
+.pcm-row:last-child { border-bottom: 0; }
+button.pcm-row { cursor: pointer; }
+.pcm-row-icon {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  background: rgba(var(--pdm-accent-rgb), 0.10); color: var(--pdm-accent);
+}
+.pcm-row-icon img { width: 100%; height: 100%; object-fit: cover; }
+.pcm-row-main { flex: 1; min-width: 0; }
+.pcm-row-title { font-size: 13.5px; font-weight: 600; color: var(--pdm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcm-row-sub { font-size: 11.5px; color: var(--pdm-faint); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pcm-row-right { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #fff; text-align: right; max-width: 42%; font-variant-numeric: tabular-nums; }
+.pcm-row-right-sub { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 600; color: var(--pdm-faint); }
+.pcm-pill { display: inline-flex; align-items: center; border-radius: 100px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; }
+.pcm-go {
+  display: inline-flex; align-items: center; gap: 3px; border-radius: 100px; padding: 6px 11px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.pcm-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; font-size: 12.5px; color: var(--pdm-faint); }
+
+.pcm-products {
+  display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px;
+  scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.pcm-products::-webkit-scrollbar { display: none; }
+.pcm-product {
+  flex: 0 0 150px; scroll-snap-align: start; text-align: left; overflow: hidden;
+  border-radius: 20px; border: 1px solid var(--pdm-line); padding: 0; cursor: pointer; font: inherit; color: inherit;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.pcm-product-img {
+  height: 120px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.04); color: var(--pdm-faint); font-size: 26px;
+}
+.pcm-product-img img { width: 100%; height: 100%; object-fit: cover; }
+.pcm-product-name { padding: 10px 12px 0; font-size: 12.5px; font-weight: 600; color: var(--pdm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcm-product-price { padding: 4px 12px 12px; font-size: 13px; font-weight: 800; color: var(--pdm-accent); }
+
+.pcm-support {
+  margin-top: 26px; border-radius: 22px; padding: 18px 16px;
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(160deg, rgba(var(--pdm-accent-rgb), 0.14) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(var(--pdm-accent-rgb), 0.25);
+}
+.pcm-support-text { flex: 1; min-width: 0; }
+.pcm-support-text strong { display: block; font-size: 14px; color: #fff; }
+.pcm-support-text span { display: block; margin-top: 3px; font-size: 12px; color: var(--pdm-muted); }
+.pcm-support .pcm-cta { margin-top: 0; flex-shrink: 0; padding: 10px 16px; font-size: 12.5px; }
+
+.pcm-skel { border-radius: 16px; background: rgba(255, 255, 255, 0.05); animation: pcm-pulse 1.4s ease-in-out infinite; }
+@keyframes pcm-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .pcm-spin, .pcm-skel { animation: none; } }
+
+.pcm-palette {
+  margin-top: 14px; padding: 14px 12px; border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pdm-line);
+}
+.pcm-palette-title { font-size: 12.5px; color: var(--pdm-muted); margin: 0 0 12px 2px; }
+.pcm-swatches { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.pcm-swatch {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: 0; padding: 0; color: var(--pdm-muted); font: inherit; font-size: 10.5px; cursor: pointer;
+}
+.pcm-swatch-dot { position: relative; width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12); overflow: hidden; }
+.pcm-swatch.is-on { color: #fff; font-weight: 600; }
+.pcm-swatch.is-on .pcm-swatch-dot { box-shadow: 0 0 0 2px ${PCM_DARK}, 0 0 0 4px #fff; }
+.pcm-swatch-custom .pcm-swatch-dot { background: conic-gradient(#f87171, #fbbf24, #a3e635, #22d3ee, #818cf8, #f472b6, #f87171); }
+.pcm-swatch-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+
+body.peg-dash-dark .header { background: ${PCM_DARK}; border-color: rgba(255, 255, 255, 0.06); }
+body.peg-dash-dark .peg-dock { background: rgba(10, 13, 11, 0.92); border-top-color: rgba(255, 255, 255, 0.06); }
+body.peg-dash-dark .peg-dock-item.is-active .peg-dock-icon { background: rgba(var(--pdm-accent-rgb), 0.16); color: var(--pdm-accent); }
+body.peg-dash-dark .peg-app-main { background: ${PCM_DARK}; }
+`;
+
+// ── Couleur d'accent : même réglage (et même clé) que l'admin sur téléphone ──
+const ACCENT_KEY = 'peg:dashboardAccent';
+const DEFAULT_ACCENT = '#c6f432';
+const ACCENTS = [
+  { name: 'Citron', hex: '#c6f432' },
+  { name: 'Menthe', hex: '#34d399' },
+  { name: 'Cyan', hex: '#22d3ee' },
+  { name: 'Violet', hex: '#a78bfa' },
+  { name: 'Rose', hex: '#f472b6' },
+  { name: 'Orange', hex: '#fb923c' },
+];
+const isHex = (v: string) => /^#[0-9a-f]{6}$/i.test(v);
+const loadAccent = (): string => {
+  try {
+    const v = localStorage.getItem(ACCENT_KEY);
+    return v && isHex(v) ? v.toLowerCase() : DEFAULT_ACCENT;
+  } catch {
+    return DEFAULT_ACCENT;
+  }
+};
+const rgbOf = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+// Texte posé sur l'accent : sombre sur une teinte claire, blanc sur une foncée
+const onAccentOf = (hex: string) => {
+  const [r, g, b] = rgbOf(hex).map((c) => {
+    const x = c / 255;
+    return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#10140a' : '#ffffff';
+};
+const accentVars = (accent: string) => ({
+  '--pdm-accent': accent,
+  '--pdm-accent-rgb': rgbOf(accent).join(', '),
+  '--pdm-on-accent': onAccentOf(accent),
+});
+
+// Page, en-tête, barre d'onglets et barre d'état du téléphone dans le même
+// noir ; tout est rétabli en quittant l'accueil.
+const useDarkShell = (accent: string) => {
+  useEffect(() => {
+    document.body.classList.add('peg-dash-dark');
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const previous = meta?.content;
+    if (meta) meta.content = PCM_DARK;
+    return () => {
+      document.body.classList.remove('peg-dash-dark');
+      if (meta && previous) meta.content = previous;
+    };
+  }, []);
+  useEffect(() => {
+    const st = document.body.style;
+    Object.entries(accentVars(accent)).forEach(([k, v]) => st.setProperty(k, v));
+    return () => Object.keys(accentVars(accent)).forEach((k) => st.removeProperty(k));
+  }, [accent]);
+};
+
+const Row = ({ row }: { row: PcmRow }) => {
+  const inner = (
+    <>
+      <span
+        className="pcm-row-icon"
+        style={row.color ? { background: `${row.color}1f`, color: row.color } : undefined}
+      >
+        {row.image ? (
+          <img
+            src={row.image}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          row.icon ?? <HiOutlineCube />
+        )}
+      </span>
+      <span className="pcm-row-main">
+        <span className="pcm-row-title" style={{ display: 'block' }}>{row.title}</span>
+        {(row.pill || row.sub) && (
+          <span className="pcm-row-sub">
+            {row.pill && (
+              <span className="pcm-pill" style={{ color: row.pill.color, background: `${row.pill.color}22` }}>
+                {row.pill.label}
+              </span>
+            )}
+            {row.sub}
+          </span>
+        )}
+      </span>
+      {row.right && (
+        <span className="pcm-row-right">
+          {row.right}
+          {row.rightSub && <span className="pcm-row-right-sub">{row.rightSub}</span>}
+        </span>
+      )}
+      {row.cta && (
+        <span className="pcm-go" style={{ color: row.color ?? 'var(--pdm-accent)', background: `${row.color ?? '#ffffff'}1f` }}>
+          {row.cta} <HiOutlineChevronRight />
+        </span>
+      )}
+    </>
+  );
+  return row.onClick ? (
+    <button type="button" className="pcm-row" onClick={row.onClick}>{inner}</button>
+  ) : (
+    <div className="pcm-row">{inner}</div>
+  );
+};
+
+const Products = ({ items }: { items: PcmProduct[] }) => (
+  <div className="pcm-products">
+    {items.map((p) => (
+      <button key={p.key} type="button" className="pcm-product" onClick={p.onClick}>
+        <span className="pcm-product-img" style={{ display: 'flex' }}>
+          {p.image ? (
+            <img
+              src={p.image}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+            />
+          ) : (
+            <HiOutlineCube />
+          )}
+        </span>
+        <span className="pcm-product-name" style={{ display: 'block' }}>{p.name}</span>
+        <span className="pcm-product-price" style={{ display: 'block' }}>{p.price}</span>
+      </button>
+    ))}
+  </div>
+);
+
+const DashboardCustomerMobile = ({
+  banner,
+  greeting,
+  status,
+  onRefresh,
+  refreshing,
+  balance,
+  todos,
+  tiles,
+  shortcuts,
+  orders,
+  onSeeAllOrders,
+  onOrder,
+  activity,
+  suggestions,
+  onSeeCatalogue,
+  offers,
+  onSeeOffers,
+  onSupport,
+}: Props) => {
+  const [accent, setAccent] = useState(loadAccent);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useDarkShell(accent);
+  const chooseAccent = (hex: string) => {
+    if (!isHex(hex)) return;
+    const next = hex.toLowerCase();
+    setAccent(next);
+    try {
+      localStorage.setItem(ACCENT_KEY, next);
+    } catch {
+      /* navigation privée : la couleur vaut pour la session */
+    }
+  };
+  const isPreset = ACCENTS.some((a) => a.hex === accent);
+
+  return (
+    // Variables posées aussi ici : la page a sa couleur dès le premier rendu
+    <div className="pcm" style={accentVars(accent) as React.CSSProperties}>
+      <style>{CSS}</style>
+
+      {banner}
+
+      <div className="pcm-body">
+        <div className="pcm-top">
+          <div className="pcm-hello">
+            <h1>{greeting}</h1>
+            <p>{status}</p>
+          </div>
+          <div className="pcm-icons">
+            <button
+              type="button"
+              className={`pcm-icon-btn${paletteOpen ? ' is-on' : ''}`}
+              onClick={() => setPaletteOpen((o) => !o)}
+              aria-expanded={paletteOpen}
+              aria-label="Couleur de l'accueil"
+            >
+              <HiOutlineColorSwatch />
+            </button>
+            <button type="button" className="pcm-icon-btn" onClick={onRefresh} aria-label="Actualiser">
+              <HiOutlineRefresh className={refreshing ? 'pcm-spin' : undefined} />
+            </button>
+          </div>
+        </div>
+
+        {paletteOpen && (
+          <div className="pcm-palette" role="group" aria-label="Couleur de l'accueil">
+            <p className="pcm-palette-title">Couleur de l'accueil</p>
+            <div className="pcm-swatches">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.hex}
+                  type="button"
+                  className={`pcm-swatch${accent === a.hex ? ' is-on' : ''}`}
+                  aria-pressed={accent === a.hex}
+                  onClick={() => chooseAccent(a.hex)}
+                >
+                  <span className="pcm-swatch-dot" style={{ background: a.hex }} />
+                  {a.name}
+                </button>
+              ))}
+              <label className={`pcm-swatch pcm-swatch-custom${isPreset ? '' : ' is-on'}`}>
+                <span className="pcm-swatch-dot">
+                  <input
+                    type="color"
+                    value={accent}
+                    onChange={(e) => chooseAccent(e.target.value)}
+                    aria-label="Autre couleur"
+                  />
+                </span>
+                Autre
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Montant en grand : ce qui reste à régler */}
+        <section className="pcm-balance">
+          {balance ? (
+            <>
+              <div className="pcm-balance-label">{balance.label}</div>
+              <div className="pcm-balance-value">{balance.value}</div>
+              <div className="pcm-balance-sub">{balance.sub}</div>
+              {balance.cta && (
+                <button type="button" className="pcm-cta" onClick={balance.cta.onClick}>
+                  {balance.cta.label} <HiOutlineChevronRight />
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="pcm-skel" style={{ height: 96, width: 220, margin: '0 auto' }} />
+          )}
+        </section>
+
+        {/* Raccourcis ronds */}
+        <div className="pcm-section-head">
+          <h2>Raccourcis</h2>
+        </div>
+        <div className="pcm-shortcuts">
+          {shortcuts.map((s) => (
+            <button key={s.key} type="button" className="pcm-shortcut" onClick={s.onClick}>
+              <span className="pcm-shortcut-ring">{s.icon}</span>
+              <span className="pcm-shortcut-label">{s.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Ce qui attend le client */}
+        {todos.length > 0 && (
+          <>
+            <div className="pcm-section-head">
+              <h2>À faire</h2>
+              <span className="pcm-count">{todos.length}</span>
+            </div>
+            <div className="pcm-list">
+              {todos.map((r) => <Row key={r.key} row={r} />)}
+            </div>
+          </>
+        )}
+
+        {/* Chiffres clés */}
+        <div className="pcm-section-head">
+          <h2>Mon activité</h2>
+        </div>
+        <div className="pcm-tiles">
+          {tiles.map((t) => (
+            <button key={t.key} type="button" className="pcm-tile" data-tone={t.tone} onClick={t.onClick}>
+              <span className="pcm-tile-icon">{t.icon}</span>
+              <span className="pcm-tile-label">{t.label}</span>
+              <span className="pcm-tile-value">{t.value}</span>
+              <HiOutlineChevronRight className="pcm-tile-go" />
+            </button>
+          ))}
+        </div>
+
+        {/* Commandes en cours */}
+        <div className="pcm-section-head">
+          <h2>Mes commandes en cours</h2>
+          {orders.length > 0 && (
+            <button type="button" className="pcm-link" onClick={onSeeAllOrders}>Voir tout</button>
+          )}
+        </div>
+        <div className="pcm-list">
+          {orders.length > 0 ? (
+            orders.map((r) => <Row key={r.key} row={r} />)
+          ) : (
+            <div className="pcm-empty">
+              Aucune commande en cours.
+              <button type="button" className="pcm-link" onClick={onOrder}>Commander →</button>
+            </div>
+          )}
+        </div>
+
+        {/* Activité récente, façon transactions */}
+        {activity.length > 0 && (
+          <>
+            <div className="pcm-section-head">
+              <h2>Activité récente</h2>
+              <button type="button" className="pcm-link" onClick={onSeeAllOrders}>Voir tout</button>
+            </div>
+            <div className="pcm-list">
+              {activity.map((r) => <Row key={r.key} row={r} />)}
+            </div>
+          </>
+        )}
+
+        {suggestions.length > 0 && (
+          <>
+            <div className="pcm-section-head">
+              <h2>Suggestions pour vous</h2>
+              {onSeeCatalogue && (
+                <button type="button" className="pcm-link" onClick={onSeeCatalogue}>Le catalogue</button>
+              )}
+            </div>
+            <Products items={suggestions} />
+          </>
+        )}
+
+        {offers.length > 0 && (
+          <>
+            <div className="pcm-section-head">
+              <h2>Vos offres personnalisées</h2>
+              {onSeeOffers && (
+                <button type="button" className="pcm-link" onClick={onSeeOffers}>Tout voir</button>
+              )}
+            </div>
+            <Products items={offers} />
+          </>
+        )}
+
+        <div className="pcm-support">
+          <div className="pcm-support-text">
+            <strong>Besoin d'aide ?</strong>
+            <span>Notre équipe vous accompagne dans tous vos projets.</span>
+          </div>
+          <button type="button" className="pcm-cta" onClick={onSupport}>Nous écrire</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardCustomerMobile;

@@ -20,9 +20,10 @@ import {
 } from '@/utils/bannerVisual';
 
 const FADE = 'linear-gradient(to top, #0a1628, transparent)';
+const fadeTo = (color?: string) => (color ? `linear-gradient(to top, ${color}, transparent)` : FADE);
 const PHONE_FRAME_RATIO = `${MOBILE_BANNER_WIDTH} / ${MOBILE_BANNER_HEIGHT}`;
 
-const PhoneBanner = ({ image, dedicated }: PhoneBannerImage) => {
+const PhoneBanner = ({ image, dedicated, fadeColor }: PhoneBannerImage & { fadeColor?: string }) => {
   const src = image.url!;
   if (dedicated) {
     const sources = buildImageSources(image);
@@ -38,14 +39,14 @@ const PhoneBanner = ({ image, dedicated }: PhoneBannerImage) => {
           alt="Bannière"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: FADE }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: fadeTo(fadeColor) }} />
       </div>
     );
   }
   return (
     <div style={{
       position: 'relative', width: '100%', aspectRatio: PHONE_FRAME_RATIO,
-      overflow: 'hidden', background: '#0a1628',
+      overflow: 'hidden', background: fadeColor ?? '#0a1628',
     }}>
       <img
         src={src}
@@ -62,13 +63,13 @@ const PhoneBanner = ({ image, dedicated }: PhoneBannerImage) => {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
       />
       {/* Fondu limité au tiers bas : il ne recouvre que le fond flouté */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '33%', background: FADE }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '33%', background: fadeTo(fadeColor) }} />
     </div>
   );
 };
 
 /** Visuel épuré sans texte, quand aucune bannière n'a d'image. */
-const EmptyBanner = ({ phone }: { phone: boolean }) => (
+const EmptyBanner = ({ phone, fadeColor }: { phone: boolean; fadeColor?: string }) => (
   <div style={{
     position: 'relative',
     width: '100%',
@@ -105,7 +106,7 @@ const EmptyBanner = ({ phone }: { phone: boolean }) => (
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
       height: '80px',
-      background: 'linear-gradient(to top, #0a0c16, transparent)',
+      background: `linear-gradient(to top, ${fadeColor ?? '#0a0c16'}, transparent)`,
     }} />
   </div>
 );
@@ -113,14 +114,17 @@ const EmptyBanner = ({ phone }: { phone: boolean }) => (
 const CustomerHomeBanner = ({
   desktop,
   phone,
+  fadeColor,
 }: {
   desktop: BannerImage | null;
   phone: PhoneBannerImage | null;
+  /** Téléphone : couleur dans laquelle la bannière se fond (fond de la page). */
+  fadeColor?: string;
 }) => {
   const { smaller } = useResponsive();
 
   if (smaller.md) {
-    return phone ? <PhoneBanner {...phone} /> : <EmptyBanner phone />;
+    return phone ? <PhoneBanner {...phone} fadeColor={fadeColor} /> : <EmptyBanner phone fadeColor={fadeColor} />;
   }
   if (!desktop?.url) return <EmptyBanner phone={false} />;
   return (

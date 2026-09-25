@@ -677,6 +677,21 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ---
 
+## 📱 Accueil client sur téléphone — style « app » (ajout 25/09/2026)
+
+### Concept
+- Sous 768px, `/home` client = `DashboardCustomerMobile.tsx`, même langage que l'admin sur téléphone (`DashboardAdminMobile.tsx`) : fond noir `#070a08`, montant en grand, tuiles vitrées, raccourcis ronds, listes façon transactions, couleur d'accent au choix (même clé `peg:dashboardAccent`, même classe `peg-dash-dark` sur le body → en-tête et barre du bas dans le même noir).
+- **Composant d'affichage** : `DashboardCustomer` calcule tout et passe des valeurs prêtes. Bureau et tablette : **inchangés au pixel**.
+- Ordre : bannière (3× plus haute, fondue dans le noir) → salutation → **« À régler TTC »** en grand (+ « Régler mes factures ») → raccourcis → À faire → Mon activité (tuiles) → commandes en cours → activité récente → suggestions → offres personnalisées → aide.
+
+### Factures de l'accueil (correctif du même jour, bureau compris)
+- La requête des projets client **ne ramène pas `invoices`** : « Factures disponibles », les factures du bloc « À faire » et de l'activité restaient à zéro. Elles sont désormais lues à part (`apiGetCustomerInvoiceSummaries`), **jamais bloquant** (échec → accueil sans factures ; le grand chiffre devient « Commandes en cours »).
+- `totalAmount` = **TTC** (l'activité l'affichait en « HT »).
+- Règle « à régler » unique : `src/utils/invoiceStatus.ts` (non annulée et non « Payé », virement déclaré compris) — utilisée aussi par les totaux de la page Factures. Une facture en « virement en attente » compte dans le montant mais ne redemande pas « Régler ».
+- ⚠️ `devis` n'est pas non plus demandé par cette requête : « Devis en attente » reste à 0 (non traité).
+
+---
+
 ## 📱 Barre du bas du téléphone — défilante et personnalisable (ajout 25/09/2026)
 
 ### Comportement (< 768px, `src/components/template/MobileDock.tsx`)

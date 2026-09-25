@@ -6,6 +6,7 @@ import { apiGetSuggestedProducts } from '@/services/ProductServices';
 import { apiGetFallbackBanners } from '@/services/BannerServices';
 import { BannerVisual, pickDesktopImage, pickPhoneImage } from '@/utils/bannerVisual';
 import CustomerHomeBanner from './CustomerHomeBanner';
+import DashboardCustomerMobile, { PCM_DARK, PcmProduct, PcmRow } from './DashboardCustomerMobile';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -24,7 +25,9 @@ import { Project } from '@/@types/project';
 import { Product } from '@/@types/product';
 import dayjs from 'dayjs';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { fmtHT, fmtPrice } from '@/utils/priceHelpers';
+import { fmtHT, fmtPrice, fmtTTC } from '@/utils/priceHelpers';
+import { apiGetCustomerInvoiceSummaries, CustomerInvoiceSummary } from '@/services/InvoicesServices';
+import { isInvoiceCanceled, isInvoiceOutstanding, isTransferPending } from '@/utils/invoiceStatus';
 import useResponsive from '@/utils/hooks/useResponsive';
 import reducer, {
   getDashboardCustomerInformations,
@@ -138,6 +141,33 @@ const DashboardCustomer = () => {
     }
   }, [dispatch, user.customer?.documentId]);
 
+  // Factures du client : la requête des projets ne les ramène pas (compteur,
+  // « À faire » et activité restaient à zéro). Chargées à part, jamais
+  // bloquantes : en cas d'échec l'accueil s'affiche sans elles.
+  const [invoices, setInvoices] = useState<CustomerInvoiceSummary[]>([]);
+  const [invoicesStatus, setInvoicesStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+  const loadInvoices = async (customerDocumentId: string) => {
+    try {
+      setInvoices(await apiGetCustomerInvoiceSummaries(customerDocumentId));
+      setInvoicesStatus('ok');
+    } catch {
+      setInvoicesStatus('error');
+    }
+  };
+  useEffect(() => {
+    if (user.customer?.documentId) loadInvoices(user.customer.documentId);
+  }, [user.customer?.documentId]);
+
+  // Téléphone : bouton « Actualiser »
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    const id = user.customer?.documentId;
+    if (!id || refreshing) return;
+    setRefreshing(true);
+    await Promise.allSettled([dispatch(getDashboardCustomerInformations(id)), loadInvoices(id)]);
+    setRefreshing(false);
+  };
+
   // Bannière propre sans image d'ordinateur (absente, ou seulement une version
   // téléphone) : on charge la bannière de sa catégorie, sinon NEW CUSTOMER.
   useEffect(() => {
@@ -171,7 +201,7 @@ const DashboardCustomer = () => {
     return () => { cancelled = true; };
   }, [catalogAccess]);
 
-  if (loading) {
+  if (loading && !customer) {
     return (
       <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {Array.from({ length: 3 }).map((_, i) => (
@@ -201,7 +231,10 @@ const DashboardCustomer = () => {
   // ── Données dérivées ──
   const ordersCount = projects.length;
   const devisCount = projects.filter((p) => (p.devis?.length || 0) > 0 && (p.paidPrice ?? 0) < (p.price ?? 0)).length;
-  const invoicesCount = projects.reduce((s, p) => s + (p.invoices?.length || 0), 0);
+  const liveInvoices = invoices.filter((inv) => !isInvoiceCanceled(inv));
+  const invoicesCount = liveInvoices.length;
+  const outstandingInvoices = invoices.filter(isInvoiceOutstanding);
+  const amountDueTTC = outstandingInvoices.reduce((s, inv) => s + (inv.totalAmount ?? 0), 0);
   const offersCount = products.length;
 
   const sortedProjects = [...projects].sort(
@@ -216,9 +249,8 @@ const DashboardCustomer = () => {
   // C'est la seule chose qui justifie un tableau de bord. Les trois cas sont
   // disjoints : un projet dont la facture est émise est au stade du paiement,
   // un projet qui n'a qu'un devis est au stade de l'examen.
-  const invoicesToPay = projects.filter(
-    (p) => (p.invoices?.length || 0) > 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
-  );
+  // Facture à régler — sauf si le client a déjà déclaré son virement.
+  const invoicesToPay = outstandingInvoices.filter((inv) => !isTransferPending(inv));
   const quotesToReview = projects.filter(
     (p) => (p.devis?.length || 0) > 0 && (p.invoices?.length || 0) === 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
   );
@@ -231,19 +263,23 @@ const DashboardCustomer = () => {
     .slice(0, 3);
 
   // Flux d'activité récente (à partir des données réelles)
-  type Act = { id: string; color: string; icon: ReactNode; title: string; sub?: string; date: Date };
+  type Act = { id: string; color: string; icon: ReactNode; title: string; sub?: string; amount?: string; date: Date };
   const activity: Act[] = [];
   projects.forEach((p) => {
     const si = getStateInfo(p.state);
     activity.push({ id: `p-${p.documentId}`, color: si.color, icon: <HiOutlineShoppingCart size={16} />, title: `Commande ${p.name}`, sub: si.label, date: p.startDate });
-    (p.invoices || []).forEach((inv, i) => activity.push({
-      id: `i-${p.documentId}-${i}`, color: '#fbbf24', icon: <HiOutlineDocumentDownload size={16} />,
-      title: `Facture ${inv.name || ''}`.trim(), sub: inv.totalAmount ? fmtHT(inv.totalAmount) : undefined, date: (inv.date as unknown as Date) || p.startDate,
-    }));
     (p.devis || []).forEach((_, i) => activity.push({
       id: `d-${p.documentId}-${i}`, color: '#6b9eff', icon: <HiOutlineDocumentText size={16} />,
       title: `Devis — ${p.name}`, date: p.startDate,
     }));
+  });
+  liveInvoices.forEach((inv) => {
+    // totalAmount = TTC (la page Factures l'affiche ainsi)
+    const amount = inv.totalAmount ? fmtTTC(inv.totalAmount) : undefined;
+    activity.push({
+      id: `i-${inv.documentId}`, color: '#fbbf24', icon: <HiOutlineDocumentDownload size={16} />,
+      title: `Facture ${inv.name || ''}`.trim(), sub: amount, amount, date: inv.date,
+    });
   });
   const recentActivity = activity
     .filter((a) => a.date)
@@ -296,6 +332,95 @@ const DashboardCustomer = () => {
       </div>
     );
   };
+
+  // ── Téléphone : rendu « app » (même langage que l'admin), mêmes données ──
+  if (smaller.md) {
+    const productCard = (product: Product): PcmProduct => ({
+      key: product.documentId,
+      name: product.name,
+      price: fmtHT(applyPremiumDiscount(getProductBasePrice(product), user?.customer)),
+      image: product.images?.[0]?.url,
+      onClick: () => navigate(`/customer/product/${product.documentId}`),
+    });
+    const ongoingCount = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
+    const transferCount = outstandingInvoices.length - invoicesToPay.length;
+    const todos: PcmRow[] = [
+      ...pendingBats.map((p) => ({
+        key: `bat-${p.documentId}`, title: p.name, sub: `${p.orderItem!.product.name} — Bon à Tirer à valider`,
+        icon: <HiOutlineDocumentText />, color: '#c084fc', cta: 'Valider',
+        onClick: () => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`),
+      })),
+      ...invoicesToPay.map((inv) => ({
+        key: `inv-${inv.documentId}`, title: inv.name || 'Facture', sub: `À régler — ${fmtTTC(inv.totalAmount ?? 0)}`,
+        icon: <HiOutlineDocumentDownload />, color: '#fbbf24', cta: 'Régler',
+        onClick: () => navigate('/customer/invoices'),
+      })),
+      ...quotesToReview.map((p) => ({
+        key: `dev-${p.documentId}`, title: p.name, sub: 'Devis à examiner',
+        icon: <HiOutlineDocumentText />, color: '#6b9eff', cta: 'Voir',
+        onClick: () => navigate('/customer/devis'),
+      })),
+    ];
+    return (
+      <DashboardCustomerMobile
+        banner={<CustomerHomeBanner desktop={desktopBanner} phone={phoneBanner} fadeColor={PCM_DARK} />}
+        greeting={`Bonjour, ${user?.firstName || customer.name} 👋`}
+        status={`${customer.name}${user.customer?.premium ? ' · Premium' : ''}`}
+        onRefresh={refresh}
+        refreshing={refreshing}
+        balance={
+          invoicesStatus === 'loading'
+            ? null
+            : invoicesStatus === 'ok'
+              ? {
+                  label: 'À régler TTC',
+                  value: fmtPrice(amountDueTTC),
+                  sub: outstandingInvoices.length === 0
+                    ? 'Aucune facture en attente'
+                    : `${outstandingInvoices.length} facture${outstandingInvoices.length > 1 ? 's' : ''} en attente${transferCount > 0 ? ` · ${transferCount} virement${transferCount > 1 ? 's' : ''} déclaré${transferCount > 1 ? 's' : ''}` : ''}`,
+                  cta: invoicesToPay.length > 0
+                    ? { label: 'Régler mes factures', onClick: () => navigate('/customer/invoices') }
+                    : undefined,
+                }
+              // Factures illisibles : on met en avant les commandes en cours
+              : { label: 'Commandes en cours', value: String(ongoingCount), sub: `${ordersCount} commande${ordersCount > 1 ? 's' : ''} au total` }
+        }
+        todos={todos}
+        tiles={kpis.map((k, i) => ({
+          key: k.label, label: k.label, value: String(k.value), icon: k.icon,
+          tone: (['accent', 'sky', 'mint', 'amber'] as const)[i],
+          onClick: () => navigate(k.to),
+        }))}
+        shortcuts={quickActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onClick: () => navigate(a.to) }))}
+        orders={ongoingProjects.map((p) => {
+          const si = getStateInfo(p.state);
+          const va = (p.additionalSales ?? []).reduce((s: number, e) => s + (Number(e?.amount) || 0), 0);
+          return {
+            key: p.documentId,
+            title: p.name,
+            image: p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url,
+            pill: { label: si.label, color: si.color },
+            sub: p.endDate ? `Livraison ${dayjs(p.endDate).format('DD MMM')}` : undefined,
+            right: fmtHT((p.price || 0) + va),
+            rightSub: va > 0 ? `dont ventes add. ${fmtPrice(va)}` : undefined,
+            onClick: () => navigate(`/common/projects/details/${p.documentId}`),
+          };
+        })}
+        onSeeAllOrders={() => navigate('/common/projects')}
+        onOrder={() => navigate(catalogAccess ? '/customer/catalogue' : '/customer/products')}
+        activity={recentActivity.map((a) => ({
+          key: a.id, title: a.title, icon: a.icon, color: a.color,
+          sub: [a.amount ? undefined : a.sub, dayjs(a.date).format('DD MMM')].filter(Boolean).join(' · '),
+          right: a.amount,
+        }))}
+        suggestions={catalogAccess ? suggestions.map(productCard) : []}
+        onSeeCatalogue={catalogAccess ? () => navigate('/customer/catalogue') : undefined}
+        offers={offersReserved ? [] : recommendedProducts.map(productCard)}
+        onSeeOffers={() => navigate('/customer/products')}
+        onSupport={() => navigate('/support')}
+      />
+    );
+  }
 
   return (
     customer && (
@@ -363,11 +488,11 @@ const DashboardCustomer = () => {
                       onClick={() => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`)}
                     />
                   ))}
-                  {invoicesToPay.map((p, i) => (
+                  {invoicesToPay.map((inv, i) => (
                     <TodoRow
-                      key={`inv-${p.documentId}`} first={pendingBats.length === 0 && i === 0} color="#fbbf24"
+                      key={`inv-${inv.documentId}`} first={pendingBats.length === 0 && i === 0} color="#fbbf24"
                       icon={<HiOutlineDocumentDownload size={16} />}
-                      title={p.name} sub={`Facture à régler — ${fmtHT((p.price ?? 0) - (p.paidPrice ?? 0))} restant`} cta="Régler"
+                      title={inv.name || 'Facture'} sub={`Facture à régler — ${fmtTTC(inv.totalAmount ?? 0)}`} cta="Régler"
                       onClick={() => navigate('/customer/invoices')}
                     />
                   ))}

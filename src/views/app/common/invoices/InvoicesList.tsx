@@ -16,6 +16,7 @@ import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
 import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
+import { isInvoiceCanceled, isInvoiceOutstanding } from '@/utils/invoiceStatus';
 import { toast } from 'react-toastify';
 import { Pagination } from '@/components/ui';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -221,11 +222,11 @@ const InvoicesList = () => {
   const stats = useMemo(() => {
     let billed = 0, pending = 0, paid = 0, savingsHT = 0
     for (const inv of invoices) {
-      if (inv.state === 'canceled') continue
+      if (isInvoiceCanceled(inv)) continue
       const ttc = inv.totalAmount ?? 0
       billed += ttc
-      if (inv.paymentState === 'fulfilled') paid += ttc
-      else pending += ttc
+      if (isInvoiceOutstanding(inv)) pending += ttc
+      else paid += ttc
       savingsHT += inv.amount ?? 0
     }
     // Économie premium = surcoût évité (15% que le client n'a pas payé sur le HT déjà remisé)
