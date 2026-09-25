@@ -132,3 +132,8 @@ Voir le compte rendu du lot (résultat structuré) — résumé :
   `last30Days.conversations` (conversations ayant mené à une commande validée sur 30 jours).
 - Limites acceptées : offre sortie des 40 derniers messages conservés → article non tracé ; clôture repliée si le
   widget est démonté pendant la requête.
+- ESLint (règle `prettier/prettier` seulement, fichiers déjà très loin de Prettier) : `ChatWidget.tsx` +36 erreurs,
+  toutes dues au bloc de saisie enveloppé par `{closing.locked ? … : (<> … </>)}` SANS réindentation (imposé par le
+  contrat §4.3, pour ne pas entrer en conflit avec les lots 2 et 3) ; `ChatOfferAction.tsx` +1 (la ligne insérée suit
+  l'indentation de ses voisines, déjà signalées). Aucune autre règle touchée ; les autres lignes insérées sont au
+  format Prettier. L'intégrateur peut réindenter le bloc de saisie une fois les lots fusionnés.

@@ -29,7 +29,10 @@ import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 import { createOrderItemWithTrace } from '@/services/ChatTraceServices';
 import { chatUserKey } from '@/components/template/chat/chatTrace';
-import { announceChatClosing, prepareChatClosing } from '@/components/template/chat/chatClosing';
+import {
+  announceChatClosing,
+  prepareChatClosing,
+} from '@/components/template/chat/chatClosing';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
   // Articles dont la personnalisation OBLIGATOIRE n'est pas faite (ajoutés depuis
@@ -154,7 +157,9 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           ...(item.batApproved && { batStatus: 'approved' as const }),
         },
         { createOrderItem: orderItemCreated }: { createOrderItem: OrderItem } =
-          await unwrapData(createOrderItemWithTrace(orderItem, item.chatConversationId));
+          await unwrapData(
+            createOrderItemWithTrace(orderItem, item.chatConversationId)
+          );
 
       return orderItemCreated;
     } catch (error) {
@@ -202,7 +207,11 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     setSubmitting(true);
     try {
       const orderItems: OrderItem[] = await createOrdersAndUpdateCartItems();
-      prepareChatClosing(chatUserKey(user), orderItems.map((o) => o.documentId), user.customer!.deferredPayment ? 'deferred' : 'card');
+      prepareChatClosing(
+        chatUserKey(user),
+        orderItems.map((o) => o.documentId),
+        user.customer!.deferredPayment ? 'deferred' : 'card'
+      );
       if (orderItems.length === 0) {
         toast.error("La commande n'a pas pu être créée. Veuillez réessayer.");
         return;

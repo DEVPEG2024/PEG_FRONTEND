@@ -866,7 +866,19 @@ const HistoryPanel = () => {
                 <div>
                   <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{c.userName}</div>
                   {c.closedAt && (
-                    <span style={{ display: 'inline-block', marginTop: '3px', padding: '1px 8px', borderRadius: '999px', fontSize: '10.5px', fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '3px',
+                        padding: '1px 8px',
+                        borderRadius: '999px',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        color: '#22c55e',
+                        background: 'rgba(34,197,94,0.12)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                      }}
+                    >
                       Commande
                     </span>
                   )}

@@ -407,9 +407,17 @@ const ChatWidget = () => {
     conversationId,
     token: sessionToken || getPersistedAuthToken(),
     onClosing: (c) => {
-      const thanks: Message = { role: 'assistant', content: c.reply, at: Date.now() };
-      if (c.conversationId === conversationId) setMessages((prev) => [...prev.filter((m) => !m.error), thanks]);
-      else { setConversationId(c.conversationId); setMessages([thanks]); }
+      const thanks: Message = {
+        role: 'assistant',
+        content: c.reply,
+        at: Date.now(),
+      };
+      if (c.conversationId === conversationId)
+        setMessages((prev) => [...prev.filter((m) => !m.error), thanks]);
+      else {
+        setConversationId(c.conversationId);
+        setMessages([thanks]);
+      }
       setAwaitingClose(false);
       setOpen(true);
     },
