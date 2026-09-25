@@ -27,6 +27,7 @@ import {
   HiOutlineRefresh,
 } from 'react-icons/hi';
 import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
+import useAutoAdvance from '@/utils/hooks/useAutoAdvance';
 
 export const PCM_DARK = '#070a08';
 
@@ -457,8 +458,12 @@ const Row = ({ row }: { row: PcmRow }) => {
   );
 };
 
-const Products = ({ items }: { items: PcmProduct[] }) => (
-  <div className="pcm-products">
+// `autoPlay` : la piste avance seule (suggestions), comme le carrousel de l'ordinateur.
+const Products = ({ items, autoPlay = false }: { items: PcmProduct[]; autoPlay?: boolean }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useAutoAdvance(ref, autoPlay && items.length > 1);
+  return (
+  <div ref={ref} className="pcm-products">
     {items.map((p) => (
       <button key={p.key} type="button" className="pcm-product" onClick={p.onClick}>
         <span className="pcm-product-img" style={{ display: 'flex' }}>
@@ -479,7 +484,8 @@ const Products = ({ items }: { items: PcmProduct[] }) => (
       </button>
     ))}
   </div>
-);
+  );
+};
 
 const DashboardCustomerMobile = ({
   photo,
@@ -757,7 +763,7 @@ const DashboardCustomerMobile = ({
                 <button type="button" className="pcm-link" onClick={onSeeCatalogue}>Le catalogue</button>
               )}
             </div>
-            <Products items={suggestions} />
+            <Products items={suggestions} autoPlay />
           </>
         )}
 
