@@ -36,6 +36,19 @@ const SUGGESTIONS = ['Où en est ma commande ?', 'Je cherche un produit', 'Ai-je
  */
 const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment'];
 
+/**
+ * Téléphone (< md) : un bouton flottant permanent recouvrait les contrôles de la
+ * page (il chevauchait le « + » des tailles). Il apparaît donc en pulsant
+ * PEEK_VISIBLE_MS toutes les PEEK_PERIOD_MS (demande du 25/09/2026), et reste
+ * affiché tant qu'une réponse est en cours ou non lue.
+ */
+const PEEK_VISIBLE_MS = 5_000;
+const PEEK_PERIOD_MS = 15_000;
+
+const prefersReducedMotion = (): boolean => {
+  try { return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+};
+
 const newConversationId = (): string => {
   try {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
@@ -323,10 +336,42 @@ const ChatWidget = () => {
     if (open) setTimeout(() => inputRef.current?.focus(), 60);
   }, [open]);
 
-  // Masqué sur TÉLÉPHONE (< md) : sur un écran étroit, un bouton flottant de
-  // 56px recouvre en permanence une partie du contenu — il chevauchait le « + »
-  // de la première ligne de tailles. Le chatbot reste accessible sur ordinateur.
-  if (smaller.md) return null;
+  const isPhone = smaller.md;
+  const [reducedMotion] = useState(prefersReducedMotion);
+
+  // Cycle d'apparition du bouton sur téléphone : visible 5 s, puis masqué jusqu'au
+  // tour suivant (toutes les 15 s). Suspendu pendant que le chat est ouvert.
+  const [peek, setPeek] = useState(true);
+  useEffect(() => {
+    if (!isPhone || open) return;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    const show = () => {
+      setPeek(true);
+      hideTimer = setTimeout(() => setPeek(false), PEEK_VISIBLE_MS);
+    };
+    show();
+    const cycle = setInterval(show, PEEK_PERIOD_MS);
+    return () => { clearInterval(cycle); if (hideTimer) clearTimeout(hideTimer); };
+  }, [isPhone, open]);
+
+  // Téléphone, chat ouvert : plein écran calé sur la zone VISIBLE (visualViewport),
+  // pour que le champ de saisie reste au-dessus du clavier, et page figée derrière.
+  const [viewport, setViewport] = useState<{ height: number; top: number } | null>(null);
+  useEffect(() => {
+    if (!isPhone || !open) return;
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    const update = () => setViewport(vv ? { height: vv.height, top: vv.offsetTop } : null);
+    update();
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      vv?.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isPhone, open]);
 
   // Masqué aussi pendant une commande sur grand écran : le bouton recouvrait
   // les actions de ligne du panier et le lien « Voir tout » du tableau de bord.
@@ -378,27 +423,60 @@ const ChatWidget = () => {
     overflowWrap: 'anywhere',
   });
 
+  // Bouton du téléphone : affiché pendant sa fenêtre d'apparition, ou en permanence
+  // s'il y a une réponse à lire / en cours (et sans animation si l'utilisateur l'a
+  // demandé au système : pas d'apparitions répétées).
+  const launcherVisible = !isPhone || peek || unread > 0 || loading || reducedMotion;
+
   return (
-    <div style={{ position: 'fixed', bottom: 'calc(90px + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))', right: '24px', zIndex: 9999, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{
+      position: 'fixed',
+      // Téléphone : au-dessus de la barre d'onglets, du bouton « retour en haut »
+      // et du bandeau « Installer MyPEG » de l'accueil (82px de haut avec sa marge).
+      bottom: isPhone
+        ? 'calc(96px + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))'
+        : 'calc(90px + var(--peg-safe-bottom, 0px) + var(--peg-dock-lift, 0px))',
+      right: isPhone ? '16px' : '24px',
+      zIndex: 9999,
+      fontFamily: 'Inter, sans-serif',
+    }}>
       <style>{`
         @keyframes peg-chat-pulse {
           0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
           50% { box-shadow: 0 8px 32px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.12); }
         }
+        @keyframes peg-chat-pop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         @keyframes peg-chat-dot { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) { .peg-chat-anim { animation: none !important; } }
       `}</style>
       {/* Fenêtre de chat */}
       {open && (
         <div role="dialog" aria-label="Assistant PEG" style={{
-          position: 'absolute',
-          bottom: '72px',
-          right: 0,
-          width: 'min(380px, calc(100vw - 32px))',
-          height: 'min(540px, calc(100dvh - 140px))',
+          ...(isPhone
+            ? {
+                // Plein écran : une fenêtre de 380px flottante n'a pas de sens sur un
+                // téléphone, et la barre d'onglets passerait sur le champ de saisie.
+                position: 'fixed',
+                left: 0,
+                right: 0,
+                top: viewport ? `${viewport.top}px` : 0,
+                height: viewport ? `${viewport.height}px` : '100dvh',
+                width: '100vw',
+                borderRadius: 0,
+                border: 'none',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+                boxSizing: 'border-box',
+              }
+            : {
+                position: 'absolute',
+                bottom: '72px',
+                right: 0,
+                width: 'min(380px, calc(100vw - 32px))',
+                height: 'min(540px, calc(100dvh - 140px))',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '20px',
+              }),
           background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '20px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           display: 'flex',
           flexDirection: 'column',
@@ -545,6 +623,8 @@ const ChatWidget = () => {
           <div style={{
             borderTop: '1px solid rgba(255,255,255,0.07)',
             padding: '10px 12px',
+            // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
+            paddingBottom: isPhone ? 'calc(10px + env(safe-area-inset-bottom, 0px))' : '10px',
             display: 'flex',
             gap: '8px',
             alignItems: 'flex-end',
@@ -598,11 +678,42 @@ const ChatWidget = () => {
         </div>
       )}
 
-      {/* Bouton flottant */}
+      {/* Bouton flottant — sur téléphone, masqué pendant que le chat occupe l'écran
+          (fermeture par la croix de l'en-tête). */}
+      {!(isPhone && open) && (
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          opacity: launcherVisible ? 1 : 0,
+          transform: launcherVisible ? 'none' : 'translateY(16px) scale(0.6)',
+          pointerEvents: launcherVisible ? 'auto' : 'none',
+          transition: reducedMotion ? 'none' : 'opacity 0.35s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+        aria-hidden={!launcherVisible}
+      >
+      {isPhone && !open && launcherVisible && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          tabIndex={-1}
+          style={{
+            position: 'absolute', right: '64px', whiteSpace: 'nowrap',
+            padding: '8px 12px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.12)',
+            background: 'rgba(15,28,46,0.92)', color: '#fff', fontSize: '12.5px', fontWeight: 600,
+            fontFamily: 'inherit', boxShadow: '0 6px 20px rgba(0,0,0,0.35)', cursor: 'pointer',
+          }}
+        >
+          {unread > 0 ? 'Nouvelle réponse' : 'Une question ?'}
+        </button>
+      )}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Fermer le chat' : 'Ouvrir le chat assistant'}
         aria-expanded={open}
+        tabIndex={launcherVisible ? 0 : -1}
         className="peg-chat-anim"
         style={{
           width: '56px',
@@ -611,7 +722,10 @@ const ChatWidget = () => {
           background: open ? 'rgba(220,38,38,0.25)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
           border: open ? '1px solid rgba(239,68,68,0.5)' : 'none',
           boxShadow: open ? '0 8px 24px rgba(239,68,68,0.3)' : undefined,
-          animation: open ? 'none' : 'peg-chat-pulse 2.2s ease-in-out infinite',
+          // Téléphone : pulsation plus marquée (halo + battement) pendant l'apparition.
+          animation: open ? 'none' : isPhone
+            ? 'peg-chat-pulse 1.25s ease-in-out infinite, peg-chat-pop 1.25s ease-in-out infinite'
+            : 'peg-chat-pulse 2.2s ease-in-out infinite',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -641,6 +755,8 @@ const ChatWidget = () => {
           </span>
         )}
       </button>
+      </div>
+      )}
     </div>
   );
 };
