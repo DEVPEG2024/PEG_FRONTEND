@@ -285,3 +285,35 @@ export async function apiUpdateOwnCompany(data: {
         data,
     });
 }
+
+/**
+ * Photo de fond de l'accueil téléphone, téléversée par l'utilisateur lui-même
+ * (comme la bannière du tableau de bord admin). Routes dédiées : la photo lue,
+ * remplacée ou retirée est toujours celle du porteur du token.
+ */
+export async function apiGetDashboardPhoto(): Promise<string | null> {
+    const { data } = await ApiService.fetchData<{ url: string | null }>({
+        url: API_BASE_URL + '/auth/dashboard-photo',
+        method: 'get',
+    })
+    return data?.url ?? null
+}
+
+export async function apiUploadDashboardPhoto(file: File): Promise<string | null> {
+    const form = new FormData()
+    form.append('file', file)
+    const { data } = await ApiService.fetchData<{ url: string | null }>({
+        url: API_BASE_URL + '/auth/dashboard-photo',
+        method: 'post',
+        data: form,
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data?.url ?? null
+}
+
+export async function apiRemoveDashboardPhoto(): Promise<void> {
+    await ApiService.fetchData({
+        url: API_BASE_URL + '/auth/dashboard-photo',
+        method: 'delete',
+    })
+}

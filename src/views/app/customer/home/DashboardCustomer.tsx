@@ -6,7 +6,7 @@ import { apiGetSuggestedProducts } from '@/services/ProductServices';
 import { apiGetFallbackBanners } from '@/services/BannerServices';
 import { BannerVisual, pickDesktopImage, pickPhoneImage } from '@/utils/bannerVisual';
 import CustomerHomeBanner from './CustomerHomeBanner';
-import DashboardCustomerMobile, { PCM_DARK, PcmProduct, PcmRow } from './DashboardCustomerMobile';
+import DashboardCustomerMobile, { PcmProduct, PcmRow } from './DashboardCustomerMobile';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
@@ -29,6 +29,7 @@ import { fmtHT, fmtPrice, fmtTTC } from '@/utils/priceHelpers';
 import { apiGetCustomerInvoiceSummaries, CustomerInvoiceSummary } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding, isTransferPending } from '@/utils/invoiceStatus';
 import useResponsive from '@/utils/hooks/useResponsive';
+import useDashboardPhoto from '@/utils/hooks/useDashboardPhoto';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -121,6 +122,8 @@ const DashboardCustomer = () => {
   // doigt (le :hover qui la met en pause n'existe pas au tactile) et ignore
   // prefers-reduced-motion. Dans ces deux cas elle devient une piste défilante.
   const { smaller } = useResponsive();
+  // Téléphone : photo de fond de l'accueil, téléversée par le client (pas de bannière)
+  const dashboardPhoto = useDashboardPhoto(smaller.md ? user?.documentId : undefined);
   const [reducedMotion, setReducedMotion] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   );
@@ -386,7 +389,7 @@ const DashboardCustomer = () => {
     ];
     return (
       <DashboardCustomerMobile
-        banner={<CustomerHomeBanner desktop={desktopBanner} phone={phoneBanner} fadeColor={PCM_DARK} />}
+        photo={dashboardPhoto}
         hero={{
           date: dayjs().format('dddd D MMMM'),
           hello: new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour',

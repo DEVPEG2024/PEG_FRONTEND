@@ -657,7 +657,8 @@ Même pattern que `api::auth` : les rôles n'ont **aucune permission users-permi
 
 ### Concept
 - Chaque bannière (client, catégorie, NEW CUSTOMER, catalogue, projets, offres) porte une **image principale** (`image`) et une **image téléphone** facultative (`mobileImage`, champ media Strapi).
-- Accueil client sur téléphone (< 768px) : cadre **3× plus haut** qu'avant (demande Nova) — 188px au lieu de 63px sur un iPhone de 402px pour une bannière client 2836 × 442.
+- ⚠️ **Depuis le 25/09/2026 (soir), l'accueil client sur téléphone n'affiche PLUS de bannière** (demande Nova) : elle est remplacée par la photo de fond que le client téléverse lui-même (voir « Photo de fond de l'accueil téléphone »). Le reste ci-dessous vaut pour l'ordinateur et pour les bannières catalogue / projets / offres.
+- Accueil client sur téléphone (< 768px), AVANT le 25/09 au soir : cadre **3× plus haut** qu'avant (demande Nova) — 188px au lieu de 63px sur un iPhone de 402px pour une bannière client 2836 × 442.
   - image téléphone → affichée entière ; **format conseillé 1280 × 600 px** (`MOBILE_BANNER_FORMAT`) ;
   - sinon → image d'ordinateur **entière** au milieu du cadre, sur une copie floutée d'elle-même. **Jamais rognée** : les visuels clients placent leur logo sur les bords.
 - Bureau et tablette : **inchangés au pixel** (vérifié 1440 et 820).
@@ -723,6 +724,26 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 - Posé par `MobileDock` (classe `body.peg-mobile-dark`, variables `--pdm-accent*` sur `<html>`, relues à chaque page), helpers `src/utils/mobileShell.ts`, styles « FOND APP » de `_mobile.css`. Les tableaux de bord gardent leur propre fond et leurs variables sur le body (elles passent devant). Mode clair : rien ne change.
 - **Cartes au style des tableaux de bord** (demande Nova 25/09, page par page, téléphone seulement) :
   - **Projets** : `ProjectCardMobile.tsx` (affichage seul, `ProjectItem` calcule tout et bascule sous md) — coins de 22px, photo produit pleine largeur **jamais rognée** sur fond « studio » clair (`mix-blend-mode: multiply` : le blanc des photos s'y fond), statut/priorité posés sur la photo, montant en grand. **Couleurs de la carte d'ordinateur conservées** (bleu nuit, bordure/barre/filet au statut — Nova : « remets la couleur d'avant sur les cartes de projet »). Mêmes infos et libellés que l'ordinateur ; ordinateur et tablette vérifiés identiques au pixel. Styles « CARTES PROJET » de `_mobile.css`.
+
+---
+
+## 🖼️ Photo de fond de l'accueil téléphone (ajout 25/09/2026)
+
+### Concept
+- Demande Nova : sur téléphone, l'accueil client **perd sa bannière** et prend, comme le tableau de bord admin, une **photo de fond que le client téléverse lui-même** — estompée derrière « Bonjour, … » (même traitement que la bannière admin : opacité 0,22, fondu haut et bas).
+- Bouton « photo » à côté de la palette → panneau « Photo de fond de l'accueil » : Choisir / Changer la photo, Retirer. Image réduite dans le navigateur (`shrinkImage`, ≈ 2 Mo) avant l'envoi.
+- La photo est rattachée au **compte** (`user.dashboardPhoto`) : elle suit le client sur tous ses appareils ; copie locale `peg:dashboardPhoto:<documentId>` pour l'affichage immédiat.
+
+### Backend (`peg_strapi`)
+- `user.dashboardPhoto` (media, images) dans `src/extensions/users-permissions/content-types/user/schema.json`.
+- `GET | POST | DELETE /api/auth/dashboard-photo` (contrôleur auth, `auth: false` + JWT vérifié) : **toujours la photo du porteur du token**, aucun identifiant accepté. Envoi fait PAR LE SERVEUR (pas de lien vers un fichier existant : un id de fichier fourni par le client permettrait de s'approprier le fichier d'un autre). JPG/PNG/WebP/GIF/AVIF, 8 Mo max (`src/services/dashboard-photo.ts`, tests `src/__tests__/dashboardPhoto.test.ts`). L'ancienne photo quitte le stockage.
+
+### Front
+- `src/utils/hooks/useDashboardPhoto.ts` (+ `apiGet/Upload/RemoveDashboardPhoto` dans `UserService.ts`), affichage dans `DashboardCustomerMobile.tsx` (`.pcm-hero`).
+- **Rétro-compatible** : tant que le backend n'a pas les routes (404/405) ou hors ligne, le bouton photo ne s'affiche pas ; rien d'autre ne change. Ordinateur inchangé (le hook ne fait aucun appel au-dessus de md).
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (nouveau champ, aucune migration). Front avant back = sans risque (bouton masqué).
 
 ---
 

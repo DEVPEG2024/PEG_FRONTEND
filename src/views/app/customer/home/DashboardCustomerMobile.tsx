@@ -8,12 +8,14 @@
  *
  * Composant d'AFFICHAGE : DashboardCustomer calcule tout (mêmes valeurs et
  * mêmes libellés que l'ordinateur) et passe des données prêtes à afficher.
- * La bannière du client reste en tête, pleine largeur et 3× plus haute.
+ * Pas de bannière (demande Nova du 25/09/2026) : comme sur le tableau de bord
+ * admin, une photo que le client téléverse lui-même passe en fond, estompée,
+ * derrière la salutation (useDashboardPhoto, rattachée à son compte).
  *
  * Mêmes variables `--pdm-*` et même classe `peg-dash-dark` sur le body que
  * l'admin : en-tête et barre d'onglets se fondent dans le même noir.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   HiOutlineChatAlt2,
@@ -21,8 +23,10 @@ import {
   HiOutlineColorSwatch,
   HiOutlineCube,
   HiOutlinePhone,
+  HiOutlinePhotograph,
   HiOutlineRefresh,
 } from 'react-icons/hi';
+import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
 
 export const PCM_DARK = '#070a08';
 
@@ -61,7 +65,8 @@ export type PcmProduct = { key: string; name: string; price: string; image?: str
 export type PcmWork = { key: string; image: string; title: string; caption: string; onClick: () => void };
 
 type Props = {
-  banner: ReactNode;
+  /** Photo de fond de l'accueil, téléversée par le client */
+  photo: DashboardPhoto;
   hero: {
     /** « jeudi 25 septembre » */
     date: string;
@@ -108,6 +113,29 @@ const CSS = `
   overflow: hidden;
 }
 .pcm-body { position: relative; padding: 16px 16px 28px; }
+/* En-tête de l'accueil : la photo du client en fond, estompée et fondue en
+   haut comme en bas — même traitement que la bannière du tableau de bord admin */
+.pcm-hero { position: relative; margin: -16px -16px 0; padding: 16px 16px 8px; overflow: hidden; }
+.pcm-hero > *:not(.pcm-hero-bg) { position: relative; }
+.pcm-hero-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  opacity: 0.22; filter: saturate(0.8);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 60%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 60%, transparent 100%);
+  pointer-events: none;
+}
+.pcm-photo-actions { display: flex; gap: 8px; }
+.pcm-photo-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 42px; padding: 0 16px; border-radius: 100px; cursor: pointer;
+  border: 1px solid var(--pdm-line); background: rgba(255, 255, 255, 0.06);
+  color: var(--pdm-text); font: inherit; font-size: 13px; font-weight: 600;
+}
+.pcm-photo-btn.is-main { flex: 1; border-color: transparent; background: var(--pdm-accent); color: var(--pdm-on-accent); font-weight: 700; }
+.pcm-photo-btn:disabled { opacity: 0.6; cursor: default; }
+.pcm-photo-hint { margin: 10px 2px 0; font-size: 11.5px; color: var(--pdm-faint); }
+.pcm-photo-error { margin: 10px 0 0; font-size: 12.5px; color: #fca5a5; }
+.pcm-pulse-icon { animation: pcm-pulse 1.1s ease-in-out infinite; }
 .pcm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pcm-icons { display: flex; gap: 6px; flex-shrink: 0; }
 .pcm-icon-btn {
@@ -294,7 +322,7 @@ button.pcm-row { cursor: pointer; }
 
 .pcm-skel { border-radius: 16px; background: rgba(255, 255, 255, 0.05); animation: pcm-pulse 1.4s ease-in-out infinite; }
 @keyframes pcm-pulse { 50% { opacity: 0.55; } }
-@media (prefers-reduced-motion: reduce) { .pcm-spin, .pcm-skel, .pcm-rise { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pcm-spin, .pcm-skel, .pcm-rise, .pcm-pulse-icon { animation: none; } }
 
 .pcm-palette {
   margin-top: 14px; padding: 14px 12px; border-radius: 20px;
@@ -450,7 +478,7 @@ const Products = ({ items }: { items: PcmProduct[] }) => (
 );
 
 const DashboardCustomerMobile = ({
-  banner,
+  photo,
   hero,
   onRefresh,
   refreshing,
@@ -471,6 +499,8 @@ const DashboardCustomerMobile = ({
 }: Props) => {
   const [accent, setAccent] = useState(loadAccent);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   useDarkShell(accent);
   const chooseAccent = (hex: string) => {
     if (!isHex(hex)) return;
@@ -489,26 +519,90 @@ const DashboardCustomerMobile = ({
     <div className="pcm" style={accentVars(accent) as React.CSSProperties}>
       <style>{CSS}</style>
 
-      {banner}
-
       <div className="pcm-body">
+        <section className="pcm-hero">
+        {/* Photo du client en fond, estompée — comme la bannière admin */}
+        {photo.url && (
+          <img className="pcm-hero-bg" src={photo.url} alt="" aria-hidden="true" />
+        )}
         <div className="pcm-top">
           <span className="pcm-date pcm-rise">{hero.date}</span>
           <div className="pcm-icons">
             <button
               type="button"
               className={`pcm-icon-btn${paletteOpen ? ' is-on' : ''}`}
-              onClick={() => setPaletteOpen((o) => !o)}
+              onClick={() => {
+                setPaletteOpen((o) => !o);
+                setPhotoOpen(false);
+              }}
               aria-expanded={paletteOpen}
               aria-label="Couleur de l'accueil"
             >
               <HiOutlineColorSwatch />
             </button>
+            {photo.available && (
+              <button
+                type="button"
+                className={`pcm-icon-btn${photoOpen ? ' is-on' : ''}`}
+                onClick={() => {
+                  setPhotoOpen((o) => !o);
+                  setPaletteOpen(false);
+                }}
+                aria-expanded={photoOpen}
+                aria-label="Photo de fond de l'accueil"
+              >
+                <HiOutlinePhotograph className={photo.busy ? 'pcm-pulse-icon' : undefined} />
+              </button>
+            )}
             <button type="button" className="pcm-icon-btn" onClick={onRefresh} aria-label="Actualiser">
               <HiOutlineRefresh className={refreshing ? 'pcm-spin' : undefined} />
             </button>
           </div>
         </div>
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ''; // la même photo peut être choisie à nouveau
+            if (file) photo.choose(file);
+          }}
+        />
+        {photoOpen && (
+          <div className="pcm-palette" role="group" aria-label="Photo de fond de l'accueil">
+            <p className="pcm-palette-title">Photo de fond de l'accueil</p>
+            <div className="pcm-photo-actions">
+              <button
+                type="button"
+                className="pcm-photo-btn is-main"
+                disabled={photo.busy}
+                onClick={() => fileRef.current?.click()}
+              >
+                <HiOutlinePhotograph />
+                {photo.busy ? 'Envoi en cours…' : photo.url ? 'Changer la photo' : 'Choisir une photo'}
+              </button>
+              {photo.url && (
+                <button
+                  type="button"
+                  className="pcm-photo-btn"
+                  disabled={photo.busy}
+                  onClick={() => photo.remove()}
+                >
+                  Retirer
+                </button>
+              )}
+            </div>
+            <p className="pcm-photo-hint">Visible sur votre accueil, sur tous vos appareils.</p>
+          </div>
+        )}
+        {photo.error && (
+          <p className="pcm-photo-error" role="alert">
+            {photo.error}
+          </p>
+        )}
 
         {paletteOpen && (
           <div className="pcm-palette" role="group" aria-label="Couleur de l'accueil">
@@ -550,6 +644,7 @@ const DashboardCustomerMobile = ({
           {hero.premium && <span className="pcm-fact is-accent">★ Client Premium</span>}
           {hero.facts.map((f) => <span key={f} className="pcm-fact">{f}</span>)}
         </div>
+        </section>
 
         {/* Ses réalisations, en photos */}
         {works.length > 0 && (
