@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Product, SizeAndColorSelection } from '@/@types/product';
+import { Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { apiGetProductForShowById } from '@/services/ProductServices';
 import { FormAnswer } from '@/@types/formAnswer';
 import { unwrapData } from '@/utils/serviceHelper';
@@ -15,6 +15,9 @@ export type StateData = {
   formAnswer: Partial<FormAnswer> | null;
   sizeAndColorsSelected: SizeAndColorSelection[];
   cartItemId: string;
+  /** Produit par packs : format choisi (cartes vertical / horizontal). Le tableau des
+      packs le reprend — avant, cliquer un pack remettait le premier format en silence. */
+  packSize: Size | null;
 };
 
 const initialState: StateData = {
@@ -26,6 +29,7 @@ const initialState: StateData = {
   formAnswer: null,
   sizeAndColorsSelected: [],
   cartItemId: '',
+  packSize: null,
 };
 
 export const getProductToShow = createAsyncThunk(
@@ -54,6 +58,9 @@ const productSlice = createSlice({
     setCartItemId: (state, action) => {
       state.cartItemId = action.payload;
     },
+    setPackSize: (state, action) => {
+      state.packSize = action.payload;
+    },
     setProductToShow: (state, action) => {
       state.product = action.payload;
     },
@@ -64,6 +71,7 @@ const productSlice = createSlice({
       state.error = null;
       state.sizeAndColorsSelected = [];
       state.formAnswer = null;
+      state.packSize = null;
     },
   },
   extraReducers: (builder) => {
@@ -92,6 +100,7 @@ export const {
   setFormAnswer,
   setSizeAndColorsSelected,
   setCartItemId,
+  setPackSize,
   setProductToShow,
 } = productSlice.actions;
 

@@ -12,8 +12,10 @@ import reducer, {
   useAppDispatch,
   useAppSelector,
   getProductToShow,
+  setPackSize,
   setSizeAndColorsSelected,
 } from './store';
+import { sortSizes } from '@/utils/sizeSort';
 import {
   addToCart,
   CartItemSizeAndColorEdition,
@@ -65,6 +67,7 @@ const ShowProduct = () => {
     formAnswer,
     sizeAndColorsSelected,
     cartItemId,
+    packSize,
   } = useAppSelector((state) => state.showProduct.data);
   const [canAddToCart, setCanAddToCart] = useState<boolean>(false);
   const [isFirstRender, setFirstRender] = useState<boolean>(true);
@@ -202,6 +205,7 @@ const ShowProduct = () => {
       return;
     }
     if (prefill?.selection.length) dispatch(setSizeAndColorsSelected(prefill.selection));
+    if (prefill?.packFormatDefaulted) dispatch(setPackSize(prefill.packFormatDefaulted));
   }, [chatPrefill, product, documentId, isM2Pricing, prefillM2, prefill, dispatch]);
 
   const isAtLeastOneItemWanted = (): boolean =>
@@ -394,12 +398,14 @@ const ShowProduct = () => {
           <HiShoppingCart size={18} style={{ color: '#4ade80', flexShrink: 0, marginTop: '1px' }} />
           <span>
             <strong style={{ color: '#fff' }}>
-              Votre offre : {chatPrefill.quantity} × {product.name}
+              Votre offre : {isPackPricing ? `pack de ${prefill?.selection[0]?.quantity ?? chatPrefill.quantity}` : chatPrefill.quantity} × {product.name}
               {describeLines(prefillLines) ? ` · ${describeLines(prefillLines)}` : ''}
             </strong>
             <br />
-            {prefillComplete
-              ? (isM2Pricing ? 'Dimensions et quantité reprises de la conversation. ' : 'Quantité, tailles et couleurs reprises de la conversation. ')
+            {isPackPricing && prefill?.packFormatDefaulted
+              ? `Pack sélectionné, au format « ${prefill.packFormatDefaulted.name} » par défaut : changez-le si besoin. `
+              : prefillComplete
+              ? (isM2Pricing ? 'Dimensions et quantité reprises de la conversation. ' : isPackPricing ? 'Pack et format repris de la conversation. ' : 'Quantité, tailles et couleurs reprises de la conversation. ')
               : isM2Pricing
                 ? 'Indiquez les dimensions. '
                 : prefillMissing.length
@@ -651,7 +657,13 @@ const ShowProduct = () => {
                         <div
                           key={i}
                           onClick={isPackPricing ? () => {
-                            const size = product.sizes?.[0] ?? ({ name: 'Default', value: 'DEFAULT', description: 'Default' } as Size);
+                            // Format : celui du pack en cours, sinon celui choisi, sinon le premier
+                            // (même ordre que le bouton de format). Avant : toujours sizes[0], le
+                            // format choisi par le client était perdu en silence.
+                            const size = sizeAndColorsSelected.find((s) => s.quantity > 0)?.size
+                              ?? packSize
+                              ?? sortSizes(product.sizes ?? [])[0]
+                              ?? ({ name: 'Default', value: 'DEFAULT', description: 'Default' } as Size);
                             const clr = product.colors?.[0] ?? ({ name: 'Default', value: 'DEFAULT', description: 'Default' } as Color);
                             handleSizeAndColorsChanged(tier.minQuantity, size, clr);
                           } : undefined}

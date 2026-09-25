@@ -288,6 +288,26 @@ describe('produits vendus par packs (cartes de visite)', () => {
     expect(sel).toEqual([expect.objectContaining({ quantity: 500 })]);
   });
 
+  it('« 500 cartes » sans format : le pack de 500 est sélectionné au format par défaut', () => {
+    const { selection, missing, packFormatDefaulted } = prefillSelection(cartes, [line({ quantity: 500 })]);
+    expect(missing).toEqual([]);
+    expect(selection).toEqual([expect.objectContaining({ quantity: 500 })]);
+    expect(packFormatDefaulted?.name).toBe(selection[0].size.name);
+  });
+
+  it('format non dit : jamais d’entrée directe au panier, la fiche le fait choisir', () => {
+    const l = line({ quantity: 500 });
+    expect(missingSteps(cartes, l, selectionForLine(cartes, l))).toEqual(['le format']);
+    const avecFormat = line({ quantity: 500, sizeDocumentId: 'h' });
+    expect(missingSteps(cartes, avecFormat, selectionForLine(cartes, avecFormat))).toEqual([]);
+  });
+
+  it('format demandé mais introuvable : signalé, pas remplacé en silence', () => {
+    const { missing, packFormatDefaulted } = prefillSelection(cartes, [line({ quantity: 500, requestedSize: 'carré' })]);
+    expect(missing).toHaveLength(1);
+    expect(packFormatDefaulted).toBeUndefined();
+  });
+
   it('un format = un pack = un article : 500 vertical + 500 horizontal restent séparés', () => {
     const parts = splitPackLines([
       line({ quantity: 500, sizeDocumentId: 'v' }),

@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
+import { setPackSize, useAppDispatch, useAppSelector } from './store';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
 import { sortSizes } from '@/utils/sizeSort';
@@ -83,17 +83,13 @@ const SizeChoice = ({
   const packOptions = getProductPackOptions(product);
   const canShowPackSelection = isProductPackPricing(product);
   const activeSelection = relevantSelections.find((s) => s.quantity > 0);
-  const defaultSize = activeSelection?.size ?? sorted[0];
-  const [selectedSize, setSelectedSize] = useState<Size | null>(defaultSize ?? sorted[0] ?? null);
-
-  // Sync selectedSize with actual selection from store
-  const currentSelectedSize = activeSelection?.size;
-  if (currentSelectedSize && !sameOption(selectedSize, currentSelectedSize)) {
-    const matchedSize = sorted.find((s) => sameOption(s, currentSelectedSize));
-    if (matchedSize && !sameOption(matchedSize, selectedSize)) {
-      setSelectedSize(matchedSize);
-    }
-  }
+  // Format affiché : celui du pack sélectionné, sinon celui choisi (état de la fiche,
+  // partagé avec le tableau des packs), sinon le premier.
+  const dispatch = useAppDispatch();
+  const packSize = useAppSelector((state) => state.showProduct.data.packSize);
+  const selectedSize: Size | null = activeSelection?.size
+    ? sorted.find((s) => sameOption(s, activeSelection.size)) ?? activeSelection.size
+    : packSize ?? sorted[0] ?? null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -113,7 +109,7 @@ const SizeChoice = ({
                       type="button"
                       className="peg-tap-target"
                       onClick={() => {
-                        setSelectedSize(size);
+                        dispatch(setPackSize(size));
                         if (total > 0) {
                           handleSizeAndColorsChanged(total, size, color ?? (DEFAULT_CHOICE as Color));
                         }

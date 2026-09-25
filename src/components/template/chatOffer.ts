@@ -6,6 +6,7 @@ import { unwrapData } from '@/utils/serviceHelper';
 import { getProductPackOptions, isProductM2Pricing, isProductPackPricing } from '@/utils/productHelpers';
 import { DEFAULT_CHOICE } from '@/views/app/customer/products/show/SizeAndColorsChoice';
 import { optionKey } from '@/utils/optionKey';
+import { sortSizes } from '@/utils/sizeSort';
 
 /**
  * Offre chiffrée par l'assistant, prête à passer au panier. Construite par le
@@ -132,7 +133,10 @@ const resolveOption = <T extends { documentId?: string; name?: string }>(
  * (« 2 noirs XXL » sur une fiche qui dit « 2XL ») faisait perdre TOUTE la
  * pré-sélection, y compris les 5 blancs L connus (25/09/2026).
  */
-export const prefillSelection = (product: Product, lines: ChatOfferLine[]): { selection: SizeAndColorSelection[]; missing: ChatOfferLine[] } => {
+export const prefillSelection = (
+  product: Product,
+  lines: ChatOfferLine[],
+): { selection: SizeAndColorSelection[]; missing: ChatOfferLine[]; packFormatDefaulted?: Size } => {
   if (isProductM2Pricing(product)) {
     const ok = lines.filter((l) => Number(l.width) > 0 && Number(l.height) > 0);
     // Même forme que ShowProduct.handleAddToCart pour le m² (dimensions en mètres).
@@ -143,8 +147,15 @@ export const prefillSelection = (product: Product, lines: ChatOfferLine[]): { se
   }
   const merged = new Map<string, SizeAndColorSelection>();
   const missing: ChatOfferLine[] = [];
+  // Packs sans format précisé (« 500 cartes ») : le pack est sélectionné quand même,
+  // au format par défaut de la fiche (le premier, comme le bouton de format), que le
+  // client change d'un clic. Avant, rien n'était sélectionné, pas même le pack.
+  const packDefault = isProductPackPricing(product) && (product.sizes?.length ?? 0) > 1 ? sortSizes(product.sizes)[0] : undefined;
+  let packFormatDefaulted: Size | undefined;
   for (const l of lines) {
-    const size = resolveOption(product.sizes, l.sizeDocumentId, l.sizeName ?? l.requestedSize, DEFAULT_SIZE);
+    const wantedSize = l.sizeName ?? l.requestedSize;
+    let size = resolveOption(product.sizes, l.sizeDocumentId, wantedSize, DEFAULT_SIZE);
+    if (!size && packDefault && !l.sizeDocumentId && !wantedSize) size = packFormatDefaulted = packDefault;
     const color = resolveOption(product.colors, l.colorDocumentId, l.colorName ?? l.requestedColor, DEFAULT_COLOR);
     if (!size || !color) { missing.push(l); continue; }
     // Identité par documentId (optionKey) : deux couleurs peuvent partager le même
@@ -153,7 +164,11 @@ export const prefillSelection = (product: Product, lines: ChatOfferLine[]): { se
     const prev = merged.get(key);
     merged.set(key, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { size, color, quantity: l.quantity });
   }
-  return { selection: [...merged.values()].map((sel) => ({ ...sel, quantity: packQuantity(product, sel.quantity) })), missing };
+  return {
+    selection: [...merged.values()].map((sel) => ({ ...sel, quantity: packQuantity(product, sel.quantity) })),
+    missing,
+    ...(packFormatDefaulted ? { packFormatDefaulted } : {}),
+  };
 };
 
 /** Sélection COMPLÈTE (prête pour le panier), ou null si une taille/couleur reste à choisir. */
@@ -192,6 +207,11 @@ export const missingSteps = (product: Product, lines: ChatOfferLine | ChatOfferL
       if ((product.colors?.length ?? 0) > 1 && list.some((l) => !l.colorDocumentId)) missing.push('la couleur');
     }
     if (!missing.length) missing.push('votre sélection');
+  }
+  // Packs à plusieurs formats sans format dit : c'est au client de le choisir sur la
+  // fiche (elle arrive avec le pack sélectionné au format par défaut).
+  if (isProductPackPricing(product) && (product.sizes?.length ?? 0) > 1 && list.some((l) => !l.sizeDocumentId && !l.sizeName && !l.requestedSize)) {
+    missing.push('le format');
   }
   // Produit « BAT requis » : le client approuve le BAT sur la fiche avant l'ajout,
   // jamais d'entrée directe au panier.
