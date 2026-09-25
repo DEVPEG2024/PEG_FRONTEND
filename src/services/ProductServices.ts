@@ -498,7 +498,10 @@ export async function apiGetCustomerProducts(customerDocumentId: string, custome
             pricePerM2
             minM2
                 inCatalogue
-                # catalogPrice                         — activer après déploiement Strapi
+                # Prix catalogue de référence : la carte d'une offre affiche l'économie
+                # (« −15 % », offres préparées par l'agent Premium). Pas sur la fiche
+                # produit : comparé au prix de la quantité choisie, l'écart serait gonflé.
+                catalogPrice
                 # Champs lus par CustomerProductCard (badge catégorie, tailles,
                 # couleurs) — déjà lus côté client ailleurs (fiche produit,
                 # suggestions). Ne JAMAIS ajouter cost / customers / customerCategories.
