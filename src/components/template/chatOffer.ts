@@ -23,6 +23,9 @@ export type ChatOfferLine = {
   sizeName?: string;
   colorDocumentId?: string;
   colorName?: string;
+  /** Demandées dans le chat mais introuvables sur le produit (le serveur les transmet). */
+  requestedSize?: string;
+  requestedColor?: string;
   totalHT: number;
 };
 
@@ -70,6 +73,12 @@ const DEFAULT_COLOR = DEFAULT_CHOICE as Color;
  * qu'une seule. Sinon c'est au client de choisir sur la fiche.
  */
 const norm = (v?: string) => (v ?? '').trim().toLowerCase();
+/** « XXL » = « 2XL » (même règle que le serveur, chatbot-speed.ts) ; « bleu-marine » = « bleu marine ». */
+export const canonOption = (v?: string): string => {
+  const t = norm(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s.-]+/g, '');
+  const x = /^(x{2,5})(s|l)$/.exec(t);
+  return x ? `${x[1].length}x${x[2]}` : t;
+};
 const resolveOption = <T extends { documentId?: string; name?: string }>(
   options: T[] | undefined, wantedId: string | undefined, wantedName: string | undefined, fallback: T,
 ): T | null => {
@@ -77,8 +86,10 @@ const resolveOption = <T extends { documentId?: string; name?: string }>(
   if (wantedId || wantedName) {
     // Par identifiant, puis par nom : une fiche chargée sans documentId (ancienne
     // requête, données en cache) ne doit pas faire perdre la couleur « NOIR ».
+    // Puis par nom équivalent : « XXL » demandé, « 2XL » sur la fiche.
     return list.find((o) => wantedId && o.documentId === wantedId)
       ?? list.find((o) => wantedName && norm(o.name) === norm(wantedName))
+      ?? list.find((o) => wantedName && canonOption(o.name) === canonOption(wantedName))
       ?? null;
   }
   if (list.length === 0) return fallback;
@@ -87,31 +98,57 @@ const resolveOption = <T extends { documentId?: string; name?: string }>(
 };
 
 /**
- * Sélection tailles/couleurs d'un produit à partir des lignes de l'offre, identique
- * à celle que produirait la fiche : une entrée par taille×couleur (une répartition
- * « 5 M et 5 L » donne deux entrées, le palier se calcule sur le total). null si
- * une taille ou une couleur reste à choisir.
+ * Sélection tailles/couleurs reprise de l'offre, identique à celle que produirait la
+ * fiche : une entrée par taille×couleur (« 5 M et 5 L » donne deux entrées, le palier
+ * se calcule sur le total). PARTIELLE : les lignes dont la taille ou la couleur reste
+ * à choisir sont rendues à part (`missing`) — avant, une seule ligne incomplète
+ * (« 2 noirs XXL » sur une fiche qui dit « 2XL ») faisait perdre TOUTE la
+ * pré-sélection, y compris les 5 blancs L connus (25/09/2026).
  */
-export const selectionForLines = (product: Product, lines: ChatOfferLine[]): SizeAndColorSelection[] | null => {
-  if (!lines.length) return null;
+export const prefillSelection = (product: Product, lines: ChatOfferLine[]): { selection: SizeAndColorSelection[]; missing: ChatOfferLine[] } => {
   if (isProductM2Pricing(product)) {
-    if (!lines.every((l) => Number(l.width) > 0 && Number(l.height) > 0)) return null;
+    const ok = lines.filter((l) => Number(l.width) > 0 && Number(l.height) > 0);
     // Même forme que ShowProduct.handleAddToCart pour le m² (dimensions en mètres).
-    return lines.map((l) => ({ size: {} as Size, color: {} as Color, quantity: l.quantity, width: l.width, height: l.height }));
+    return {
+      selection: ok.map((l) => ({ size: {} as Size, color: {} as Color, quantity: l.quantity, width: l.width, height: l.height })),
+      missing: lines.filter((l) => !ok.includes(l)),
+    };
   }
   const merged = new Map<string, SizeAndColorSelection>();
+  const missing: ChatOfferLine[] = [];
   for (const l of lines) {
-    const size = resolveOption(product.sizes, l.sizeDocumentId, l.sizeName, DEFAULT_SIZE);
-    const color = resolveOption(product.colors, l.colorDocumentId, l.colorName, DEFAULT_COLOR);
-    if (!size || !color) return null;
+    const size = resolveOption(product.sizes, l.sizeDocumentId, l.sizeName ?? l.requestedSize, DEFAULT_SIZE);
+    const color = resolveOption(product.colors, l.colorDocumentId, l.colorName ?? l.requestedColor, DEFAULT_COLOR);
+    if (!size || !color) { missing.push(l); continue; }
     // Identité par documentId (optionKey) : deux couleurs peuvent partager le même
     // code hex (NOIR et HEATHER GREY du Bonnet, tous deux #000000).
     const key = `${optionKey(size)}|${optionKey(color)}`;
     const prev = merged.get(key);
     merged.set(key, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { size, color, quantity: l.quantity });
   }
-  return [...merged.values()];
+  return { selection: [...merged.values()], missing };
 };
+
+/** Sélection COMPLÈTE (prête pour le panier), ou null si une taille/couleur reste à choisir. */
+export const selectionForLines = (product: Product, lines: ChatOfferLine[]): SizeAndColorSelection[] | null => {
+  if (!lines.length) return null;
+  const { selection, missing } = prefillSelection(product, lines);
+  return missing.length || !selection.length ? null : selection;
+};
+
+/** Ce qu'il reste à choisir sur la fiche, lisible : « 2 NOIR : taille « XXL » introuvable ». */
+export const describeMissing = (product: Product, lines: ChatOfferLine[]): string[] =>
+  lines.map((l) => {
+    if (isProductM2Pricing(product)) return `${l.quantity} pièce${l.quantity > 1 ? 's' : ''} : dimensions à indiquer`;
+    const known = [l.sizeName, l.colorName].filter(Boolean).join(' ');
+    const needSize = !resolveOption(product.sizes, l.sizeDocumentId, l.sizeName ?? l.requestedSize, DEFAULT_SIZE);
+    const needColor = !resolveOption(product.colors, l.colorDocumentId, l.colorName ?? l.requestedColor, DEFAULT_COLOR);
+    const what = [
+      needSize ? (l.requestedSize ? `taille « ${l.requestedSize} » introuvable` : 'taille à choisir') : '',
+      needColor ? (l.requestedColor ? `couleur « ${l.requestedColor} » introuvable` : 'couleur à choisir') : '',
+    ].filter(Boolean).join(', ');
+    return `${l.quantity}${known ? ` ${known}` : ''} : ${what}`;
+  });
 
 /** Sélection d'une seule ligne (cas simple). */
 export const selectionForLine = (product: Product, line: ChatOfferLine): SizeAndColorSelection[] | null =>
@@ -132,6 +169,21 @@ export const missingSteps = (product: Product, lines: ChatOfferLine | ChatOfferL
   return missing;
 };
 
+/**
+ * Résumé de l'offre sous la réponse du chat, AVEC tailles et couleurs : « 7 × T-shirt
+ * ECO 150 g/m² — 5 M NOIR, 2 XL BLANC ». Avant : « 5 × T-shirt · 2 × T-shirt », sans
+ * rien pour vérifier que la demande était respectée.
+ */
+export const describeOffer = (offer: ChatOffer): string => {
+  const byProduct = new Map<string, ChatOfferLine[]>();
+  for (const l of offer.lines) byProduct.set(l.productDocumentId, [...(byProduct.get(l.productDocumentId) ?? []), l]);
+  return [...byProduct.values()].map((lines) => {
+    const total = lines.reduce((n, l) => n + l.quantity, 0);
+    const detail = describeLines(lines);
+    return `${total} × ${lines[0].productName}${detail ? ` — ${detail}` : ''}`;
+  }).join(' · ');
+};
+
 /** Pré-remplissage d'un produit de l'offre (null s'il n'y figure pas). */
 export const prefillForProduct = (offer: ChatOffer, productDocumentId: string): ChatPrefill | null => {
   const lines = offer.lines.filter((l) => l.productDocumentId === productDocumentId);
@@ -141,7 +193,7 @@ export const prefillForProduct = (offer: ChatOffer, productDocumentId: string): 
 
 /** Résumé lisible d'une répartition : « 5 M, 5 L » ou « NOIR ». */
 export const describeLines = (lines: ChatOfferLine[]): string => {
-  const label = (l: ChatOfferLine) => [l.sizeName, l.colorName].filter(Boolean).join(' ');
+  const label = (l: ChatOfferLine) => [l.sizeName ?? l.requestedSize, l.colorName ?? l.requestedColor].filter(Boolean).join(' ');
   if (lines.length === 1) return label(lines[0]);
   return lines.map((l) => `${l.quantity}${label(l) ? ` ${label(l)}` : ''}`).join(', ');
 };

@@ -1,6 +1,10 @@
 import type { Product } from '@/@types/product';
 import {
+  canonOption,
   describeLines,
+  describeMissing,
+  describeOffer,
+  prefillSelection,
   formRequiresInput,
   prefillForProduct,
   selectionForLines,
@@ -206,5 +210,47 @@ describe('Bonnet réel : taille unique, NOIR et HEATHER GREY au même code #0000
       line({ quantity: 5, colorDocumentId: 'c173', colorName: 'HEATHER GREY' }),
     ]);
     expect(sel).toHaveLength(2);
+  });
+});
+
+// 25/09/2026 : « les tailles et couleurs ne sont plus respectées ». Cas réel : « 5 t-shirts
+// blancs taille L et 2 noirs taille XXL » sur le T-shirt ECO, qui n'a que « 2XL ».
+describe('tailles et couleurs respectées (T-shirt ECO réel)', () => {
+  const eco = product({
+    sizes: [opt('xs', 'XS'), opt('s', 'S'), opt('m', 'M'), opt('l', 'L'), opt('xl', 'XL'), opt('2xl', '2XL'), opt('3xl', '3XL'), opt('4xl', '4XL')] as never,
+    colors: [opt('noir', 'NOIR'), opt('blanc', 'BLANC'), opt('rouge', 'ROUGE')] as never,
+  });
+  const blancsL = line({ quantity: 5, sizeDocumentId: 'l', sizeName: 'L', colorDocumentId: 'blanc', colorName: 'BLANC' });
+
+  it('« XXL » demandé = « 2XL » de la fiche : la ligne est complète', () => {
+    const noirsXXL = line({ quantity: 2, requestedSize: 'XXL', colorDocumentId: 'noir', colorName: 'NOIR' });
+    const sel = selectionForLines(eco, [blancsL, noirsXXL]);
+    expect(sel!.map((x) => `${x.quantity} ${x.size.name} ${x.color.name}`)).toEqual(['5 L BLANC', '2 2XL NOIR']);
+    expect(canonOption('XXL')).toBe(canonOption('2XL'));
+    expect(canonOption('XL')).not.toBe(canonOption('XXL'));
+  });
+
+  it('une ligne vraiment introuvable ne fait plus perdre les autres (pré-remplissage partiel)', () => {
+    const noirs5XL = line({ quantity: 2, requestedSize: '5XL', colorDocumentId: 'noir', colorName: 'NOIR' });
+    const { selection, missing } = prefillSelection(eco, [blancsL, noirs5XL]);
+    expect(selection.map((x) => `${x.quantity} ${x.size.name} ${x.color.name}`)).toEqual(['5 L BLANC']);
+    expect(missing).toEqual([noirs5XL]);
+    expect(describeMissing(eco, missing)).toEqual(['2 NOIR : taille « 5XL » introuvable']);
+    // Le panier, lui, n'accepte qu'une sélection complète.
+    expect(selectionForLines(eco, [blancsL, noirs5XL])).toBeNull();
+  });
+
+  it('couleur non précisée sur un produit multicolore → « couleur à choisir »', () => {
+    const sansCouleur = line({ quantity: 3, sizeDocumentId: 'm', sizeName: 'M' });
+    expect(describeMissing(eco, [sansCouleur])).toEqual(['3 M : couleur à choisir']);
+  });
+
+  it('résumé de l’offre dans le chat : tailles et couleurs visibles', () => {
+    const offer = { id: 'o', totalHT: 84.28, totalTTC: 101.14, lines: [
+      line({ productDocumentId: 'eco', productName: 'T-shirt ECO 150 g/m²', quantity: 5, sizeName: 'M', colorName: 'NOIR' }),
+      line({ productDocumentId: 'eco', productName: 'T-shirt ECO 150 g/m²', quantity: 2, sizeName: 'XL', colorName: 'BLANC' }),
+      line({ productDocumentId: 'roll', productName: 'ROLL-UP 85x200 cm', quantity: 1 }),
+    ] };
+    expect(describeOffer(offer)).toBe('7 × T-shirt ECO 150 g/m² — 5 M NOIR, 2 XL BLANC · 1 × ROLL-UP 85x200 cm');
   });
 });

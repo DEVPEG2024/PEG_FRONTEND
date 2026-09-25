@@ -300,6 +300,13 @@ La base d'int est une copie de la prod (mêmes `documentId`) et peg-backend est 
 - **Backend Strapi d'abord** (int → prod) pour que les outils existent. Changements mutuellement rétro-compatibles, mais feature active seulement une fois le back **redéployé** (peg-prod = déploiement Heroku manuel). Nécessite `GROQ_API_KEY` (déjà présent).
 - Nouveaux outils = **lecture seule**. Actions d'écriture (créer un devis/ticket) volontairement **non implémentées** (décision produit).
 
+### ⚡ Temps de réponse et tailles/couleurs respectées (25/09/2026)
+- Demandes Nova : « il faut absolument optimiser le temps de réponse du chat » et « les tailles et couleurs ne sont plus respectées ». Détail serveur : `CLAUDE.md` de peg_strapi, section « Chatbot client — temps de réponse et tailles ». Mesuré sur int : 28-30 s → **2,7 à 3,7 s** pour une offre (réponse écrite par le serveur, modèle saturé écarté sans être rappelé, 3 outils au lieu de 14).
+- **Pré-remplissage partiel** (`prefillSelection`) : une ligne dont la taille/couleur reste à choisir ne fait plus perdre les autres. Avant, « 5 blancs L + 2 noirs XXL » (fiche en « 2XL ») ouvrait la fiche VIDE. Bandeau : « Le reste est déjà sélectionné. À compléter : 2 BLANC : taille « 5XL » introuvable » (`describeMissing`, champs `requestedSize` / `requestedColor` de l'offre). Le panier, lui, n'accepte qu'une sélection complète (`selectionForLines`).
+- Tailles équivalentes côté front aussi (`canonOption` : XXL = 2XL), en plus du serveur.
+- Résumé sous l'offre avec tailles et couleurs (`describeOffer`) : « 7 × T-shirt ECO 150 g/m² — 5 M NOIR, 2 XL BLANC ».
+- ⚠️ Palier gratuit Groq : 8 000 tokens/min par modèle ET plafond journalier (le 120b a été bloqué 10 min d'affilée le 25/09). Une offre ≈ 6 700 tokens → environ une offre par minute et par modèle. Le Dev Tier (payant) est la seule vraie levée : décision Nova.
+
 ### 🎙️ Chat client à la voix (25/09/2026)
 Demande Nova : « échanger à la voix comme avec NOVA ». Même parcours que NOVA 3.3 :
 - **Un appui sur le micro = un tour.** Le micro remplace le bouton d'envoi tant que le champ est vide (ordinateur et téléphone). Barre d'enregistrement : annuler, durée, onde qui suit la voix, envoyer. **Arrêt tout seul** 1,2 s après la fin de la phrase ; 8 s sans parole → micro refermé sans rien envoyer ; 30 s au plus.

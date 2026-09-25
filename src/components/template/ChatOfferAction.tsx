@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { addToCart } from '@/store/slices/base/cartSlice';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
-import { planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
+import { describeOffer, planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
 
 type Props = {
   offer: ChatOffer;
@@ -51,7 +51,8 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
     onChange(still.length ? { ...offer, pendingIds: still } : { ...offer, status: 'added', pendingIds: [] });
   }, [userCart, offer, onChange]);
 
-  const summary = offer.lines.map((l) => `${l.quantity} × ${l.productName}`).join(' · ');
+  // Tailles et couleurs visibles : le client vérifie que sa demande est respectée.
+  const summary = describeOffer(offer);
   const pendingLines = offer.lines.filter((l) => offer.pendingIds?.includes(l.productDocumentId));
 
   /** Planifie les lignes demandées, ajoute celles qui sont prêtes, ouvre la première à finaliser. */
@@ -128,7 +129,7 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
         </>
       ) : offer.status === 'completing' && pendingLines.length ? (
         <>
-          <div style={{ fontSize: '12px', color: '#fcd34d' }}>Plus qu’une étape sur la fiche : répartir les tailles.</div>
+          <div style={{ fontSize: '12px', color: '#fcd34d' }}>Plus qu’une étape sur la fiche : choisir la taille ou la couleur manquante.</div>
           {pendingLines.map((l) => (
             <button key={l.productDocumentId} type="button" style={btn(true)} disabled={busy} onClick={() => run([l.productDocumentId])}>
               Finaliser {l.productName} <MdArrowForward size={15} />
