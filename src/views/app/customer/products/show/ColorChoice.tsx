@@ -1,9 +1,11 @@
+import { useEffect, useRef, useState } from 'react';
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { Tabs } from '@/components/ui';
 import { useTabs } from '@/components/ui/Tabs/context';
 import { HiCheck } from 'react-icons/hi';
 import SizeChoice from './SizeChoice';
 import DefaultChoice from './DefaultChoice';
+import { optionKey, sameOption } from '@/utils/optionKey';
 
 const { TabContent } = Tabs;
 
@@ -33,14 +35,14 @@ const ColorTabBar = ({ colors }: { colors: Color[] }) => {
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '2px 0' }}>
         {colors.map((color) => {
-          const selected = color.value === value;
+          const selected = optionKey(color) === value;
           return (
             <button
-              key={color.value}
+              key={optionKey(color)}
               type="button"
               className="peg-tap-target"
               aria-pressed={selected}
-              onClick={() => onValueChange?.(color.value)}
+              onClick={() => onValueChange?.(optionKey(color))}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -118,15 +120,29 @@ const ColorChoice = ({
   sizeAndColorsSelected: SizeAndColorSelection[];
   handleSizeAndColorsChanged: (value: number, size: Size, color: Color) => void;
 }) => {
+  // Onglet affiché : la première couleur, puis — une seule fois — celle d'une
+  // sélection arrivée après coup (fiche pré-remplie depuis le chat : « 10 bonnets
+  // BLANCS » doit ouvrir l'onglet BLANC). Ensuite, c'est le client qui navigue.
+  const [tab, setTab] = useState<string>(optionKey(product.colors[0]));
+  const synced = useRef(false);
+  useEffect(() => {
+    if (synced.current) return;
+    const selected = sizeAndColorsSelected.find((s) => s.quantity > 0);
+    const color = selected && product.colors.find((c) => sameOption(c, selected.color));
+    if (!color) return;
+    synced.current = true;
+    setTab(optionKey(color));
+  }, [sizeAndColorsSelected, product.colors]);
+
   return (
-    <Tabs defaultValue={product.colors[0].value}>
+    <Tabs value={tab} onChange={(v) => setTab(String(v))}>
       <ColorTabBar colors={product.colors} />
       <div className="p-4">
         {product.colors.map((color) => (
-          <TabContent value={color.value} key={color.value}>
+          <TabContent value={optionKey(color)} key={optionKey(color)}>
             {product.sizes?.length > 0 ? (
               <SizeChoice
-                key={color.value}
+                key={optionKey(color)}
                 product={product}
                 sizeAndColorsSelected={sizeAndColorsSelected}
                 color={color}

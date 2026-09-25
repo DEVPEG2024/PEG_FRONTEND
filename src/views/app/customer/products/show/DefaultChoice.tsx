@@ -1,6 +1,7 @@
 import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
+import { sameOption } from '@/utils/optionKey';
 
 const DefaultChoice = ({
   product,
@@ -15,7 +16,7 @@ const DefaultChoice = ({
 }) => {
   const determineQuantitiesForColor = () => {
     if (color) {
-      return sizeAndColorsSelected.filter((s) => s.color.value === color.value);
+      return sizeAndColorsSelected.filter((s) => sameOption(s.color, color));
     }
     return sizeAndColorsSelected;
   };

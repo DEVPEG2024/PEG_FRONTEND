@@ -38,6 +38,7 @@ import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
+import { sameOption } from '@/utils/optionKey';
 import { describeLines, readChatPrefill, selectionForLines } from '@/components/template/chatOffer';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 
@@ -287,14 +288,14 @@ const ShowProduct = () => {
     // In pack mode, only one size entry per color at a time
     if (isPackPricing && value > 0) {
       const otherColors = sizeAndColorsSelected.filter(
-        (s) => color && s.color.value !== color.value
+        (s) => color && !sameOption(s.color, color)
       );
       return [...otherColors, { size, color, quantity: value }];
     }
 
     if (value > 0) {
       const index = sizeAndColorsSelected.findIndex(
-        (s) => s.size.value === size.value && s.color.value === color.value
+        (s) => sameOption(s.size, size) && sameOption(s.color, color)
       );
       const newEntry: SizeAndColorSelection = { size, color, quantity: value };
       if (index > -1) {
@@ -305,7 +306,7 @@ const ShowProduct = () => {
       return [...sizeAndColorsSelected, newEntry];
     }
     return sizeAndColorsSelected.filter(
-      (s) => !(s.size.value === size.value && s.color.value === color.value)
+      (s) => !(sameOption(s.size, size) && sameOption(s.color, color))
     );
   };
 

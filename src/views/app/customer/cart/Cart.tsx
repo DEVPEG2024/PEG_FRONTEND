@@ -34,6 +34,7 @@ import { User } from '@/@types/user';
 import PaymentContent from './PaymentContent';
 import useUserCart from '@/utils/hooks/useUserCart';
 import { personalizationStatus } from '@/components/template/chatOffer';
+import { optionKey } from '@/utils/optionKey';
 
 /* ── Shared styles ── */
 const inputStyle: React.CSSProperties = {
@@ -297,7 +298,7 @@ function CartItemCard({
               })
             : item.sizeAndColors.map((s) => (
               <span
-                key={s.size.value + (s.color?.value ?? '')}
+                key={optionKey(s.size) + optionKey(s.color)}
                 style={{
                   background:
                     'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',

@@ -175,3 +175,36 @@ describe('répartition et pré-remplissage de la fiche', () => {
     expect(prefillForProduct(offer, 'absent')).toBeNull();
   });
 });
+
+describe('Bonnet réel : taille unique, NOIR et HEATHER GREY au même code #000000', () => {
+  const tu = { documentId: 's199', name: 'Taille unique', value: 'Taille unique', description: '' };
+  const colors = [
+    { documentId: 'c67', name: 'NOIR', value: '#000000', description: '' },
+    { documentId: 'c68', name: 'BLANC', value: '#ffffff', description: '' },
+    { documentId: 'c173', name: 'HEATHER GREY', value: '#000000', description: '' },
+  ];
+  const bonnet = product({ sizes: [tu] as never, colors: colors as never, form: { documentId: 'f44' } as never });
+
+  it('« 10 bonnets noirs » → Taille unique (seule taille) + NOIR, quantité 10', () => {
+    const sel = selectionForLines(bonnet, [line({ quantity: 10, colorDocumentId: 'c67', colorName: 'NOIR' })]);
+    expect(sel).toEqual([expect.objectContaining({ quantity: 10, size: expect.objectContaining({ name: 'Taille unique' }), color: expect.objectContaining({ name: 'NOIR' }) })]);
+  });
+
+  it('fiche chargée SANS documentId (ancienne requête) : couleur retrouvée par son nom', () => {
+    const legacy = product({
+      sizes: [{ name: 'Taille unique', value: 'Taille unique' }] as never,
+      colors: colors.map(({ name, value }) => ({ name, value })) as never,
+    });
+    const sel = selectionForLines(legacy, [line({ quantity: 10, colorDocumentId: 'c67', colorName: 'NOIR' })]);
+    expect(sel?.[0].color.name).toBe('NOIR');
+    expect(sel?.[0].size.name).toBe('Taille unique');
+  });
+
+  it('5 noirs + 5 heather grey → deux entrées distinctes (même code hex)', () => {
+    const sel = selectionForLines(bonnet, [
+      line({ quantity: 5, colorDocumentId: 'c67', colorName: 'NOIR' }),
+      line({ quantity: 5, colorDocumentId: 'c173', colorName: 'HEATHER GREY' }),
+    ]);
+    expect(sel).toHaveLength(2);
+  });
+});

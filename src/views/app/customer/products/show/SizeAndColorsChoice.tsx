@@ -3,6 +3,7 @@ import ColorChoice from './ColorChoice';
 import QuantityChoice from './DefaultChoice';
 import SizeChoice from './SizeChoice';
 import { compareSizes } from '@/utils/sizeSort';
+import { optionKey } from '@/utils/optionKey';
 
 export const DEFAULT_CHOICE = {
   name: 'Default',
@@ -35,7 +36,7 @@ const SelectionRecap = ({
   const groupsMap = new Map<string, ColorGroup>();
   for (const sel of sizeAndColorsSelected) {
     if (!sel || sel.quantity <= 0) continue;
-    const key = sel.color?.value ?? 'DEFAULT';
+    const key = optionKey(sel.color);
     if (!groupsMap.has(key)) {
       groupsMap.set(key, { color: sel.color ?? (DEFAULT_CHOICE as Color), total: 0, sizes: [] });
     }
@@ -79,7 +80,7 @@ const SelectionRecap = ({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {groups.map((g) => (
           <div
-            key={g.color.value}
+            key={optionKey(g.color)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -117,7 +118,7 @@ const SelectionRecap = ({
                   .filter((s) => s.size?.value !== 'DEFAULT')
                   .map((s) => (
                     <span
-                      key={s.size.value}
+                      key={optionKey(s.size)}
                       style={{
                         fontSize: '11px',
                         fontWeight: 600,

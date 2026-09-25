@@ -21,10 +21,12 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 url
             }
             sizes {
+                documentId
                 name
                 value
             }
             colors {
+                documentId
                 name
                 value
             }

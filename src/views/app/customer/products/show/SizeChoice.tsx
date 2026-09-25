@@ -3,6 +3,7 @@ import { Color, Product, Size, SizeAndColorSelection } from '@/@types/product';
 import { DEFAULT_CHOICE } from './SizeAndColorsChoice';
 import { getProductPackOptions, isProductPackPricing } from '@/utils/productHelpers';
 import { sortSizes } from '@/utils/sizeSort';
+import { optionKey, sameOption } from '@/utils/optionKey';
 
 const Stepper = ({
   value,
@@ -76,7 +77,7 @@ const SizeChoice = ({
   const sorted = sortSizes(product.sizes);
 
   const relevantSelections = sizeAndColorsSelected.filter(
-    (s) => !color || s.color.value === color.value
+    (s) => !color || sameOption(s.color, color)
   );
   const total = relevantSelections.reduce((sum, s) => sum + s.quantity, 0);
   const packOptions = getProductPackOptions(product);
@@ -86,10 +87,10 @@ const SizeChoice = ({
   const [selectedSize, setSelectedSize] = useState<Size | null>(defaultSize ?? sorted[0] ?? null);
 
   // Sync selectedSize with actual selection from store
-  const currentSelectedSizeValue = activeSelection?.size?.value;
-  if (currentSelectedSizeValue && selectedSize?.value !== currentSelectedSizeValue) {
-    const matchedSize = sorted.find((s) => s.value === currentSelectedSizeValue);
-    if (matchedSize && matchedSize.value !== selectedSize?.value) {
+  const currentSelectedSize = activeSelection?.size;
+  if (currentSelectedSize && !sameOption(selectedSize, currentSelectedSize)) {
+    const matchedSize = sorted.find((s) => sameOption(s, currentSelectedSize));
+    if (matchedSize && !sameOption(matchedSize, selectedSize)) {
       setSelectedSize(matchedSize);
     }
   }
@@ -105,10 +106,10 @@ const SizeChoice = ({
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {sorted.map((size) => {
-                  const active = selectedSize?.value === size.value;
+                  const active = sameOption(selectedSize, size);
                   return (
                     <button
-                      key={size.value}
+                      key={optionKey(size)}
                       type="button"
                       className="peg-tap-target"
                       onClick={() => {
@@ -147,12 +148,12 @@ const SizeChoice = ({
           <div className="peg-size-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {sorted.map((size) => {
               const qty = sizeAndColorsSelected.find(
-                (s) => s.size.value === size.value && (!color || s.color.value === color.value)
+                (s) => sameOption(s.size, size) && (!color || sameOption(s.color, color))
               )?.quantity ?? 0;
               const active = qty > 0;
               return (
                 <div
-                  key={size.value}
+                  key={optionKey(size)}
                   className="peg-size-row"
                   style={{
                     background: active ? 'rgba(47,111,237,0.10)' : 'rgba(255,255,255,0.03)',

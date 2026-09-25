@@ -5,6 +5,7 @@ import { apiGetProductForShowById } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { isProductM2Pricing } from '@/utils/productHelpers';
 import { DEFAULT_CHOICE } from '@/views/app/customer/products/show/SizeAndColorsChoice';
+import { optionKey } from '@/utils/optionKey';
 
 /**
  * Offre chiffrée par l'assistant, prête à passer au panier. Construite par le
@@ -65,9 +66,18 @@ const DEFAULT_COLOR = DEFAULT_CHOICE as Color;
  * produit n'en a pas (valeur DEFAULT, comme SizeAndColorsChoice) ou n'en a
  * qu'une seule. Sinon c'est au client de choisir sur la fiche.
  */
-const resolveOption = <T extends { documentId: string }>(options: T[] | undefined, wantedId: string | undefined, fallback: T): T | null => {
+const norm = (v?: string) => (v ?? '').trim().toLowerCase();
+const resolveOption = <T extends { documentId?: string; name?: string }>(
+  options: T[] | undefined, wantedId: string | undefined, wantedName: string | undefined, fallback: T,
+): T | null => {
   const list = options ?? [];
-  if (wantedId) return list.find((o) => o.documentId === wantedId) ?? null;
+  if (wantedId || wantedName) {
+    // Par identifiant, puis par nom : une fiche chargée sans documentId (ancienne
+    // requête, données en cache) ne doit pas faire perdre la couleur « NOIR ».
+    return list.find((o) => wantedId && o.documentId === wantedId)
+      ?? list.find((o) => wantedName && norm(o.name) === norm(wantedName))
+      ?? null;
+  }
   if (list.length === 0) return fallback;
   if (list.length === 1) return list[0];
   return null;
@@ -88,11 +98,12 @@ export const selectionForLines = (product: Product, lines: ChatOfferLine[]): Siz
   }
   const merged = new Map<string, SizeAndColorSelection>();
   for (const l of lines) {
-    const size = resolveOption(product.sizes, l.sizeDocumentId, DEFAULT_SIZE);
-    const color = resolveOption(product.colors, l.colorDocumentId, DEFAULT_COLOR);
+    const size = resolveOption(product.sizes, l.sizeDocumentId, l.sizeName, DEFAULT_SIZE);
+    const color = resolveOption(product.colors, l.colorDocumentId, l.colorName, DEFAULT_COLOR);
     if (!size || !color) return null;
-    // Même clé que la fiche (ShowProduct.determineNewSizeAndColors) : size.value + color.value.
-    const key = `${size.value}|${color.value}`;
+    // Identité par documentId (optionKey) : deux couleurs peuvent partager le même
+    // code hex (NOIR et HEATHER GREY du Bonnet, tous deux #000000).
+    const key = `${optionKey(size)}|${optionKey(color)}`;
     const prev = merged.get(key);
     merged.set(key, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { size, color, quantity: l.quantity });
   }
