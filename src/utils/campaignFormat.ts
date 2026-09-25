@@ -85,6 +85,28 @@ export const emptyCampaign = (): CampaignInput => ({
   expiresAt: null,
 });
 
+// ── Suppression ──────────────────────────────────────────────────────────────
+
+/** Supprimable à tout moment, sauf pendant les quelques secondes d'un envoi. */
+export const canDeleteCampaign = (c: { status: CampaignStatus }) => c.status !== 'sending';
+
+/** Confirmation de suppression : dit exactement ce qui sera effacé. */
+export function deleteConfirmText(list: { title: string; status: CampaignStatus }[]): string {
+  const one = list.length === 1;
+  const head = one ? `Supprimer définitivement « ${list[0].title} » ?` : `Supprimer définitivement ces ${list.length} campagnes ?`;
+  const sent = list.filter((c) => c.status === 'sent' || c.status === 'sending').length;
+  if (!sent) return head;
+  const single = one || sent === 1;
+  const who = one
+    ? 'Elle a déjà été envoyée : elle disparaîtra'
+    : sent === list.length
+      ? 'Elles ont déjà été envoyées : elles disparaîtront'
+      : sent === 1
+        ? 'L’une d’elles a déjà été envoyée : elle disparaîtra'
+        : `${sent} d’entre elles ont déjà été envoyées : elles disparaîtront`;
+  return `${head}\n\n${who} des Actualités, des pop-ups et de la cloche des clients, et ${single ? 'ses' : 'leurs'} statistiques seront effacées.\n\nPour ${single ? 'la' : 'les'} cacher aux clients en gardant les statistiques : « Retirer ».`;
+}
+
 // ── Liens ────────────────────────────────────────────────────────────────────
 
 /** Chemin interne du front (navigation dans l'app) — jamais « //hôte ». */

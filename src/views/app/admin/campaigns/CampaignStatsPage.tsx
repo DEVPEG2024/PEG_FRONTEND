@@ -10,10 +10,12 @@ import {
   HiOutlineRefresh,
   HiOutlineReply,
   HiOutlineSearch,
+  HiOutlineTrash,
 } from 'react-icons/hi';
 import type { Campaign, CampaignRecipient, CampaignStats, CampaignTimeline } from '@/@types/campaign';
 import {
   apiArchiveCampaign,
+  apiDeleteCampaign,
   apiDuplicateCampaign,
   apiGetCampaignRecipients,
   apiGetCampaignStats,
@@ -24,6 +26,8 @@ import {
   CHANNEL_LABELS,
   EMAIL_STATUS_LABELS,
   RecipientFilter,
+  canDeleteCampaign,
+  deleteConfirmText,
   filterRecipients,
   fmtDateTime,
   fmtInt,
@@ -181,6 +185,16 @@ const CampaignStatsPage = () => {
           <button type="button" style={btn('rgba(255,255,255,0.7)')} disabled={busy} onClick={() => act(() => apiArchiveCampaign(campaign.id, !campaign.archived), campaign.archived ? 'Campagne désarchivée' : 'Campagne archivée', () => load())}>
             <HiOutlineArchive size={15} /> {campaign.archived ? 'Désarchiver' : 'Archiver'}
           </button>
+          {canDeleteCampaign(campaign) && (
+            <button
+              type="button"
+              style={btn('#f87171')}
+              disabled={busy}
+              onClick={() => window.confirm(deleteConfirmText([campaign])) && act(() => apiDeleteCampaign(campaign.id), 'Campagne supprimée', () => navigate('/admin/campaigns', { replace: true }))}
+            >
+              <HiOutlineTrash size={15} /> Supprimer
+            </button>
+          )}
         </div>
       </div>
 

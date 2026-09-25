@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { HiArrowLeft, HiOutlineBell, HiOutlineClock, HiOutlineMail, HiOutlinePaperAirplane, HiOutlineSave, HiOutlineBeaker, HiOutlineViewGridAdd } from 'react-icons/hi';
+import { HiArrowLeft, HiOutlineBell, HiOutlineTrash, HiOutlineClock, HiOutlineMail, HiOutlinePaperAirplane, HiOutlineSave, HiOutlineBeaker, HiOutlineViewGridAdd } from 'react-icons/hi';
 import type { AudienceDirectory, AudiencePreview, Campaign, CampaignInput } from '@/@types/campaign';
 import {
   apiCreateCampaign,
+  apiDeleteCampaign,
   apiGetAudienceDirectory,
   apiGetCampaign,
   apiPreviewAudience,
@@ -13,7 +14,7 @@ import {
   apiUnscheduleCampaign,
   apiUpdateCampaign,
 } from '@/services/CampaignServices';
-import { CAMPAIGN_TAGS, CTA_PRESETS, CtaMode, LIMITS, TAG_META, categoryLink, ctaTargetOf, emptyCampaign, fmtDateTime, fmtInt, fromLocalInput, isSafeCtaUrl, productLink, toLocalInput } from '@/utils/campaignFormat';
+import { CAMPAIGN_TAGS, CTA_PRESETS, CtaMode, deleteConfirmText, LIMITS, TAG_META, categoryLink, ctaTargetOf, emptyCampaign, fmtDateTime, fmtInt, fromLocalInput, isSafeCtaUrl, productLink, toLocalInput } from '@/utils/campaignFormat';
 import AudiencePicker from './components/AudiencePicker';
 import { CategoryPicker, ProductPicker } from './components/CtaTargetPicker';
 import ImagesField from './components/ImagesField';
@@ -282,6 +283,26 @@ const CampaignEditor = () => {
           </span>
         )}
         {dirty && <span style={{ ...hintStyle, marginLeft: 'auto' }}>Modifications non enregistrées</span>}
+        {campaign && (
+          <button
+            type="button"
+            style={{ ...btn('#f87171'), padding: '6px 10px', fontSize: '12px', marginLeft: dirty ? undefined : 'auto' }}
+            disabled={!!busy}
+            onClick={async () => {
+              if (!window.confirm(deleteConfirmText([campaign]))) return;
+              try {
+                await apiDeleteCampaign(campaign.id);
+                setDirty(false);
+                toast.success('Campagne supprimée');
+                navigate('/admin/campaigns', { replace: true });
+              } catch (e: any) {
+                toast.error(errorMessage(e, 'Suppression impossible'));
+              }
+            }}
+          >
+            <HiOutlineTrash size={14} /> Supprimer
+          </button>
+        )}
       </div>
 
       {missing && (

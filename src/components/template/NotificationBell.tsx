@@ -17,6 +17,7 @@ import { HiBell } from 'react-icons/hi';
 import { HiOutlineTrash, HiOutlineCheck, HiOutlineCheckCircle } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import useNotifications from '@/utils/hooks/useNotifications';
+import useCampaignBellCleanup from '@/utils/hooks/useCampaignBellCleanup';
 import { fmtPrice } from '@/utils/priceHelpers';
 
 const EVENT_ICONS: Record<string, string> = {
@@ -101,6 +102,7 @@ const NotificationBell = () => {
   const navigate = useNavigate();
 
   const { loadMore } = useNotifications();
+  useCampaignBellCleanup();
 
   const {
     unreadCount = 0,

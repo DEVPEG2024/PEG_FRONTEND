@@ -1,6 +1,8 @@
 import {
+  canDeleteCampaign,
   categoryLink,
   ctaTargetOf,
+  deleteConfirmText,
   excerpt,
   filterRecipients,
   fromLocalInput,
@@ -79,6 +81,35 @@ describe('destination du bouton : produit, catégorie', () => {
     expect(ctaTargetOf('')).toEqual({ mode: 'none', id: null });
     // Sous-page d'une fiche (édition) : pas une destination « produit »
     expect(ctaTargetOf('/customer/product/abc123/edit').mode).toBe('custom');
+  });
+});
+
+describe('suppression', () => {
+  test('supprimable à tout moment, sauf pendant un envoi', () => {
+    expect(['draft', 'scheduled', 'sent', 'canceled'].every((status) => canDeleteCampaign({ status: status as never }))).toBe(true);
+    expect(canDeleteCampaign({ status: 'sending' })).toBe(false);
+  });
+
+  test('confirmation : un brouillon, sans avertissement', () => {
+    expect(deleteConfirmText([{ title: 'Brouillon', status: 'draft' }])).toBe('Supprimer définitivement « Brouillon » ?');
+  });
+
+  test('confirmation : une campagne envoyée prévient des conséquences', () => {
+    const t = deleteConfirmText([{ title: 'Promo', status: 'sent' }]);
+    expect(t).toContain('« Promo »');
+    expect(t).toContain('cloche des clients');
+    expect(t).toContain('ses statistiques seront effacées');
+    expect(t).toContain('« Retirer »');
+  });
+
+  test('confirmation groupée', () => {
+    const t = deleteConfirmText([{ title: 'A', status: 'sent' }, { title: 'B', status: 'draft' }]);
+    expect(t.startsWith('Supprimer définitivement ces 2 campagnes ?')).toBe(true);
+    expect(t).toContain('L’une d’elles a déjà été envoyée : elle disparaîtra');
+    expect(t).toContain('ses statistiques');
+    const all = deleteConfirmText([{ title: 'A', status: 'sent' }, { title: 'B', status: 'sent' }, { title: 'C', status: 'draft' }]);
+    expect(all).toContain('2 d’entre elles ont déjà été envoyées');
+    expect(all).toContain('leurs statistiques');
   });
 });
 

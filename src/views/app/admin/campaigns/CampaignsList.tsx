@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
+  HiCheck,
   HiOutlineBell,
   HiOutlineChartBar,
   HiOutlineDuplicate,
@@ -16,7 +17,7 @@ import {
 import type { CampaignListItem, CampaignsOverview } from '@/@types/campaign';
 import { apiDeleteCampaign, apiDuplicateCampaign, apiGetCampaigns } from '@/services/CampaignServices';
 import { TagChip } from '@/components/campaign/CampaignContent';
-import { TAG_META, fmtInt, fmtRelativeDay, pct } from '@/utils/campaignFormat';
+import { TAG_META, canDeleteCampaign, deleteConfirmText, fmtInt, fmtRelativeDay, pct } from '@/utils/campaignFormat';
 import { SERIES } from './components/charts';
 import { Kpi, PANEL, RateBar, StatusBadge, btn, chip, errorMessage, hintStyle, inputStyle, isBackendMissing } from './ui';
 
@@ -50,19 +51,39 @@ const dateLine = (c: CampaignListItem) => {
   return `Modifiée ${fmtRelativeDay(c.updatedAt)}`;
 };
 
-const CampaignCard = ({ c, onOpen, onDuplicate, onDelete }: {
+const CampaignCard = ({ c, onOpen, onDuplicate, onDelete, selecting, selected, onToggle }: {
   c: CampaignListItem;
   onOpen: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  selecting: boolean;
+  selected: boolean;
+  onToggle: () => void;
 }) => {
   const cover = c.images[0];
   const sent = c.status === 'sent' || c.status === 'sending';
-  const editable = c.status === 'draft' || c.status === 'scheduled' || c.status === 'canceled';
+  const deletable = canDeleteCampaign(c);
   const tag = TAG_META[c.tag] || TAG_META.info;
   return (
-    <div style={{ ...PANEL, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      <button type="button" onClick={onOpen} style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', flex: 1, fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ ...PANEL, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative', ...(selected ? { borderColor: 'rgba(248,113,113,0.7)', boxShadow: '0 0 0 1px rgba(248,113,113,0.5)' } : {}) }}>
+      {selecting && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute', top: '10px', left: '10px', zIndex: 2, width: '24px', height: '24px', borderRadius: '6px',
+            background: selected ? '#ef4444' : 'rgba(15,23,42,0.8)', border: `2px solid ${selected ? '#ef4444' : 'rgba(255,255,255,0.6)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', opacity: deletable ? 1 : 0.35,
+          }}
+        >
+          {selected && <HiCheck size={16} />}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={selecting ? (deletable ? onToggle : undefined) : onOpen}
+        aria-pressed={selecting ? selected : undefined}
+        aria-label={selecting ? `${selected ? 'Désélectionner' : 'Sélectionner'} « ${c.title} »` : undefined}
+        style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', flex: 1, fontFamily: 'Inter, sans-serif' }}>
         <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 7', background: '#0b1422', overflow: 'hidden' }}>
           {cover ? (
             <>
@@ -112,7 +133,7 @@ const CampaignCard = ({ c, onOpen, onDuplicate, onDelete }: {
         <button type="button" style={btn('rgba(255,255,255,0.7)')} onClick={onDuplicate} aria-label="Dupliquer" title="Dupliquer">
           <HiOutlineDuplicate size={15} />
         </button>
-        {editable && (
+        {deletable && (
           <button type="button" style={btn('#f87171')} onClick={onDelete} aria-label="Supprimer" title="Supprimer">
             <HiOutlineTrash size={15} />
           </button>
@@ -130,6 +151,9 @@ const CampaignsList = () => {
   const [missing, setMissing] = useState(false);
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -178,16 +202,37 @@ const CampaignsList = () => {
     }
   };
 
-  const remove = async (c: CampaignListItem) => {
-    if (!window.confirm(`Supprimer la campagne « ${c.title} » ?`)) return;
-    try {
-      await apiDeleteCampaign(c.id);
-      toast.success('Campagne supprimée');
-      load();
-    } catch (e: any) {
-      toast.error(errorMessage(e, 'Suppression impossible'));
+  /** Suppression définitive (une ou plusieurs), après confirmation. */
+  const remove = async (list: CampaignListItem[]) => {
+    const targets = list.filter(canDeleteCampaign);
+    if (!targets.length || !window.confirm(deleteConfirmText(targets))) return;
+    setDeleting(true);
+    let ok = 0;
+    const failed: string[] = [];
+    for (const c of targets) {
+      try {
+        await apiDeleteCampaign(c.id);
+        ok++;
+      } catch (e: any) {
+        failed.push(`${c.title} : ${errorMessage(e, 'suppression impossible')}`);
+      }
     }
+    setDeleting(false);
+    if (ok) toast.success(ok > 1 ? `${ok} campagnes supprimées` : 'Campagne supprimée');
+    failed.forEach((f) => toast.error(f));
+    setSelected(new Set());
+    if (!failed.length) setSelecting(false);
+    load();
   };
+
+  const toggle = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  const selectable = visible.filter(canDeleteCampaign);
+  const allSelected = selectable.length > 0 && selectable.every((c) => selected.has(c.id));
 
   return (
     <div style={{ padding: '24px 16px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
@@ -230,11 +275,43 @@ const CampaignsList = () => {
             {t.label}{counts[t.key] ? ` (${counts[t.key]})` : ''}
           </button>
         ))}
-        <div style={{ position: 'relative', marginLeft: 'auto', flex: '0 1 240px', minWidth: '160px' }}>
+        <button
+          type="button"
+          style={{ ...chip(selecting, '#f87171'), marginLeft: 'auto' }}
+          onClick={() => { setSelecting((v) => !v); setSelected(new Set()); }}
+          disabled={!campaigns?.length}
+        >
+          {selecting ? 'Terminer' : 'Sélectionner'}
+        </button>
+        <div style={{ position: 'relative', flex: '0 1 240px', minWidth: '160px' }}>
           <HiOutlineSearch size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher" aria-label="Rechercher une campagne" style={{ ...inputStyle, padding: '8px 10px 8px 30px', fontSize: '13px' }} />
         </div>
       </div>
+
+      {selecting && (
+        <div style={{ ...PANEL, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderColor: 'rgba(248,113,113,0.35)' }}>
+          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+            {selected.size ? `${selected.size} sélectionnée${selected.size > 1 ? 's' : ''}` : 'Touchez les campagnes à supprimer'}
+          </span>
+          <button
+            type="button"
+            style={{ ...btn('rgba(255,255,255,0.7)'), padding: '6px 10px', fontSize: '12px' }}
+            disabled={!selectable.length}
+            onClick={() => setSelected(allSelected ? new Set() : new Set(selectable.map((c) => c.id)))}
+          >
+            {allSelected ? 'Tout désélectionner' : `Tout sélectionner (${selectable.length})`}
+          </button>
+          <button
+            type="button"
+            style={{ ...btn('#dc2626', true), marginLeft: 'auto' }}
+            disabled={!selected.size || deleting}
+            onClick={() => remove((campaigns || []).filter((c) => selected.has(c.id)))}
+          >
+            <HiOutlineTrash size={15} /> {deleting ? 'Suppression…' : `Supprimer${selected.size ? ` (${selected.size})` : ''}`}
+          </button>
+        </div>
+      )}
 
       {campaigns === null ? (
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>Chargement…</div>
@@ -252,7 +329,16 @@ const CampaignsList = () => {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '14px' }}>
           {visible.map((c) => (
-            <CampaignCard key={c.id} c={c} onOpen={() => open(c)} onDuplicate={() => duplicate(c)} onDelete={() => remove(c)} />
+            <CampaignCard
+              key={c.id}
+              c={c}
+              onOpen={() => open(c)}
+              onDuplicate={() => duplicate(c)}
+              onDelete={() => remove([c])}
+              selecting={selecting}
+              selected={selected.has(c.id)}
+              onToggle={() => toggle(c.id)}
+            />
           ))}
         </div>
       )}

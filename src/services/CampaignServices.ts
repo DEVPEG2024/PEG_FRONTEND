@@ -100,6 +100,10 @@ export const apiGetMyCampaigns = () =>
     method: 'get',
   });
 
+/** Parmi ces campagnes (citées par la cloche), celles qui existent encore pour le compte. */
+export const apiKnownCampaigns = (ids: number[]) =>
+  ApiService.fetchData<Ok<{ existing: number[] }>>({ url: '/campaigns/me/known', method: 'post', data: { ids } });
+
 export const apiGetMyCampaign = (id: number) =>
   ApiService.fetchData<Ok<{ campaign: ClientCampaign }>>({ url: `/campaigns/me/${id}`, method: 'get' });
 
