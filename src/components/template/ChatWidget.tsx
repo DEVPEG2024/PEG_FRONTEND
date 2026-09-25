@@ -3,6 +3,13 @@ import { createPortal } from 'react-dom';
 import { MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment, MdAutoAwesome, MdKeyboardArrowDown, MdMic, MdStop, MdVolumeOff, MdVolumeUp } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
+import { useChatStyle } from '@/components/template/chat/useChatStyle';
+import ChatStyleChooser from '@/components/template/chat/ChatStyleChooser';
+import ChatStyleToggle from '@/components/template/chat/ChatStyleToggle';
+import {
+  STYLE_WHEN_UNCHOSEN,
+  noteChatServerFeatures,
+} from '@/components/template/chat/chatStyle';
 import { useAppSelector } from '@/store';
 import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
@@ -139,6 +146,7 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
   type StreamData = { label?: string; text?: string; message?: string } & Partial<ChatResult>;
   let lastCards: ChatCard[] = [];
   const handleEvent = (event: string, data: StreamData) => {
+    if (event === 'open') noteChatServerFeatures((data as { features?: unknown } | null)?.features);
     if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
     else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
     else if (event === 'cards' && Array.isArray(data?.cards)) { lastCards = data.cards; h.onCards(data.cards); }
@@ -337,6 +345,7 @@ const ChatWidget = () => {
   const [unread, setUnread] = useState(0);
   const [awaitingClose, setAwaitingClose] = useState(false);
   const [authWarn, setAuthWarn] = useState(false);
+  const chatStyle = useChatStyle(user?.documentId);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -409,9 +418,12 @@ const ChatWidget = () => {
     setStreamingText('');
     setStreamingCards([]);
     const token = sessionToken || getPersistedAuthToken();
+    // Style de réponse (⚡ Rapide / 💬 Conseil) : absent si le serveur ne le connaît pas.
+    const requestStyle = chatStyle.forRequest();
     const body = {
       messages: history.filter((m) => !m.error).map(({ role, content }) => ({ role, content })),
       userName,
+      ...(requestStyle ? { style: requestStyle } : {}),
       origin: window.location.origin,
       conversationId,
     };
@@ -681,6 +693,13 @@ const ChatWidget = () => {
                   : 'En ligne'}
               </div>
             </div>
+            {chatStyle.supported !== false && !!user?.documentId && (
+              <ChatStyleToggle
+                style={chatStyle.style ?? STYLE_WHEN_UNCHOSEN}
+                onToggle={chatStyle.toggle}
+                compact={isPhone}
+              />
+            )}
             {voice.supported && (
               <button
                 type="button"
@@ -714,6 +733,11 @@ const ChatWidget = () => {
                     ? 'Écrivez, ou touchez le micro pour me parler : je vous réponds à voix haute.'
                     : 'Posez votre question, je vous réponds tout de suite.'}
                 </div>
+                {chatStyle.style === null &&
+                  chatStyle.supported !== false &&
+                  !!user?.documentId && (
+                    <ChatStyleChooser onChoose={chatStyle.choose} />
+                  )}
                 {/* Suggestions rapides — envoi direct au clic */}
                 <div className="pcw-sugg">
                   {SUGGESTIONS.map((q) => (
