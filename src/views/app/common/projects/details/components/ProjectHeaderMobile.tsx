@@ -5,6 +5,8 @@
  * de _mobile.css) : même photo en tête avec le statut posé dessus, mêmes
  * couleurs bleu nuit et barre au statut (choix de Nova pour les cartes),
  * puis le nom en grand, l'échéance, l'avancement et les intervenants.
+ * Hors de l'onglet Accueil, l'en-tête se réduit à une bande (vignette, nom,
+ * statut, avancement) : le contenu de l'onglet apparaît sans défiler.
  * Les onglets (ProjectTabsMobile) deviennent une barre accrochée sous
  * l'en-tête de l'app : ProjectDetails la pose entre l'en-tête et le contenu,
  * car un élément collant ne tient que dans son bloc parent.
@@ -37,6 +39,8 @@ type Props = {
   onAssign?: () => void;
   /** Admin : rangée « Statut du projet » (écrit en base, confirmations comprises) */
   statusControl?: ReactNode;
+  /** Bande réduite (onglets autres qu'Accueil) */
+  compact?: boolean;
 };
 
 const CSS = `
@@ -76,6 +80,26 @@ const CSS = `
   border-color: transparent; background: var(--pdm-accent, #c6f432); color: var(--pdm-on-accent, #10140a);
 }
 .peg-pd-status { margin-top: 14px; }
+/* Bande réduite : vignette « studio », nom, statut, avancement */
+.peg-pd-strip { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 12px; }
+.peg-pd-thumb {
+  width: 56px; height: 56px; flex-shrink: 0; border-radius: 14px; overflow: hidden; padding: 5px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #eceee8 0%, #d9ddd4 100%);
+}
+.peg-pd-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+.peg-pd-thumb.is-empty { background: rgba(255, 255, 255, 0.05); }
+.peg-pd-thumb.is-empty img { mix-blend-mode: normal; opacity: 0.85; }
+.peg-pd-strip-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.peg-pd-strip-title {
+  margin: 0; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.peg-pd-strip-meta { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 11.5px; color: rgba(255, 255, 255, 0.55); }
+.peg-pd-strip-meta .peg-pcard-pill { padding: 2px 8px; font-size: 10.5px; }
+.peg-pd-strip-meta .is-late { color: #f87171; }
+.peg-pd-strip-date { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.peg-pd-strip .peg-pd-edit { position: static; width: 38px; height: 38px; flex-shrink: 0; font-size: 16px; }
 .peg-pd-status > div { margin-bottom: 0 !important; }
 /* Onglets accrochés sous l'en-tête de l'app (collant, 64px + barre d'état)
    pendant le défilement. */
@@ -100,6 +124,7 @@ const ProjectHeaderMobile = ({
   photo,
   onAssign,
   statusControl,
+  compact,
 }: Props) => (
   <div className="peg-pd">
     <style>{CSS}</style>
@@ -108,6 +133,43 @@ const ProjectHeaderMobile = ({
       <HiArrowLeft /> Projets
     </button>
 
+    {compact ? (
+      <article
+        className="peg-pcard"
+        style={
+          {
+            '--pcard-bar': status.color,
+            '--pcard-line': `${status.color}35`,
+          } as CSSProperties
+        }
+      >
+        <div className="peg-pd-strip">
+          <div className={image ? 'peg-pd-thumb' : 'peg-pd-thumb is-empty'}>
+            <img src={image || '/img/others/project-default.svg'} alt="" decoding="async" />
+          </div>
+          <div className="peg-pd-strip-main">
+            <p className="peg-pd-strip-title">{name}</p>
+            <div className="peg-pd-strip-meta">
+              <span className="peg-pcard-pill" style={{ color: status.color, borderColor: status.border }}>
+                {status.label}
+              </span>
+              {deadline && (
+                <span className={deadline.late ? 'peg-pd-strip-date is-late' : 'peg-pd-strip-date'}>
+                  {deadline.label}
+                </span>
+              )}
+            </div>
+            <ProgressionBar progression={progress.percent} />
+          </div>
+          {onEdit && (
+            <button type="button" className="peg-pd-edit" onClick={onEdit} aria-label="Modifier le projet">
+              <HiOutlinePencil />
+            </button>
+          )}
+        </div>
+      </article>
+    ) : (
+    <>
     <article
       className="peg-pcard peg-pd-hero"
       style={
@@ -191,6 +253,8 @@ const ProjectHeaderMobile = ({
     </article>
 
     {statusControl && <div className="peg-pd-status">{statusControl}</div>}
+    </>
+    )}
   </div>
 );
 

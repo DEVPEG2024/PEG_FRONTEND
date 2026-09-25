@@ -22,12 +22,9 @@ const QuickFilterTab = () => {
 
   const handleTabChange = (val: string) => {
     dispatch(setSelectedTab(val));
-    // Barre accrochée en haut : on remonte au début de la section choisie
-    if (phone) {
-      const bar = document.querySelector('.peg-pd-tabs');
-      const top = bar ? bar.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(bar).top) || 0) : 0;
-      if (window.scrollY > top) window.scrollTo({ top });
-    }
+    // Téléphone : chaque onglet s'ouvre en haut de page — l'en-tête réduit
+    // (hors Accueil) laisse alors son contenu visible sans défiler.
+    if (phone) window.scrollTo({ top: 0 });
   };
 
   const isProducer = hasRole(user, [PRODUCER]);

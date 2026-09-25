@@ -416,6 +416,7 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
             state
             adminNotes
             additionalSales
+            checklistItems
             tasks (pagination: {limit: 100}){
                 documentId
                 name

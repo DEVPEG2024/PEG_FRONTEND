@@ -281,8 +281,13 @@ const Comments = () => {
           border: '1px solid rgba(255,255,255,0.06)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
           overflow: 'hidden',
-          minHeight: '500px',
-          maxHeight: '75dvh',
+          // Téléphone : la fenêtre prend la hauteur des messages (vide, elle
+          // ne faisait pas moins de 500px et poussait la saisie hors de l'écran)
+          // et ne défile en elle-même qu'une fois l'écran rempli : sous
+          // l'en-tête de l'app et les onglets accrochés, au-dessus de la barre du bas.
+          ...(larger.md
+            ? { minHeight: '500px', maxHeight: '75dvh' }
+            : { maxHeight: 'calc(100dvh - 180px - var(--peg-safe-top, 0px) - var(--peg-dock-lift, 0px) - var(--peg-safe-bottom, 0px))' }),
         }}>
           {/* ── Header ── */}
           <div style={{

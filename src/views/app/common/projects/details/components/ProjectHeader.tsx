@@ -155,7 +155,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
   // ── Téléphone : en-tête au style des cartes projet (ProjectHeaderMobile) ──
   const { smaller } = useResponsive();
   const navigate = useNavigate();
-  const { checklistPercent } = useDetailsSelector((state) => state.projectDetails.data);
+  const { checklistPercent, selectedTab } = useDetailsSelector((state) => state.projectDetails.data);
   const photoUpload = useProjectPhotoUpload(project);
   if (smaller.md) {
     const isActiveState = ACTIVE_STATES.includes(project.state);
@@ -214,6 +214,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
           }
           onAssign={hasRole(user, [PRODUCER]) && !project.producer ? assignMeAsProducer : undefined}
           statusControl={statusControl || undefined}
+          compact={selectedTab !== 'Accueil'}
         />
         {isAdmin && <ModalEditProject />}
       </>

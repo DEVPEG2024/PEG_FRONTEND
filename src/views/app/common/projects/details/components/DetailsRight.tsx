@@ -109,14 +109,19 @@ const FinanceRow = ({ label, value, color = 'rgba(255,255,255,0.8)', bold = fals
 
 const DetailsRight = () => {
   const dispatch = useAppDispatch();
-  const { project, checklistPercent } = useAppSelector((state) => state.projectDetails.data);
+  const { project, checklistPercent, selectedTab } = useAppSelector((state) => state.projectDetails.data);
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]);
-  // Téléphone : pour le client, la carte « Équipe » redit l'en-tête (ProjectHeaderMobile)
+  // Téléphone : ce bloc, colonne de droite de CHAQUE onglet sur ordinateur,
+  // retombait sous le contenu de chaque onglet et redisait l'Accueil — il n'y
+  // est plus rendu que dans l'onglet Accueil. L'en-tête (ProjectHeaderMobile)
+  // affiche déjà l'avancement, et pour le client les intervenants.
   const { smaller } = useResponsive();
+  const hideOnThisTab = smaller.md && selectedTab !== 'Accueil';
+  const hideProgressCard = smaller.md;
   const hideTeamCard = smaller.md && isCustomer;
 
   // Fetch project expenses (admin only)
@@ -252,6 +257,8 @@ const DetailsRight = () => {
     return null;
   };
 
+  if (hideOnThisTab) return null;
+
   return (
     <div style={{
       display: 'flex',
@@ -260,6 +267,7 @@ const DetailsRight = () => {
       fontFamily: 'Inter, sans-serif',
     }}>
       {/* ── Card 1: Progress & Timeline ── */}
+      {!hideProgressCard && (
       <div style={miniCard}>
         <p style={sectionLabel}>Avancement</p>
 
@@ -314,6 +322,8 @@ const DetailsRight = () => {
           </div>
         </div>
       </div>
+
+      )}
 
       {/* ── Card 2: Status, Priority & Dates ── */}
       <div style={miniCard}>
