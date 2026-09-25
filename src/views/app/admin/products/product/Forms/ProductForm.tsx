@@ -65,6 +65,9 @@ type ProductFormProps = {
   onFormSubmit: (formData: ProductFormModel, batFile: PegFile | null) => void;
   sizes: Options[];
   colors: Options[];
+  /** Noms des tailles/couleurs déjà rencontrées (valeurs hors catégorie) */
+  knownSizes?: Options[];
+  knownColors?: Options[];
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
@@ -126,6 +129,8 @@ const ProductForm = (props: ProductFormProps) => {
     type,
     sizes,
     colors,
+    knownSizes,
+    knownColors,
     forms,
     checklists,
     initialData,
@@ -335,6 +340,8 @@ const ProductForm = (props: ProductFormProps) => {
               checklists={checklists}
               sizes={sizes}
               colors={colors}
+              knownSizes={knownSizes}
+              knownColors={knownColors}
               customerCategories={customerCategories}
               categories={categories}
               customers={customers}

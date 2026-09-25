@@ -4,6 +4,7 @@ import { Color, Product, ProductCategory, Size } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
 import { PegFile } from '@/@types/pegFile';
 import ProductForm, { ProductFormModel } from './Forms/ProductForm';
+import { rememberOptions } from './Forms/attachedOptions';
 import {
   apiGetCustomers,
   GetCustomersResponse,
@@ -69,6 +70,11 @@ const EditProduct = () => {
   const [customerCategories, setCustomerCategories] = useState<Options[]>([]);
   const [sizes, setSizes] = useState<Options[]>([]);
   const [colors, setColors] = useState<Options[]>([]);
+  // Noms des tailles/couleurs déjà rencontrées (produit chargé + listes des
+  // catégories) : une valeur rattachée hors de la catégorie reste AFFICHÉE
+  // dans le formulaire au lieu d'être enregistrée à l'insu de l'admin
+  const [knownSizes, setKnownSizes] = useState<Options[]>([]);
+  const [knownColors, setKnownColors] = useState<Options[]>([]);
   const [productCategories, setProductCategories] = useState<Options[]>([]);
   const [forms, setForms] = useState<Options[]>([]);
   const [checklists, setChecklists] = useState<Options[]>([]);
@@ -256,6 +262,7 @@ const EditProduct = () => {
       label: size.name || '',
     }));
     setSizes(productSizes);
+    setKnownSizes(rememberOptions(productSizes));
   };
 
   const fetchColors = async () => {
@@ -277,7 +284,28 @@ const EditProduct = () => {
       label: color.name || '',
     }));
     setColors(productColors);
+    setKnownColors(rememberOptions(productColors));
   };
+
+  useEffect(() => {
+    if (!product) return;
+    setKnownSizes(
+      rememberOptions(
+        (product.sizes ?? []).map((size) => ({
+          value: size.documentId || '',
+          label: size.name || '',
+        }))
+      )
+    );
+    setKnownColors(
+      rememberOptions(
+        (product.colors ?? []).map((color) => ({
+          value: color.documentId || '',
+          label: color.name || '',
+        }))
+      )
+    );
+  }, [product]);
 
   const updateOrCreateProduct = async (data: Product): Promise<Product> => {
     if (onEdition) {
@@ -388,6 +416,8 @@ const EditProduct = () => {
         onDiscard={handleDiscard}
         sizes={sizes}
         colors={colors}
+        knownSizes={knownSizes}
+        knownColors={knownColors}
         customers={customers}
         customerCategories={customerCategories}
         categories={productCategories}

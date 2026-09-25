@@ -8,6 +8,7 @@ import {
 } from 'react-hook-form';
 import { Select, Switcher } from '@/components/ui';
 import type { ProductFormModel } from './ProductForm';
+import { withAttachedOutsideCategory } from './attachedOptions';
 import { PriceTier } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
 import { HiOutlineTrash, HiOutlinePlus, HiOutlineLockClosed, HiOutlineDocumentText, HiOutlineUpload, HiX } from 'react-icons/hi';
@@ -30,6 +31,9 @@ type ProductFieldsProps = {
   type: string;
   sizes: Options[];
   colors: Options[];
+  /** Noms des tailles/couleurs déjà rencontrées, pour afficher celles hors catégorie */
+  knownSizes?: Options[];
+  knownColors?: Options[];
   customerCategories: Options[];
   categories: Options[];
   customers: Options[];
@@ -84,12 +88,24 @@ const fieldError: React.CSSProperties = {
   marginTop: '4px',
 };
 
+// Valeurs rattachées hors de la catégorie : l'admin sait qu'elles sont
+// proposées au client et peut les retirer (croix de la pastille)
+const OutsideCategoryNote = ({ kind, count }: { kind: 'taille' | 'couleur'; count: number }) => (
+  <p style={{ margin: '6px 0 0', fontSize: '11.5px', lineHeight: 1.4, color: '#fbbf24' }}>
+    {count > 1
+      ? `${count} ${kind}s « hors catégorie » sont rattachées au produit et proposées au client. Retirez-les si elles ne doivent pas l'être.`
+      : `1 ${kind} « hors catégorie » est rattachée au produit et proposée au client. Retirez-la si elle ne doit pas l'être.`}
+  </p>
+);
+
 const ProductFields = (props: ProductFieldsProps) => {
   const {
     errors,
     type,
     sizes,
     colors,
+    knownSizes = [],
+    knownColors = [],
     customerCategories,
     categories,
     customers,
@@ -653,15 +669,31 @@ const ProductFields = (props: ProductFieldsProps) => {
             <Controller
               name="sizes"
               control={control}
-              render={({ field }) => (
-                <Select
-                  isMulti
-                  value={sizes.filter((o) => field.value?.includes(o.value))}
-                  placeholder="Tailles..."
-                  options={sizes}
-                  onChange={(sel) => field.onChange(sel.map((o) => o.value))}
-                />
-              )}
+              render={({ field }) => {
+                // Toute taille rattachée est affichée, même hors de la
+                // catégorie : sinon invisible, mais enregistrée et proposée
+                // au client (attachedOptions.ts)
+                const { options, outside } = withAttachedOutsideCategory(
+                  sizes,
+                  knownSizes,
+                  field.value,
+                  'Taille'
+                );
+                return (
+                  <>
+                    <Select
+                      isMulti
+                      value={options.filter((o) => field.value?.includes(o.value))}
+                      placeholder="Tailles..."
+                      options={options}
+                      onChange={(sel) => field.onChange(sel.map((o) => o.value))}
+                    />
+                    {outside.length > 0 && (
+                      <OutsideCategoryNote kind="taille" count={outside.length} />
+                    )}
+                  </>
+                );
+              }}
             />
           </div>
           <div>
@@ -669,15 +701,28 @@ const ProductFields = (props: ProductFieldsProps) => {
             <Controller
               name="colors"
               control={control}
-              render={({ field }) => (
-                <Select
-                  isMulti
-                  value={colors.filter((o) => field.value?.includes(o.value))}
-                  placeholder="Couleurs..."
-                  options={colors}
-                  onChange={(sel) => field.onChange(sel.map((o) => o.value))}
-                />
-              )}
+              render={({ field }) => {
+                const { options, outside } = withAttachedOutsideCategory(
+                  colors,
+                  knownColors,
+                  field.value,
+                  'Couleur'
+                );
+                return (
+                  <>
+                    <Select
+                      isMulti
+                      value={options.filter((o) => field.value?.includes(o.value))}
+                      placeholder="Couleurs..."
+                      options={options}
+                      onChange={(sel) => field.onChange(sel.map((o) => o.value))}
+                    />
+                    {outside.length > 0 && (
+                      <OutsideCategoryNote kind="couleur" count={outside.length} />
+                    )}
+                  </>
+                );
+              }}
             />
           </div>
           <div>
