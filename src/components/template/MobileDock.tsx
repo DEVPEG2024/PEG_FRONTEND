@@ -62,12 +62,18 @@ import { accentVars, readAccent } from '@/utils/mobileShell';
  */
 
 const LONG_PRESS_MS = 480;
-// Retrait de la capsule de verre dans son onglet (px, de chaque côté)
+// Lentille de verre, visible SEULEMENT sous le doigt (demande Nova) :
+// retrait dans son onglet (px, de chaque côté)
 const GLASS_INSET = 3;
-// Bord de tête rapide, bord de queue plus mou : la capsule s'étire vers
+// Bord de tête rapide, bord de queue plus mou : la lentille s'étire vers
 // l'onglet visé puis se rétracte en arrivant, comme une goutte
-const GLASS_LEAD = { type: 'spring', stiffness: 560, damping: 38 } as const;
-const GLASS_TAIL = { type: 'spring', stiffness: 230, damping: 26 } as const;
+const GLASS_LEAD = { type: 'spring', stiffness: 520, damping: 40 } as const;
+const GLASS_TAIL = { type: 'spring', stiffness: 260, damping: 30 } as const;
+// Apparition sous le doigt / fonte dans l'onglet au lâcher
+const GLASS_IN = { type: 'spring', stiffness: 520, damping: 32 } as const;
+const GLASS_OUT = { type: 'spring', stiffness: 300, damping: 34 } as const;
+// Au lâcher, le temps que la lentille finisse sa course avant de fondre
+const GLASS_LINGER_MS = 360;
 // Largeur du fondu aux bords de la barre (--peg-dock-fade-*, _mobile.css)
 const EDGE_FADE_PX = 26;
 // Petit va-et-vient de la barre, une seule fois par appareil : « ça défile »
@@ -188,7 +194,10 @@ const Dock = () => {
   const syncEdges = useCallback(() => {
     const nav = navRef.current;
     const track = trackRef.current;
-    const items = track?.querySelectorAll<HTMLElement>('.peg-dock-item');
+    // Les onglets de la barre (pas leur copie dans la lentille de verre)
+    const items = track?.querySelectorAll<HTMLElement>(
+      ':scope > .peg-dock-item'
+    );
     if (!nav || !track || !items?.length) return;
     const box = track.getBoundingClientRect();
     const a = items[0].getBoundingClientRect();
@@ -269,61 +278,95 @@ const Dock = () => {
     revealedOnce.current = true;
   }, [activeKey, reveal]);
 
-  // Capsule de verre sous l'onglet actif : d'un onglet à l'autre, ses deux
-  // bords sont animés séparément (GLASS_LEAD / GLASS_TAIL) — elle coule,
-  // s'amincit un peu en s'étirant, et un reflet la traverse selon sa vitesse.
+  // Lentille de verre : invisible au repos (l'onglet actif garde sa pastille).
+  // Doigt posé sur un onglet → elle naît sur l'onglet actif, coule jusqu'à
+  // l'onglet touché (bords animés à part : elle s'étire puis se rétracte) en
+  // grossissant ce qu'elle survole, avec une légère dispersion des couleurs ;
+  // doigt levé → elle fond dans la pastille de l'onglet.
   const glassLeft = useMotionValue(0);
   const glassRight = useMotionValue(0);
+  const glassPress = useMotionValue(0); // 0 = repos, 1 = doigt posé
   const glassWidth = useTransform([glassLeft, glassRight], ([l, r]: number[]) =>
     Math.max(0, r - l)
   );
-  const glassRest = useRef(0);
-  const glassSquash = useTransform(glassWidth, (w) => {
-    const rest = glassRest.current;
-    return rest && w > rest ? Math.max(0.8, 1 - (w - rest) / (rest * 4)) : 1;
-  });
-  const glassSheen = useTransform(useVelocity(glassLeft), (v) =>
-    Math.min(1, Math.abs(v) / 900)
+  const glassSpeed = useTransform(
+    [useVelocity(glassLeft), useVelocity(glassRight)],
+    ([a, b]: number[]) => Math.min(1, Math.max(Math.abs(a), Math.abs(b)) / 1100)
   );
-  const glassPlaced = useRef(false);
-  const [glassShown, setGlassShown] = useState(false);
+  const glassOpacity = useTransform(glassPress, (p) => Math.min(1, p * 1.5));
+  // Elle naît petite, et se soulève un peu pendant sa course
+  const glassScale = useTransform(
+    [glassPress, glassSpeed],
+    ([p, v]: number[]) => 0.7 + 0.3 * p + 0.05 * v
+  );
+  // Réfraction : les onglets vus au travers, grossis autour de son centre
+  const lensX = useTransform(glassLeft, (l) => -l);
+  const lensOrigin = useTransform(
+    [glassLeft, glassRight],
+    ([l, r]: number[]) => `${(l + r) / 2}px`
+  );
+  const lensScale = useTransform(
+    [glassPress, glassSpeed],
+    ([p, v]: number[]) => 1 + 0.07 * p + 0.07 * v
+  );
+  const lensFilter = useTransform(glassSpeed, (v) =>
+    v < 0.05
+      ? 'none'
+      : `drop-shadow(${(1.3 * v).toFixed(2)}px 0 0 rgba(255,80,80,0.45)) drop-shadow(${(-1.3 * v).toFixed(2)}px 0 0 rgba(80,170,255,0.45))`
+  );
+  const [lensWidth, setLensWidth] = useState(0);
+  const glassHide = useRef<ReturnType<typeof setTimeout>>();
 
-  const placeGlass = useCallback(
-    (animated: boolean) => {
-      const el = shownKey
-        ? trackRef.current?.querySelector<HTMLElement>(
-            `[data-key="${CSS.escape(shownKey)}"]`
-          )
+  const moveGlass = useCallback(
+    (key: string | undefined, animated: boolean) => {
+      const track = trackRef.current;
+      const el = key
+        ? track?.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`)
         : null;
-      // Page hors des onglets : la capsule s'efface (« Menu » s'allume)
-      if (!el) {
-        setGlassShown(false);
-        return;
-      }
+      if (!track || !el) return;
+      setLensWidth(track.scrollWidth);
       const left = el.offsetLeft + GLASS_INSET;
       const right = el.offsetLeft + el.offsetWidth - GLASS_INSET;
-      glassRest.current = right - left;
-      setGlassShown(true);
-      if (!animated || !glassPlaced.current || reduceMotion) {
+      if (!animated) {
         glassLeft.set(left);
         glassRight.set(right);
-        glassPlaced.current = true;
         return;
       }
       const toRight = left > glassLeft.get();
       animate(glassLeft, left, toRight ? GLASS_TAIL : GLASS_LEAD);
       animate(glassRight, right, toRight ? GLASS_LEAD : GLASS_TAIL);
     },
-    [shownKey, reduceMotion, glassLeft, glassRight]
+    [glassLeft, glassRight]
   );
 
-  // Nouvel onglet actif, ou onglets réordonnés : la capsule rejoint sa place
-  useLayoutEffect(() => placeGlass(true), [placeGlass, tabs]);
+  const showGlass = (key: string) => {
+    if (reduceMotion) return;
+    clearTimeout(glassHide.current);
+    // Elle part de l'onglet actif (ou naît sous le doigt s'il n'y en a pas)
+    if (glassPress.get() < 0.05) moveGlass(shownKey ?? key, false);
+    moveGlass(key, true);
+    animate(glassPress, 1, GLASS_IN);
+  };
+  const hideGlass = (delay: number) => {
+    clearTimeout(glassHide.current);
+    glassHide.current = setTimeout(
+      () => animate(glassPress, 0, GLASS_OUT),
+      delay
+    );
+  };
+  useEffect(() => () => clearTimeout(glassHide.current), []);
+
+  // Onglet actif changé (ou onglets réordonnés) : la lentille visible le
+  // rejoint en coulant, invisible elle s'y place sans bruit
+  useLayoutEffect(
+    () => moveGlass(shownKey, glassPress.get() > 0.05),
+    [moveGlass, shownKey, tabs, glassPress]
+  );
   useEffect(() => {
-    const onResize = () => placeGlass(false);
+    const onResize = () => moveGlass(shownKey, false);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [placeGlass]);
+  }, [moveGlass, shownKey]);
 
   // Première fois sur cet appareil : la barre glisse un peu et revient. Elle
   // n'est notée « vue » qu'une fois jouée (ou touchée) : un montage annulé
@@ -504,6 +547,34 @@ const Dock = () => {
     return `side-nav-${navMode}`;
   };
 
+  // Contenu d'un onglet : dans la barre, et dans la lentille (sans le texte
+  // réservé aux lecteurs d'écran, déjà lu sur l'onglet)
+  const tabBody = (tab: DockEntry, readable: boolean) => {
+    const { badge, dot } = tabNews(tab);
+    return (
+      <>
+        <span className="peg-dock-icon">
+          {navigationIcon[tab.icon]}
+          {badge && (
+            <span
+              className="peg-dock-badge"
+              style={{ background: badge.color }}
+            >
+              {badge.count > 99 ? '99+' : badge.count}
+            </span>
+          )}
+          {dot && <span className="peg-dock-dot" aria-hidden="true" />}
+        </span>
+        <span className="peg-dock-label">
+          {tab.title}
+          {readable && tab.group && (
+            <span className="sr-only"> ({tab.group})</span>
+          )}
+        </span>
+      </>
+    );
+  };
+
   return (
     <>
       <nav
@@ -524,10 +595,12 @@ const Dock = () => {
               if (!item || (e.pointerType === 'mouse' && e.button !== 0))
                 return;
               const key = item.dataset.key!;
+              showGlass(key);
               press.current = {
                 x: e.clientX,
                 y: e.clientY,
                 timer: setTimeout(() => {
+                  hideGlass(0);
                   swallowReleaseClick();
                   navigator.vibrate?.(10);
                   openEditor(key);
@@ -539,27 +612,19 @@ const Dock = () => {
               if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8)
                 clearTimeout(p.timer);
             }}
-            onPointerUp={cancelPress}
-            onPointerCancel={cancelPress}
+            onPointerUp={() => {
+              cancelPress();
+              hideGlass(GLASS_LINGER_MS);
+            }}
+            // La barre se met à défiler (ou le geste est interrompu) : la
+            // lentille fond aussitôt
+            onPointerCancel={() => {
+              cancelPress();
+              hideGlass(0);
+            }}
             onContextMenu={(e) => e.preventDefault()}
           >
-            <motion.span
-              className="peg-dock-glass"
-              aria-hidden="true"
-              style={{
-                x: glassLeft,
-                width: glassWidth,
-                scaleY: glassSquash,
-                opacity: glassShown ? 1 : 0,
-              }}
-            >
-              <motion.span
-                className="peg-dock-glass-sheen"
-                style={{ opacity: glassSheen }}
-              />
-            </motion.span>
             {tabs.map((tab) => {
-              const active = tab.key === shownKey;
               const { badge, dot } = tabNews(tab);
               return (
                 <Link
@@ -568,33 +633,55 @@ const Dock = () => {
                   data-key={tab.key}
                   data-news={badge || dot ? '' : undefined}
                   draggable={false}
-                  className={classNames('peg-dock-item', active && 'is-active')}
+                  className={classNames(
+                    'peg-dock-item',
+                    tab.key === shownKey && 'is-active'
+                  )}
                   aria-current={tab === activeTab ? 'page' : undefined}
                   onClick={() => onTabClick(tab)}
                 >
-                  <span className="peg-dock-icon">
-                    {navigationIcon[tab.icon]}
-                    {badge && (
-                      <span
-                        className="peg-dock-badge"
-                        style={{ background: badge.color }}
-                      >
-                        {badge.count > 99 ? '99+' : badge.count}
-                      </span>
-                    )}
-                    {dot && (
-                      <span className="peg-dock-dot" aria-hidden="true" />
-                    )}
-                  </span>
-                  <span className="peg-dock-label">
-                    {tab.title}
-                    {tab.group && (
-                      <span className="sr-only"> ({tab.group})</span>
-                    )}
-                  </span>
+                  {tabBody(tab, true)}
                 </Link>
               );
             })}
+            <motion.span
+              className="peg-dock-glass"
+              aria-hidden="true"
+              style={{
+                x: glassLeft,
+                width: glassWidth,
+                scale: glassScale,
+                opacity: glassOpacity,
+              }}
+            >
+              {/* Les onglets vus au travers du verre, grossis */}
+              <motion.span
+                className="peg-dock-glass-lens"
+                style={{
+                  x: lensX,
+                  width: lensWidth || undefined,
+                  scale: lensScale,
+                  originX: lensOrigin,
+                  filter: lensFilter,
+                }}
+              >
+                {tabs.map((tab) => (
+                  <span
+                    key={tab.key}
+                    className={classNames(
+                      'peg-dock-item',
+                      tab.key === shownKey && 'is-active'
+                    )}
+                  >
+                    {tabBody(tab, false)}
+                  </span>
+                ))}
+              </motion.span>
+              <motion.span
+                className="peg-dock-glass-sheen"
+                style={{ opacity: glassSpeed }}
+              />
+            </motion.span>
           </div>
           <span
             className="peg-dock-news peg-dock-news--left"
