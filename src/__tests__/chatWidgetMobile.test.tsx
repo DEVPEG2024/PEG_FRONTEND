@@ -9,8 +9,9 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import cartReducer from '@/store/slices/base/cartSlice';
 import ChatWidget from '@/components/template/ChatWidget';
 
-// Assistant client sur TÉLÉPHONE (demande du 25/09/2026) : petit bouton dans
-// l'en-tête, à gauche du panier, qui apparaît en pulsant 7 s toutes les 30 s ;
+// Assistant client sur TÉLÉPHONE (demandes du 25/09/2026) : petit bouton dans
+// l'en-tête, à gauche du panier, AFFICHÉ EN PERMANENCE et qui pulse sans arrêt
+// (l'ancien cycle « 7 s visible toutes les 30 s » le faisait disparaître) ;
 // le chat s'ouvre en plein écran.
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -59,7 +60,11 @@ const render = (path = '/home') =>
   });
 
 const launcher = () => container.querySelector('button[aria-label="Ouvrir le chat assistant"]') as HTMLButtonElement | null;
-const launcherShown = () => (launcher()?.parentElement as HTMLElement | null)?.style.opacity === '1';
+// Visible = présent, et ni masqué aux lecteurs d'écran ni retiré du clavier.
+const launcherShown = () => {
+  const btn = launcher();
+  return !!btn && !btn.closest('[aria-hidden="true"]') && btn.tabIndex !== -1;
+};
 const advance = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
 
 const addHeaderSlot = () => {
@@ -74,20 +79,20 @@ const slotWrapperWidth = (slot: HTMLElement) =>
 describe('ChatWidget — téléphone, bouton dans l’en-tête (à gauche du panier)', () => {
   afterEach(() => document.getElementById('peg-chat-header-slot')?.remove());
 
-  it('se place dans l’en-tête et apparaît 7 s toutes les 30 s', () => {
+  it('se place dans l’en-tête et y reste en permanence, en pulsant', () => {
     const slot = addHeaderSlot();
     render();
     expect(slot.querySelector('button[aria-label="Ouvrir le chat assistant"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Ouvrir le chat assistant"]')).toBeNull(); // pas de bouton flottant
-    expect(slotWrapperWidth(slot)).toBe('40px');   // 0 s : déplié
-    advance(6_900);
-    expect(slotWrapperWidth(slot)).toBe('40px');   // 6,9 s
-    advance(200);
-    expect(slotWrapperWidth(slot)).toBe('0px');    // 7,1 s : replié
-    advance(22_800);
-    expect(slotWrapperWidth(slot)).toBe('0px');    // 29,9 s
-    advance(200);
-    expect(slotWrapperWidth(slot)).toBe('40px');   // 30,1 s : réapparaît
+    const stillThere = () => {
+      const btn = slot.querySelector('button[aria-label="Ouvrir le chat assistant"]') as HTMLButtonElement;
+      expect(slotWrapperWidth(slot)).toBe('40px');           // jamais replié
+      expect(btn.style.animation).toContain('peg-chat-halo'); // pulse toujours
+    };
+    stillThere();                    // 0 s
+    advance(7_100); stillThere();    // 7,1 s : l'ancien cycle le repliait ici
+    advance(22_900); stillThere();   // 30 s
+    advance(90_000); stillThere();   // 2 min
   });
 
   it('pulse, s’ouvre en plein écran, et reste disponible pendant la commande', () => {
@@ -102,23 +107,24 @@ describe('ChatWidget — téléphone, bouton dans l’en-tête (à gauche du pan
     expect(dialog.style.width).toBe('100vw');
   });
 
-  it('replié : ni cliquable ni atteignable au clavier', () => {
+  it('toujours cliquable et atteignable au clavier', () => {
     const slot = addHeaderSlot();
     render();
-    advance(7_100);
+    advance(45_000);
     const btn = slot.querySelector('button[aria-label="Ouvrir le chat assistant"]') as HTMLButtonElement;
-    expect(btn.style.pointerEvents).toBe('none');
-    expect(btn.tabIndex).toBe(-1);
+    expect(btn.style.pointerEvents).not.toBe('none');
+    expect(btn.tabIndex).toBe(0);
+    expect(btn.getAttribute('aria-hidden')).toBeNull();
   });
 });
 
 describe('ChatWidget — téléphone sans en-tête (repli flottant)', () => {
-  it('bouton flottant, même cycle 7 s / 30 s', () => {
+  it('bouton flottant, lui aussi affiché en permanence', () => {
     render();
     expect(launcherShown()).toBe(true);
     advance(7_100);
-    expect(launcherShown()).toBe(false);
-    advance(23_000);
+    expect(launcherShown()).toBe(true);
+    advance(60_000);
     expect(launcherShown()).toBe(true);
   });
 

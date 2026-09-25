@@ -48,19 +48,14 @@ const FUNNEL_ROUTES = ['/customer/product', '/customer/cart', '/customer/payment
 
 /**
  * Téléphone (< md) : petit bouton dans l'EN-TÊTE, à gauche du panier (demande du
- * 25/09/2026) — un bouton flottant recouvrait les contrôles de la page. Il
- * apparaît en pulsant PEEK_VISIBLE_MS toutes les PEEK_PERIOD_MS et reste affiché
- * tant qu'une réponse est en cours ou non lue.
+ * 25/09/2026) — un bouton flottant recouvrait les contrôles de la page. Il y
+ * reste EN PERMANENCE et pulse sans arrêt (demande du même jour : l'ancien cycle
+ * « 7 s visible toutes les 30 s » le faisait disparaître). « Réduire les
+ * animations » : une lueur qui pulse doucement remplace le battement.
  * L'en-tête (ModernLayout) fournit l'emplacement HEADER_SLOT_ID ; sans lui (autre
  * mise en page), repli sur le bouton flottant en bas à droite.
  */
-const PEEK_VISIBLE_MS = 7_000;
-const PEEK_PERIOD_MS = 30_000;
 const HEADER_SLOT_ID = 'peg-chat-header-slot';
-
-const prefersReducedMotion = (): boolean => {
-  try { return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
-};
 
 const newConversationId = (): string => {
   try {
@@ -470,22 +465,6 @@ const ChatWidget = () => {
   }, [input, open]);
 
   const isPhone = smaller.md;
-  const [reducedMotion] = useState(prefersReducedMotion);
-
-  // Cycle d'apparition du bouton sur téléphone : visible PEEK_VISIBLE_MS, puis
-  // masqué jusqu'au tour suivant (toutes les PEEK_PERIOD_MS). Suspendu chat ouvert.
-  const [peek, setPeek] = useState(true);
-  useEffect(() => {
-    if (!isPhone || open) return;
-    let hideTimer: ReturnType<typeof setTimeout> | undefined;
-    const show = () => {
-      setPeek(true);
-      hideTimer = setTimeout(() => setPeek(false), PEEK_VISIBLE_MS);
-    };
-    show();
-    const cycle = setInterval(show, PEEK_PERIOD_MS);
-    return () => { clearInterval(cycle); if (hideTimer) clearTimeout(hideTimer); };
-  }, [isPhone, open]);
 
   // Téléphone, chat ouvert : plein écran calé sur la zone VISIBLE (visualViewport),
   // pour que le champ de saisie reste au-dessus du clavier, et page figée derrière.
@@ -568,11 +547,6 @@ const ChatWidget = () => {
   );
   const firstName = userName.split(' ')[0] || '';
 
-  // Bouton du téléphone : affiché pendant sa fenêtre d'apparition, ou en permanence
-  // s'il y a une réponse à lire / en cours (et sans animation si l'utilisateur l'a
-  // demandé au système : pas d'apparitions répétées).
-  const launcherVisible = !isPhone || peek || unread > 0 || loading || reducedMotion;
-
   return (
     <div style={{
       position: 'fixed',
@@ -596,7 +570,15 @@ const ChatWidget = () => {
           70% { box-shadow: 0 0 0 8px rgba(124,92,255,0); }
           100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
         }
-        @media (prefers-reduced-motion: reduce) { .peg-chat-anim { animation: none !important; } }
+        @keyframes peg-chat-glow {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(124,92,255,0.25); }
+          50% { box-shadow: 0 0 14px 3px rgba(124,92,255,0.65); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .peg-chat-anim { animation: none !important; }
+          /* Pas de battement ni d'anneau qui s'étend : une lueur qui pulse sur place */
+          .peg-chat-glow { animation: peg-chat-glow 1.8s ease-in-out infinite !important; }
+        }
         ${CHAT_CSS}
       `}</style>
       {/* Fenêtre de chat */}
@@ -753,36 +735,29 @@ const ChatWidget = () => {
         </div>
       )}
 
-      {/* Téléphone : petit bouton dans l'en-tête, à gauche du panier. Il se déplie
-          (le panier glisse) pendant sa fenêtre d'apparition, puis se replie. */}
+      {/* Téléphone : petit bouton dans l'en-tête, à gauche du panier — toujours là,
+          pulsation permanente (halo + battement). */}
       {inHeader && headerSlot && createPortal(
         <span
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            width: launcherVisible ? '40px' : '0px',
-            transition: reducedMotion ? 'none' : 'width 0.35s ease',
+            width: '40px',
           }}
         >
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Ouvrir le chat assistant"
-            aria-hidden={!launcherVisible}
-            tabIndex={launcherVisible ? 0 : -1}
             title="Une question ? Assistant PEG"
-            className="peg-chat-anim"
+            className="peg-chat-anim peg-chat-glow"
             style={{
               width: '32px', height: '32px', padding: 0, borderRadius: '50%', border: 'none', cursor: 'pointer',
               background: 'linear-gradient(135deg, #4f7cff, #7c5cff)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
-              opacity: launcherVisible ? 1 : 0,
-              transform: launcherVisible ? 'scale(1)' : 'scale(0.3)',
-              pointerEvents: launcherVisible ? 'auto' : 'none',
-              transition: reducedMotion ? 'none' : 'opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              animation: launcherVisible ? 'peg-chat-halo 1.4s ease-out infinite' : 'none',
+              animation: 'peg-chat-halo 1.4s ease-out infinite',
             }}
           >
-            <span className="peg-chat-anim" style={{ display: 'flex', animation: launcherVisible ? 'peg-chat-pop 1.4s ease-in-out infinite' : 'none' }}>
+            <span className="peg-chat-anim" style={{ display: 'flex', animation: 'peg-chat-pop 1.4s ease-in-out infinite' }}>
               <MdChatBubble size={16} color="#fff" />
             </span>
             {unread > 0 && (
@@ -805,14 +780,9 @@ const ChatWidget = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',
-          opacity: launcherVisible ? 1 : 0,
-          transform: launcherVisible ? 'none' : 'translateY(16px) scale(0.6)',
-          pointerEvents: launcherVisible ? 'auto' : 'none',
-          transition: reducedMotion ? 'none' : 'opacity 0.35s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
-        aria-hidden={!launcherVisible}
       >
-      {isPhone && !open && launcherVisible && (
+      {isPhone && !open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -831,7 +801,6 @@ const ChatWidget = () => {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Fermer le chat' : 'Ouvrir le chat assistant'}
         aria-expanded={open}
-        tabIndex={launcherVisible ? 0 : -1}
         className="peg-chat-anim"
         style={{
           width: '56px',
@@ -841,7 +810,7 @@ const ChatWidget = () => {
           background: open ? 'rgba(15,23,42,0.92)' : 'linear-gradient(135deg, #4f7cff, #7c5cff)',
           border: open ? '1px solid rgba(255,255,255,0.14)' : 'none',
           boxShadow: open ? '0 10px 28px rgba(0,0,0,0.45)' : undefined,
-          // Téléphone : pulsation plus marquée (halo + battement) pendant l'apparition.
+          // Téléphone : pulsation plus marquée (halo + battement).
           animation: open ? 'none' : isPhone
             ? 'peg-chat-pulse 1.25s ease-in-out infinite, peg-chat-pop 1.25s ease-in-out infinite'
             : 'peg-chat-pulse 2.2s ease-in-out infinite',
