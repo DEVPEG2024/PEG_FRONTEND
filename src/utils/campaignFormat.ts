@@ -86,6 +86,7 @@ export const emptyCampaign = (): CampaignInput => ({
   popupDelay: 0,
   popupDuration: null,
   popupDays: null,
+  popupAnimation: 'zoom',
 });
 
 // ── Réglages de la pop-up ────────────────────────────────────────────────────

@@ -20,6 +20,18 @@ jest.mock('@/services/CampaignServices', () => ({
   apiGetMyCampaigns: () => mockGet(),
   apiTrackCampaign: (...args: unknown[]) => (mockTrack as (...a: unknown[]) => Promise<unknown>)(...args),
 }));
+// Animations : vérifiées dans un vrai navigateur. Ici, éléments simples, sortie immédiate.
+jest.mock('framer-motion', () => {
+  const React = jest.requireActual('react');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'transition', 'variants', 'whileHover', 'whileTap', 'layout']);
+  const cache: Record<string, unknown> = {};
+  const motion = new Proxy({}, {
+    get: (_t, tag: string) =>
+      (cache[tag] ||= React.forwardRef((props: Record<string, unknown>, ref: unknown) =>
+        React.createElement(tag, { ...Object.fromEntries(Object.entries(props).filter(([k]) => !MOTION_PROPS.has(k))), ref }))),
+  });
+  return { motion, AnimatePresence: ({ children }: { children: unknown }) => children, useReducedMotion: () => false };
+});
 jest.mock('@/store', () => ({
   useAppSelector: (fn: (s: unknown) => unknown) => jest.requireActual('react-redux').useSelector(fn),
 }));
@@ -32,7 +44,7 @@ const campaign = (over: Partial<ClientCampaign> = {}): ClientCampaign => ({
   images: [{ id: 1, url: 'https://s3.exemple/cover.jpg', width: 1200, height: 630, name: 'cover' }],
   ctaLabel: 'Voir le catalogue', ctaUrl: '/customer/catalogue',
   receivedAt: new Date().toISOString(), expiresAt: null, openedAt: null, clickedAt: null, dismissedAt: null,
-  popup: true, popupDelay: 0, popupDuration: null, popupDays: null, isTest: false, ...over,
+  popup: true, popupDelay: 0, popupDuration: null, popupDays: null, popupAnimation: 'zoom', isTest: false, ...over,
 });
 
 const store = () =>

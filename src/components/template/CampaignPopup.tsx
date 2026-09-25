@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { HiX } from 'react-icons/hi';
 import { useAppSelector } from '@/store';
 import type { ClientCampaign } from '@/@types/campaign';
@@ -8,6 +8,7 @@ import { apiGetMyCampaigns, apiTrackCampaign } from '@/services/CampaignServices
 import CampaignContent from '@/components/campaign/CampaignContent';
 import { openCampaignLink } from '@/components/campaign/openCampaignLink';
 import { fmtRelativeDay } from '@/utils/campaignFormat';
+import { backdropMotion, cardMotion } from '@/components/campaign/popupMotion';
 
 /**
  * Pop-up des campagnes clients (option « pop-up à la prochaine visite »).
@@ -63,6 +64,8 @@ const CampaignPopup = () => {
   const arrivedAt = useRef(Date.now());
   const [remaining, setRemaining] = useState<number | null>(null);
   const paused = useRef(false);
+  // Préférence système « réduire les animations » : fondu simple, contenu sans décalage.
+  const reduced = !!useReducedMotion();
 
   const notifications = useAppSelector((s) => s.base.notification?.notifications ?? []);
   const latestCampaignNotif = useMemo(
@@ -150,16 +153,21 @@ const CampaignPopup = () => {
     };
   }, [current, close]);
 
-  if (!current) return null;
-
   const onCta = () => {
+    if (!current) return;
     const url = current.ctaUrl;
     close('click');
     openCampaignLink(url, navigate);
   };
+  const m = current ? cardMotion(current.popupAnimation || 'zoom', reduced) : null;
 
+  // AnimatePresence : la pop-up joue aussi son animation de sortie à la fermeture.
   return (
-    <div
+    <AnimatePresence>
+    {current && m && (
+    <motion.div
+      key={`campaign-popup-${current.id}`}
+      {...backdropMotion}
       onClick={() => close('dismiss')}
       style={{
         position: 'fixed', inset: 0, zIndex: 10050,
@@ -174,9 +182,9 @@ const CampaignPopup = () => {
         aria-modal="true"
         aria-label={current.title}
         tabIndex={-1}
-        initial={{ opacity: 0, scale: 0.94, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.22, ease: 'easeOut' }}
+        initial={m.initial}
+        animate={m.animate}
+        exit={m.exit}
         onClick={(e) => e.stopPropagation()}
         onPointerEnter={() => { paused.current = true; }}
         onPointerLeave={() => { paused.current = false; }}
@@ -217,7 +225,7 @@ const CampaignPopup = () => {
         >
           <HiX size={18} />
         </button>
-        <CampaignContent campaign={current} dateLabel={fmtRelativeDay(current.receivedAt)} onCta={onCta} />
+        <CampaignContent campaign={current} dateLabel={fmtRelativeDay(current.receivedAt)} onCta={onCta} entranceDelay={reduced ? null : m.contentDelay} />
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '0 18px 16px', flexWrap: 'wrap' }}>
           <button
             type="button"
@@ -235,7 +243,9 @@ const CampaignPopup = () => {
           </button>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
+    )}
+    </AnimatePresence>
   );
 };
 

@@ -129,6 +129,7 @@ const CampaignEditor = () => {
           title: c.title, message: c.message, tag: c.tag, images: c.images, ctaLabel: c.ctaLabel, ctaUrl: c.ctaUrl,
           channelPopup: c.channelPopup, channelEmail: c.channelEmail, audience: c.audience, expiresAt: c.expiresAt,
           popupDelay: c.popupDelay ?? 0, popupDuration: c.popupDuration ?? null, popupDays: c.popupDays ?? null,
+          popupAnimation: c.popupAnimation ?? 'zoom',
         });
         if (c.status === 'scheduled' && c.sendAt) { setLater(true); setSendAt(toLocalInput(c.sendAt)); }
       })
@@ -448,6 +449,7 @@ const CampaignEditor = () => {
                 delay={form.popupDelay}
                 duration={form.popupDuration}
                 days={form.popupDays}
+                animation={form.popupAnimation}
                 onChange={(patch) => update(patch)}
               />
             )}

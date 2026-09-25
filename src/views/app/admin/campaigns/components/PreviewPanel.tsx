@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { HiOutlinePlay } from 'react-icons/hi';
+import { POPUP_ANIMATION_LABELS, cardMotion } from '@/components/campaign/popupMotion';
 import type { CampaignInput } from '@/@types/campaign';
 import CampaignContent from '@/components/campaign/CampaignContent';
 import { apiPreviewCampaignEmail } from '@/services/CampaignServices';
@@ -18,6 +21,10 @@ const PreviewPanel = ({ form }: { form: CampaignInput }) => {
   const [emailHtml, setEmailHtml] = useState<string>('');
   const [emailError, setEmailError] = useState(false);
   const meta = TAG_META[form.tag] || TAG_META.info;
+  // Rejoue l'animation d'apparition (bouton, ou changement de style).
+  const [replay, setReplay] = useState(0);
+  const reduced = !!useReducedMotion();
+  const m = cardMotion(form.popupAnimation, reduced, true);
 
   // E-mail : rendu serveur, à la demande, avec un temps de pause pendant la frappe.
   useEffect(() => {
@@ -42,9 +49,23 @@ const PreviewPanel = ({ form }: { form: CampaignInput }) => {
 
       {view === 'popup' && (
         <>
-          <div style={{ ...PANEL, overflow: 'hidden', borderRadius: '18px', boxShadow: '0 18px 40px rgba(0,0,0,0.4)' }}>
-            <CampaignContent campaign={form} dateLabel="aujourd’hui" coverMaxHeight={260} />
-          </div>
+          <motion.div
+            key={`${form.popupAnimation}-${replay}`}
+            initial={form.channelPopup ? m.initial : false}
+            animate={m.animate}
+            style={{ ...PANEL, overflow: 'hidden', borderRadius: '18px', boxShadow: '0 18px 40px rgba(0,0,0,0.4)' }}
+          >
+            <CampaignContent campaign={form} dateLabel="aujourd’hui" coverMaxHeight={260} entranceDelay={form.channelPopup && !reduced ? m.contentDelay : null} />
+          </motion.div>
+          {form.channelPopup && (
+            <button
+              type="button"
+              onClick={() => setReplay((n) => n + 1)}
+              style={{ ...chip(false), alignSelf: 'flex-start' }}
+            >
+              <HiOutlinePlay size={14} /> Rejouer l’animation · {POPUP_ANIMATION_LABELS[form.popupAnimation]}
+            </button>
+          )}
           {form.channelPopup ? (
             <span style={hintStyle}>
               Pop-up : s’ouvre {delayLabel(form.popupDelay)}, {form.popupDuration == null ? 'reste jusqu’à ce que le client la ferme' : durationLabel(form.popupDuration)}.

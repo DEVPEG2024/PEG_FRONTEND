@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { HiChevronLeft, HiChevronRight, HiX } from 'react-icons/hi';
 import type { CampaignImage, CampaignTag } from '@/@types/campaign';
 import { TAG_META, parseMessage } from '@/utils/campaignFormat';
@@ -114,9 +115,25 @@ type Props = {
   /** Hauteur maximale de la photo principale. */
   coverMaxHeight?: number;
   titleSize?: number;
+  /**
+   * Entrée animée (pop-up) : la photo se pose, puis type, titre, texte et bouton
+   * arrivent l'un après l'autre à partir de ce délai (s). Absent = rendu statique.
+   */
+  entranceDelay?: number | null;
 };
 
-const CampaignContent = ({ campaign, dateLabel, onCta, coverMaxHeight = 320, titleSize = 20 }: Props) => {
+// Apparition d'un élément du contenu, décalée de `i` crans.
+const rise = (base: number | null | undefined, i: number) =>
+  base == null
+    ? {}
+    : {
+        initial: { opacity: 0, y: 12 },
+        animate: { opacity: 1, y: 0 },
+        transition: { delay: base + 0.1 + i * 0.08, duration: 0.38, ease: [0.16, 1, 0.3, 1] as const },
+      };
+
+const CampaignContent = ({ campaign, dateLabel, onCta, coverMaxHeight = 320, titleSize = 20, entranceDelay = null }: Props) => {
+  const animated = entranceDelay != null;
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState<number | null>(null);
   const images = campaign.images || [];
@@ -145,9 +162,12 @@ const CampaignContent = ({ campaign, dateLabel, onCta, coverMaxHeight = 320, tit
               backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(18px) brightness(0.55)',
             }}
           />
-          <img
+          <motion.img
             src={current.url}
             alt=""
+            {...(animated
+              ? { initial: { scale: 1.12, opacity: 0.35 }, animate: { scale: 1, opacity: 1 }, transition: { delay: entranceDelay as number, duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
+              : {})}
             style={{ position: 'relative', display: 'block', width: '100%', maxHeight: `${coverMaxHeight}px`, objectFit: 'contain' }}
           />
         </button>
@@ -173,18 +193,34 @@ const CampaignContent = ({ campaign, dateLabel, onCta, coverMaxHeight = 320, tit
       )}
 
       <div style={{ padding: '16px 18px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+        <motion.div {...rise(entranceDelay, 0)} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
           <TagChip tag={campaign.tag} />
           {dateLabel && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>{dateLabel}</span>}
-        </div>
-        <h2 style={{ color: '#fff', fontSize: `${titleSize}px`, fontWeight: 700, lineHeight: 1.3, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
+        </motion.div>
+        <motion.h2 {...rise(entranceDelay, 1)} style={{ color: '#fff', fontSize: `${titleSize}px`, fontWeight: 700, lineHeight: 1.3, margin: '0 0 10px', overflowWrap: 'anywhere' }}>
           {campaign.title || 'Titre de la campagne'}
-        </h2>
-        {campaign.message ? <CampaignMessage text={campaign.message} /> : null}
+        </motion.h2>
+        {campaign.message ? (
+          <motion.div {...rise(entranceDelay, 2)}>
+            <CampaignMessage text={campaign.message} />
+          </motion.div>
+        ) : null}
         {campaign.ctaLabel && campaign.ctaUrl && (
-          <button
+          <motion.button
             type="button"
             onClick={onCta}
+            {...(animated
+              ? {
+                  // Arrive en dernier, puis une légère pulsation attire l'œil.
+                  initial: { opacity: 0, y: 12, scale: 1 },
+                  animate: { opacity: 1, y: 0, scale: [1, 1.045, 1] },
+                  transition: {
+                    opacity: { delay: (entranceDelay as number) + 0.34, duration: 0.35 },
+                    y: { delay: (entranceDelay as number) + 0.34, duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+                    scale: { delay: (entranceDelay as number) + 0.95, duration: 0.6, ease: 'easeInOut' },
+                  },
+                }
+              : {})}
             style={{
               marginTop: '6px', width: '100%', border: 'none', borderRadius: '10px', padding: '12px 16px',
               background: meta.color, color: '#0b1220', fontWeight: 700, fontSize: '14px', cursor: 'pointer',
@@ -192,7 +228,7 @@ const CampaignContent = ({ campaign, dateLabel, onCta, coverMaxHeight = 320, tit
             }}
           >
             {campaign.ctaLabel}
-          </button>
+          </motion.button>
         )}
       </div>
 

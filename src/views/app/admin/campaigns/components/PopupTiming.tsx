@@ -8,6 +8,8 @@ import {
   delayLabel,
   durationLabel,
 } from '@/utils/campaignFormat';
+import type { PopupAnimation } from '@/@types/campaign';
+import { POPUP_ANIMATIONS, POPUP_ANIMATION_LABELS } from '@/components/campaign/popupMotion';
 import { hintStyle, inputStyle, labelStyle } from '../ui';
 
 /**
@@ -15,7 +17,7 @@ import { hintStyle, inputStyle, labelStyle } from '../ui';
  * l'écran, pendant combien de jours elle est proposée.
  */
 
-type Patch = { popupDelay?: number; popupDuration?: number | null; popupDays?: number | null };
+type Patch = { popupDelay?: number; popupDuration?: number | null; popupDays?: number | null; popupAnimation?: PopupAnimation };
 
 // Une valeur enregistrée hors des choix proposés reste sélectionnable.
 const withValue = <T,>(list: T[], v: T) => (list.includes(v) ? list : [...list, v]);
@@ -39,10 +41,16 @@ const Select = ({ label, value, options, render, onChange }: {
   </label>
 );
 
-const PopupTiming = ({ delay, duration, days, onChange }: { delay: number; duration: number | null; days: number | null; onChange: (p: Patch) => void }) => (
+const PopupTiming = ({ delay, duration, days, animation, onChange }: {
+  delay: number;
+  duration: number | null;
+  days: number | null;
+  animation: PopupAnimation;
+  onChange: (p: Patch) => void;
+}) => (
   <div style={{ marginLeft: '32px', background: 'rgba(0,0,0,0.18)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#93c5fd', fontSize: '12px', fontWeight: 600 }}>
-      <HiOutlineClock size={14} /> Temps d’apparition de la pop-up
+      <HiOutlineClock size={14} /> Apparition de la pop-up
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px' }}>
       <Select
@@ -59,6 +67,17 @@ const PopupTiming = ({ delay, duration, days, onChange }: { delay: number; durat
         render={(v) => (v == null ? 'Jusqu’à ce que le client la ferme' : durationLabel(v).replace('se ferme seule après', 'Pendant'))}
         onChange={(v) => onChange({ popupDuration: v })}
       />
+      <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+        <span style={labelStyle}>Animation</span>
+        <select
+          aria-label="Pop-up : animation"
+          value={animation}
+          onChange={(e) => onChange({ popupAnimation: e.target.value as PopupAnimation })}
+          style={{ ...inputStyle, appearance: 'auto', fontSize: '13px' }}
+        >
+          {POPUP_ANIMATIONS.map((a) => <option key={a} value={a} style={{ color: '#000' }}>{POPUP_ANIMATION_LABELS[a]}</option>)}
+        </select>
+      </label>
       <Select
         label="Proposée pendant"
         value={days}

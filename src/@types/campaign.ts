@@ -5,6 +5,8 @@
  */
 
 export type CampaignTag = 'info' | 'nouveaute' | 'promotion' | 'important';
+/** Animation d'apparition de la pop-up (cf. `components/campaign/popupMotion.ts`). */
+export type PopupAnimation = 'zoom' | 'slide' | 'bounce' | 'fade';
 export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'canceled';
 
 /**
@@ -50,6 +52,7 @@ export type CampaignInput = {
   popupDuration: number | null;
   /** Pop-up : proposée pendant N jours après l'envoi (null = 45 jours), ensuite Actualités seulement. */
   popupDays: number | null;
+  popupAnimation: PopupAnimation;
 };
 
 export type Campaign = CampaignInput & {
@@ -175,6 +178,7 @@ export type ClientCampaign = {
   popupDelay: number;
   popupDuration: number | null;
   popupDays: number | null;
+  popupAnimation: PopupAnimation;
   isTest: boolean;
 };
 
