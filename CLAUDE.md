@@ -646,6 +646,22 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ---
 
+## 📱 Barre du bas du téléphone — défilante et personnalisable (ajout 25/09/2026)
+
+### Comportement (< 768px, `src/components/template/MobileDock.tsx`)
+- Par défaut : **un onglet par entrée du premier niveau du menu**, dans l'ordre de la barre latérale. Une catégorie (« Clients », « Finance »…) mène à sa première page et reste allumée sur toutes ses pages.
+- Ce qui ne tient pas à l'écran **se fait glisser sur le côté** : 4,5 onglets visibles (le demi-onglet au bord signale la suite), fondu aux bords, **point rouge au bord** si un onglet hors écran a une pastille. « Menu » reste épinglé à droite. Une seule fois par appareil, la barre glisse de 56px et revient (`peg_dock_hint_v1`).
+- **Personnalisation** : bouton « Personnaliser la barre du bas » en tête du menu, ou **appui long** (480 ms) sur un onglet → feuille « Barre du bas » (`MobileDockEditor.tsx`) : retirer (−), ajouter (+, sous-pages comprises : « Factures », « Commandes »…), réordonner (poignée, ou flèches au clavier), « Rétablir la barre d'origine ». La barre reste visible **au-dessus** de la feuille et change en direct.
+- Choix **local à l'appareil, par profil** : `localStorage.peg_dock_tabs_v1 = { "<rôles triés>": [clés] }`. Une clé qui n'est plus visible (droits, accès catalogue, Premium) est ignorée ; plus rien de valide → barre par défaut.
+
+### Règles (`src/utils/navMenu.ts`, tests `src/__tests__/dockTabs.test.ts`)
+- Entrées = `getDockEntries()` : même lecture des catégories que la barre latérale, mêmes droits, mêmes pastilles. **Ne pas recréer une liste d'onglets à part.**
+- Onglet actif = `findActiveDockTab()` : le chemin le plus précis gagne (`/admin/products/sizes` → Attributs, pas Boutique), puis une page épinglée sur sa catégorie.
+- ⚠️ Au relâchement du doigt après l'appui long, le navigateur émet un clic à cet endroit : il est **avalé** (`swallowReleaseClick`) — sinon il refermait la feuille ou touchait une de ses lignes.
+- Bureau et tablette non concernés : composant non monté ≥ 768px, styles sous `@media (max-width: 767.98px)`.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

@@ -1,9 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
+import { useReducedMotion } from 'framer-motion';
 import { HiOutlineMenu } from 'react-icons/hi';
+import { TbLayoutBottombar } from 'react-icons/tb';
 import Drawer from '@/components/ui/Drawer';
 import CustomVerticalMenu from '@/components/template/CustomVerticalMenu';
+import MobileDockEditor from '@/components/template/MobileDockEditor';
 import PullToRefresh from '@/components/template/PullToRefresh';
 import { PremiumCard, QuoteCard } from '@/components/template/SideNav';
 import navigationConfig from '@/configs/navigation.config';
@@ -19,21 +29,34 @@ import useNavActivity from '@/utils/hooks/useNavActivity';
 import useNavCounters from '@/utils/hooks/useNavCounters';
 import usePageFade from '@/utils/hooks/usePageFade';
 import {
+  dockScope,
   filterNavForCatalogAccess,
+  findActiveDockTab,
+  getDockEntries,
   getNavBadge,
+  getStoredDockKeys,
   getVisibleNavItems,
+  resolveDockTabs,
+  saveDockKeys,
 } from '@/utils/navMenu';
-import type { NavigationTree } from '@/@types/navigation';
+import type { DockEntry } from '@/utils/navMenu';
 
 /*
  * Barre d'onglets du téléphone (< md) : la navigation d'une application native.
- * Onglets = les premières entrées du menu de l'utilisateur, dans SON ordre, avec
- * les mêmes règles de visibilité et les mêmes pastilles que la barre latérale
- * (utils/navMenu.ts). « Menu » ouvre le menu complet, identique à celui du bureau.
+ * Par défaut, un onglet par entrée du menu de l'utilisateur (page ou catégorie),
+ * dans SON ordre, avec les mêmes règles de visibilité et les mêmes pastilles
+ * que la barre latérale (utils/navMenu.ts). Ceux qui ne tiennent pas à l'écran
+ * se font glisser sur le côté ; « Menu », épinglé à droite, ouvre le menu
+ * complet. Onglets et ordre se personnalisent (MobileDockEditor.tsx), depuis
+ * le menu ou par un appui long sur un onglet.
  * Styles : section « BARRE D'ONGLETS » de _mobile.css.
  */
 
-const TAB_COUNT = 4;
+const LONG_PRESS_MS = 480;
+// Largeur du fondu aux bords de la barre (--peg-dock-fade-*, _mobile.css)
+const EDGE_FADE_PX = 26;
+// Petit va-et-vient de la barre, une seule fois par appareil : « ça défile »
+const SCROLL_HINT_STORAGE_KEY = 'peg_dock_hint_v1';
 // Couleur appliquée à la barre d'état (Android, Safari) : celle de l'en-tête
 const THEME_COLOR_SELECTOR = 'meta[name="theme-color"]';
 
@@ -60,9 +83,6 @@ const opensKeyboard = (el: EventTarget | Element | null): boolean => {
   );
 };
 
-const isActivePath = (pathname: string, path: string) =>
-  !!path && pathname.startsWith(path);
-
 const Dock = () => {
   const location = useLocation();
   const user = useAppSelector((state) => state.auth.user.user);
@@ -84,8 +104,20 @@ const Dock = () => {
   usePageFade();
   const { getActivityCount, markActivitySeen } = useNavActivity();
 
+  const reduceMotion = useReducedMotion();
+  const navRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [editor, setEditor] = useState<{ focusKey?: string } | null>(null);
+
+  const authorityKey = userAuthority.join(',');
+  const scope = dockScope(userAuthority);
+  const [storedKeys, setStoredKeys] = useState(() => getStoredDockKeys(scope));
+  useEffect(() => {
+    setStoredKeys(getStoredDockKeys(scope));
+  }, [scope]);
 
   const navTree = useMemo(
     () => filterNavForCatalogAccess(navigationConfig, customer),
@@ -99,34 +131,218 @@ const Dock = () => {
         isCustomerPremium,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [navTree, userAuthority.join(','), isAdmin, isCustomerPremium]
+    [navTree, authorityKey, isAdmin, isCustomerPremium]
   );
-  // Un onglet mène à une page : les groupes (sous-menus) restent dans « Menu »
+  // `items` change déjà avec les droits de l'utilisateur
+  const entries = useMemo(() => getDockEntries(items, userAuthority), [items]);
   const tabs = useMemo(
-    () => items.filter((i) => i.path && !i.subMenu?.length).slice(0, TAB_COUNT),
-    [items]
+    () => resolveDockTabs(entries, storedKeys),
+    [entries, storedKeys]
   );
-  // « Menu » n'apparaît que s'il mène à autre chose que les onglets
-  const hasMoreThanTabs = items.length > tabs.length;
+  const activeTab = findActiveDockTab(tabs, location.pathname);
 
-  const badgeFor = (nav: NavigationTree) =>
-    getNavBadge(nav.path, getActivityCount(nav.path), counters);
-  // Pastille sur « Menu » quand une entrée hors onglets a du nouveau
-  const menuHasNews = items
-    .filter((i) => !tabs.includes(i))
-    .flatMap((i) => [
-      i,
-      ...(i.subMenu ?? []),
-      ...(i.subMenu ?? []).flatMap((s) => s.subMenu ?? []),
-    ])
-    .some((i) => i.path && badgeFor(i));
-
-  const activeTab = tabs.find((t) => isActivePath(location.pathname, t.path));
+  const badgeFor = (path: string) =>
+    getNavBadge(path, getActivityCount(path), counters);
+  // Un onglet de catégorie signale le nouveau de ses pages par un point
+  const tabNews = (tab: DockEntry) =>
+    tab.pages
+      ? { badge: null, dot: tab.pages.some((p) => badgeFor(p.path)) }
+      : { badge: badgeFor(tab.path), dot: false };
+  // Pastille sur « Menu » quand une page hors des onglets a du nouveau
+  const reachable = new Set(
+    tabs.flatMap((t) => (t.pages ? t.pages.map((p) => p.path) : [t.path]))
+  );
+  const menuHasNews = entries.some(
+    (e) => !e.pages && !reachable.has(e.path) && badgeFor(e.path)
+  );
 
   // Toute navigation referme le menu (y compris vers la page déjà ouverte)
   useEffect(() => {
     setMenuOpen(false);
   }, [location.key]);
+
+  // Bords de la barre : fondu du côté où d'autres onglets attendent, et point
+  // rouge si l'un d'eux, hors de l'écran, a du nouveau.
+  const syncEdges = useCallback(() => {
+    const nav = navRef.current;
+    const track = trackRef.current;
+    if (!nav || !track || !track.firstElementChild) return;
+    const box = track.getBoundingClientRect();
+    const a = track.firstElementChild.getBoundingClientRect();
+    const b = track.lastElementChild!.getBoundingClientRect();
+    nav.classList.toggle(
+      'is-clipped-left',
+      Math.min(a.left, b.left) < box.left - 1
+    );
+    nav.classList.toggle(
+      'is-clipped-right',
+      Math.max(a.right, b.right) > box.right + 1
+    );
+    // Pastille dans le fondu du bord ou au-delà : elle ne se voit pas
+    let newsLeft = false;
+    let newsRight = false;
+    track
+      .querySelectorAll<HTMLElement>(
+        '[data-news] .peg-dock-badge, [data-news] .peg-dock-dot'
+      )
+      .forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.left < box.left + EDGE_FADE_PX / 2) newsLeft = true;
+        else if (r.right > box.right - EDGE_FADE_PX / 2) newsRight = true;
+      });
+    nav.classList.toggle('has-news-left', newsLeft);
+    nav.classList.toggle('has-news-right', newsRight);
+  }, []);
+
+  // Après chaque rendu : onglets ou pastilles ont pu changer
+  useLayoutEffect(syncEdges);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(syncEdges);
+    };
+    track.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      track.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [syncEdges]);
+
+  // Amène un onglet à l'écran, avec un bout de son voisin : on devine la suite
+  const reveal = useCallback(
+    (key: string, smooth: boolean) => {
+      const track = trackRef.current;
+      const el = track?.querySelector<HTMLElement>(
+        `[data-key="${CSS.escape(key)}"]`
+      );
+      if (!track || !el) return;
+      const box = track.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const peek = Math.min(r.width / 2, 36);
+      let delta = 0;
+      if (r.left < box.left + peek) delta = r.left - box.left - peek;
+      else if (r.right > box.right - peek) delta = r.right - box.right + peek;
+      if (delta)
+        track.scrollBy({
+          left: delta,
+          behavior: smooth && !reduceMotion ? 'smooth' : 'auto',
+        });
+    },
+    [reduceMotion]
+  );
+
+  // L'onglet de la page affichée est toujours visible (d'emblée à l'ouverture)
+  const revealedOnce = useRef(false);
+  const activeKey = activeTab?.key;
+  useEffect(() => {
+    if (!activeKey) return;
+    reveal(activeKey, revealedOnce.current);
+    revealedOnce.current = true;
+  }, [activeKey, reveal]);
+
+  // Première fois sur cet appareil : la barre glisse un peu et revient. Elle
+  // n'est notée « vue » qu'une fois jouée (ou touchée) : un montage annulé
+  // (StrictMode, page quittée aussitôt) ne la consomme pas.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || reduceMotion) return;
+    const markSeen = () => {
+      try {
+        localStorage.setItem(SCROLL_HINT_STORAGE_KEY, '1');
+      } catch {
+        // stockage indisponible : l'indice reviendra, sans gravité
+      }
+    };
+    try {
+      if (localStorage.getItem(SCROLL_HINT_STORAGE_KEY)) return;
+    } catch {
+      return;
+    }
+    let back: ReturnType<typeof setTimeout>;
+    const out = setTimeout(() => {
+      if (track.scrollWidth <= track.clientWidth + 4) return;
+      markSeen();
+      const start = track.scrollLeft;
+      const way = direction === DIR_RTL ? -1 : 1;
+      track.scrollTo({ left: start + way * 56, behavior: 'smooth' });
+      back = setTimeout(
+        () => track.scrollTo({ left: start, behavior: 'smooth' }),
+        550
+      );
+    }, 1200);
+    const stop = () => {
+      clearTimeout(out);
+      clearTimeout(back);
+    };
+    // Barre déjà touchée : le geste est connu, l'indice n'a plus lieu d'être
+    const touched = () => {
+      stop();
+      markSeen();
+    };
+    track.addEventListener('pointerdown', touched, { once: true });
+    return () => {
+      stop();
+      track.removeEventListener('pointerdown', touched);
+    };
+    // Une seule fois, au montage
+  }, []);
+
+  // Appui long sur un onglet : ouvre le réglage de la barre, sur cet onglet
+  const press = useRef<{
+    timer: ReturnType<typeof setTimeout>;
+    x: number;
+    y: number;
+  } | null>(null);
+  const cancelPress = () => {
+    if (press.current) clearTimeout(press.current.timer);
+  };
+  // Le doigt qui se lève après l'appui long produit un clic là où il était :
+  // ni l'onglet, ni la feuille qui vient de s'ouvrir ne doivent le recevoir.
+  // Le geste suivant commence par un pointerdown : la garde s'arrête là.
+  const swallowReleaseClick = () => {
+    const swallow = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      release();
+    };
+    const release = () => {
+      document.removeEventListener('click', swallow, true);
+      document.removeEventListener('pointerdown', release, true);
+    };
+    document.addEventListener('click', swallow, true);
+    document.addEventListener('pointerdown', release, true);
+  };
+
+  const openEditor = (focusKey?: string) => {
+    setMenuOpen(false);
+    setEditor({ focusKey });
+  };
+
+  const applyKeys = (keys: string[] | null, revealKey?: string) => {
+    setStoredKeys(keys);
+    saveDockKeys(scope, keys);
+    if (revealKey) requestAnimationFrame(() => reveal(revealKey, true));
+  };
+
+  // Pendant le réglage, la barre passe au-dessus de la feuille comme aperçu :
+  // visible, mais plus ni cliquable ni atteignable au clavier.
+  const editing = !!editor;
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!editing || !nav) return;
+    document.body.classList.add('peg-dock-editing');
+    nav.setAttribute('inert', '');
+    return () => {
+      document.body.classList.remove('peg-dock-editing');
+      nav.removeAttribute('inert');
+    };
+  }, [editing]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -173,10 +389,10 @@ const Dock = () => {
     };
   }, [mode]);
 
-  const onTabClick = (nav: NavigationTree) => {
-    markActivitySeen(nav.path);
+  const onTabClick = (tab: DockEntry) => {
+    markActivitySeen(tab.path);
     // Toucher l'onglet de la page affichée la fait remonter, comme dans une app
-    if (location.pathname === nav.path) {
+    if (location.pathname === tab.path) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -191,56 +407,108 @@ const Dock = () => {
   return (
     <>
       <nav
+        ref={navRef}
         className={classNames('peg-dock', keyboardOpen && 'peg-dock--hidden')}
         aria-label="Navigation principale"
       >
-        {tabs.map((tab) => {
-          const active = tab === activeTab;
-          const badge = badgeFor(tab);
-          return (
-            <Link
-              key={tab.key}
-              to={tab.path}
-              className={classNames('peg-dock-item', active && 'is-active')}
-              aria-current={active ? 'page' : undefined}
-              onClick={() => onTabClick(tab)}
-            >
-              <span className="peg-dock-icon">
-                {navigationIcon[tab.icon]}
-                {badge && (
-                  <span
-                    className="peg-dock-badge"
-                    style={{ background: badge.color }}
-                  >
-                    {badge.count > 99 ? '99+' : badge.count}
-                  </span>
-                )}
-              </span>
-              <span className="peg-dock-label">{tab.title}</span>
-            </Link>
-          );
-        })}
-        {hasMoreThanTabs && (
-          <button
-            type="button"
-            className={classNames(
-              'peg-dock-item',
-              (menuOpen || !activeTab) && 'is-active'
-            )}
-            aria-haspopup="dialog"
-            aria-expanded={menuOpen}
-            aria-label={menuHasNews ? 'Menu (du nouveau)' : undefined}
-            onClick={() => setMenuOpen(true)}
+        <div className="peg-dock-rail">
+          <div
+            ref={trackRef}
+            className="peg-dock-track"
+            onPointerDown={(e) => {
+              const item = (e.target as HTMLElement).closest<HTMLElement>(
+                '[data-key]'
+              );
+              cancelPress();
+              press.current = null;
+              if (!item || (e.pointerType === 'mouse' && e.button !== 0))
+                return;
+              const key = item.dataset.key!;
+              press.current = {
+                x: e.clientX,
+                y: e.clientY,
+                timer: setTimeout(() => {
+                  swallowReleaseClick();
+                  navigator.vibrate?.(10);
+                  openEditor(key);
+                }, LONG_PRESS_MS),
+              };
+            }}
+            onPointerMove={(e) => {
+              const p = press.current;
+              if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8)
+                clearTimeout(p.timer);
+            }}
+            onPointerUp={cancelPress}
+            onPointerCancel={cancelPress}
+            onContextMenu={(e) => e.preventDefault()}
           >
-            <span className="peg-dock-icon">
-              <HiOutlineMenu />
-              {menuHasNews && (
-                <span className="peg-dock-dot" aria-hidden="true" />
-              )}
-            </span>
-            <span className="peg-dock-label">Menu</span>
-          </button>
-        )}
+            {tabs.map((tab) => {
+              const active = tab === activeTab;
+              const { badge, dot } = tabNews(tab);
+              return (
+                <Link
+                  key={tab.key}
+                  to={tab.path}
+                  data-key={tab.key}
+                  data-news={badge || dot ? '' : undefined}
+                  draggable={false}
+                  className={classNames('peg-dock-item', active && 'is-active')}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => onTabClick(tab)}
+                >
+                  <span className="peg-dock-icon">
+                    {navigationIcon[tab.icon]}
+                    {badge && (
+                      <span
+                        className="peg-dock-badge"
+                        style={{ background: badge.color }}
+                      >
+                        {badge.count > 99 ? '99+' : badge.count}
+                      </span>
+                    )}
+                    {dot && (
+                      <span className="peg-dock-dot" aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="peg-dock-label">
+                    {tab.title}
+                    {tab.group && (
+                      <span className="sr-only"> ({tab.group})</span>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+          <span
+            className="peg-dock-news peg-dock-news--left"
+            aria-hidden="true"
+          />
+          <span
+            className="peg-dock-news peg-dock-news--right"
+            aria-hidden="true"
+          />
+        </div>
+        <button
+          type="button"
+          className={classNames(
+            'peg-dock-item peg-dock-more',
+            (menuOpen || !activeTab) && 'is-active'
+          )}
+          aria-haspopup="dialog"
+          aria-expanded={menuOpen}
+          aria-label={menuHasNews ? 'Menu (du nouveau)' : undefined}
+          onClick={() => setMenuOpen(true)}
+        >
+          <span className="peg-dock-icon">
+            <HiOutlineMenu />
+            {menuHasNews && (
+              <span className="peg-dock-dot" aria-hidden="true" />
+            )}
+          </span>
+          <span className="peg-dock-label">Menu</span>
+        </button>
       </nav>
 
       <Drawer
@@ -254,6 +522,14 @@ const Dock = () => {
       >
         {menuOpen && (
           <div className="peg-dock-menu">
+            <button
+              type="button"
+              className="peg-dock-customize"
+              onClick={() => openEditor()}
+            >
+              <TbLayoutBottombar aria-hidden="true" />
+              Personnaliser la barre du bas
+            </button>
             <CustomVerticalMenu
               navigationTree={navTree}
               userAuthority={userAuthority}
@@ -265,7 +541,18 @@ const Dock = () => {
         )}
       </Drawer>
 
-      <PullToRefresh disabled={menuOpen || keyboardOpen} />
+      <MobileDockEditor
+        open={editing}
+        entries={entries}
+        tabs={tabs}
+        isCustom={!!storedKeys}
+        focusKey={editor?.focusKey}
+        onChange={applyKeys}
+        onReset={() => applyKeys(null)}
+        onClose={() => setEditor(null)}
+      />
+
+      <PullToRefresh disabled={menuOpen || keyboardOpen || editing} />
     </>
   );
 };

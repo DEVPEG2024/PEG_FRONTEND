@@ -799,6 +799,362 @@
     box-shadow: 0 0 0 2px rgb(24, 32, 46);
   }
 
+  /* Onglets défilants : 4,5 onglets à l'écran (le demi-onglet au bord dit
+     « la suite est à côté ») ; « Menu » reste épinglé à droite. Peu
+     d'onglets : ils s'élargissent et remplissent la barre, sans défilement. */
+  .peg-dock-rail {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+  }
+  .peg-dock-track {
+    /* 56px au plus étroit (320px) : la pastille d'icône (54px) y tient et le
+       demi-onglet reste visible au bord */
+    --peg-dock-item-w: clamp(56px, calc((100vw - 74px) / 4.5), 92px);
+    --peg-dock-fade-l: 0px;
+    --peg-dock-fade-r: 0px;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--peg-dock-fade-l), #000 calc(100% - var(--peg-dock-fade-r)), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 var(--peg-dock-fade-l), #000 calc(100% - var(--peg-dock-fade-r)), transparent 100%);
+  }
+  .peg-dock-track::-webkit-scrollbar {
+    display: none;
+  }
+  .peg-dock.is-clipped-left .peg-dock-track {
+    --peg-dock-fade-l: 26px;
+  }
+  .peg-dock.is-clipped-right .peg-dock-track {
+    --peg-dock-fade-r: 26px;
+  }
+  .peg-dock-track > .peg-dock-item {
+    flex: 1 0 var(--peg-dock-item-w);
+    padding-left: 1px;
+    padding-right: 1px;
+    -webkit-user-drag: none;
+  }
+  .peg-dock-more {
+    position: relative;
+    flex: 0 0 62px;
+  }
+  .peg-dock-more::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    height: 24px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  /* Un onglet hors de l'écran a du nouveau : point rouge au bord concerné */
+  .peg-dock-news {
+    position: absolute;
+    top: 17px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+  .peg-dock-news--left {
+    left: 2px;
+  }
+  /* Sur le filet de « Menu » : hors de l'onglet coupé au bord */
+  .peg-dock-news--right {
+    right: -4px;
+    z-index: 1;
+  }
+  .peg-dock.has-news-left .peg-dock-news--left,
+  .peg-dock.has-news-right .peg-dock-news--right {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Réglage de la barre (MobileDockEditor.tsx) : la feuille sort de derrière
+     la barre, qui passe devant elle comme aperçu. Au-dessus de tout le reste,
+     bulle d'aide comprise (9999). */
+  body.peg-dock-editing .peg-dock {
+    z-index: 10002;
+    border-top-color: rgba(143, 180, 255, 0.3);
+  }
+  .peg-dock-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(5, 8, 14, 0.62);
+    touch-action: none;
+  }
+  .peg-dock-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--peg-dock-h, 60px) + var(--peg-safe-bottom));
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - var(--peg-safe-top) - var(--peg-dock-h, 60px) - var(--peg-safe-bottom) - 44px);
+    background: #141b28;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-family: Inter, sans-serif;
+    outline: none;
+  }
+  .peg-dock-sheet-head {
+    flex: none;
+    padding: 8px max(18px, var(--peg-safe-right)) 6px max(18px, var(--peg-safe-left));
+    touch-action: none;
+    cursor: grab;
+  }
+  .peg-dock-sheet-grabber {
+    display: block;
+    width: 38px;
+    height: 5px;
+    margin: 0 auto 10px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .peg-dock-sheet-headrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .peg-dock-sheet h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .peg-dock-sheet-done {
+    min-height: 36px;
+    min-width: 64px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 18px;
+    background: #2f6fed;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .peg-dock-sheet-intro {
+    margin: 4px 0 0;
+    max-width: 34em;
+    color: rgba(160, 185, 220, 0.75);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .peg-dock-sheet-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 max(12px, var(--peg-safe-right)) 12px max(12px, var(--peg-safe-left));
+  }
+  .peg-dock-sheet-section {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 16px 6px 8px;
+    color: rgba(160, 185, 220, 0.7);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .peg-dock-sheet-count {
+    color: #8fb4ff;
+    font-variant-numeric: tabular-nums;
+  }
+  .peg-dock-sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .peg-dock-sheet-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 54px;
+    padding: 5px 4px 5px 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+  .peg-dock-sheet-add {
+    padding-left: 13px;
+    cursor: pointer;
+  }
+  .peg-dock-sheet-add:active {
+    background: rgba(34, 197, 94, 0.12);
+  }
+  .peg-dock-sheet-row.is-flash {
+    animation: peg-dock-flash 1.4s ease 0.3s;
+  }
+  @keyframes peg-dock-flash {
+    30% {
+      background-color: rgba(47, 111, 237, 0.32);
+      border-color: rgba(143, 180, 255, 0.5);
+    }
+  }
+  /* Bouton de 40px, pastille de 24px : cible confortable, rangée compacte */
+  .peg-dock-sheet-toggle {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .peg-dock-sheet-dot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 15px;
+  }
+  .peg-dock-sheet-dot.is-remove {
+    background: #ef4444;
+  }
+  .peg-dock-sheet-toggle:disabled .peg-dock-sheet-dot {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.35);
+  }
+  .peg-dock-sheet-dot.is-add {
+    background: #22c55e;
+  }
+  .peg-dock-sheet-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: rgba(47, 111, 237, 0.16);
+    color: #8fb4ff;
+    font-size: 19px;
+  }
+  .peg-dock-sheet-add .peg-dock-sheet-icon {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .peg-dock-sheet-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+  .peg-dock-sheet-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .peg-dock-sheet-caption {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgba(160, 185, 220, 0.7);
+    font-size: 12px;
+  }
+  .peg-dock-sheet-handle {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 22px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .peg-dock-sheet-reset {
+    display: block;
+    min-height: var(--peg-tap);
+    margin: 14px auto 0;
+    padding: 0 16px;
+    border: 0;
+    background: none;
+    color: #8fb4ff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .peg-dock-sheet-reset:disabled {
+    color: rgba(255, 255, 255, 0.28);
+    cursor: default;
+  }
+  .peg-dock-sheet :focus-visible {
+    outline: 2px solid #8fb4ff;
+    outline-offset: 2px;
+  }
+
+  /* Accès au réglage depuis le menu complet */
+  .peg-dock-customize {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - 24px);
+    min-height: var(--peg-tap);
+    margin: 12px 12px 6px;
+    padding: 0 12px;
+    border: 1px dashed rgba(143, 180, 255, 0.35);
+    border-radius: 12px;
+    background: rgba(47, 111, 237, 0.08);
+    color: #cfe0ff;
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .peg-dock-customize svg {
+    flex: none;
+    color: #8fb4ff;
+    font-size: 19px;
+  }
+
   /* Barre d'action de la fiche produit (ProductActionBar.tsx) : total en
      direct + étape suivante, juste au-dessus de la barre d'onglets. Clavier
      ouvert (plus de barre d'onglets) : elle descend au bord de l'écran. */
@@ -943,9 +1299,14 @@
 @media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
   .peg-dock,
   .peg-dock-icon,
+  .peg-dock-news,
   .peg-ptr--settle,
   .peg-ptr-icon {
     transition: none;
+  }
+  .peg-dock-sheet-row.is-flash {
+    animation: none;
+    border-color: rgba(143, 180, 255, 0.5);
   }
 }
 
