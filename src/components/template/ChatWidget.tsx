@@ -697,7 +697,7 @@ const ChatWidget = () => {
               <ChatStyleToggle
                 style={chatStyle.style ?? STYLE_WHEN_UNCHOSEN}
                 onToggle={chatStyle.toggle}
-                compact={isPhone}
+                compact={isPhone || messages.length > 0}
               />
             )}
             {voice.supported && (

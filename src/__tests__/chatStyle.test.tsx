@@ -251,7 +251,8 @@ describe('ChatWidget — choix du style', () => {
     expect(t.getAttribute('title')).toBe(
       'Style de réponse : Conseil — passer en Rapide'
     );
-    expect(t.textContent).toBe('💬Conseil');
+    // Conversation commencée : emoji seul (voir le test « en-tête chargé »).
+    expect(t.textContent).toBe('💬');
     click(t);
     expect(toggle()!.getAttribute('aria-label')).toBe(
       'Style de réponse : Rapide — passer en Conseil'
@@ -299,6 +300,42 @@ describe('ChatWidget — choix du style', () => {
     expect(t.textContent).toBe('💬');
     expect(t.getAttribute('aria-label')).toBe(
       'Style de réponse : Conseil — passer en Rapide'
+    );
+  });
+
+  it('ordinateur : « 💬 Conseil » en toutes lettres à l’accueil, emoji seul dès que la conversation commence', async () => {
+    // Relecture du 26/09 : avec « Nouvelle conversation » en plus du micro et de la
+    // fermeture, le libellé complet ne laissait qu'≈ 70 px au titre (fenêtre de 400 px) :
+    // « Assistant PEG » passait sur deux lignes et le statut était tronqué.
+    localStorage.setItem('peg_chat_style:u1', 'advice');
+    render();
+    openChat();
+    expect(q('button[aria-label="Nouvelle conversation"]')).toBeNull();
+    expect(toggle()!.classList.contains('pcw-style-toggle--compact')).toBe(false);
+    expect(toggle()!.textContent).toBe('💬Conseil');
+    await sendTyped('Bonjour');
+    expect(q('button[aria-label="Nouvelle conversation"]')).not.toBeNull();
+    const t = toggle()!;
+    expect(t.classList.contains('pcw-style-toggle--compact')).toBe(true);
+    expect(t.textContent).toBe('💬');
+    expect(t.getAttribute('aria-label')).toBe(
+      'Style de réponse : Conseil — passer en Rapide'
+    );
+    // Nouvelle conversation → accueil : le libellé revient.
+    click(q('button[aria-label="Nouvelle conversation"]'));
+    expect(toggle()!.textContent).toBe('💬Conseil');
+  });
+
+  it('bascule affichée : le titre de l’en-tête reste sur une ligne (ellipse)', () => {
+    phone = true;
+    render();
+    openChat();
+    expect(toggle()).not.toBeNull();
+    const css = [...container.querySelectorAll('style')]
+      .map((s) => s.textContent)
+      .join('\n');
+    expect(css).toMatch(
+      /\.pcw-head \.pcw-title \{[^}]*white-space: nowrap;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;/
     );
   });
 
