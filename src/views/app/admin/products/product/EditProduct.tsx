@@ -294,10 +294,12 @@ const EditProduct = () => {
 
   const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
     try {
-      let batFileId: string | undefined;
+      // Média Strapi : la relation attend l'id NUMÉRIQUE du fichier (comme les images),
+      // pas son documentId.
+      let batFileId: number | string | undefined;
       if (batFile?.file) {
         const uploaded = await apiUploadFile(batFile.file);
-        batFileId = uploaded.documentId;
+        batFileId = uploaded.id;
       }
 
       const newImages: PegFile[] = [];
@@ -332,15 +334,16 @@ const EditProduct = () => {
       if (!onEdition) {
         delete data.documentId;
       }
-      // `batFile` (média) : le code produit un documentId là où Strapi attend un
-      // id numérique → toujours écarté ici (gestion propre à traiter à part).
+      // `batFile` : seulement l'id numérique d'un NOUVEL envoi — jamais l'objet lu du
+      // produit. Avant, il était toujours retiré : aucun BAT n'était jamais rattaché.
       delete data.batFile;
+      if (batFileId !== undefined) data.batFile = batFileId;
       // Champs CŒUR du schéma produit (backend prod désormais aligné sur `main`) :
       // jamais retirés du payload. C'est le correctif du bug « Packs/m² ne
       // s'enregistre pas » — pricingMode & consorts étaient stripés silencieusement.
       const ALWAYS_KEEP = new Set([
         'pricingMode', 'pricePerM2', 'minM2', 'cost', 'priceTiers', 'price',
-        'catalogPrice', 'requiresBat',
+        'catalogPrice', 'requiresBat', 'batFile',
       ]);
 
       const inputFields = await apiGetProductInputFields();

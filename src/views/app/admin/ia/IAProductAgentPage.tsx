@@ -266,10 +266,11 @@ const IAProductAgentPage = () => {
 
   const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
     try {
-      let batFileId: string | undefined;
+      // Média Strapi : l'id NUMÉRIQUE du fichier (comme les images), pas son documentId.
+      let batFileId: number | string | undefined;
       if (batFile?.file) {
         const uploaded = await apiUploadFile(batFile.file);
-        batFileId = uploaded.documentId;
+        batFileId = uploaded.id;
       }
 
       const newImages: PegFile[] = [];

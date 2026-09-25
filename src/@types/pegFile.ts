@@ -4,6 +4,8 @@ export type PegFile = {
   url: string;
   name: string;
   file: File;
+  // Type MIME (Strapi le renseigne) — lu pour savoir si un BAT s'affiche en image
+  mime?: string;
   // Dimensions d'origine (Strapi les renseigne pour les images), si la requête les demande
   width?: number | null;
   height?: number | null;

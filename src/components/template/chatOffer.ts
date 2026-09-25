@@ -166,6 +166,9 @@ export const missingSteps = (product: Product, lines: ChatOfferLine | ChatOfferL
     }
     if (!missing.length) missing.push('votre sélection');
   }
+  // Produit « BAT requis » : le client approuve le BAT sur la fiche avant l'ajout,
+  // jamais d'entrée directe au panier.
+  if (product.requiresBat && product.batFile?.url) missing.push('la validation du BAT');
   return missing;
 };
 

@@ -21,7 +21,7 @@ import {
   editFormAnswerCartItem,
   CartItemFormAnswerEdition,
 } from '@/store/slices/base/cartSlice';
-import { apiGetOrderItem, apiGetOrderItemByProduct, apiUpdateBatStatus } from '@/services/ProductServices';
+import { apiGetOrderItem, apiUpdateBatStatus } from '@/services/ProductServices';
 import { OrderItem } from '@/@types/orderItem';
 import Container from '@/components/shared/Container';
 
@@ -92,6 +92,10 @@ const ShowProduct = () => {
   const [batComment, setBatComment] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
   const [batStatusOverride, setBatStatusOverride] = useState<'approved' | 'rejected' | null>(null);
+  // Avant commande : le client ouvre le BAT puis l'approuve ; l'approbation suit
+  // l'article jusqu'à la commande (CartItem.batApproved → orderItem.batStatus).
+  const [batSeen, setBatSeen] = useState(false);
+  const [batApprovedBeforeOrder, setBatApprovedBeforeOrder] = useState(false);
   const { user }: { user: User } = useRootAppSelector(
     (state: RootState) => state.auth.user
   );
@@ -133,19 +137,24 @@ const ShowProduct = () => {
     };
   }, [dispatch, documentId]);
 
+  // Consultation d'une commande passée (?orderItemId=…) : le statut du BAT est
+  // celui de la commande. Nouvelle commande : approbation avant l'ajout au panier
+  // (plus de reprise du statut d'une ANCIENNE commande du même produit, dont les
+  // boutons agissaient sur cette ancienne commande).
   useEffect(() => {
-    if (orderItemId) {
-      apiGetOrderItem(orderItemId).then((res: any) => {
-        const data = res.data?.data?.orderItem;
-        if (data) setOrderItem(data);
-      }).catch((err) => console.error('ShowProduct fetch error:', err));
-    } else if (product?.requiresBat && user?.customer?.documentId) {
-      apiGetOrderItemByProduct(documentId, user.customer.documentId).then((res: any) => {
-        const items = res.data?.data?.orderItems;
-        if (items?.length > 0) setOrderItem(items[0]);
-      }).catch((err) => console.error('ShowProduct fetch error:', err));
-    }
-  }, [orderItemId, documentId, product?.requiresBat, user?.customer?.documentId]);
+    if (!orderItemId) return;
+    apiGetOrderItem(orderItemId).then((res: any) => {
+      const data = res.data?.data?.orderItem;
+      if (data) setOrderItem(data);
+    }).catch((err) => console.error('ShowProduct fetch error:', err));
+  }, [orderItemId]);
+
+  const hasBat = !!product?.requiresBat && !!product?.batFile?.url;
+  const needsBatBeforeOrder = hasBat && !orderItemId && !onEdition;
+  const batBlocking = needsBatBeforeOrder && !batApprovedBeforeOrder;
+  const batIsImage = /^image\//.test(product?.batFile?.mime ?? '')
+    || /\.(jpe?g|png|webp|gif)$/i.test(product?.batFile?.name ?? product?.batFile?.url ?? '');
+  const scrollToBat = () => document.getElementById('peg-bat')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   useEffect(() => {
     if (isFirstRender) {
@@ -211,6 +220,7 @@ const ShowProduct = () => {
         formAnswer,
         sizeAndColors,
         userDocumentId: user.documentId,
+        ...(needsBatBeforeOrder && { batApproved: true }),
       } as CartItem)
     );
     toast.success('Article ajouté au panier');
@@ -889,27 +899,103 @@ const ShowProduct = () => {
               </button>
               <button
                 onClick={handleAddToCart}
-                disabled={!canAddToCart}
+                disabled={!canAddToCart || batBlocking}
                 style={{
                   padding: '14px 32px', borderRadius: '12px', border: 'none', color: '#fff',
-                  fontSize: '15px', fontWeight: 700, cursor: canAddToCart ? 'pointer' : 'not-allowed',
+                  fontSize: '15px', fontWeight: 700, cursor: canAddToCart && !batBlocking ? 'pointer' : 'not-allowed',
                   fontFamily: 'Inter, sans-serif',
-                  background: canAddToCart ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'rgba(255,255,255,0.05)',
+                  background: canAddToCart && !batBlocking ? 'linear-gradient(90deg, #22c55e, #16a34a)' : 'rgba(255,255,255,0.05)',
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  boxShadow: canAddToCart ? '0 4px 20px rgba(34,197,94,0.4)' : 'none',
+                  boxShadow: canAddToCart && !batBlocking ? '0 4px 20px rgba(34,197,94,0.4)' : 'none',
                   transition: 'all 0.2s',
                 }}
               >
                 Ajouter au panier — {fmtTTC(toTTC(totalPrice))} <HiShoppingCart size={16} />
               </button>
             </div>
+            {batBlocking && (
+              <button
+                type="button"
+                onClick={scrollToBat}
+                style={{ marginTop: '10px', width: '100%', background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '10px', padding: '10px 14px', color: '#c084fc', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              >
+                Validez le BAT ci-dessous pour ajouter au panier ↓
+              </button>
+            )}
           </div>
         )}
 
       </div>
 
-      {/* ── Section BAT ──────────────────────────────────────────────────── */}
-      {product.requiresBat && product.batFile?.url && (() => {
+      {/* ── Section BAT : validation AVANT commande ──────────────────────── */}
+      {needsBatBeforeOrder && (
+        <div id="peg-bat" style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: `1.5px solid ${batApprovedBeforeOrder ? 'rgba(34,197,94,0.35)' : 'rgba(168,85,247,0.25)'}`, padding: 'var(--peg-pad-24)', scrollMarginTop: '80px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '18px' }}>📄</span>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: '#c084fc' }}>Bon à Tirer — Validation requise</p>
+                <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>Vérifiez le BAT puis approuvez-le pour ajouter ce produit au panier</p>
+              </div>
+            </div>
+            <a
+              className="peg-tap-target"
+              href={product.batFile!.url}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setBatSeen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '8px', padding: '8px 14px', color: '#c084fc', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
+            >
+              {batIsImage ? 'Agrandir le BAT →' : 'Voir le BAT →'}
+            </a>
+          </div>
+
+          {/* Aperçu direct d'un BAT image ; un PDF s'ouvre (l'aperçu intégré est vide sur iPhone) */}
+          {batIsImage && (
+            <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px', display: 'flex', justifyContent: 'center' }}>
+              <img
+                src={product.batFile!.url}
+                alt="BAT à valider"
+                onLoad={() => setBatSeen(true)}
+                // Image déjà en cache : chargée avant l'écoute de `load`
+                ref={(el) => { if (el?.complete && el.naturalWidth > 0) setBatSeen(true); }}
+                style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain', borderRadius: '8px' }}
+              />
+            </div>
+          )}
+
+          {batApprovedBeforeOrder ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '10px', padding: '12px 16px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: '#4ade80', fontSize: '14px' }}>
+                <span style={{ fontSize: '18px' }}>✅</span> BAT approuvé — vous pouvez ajouter au panier
+              </span>
+              <button type="button" onClick={() => setBatApprovedBeforeOrder(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}>
+                Annuler l'approbation
+              </button>
+            </div>
+          ) : (
+            <div>
+              <button
+                type="button"
+                onClick={() => setBatApprovedBeforeOrder(true)}
+                disabled={!batSeen}
+                style={{ width: '100%', background: batSeen ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)', border: `1.5px solid ${batSeen ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '10px', padding: '12px', color: batSeen ? '#4ade80' : 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '14px', cursor: batSeen ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif' }}
+              >
+                ✅ J'approuve ce BAT
+              </button>
+              <p style={{ margin: '10px 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                {batSeen ? '' : 'Ouvrez le BAT pour pouvoir l’approuver. '}
+                Une modification à apporter ? <a href="/support" onClick={(e) => { e.preventDefault(); navigate('/support'); }} style={{ color: '#c084fc' }}>Écrivez-nous</a> avant de commander.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Section BAT : commande passée (?orderItemId=…) ──────────────────── */}
+      {hasBat && !!orderItemId && (() => {
         const currentStatus = batStatusOverride ?? (orderItem?.batStatus as 'approved' | 'rejected' | 'pending' | null) ?? null;
         return (
           <div style={{ marginTop: '16px', background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 100%)', borderRadius: '16px', border: '1.5px solid rgba(168,85,247,0.25)', padding: 'var(--peg-pad-24)' }}>

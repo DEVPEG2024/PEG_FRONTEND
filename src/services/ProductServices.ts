@@ -34,8 +34,9 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
                 documentId
                 fields
             }
-            # requiresBat                          — activer après déploiement Strapi
-            # batFile { documentId url name }      — activer après déploiement Strapi
+            # BAT : le client l'approuve sur la fiche avant d'ajouter au panier
+            requiresBat
+            batFile { url name mime }
             # catalogPrice                         — activer après déploiement Strapi
             # checklist { documentId name items }  — activer après config Strapi
         }
@@ -94,8 +95,9 @@ export async function apiGetProductForEditById(documentId: string): Promise<Axio
             }
             requiresBat
             catalogPrice
-            # batFile { documentId url name }      — laissé désactivé : le média
-            #   renvoie un documentId là où l'update attend un id numérique
+            # Lecture seule (lien « Voir le BAT ») : ProductFormModel n'embarque pas
+            # batFile, l'enregistrement n'envoie que l'id numérique d'un NOUVEL envoi.
+            batFile { url name }
             productRef
             refVisibleToCustomer
             customerCategories {
@@ -774,27 +776,6 @@ export async function apiGetOrderItem(documentId: string) {
 }
 
 // get customer's latest orderItem for a product (auto-fetch BAT in ShowProduct)
-export async function apiGetOrderItemByProduct(productDocumentId: string, customerDocumentId: string) {
-    const query = `
-    query GetOrderItemByProduct($productDocumentId: ID!, $customerDocumentId: ID!) {
-        orderItems(
-            filters: {
-                and: [
-                    { product: { documentId: { eq: $productDocumentId } } }
-                    { customer: { documentId: { eq: $customerDocumentId } } }
-                ]
-            }
-            pagination: { pageSize: 1 }
-            sort: ["createdAt:desc"]
-        ) {
-            documentId
-            batStatus
-            batComment
-        }
-    }`
-    return ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query, variables: { productDocumentId, customerDocumentId } } })
-}
-
 // update BAT file on product (admin uploads new BAT) + reset orderItem status to pending
 export async function apiUpdateBatFile(productDocumentId: string, orderItemDocumentId: string, batFileDocumentId: string) {
     const updateProductQuery = `

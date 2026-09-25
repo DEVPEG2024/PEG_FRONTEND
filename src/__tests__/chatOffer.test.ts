@@ -92,6 +92,14 @@ describe('missingSteps', () => {
     const l = line({ colorDocumentId: 'b' });
     expect(missingSteps(p, l, selectionForLine(p, l))).toEqual(['les tailles']);
   });
+
+  it('produit « BAT requis » : passage par la fiche pour valider le BAT', () => {
+    const p = product({ requiresBat: true, batFile: { url: 'https://x/bat.png' } as never });
+    expect(missingSteps(p, line(), selectionForLine(p, line()))).toEqual(['la validation du BAT']);
+    // BAT requis mais aucun fichier encore déposé : rien à valider, entrée directe
+    const sansFichier = product({ requiresBat: true, batFile: null });
+    expect(missingSteps(sansFichier, line(), selectionForLine(sansFichier, line()))).toEqual([]);
+  });
 });
 
 describe('validation des données reçues', () => {

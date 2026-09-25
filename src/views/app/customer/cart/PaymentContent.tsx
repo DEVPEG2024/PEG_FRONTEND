@@ -148,6 +148,8 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           price: premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors)),
           state: 'pending',
           customer: user.customer!,
+          // BAT approuvé sur la fiche avant l'ajout au panier : la commande part validée
+          ...(item.batApproved && { batStatus: 'approved' as const }),
         },
         { createOrderItem: orderItemCreated }: { createOrderItem: OrderItem } =
           await unwrapData(apiCreateOrderItem(orderItem));

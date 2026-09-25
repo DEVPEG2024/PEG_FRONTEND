@@ -8,4 +8,6 @@ export type CartItem = {
   sizeAndColors: SizeAndColorSelection[];
   orderItemDocumentId?: string;
   userDocumentId: string;
+  /** BAT du produit approuvé sur la fiche avant l'ajout (produit « BAT requis »). */
+  batApproved?: boolean;
 };
