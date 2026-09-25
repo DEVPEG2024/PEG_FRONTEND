@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { MdSmartToy, MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment } from 'react-icons/md';
+import { MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment, MdAutoAwesome, MdKeyboardArrowDown } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { useAppSelector } from '@/store';
@@ -17,13 +17,22 @@ import { isChatOffer, type ChatOffer, type ChatPrefill } from '@/components/temp
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
 
 const STORAGE_KEY = 'peg_chat_widget_v2';
-const SUGGESTIONS = ['Où en est ma commande ?', 'Je cherche un produit', 'Ai-je des factures à payer ?', 'Un BAT à valider ?'];
+const SUGGESTIONS = [
+  { icon: '📦', label: 'Où en est ma commande ?' },
+  { icon: '🔎', label: 'Je cherche un produit' },
+  { icon: '🧾', label: 'Ai-je des factures à payer ?' },
+  { icon: '✅', label: 'Un BAT à valider ?' },
+];
+
+const fmtTime = (at: number): string => {
+  try { return new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); } catch { return ''; }
+};
 
 /**
  * Le bouton flottant est en position fixed en bas à droite. Sur les écrans du
@@ -175,6 +184,110 @@ const chatJson = async (body: object, token: string | null, signal: AbortSignal)
   return res.data as ChatResult;
 };
 
+// ── Apparence de la conversation ─────────────────────────────────────────────
+// Classes préfixées `pcw-` (portée : la fenêtre du chat). Style « messagerie » :
+// bulles regroupées par auteur, dégradé bleu→violet pour le client, surface
+// translucide pour l'assistant, en-tête vitré, zone de saisie en pilule.
+const CHAT_CSS = `
+.pcw {
+  --pcw-bg: #0b1120; --pcw-surface: rgba(255,255,255,0.055); --pcw-border: rgba(255,255,255,0.08);
+  --pcw-text: rgba(255,255,255,0.92); --pcw-muted: rgba(255,255,255,0.55);
+  --pcw-a1: #4f7cff; --pcw-a2: #7c5cff;
+  color: var(--pcw-text); font-family: Inter, system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(120% 55% at 100% 0%, rgba(124,92,255,0.16), transparent 60%),
+    radial-gradient(100% 45% at 0% 0%, rgba(79,124,255,0.13), transparent 60%),
+    var(--pcw-bg);
+}
+.pcw--desk { transform-origin: bottom right; animation: pcw-open .22s cubic-bezier(.2,.8,.2,1); }
+.pcw--phone { animation: pcw-slide .26s cubic-bezier(.2,.8,.2,1); }
+@keyframes pcw-open { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes pcw-slide { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+.pcw-head { display: flex; align-items: center; gap: 12px; padding: 14px 10px 12px 16px;
+  border-bottom: 1px solid var(--pcw-border); background: rgba(11,17,32,0.55);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.pcw-avatar-wrap { position: relative; flex-shrink: 0; }
+.pcw-avatar { border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--pcw-a1), var(--pcw-a2)); }
+.pcw-head .pcw-avatar { box-shadow: 0 6px 18px rgba(92,108,255,0.35); }
+.pcw-online { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%;
+  background: #22c55e; border: 2px solid var(--pcw-bg); }
+.pcw-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+.pcw-sub { font-size: 12px; color: var(--pcw-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.pcw-icon-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent; flex-shrink: 0;
+  color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background .15s, color .15s; }
+.pcw-icon-btn:hover, .pcw-icon-btn:focus-visible { background: rgba(255,255,255,0.08); color: #fff; outline: none; }
+
+.pcw-log { flex: 1; overflow-y: auto; padding: 18px 14px 10px; display: flex; flex-direction: column;
+  overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+.pcw-msg { display: flex; flex-direction: column; }
+.pcw-row { display: flex; align-items: flex-end; gap: 8px; margin-top: 3px; animation: pcw-in .22s ease-out both; }
+.pcw-row--group { margin-top: 14px; }
+.pcw-msg:first-child .pcw-row { margin-top: 0; }
+.pcw-row--user { justify-content: flex-end; }
+@keyframes pcw-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.pcw-avatar-slot { width: 28px; flex-shrink: 0; }
+
+.pcw-bubble { max-width: 82%; min-width: 0; padding: 10px 14px; border-radius: 20px;
+  font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pcw-bubble--bot { background: var(--pcw-surface); border: 1px solid var(--pcw-border); color: var(--pcw-text); }
+.pcw-bubble--bot.pcw-tail { border-bottom-left-radius: 6px; }
+.pcw-bubble--user { color: #fff; background: linear-gradient(135deg, var(--pcw-a1), var(--pcw-a2));
+  box-shadow: 0 6px 16px rgba(92,108,255,0.28); }
+.pcw-bubble--user.pcw-tail { border-bottom-right-radius: 6px; }
+.pcw-bubble--error { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.28); color: #fcd34d; }
+.pcw-bubble--error.pcw-tail { border-bottom-left-radius: 6px; }
+.pcw-time { font-size: 10.5px; color: rgba(255,255,255,0.38); margin: 5px 0 0 38px; }
+.pcw-time--user { align-self: flex-end; margin: 5px 4px 0 0; }
+
+.pcw-typing-bubble { display: inline-flex; align-items: center; padding: 12px 14px; }
+.pcw-typing { display: inline-flex; align-items: center; gap: 4px; }
+.pcw-typing i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.65);
+  animation: pcw-bounce 1.2s infinite ease-in-out; }
+.pcw-typing i:nth-child(2) { animation-delay: .15s; }
+.pcw-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes pcw-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-4px); opacity: 1; } }
+.pcw-status { font-size: 12px; color: var(--pcw-muted); margin-left: 10px; }
+
+.pcw-empty { margin: auto 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 8px 2px 4px; }
+.pcw-hero .pcw-avatar { box-shadow: 0 0 0 7px rgba(124,92,255,0.12), 0 14px 34px rgba(92,108,255,0.38); }
+.pcw-hello { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.015em; margin-top: 12px; }
+.pcw-intro { font-size: 13.5px; line-height: 1.5; color: var(--pcw-muted); max-width: 290px; }
+.pcw-sugg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 14px; }
+.pcw-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; padding: 12px;
+  border-radius: 16px; background: var(--pcw-surface); border: 1px solid var(--pcw-border); color: var(--pcw-text);
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1.35; cursor: pointer;
+  transition: transform .15s, background .15s, border-color .15s; }
+.pcw-chip:hover, .pcw-chip:focus-visible { background: rgba(255,255,255,0.09); border-color: rgba(124,92,255,0.45); transform: translateY(-1px); outline: none; }
+.pcw-chip-ico { font-size: 18px; line-height: 1; }
+
+.pcw-retry { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; color: #fcd34d; background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.35); }
+.pcw-warn { margin: 0 12px 4px; padding: 8px 12px; border-radius: 12px; font-size: 12px; line-height: 1.4;
+  color: #fcd34d; background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.25); }
+
+.pcw-compose { padding: 10px 12px 14px; }
+.pcw-field { display: flex; align-items: flex-end; gap: 8px; padding: 5px 5px 5px 16px; border-radius: 26px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); transition: border-color .15s, box-shadow .15s; }
+.pcw-field:focus-within { border-color: rgba(124,92,255,0.6); box-shadow: 0 0 0 4px rgba(124,92,255,0.15); }
+.pcw-field textarea { flex: 1; min-width: 0; background: transparent; border: none; outline: none; resize: none;
+  color: #fff; font: inherit; font-size: 14px; line-height: 1.45; padding: 9px 0; max-height: 120px; overflow-y: auto; }
+.pcw-field textarea::placeholder { color: rgba(255,255,255,0.4); }
+.pcw-send { width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0; cursor: pointer; color: #fff;
+  display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--pcw-a1), var(--pcw-a2));
+  box-shadow: 0 6px 16px rgba(92,108,255,0.35); transition: transform .15s, opacity .15s, box-shadow .15s; }
+.pcw-send:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+.pcw-send:not(:disabled):hover { transform: scale(1.06); }
+
+.pcw--phone .pcw-bubble { font-size: 15px; }
+.pcw--phone .pcw-log { padding: 18px 12px 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .pcw, .pcw-row, .pcw-typing i { animation: none !important; }
+}
+`;
+
 // ── Composant ────────────────────────────────────────────────────────────────
 
 const ChatWidget = () => {
@@ -274,14 +387,14 @@ const ChatWidget = () => {
       if (controller.signal.aborted) return;
       const reply = (result.reply || '').trim();
       if (result.rateLimited || !reply) {
-        setMessages([...history, { role: 'assistant', content: reply || 'Aucune réponse reçue.', error: true }]);
+        setMessages([...history, { role: 'assistant', content: reply || 'Aucune réponse reçue.', error: true, at: Date.now() }]);
       } else {
         // Seules les cartes citées dans la réponse sont conservées (le serveur les filtre ; la route
         // JSON d'un backend antérieur n'en renvoie pas → liens simples).
         const cards = (result.cards || []).filter((c) => reply.includes(`](${c.url})`));
         // Offre chiffrée → bouton « Ajouter au panier » sous la réponse.
         const offer = isChatOffer(result.offer) ? result.offer : undefined;
-        setMessages([...history, { role: 'assistant', content: reply, ...(cards.length ? { cards } : {}), ...(offer ? { offer } : {}) }]);
+        setMessages([...history, { role: 'assistant', content: reply, at: Date.now(), ...(cards.length ? { cards } : {}), ...(offer ? { offer } : {}) }]);
         // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
         setAuthWarn(Boolean(token) && result.authenticated === false);
         if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
@@ -297,7 +410,7 @@ const ChatWidget = () => {
         : !navigator.onLine
           ? 'Vous semblez hors ligne. Vérifiez votre connexion puis réessayez.'
           : 'Le service est momentanément indisponible. Réessayez dans un instant.';
-      setMessages([...history, { role: 'assistant', content, error: true }]);
+      setMessages([...history, { role: 'assistant', content, error: true, at: Date.now() }]);
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
@@ -313,7 +426,7 @@ const ChatWidget = () => {
     // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
     const isClosing = awaitingClose && USER_NO_RE.test(text);
     // Les bulles d'erreur précédentes disparaissent dès qu'on renvoie un message.
-    const next: Message[] = [...messages.filter((m) => !m.error), { role: 'user', content: text }];
+    const next: Message[] = [...messages.filter((m) => !m.error), { role: 'user', content: text, at: Date.now() }];
     setMessages(next);
     setInput('');
     await requestReply(next, isClosing);
@@ -339,6 +452,22 @@ const ChatWidget = () => {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 60);
   }, [open]);
+
+  // À l'ouverture, on arrive sur le DERNIER message (la conversation est conservée
+  // pour l'onglet : sans ça, on retombait sur son début).
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ block: 'end' }));
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
+  // Zone de saisie qui s'agrandit avec le texte (jusqu'à 5 lignes environ).
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [input, open]);
 
   const isPhone = smaller.md;
   const [reducedMotion] = useState(prefersReducedMotion);
@@ -418,32 +547,12 @@ const ChatWidget = () => {
   // Une carte interne navigue dans l'application sans recharger (la conversation reste ouverte).
   const renderContent = (content: string, cards?: ChatCard[]) => renderChatMarkdown(content, { cards, onNavigate: navigate });
 
-  const botAvatar = (
-    <div style={{
-      width: '24px', height: '24px', borderRadius: '6px',
-      background: 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, marginRight: '6px', marginTop: '2px',
-    }}>
-      <MdSmartToy size={14} color="#fff" />
+  const botAvatar = (size: number) => (
+    <div className="pcw-avatar" style={{ width: size, height: size }} aria-hidden="true">
+      <MdAutoAwesome size={Math.round(size * 0.5)} color="#fff" />
     </div>
   );
-
-  const bubble = (role: 'user' | 'assistant', error?: boolean): React.CSSProperties => ({
-    maxWidth: '80%',
-    minWidth: 0,
-    background: role === 'user'
-      ? 'linear-gradient(135deg, rgba(47,111,237,0.35), rgba(47,111,237,0.2))'
-      : error ? 'rgba(234,179,8,0.10)' : 'rgba(255,255,255,0.07)',
-    border: `1px solid ${role === 'user' ? 'rgba(47,111,237,0.4)' : error ? 'rgba(234,179,8,0.3)' : 'rgba(255,255,255,0.08)'}`,
-    borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-    padding: '9px 13px',
-    color: error ? '#fcd34d' : 'rgba(255,255,255,0.9)',
-    fontSize: '13px',
-    lineHeight: 1.55,
-    whiteSpace: 'pre-wrap',
-    overflowWrap: 'anywhere',
-  });
+  const firstName = userName.split(' ')[0] || '';
 
   // Bouton du téléphone : affiché pendant sa fenêtre d'apparition, ou en permanence
   // s'il y a une réponse à lire / en cours (et sans animation si l'utilisateur l'a
@@ -464,24 +573,24 @@ const ChatWidget = () => {
     }}>
       <style>{`
         @keyframes peg-chat-pulse {
-          0%, 100% { box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
-          50% { box-shadow: 0 8px 32px rgba(239,68,68,0.75), 0 0 0 8px rgba(239,68,68,0.12); }
+          0%, 100% { box-shadow: 0 8px 24px rgba(92,108,255,0.45); }
+          50% { box-shadow: 0 8px 32px rgba(92,108,255,0.7), 0 0 0 9px rgba(124,92,255,0.14); }
         }
         @keyframes peg-chat-pop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         @keyframes peg-chat-halo {
-          0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.65); }
-          70% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+          0% { box-shadow: 0 0 0 0 rgba(124,92,255,0.7); }
+          70% { box-shadow: 0 0 0 8px rgba(124,92,255,0); }
+          100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
         }
-        @keyframes peg-chat-dot { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) { .peg-chat-anim { animation: none !important; } }
+        ${CHAT_CSS}
       `}</style>
       {/* Fenêtre de chat */}
       {open && (
-        <div role="dialog" aria-label="Assistant PEG" style={{
+        <div role="dialog" aria-label="Assistant PEG" className={`pcw ${isPhone ? 'pcw--phone' : 'pcw--desk'}`} style={{
           ...(isPhone
             ? {
-                // Plein écran : une fenêtre de 380px flottante n'a pas de sens sur un
+                // Plein écran : une fenêtre de 400px flottante n'a pas de sens sur un
                 // téléphone, et la barre d'onglets passerait sur le champ de saisie.
                 position: 'fixed',
                 left: 0,
@@ -498,138 +607,102 @@ const ChatWidget = () => {
                 position: 'absolute',
                 bottom: '72px',
                 right: 0,
-                width: 'min(380px, calc(100vw - 32px))',
-                height: 'min(540px, calc(100dvh - 140px))',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '20px',
+                width: 'min(400px, calc(100vw - 32px))',
+                height: 'min(620px, calc(100dvh - 140px))',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: '24px',
+                boxShadow: '0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.2)',
               }),
-          background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}>
-          {/* Header */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(47,111,237,0.3), rgba(47,111,237,0.1))',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-          }}>
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <MdSmartToy size={20} color="#fff" />
+          {/* En-tête */}
+          <div className="pcw-head">
+            <div className="pcw-avatar-wrap">
+              {botAvatar(40)}
+              <span className="pcw-online" aria-hidden="true" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px' }}>Assistant PEG</div>
-              <div aria-live="polite" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {loading ? (statusLabel || 'En train d\'écrire...') : 'En ligne'}
+              <div className="pcw-title">Assistant PEG</div>
+              <div className="pcw-sub" aria-live="polite">
+                {loading ? (statusLabel || 'Écrit…') : 'En ligne'}
               </div>
             </div>
             {messages.length > 0 && (
-              <button
-                onClick={resetConversation}
-                aria-label="Nouvelle conversation"
-                title="Nouvelle conversation"
-                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}
-              >
-                <MdAddComment size={18} />
+              <button type="button" className="pcw-icon-btn" onClick={resetConversation} aria-label="Nouvelle conversation" title="Nouvelle conversation">
+                <MdAddComment size={19} />
               </button>
             )}
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Fermer le chat"
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px' }}
-            >
-              <MdClose size={18} />
+            <button type="button" className="pcw-icon-btn" onClick={() => setOpen(false)} aria-label="Fermer le chat" title="Fermer">
+              {isPhone ? <MdKeyboardArrowDown size={26} /> : <MdClose size={20} />}
             </button>
           </div>
 
           {/* Messages */}
-          <div role="log" aria-live="polite" aria-label="Conversation" style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div role="log" aria-live="polite" aria-label="Conversation" className="pcw-log">
             {messages.length === 0 && !loading && (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                justifyContent: 'center', height: '100%', gap: '12px',
-                color: 'rgba(255,255,255,0.55)',
-              }}>
-                <MdSmartToy size={40} />
-                <div style={{ textAlign: 'center', fontSize: '13px', lineHeight: 1.5 }}>
-                  Bonjour {userName.split(' ')[0] || ''} ! 👋<br />
-                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>
-                    Comment puis-je vous aider ?
-                  </span>
-                </div>
+              <div className="pcw-empty">
+                <div className="pcw-hero">{botAvatar(60)}</div>
+                <div className="pcw-hello">Bonjour {firstName} 👋</div>
+                <div className="pcw-intro">Commandes, produits, factures, devis… Posez votre question, je vous réponds tout de suite.</div>
                 {/* Suggestions rapides — envoi direct au clic */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                <div className="pcw-sugg">
                   {SUGGESTIONS.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => sendText(q)}
-                      style={{
-                        background: 'rgba(47,111,237,0.1)',
-                        border: '1px solid rgba(47,111,237,0.2)',
-                        borderRadius: '8px',
-                        color: 'rgba(107,158,255,0.9)',
-                        fontSize: '12px',
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      {q}
+                    <button key={q.label} type="button" className="pcw-chip" onClick={() => sendText(q.label)}>
+                      <span className="pcw-chip-ico" aria-hidden="true">{q.icon}</span>
+                      {q.label}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            {messages.map((msg, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                {msg.role === 'assistant' && botAvatar}
-                <div style={bubble(msg.role, msg.error)}>
-                  {msg.role === 'assistant' && !msg.error ? renderContent(msg.content, msg.cards) : msg.content}
-                  {msg.role === 'assistant' && !msg.error && msg.offer && (
-                    <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} />
+            {messages.map((msg, i) => {
+              const isUser = msg.role === 'user';
+              const prev = messages[i - 1];
+              const next = messages[i + 1];
+              // Messages regroupés par auteur : l'avatar, la « queue » de la bulle et
+              // l'heure ne figurent que sur le dernier message du groupe.
+              const firstOfGroup = !prev || prev.role !== msg.role;
+              const lastOfGroup = !next || next.role !== msg.role;
+              const tone = isUser ? 'pcw-bubble--user' : msg.error ? 'pcw-bubble--error' : 'pcw-bubble--bot';
+              return (
+                <div key={i} className="pcw-msg">
+                  <div className={`pcw-row${firstOfGroup ? ' pcw-row--group' : ''}${isUser ? ' pcw-row--user' : ''}`}>
+                    {!isUser && <div className="pcw-avatar-slot">{lastOfGroup && botAvatar(28)}</div>}
+                    <div className={`pcw-bubble ${tone}${lastOfGroup ? ' pcw-tail' : ''}`}>
+                      {msg.role === 'assistant' && !msg.error ? renderContent(msg.content, msg.cards) : msg.content}
+                      {msg.role === 'assistant' && !msg.error && msg.offer && (
+                        <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} />
+                      )}
+                      {msg.error && i === messages.length - 1 && (
+                        <div style={{ marginTop: '8px' }}>
+                          <button type="button" className="pcw-retry" onClick={retryLast} disabled={loading}>
+                            <MdRefresh size={14} /> Réessayer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {lastOfGroup && msg.at && (
+                    <div className={`pcw-time${isUser ? ' pcw-time--user' : ''}`}>{fmtTime(msg.at)}</div>
                   )}
-                  {msg.error && i === messages.length - 1 && (
-                    <div style={{ marginTop: '6px' }}>
-                      <button
-                        onClick={retryLast}
-                        disabled={loading}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)',
-                          borderRadius: '6px', color: '#fcd34d', fontSize: '11px', padding: '3px 8px', cursor: 'pointer',
-                        }}
-                      >
-                        <MdRefresh size={13} /> Réessayer
-                      </button>
+                </div>
+              );
+            })}
+            {loading && (
+              <div className="pcw-msg">
+                <div className="pcw-row pcw-row--group">
+                  <div className="pcw-avatar-slot">{botAvatar(28)}</div>
+                  {streamingText ? (
+                    <div className="pcw-bubble pcw-bubble--bot pcw-tail">{renderContent(streamingText, streamingCards)}</div>
+                  ) : (
+                    <div className="pcw-bubble pcw-bubble--bot pcw-tail pcw-typing-bubble">
+                      <span className="pcw-typing" aria-hidden="true"><i /><i /><i /></span>
+                      {statusLabel && <span className="pcw-status">{statusLabel}</span>}
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
-            {loading && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                {botAvatar}
-                {streamingText ? (
-                  <div style={bubble('assistant')}>{renderContent(streamingText, streamingCards)}</div>
-                ) : (
-                  <div style={{ ...bubble('assistant'), color: 'rgba(255,255,255,0.55)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span aria-hidden="true" style={{ fontSize: '18px', letterSpacing: '2px' }}>
-                      {[0, 1, 2].map((d) => (
-                        <span key={d} className="peg-chat-anim" style={{ animation: `peg-chat-dot 1.2s ${d * 0.15}s infinite` }}>·</span>
-                      ))}
-                    </span>
-                    {statusLabel && <span>{statusLabel}</span>}
-                  </div>
-                )}
               </div>
             )}
             <div ref={bottomRef} />
@@ -637,70 +710,31 @@ const ChatWidget = () => {
 
           {/* Bandeau session expirée */}
           {authWarn && (
-            <div style={{
-              padding: '6px 12px', fontSize: '11px', textAlign: 'center',
-              color: '#fcd34d', background: 'rgba(234,179,8,0.12)',
-              borderTop: '1px solid rgba(234,179,8,0.25)',
-            }}>
+            <div className="pcw-warn">
               Mode limité : reconnectez-vous pour accéder à vos données (offres, projets, factures).
             </div>
           )}
 
-          {/* Input */}
-          <div style={{
-            borderTop: '1px solid rgba(255,255,255,0.07)',
-            padding: '10px 12px',
+          {/* Saisie */}
+          <div className="pcw-compose" style={{
             // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
-            paddingBottom: isPhone ? 'calc(10px + env(safe-area-inset-bottom, 0px))' : '10px',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'flex-end',
+            paddingBottom: isPhone ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : '14px',
           }}>
-            <textarea
-              ref={inputRef}
-              aria-label="Votre message"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Votre message...'}
-              rows={1}
-              maxLength={2000}
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '10px',
-                color: 'rgba(255,255,255,0.85)',
-                fontSize: '13px',
-                padding: '9px 12px',
-                outline: 'none',
-                resize: 'none',
-                fontFamily: 'inherit',
-                maxHeight: '80px',
-                overflowY: 'auto',
-              }}
-            />
-            <button
-              onClick={send}
-              disabled={loading || !input.trim()}
-              aria-label="Envoyer"
-              className="peg-tap-target"
-              style={{
-                width: '36px', height: '36px',
-                background: loading || !input.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #2f6fed, #1a4fbf)',
-                border: 'none',
-                borderRadius: '10px',
-                color: '#fff',
-                cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                transition: 'all 0.15s',
-              }}
-            >
-              <MdSend size={16} />
-            </button>
+            <div className="pcw-field">
+              <textarea
+                ref={inputRef}
+                aria-label="Votre message"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Écrivez votre message…'}
+                rows={1}
+                maxLength={2000}
+              />
+              <button type="button" className="pcw-send" onClick={send} disabled={loading || !input.trim()} aria-label="Envoyer">
+                <MdSend size={17} />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -725,7 +759,7 @@ const ChatWidget = () => {
             className="peg-chat-anim"
             style={{
               width: '32px', height: '32px', padding: 0, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              background: 'linear-gradient(135deg, #4f7cff, #7c5cff)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0,
               opacity: launcherVisible ? 1 : 0,
               transform: launcherVisible ? 'scale(1)' : 'scale(0.3)',
@@ -788,10 +822,11 @@ const ChatWidget = () => {
         style={{
           width: '56px',
           height: '56px',
-          borderRadius: '16px',
-          background: open ? 'rgba(220,38,38,0.25)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
-          border: open ? '1px solid rgba(239,68,68,0.5)' : 'none',
-          boxShadow: open ? '0 8px 24px rgba(239,68,68,0.3)' : undefined,
+          // Même langage visuel que la fenêtre : rond, dégradé bleu→violet.
+          borderRadius: '50%',
+          background: open ? 'rgba(15,23,42,0.92)' : 'linear-gradient(135deg, #4f7cff, #7c5cff)',
+          border: open ? '1px solid rgba(255,255,255,0.14)' : 'none',
+          boxShadow: open ? '0 10px 28px rgba(0,0,0,0.45)' : undefined,
           // Téléphone : pulsation plus marquée (halo + battement) pendant l'apparition.
           animation: open ? 'none' : isPhone
             ? 'peg-chat-pulse 1.25s ease-in-out infinite, peg-chat-pop 1.25s ease-in-out infinite'
