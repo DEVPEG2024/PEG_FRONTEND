@@ -53,9 +53,12 @@ export type GetUsersResponse = {
 };
 
 export async function apiGetUsers(data: GetUsersRequest = {pagination: {page: 1, pageSize: 1000}, searchTerm: ''}): Promise<AxiosResponse<ApiResponse<{usersPermissionsUsers_connection: GetUsersResponse}>>> {
+    // documentId non nul : une seule ligne insérée hors Strapi (sans documentId)
+    // faisait échouer TOUTE la liste (« Cannot return null for non-nullable
+    // field documentId ») ; un tel compte ne peut de toute façon pas être ouvert.
     const query = `
     query GetUsers($searchTerm: String, $pagination: PaginationArg) {
-        usersPermissionsUsers_connection(filters: {username: {containsi: $searchTerm}}, pagination: $pagination) {
+        usersPermissionsUsers_connection(filters: {username: {containsi: $searchTerm}, documentId: {notNull: true}}, pagination: $pagination) {
             nodes {
                 documentId
                 username
