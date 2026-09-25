@@ -1130,29 +1130,31 @@
     outline-offset: 2px;
   }
 
-  /* Accès au réglage depuis le menu complet */
+  /* Accès au réglage, en bas du menu complet : sous la carte devis, aligné
+     sur elle (même retrait de 16px que les cartes de SideNav). */
   .peg-dock-customize {
     display: flex;
     align-items: center;
-    gap: 10px;
-    width: calc(100% - 24px);
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 32px);
     min-height: var(--peg-tap);
-    margin: 12px 12px 6px;
-    padding: 0 12px;
+    margin: 14px 16px calc(16px + var(--peg-safe-bottom));
+    padding: 0 10px;
     border: 1px dashed rgba(143, 180, 255, 0.35);
     border-radius: 12px;
     background: rgba(47, 111, 237, 0.08);
     color: #cfe0ff;
     font-family: Inter, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    text-align: left;
+    white-space: nowrap;
     cursor: pointer;
   }
   .peg-dock-customize svg {
     flex: none;
     color: #8fb4ff;
-    font-size: 19px;
+    font-size: 18px;
   }
 
   /* Barre d'action de la fiche produit (ProductActionBar.tsx) : total en

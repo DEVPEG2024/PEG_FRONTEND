@@ -522,6 +522,14 @@ const Dock = () => {
       >
         {menuOpen && (
           <div className="peg-dock-menu">
+            <CustomVerticalMenu
+              navigationTree={navTree}
+              userAuthority={userAuthority}
+              onNavigate={() => setMenuOpen(false)}
+            />
+            {customer && !customer.premium && <PremiumCard />}
+            {customer && <QuoteCard />}
+            {/* En dernier, sous la carte devis : un réglage, pas une destination */}
             <button
               type="button"
               className="peg-dock-customize"
@@ -530,13 +538,6 @@ const Dock = () => {
               <TbLayoutBottombar aria-hidden="true" />
               Personnaliser la barre du bas
             </button>
-            <CustomVerticalMenu
-              navigationTree={navTree}
-              userAuthority={userAuthority}
-              onNavigate={() => setMenuOpen(false)}
-            />
-            {customer && !customer.premium && <PremiumCard />}
-            {customer && <QuoteCard />}
           </div>
         )}
       </Drawer>
