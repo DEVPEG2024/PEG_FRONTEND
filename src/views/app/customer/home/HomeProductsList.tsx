@@ -14,7 +14,7 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
       {products.map((product) => {
         const imageUrl = product.images?.[0]?.url;
         const fullPriceHT = getProductBasePrice(product);
-        const priceHT = applyPremiumDiscount(fullPriceHT, customer);
+        const priceHT = applyPremiumDiscount(fullPriceHT, customer, product);
         const priceTTC = toTTC(priceHT);
         const isPremium = !!customer?.premium;
         return (

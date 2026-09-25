@@ -313,7 +313,7 @@ const DashboardCustomer = () => {
 
 
   const ProductRow = ({ product }: { product: Product }) => {
-    const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
+    const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
     return (
       <div
         onClick={() => navigate(`/customer/product/${product.documentId}`)}
@@ -340,7 +340,7 @@ const DashboardCustomer = () => {
     const productCard = (product: Product): PcmProduct => ({
       key: product.documentId,
       name: product.name,
-      price: fmtHT(applyPremiumDiscount(getProductBasePrice(product), user?.customer)),
+      price: fmtHT(applyPremiumDiscount(getProductBasePrice(product), user?.customer, product)),
       image: product.images?.[0]?.url,
       onClick: () => navigate(`/customer/product/${product.documentId}`),
     });
@@ -669,7 +669,7 @@ const DashboardCustomer = () => {
                       : { display: 'flex', width: 'max-content' }}
                   >
                     {(staticCarousel ? suggestions : [...suggestions, ...suggestions]).map((product, idx) => {
-                      const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
+                      const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
                       return (
                         <div
                           key={`${product.documentId}-${idx}`}

@@ -176,9 +176,10 @@ function CartItemCard({
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const unitPrice = applyPremiumDiscount(
     getProductPriceForSizeAndColors(item.product, item.sizeAndColors),
-    customer
+    customer,
+    item.product
   );
-  const totalItem = applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer);
+  const totalItem = applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer, item.product);
   const isPackPricing = isProductPackPricing(item.product);
   const isM2 = isProductM2Pricing(item.product);
   const totalQuantity = item.sizeAndColors.reduce(
@@ -606,7 +607,7 @@ function Cart() {
 
   const totalHT = cart.reduce(
     (sum, item) =>
-      sum + applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), user?.customer),
+      sum + applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), user?.customer, item.product),
     0
   );
 

@@ -109,7 +109,7 @@ const ShowProduct = () => {
   const tierPriceSelected = product ? getProductPriceForQuantity(product, amountSelected) : 0;
   const rawUnitPrice = tierPriceSelected > 0 ? tierPriceSelected : (product ? getProductBasePrice(product) : 0);
   // Remise automatique -15% pour les clients Premium (catalogue standard)
-  const unitPrice = applyPremiumDiscount(rawUnitPrice, user?.customer);
+  const unitPrice = applyPremiumDiscount(rawUnitPrice, user?.customer, product);
   const isPremium = !!user?.customer?.premium;
 
   // m² pricing calculation
@@ -120,9 +120,9 @@ const ShowProduct = () => {
   // total de la ligne, arrondie une fois. « quantité × prix unitaire remisé »
   // affichait 101,84 € là où le panier (et Stripe) disaient 101,83 €.
   const totalPrice = isM2Pricing && m2Data
-    ? applyPremiumDiscount(m2Data.total, user?.customer)
+    ? applyPremiumDiscount(m2Data.total, user?.customer, product)
     : product
-      ? applyPremiumDiscount(getTotalPriceForCartItem(product, sizeAndColorsSelected), user?.customer)
+      ? applyPremiumDiscount(getTotalPriceForCartItem(product, sizeAndColorsSelected), user?.customer, product)
       : 0;
 
   useEffect(() => {
@@ -345,7 +345,7 @@ const ShowProduct = () => {
     </Container>
   );
 
-  const basePrice = applyPremiumDiscount(getProductBasePrice(product), user?.customer);
+  const basePrice = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
   const savingsPercent = getCatalogSavingsPercent(product, amountSelected > 0 ? amountSelected : 1);
   const hasTiers = product.priceTiers?.length > 1;
   const activeTierIndex = hasTiers
@@ -646,7 +646,7 @@ const ShowProduct = () => {
                         ? Math.round(((baseCostPerUnit - tierCostPerUnit) / baseCostPerUnit) * 100)
                         : null;
                       // Prix du palier remisé -15% si client Premium
-                      const tierDisplayHT = applyPremiumDiscount(tier.price, user?.customer);
+                      const tierDisplayHT = applyPremiumDiscount(tier.price, user?.customer, product);
                       return (
                         <div
                           key={i}

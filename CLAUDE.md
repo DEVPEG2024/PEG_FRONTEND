@@ -560,7 +560,9 @@ Agent qui relit les **fiches produit** : corrige l'orthographe (appliqué d'offi
 - **⚠️ Activer ces 3 événements sur le webhook Stripe** (dashboard) — sinon pas de rétrogradation.
 
 ### Remise −15 % catalogue
-- Helper `applyPremiumDiscount(price, customer)` + `getPremiumMultiplier()` dans `src/utils/productHelpers.ts` (`PREMIUM_DISCOUNT_RATE = 0.15`).
+- ⚠️ **Catalogue PUBLIC seulement** (demande Nova 25/09/2026) : une **offre préparée pour un client** (produit hors catalogue, réservé à lui ou à son secteur — « Mes offres ») **garde son prix**, même pour un Premium. Règle unique `isPremiumDiscountEligible(product)` = `product.inCatalogue !== false` (en prod au 25/09 : les 18 produits réservés sont tous hors catalogue, aucun produit du catalogue n'est réservé). Miroir serveur : `peg_strapi/src/services/premium-pricing.ts` (prix au paiement `serverLinePriceHT`, offres du chatbot) — **garder les deux alignés**.
+- Helper `applyPremiumDiscount(price, customer, product)` + `getPremiumMultiplier(customer, product)` dans `src/utils/productHelpers.ts` (`PREMIUM_DISCOUNT_RATE = 0.15`). Le produit est **obligatoire** : aucun écran ne peut oublier la règle. La requête de la fiche produit (`apiGetProductForShowById`) lit `inCatalogue` (le panier et les offres du chat en héritent).
+- « Économies Premium » des factures client : `premiumSavingsHT(invoice)` — seulement les lignes réellement remisées (catalogue, et offres facturées avant le 26/09/2026) ; une facture sans ligne de commande (devis, projet) n'en a pas.
 - Appliquée à l'**affichage** : `CustomerProductCard.tsx`, `ShowProduct.tsx`, `HomeProductsList.tsx`, `Cart.tsx`.
 - Appliquée au **prix facturé** : `PaymentContent.tsx` (le champ `orderItem.price`). **C'est le point critique** : le backend `recalculateFromDB` recalcule le montant Stripe à partir de `oi.price` en BDD — donc la remise doit être figée à la création de l'order-item.
 - Non appliquée à `ShowOrderItem.tsx` / `CartColumns.tsx` (vues commande/legacy : la remise serait basée sur le spectateur, pas sur le client de la commande).

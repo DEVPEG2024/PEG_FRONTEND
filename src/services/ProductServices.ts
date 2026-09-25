@@ -17,6 +17,8 @@ export async function apiGetProductForShowById(documentId: string): Promise<Axio
             pricingMode
             pricePerM2
             minM2
+            # Remise Premium : catalogue public seulement (isPremiumDiscountEligible)
+            inCatalogue
             images {
                 url
             }

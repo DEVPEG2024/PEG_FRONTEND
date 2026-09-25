@@ -10,6 +10,8 @@ import {
   PREMIUM_DISCOUNT_RATE,
   getPremiumMultiplier,
   applyPremiumDiscount,
+  isPremiumDiscountEligible,
+  premiumSavingsHT,
   getProductBasePrice,
   getProductCost,
   getCatalogueVisibilityIssues,
@@ -42,27 +44,72 @@ describe('Remise Premium', () => {
     expect(PREMIUM_DISCOUNT_RATE).toBe(0.15);
   });
 
-  test('multiplicateur = 0.85 pour un client Premium', () => {
-    expect(getPremiumMultiplier(makeCustomer(true))).toBe(0.85);
+  const catalogue = { inCatalogue: true };
+  const offre = { inCatalogue: false };
+
+  test('multiplicateur = 0.85 pour un client Premium (catalogue public)', () => {
+    expect(getPremiumMultiplier(makeCustomer(true), catalogue)).toBe(0.85);
   });
 
   test('multiplicateur = 1 pour un client standard', () => {
-    expect(getPremiumMultiplier(makeCustomer(false))).toBe(1);
+    expect(getPremiumMultiplier(makeCustomer(false), catalogue)).toBe(1);
   });
 
   test('multiplicateur = 1 sans client (null/undefined)', () => {
-    expect(getPremiumMultiplier(null)).toBe(1);
-    expect(getPremiumMultiplier(undefined)).toBe(1);
+    expect(getPremiumMultiplier(null, catalogue)).toBe(1);
+    expect(getPremiumMultiplier(undefined, catalogue)).toBe(1);
   });
 
   test('applique −15 % et arrondit au centime', () => {
-    expect(applyPremiumDiscount(100, makeCustomer(true))).toBe(85);
+    expect(applyPremiumDiscount(100, makeCustomer(true), catalogue)).toBe(85);
     // 33.33 × 0.85 = 28.3305 → 28.33
-    expect(applyPremiumDiscount(33.33, makeCustomer(true))).toBe(28.33);
+    expect(applyPremiumDiscount(33.33, makeCustomer(true), catalogue)).toBe(
+      28.33
+    );
   });
 
   test('ne modifie pas le prix pour un client standard', () => {
-    expect(applyPremiumDiscount(100, makeCustomer(false))).toBe(100);
+    expect(applyPremiumDiscount(100, makeCustomer(false), catalogue)).toBe(100);
+  });
+
+  test('offre préparée pour le client (hors catalogue) : prix inchangé, même Premium', () => {
+    expect(isPremiumDiscountEligible(offre)).toBe(false);
+    expect(getPremiumMultiplier(makeCustomer(true), offre)).toBe(1);
+    expect(applyPremiumDiscount(100, makeCustomer(true), offre)).toBe(100);
+  });
+
+  test('champ absent (requête du catalogue, ancien panier) : traité comme catalogue', () => {
+    expect(isPremiumDiscountEligible({})).toBe(true);
+    expect(applyPremiumDiscount(100, makeCustomer(true), null)).toBe(85);
+  });
+});
+
+describe('Économie Premium affichée sur les factures', () => {
+  const item = (price: number, inCatalogue: boolean) => ({
+    price,
+    product: { inCatalogue },
+  });
+
+  test('seules les lignes du catalogue comptent', () => {
+    // 85 € payés au lieu de 100 € → 15 € d'économie ; l'offre (200 €) : aucune
+    const saved = premiumSavingsHT({
+      date: '2026-10-02',
+      orderItems: [item(85, true), item(200, false)],
+    });
+    expect(Math.round(saved * 100) / 100).toBe(15);
+  });
+
+  test('offre facturée avant le 26/09/2026 : elle avait la remise, elle compte', () => {
+    const saved = premiumSavingsHT({
+      date: '2026-09-10',
+      orderItems: [item(85, false)],
+    });
+    expect(Math.round(saved * 100) / 100).toBe(15);
+  });
+
+  test('facture sans ligne de commande (devis, projet) : aucune économie Premium', () => {
+    expect(premiumSavingsHT({ date: '2026-10-02', orderItems: [] })).toBe(0);
+    expect(premiumSavingsHT({ date: '2026-10-02' })).toBe(0);
   });
 });
 

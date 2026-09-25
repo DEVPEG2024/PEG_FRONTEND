@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck } from 'react-icons/hi';
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
-import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
+import { premiumSavingsHT } from '@/utils/productHelpers';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding } from '@/utils/invoiceStatus';
@@ -220,17 +220,17 @@ const InvoicesList = () => {
 
   /* ── Stats KPI ── */
   const stats = useMemo(() => {
-    let billed = 0, pending = 0, paid = 0, savingsHT = 0
+    let billed = 0, pending = 0, paid = 0, premiumSavings = 0
     for (const inv of invoices) {
       if (isInvoiceCanceled(inv)) continue
       const ttc = inv.totalAmount ?? 0
       billed += ttc
       if (isInvoiceOutstanding(inv)) pending += ttc
       else paid += ttc
-      savingsHT += inv.amount ?? 0
+      // Économie Premium : seulement sur les lignes réellement remisées
+      // (catalogue public — les offres personnalisées gardent leur prix)
+      if (isPremium) premiumSavings += premiumSavingsHT(inv)
     }
-    // Économie premium = surcoût évité (15% que le client n'a pas payé sur le HT déjà remisé)
-    const premiumSavings = isPremium ? savingsHT * (PREMIUM_DISCOUNT_RATE / (1 - PREMIUM_DISCOUNT_RATE)) : 0
     return { billed, pending, paid, premiumSavings }
   }, [invoices, isPremium]);
 

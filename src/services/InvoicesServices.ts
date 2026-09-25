@@ -193,6 +193,8 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
                     documentId
                     product {
                         name
+                        # Économie Premium : catalogue public seulement
+                        inCatalogue
                     }
                     sizeAndColorSelections
                     price

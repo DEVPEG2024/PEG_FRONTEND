@@ -2,18 +2,82 @@ import { Product, SizeAndColorSelection } from '@/@types/product';
 import { Customer } from '@/@types/customer';
 
 /**
- * Remise automatique des clients Premium sur le catalogue standard (-15 %).
+ * Remise automatique des clients Premium sur le CATALOGUE PUBLIC (-15 %).
  * Source unique de vérité côté front.
  */
 export const PREMIUM_DISCOUNT_RATE = 0.15;
 
-export function getPremiumMultiplier(customer?: Customer | null): number {
-  return customer?.premium ? 1 - PREMIUM_DISCOUNT_RATE : 1;
+/** Drapeau du catalogue public — peut manquer selon la requête qui a lu le produit */
+type CatalogueFlag = { inCatalogue?: boolean | null };
+
+/**
+ * La remise Premium ne vaut que pour le catalogue public (demande Nova du
+ * 25/09/2026) : une offre préparée pour un client — produit hors catalogue,
+ * réservé à lui ou à son secteur (« Mes offres ») — garde son prix, c'est déjà
+ * un tarif négocié. En prod, tous les produits réservés sont hors catalogue.
+ * Champ absent (requête du catalogue, ancien panier) : traité comme catalogue.
+ * ⚠️ Miroir de `services/premium-pricing.ts` côté serveur (prix au paiement,
+ * offres du chatbot) : garder les deux alignés.
+ */
+export function isPremiumDiscountEligible(
+  product?: CatalogueFlag | null
+): boolean {
+  return product?.inCatalogue !== false;
 }
 
-/** Applique la remise Premium (-15 %) à un prix si le client est Premium. Arrondi au centime. */
-export function applyPremiumDiscount(price: number, customer?: Customer | null): number {
-  return Math.round(price * getPremiumMultiplier(customer) * 100) / 100;
+export function getPremiumMultiplier(
+  customer: Customer | null | undefined,
+  product: CatalogueFlag | null | undefined
+): number {
+  return customer?.premium && isPremiumDiscountEligible(product)
+    ? 1 - PREMIUM_DISCOUNT_RATE
+    : 1;
+}
+
+/** Jusqu'à cette date, les offres préparées recevaient aussi la remise Premium. */
+export const PREMIUM_OFFERS_EXCLUDED_SINCE = '2026-09-26';
+
+/**
+ * Économie Premium d'une facture (HT) : ce que la remise a réellement évité,
+ * ligne par ligne — produits du catalogue public, et offres facturées avant
+ * PREMIUM_OFFERS_EXCLUDED_SINCE. Une facture sans ligne de commande (devis,
+ * projet) n'a jamais eu de remise Premium : 0. Le prix d'une ligne est déjà
+ * remisé → économie = prix × taux / (1 − taux).
+ */
+export function premiumSavingsHT(invoice: {
+  date?: string | Date | null;
+  orderItems?:
+    | { price?: number | null; product?: CatalogueFlag | null }[]
+    | null;
+}): number {
+  const issued = invoice.date ? new Date(invoice.date) : null;
+  const before =
+    !!issued &&
+    !Number.isNaN(issued.getTime()) &&
+    issued < new Date(PREMIUM_OFFERS_EXCLUDED_SINCE);
+  const discounted = (invoice.orderItems ?? []).reduce(
+    (sum, item) =>
+      before || isPremiumDiscountEligible(item.product)
+        ? sum + (Number(item.price) || 0)
+        : sum,
+    0
+  );
+  return (discounted * PREMIUM_DISCOUNT_RATE) / (1 - PREMIUM_DISCOUNT_RATE);
+}
+
+/**
+ * Applique la remise Premium (-15 %) à un prix si le client est Premium et
+ * que le produit est au catalogue public. Arrondi au centime. Le produit est
+ * OBLIGATOIRE : aucun écran ne peut oublier la règle des offres.
+ */
+export function applyPremiumDiscount(
+  price: number,
+  customer: Customer | null | undefined,
+  product: CatalogueFlag | null | undefined
+): number {
+  return (
+    Math.round(price * getPremiumMultiplier(customer, product) * 100) / 100
+  );
 }
 
 /**

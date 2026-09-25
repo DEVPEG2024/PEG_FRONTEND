@@ -43,7 +43,7 @@ const CustomerProductCard = ({
   const shortDesc = product.description ? getShortSentence(product.description) : null;
   const isM2 = product.pricingMode === 'm2';
   const fullPriceHT = isM2 ? (product.pricePerM2 || 0) : getProductBasePrice(product);
-  const priceHT = applyPremiumDiscount(fullPriceHT, customer);
+  const priceHT = applyPremiumDiscount(fullPriceHT, customer, product);
   const priceTTC = toTTC(priceHT);
   const unitSuffix = isM2 ? ' /m²' : '';
   const savingsPercent = getCatalogSavingsPercent(product);

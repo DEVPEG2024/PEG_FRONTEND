@@ -43,8 +43,10 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // Remise automatique -15% pour les clients Premium (catalogue standard)
-  const premiumPrice = (p: number) => applyPremiumDiscount(p, user?.customer);
+  // Remise automatique -15% pour les clients Premium — catalogue public
+  // seulement : une offre préparée pour le client garde son prix
+  const premiumPrice = (p: number, product: CartItem['product']) =>
+    applyPremiumDiscount(p, user?.customer, product);
 
   // Promo code state
   const [promoInput, setPromoInput] = useState('');
@@ -55,7 +57,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
   const SHIPPING_HT = 9.90;
 
   const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
-    return total + premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors));
+    return total + premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors), item.product);
   }, 0);
 
   const discountAmount = (promoValidation?.valid && promoValidation.discountAmount) || 0;
@@ -145,7 +147,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           product: item.product,
           sizeAndColorSelections: item.sizeAndColors,
           formAnswer,
-          price: premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors)),
+          price: premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors), item.product),
           state: 'pending',
           customer: user.customer!,
           // BAT approuvé sur la fiche avant l'ajout au panier : la commande part validée
@@ -347,7 +349,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
         padding: '10px 12px', marginBottom: '10px',
       }}>
         {cart.map((item, i) => {
-          const total = premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors));
+          const total = premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors), item.product);
           const qty = item.sizeAndColors.reduce((s, sc) => s + sc.quantity, 0);
           return (
             <div key={item.id} style={{
