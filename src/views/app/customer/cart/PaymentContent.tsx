@@ -5,8 +5,6 @@ import {
 } from '@/utils/productHelpers';
 import { Checkout, ShippingAddress } from '@/@types/checkout';
 import { useEffect, useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { env } from '@/configs/env.config';
 import { API_BASE_URL } from '@/configs/api.config';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { TOKEN_TYPE } from '@/constants/api.constant';
@@ -28,16 +26,16 @@ import { apiValidatePromoCode } from '@/services/PromoCodeServices';
 import { apiGetReferralCredit } from '@/services/GeneratorServices';
 import { PromoCodeValidation } from '@/@types/promoCode';
 import { toast } from 'react-toastify';
-
-// loadStripe doit être appelé une seule fois (hors composant) — sinon Stripe.js
-// est réinstancié à chaque render.
-const stripePromise = loadStripe(env?.STRIPE_PUBLIC_KEY as string);
+import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
   // Articles dont la personnalisation OBLIGATOIRE n'est pas faite (ajoutés depuis
   // l'assistant) : la commande partirait sans le fichier exigé.
   const personalizationMissing = missingPersonalization.length > 0;
   const [isSubmitting, setSubmitting] = useState<boolean>(false);
+  // Session Stripe en cours de paiement dans la fenêtre intégrée
+  const [stripePayment, setStripePayment] = useState<{ sessionId: string; clientSecret: string } | null>(null);
   const { token } = useAppSelector((state) => state.auth.session);
   const { user }: { user: User } = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
@@ -259,7 +257,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     if (user.customer!.deferredPayment) {
       await createProjectAndDeferredInvoice(orderItems);
     } else {
-      await redirectToStripeCheckout(orderItems);
+      await startStripeCheckout(orderItems);
     }
   };
 
@@ -286,7 +284,10 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     navigate('/common/projects');
   };
 
-  const redirectToStripeCheckout = async (
+  // Paiement par carte DANS PEG (fenêtre Stripe intégrée). Si le backend ne
+  // renvoie pas de `clientSecret` (Strapi pas encore redéployé), repli sur la
+  // page hébergée par Stripe, comme avant.
+  const startStripeCheckout = async (
     orderItems: OrderItem[]
   ): Promise<void> => {
     const response = await fetch(API_BASE_URL + '/checkout/stripe', {
@@ -295,24 +296,52 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
         'Content-Type': 'application/json',
         Authorization: `${TOKEN_TYPE}${token}`,
       },
-      body: JSON.stringify(createCheckout(orderItems)),
+      body: JSON.stringify({ ...createCheckout(orderItems), uiMode: 'embedded' }),
     });
 
     if (!response.ok) {
       throw new Error(`Création de session Stripe échouée (HTTP ${response.status})`);
     }
 
-    const { id }: { id?: string } = await response.json();
+    const { id, clientSecret }: StripeSessionResponse = await response.json();
     if (!id) {
       throw new Error('Session Stripe invalide (identifiant manquant).');
     }
 
-    const stripe = await stripePromise;
-    if (!stripe) {
-      throw new Error('Stripe.js indisponible.');
+    if (clientSecret) {
+      setStripePayment({ sessionId: id, clientSecret });
+      return;
     }
+    await redirectToHostedCheckout(id);
+  };
 
-    await stripe.redirectToCheckout({ sessionId: id });
+  // Même page de confirmation qu'au retour de l'ancienne redirection : elle
+  // retire du panier les articles réellement payés.
+  const handleStripeComplete = () => {
+    if (!stripePayment) return;
+    const { sessionId } = stripePayment;
+    setStripePayment(null);
+    navigate(`/customer/checkout/success?session_id=${encodeURIComponent(sessionId)}`);
+  };
+
+  // Fenêtre fermée sans payer = ancienne page d'annulation : le serveur expire
+  // la session, efface les lignes de commande et rend l'avoir réservé (jamais
+  // sur une session déjà payée). Le panier reste intact.
+  const handleStripeClose = () => {
+    if (!stripePayment) return;
+    const { sessionId } = stripePayment;
+    setStripePayment(null);
+    fetch(API_BASE_URL + '/checkout/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `${TOKEN_TYPE}${token}`,
+      },
+      body: JSON.stringify({ sessionId }),
+    }).catch((err) => {
+      console.error('[Checkout] Annulation de la session échouée :', err);
+    });
+    toast.info('Paiement annulé — votre panier est conservé.');
   };
 
   const itemCount = cart.reduce((sum, item) =>
@@ -615,6 +644,14 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           Paiement securise par Stripe
         </p>
       </div>
+
+      {stripePayment && (
+        <StripeEmbeddedCheckout
+          clientSecret={stripePayment.clientSecret}
+          onComplete={handleStripeComplete}
+          onClose={handleStripeClose}
+        />
+      )}
     </div>
   );
 }

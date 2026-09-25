@@ -5,6 +5,7 @@ import { API_BASE_URL, API_GRAPHQL_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { pegBackendFetch } from './PegBackendClient';
 import { CustomerBanner, fetchBannerGraphQL } from './BannerServices';
+import type { StripeSessionResponse } from '@/utils/stripeClient';
 
 // Tarif Premium (HT mensuel) — doit rester aligné avec PREMIUM_PRICE_HT côté backend.
 export const PREMIUM_PRICE_HT = 250;
@@ -84,15 +85,16 @@ export type PremiumCustomer = {
   banner?: CustomerBanner | null;
 };
 
-// Démarre la session Stripe d'abonnement Premium → renvoie l'id de session
+// Démarre la session Stripe d'abonnement Premium → id de session, et
+// `clientSecret` quand le backend sait l'afficher dans PEG (paiement intégré)
 export async function apiStartPremiumCheckout(
   customerDocumentId: string,
   token: string
-): Promise<{ id: string }> {
+): Promise<StripeSessionResponse> {
   const res = await fetch(API_BASE_URL + '/checkout/premium', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
-    body: JSON.stringify({ customerDocumentId }),
+    body: JSON.stringify({ customerDocumentId, uiMode: 'embedded' }),
   });
   if (!res.ok) throw new Error('Échec création session premium');
   return res.json();

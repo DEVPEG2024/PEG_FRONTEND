@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { env } from '@/configs/env.config';
 import { RootState, useAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
@@ -22,6 +20,8 @@ import {
   PREMIUM_CONTRACT_VERSION,
   downloadPremiumContract,
 } from './contract';
+import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import { redirectToHostedCheckout } from '@/utils/stripeClient';
 
 const GOLD = '#eab308';
 
@@ -44,6 +44,8 @@ const PremiumPage = () => {
   const [accepted, setAccepted] = useState(false);
   const [showContract, setShowContract] = useState(false);
   const paidHandledRef = useRef<string | null>(null);
+  // Abonnement en cours de paiement dans la fenêtre Stripe intégrée
+  const [paymentSecret, setPaymentSecret] = useState<string | null>(null);
 
   const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
   const premiumSince = user?.customer?.premiumSince;
@@ -85,10 +87,16 @@ const PremiumPage = () => {
         email: user?.email || user?.customer?.companyInformations?.email,
         contractVersion: PREMIUM_CONTRACT_VERSION,
       });
-      const { id } = await apiStartPremiumCheckout(customerDocumentId, token as string);
-      const stripe = await loadStripe(env?.STRIPE_PUBLIC_KEY as string);
-      if (!stripe || !id) throw new Error('stripe');
-      await stripe.redirectToCheckout({ sessionId: id });
+      const { id, clientSecret } = await apiStartPremiumCheckout(customerDocumentId, token as string);
+      if (!id) throw new Error('stripe');
+      // Fenêtre Stripe intégrée à PEG ; repli sur la page hébergée par Stripe
+      // si le backend ne renvoie pas de `clientSecret`.
+      if (clientSecret) {
+        setPaymentSecret(clientSecret);
+        setBusy(false);
+        return;
+      }
+      await redirectToHostedCheckout(id);
     } catch {
       toast.error('Impossible de démarrer le paiement. Réessayez.');
       setBusy(false);
@@ -301,6 +309,25 @@ const PremiumPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {paymentSecret && (
+        <StripeEmbeddedCheckout
+          clientSecret={paymentSecret}
+          title="Abonnement Premium"
+          // Même traitement qu'au retour de l'ancienne redirection (?paid=) :
+          // l'activation Premium est faite par le webhook.
+          onComplete={() => {
+            setPaymentSecret(null);
+            if (customerDocumentId) {
+              navigate(`/customer/premium?paid=${encodeURIComponent(customerDocumentId)}`);
+            }
+          }}
+          onClose={() => {
+            setPaymentSecret(null);
+            toast.info('Paiement annulé — vous n’êtes pas passé Premium.');
+          }}
+        />
       )}
     </div>
   );

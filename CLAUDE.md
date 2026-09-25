@@ -91,6 +91,14 @@ FRONTEND :
 - Le webhook gère la redirection après paiement (succès ou échec)
 - `STRIPE_WEBHOOK_SECRET` : permet au PEG de retrouver les infos de paiement côté Stripe
 
+### Paiement intégré — le client ne quitte plus PEG (ajout 25/09/2026)
+- Les trois paiements (commande du panier, devis, abonnement Premium) s'affichent dans une **fenêtre PEG** (`src/components/payment/StripeEmbeddedCheckout.tsx`) au lieu d'une redirection vers checkout.stripe.com : **Stripe Embedded Checkout**. Même session Checkout, mêmes metadata, **même webhook** `checkout.session.completed` — rien ne change côté facture/projet.
+- Le front envoie `uiMode: 'embedded'` ; Strapi (`checkoutUi()` dans `checkout.ts`) crée alors la session en `ui_mode: 'embedded'`, `redirect_on_completion: 'if_required'`, `locale: 'fr'`, et renvoie `{ id, clientSecret }`. **Sans `clientSecret`** (Strapi pas encore redéployé), le front **retombe sur la redirection** (`redirectToHostedCheckout`, `src/utils/stripeClient.ts`) : rétro-compatible dans les deux sens.
+- Fin de paiement : `onComplete` → navigation interne vers les mêmes pages qu'avant (`/customer/checkout/success?session_id=…`, `/common/quotes?paid=…`, `/customer/premium?paid=…`).
+- Fenêtre fermée (panier) → `POST /checkout/cancel` : le serveur **expire d'abord la session** (plus payable ensuite) ; une session **déjà payée n'est jamais annulée** (Stripe refuse d'expirer une session `complete`).
+- CSP (`index.html`) : `*.js.stripe.com`, `checkout.stripe.com`, images `*.stripe.com`, Link (`link.com`). Apparence du formulaire = réglages **Branding** du tableau de bord Stripe.
+- Vérifié en mode test le 25/09/2026 (carte, 3-D Secure, abonnement) : paiement dans la page, aucune erreur CSP.
+
 ---
 
 ## ☁️ Amazon S3 — CORS

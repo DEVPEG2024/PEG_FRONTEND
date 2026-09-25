@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { env } from '@/configs/env.config';
 import { API_BASE_URL } from '@/configs/api.config';
 import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Container } from '@/components/shared';
@@ -18,6 +16,8 @@ import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote, apiRejectQuoteAsCustomer } from '@/services/QuoteServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
+import StripeEmbeddedCheckout from '@/components/payment/StripeEmbeddedCheckout';
+import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 
 const fmtDate = (d?: string | null) => {
   if (!d) return '—';
@@ -362,6 +362,8 @@ const QuotesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const paidHandledRef = useRef<string | null>(null);
+  // Devis en cours de paiement dans la fenêtre Stripe intégrée
+  const [quotePayment, setQuotePayment] = useState<{ quoteDocumentId: string; clientSecret: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -495,20 +497,25 @@ const QuotesList = () => {
     }
   };
 
-  // Paiement immédiat : redirige vers Stripe (Stripe.js chargé à la demande)
+  // Paiement immédiat : fenêtre Stripe intégrée à PEG ; repli sur la page
+  // hébergée par Stripe si le backend ne renvoie pas de `clientSecret`.
   const startQuotePayment = async (q: Quote) => {
     setBusyId(q.documentId);
     try {
       const res = await fetch(API_BASE_URL + '/checkout/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `${TOKEN_TYPE}${token}` },
-        body: JSON.stringify({ quoteDocumentId: q.documentId }),
+        body: JSON.stringify({ quoteDocumentId: q.documentId, uiMode: 'embedded' }),
       });
       if (!res.ok) throw new Error('session');
-      const { id } = await res.json();
-      const stripe = await loadStripe(env?.STRIPE_PUBLIC_KEY as string);
-      if (!stripe || !id) throw new Error('stripe');
-      await stripe.redirectToCheckout({ sessionId: id });
+      const { id, clientSecret }: StripeSessionResponse = await res.json();
+      if (!id) throw new Error('stripe');
+      if (clientSecret) {
+        setQuotePayment({ quoteDocumentId: q.documentId, clientSecret });
+        setBusyId(null);
+        return;
+      }
+      await redirectToHostedCheckout(id);
     } catch {
       toast.error('Impossible de démarrer le paiement');
       setBusyId(null);
@@ -761,6 +768,23 @@ const QuotesList = () => {
           </svg>
         </Panel>
       </div>
+
+      {quotePayment && (
+        <StripeEmbeddedCheckout
+          clientSecret={quotePayment.clientSecret}
+          // Même traitement qu'au retour de l'ancienne redirection (?paid=) :
+          // le projet est créé par le webhook, la liste se rafraîchit.
+          onComplete={() => {
+            const { quoteDocumentId } = quotePayment;
+            setQuotePayment(null);
+            navigate(`/common/quotes?paid=${encodeURIComponent(quoteDocumentId)}`);
+          }}
+          onClose={() => {
+            setQuotePayment(null);
+            toast.info('Paiement annulé — devis non validé');
+          }}
+        />
+      )}
     </Container>
   );
 };
