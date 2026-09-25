@@ -808,11 +808,15 @@
      redevenait noire. Il vit désormais dans deux calques FIXÉS à l'écran
      (body::before / ::after), derrière tout le contenu : il accompagne chaque
      page jusqu'au bout du défilement. Ils portent des nuances de la couleur
-     choisie (la couleur, une nuance tirée vers le cyan, une vers le rose) qui
-     dérivent lentement ; au défilement, les deux calques glissent en sens
-     opposé et les nuances se croisent. Transformations seules (GPU), aucune
-     animation si l'utilisateur réduit les animations. La page et les
-     tableaux de bord (.pdm / .pcm) sont donc transparents. */
+     choisie (la couleur, une nuance tirée vers le cyan, une vers le rose) EN
+     MOUVEMENT permanent : dérive (~10 s), balancement (rotation ~20°) et
+     respiration du calque des nuances, qui fait se mélanger les couleurs ; au
+     défilement, les deux calques glissent en sens opposé. Une première version
+     (dérive de 26/34 s, quelques pixels par seconde) paraissait FIXE sur
+     iPhone : ne pas revenir à des amplitudes aussi faibles.
+     Transformations et opacité seules (GPU). « Réduire les animations » : plus
+     aucun déplacement, seule la respiration des couleurs reste.
+     La page et les tableaux de bord (.pdm / .pcm) sont donc transparents. */
   body.peg-mobile-dark {
     background: #070a08;
   }
@@ -823,7 +827,7 @@
     inset: -14% -20%;
     z-index: -1;
     pointer-events: none;
-    will-change: transform;
+    will-change: transform, rotate, opacity;
   }
   /* Repli (sans color-mix) : la couleur choisie seule, à différentes intensités */
   body.peg-mobile-dark::before {
@@ -831,14 +835,19 @@
       radial-gradient(42% 30% at 82% 18%, rgba(var(--pdm-accent-rgb), 0.3) 0%, rgba(var(--pdm-accent-rgb), 0.1) 45%, transparent 72%),
       radial-gradient(40% 26% at 14% 56%, rgba(var(--pdm-accent-rgb), 0.18) 0%, transparent 70%),
       radial-gradient(46% 30% at 72% 90%, rgba(var(--pdm-accent-rgb), 0.22) 0%, transparent 72%);
-    animation: peg-aura-a 26s ease-in-out infinite alternate;
+    animation:
+      peg-aura-drift-a 10s ease-in-out infinite alternate,
+      peg-aura-sway-a 16s ease-in-out infinite alternate;
   }
   body.peg-mobile-dark::after {
     background:
       radial-gradient(34% 22% at 26% 22%, rgba(var(--pdm-accent-rgb), 0.1) 0%, transparent 70%),
       radial-gradient(40% 28% at 86% 60%, rgba(var(--pdm-accent-rgb), 0.15) 0%, transparent 70%),
       radial-gradient(48% 30% at 28% 94%, rgba(var(--pdm-accent-rgb), 0.18) 0%, transparent 72%);
-    animation: peg-aura-b 34s ease-in-out infinite alternate;
+    animation:
+      peg-aura-drift-b 12s ease-in-out infinite alternate,
+      peg-aura-sway-b 20s ease-in-out infinite alternate,
+      peg-aura-breathe 7s ease-in-out infinite alternate;
   }
   /* Nuances : la couleur tirée vers le cyan (froide) et vers le rose (chaude).
      Calculées ici depuis --pdm-accent-rgb : elles suivent la couleur quand on
@@ -861,27 +870,46 @@
         radial-gradient(48% 30% at 28% 94%, color-mix(in srgb, var(--peg-aura-cool) 20%, transparent) 0%, transparent 72%);
     }
   }
-  @keyframes peg-aura-a {
-    0% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(-4%, 3%, 0) scale(1.06); }
-    100% { transform: translate3d(3%, -2%, 0) scale(1.03); }
+  @keyframes peg-aura-drift-a {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(-9%, 7%, 0) scale(1.14); }
   }
-  @keyframes peg-aura-b {
-    0% { transform: translate3d(0, 0, 0) scale(1.04); }
-    50% { transform: translate3d(5%, -3%, 0) scale(1); }
-    100% { transform: translate3d(-3%, 4%, 0) scale(1.07); }
+  @keyframes peg-aura-drift-b {
+    from { transform: translate3d(0, 0, 0) scale(1.1); }
+    to { transform: translate3d(10%, -8%, 0) scale(1); }
+  }
+  /* `rotate` et `translate` (propriétés individuelles) se composent avec
+     `transform` : dérive, balancement et défilement s'additionnent. */
+  @keyframes peg-aura-sway-a {
+    from { rotate: -16deg; }
+    to { rotate: 20deg; }
+  }
+  @keyframes peg-aura-sway-b {
+    from { rotate: 18deg; }
+    to { rotate: -22deg; }
+  }
+  @keyframes peg-aura-breathe {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
   }
   /* Navigateurs qui savent lier une animation au défilement : les calques
      glissent en sens opposé (propriété `translate`, qui se compose avec la
      dérive en `transform`). Ailleurs, la dérive seule. */
   @supports (animation-timeline: scroll()) {
     body.peg-mobile-dark::before {
-      animation: peg-aura-a 26s ease-in-out infinite alternate, peg-aura-scroll-a linear both;
-      animation-timeline: auto, scroll(root);
+      animation:
+        peg-aura-drift-a 10s ease-in-out infinite alternate,
+        peg-aura-sway-a 16s ease-in-out infinite alternate,
+        peg-aura-scroll-a linear both;
+      animation-timeline: auto, auto, scroll(root);
     }
     body.peg-mobile-dark::after {
-      animation: peg-aura-b 34s ease-in-out infinite alternate, peg-aura-scroll-b linear both;
-      animation-timeline: auto, scroll(root);
+      animation:
+        peg-aura-drift-b 12s ease-in-out infinite alternate,
+        peg-aura-sway-b 20s ease-in-out infinite alternate,
+        peg-aura-breathe 7s ease-in-out infinite alternate,
+        peg-aura-scroll-b linear both;
+      animation-timeline: auto, auto, auto, scroll(root);
     }
   }
   @keyframes peg-aura-scroll-a {
@@ -1623,9 +1651,16 @@
 }
 
 @media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  /* Fond animé : plus de déplacement, les nuances se mélangent seulement
+     (fondu d'opacité, pas un mouvement). Le raccourci `animation` remet aussi
+     `animation-timeline` à auto : plus de glissement au défilement. */
   body.peg-mobile-dark::before,
   body.peg-mobile-dark::after {
-    animation: none;
+    animation: peg-aura-breathe 9s ease-in-out infinite alternate;
+  }
+  body.peg-mobile-dark::after {
+    animation-duration: 7s;
+    animation-direction: alternate-reverse;
   }
   .peg-dock,
   .peg-dock-icon,
