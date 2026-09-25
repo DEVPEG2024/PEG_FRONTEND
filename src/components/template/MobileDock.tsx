@@ -22,6 +22,7 @@ import {
   NAV_MODE_THEMED,
   NAV_MODE_TRANSPARENT,
   DIR_RTL,
+  MODE_DARK,
 } from '@/constants/theme.constant';
 import { useAppSelector } from '@/store';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -40,6 +41,7 @@ import {
   saveDockKeys,
 } from '@/utils/navMenu';
 import type { DockEntry } from '@/utils/navMenu';
+import { accentVars, readAccent } from '@/utils/mobileShell';
 
 /*
  * Barre d'onglets du téléphone (< md) : la navigation d'une application native.
@@ -375,6 +377,26 @@ const Dock = () => {
     document.body.classList.add('peg-has-dock');
     return () => document.body.classList.remove('peg-has-dock');
   }, [keyboardOpen]);
+
+  // Fond « app » : tout PEG prend le noir et le halo de couleur des tableaux
+  // de bord (utils/mobileShell.ts). Posé avant l'affichage, et avant la barre
+  // d'état ci-dessous, qui lit la couleur de l'en-tête.
+  const darkShell = mode === MODE_DARK;
+  useLayoutEffect(() => {
+    if (!darkShell) return;
+    document.body.classList.add('peg-mobile-dark');
+    return () => document.body.classList.remove('peg-mobile-dark');
+  }, [darkShell]);
+  // Couleur relue à chaque page : elle a pu changer sur le tableau de bord.
+  // Posée sur <html> : les tableaux de bord posent les mêmes variables sur le
+  // body et les retirent en partant, sans toucher à celles-ci.
+  useLayoutEffect(() => {
+    if (!darkShell) return;
+    const root = document.documentElement.style;
+    const vars = accentVars(readAccent());
+    Object.entries(vars).forEach(([k, v]) => root.setProperty(k, v));
+    return () => Object.keys(vars).forEach((k) => root.removeProperty(k));
+  }, [darkShell, location.pathname]);
 
   // Barre d'état du téléphone à la couleur de l'en-tête : l'en-tête s'y prolonge
   useEffect(() => {

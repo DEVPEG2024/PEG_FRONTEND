@@ -799,6 +799,33 @@
     box-shadow: 0 0 0 2px rgb(24, 32, 46);
   }
 
+  /* FOND APP (MobileDock + utils/mobileShell.ts) : toutes les pages prennent
+     le fond des tableaux de bord — noir, halo de la couleur choisie sur le
+     tableau de bord en haut à droite, sous l'en-tête — et l'en-tête, la barre
+     d'onglets et la barre d'état s'y fondent. Sur les tableaux de bord, leur
+     propre fond (.pdm / .pcm) reste devant : rien n'y change. */
+  body.peg-mobile-dark {
+    background: #070a08;
+  }
+  body.peg-mobile-dark .peg-app-main {
+    background:
+      radial-gradient(130% 1100px at 100% calc(64px + var(--peg-safe-top)), rgba(var(--pdm-accent-rgb), 0.3) 0%, rgba(var(--pdm-accent-rgb), 0.1) 40%, transparent 70%),
+      radial-gradient(90% 740px at 0% 620px, rgba(var(--pdm-accent-rgb), 0.06) 0%, transparent 60%),
+      #070a08;
+  }
+  body.peg-mobile-dark .header {
+    background: #070a08;
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+  body.peg-mobile-dark .peg-dock {
+    background: rgba(10, 13, 11, 0.92);
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+  body.peg-mobile-dark .peg-dock-item.is-active .peg-dock-icon {
+    background: rgba(var(--pdm-accent-rgb), 0.16);
+    color: var(--pdm-accent);
+  }
+
   /* Onglets défilants : 4,5 onglets à l'écran (le demi-onglet au bord dit
      « la suite est à côté ») ; « Menu » reste épinglé à droite. Peu
      d'onglets : ils s'élargissent et remplissent la barre, sans défilement. */

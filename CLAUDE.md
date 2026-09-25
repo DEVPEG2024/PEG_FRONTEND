@@ -708,6 +708,10 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 - ⚠️ Au relâchement du doigt après l'appui long, le navigateur émet un clic à cet endroit : il est **avalé** (`swallowReleaseClick`) — sinon il refermait la feuille ou touchait une de ses lignes.
 - Bureau et tablette non concernés : composant non monté ≥ 768px, styles sous `@media (max-width: 767.98px)`.
 
+### Fond « app » sur téléphone (demande Nova 25/09/2026)
+- Sous 768px, **toutes les pages** prennent le fond des tableaux de bord téléphone : noir `#070a08`, halo de la couleur choisie sur le tableau de bord (bouton palette, `localStorage.peg:dashboardAccent`), en-tête, barre d'onglets et barre d'état fondus dans le même noir.
+- Posé par `MobileDock` (classe `body.peg-mobile-dark`, variables `--pdm-accent*` sur `<html>`, relues à chaque page), helpers `src/utils/mobileShell.ts`, styles « FOND APP » de `_mobile.css`. Les tableaux de bord gardent leur propre fond et leurs variables sur le body (elles passent devant). Mode clair : rien ne change.
+
 ---
 
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
