@@ -18,6 +18,7 @@ import { CAMPAIGN_TAGS, CTA_PRESETS, CtaMode, deleteConfirmText, LIMITS, TAG_MET
 import AudiencePicker from './components/AudiencePicker';
 import { CategoryPicker, ProductPicker } from './components/CtaTargetPicker';
 import ImagesField from './components/ImagesField';
+import PopupTiming from './components/PopupTiming';
 import PreviewPanel from './components/PreviewPanel';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { PANEL, StatusBadge, Toggle, btn, chip, errorMessage, hintStyle, inputStyle, isBackendMissing, labelStyle } from './ui';
@@ -127,6 +128,7 @@ const CampaignEditor = () => {
         setForm({
           title: c.title, message: c.message, tag: c.tag, images: c.images, ctaLabel: c.ctaLabel, ctaUrl: c.ctaUrl,
           channelPopup: c.channelPopup, channelEmail: c.channelEmail, audience: c.audience, expiresAt: c.expiresAt,
+          popupDelay: c.popupDelay ?? 0, popupDuration: c.popupDuration ?? null, popupDays: c.popupDays ?? null,
         });
         if (c.status === 'scheduled' && c.sendAt) { setLater(true); setSendAt(toLocalInput(c.sendAt)); }
       })
@@ -441,6 +443,14 @@ const CampaignEditor = () => {
               on={form.channelPopup}
               onChange={(v) => update({ channelPopup: v })}
             />
+            {form.channelPopup && (
+              <PopupTiming
+                delay={form.popupDelay}
+                duration={form.popupDuration}
+                days={form.popupDays}
+                onChange={(patch) => update(patch)}
+              />
+            )}
             <ChannelRow
               icon={<HiOutlineMail size={20} />}
               title="E-mail"

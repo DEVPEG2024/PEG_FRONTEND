@@ -219,7 +219,7 @@ L'admin (`/admin/campaigns`, menu « Campagnes ») notifie **tous les clients, u
 
 ### Canaux
 - **Cloche + push** : toujours — Strapi appelle `POST /notifications/event` de peg-backend (secret `INTERNAL_SECRET`, par paquets de 20), `eventType: 'campaign'`, lien `/common/news/:id?src=bell`, photo de couverture dans `metadata.imageUrl` (vignette dans la cloche). **Aucun changement Express nécessaire** (`/event` n'a pas de liste blanche d'eventType).
-- **Pop-up** (option) : `CampaignPopup.tsx`, monté pour les clients dans `ModernLayout`. Chargé à l'arrivée et à chaque notification `campaign` (pas de polling en plus). **Une pop-up par visite** au plus, jamais sur panier / paiement / virement / Actualités.
+- **Pop-up** (option) : `CampaignPopup.tsx`, monté pour les clients dans `ModernLayout`. Chargé à l'arrivée et à chaque notification `campaign` (pas de polling en plus). **Une pop-up par visite** au plus, jamais sur panier / paiement / virement / Actualités. **Temps d'apparition réglable par campagne** (`PopupTiming.tsx`, colonnes `popup_delay` / `popup_duration` / `popup_days` ajoutées au démarrage) : délai d'ouverture après l'arrivée sur l'application (0–120 s), fermeture automatique avec barre de décompte (3–300 s, suspendue au survol ; ne compte pas comme « fermée par le client »), période de proposition en jours après l'envoi (défaut 45 j, filtrée côté serveur) — ensuite Actualités seulement.
 - **E-mail** (option) : Mailjet (50 par appel), pixel d'ouverture, lien de clic suivi, **désinscription en un clic** (`List-Unsubscribe` + page). Les désinscrits sont exclus automatiquement.
 - **Actualités** (`/common/news`, menu client « Actualités », pastille `campaign`) : historique des campagnes reçues.
 

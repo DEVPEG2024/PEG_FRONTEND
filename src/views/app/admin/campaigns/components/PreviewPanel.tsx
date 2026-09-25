@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CampaignInput } from '@/@types/campaign';
 import CampaignContent from '@/components/campaign/CampaignContent';
 import { apiPreviewCampaignEmail } from '@/services/CampaignServices';
-import { TAG_META, excerpt } from '@/utils/campaignFormat';
+import { TAG_META, delayLabel, durationLabel, excerpt } from '@/utils/campaignFormat';
 import { PANEL, chip, hintStyle } from '../ui';
 
 /**
@@ -41,9 +41,18 @@ const PreviewPanel = ({ form }: { form: CampaignInput }) => {
       </div>
 
       {view === 'popup' && (
-        <div style={{ ...PANEL, overflow: 'hidden', borderRadius: '18px', boxShadow: '0 18px 40px rgba(0,0,0,0.4)' }}>
-          <CampaignContent campaign={form} dateLabel="aujourd’hui" coverMaxHeight={260} />
-        </div>
+        <>
+          <div style={{ ...PANEL, overflow: 'hidden', borderRadius: '18px', boxShadow: '0 18px 40px rgba(0,0,0,0.4)' }}>
+            <CampaignContent campaign={form} dateLabel="aujourd’hui" coverMaxHeight={260} />
+          </div>
+          {form.channelPopup ? (
+            <span style={hintStyle}>
+              Pop-up : s’ouvre {delayLabel(form.popupDelay)}, {form.popupDuration == null ? 'reste jusqu’à ce que le client la ferme' : durationLabel(form.popupDuration)}.
+            </span>
+          ) : (
+            <span style={hintStyle}>Pop-up désactivée : visible dans Actualités uniquement.</span>
+          )}
+        </>
       )}
 
       {view === 'bell' && (

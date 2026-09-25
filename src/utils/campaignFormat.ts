@@ -83,7 +83,34 @@ export const emptyCampaign = (): CampaignInput => ({
   channelEmail: false,
   audience: emptyAudience(),
   expiresAt: null,
+  popupDelay: 0,
+  popupDuration: null,
+  popupDays: null,
 });
+
+// ── Réglages de la pop-up ────────────────────────────────────────────────────
+
+/** Mêmes bornes que le serveur (peg_strapi `campaign-text.ts`, POPUP_LIMITS). */
+export const POPUP_DELAYS = [0, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120];
+export const POPUP_DURATIONS: (number | null)[] = [null, 5, 8, 10, 15, 20, 30, 45, 60, 120, 300];
+export const POPUP_DAYS: (number | null)[] = [1, 2, 3, 5, 7, 14, 21, 30, null, 60, 90];
+export const POPUP_DEFAULT_DAYS = 45;
+
+const secondes = (n: number) => (n < 60 ? `${n} s` : n % 60 ? `${Math.floor(n / 60)} min ${n % 60} s` : `${n / 60} min`);
+export const delayLabel = (n: number) => (n ? `après ${secondes(n)}` : 'dès l’arrivée');
+export const durationLabel = (n: number | null) => (n == null ? 'jusqu’à ce que le client la ferme' : `se ferme seule après ${secondes(n)}`);
+export const daysLabel = (n: number | null) => {
+  const d = n ?? POPUP_DEFAULT_DAYS;
+  return `${d} jour${d > 1 ? 's' : ''} après l’envoi${n == null ? ' (par défaut)' : ''}`;
+};
+
+/** Résumé court (liste, statistiques) : « après 5 s · 10 s · 3 j ». */
+export function popupSummary(c: { popupDelay: number; popupDuration: number | null; popupDays: number | null }): string {
+  const parts = [c.popupDelay ? `après ${secondes(c.popupDelay)}` : 'dès l’arrivée'];
+  parts.push(c.popupDuration == null ? 'jusqu’à fermeture' : `${secondes(c.popupDuration)} à l’écran`);
+  parts.push(`${c.popupDays ?? POPUP_DEFAULT_DAYS} j`);
+  return parts.join(' · ');
+}
 
 // ── Suppression ──────────────────────────────────────────────────────────────
 

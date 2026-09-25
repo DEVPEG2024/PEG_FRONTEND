@@ -44,6 +44,12 @@ export type CampaignInput = {
   channelEmail: boolean;
   audience: CampaignAudience;
   expiresAt: string | null;
+  /** Pop-up : secondes avant l'ouverture, après l'arrivée du client sur l'application. */
+  popupDelay: number;
+  /** Pop-up : fermeture automatique au bout de N secondes (null = jusqu'à ce que le client la ferme). */
+  popupDuration: number | null;
+  /** Pop-up : proposée pendant N jours après l'envoi (null = 45 jours), ensuite Actualités seulement. */
+  popupDays: number | null;
 };
 
 export type Campaign = CampaignInput & {
@@ -166,6 +172,9 @@ export type ClientCampaign = {
   clickedAt: string | null;
   dismissedAt: string | null;
   popup: boolean;
+  popupDelay: number;
+  popupDuration: number | null;
+  popupDays: number | null;
   isTest: boolean;
 };
 

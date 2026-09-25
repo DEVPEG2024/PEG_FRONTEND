@@ -18,6 +18,11 @@ import { fmtRelativeDay } from '@/utils/campaignFormat';
  * compte comme ouverte (canal « popup ») et ne revient pas. Une seule pop-up par
  * visite (onglet) : les suivantes attendent la visite d'après — elles restent
  * dans la cloche et les Actualités.
+ *
+ * Réglages par campagne : délai d'ouverture (compté depuis l'arrivée sur
+ * l'application), fermeture automatique (décompte suspendu tant que le client
+ * survole ou touche la pop-up ; ne compte pas comme une fermeture), période de
+ * proposition (appliquée par le serveur).
  */
 
 const HIDDEN_ON = [/^\/customer\/cart/, /^\/customer\/checkout/, /^\/customer\/invoice\/[^/]+\/virement/, /^\/common\/news/];
@@ -54,6 +59,10 @@ const CampaignPopup = () => {
   // Backend pas encore déployé (route absente) : on n'insiste pas.
   const unavailable = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Le délai d'ouverture court depuis l'arrivée sur l'application, pas depuis le chargement.
+  const arrivedAt = useRef(Date.now());
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const paused = useRef(false);
 
   const notifications = useAppSelector((s) => s.base.notification?.notifications ?? []);
   const latestCampaignNotif = useMemo(
@@ -87,17 +96,44 @@ const CampaignPopup = () => {
   useEffect(() => {
     if (current || hidden || queue.length === 0 || shownThisVisit()) return;
     const next = queue[0];
-    setCurrent(next);
-    markSeen(next.id);
-    apiTrackCampaign(next.id, 'open', 'popup').catch(() => {});
+    const show = () => {
+      if (shownThisVisit()) return;
+      setCurrent(next);
+      markSeen(next.id);
+      apiTrackCampaign(next.id, 'open', 'popup').catch(() => {});
+    };
+    const wait = arrivedAt.current + (next.popupDelay || 0) * 1000 - Date.now();
+    if (wait <= 0) { show(); return; }
+    const t = setTimeout(show, wait);
+    return () => clearTimeout(t);
   }, [current, hidden, queue]);
 
-  const close = useCallback((kind: 'dismiss' | 'click' | 'feed') => {
+  // 'auto' : fermeture automatique (durée écoulée) — ni clic ni fermeture comptés.
+  const close = useCallback((kind: 'dismiss' | 'click' | 'feed' | 'auto') => {
     if (!current) return;
     if (kind === 'dismiss') apiTrackCampaign(current.id, 'dismiss', 'popup').catch(() => {});
     if (kind === 'click') apiTrackCampaign(current.id, 'click', 'popup').catch(() => {});
     setQueue((q) => q.filter((c) => c.id !== current.id));
     setCurrent(null);
+  }, [current]);
+
+  const closeRef = useRef(close);
+  closeRef.current = close;
+
+  // Fermeture automatique au bout de `popupDuration` secondes.
+  useEffect(() => {
+    paused.current = false;
+    if (!current?.popupDuration) { setRemaining(null); return; }
+    const TICK = 100;
+    let left = current.popupDuration * 1000;
+    setRemaining(left);
+    const t = setInterval(() => {
+      if (paused.current) return;
+      left -= TICK;
+      setRemaining(Math.max(0, left));
+      if (left <= 0) { clearInterval(t); closeRef.current('auto'); }
+    }, TICK);
+    return () => clearInterval(t);
   }, [current]);
 
   // Échap = « plus tard » ; défilement de la page bloqué pendant l'affichage.
@@ -142,6 +178,12 @@ const CampaignPopup = () => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.22, ease: 'easeOut' }}
         onClick={(e) => e.stopPropagation()}
+        onPointerEnter={() => { paused.current = true; }}
+        onPointerLeave={() => { paused.current = false; }}
+        // Focus sur un bouton ou un lien (clavier) = le client lit : décompte suspendu.
+        // Pas le focus de la pop-up elle-même, qu'elle prend à l'ouverture.
+        onFocusCapture={(e) => { if (e.target !== e.currentTarget) paused.current = true; }}
+        onBlurCapture={(e) => { if (e.target !== e.currentTarget) paused.current = false; }}
         style={{
           position: 'relative', width: '100%', maxWidth: '460px',
           maxHeight: 'calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
@@ -151,6 +193,18 @@ const CampaignPopup = () => {
           boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
         }}
       >
+        {remaining !== null && current.popupDuration && (
+          <div
+            role="progressbar"
+            aria-label="Fermeture automatique"
+            aria-valuemin={0}
+            aria-valuemax={current.popupDuration}
+            aria-valuenow={Math.ceil(remaining / 1000)}
+            style={{ position: 'sticky', top: 0, zIndex: 3, height: '3px', background: 'rgba(255,255,255,0.08)' }}
+          >
+            <div style={{ height: '100%', width: `${(remaining / (current.popupDuration * 1000)) * 100}%`, background: '#60a5fa', transition: 'width 0.1s linear' }} />
+          </div>
+        )}
         <button
           type="button"
           aria-label="Fermer"

@@ -32,6 +32,7 @@ import {
   fmtDateTime,
   fmtInt,
   pct,
+  popupSummary,
   recipientsToCsv,
 } from '@/utils/campaignFormat';
 import { ChannelBars, Funnel, OpensChart } from './components/charts';
@@ -133,7 +134,7 @@ const CampaignStatsPage = () => {
   if (!campaign || !stats) return <div style={{ padding: '24px 16px', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>Chargement…</div>;
 
   const expired = !!campaign.expiresAt && new Date(campaign.expiresAt).getTime() <= Date.now();
-  const channels = ['Cloche + push', campaign.channelPopup && 'Pop-up', campaign.channelEmail && 'E-mail'].filter(Boolean).join(' · ');
+  const channels = ['Cloche + push', campaign.channelPopup && `Pop-up (${popupSummary(campaign)})`, campaign.channelEmail && 'E-mail'].filter(Boolean).join(' · ');
   const pageRows = visible.slice(page * PAGE, page * PAGE + PAGE);
   const pages = Math.ceil(visible.length / PAGE);
 

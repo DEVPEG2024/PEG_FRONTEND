@@ -32,7 +32,7 @@ const campaign = (over: Partial<ClientCampaign> = {}): ClientCampaign => ({
   images: [{ id: 1, url: 'https://s3.exemple/cover.jpg', width: 1200, height: 630, name: 'cover' }],
   ctaLabel: 'Voir le catalogue', ctaUrl: '/customer/catalogue',
   receivedAt: new Date().toISOString(), expiresAt: null, openedAt: null, clickedAt: null, dismissedAt: null,
-  popup: true, isTest: false, ...over,
+  popup: true, popupDelay: 0, popupDuration: null, popupDays: null, isTest: false, ...over,
 });
 
 const store = () =>
@@ -139,4 +139,37 @@ test('serveur sans la fonctionnalité (405) : aucune erreur, rien d’affiché',
   mockGet.mockRejectedValue({ response: { status: 405 } });
   await mount();
   expect(dialog()).toBeNull();
+});
+
+test('délai d’apparition : la pop-up attend le nombre de secondes réglé', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign({ popupDelay: 5 })], campaigns: [], unread: 1 } });
+  await mount(); // 1,3 s écoulées
+  expect(dialog()).toBeNull();
+  expect(mockTrack).not.toHaveBeenCalled();
+  await act(async () => { jest.advanceTimersByTime(3000); });
+  expect(dialog()).toBeNull();
+  await act(async () => { jest.advanceTimersByTime(800); });
+  expect(dialog()?.textContent).toContain('Nouvelle collection');
+  expect(mockTrack).toHaveBeenCalledWith(7, 'open', 'popup');
+});
+
+test('durée d’affichage : fermeture automatique, sans compter de fermeture', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign({ popupDuration: 8 })], campaigns: [], unread: 1 } });
+  await mount();
+  expect(document.querySelector('[role="progressbar"]')).not.toBeNull();
+  await act(async () => { jest.advanceTimersByTime(7000); });
+  expect(dialog()).not.toBeNull();
+  await act(async () => { jest.advanceTimersByTime(1200); });
+  expect(dialog()).toBeNull();
+  expect(mockTrack).not.toHaveBeenCalledWith(7, 'dismiss', 'popup');
+});
+
+test('durée d’affichage : le décompte s’arrête pendant que le client survole', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign({ popupDuration: 5 })], campaigns: [], unread: 1 } });
+  await mount();
+  const el = dialog() as HTMLElement;
+  // jsdom n'a pas PointerEvent : React écoute l'événement natif « pointerover ».
+  await act(async () => { el.dispatchEvent(new MouseEvent('pointerover', { bubbles: true })); });
+  await act(async () => { jest.advanceTimersByTime(10_000); });
+  expect(dialog()).not.toBeNull();
 });

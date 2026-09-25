@@ -10,6 +10,9 @@ import {
   isSafeCtaUrl,
   parseMessage,
   pct,
+  popupSummary,
+  delayLabel,
+  durationLabel,
   productLink,
   recipientsToCsv,
   toLocalInput,
@@ -110,6 +113,21 @@ describe('suppression', () => {
     const all = deleteConfirmText([{ title: 'A', status: 'sent' }, { title: 'B', status: 'sent' }, { title: 'C', status: 'draft' }]);
     expect(all).toContain('2 d’entre elles ont déjà été envoyées');
     expect(all).toContain('leurs statistiques');
+  });
+});
+
+describe('temps d’apparition de la pop-up', () => {
+  test('libellés', () => {
+    expect(delayLabel(0)).toBe('dès l’arrivée');
+    expect(delayLabel(5)).toBe('après 5 s');
+    expect(delayLabel(90)).toBe('après 1 min 30 s');
+    expect(durationLabel(null)).toBe('jusqu’à ce que le client la ferme');
+    expect(durationLabel(120)).toBe('se ferme seule après 2 min');
+  });
+
+  test('résumé pour les statistiques', () => {
+    expect(popupSummary({ popupDelay: 0, popupDuration: null, popupDays: null })).toBe('dès l’arrivée · jusqu’à fermeture · 45 j');
+    expect(popupSummary({ popupDelay: 5, popupDuration: 10, popupDays: 3 })).toBe('après 5 s · 10 s à l’écran · 3 j');
   });
 });
 
