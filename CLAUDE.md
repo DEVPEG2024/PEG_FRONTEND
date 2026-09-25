@@ -719,6 +719,7 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 ### Règles (`src/utils/navMenu.ts`, tests `src/__tests__/dockTabs.test.ts`)
 - Entrées = `getDockEntries()` : même lecture des catégories que la barre latérale, mêmes droits, mêmes pastilles. **Ne pas recréer une liste d'onglets à part.**
 - Onglet actif = `findActiveDockTab()` : le chemin le plus précis gagne (`/admin/products/sizes` → Attributs, pas Boutique), puis une page épinglée sur sa catégorie.
+- **Capsule de verre** sous l'onglet actif (demande Nova 25/09, « effet glace, morphing ») : ses deux bords sont animés séparément (ressorts `GLASS_LEAD` rapide / `GLASS_TAIL` mou) → elle s'étire vers l'onglet visé, s'amincit, un reflet la traverse selon sa vitesse, puis se rétracte. Elle part **dès le toucher** (`pressedKey`, sans attendre le chargement de la page) et défile avec les onglets (dans `.peg-dock-track`). Page hors onglets → elle s'efface et « Menu » prend la même capsule. Animations réduites → déplacement sans animation.
 - ⚠️ Au relâchement du doigt après l'appui long, le navigateur émet un clic à cet endroit : il est **avalé** (`swallowReleaseClick`) — sinon il refermait la feuille ou touchait une de ses lignes.
 - Bureau et tablette non concernés : composant non monté ≥ 768px, styles sous `@media (max-width: 767.98px)`.
 

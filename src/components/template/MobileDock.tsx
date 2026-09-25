@@ -8,7 +8,14 @@ import {
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
-import { useReducedMotion } from 'framer-motion';
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  useVelocity,
+} from 'framer-motion';
 import { HiOutlineMenu } from 'react-icons/hi';
 import { TbLayoutBottombar } from 'react-icons/tb';
 import Drawer from '@/components/ui/Drawer';
@@ -55,6 +62,12 @@ import { accentVars, readAccent } from '@/utils/mobileShell';
  */
 
 const LONG_PRESS_MS = 480;
+// Retrait de la capsule de verre dans son onglet (px, de chaque côté)
+const GLASS_INSET = 3;
+// Bord de tête rapide, bord de queue plus mou : la capsule s'étire vers
+// l'onglet visé puis se rétracte en arrivant, comme une goutte
+const GLASS_LEAD = { type: 'spring', stiffness: 560, damping: 38 } as const;
+const GLASS_TAIL = { type: 'spring', stiffness: 230, damping: 26 } as const;
 // Largeur du fondu aux bords de la barre (--peg-dock-fade-*, _mobile.css)
 const EDGE_FADE_PX = 26;
 // Petit va-et-vient de la barre, une seule fois par appareil : « ça défile »
@@ -142,6 +155,13 @@ const Dock = () => {
     [entries, storedKeys]
   );
   const activeTab = findActiveDockTab(tabs, location.pathname);
+  // Onglet touché : il s'allume (et le verre part) dès le toucher, sans
+  // attendre le chargement de la page ; la navigation faite, la page décide.
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  useEffect(() => {
+    setPressedKey(null);
+  }, [location.key]);
+  const shownKey = pressedKey ?? activeTab?.key;
 
   const badgeFor = (path: string) =>
     getNavBadge(path, getActivityCount(path), counters);
@@ -168,10 +188,11 @@ const Dock = () => {
   const syncEdges = useCallback(() => {
     const nav = navRef.current;
     const track = trackRef.current;
-    if (!nav || !track || !track.firstElementChild) return;
+    const items = track?.querySelectorAll<HTMLElement>('.peg-dock-item');
+    if (!nav || !track || !items?.length) return;
     const box = track.getBoundingClientRect();
-    const a = track.firstElementChild.getBoundingClientRect();
-    const b = track.lastElementChild!.getBoundingClientRect();
+    const a = items[0].getBoundingClientRect();
+    const b = items[items.length - 1].getBoundingClientRect();
     nav.classList.toggle(
       'is-clipped-left',
       Math.min(a.left, b.left) < box.left - 1
@@ -247,6 +268,62 @@ const Dock = () => {
     reveal(activeKey, revealedOnce.current);
     revealedOnce.current = true;
   }, [activeKey, reveal]);
+
+  // Capsule de verre sous l'onglet actif : d'un onglet à l'autre, ses deux
+  // bords sont animés séparément (GLASS_LEAD / GLASS_TAIL) — elle coule,
+  // s'amincit un peu en s'étirant, et un reflet la traverse selon sa vitesse.
+  const glassLeft = useMotionValue(0);
+  const glassRight = useMotionValue(0);
+  const glassWidth = useTransform([glassLeft, glassRight], ([l, r]: number[]) =>
+    Math.max(0, r - l)
+  );
+  const glassRest = useRef(0);
+  const glassSquash = useTransform(glassWidth, (w) => {
+    const rest = glassRest.current;
+    return rest && w > rest ? Math.max(0.8, 1 - (w - rest) / (rest * 4)) : 1;
+  });
+  const glassSheen = useTransform(useVelocity(glassLeft), (v) =>
+    Math.min(1, Math.abs(v) / 900)
+  );
+  const glassPlaced = useRef(false);
+  const [glassShown, setGlassShown] = useState(false);
+
+  const placeGlass = useCallback(
+    (animated: boolean) => {
+      const el = shownKey
+        ? trackRef.current?.querySelector<HTMLElement>(
+            `[data-key="${CSS.escape(shownKey)}"]`
+          )
+        : null;
+      // Page hors des onglets : la capsule s'efface (« Menu » s'allume)
+      if (!el) {
+        setGlassShown(false);
+        return;
+      }
+      const left = el.offsetLeft + GLASS_INSET;
+      const right = el.offsetLeft + el.offsetWidth - GLASS_INSET;
+      glassRest.current = right - left;
+      setGlassShown(true);
+      if (!animated || !glassPlaced.current || reduceMotion) {
+        glassLeft.set(left);
+        glassRight.set(right);
+        glassPlaced.current = true;
+        return;
+      }
+      const toRight = left > glassLeft.get();
+      animate(glassLeft, left, toRight ? GLASS_TAIL : GLASS_LEAD);
+      animate(glassRight, right, toRight ? GLASS_LEAD : GLASS_TAIL);
+    },
+    [shownKey, reduceMotion, glassLeft, glassRight]
+  );
+
+  // Nouvel onglet actif, ou onglets réordonnés : la capsule rejoint sa place
+  useLayoutEffect(() => placeGlass(true), [placeGlass, tabs]);
+  useEffect(() => {
+    const onResize = () => placeGlass(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [placeGlass]);
 
   // Première fois sur cet appareil : la barre glisse un peu et revient. Elle
   // n'est notée « vue » qu'une fois jouée (ou touchée) : un montage annulé
@@ -412,6 +489,7 @@ const Dock = () => {
   }, [mode]);
 
   const onTabClick = (tab: DockEntry) => {
+    setPressedKey(tab.key);
     markActivitySeen(tab.path);
     // Toucher l'onglet de la page affichée la fait remonter, comme dans une app
     if (location.pathname === tab.path) {
@@ -465,8 +543,23 @@ const Dock = () => {
             onPointerCancel={cancelPress}
             onContextMenu={(e) => e.preventDefault()}
           >
+            <motion.span
+              className="peg-dock-glass"
+              aria-hidden="true"
+              style={{
+                x: glassLeft,
+                width: glassWidth,
+                scaleY: glassSquash,
+                opacity: glassShown ? 1 : 0,
+              }}
+            >
+              <motion.span
+                className="peg-dock-glass-sheen"
+                style={{ opacity: glassSheen }}
+              />
+            </motion.span>
             {tabs.map((tab) => {
-              const active = tab === activeTab;
+              const active = tab.key === shownKey;
               const { badge, dot } = tabNews(tab);
               return (
                 <Link
@@ -476,7 +569,7 @@ const Dock = () => {
                   data-news={badge || dot ? '' : undefined}
                   draggable={false}
                   className={classNames('peg-dock-item', active && 'is-active')}
-                  aria-current={active ? 'page' : undefined}
+                  aria-current={tab === activeTab ? 'page' : undefined}
                   onClick={() => onTabClick(tab)}
                 >
                   <span className="peg-dock-icon">
@@ -516,7 +609,7 @@ const Dock = () => {
           type="button"
           className={classNames(
             'peg-dock-item peg-dock-more',
-            (menuOpen || !activeTab) && 'is-active'
+            (menuOpen || !shownKey) && 'is-active'
           )}
           aria-haspopup="dialog"
           aria-expanded={menuOpen}
