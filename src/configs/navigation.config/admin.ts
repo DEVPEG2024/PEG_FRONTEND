@@ -411,7 +411,7 @@ const navigationAdmin: NavigationTree[] = [
   // --- IA ---
   {
     key: "admin.ia",
-    path: "/admin/ia/images",
+    path: "/admin/ia/chatbot",
     title: "",
     translateKey: "",
     icon: "ia",
@@ -420,7 +420,7 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [
       {
         key: "admin.ia",
-        path: "/admin/ia/images",
+        path: "/admin/ia/chatbot",
         title: "IA",
         translateKey: "nav.ia",
         icon: "ia",
@@ -428,31 +428,11 @@ const navigationAdmin: NavigationTree[] = [
         authority: [SUPER_ADMIN, ADMIN],
         subMenu: [
           {
-            key: "admin.ia.images",
-            path: "/admin/ia/images",
-            title: "Génération d'images",
-            translateKey: "nav.iaImages",
-            icon: "iaImages",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN, ADMIN],
-            subMenu: [],
-          },
-          {
             key: "admin.ia.chatbot",
             path: "/admin/ia/chatbot",
             title: "Chatbot",
             translateKey: "nav.iaChatbot",
             icon: "chatbot",
-            type: NAV_ITEM_TYPE_ITEM,
-            authority: [SUPER_ADMIN, ADMIN],
-            subMenu: [],
-          },
-          {
-            key: "admin.ia.content",
-            path: "/admin/ia/content",
-            title: "Génération de contenu",
-            translateKey: "nav.iaContent",
-            icon: "iaContent",
             type: NAV_ITEM_TYPE_ITEM,
             authority: [SUPER_ADMIN, ADMIN],
             subMenu: [],
