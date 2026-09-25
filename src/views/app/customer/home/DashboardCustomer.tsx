@@ -38,6 +38,8 @@ import { isOffersReserved } from '@/views/app/customer/products/lists/offersView
 injectReducer('dashboardCustomer', reducer);
 
 const FONT = 'Inter, sans-serif';
+// Numéro que l'assistant IA donne déjà aux clients (TOOL_GUIDANCE, peg_strapi)
+const PEG_TEAM_PHONE = '06 59 25 28 23';
 const CARD_BG = 'linear-gradient(165deg, #161a2e 0%, #0e1120 100%)';
 const CARD_BORDER = '1px solid rgba(255,255,255,0.08)';
 const CARD_SHADOW = '0 10px 30px rgba(0,0,0,0.4)';
@@ -145,13 +147,11 @@ const DashboardCustomer = () => {
   // « À faire » et activité restaient à zéro). Chargées à part, jamais
   // bloquantes : en cas d'échec l'accueil s'affiche sans elles.
   const [invoices, setInvoices] = useState<CustomerInvoiceSummary[]>([]);
-  const [invoicesStatus, setInvoicesStatus] = useState<'loading' | 'ok' | 'error'>('loading');
   const loadInvoices = async (customerDocumentId: string) => {
     try {
       setInvoices(await apiGetCustomerInvoiceSummaries(customerDocumentId));
-      setInvoicesStatus('ok');
     } catch {
-      setInvoicesStatus('error');
+      /* accueil sans factures */
     }
   };
   useEffect(() => {
@@ -234,7 +234,6 @@ const DashboardCustomer = () => {
   const liveInvoices = invoices.filter((inv) => !isInvoiceCanceled(inv));
   const invoicesCount = liveInvoices.length;
   const outstandingInvoices = invoices.filter(isInvoiceOutstanding);
-  const amountDueTTC = outstandingInvoices.reduce((s, inv) => s + (inv.totalAmount ?? 0), 0);
   const offersCount = products.length;
 
   const sortedProjects = [...projects].sort(
@@ -342,8 +341,32 @@ const DashboardCustomer = () => {
       image: product.images?.[0]?.url,
       onClick: () => navigate(`/customer/product/${product.documentId}`),
     });
-    const ongoingCount = projects.filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled').length;
-    const transferCount = outstandingInvoices.length - invoicesToPay.length;
+    // En-tête : la relation avec PEG, pas un montant (« créer du lien et faire beau »)
+    const liveProjects = projects.filter((p) => p.state !== 'canceled');
+    const firstStart = liveProjects
+      .map((p) => dayjs(p.startDate))
+      .filter((d) => d.isValid())
+      .sort((a, b) => a.valueOf() - b.valueOf())[0];
+    const doneCount = projects.filter((p) => p.state === 'fulfilled').length;
+    const facts = [
+      firstStart ? `Ensemble depuis ${firstStart.format('MMMM YYYY')}` : 'Bienvenue chez PEG',
+      ...(doneCount > 0 ? [`${doneCount} projet${doneCount > 1 ? 's' : ''} réalisé${doneCount > 1 ? 's' : ''}`] : []),
+    ];
+    // Ses réalisations : les photos de ses projets (sinon celle du produit), les plus récents d'abord
+    const works = sortedProjects
+      .filter((p) => p.state !== 'canceled')
+      .map((p) => ({ p, image: p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url }))
+      .filter((w): w is { p: Project; image: string } => !!w.image)
+      .slice(0, 8)
+      .map(({ p, image }) => ({
+        key: p.documentId,
+        image,
+        title: p.name,
+        caption: p.state === 'fulfilled'
+          ? `Livré · ${dayjs(p.endDate || p.startDate).format('MMMM YYYY')}`
+          : getStateInfo(p.state).label,
+        onClick: () => navigate(`/common/projects/details/${p.documentId}`),
+      }));
     const todos: PcmRow[] = [
       ...pendingBats.map((p) => ({
         key: `bat-${p.documentId}`, title: p.name, sub: `${p.orderItem!.product.name} — Bon à Tirer à valider`,
@@ -364,27 +387,17 @@ const DashboardCustomer = () => {
     return (
       <DashboardCustomerMobile
         banner={<CustomerHomeBanner desktop={desktopBanner} phone={phoneBanner} fadeColor={PCM_DARK} />}
-        greeting={`Bonjour, ${user?.firstName || customer.name} 👋`}
-        status={`${customer.name}${user.customer?.premium ? ' · Premium' : ''}`}
+        hero={{
+          date: dayjs().format('dddd D MMMM'),
+          hello: new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour',
+          name: user?.firstName || customer.name,
+          facts,
+          premium: !!user.customer?.premium,
+        }}
         onRefresh={refresh}
         refreshing={refreshing}
-        balance={
-          invoicesStatus === 'loading'
-            ? null
-            : invoicesStatus === 'ok'
-              ? {
-                  label: 'À régler TTC',
-                  value: fmtPrice(amountDueTTC),
-                  sub: outstandingInvoices.length === 0
-                    ? 'Aucune facture en attente'
-                    : `${outstandingInvoices.length} facture${outstandingInvoices.length > 1 ? 's' : ''} en attente${transferCount > 0 ? ` · ${transferCount} virement${transferCount > 1 ? 's' : ''} déclaré${transferCount > 1 ? 's' : ''}` : ''}`,
-                  cta: invoicesToPay.length > 0
-                    ? { label: 'Régler mes factures', onClick: () => navigate('/customer/invoices') }
-                    : undefined,
-                }
-              // Factures illisibles : on met en avant les commandes en cours
-              : { label: 'Commandes en cours', value: String(ongoingCount), sub: `${ordersCount} commande${ordersCount > 1 ? 's' : ''} au total` }
-        }
+        works={works}
+        onSeeAllWorks={() => navigate('/common/projects')}
         todos={todos}
         tiles={kpis.map((k, i) => ({
           key: k.label, label: k.label, value: String(k.value), icon: k.icon,
@@ -417,7 +430,7 @@ const DashboardCustomer = () => {
         onSeeCatalogue={catalogAccess ? () => navigate('/customer/catalogue') : undefined}
         offers={offersReserved ? [] : recommendedProducts.map(productCard)}
         onSeeOffers={() => navigate('/customer/products')}
-        onSupport={() => navigate('/support')}
+        team={{ phone: PEG_TEAM_PHONE, onWrite: () => navigate('/support') }}
       />
     );
   }

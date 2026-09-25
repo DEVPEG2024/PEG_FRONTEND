@@ -1,8 +1,10 @@
 /**
  * Accueil client — rendu TÉLÉPHONE uniquement (< md), même langage que le
  * tableau de bord admin sur téléphone (DashboardAdminMobile, demande Nova du
- * 25/09/2026) : fond noir, montant en grand, tuiles vitrées, raccourcis ronds,
- * listes façon transactions, couleur d'accent au choix.
+ * 25/09/2026) : fond noir, tuiles vitrées, raccourcis ronds, listes façon
+ * transactions, couleur d'accent au choix. En tête, pas de montant : un accueil
+ * qui crée du lien (« créer du lien et faire beau », Nova) — salutation, la
+ * relation avec PEG, ses réalisations en photos, et son équipe en bas de page.
  *
  * Composant d'AFFICHAGE : DashboardCustomer calcule tout (mêmes valeurs et
  * mêmes libellés que l'ordinateur) et passe des données prêtes à afficher.
@@ -14,9 +16,11 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
+  HiOutlineChatAlt2,
   HiOutlineChevronRight,
   HiOutlineColorSwatch,
   HiOutlineCube,
+  HiOutlinePhone,
   HiOutlineRefresh,
 } from 'react-icons/hi';
 
@@ -53,18 +57,25 @@ export type PcmRow = {
 
 export type PcmProduct = { key: string; name: string; price: string; image?: string; onClick: () => void };
 
+/** Une réalisation : photo d'un projet du client */
+export type PcmWork = { key: string; image: string; title: string; caption: string; onClick: () => void };
+
 type Props = {
   banner: ReactNode;
-  greeting: string;
-  status: string;
+  hero: {
+    /** « jeudi 25 septembre » */
+    date: string;
+    /** « Bonjour » / « Bonsoir » */
+    hello: string;
+    name: string;
+    /** Pastilles de relation (« Ensemble depuis… », « 12 projets réalisés ») */
+    facts: string[];
+    premium: boolean;
+  };
   onRefresh: () => void;
   refreshing: boolean;
-  balance: {
-    label: string;
-    value: string;
-    sub: string;
-    cta?: { label: string; onClick: () => void };
-  } | null;
+  works: PcmWork[];
+  onSeeAllWorks: () => void;
   todos: PcmRow[];
   tiles: PcmTile[];
   shortcuts: PcmShortcut[];
@@ -76,7 +87,7 @@ type Props = {
   onSeeCatalogue?: () => void;
   offers: PcmProduct[];
   onSeeOffers?: () => void;
-  onSupport: () => void;
+  team: { phone?: string; onWrite: () => void };
 };
 
 const CSS = `
@@ -97,10 +108,7 @@ const CSS = `
   overflow: hidden;
 }
 .pcm-body { position: relative; padding: 16px 16px 28px; }
-.pcm-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.pcm-hello { min-width: 0; }
-.pcm-hello h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--pdm-text); }
-.pcm-hello p { margin: 3px 0 0; font-size: 12px; color: var(--pdm-muted); }
+.pcm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pcm-icons { display: flex; gap: 6px; flex-shrink: 0; }
 .pcm-icon-btn {
   width: 38px; height: 38px; border-radius: 50%;
@@ -113,14 +121,50 @@ const CSS = `
 .pcm-spin { animation: pcm-spin 0.9s linear infinite; }
 @keyframes pcm-spin { to { transform: rotate(360deg); } }
 
-.pcm-balance { margin-top: 22px; padding: 6px 0 4px; text-align: center; }
-.pcm-balance-label { font-size: 12.5px; color: var(--pdm-muted); letter-spacing: 0.02em; }
-.pcm-balance-value {
-  margin-top: 8px; font-size: 42px; line-height: 1.05; font-weight: 800;
-  letter-spacing: -0.03em; color: #fff; font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 40px rgba(var(--pdm-accent-rgb), 0.18);
+.pcm-date { font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pdm-muted); }
+.pcm-hero-title {
+  margin: 14px 0 0; font-size: 38px; line-height: 1.04; font-weight: 800;
+  letter-spacing: -0.035em; color: #fff; overflow-wrap: anywhere;
 }
-.pcm-balance-sub { margin-top: 8px; font-size: 12.5px; color: var(--pdm-muted); }
+.pcm-hero-name {
+  background: linear-gradient(100deg, var(--pdm-accent) 0%, #ffffff 140%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.pcm-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.pcm-fact {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 100px;
+  font-size: 11.5px; font-weight: 600; color: var(--pdm-text);
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--pdm-line);
+}
+.pcm-fact.is-accent { color: var(--pdm-accent); background: rgba(var(--pdm-accent-rgb), 0.10); border-color: rgba(var(--pdm-accent-rgb), 0.28); }
+/* Entrée douce, en cascade */
+.pcm-rise { animation: pcm-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pcm-rise-2 { animation-delay: 0.08s; }
+.pcm-rise-3 { animation-delay: 0.16s; }
+.pcm-rise-4 { animation-delay: 0.24s; }
+@keyframes pcm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.pcm-works {
+  display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px;
+  scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.pcm-works::-webkit-scrollbar { display: none; }
+.pcm-work {
+  position: relative; flex: 0 0 64%; max-width: 260px; aspect-ratio: 4 / 5; scroll-snap-align: start;
+  border-radius: 24px; overflow: hidden; padding: 0; border: 1px solid var(--pdm-line);
+  background: rgba(255, 255, 255, 0.04); cursor: pointer; font: inherit; color: inherit; text-align: left;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.pcm-work:only-child { flex-basis: 100%; max-width: none; aspect-ratio: 16 / 10; }
+.pcm-work:active { transform: scale(0.98); }
+.pcm-work img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pcm-work::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.78) 100%);
+}
+.pcm-work-text { position: absolute; left: 14px; right: 14px; bottom: 13px; z-index: 1; }
+.pcm-work-title { display: block; font-size: 14.5px; font-weight: 700; color: #fff; line-height: 1.25; overflow-wrap: anywhere; }
+.pcm-work-caption { display: block; margin-top: 4px; font-size: 11.5px; color: rgba(255, 255, 255, 0.72); }
 .pcm-cta {
   margin-top: 16px; display: inline-flex; align-items: center; gap: 6px;
   border: 0; border-radius: 100px; padding: 11px 20px; cursor: pointer;
@@ -226,20 +270,31 @@ button.pcm-row { cursor: pointer; }
 .pcm-product-name { padding: 10px 12px 0; font-size: 12.5px; font-weight: 600; color: var(--pdm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pcm-product-price { padding: 4px 12px 12px; font-size: 13px; font-weight: 800; color: var(--pdm-accent); }
 
-.pcm-support {
-  margin-top: 26px; border-radius: 22px; padding: 18px 16px;
-  display: flex; align-items: center; gap: 14px;
-  background: linear-gradient(160deg, rgba(var(--pdm-accent-rgb), 0.14) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(var(--pdm-accent-rgb), 0.25);
+.pcm-team {
+  position: relative; margin-top: 30px; border-radius: 26px; padding: 22px 18px 18px; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(var(--pdm-accent-rgb), 0.20) 0%, transparent 60%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(var(--pdm-accent-rgb), 0.22);
 }
-.pcm-support-text { flex: 1; min-width: 0; }
-.pcm-support-text strong { display: block; font-size: 14px; color: #fff; }
-.pcm-support-text span { display: block; margin-top: 3px; font-size: 12px; color: var(--pdm-muted); }
-.pcm-support .pcm-cta { margin-top: 0; flex-shrink: 0; padding: 10px 16px; font-size: 12.5px; }
+.pcm-team-mark {
+  width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 900; letter-spacing: -0.04em; color: var(--pdm-on-accent); background: var(--pdm-accent);
+  box-shadow: 0 10px 28px rgba(var(--pdm-accent-rgb), 0.28);
+}
+.pcm-team h3 { margin: 14px 0 0; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.pcm-team p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--pdm-muted); }
+.pcm-team-actions { display: flex; gap: 8px; margin-top: 16px; }
+.pcm-team-actions > * { flex: 1; justify-content: center; margin-top: 0; text-decoration: none; }
+.pcm-ghost {
+  display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 11px 16px;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid var(--pdm-line); color: #fff;
+  font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
 
 .pcm-skel { border-radius: 16px; background: rgba(255, 255, 255, 0.05); animation: pcm-pulse 1.4s ease-in-out infinite; }
 @keyframes pcm-pulse { 50% { opacity: 0.55; } }
-@media (prefers-reduced-motion: reduce) { .pcm-spin, .pcm-skel { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pcm-spin, .pcm-skel, .pcm-rise { animation: none; } }
 
 .pcm-palette {
   margin-top: 14px; padding: 14px 12px; border-radius: 20px;
@@ -396,11 +451,11 @@ const Products = ({ items }: { items: PcmProduct[] }) => (
 
 const DashboardCustomerMobile = ({
   banner,
-  greeting,
-  status,
+  hero,
   onRefresh,
   refreshing,
-  balance,
+  works,
+  onSeeAllWorks,
   todos,
   tiles,
   shortcuts,
@@ -412,7 +467,7 @@ const DashboardCustomerMobile = ({
   onSeeCatalogue,
   offers,
   onSeeOffers,
-  onSupport,
+  team,
 }: Props) => {
   const [accent, setAccent] = useState(loadAccent);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -438,10 +493,7 @@ const DashboardCustomerMobile = ({
 
       <div className="pcm-body">
         <div className="pcm-top">
-          <div className="pcm-hello">
-            <h1>{greeting}</h1>
-            <p>{status}</p>
-          </div>
+          <span className="pcm-date pcm-rise">{hero.date}</span>
           <div className="pcm-icons">
             <button
               type="button"
@@ -489,23 +541,42 @@ const DashboardCustomerMobile = ({
           </div>
         )}
 
-        {/* Montant en grand : ce qui reste à régler */}
-        <section className="pcm-balance">
-          {balance ? (
-            <>
-              <div className="pcm-balance-label">{balance.label}</div>
-              <div className="pcm-balance-value">{balance.value}</div>
-              <div className="pcm-balance-sub">{balance.sub}</div>
-              {balance.cta && (
-                <button type="button" className="pcm-cta" onClick={balance.cta.onClick}>
-                  {balance.cta.label} <HiOutlineChevronRight />
+        {/* Accueil : salutation et relation avec PEG */}
+        <h1 className="pcm-hero-title pcm-rise pcm-rise-2">
+          {hero.hello},<br />
+          <span className="pcm-hero-name">{hero.name}</span>
+        </h1>
+        <div className="pcm-facts pcm-rise pcm-rise-3">
+          {hero.premium && <span className="pcm-fact is-accent">★ Client Premium</span>}
+          {hero.facts.map((f) => <span key={f} className="pcm-fact">{f}</span>)}
+        </div>
+
+        {/* Ses réalisations, en photos */}
+        {works.length > 0 && (
+          <div className="pcm-rise pcm-rise-4">
+            <div className="pcm-section-head">
+              <h2>Vos réalisations</h2>
+              <button type="button" className="pcm-link" onClick={onSeeAllWorks}>Tout voir</button>
+            </div>
+            <div className="pcm-works">
+              {works.map((w) => (
+                <button key={w.key} type="button" className="pcm-work" onClick={w.onClick}>
+                  <img
+                    src={w.image}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                  />
+                  <span className="pcm-work-text">
+                    <span className="pcm-work-title">{w.title}</span>
+                    <span className="pcm-work-caption">{w.caption}</span>
+                  </span>
                 </button>
-              )}
-            </>
-          ) : (
-            <div className="pcm-skel" style={{ height: 96, width: 220, margin: '0 auto' }} />
-          )}
-        </section>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Raccourcis ronds */}
         <div className="pcm-section-head">
@@ -603,13 +674,22 @@ const DashboardCustomerMobile = ({
           </>
         )}
 
-        <div className="pcm-support">
-          <div className="pcm-support-text">
-            <strong>Besoin d'aide ?</strong>
-            <span>Notre équipe vous accompagne dans tous vos projets.</span>
+        {/* Son équipe PEG */}
+        <section className="pcm-team">
+          <div className="pcm-team-mark" aria-hidden="true">PEG</div>
+          <h3>Votre équipe PEG</h3>
+          <p>Une idée, une question, un projet à lancer ? Nous sommes là pour vous accompagner.</p>
+          <div className="pcm-team-actions">
+            {team.phone && (
+              <a className="pcm-cta" href={`tel:${team.phone.replace(/\s/g, '')}`}>
+                <HiOutlinePhone /> Appeler
+              </a>
+            )}
+            <button type="button" className={team.phone ? 'pcm-ghost' : 'pcm-cta'} onClick={team.onWrite}>
+              <HiOutlineChatAlt2 /> Écrire
+            </button>
           </div>
-          <button type="button" className="pcm-cta" onClick={onSupport}>Nous écrire</button>
-        </div>
+        </section>
       </div>
     </div>
   );

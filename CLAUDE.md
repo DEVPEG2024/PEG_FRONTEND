@@ -682,7 +682,9 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 ### Concept
 - Sous 768px, `/home` client = `DashboardCustomerMobile.tsx`, même langage que l'admin sur téléphone (`DashboardAdminMobile.tsx`) : fond noir `#070a08`, montant en grand, tuiles vitrées, raccourcis ronds, listes façon transactions, couleur d'accent au choix (même clé `peg:dashboardAccent`, même classe `peg-dash-dark` sur le body → en-tête et barre du bas dans le même noir).
 - **Composant d'affichage** : `DashboardCustomer` calcule tout et passe des valeurs prêtes. Bureau et tablette : **inchangés au pixel**.
-- Ordre : bannière (3× plus haute, fondue dans le noir) → salutation → **« À régler TTC »** en grand (+ « Régler mes factures ») → raccourcis → À faire → Mon activité (tuiles) → commandes en cours → activité récente → suggestions → offres personnalisées → aide.
+- Ordre : bannière (3× plus haute, fondue dans le noir) → **accueil** → raccourcis → À faire → Mon activité (tuiles) → commandes en cours → activité récente → suggestions → offres personnalisées → **Votre équipe PEG**.
+- **Pas de montant en tête** (décision Nova : « créer du lien et faire beau ») : date, « Bonjour/Bonsoir, Prénom » en grand, pastilles « Client Premium » / « Ensemble depuis <1er projet> » / « N projets réalisés », puis **« Vos réalisations »** = photos de ses projets (`project.images`, sinon image du produit). Les factures à régler restent dans « À faire ».
+- Carte « Votre équipe PEG » : **Appeler** (`PEG_TEAM_PHONE`, le numéro que l'assistant IA donne déjà) et **Écrire** (ticket).
 
 ### Factures de l'accueil (correctif du même jour, bureau compris)
 - La requête des projets client **ne ramène pas `invoices`** : « Factures disponibles », les factures du bloc « À faire » et de l'activité restaient à zéro. Elles sont désormais lues à part (`apiGetCustomerInvoiceSummaries`), **jamais bloquant** (échec → accueil sans factures ; le grand chiffre devient « Commandes en cours »).
