@@ -3,7 +3,7 @@ import type { CartItem } from '@/@types/cart';
 import type { FormAnswer } from '@/@types/formAnswer';
 import { apiGetProductForShowById } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
-import { isProductM2Pricing } from '@/utils/productHelpers';
+import { getProductPackOptions, isProductM2Pricing, isProductPackPricing } from '@/utils/productHelpers';
 import { DEFAULT_CHOICE } from '@/views/app/customer/products/show/SizeAndColorsChoice';
 import { optionKey } from '@/utils/optionKey';
 
@@ -68,6 +68,33 @@ const DEFAULT_SIZE = DEFAULT_CHOICE as Size;
 const DEFAULT_COLOR = DEFAULT_CHOICE as Color;
 
 /**
+ * Produit vendu PAR PACKS (cartes de visite : 100, 500, 1 000…) : la quantité est
+ * celle d'un pack. Une autre quantité est portée au plus petit pack qui la couvre —
+ * jamais un pack plus petit (300 cartes au prix du pack de 100) ; au-delà du plus
+ * grand pack, le plus grand. Même règle que le chat côté serveur (chatbot-packs).
+ */
+export const packQuantity = (product: Product, quantity: number): number => {
+  if (!isProductPackPricing(product)) return quantity;
+  const packs = getProductPackOptions(product);
+  if (!packs.length) return quantity;
+  return packs.find((p) => p >= quantity) ?? packs[packs.length - 1];
+};
+
+/**
+ * Packs : un format (taille × couleur) = un pack = un article de panier — la fiche
+ * n'en sélectionne qu'un à la fois. 500 vertical + 500 horizontal = deux packs de
+ * 500, pas un pack de 1 000 au prix du pack de 1 000.
+ */
+export const splitPackLines = (lines: ChatOfferLine[]): ChatOfferLine[][] => {
+  const byFormat = new Map<string, ChatOfferLine[]>();
+  for (const l of lines) {
+    const key = `${l.sizeDocumentId ?? l.sizeName ?? l.requestedSize ?? ''}|${l.colorDocumentId ?? l.colorName ?? l.requestedColor ?? ''}`;
+    byFormat.set(key, [...(byFormat.get(key) ?? []), l]);
+  }
+  return [...byFormat.values()];
+};
+
+/**
  * Une dimension (taille ou couleur) est résolue si l'offre la précise, si le
  * produit n'en a pas (valeur DEFAULT, comme SizeAndColorsChoice) ou n'en a
  * qu'une seule. Sinon c'est au client de choisir sur la fiche.
@@ -126,7 +153,7 @@ export const prefillSelection = (product: Product, lines: ChatOfferLine[]): { se
     const prev = merged.get(key);
     merged.set(key, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { size, color, quantity: l.quantity });
   }
-  return { selection: [...merged.values()], missing };
+  return { selection: [...merged.values()].map((sel) => ({ ...sel, quantity: packQuantity(product, sel.quantity) })), missing };
 };
 
 /** Sélection COMPLÈTE (prête pour le panier), ou null si une taille/couleur reste à choisir. */
@@ -262,16 +289,22 @@ export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
   const byProduct = new Map<string, ChatOfferLine[]>();
   for (const line of offer.lines) byProduct.set(line.productDocumentId, [...(byProduct.get(line.productDocumentId) ?? []), line]);
   const planned: PlannedLine[] = [];
-  for (const lines of byProduct.values()) {
-    const line = lines[0];
-    const { product } = await unwrapData(apiGetProductForShowById(line.productDocumentId));
-    if (!product) throw new Error(`Produit introuvable : ${line.productName}`);
-    const selection = selectionForLines(product, lines);
-    const missing = missingSteps(product, lines, selection);
-    if (!missing.length && selection) {
-      planned.push({ kind: 'ready', line, lines, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
-    } else {
-      planned.push({ kind: 'complete', line, lines, product, missing, prefill: prefillForProduct(offer, line.productDocumentId)! });
+  for (const productLines of byProduct.values()) {
+    const { product } = await unwrapData(apiGetProductForShowById(productLines[0].productDocumentId));
+    if (!product) throw new Error(`Produit introuvable : ${productLines[0].productName}`);
+    const parts = isProductPackPricing(product) ? splitPackLines(productLines) : [productLines];
+    for (const lines of parts) {
+      const line = lines[0];
+      const selection = selectionForLines(product, lines);
+      const missing = missingSteps(product, lines, selection);
+      if (!missing.length && selection) {
+        planned.push({ kind: 'ready', line, lines, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
+      } else {
+        const prefill = parts.length > 1
+          ? { offerId: offer.id, quantity: lines.reduce((n, l) => n + l.quantity, 0), lines }
+          : prefillForProduct(offer, line.productDocumentId)!;
+        planned.push({ kind: 'complete', line, lines, product, missing, prefill });
+      }
     }
   }
   return planned;

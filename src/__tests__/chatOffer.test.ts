@@ -10,6 +10,8 @@ import {
   selectionForLines,
   isChatOffer,
   missingSteps,
+  packQuantity,
+  splitPackLines,
   pendingFormAnswer,
   personalizationStatus,
   readChatPrefill,
@@ -260,5 +262,38 @@ describe('tailles et couleurs respectées (T-shirt ECO réel)', () => {
       line({ productDocumentId: 'roll', productName: 'ROLL-UP 85x200 cm', quantity: 1 }),
     ] };
     expect(describeOffer(offer)).toBe('7 × T-shirt ECO 150 g/m² — 5 M NOIR, 2 XL BLANC · 1 × ROLL-UP 85x200 cm');
+  });
+});
+
+describe('produits vendus par packs (cartes de visite)', () => {
+  // Paliers réels de « Cartes de visite Icart » (prod, 25/09/2026)
+  const cartes = product({
+    pricingMode: 'packs',
+    priceTiers: [
+      { minQuantity: 100, price: 90 }, { minQuantity: 500, price: 180 }, { minQuantity: 1000, price: 240 },
+      { minQuantity: 2000, price: 280 }, { minQuantity: 3000, price: 310 },
+    ],
+    sizes: [opt('v', '85x55mm vertical'), opt('h', '55x85mm horizontal')],
+  } as never);
+
+  it('quantité hors pack → pack supérieur (jamais 300 cartes au prix du pack de 100)', () => {
+    expect(packQuantity(cartes, 300)).toBe(500);
+    expect(packQuantity(cartes, 500)).toBe(500);
+    expect(packQuantity(cartes, 5000)).toBe(3000);
+    expect(packQuantity(product(), 7)).toBe(7); // produit à l'unité : inchangé
+  });
+
+  it('la sélection reprise de l’offre porte une quantité de pack', () => {
+    const sel = selectionForLine(cartes, line({ quantity: 300, sizeDocumentId: 'v' }));
+    expect(sel).toEqual([expect.objectContaining({ quantity: 500 })]);
+  });
+
+  it('un format = un pack = un article : 500 vertical + 500 horizontal restent séparés', () => {
+    const parts = splitPackLines([
+      line({ quantity: 500, sizeDocumentId: 'v' }),
+      line({ quantity: 500, sizeDocumentId: 'h' }),
+    ]);
+    expect(parts).toHaveLength(2);
+    expect(parts.map((p) => p[0].sizeDocumentId)).toEqual(['v', 'h']);
   });
 });
