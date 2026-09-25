@@ -1172,32 +1172,35 @@ function GoogleCalendarModal({ onClose, onExportICS }: { onClose: () => void; on
 }
 
 // ─── Agenda téléphone ───────────────────────────────────────────────────────────
-/* Sous 768px, la page reprend le langage du widget Calendrier du tableau de bord
-   (DashboardAdmin) : carte en verre, mois compact, aujourd'hui en bleu ciel,
-   pastilles par catégorie. Les vues Semaine et Jour (grille horaire de 7
-   colonnes, glisser-déposer) ne tiennent pas sur un téléphone : on touche un
+/* Sous 768px, la page reprend la mise en page du widget Calendrier du tableau de
+   bord (DashboardAdmin) : mois compact, aujourd'hui en bleu ciel, pastilles par
+   catégorie — sur les cartes bleu nuit des autres onglets (décision du 25/09 :
+   pas de fond « verre » sur téléphone). Les vues Semaine et Jour (grille horaire
+   de 7 colonnes, glisser-déposer) ne tiennent pas sur un téléphone : on touche un
    jour et ses événements s'affichent dessous, on balaie pour changer de mois. */
-const GLASS_CARD = 'relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/[0.07] to-white/[0.02] backdrop-blur-xl border border-white/[0.08] shadow-xl shadow-sky-500/5'
-const GLASS_GLOW = { background: 'radial-gradient(ellipse at top left, rgba(56,189,248,0.07) 0%, transparent 50%)' }
-const GLASS_CAT: Record<CalendarEventCategory, { dot: string; pill: string; text: string }> = {
+const AGENDA_CARD_STYLE: React.CSSProperties = {
+    background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+}
+const CAT_PILL: Record<CalendarEventCategory, { dot: string; pill: string; text: string }> = {
     production: { dot: 'bg-orange-500', pill: 'bg-orange-500/10 border-orange-500/20', text: 'text-orange-300' },
     reunion: { dot: 'bg-sky-500', pill: 'bg-sky-500/10 border-sky-500/20', text: 'text-sky-300' },
     livraison: { dot: 'bg-emerald-500', pill: 'bg-emerald-500/10 border-emerald-500/20', text: 'text-emerald-300' },
     autre: { dot: 'bg-violet-500', pill: 'bg-violet-500/10 border-violet-500/20', text: 'text-violet-300' },
 }
-const glassCat = (v: CalendarEventCategory | string) => GLASS_CAT[getCat(v).value]
+const catPill = (v: CalendarEventCategory | string) => CAT_PILL[getCat(v).value]
 
-function GlassSection({ children }: { children: React.ReactNode }) {
+function AgendaCard({ children }: { children: React.ReactNode }) {
     return (
-        <section className={GLASS_CARD}>
-            <div className="absolute inset-0 pointer-events-none" style={GLASS_GLOW} />
+        <section className="relative overflow-hidden rounded-2xl" style={AGENDA_CARD_STYLE}>
             <div className="relative p-4">{children}</div>
         </section>
     )
 }
 
 function AgendaRow({ event, onClick, showDate = false }: { event: CalEvent; onClick: (e: CalEvent) => void; showDate?: boolean }) {
-    const c = glassCat(event.category)
+    const c = catPill(event.category)
     const multiDay = !sameDay(event.start, event.end)
     return (
         <button
@@ -1296,7 +1299,7 @@ function MobileAgenda({ date, events, direction, filtersActive, onSelectDay, onN
                 </div>
             </div>
 
-            <GlassSection>
+            <AgendaCard>
                 <div className="absolute -top-4 -left-4 -right-4 h-[2px] bg-gradient-to-r from-sky-500 to-blue-600 opacity-80" />
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1377,7 +1380,7 @@ function MobileAgenda({ date, events, direction, filtersActive, onSelectDay, onN
                                         {cats.length > 0 && (
                                             <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                                                 {cats.map((c) => (
-                                                    <span key={c} className={`w-1 h-1 rounded-full ${isT ? 'bg-white/90' : glassCat(c).dot}`} />
+                                                    <span key={c} className={`w-1 h-1 rounded-full ${isT ? 'bg-white/90' : catPill(c).dot}`} />
                                                 ))}
                                             </span>
                                         )}
@@ -1387,9 +1390,9 @@ function MobileAgenda({ date, events, direction, filtersActive, onSelectDay, onN
                         </motion.div>
                     </AnimatePresence>
                 </motion.div>
-            </GlassSection>
+            </AgendaCard>
 
-            <GlassSection>
+            <AgendaCard>
                 <div className="flex items-end justify-between gap-3 mb-3">
                     <div className="min-w-0">
                         <div className="text-[10px] uppercase tracking-wider text-white/35">
@@ -1416,15 +1419,15 @@ function MobileAgenda({ date, events, direction, filtersActive, onSelectDay, onN
                         {dayEvents.map((ev) => <AgendaRow key={ev.id} event={ev} onClick={onEdit} />)}
                     </div>
                 )}
-            </GlassSection>
+            </AgendaCard>
 
             {upcoming.length > 0 && (
-                <GlassSection>
+                <AgendaCard>
                     <div className="text-[10px] uppercase tracking-wider text-white/35 mb-2">À venir</div>
                     <div className="space-y-2">
                         {upcoming.map((ev) => <AgendaRow key={ev.id} event={ev} onClick={onEdit} showDate />)}
                     </div>
-                </GlassSection>
+                </AgendaCard>
             )}
         </div>
     )
