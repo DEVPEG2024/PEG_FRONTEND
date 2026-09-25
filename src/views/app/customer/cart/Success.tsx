@@ -7,10 +7,13 @@ import { TOKEN_TYPE } from '@/constants/api.constant';
 import { Button } from '@/components/ui';
 import { removeFromCartItemOfOrderItem, clearCart } from '@/store/slices/base/cartSlice';
 import { HiOutlineCheckCircle, HiOutlineFolderOpen, HiHome } from 'react-icons/hi';
+import { chatUserKey } from '@/components/template/chat/chatTrace';
+import { announceChatClosing } from '@/components/template/chat/chatClosing';
 
 function Success() {
   const navigate = useNavigate();
   const { token } = useAppSelector((state) => state.auth.session);
+  const user = useAppSelector((s) => s.auth.user.user);
   const dispatch = useAppDispatch();
   // La confirmation ne doit partir qu'une fois, même si le token change encore
   // après la réhydratation (ou en StrictMode).
@@ -43,12 +46,14 @@ function Success() {
         const { sessionOrderItemsDocumentIds } = await response.json();
         const ids: string[] = JSON.parse(sessionOrderItemsDocumentIds || '[]');
         ids.forEach((id) => dispatch(removeFromCartItemOfOrderItem(id)));
+        announceChatClosing(chatUserKey(user), ids);
       } catch (err) {
         // Le paiement a réussi (on est sur la page succès) mais la confirmation
         // des articles a échoué : on vide malgré tout le panier pour éviter une
         // double commande, et on trace l'erreur.
         console.error('[Success] Confirmation des articles échouée :', err);
         dispatch(clearCart());
+        announceChatClosing(chatUserKey(user));
       }
     };
 

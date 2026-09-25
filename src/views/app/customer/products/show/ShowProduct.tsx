@@ -36,6 +36,7 @@ import { FormAnswer } from '@/@types/formAnswer';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
 import ProductActionBar from './ProductActionBar';
 import useResponsive from '@/utils/hooks/useResponsive';
+import { chatTraceFor } from '@/components/template/chat/chatTrace';
 import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
@@ -225,6 +226,7 @@ const ShowProduct = () => {
         sizeAndColors,
         userDocumentId: user.documentId,
         ...(needsBatBeforeOrder && { batApproved: true }),
+        ...(chatPrefill ? chatTraceFor(chatPrefill.offerId, user) : {}),
       } as CartItem)
     );
     toast.success('Article ajouté au panier');
