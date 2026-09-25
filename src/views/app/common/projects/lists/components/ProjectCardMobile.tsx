@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { MdAccessTime } from 'react-icons/md';
 import { HiOutlineEye } from 'react-icons/hi';
 import ProgressionBar from './ProgressionBar';
 
 /*
- * Carte projet — rendu TÉLÉPHONE uniquement (< md), même langage que les
- * tableaux de bord téléphone (demande Nova du 25/09/2026) : carte vitrée,
- * photo dans un cadre, statut posé sur la photo, montant en grand.
+ * Carte projet — rendu TÉLÉPHONE uniquement (< md), mise en page des
+ * tableaux de bord téléphone (demande Nova du 25/09/2026) : photo pleine
+ * largeur, statut posé sur la photo, montant en grand. Couleurs de la carte
+ * d'ordinateur (bleu nuit, bordure et barre au statut), à la demande de Nova.
  * Composant d'AFFICHAGE : ProjectItem calcule tout (statut, délai, avancement,
  * montants selon le rôle) et passe des valeurs prêtes — mêmes informations et
  * mêmes libellés que la carte d'ordinateur. Styles : « CARTES PROJET » de
@@ -47,7 +48,17 @@ const ProjectCardMobile = ({
   menu,
   onOpen,
 }: Props) => (
-  <article className="peg-pcard">
+  <article
+    className="peg-pcard"
+    // Couleurs de la carte d'ordinateur : bordure, barre et filet au statut
+    style={
+      {
+        '--pcard-bar': status.color,
+        '--pcard-line': `${status.color}35`,
+        '--pcard-sep': `${status.color}25`,
+      } as CSSProperties
+    }
+  >
     <div
       className={image ? 'peg-pcard-media' : 'peg-pcard-media is-empty'}
       onClick={onOpen}

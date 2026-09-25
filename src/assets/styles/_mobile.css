@@ -826,21 +826,34 @@
     color: var(--pdm-accent);
   }
 
-  /* CARTES PROJET (ProjectCardMobile.tsx) : le langage des tableaux de bord
-     téléphone — carte vitrée, coins de 22px, photo dans un cadre avec le
-     statut posé dessus, montant en grand. Couleur d'accent : celle du fond
-     « app » (--pdm-accent*), citron par défaut. */
+  /* CARTES PROJET (ProjectCardMobile.tsx) : mise en page des tableaux de
+     bord téléphone — coins de 22px, photo pleine largeur avec le statut posé
+     dessus, montant en grand — mais COULEURS de la carte d'ordinateur
+     (demande Nova du 25/09/2026) : bleu nuit, bordure, barre du haut et filet
+     à la couleur du statut (--pcard-*, posées par le composant). */
   .peg-pcard {
     position: relative;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     border-radius: 22px;
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.025) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 40px rgba(0, 0, 0, 0.35);
-    color: #f3f7ec;
+    background: linear-gradient(160deg, #16263d 0%, #0f1c2e 100%);
+    border: 1.5px solid var(--pcard-line, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1.5px var(--pcard-line, transparent);
+    color: #fff;
     font-family: Inter, sans-serif;
+  }
+  .peg-pcard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    height: 4px;
+    background: var(--pcard-bar, transparent);
+    opacity: 0.8;
+    pointer-events: none;
   }
   /* Photo pleine largeur en tête de carte, comme les cartes du tableau de
      bord — mais ENTIÈRE (le produit n'est jamais rogné) : fond « studio »
@@ -864,11 +877,9 @@
     object-fit: contain;
     mix-blend-mode: multiply;
   }
-  /* Sans photo : le fond de l'app et l'illustration par défaut */
+  /* Sans photo : l'illustration par défaut sur le fond de la carte */
   .peg-pcard-media.is-empty {
-    background:
-      radial-gradient(120% 100% at 100% 0%, rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.16) 0%, transparent 70%),
-      rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.04);
   }
   .peg-pcard-media img.is-placeholder {
     width: 58%;
@@ -945,10 +956,10 @@
     align-items: center;
     gap: 5px;
     padding: 5px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
     background: rgba(255, 255, 255, 0.06);
-    color: rgba(232, 242, 220, 0.7);
+    color: rgba(255, 255, 255, 0.55);
     font-size: 11.5px;
     font-weight: 600;
     white-space: nowrap;
@@ -967,12 +978,22 @@
     border-color: rgba(99, 102, 241, 0.25);
   }
   .peg-pcard-foot {
+    position: relative;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  /* Filet au statut, comme sur ordinateur */
+  .peg-pcard-foot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--pcard-sep, rgba(255, 255, 255, 0.08)) 40%, var(--pcard-sep, rgba(255, 255, 255, 0.08)) 60%, transparent);
   }
   .peg-pcard-people {
     display: flex;
@@ -1007,7 +1028,7 @@
   }
   .peg-pcard-sub {
     margin-top: 3px;
-    color: rgba(232, 242, 220, 0.5);
+    color: rgba(255, 255, 255, 0.45);
     font-size: 11px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
