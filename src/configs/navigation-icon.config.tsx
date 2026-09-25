@@ -7,7 +7,7 @@ import {
     HiUsers,
     HiOutlineLightningBolt,
 } from 'react-icons/hi'
-import { MdOutlineMail, MdOutlineStorefront, MdSmartToy, MdSpellcheck, MdStraighten } from "react-icons/md";
+import { MdOutlineMail, MdOutlineStorefront, MdSmartToy, MdSpellcheck, MdStraighten, MdOutlineImageSearch, MdOutlineWorkspacePremium, MdOutlinePriceCheck } from "react-icons/md";
 import { FiUsers } from "react-icons/fi";
 import { LuUsers } from "react-icons/lu";
 import { RiHomeSmile2Line, RiRobot2Line } from "react-icons/ri";
@@ -64,6 +64,9 @@ const navigationIcon: NavigationIcons = {
     iaProductAgent: <MdSmartToy />,
     iaRelecture: <MdSpellcheck />,
     iaTailles: <MdStraighten />,
+    iaFichiers: <MdOutlineImageSearch />,
+    iaPremium: <MdOutlineWorkspacePremium />,
+    iaTarifs: <MdOutlinePriceCheck />,
     expenses: <IoReceiptOutline />,
     premium: <TbCrown />,
     planning: <TbCalendarStats />,

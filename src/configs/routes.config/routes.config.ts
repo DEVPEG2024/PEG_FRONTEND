@@ -287,6 +287,24 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/ia/IATaillesPage")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  {
+    key: "admin.ia.fichiers",
+    path: "/admin/ia/fichiers",
+    component: lazy(() => import("@/views/app/admin/ia/IAFichiersPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.ia.premium",
+    path: "/admin/ia/premium",
+    component: lazy(() => import("@/views/app/admin/ia/IAPremiumPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.ia.tarifs",
+    path: "/admin/ia/tarifs",
+    component: lazy(() => import("@/views/app/admin/ia/IATarifsPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
 ];
 const protectedCustomersRoutes = [
   {

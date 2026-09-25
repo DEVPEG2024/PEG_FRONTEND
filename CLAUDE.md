@@ -401,6 +401,40 @@ Désactivé par défaut. Actif → examen 30 s après chaque modification de pro
 
 ---
 
+## 🤖 Agents Contrôle des fichiers, Offres Premium, Tarifs (ajout 26/09/2026)
+
+### Socle commun (`peg_strapi/src/services/agents/core.ts`)
+Un seul socle pour les trois (le Relecteur et l'agent Tailles gardent le leur) : journal `peg_agent_review`, empreintes `peg_agent_state`, réglages `peg_agent_settings` (actif, options, compteur d'usage du jour). Routes `/api/agents/:agent/{status,settings,reviews,reviews/:id/accept|reject|revert|actions/:action,run}` en `auth: false` + JWT admin vérifié dans le contrôleur. Écran commun `src/views/app/admin/ia/agents/AgentShell.tsx`. **Tous en pause par défaut.** Déclencheurs : middleware document (`agentTriggers`, `src/services/agents/index.ts`) ; passes de nuit à 4 h (fichiers), 4 h 30 (tarifs), 5 h (premium) — importées à l'exécution dans `config/cron-tasks.ts` (le service d'e-mail exige la clé Mailjet dès son chargement : un import statique cassait `strapi build` sans secrets).
+
+### Contrôle des fichiers (`/admin/ia/fichiers`)
+- Sources : logos joints aux commandes (réponses de formulaire — URL dans le JSON, sans ligne de fichier liée), « Mes fichiers » (`client-file`), logo de la fiche client.
+- Mesures réelles (`fichiers-analyse.ts`, sharp + **pdf-lib**) : pixels, transparence réelle, fond, PDF (format fini/TrimBox, fond perdu, polices non incorporées, résolution d'un PDF « image seule »). ⚠️ Strapi ré-encode les images < 5 Mo (qualité 80, métadonnées supprimées) : **seuls les pixels comptent**, jamais le dpi déclaré.
+- Usage prévu déduit du produit et des réponses du formulaire, **ancien format Formio compris** (« avantCoeurDos » → cœur + dos → 28 cm) : `printTargetFor`. Logo sans commande : jugé pour un marquage cœur de 10 cm.
+- Vision IA (OpenAI `gpt-4.1-mini`, compte de NOVA) : capture d'écran, maquette, photo, **document joint par erreur**, logo coupé, filigrane. **Elle ajoute des problèmes, elle ne blanchit jamais une mesure** ; seul l'indice tiré du NOM (« Capture d'écran… ») s'efface si elle voit un logo propre.
+- Version corrigée (fond uni détouré, logo extrait d'une capture) **seulement pour un vrai visuel**, écrite directement sur S3 (`storage.ts` — le service d'envoi Strapi ré-encoderait le PNG ; mal configuré, il plante le processus). Ajoutée **à côté** du fichier du client, jamais à sa place.
+- Message au client relu par l'admin (cloche + e-mail), **jamais envoyé hors production** (`liveDelivery()`, même règle que les campagnes).
+
+### Tarifs (`/admin/ia/tarifs`) — aucune IA
+- Formules EXACTES du paiement (`tarifs-rules.ts`) : prix de base = premier élément du tableau ; packs = prix du pack ; m² = paliers ignorés ; Premium −15 % sur `inCatalogue !== false`. En packs, le coût saisi = coût du **plus petit pack** (19,69 € les 250 cartes).
+- Rangement d'office (annulable, jamais refait après annulation) : ancien champ `price` aligné sur le vrai prix de base (il n'est lu que par les suggestions du panier), prix arrondis au centime.
+- Propositions : paliers remis dans l'ordre, passage en mode « packs » quand les prix sont des prix de pack, paliers trompeurs retirés en mode m² (bâche : 75/65/55/45 € affichés, jamais appliqués).
+- Alertes : vente à perte, marge sous le seuil (option, 25 %), **marge Premium** (après −15 %), coût identique au centime sur deux produits sans rapport (Stylos / Lunettes à 72,80 €), prix barré incohérent.
+
+### Offres Premium (`/admin/ia/premium`)
+- Cibles : nouveaux Premium (webhook Stripe → examen dans la minute si l'agent est actif), puis Premium sans offre.
+- L'IA choisit 3 à 6 produits **parmi les identifiants fournis** (catalogue public, hors Imbretex), selon secteur, commandes et offres existantes ; le code vérifie tout.
+- **Prix d'une offre = catalogue −15 %** (+ remise supplémentaire en option) : la remise Premium ne s'applique pas aux offres, une offre au prix catalogue serait donc plus chère pour le client. Jamais sous la marge minimale (sinon le produit n'est pas proposé). `catalogPrice` = prix catalogue → la carte « Mes offres » affiche « −15 % » (le champ est désormais lu par `apiGetCustomerProducts`, pas par la fiche produit où l'économie serait comparée à la mauvaise quantité).
+- Maquette « produit + logo » : la vision situe la zone et **refuse les photos déjà marquées** (les photos du catalogue portent un logo PEG de démonstration → pas de maquette plutôt qu'une maquette trompeuse). Ajouter des photos vierges aux produits pour en obtenir.
+- Validation : offres cochées créées (hors catalogue, rattachées au client, tailles/couleurs/formulaire du produit de base), client marqué « traité », message éventuel. Annulation = offres **désactivées**, jamais supprimées.
+
+### ⚠️ Paiement : lignes Stripe (correctif du 26/09/2026, trouvé par l'agent Tarifs)
+Chaque ligne part désormais à Stripe comme **un article au montant TTC de la ligne** (`peg_strapi/src/services/stripe-lines.ts`). Avant : quantité × prix unitaire arrondi au centime → pack de 10 000 dépliants à 800 € HT encaissé **1 000 €** pour 960 € facturés, 3 000 cartes 360 € pour 372 €. **Ne pas revenir à `quantity: qty`.**
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (tables créées au démarrage, `pdf-lib` et `sharp` en dépendances directes). Front avant back → écrans « Agent indisponible », rien d'autre ne casse.
+
+---
+
 ## 👁️ Tracking des vues projet (mise à jour 03/04/2026)
 
 ### Endpoints (peg-backend Express)
