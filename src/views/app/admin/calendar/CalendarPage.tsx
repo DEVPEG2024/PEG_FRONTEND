@@ -9,9 +9,11 @@ import {
     HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight,
     HiOutlineX, HiOutlineTrash, HiOutlineSearch, HiOutlineDownload,
     HiOutlineBell, HiOutlineRefresh, HiOutlineLink, HiOutlineMenu,
+    HiOutlineCalendar, HiOutlineAdjustments,
 } from 'react-icons/hi'
 import { BsCalendar3, BsGoogle } from 'react-icons/bs'
 import { unwrapData } from '@/utils/serviceHelper'
+import useResponsive from '@/utils/hooks/useResponsive'
 import {
     apiGetCalendarEvents,
     apiCreateCalendarEvent,
@@ -1038,8 +1040,8 @@ function EventModal({ event, defaultStart, defaultEnd, projects, onSave, onDelet
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="px-6 pb-6 flex items-center justify-between">
+                    {/* Footer — téléphone : collé en bas de la fenêtre qui défile, toujours visible */}
+                    <div className="px-6 pb-6 flex items-center justify-between max-md:sticky max-md:bottom-0 max-md:pt-3 max-md:pb-4 max-md:bg-white max-md:dark:bg-gray-800 max-md:border-t max-md:border-gray-100 max-md:dark:border-gray-700">
                         <div>
                             {event && (
                                 <button
@@ -1169,6 +1171,265 @@ function GoogleCalendarModal({ onClose, onExportICS }: { onClose: () => void; on
     )
 }
 
+// ─── Agenda téléphone ───────────────────────────────────────────────────────────
+/* Sous 768px, la page reprend le langage du widget Calendrier du tableau de bord
+   (DashboardAdmin) : carte en verre, mois compact, aujourd'hui en bleu ciel,
+   pastilles par catégorie. Les vues Semaine et Jour (grille horaire de 7
+   colonnes, glisser-déposer) ne tiennent pas sur un téléphone : on touche un
+   jour et ses événements s'affichent dessous, on balaie pour changer de mois. */
+const GLASS_CARD = 'relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/[0.07] to-white/[0.02] backdrop-blur-xl border border-white/[0.08] shadow-xl shadow-sky-500/5'
+const GLASS_GLOW = { background: 'radial-gradient(ellipse at top left, rgba(56,189,248,0.07) 0%, transparent 50%)' }
+const GLASS_CAT: Record<CalendarEventCategory, { dot: string; pill: string; text: string }> = {
+    production: { dot: 'bg-orange-500', pill: 'bg-orange-500/10 border-orange-500/20', text: 'text-orange-300' },
+    reunion: { dot: 'bg-sky-500', pill: 'bg-sky-500/10 border-sky-500/20', text: 'text-sky-300' },
+    livraison: { dot: 'bg-emerald-500', pill: 'bg-emerald-500/10 border-emerald-500/20', text: 'text-emerald-300' },
+    autre: { dot: 'bg-violet-500', pill: 'bg-violet-500/10 border-violet-500/20', text: 'text-violet-300' },
+}
+const glassCat = (v: CalendarEventCategory | string) => GLASS_CAT[getCat(v).value]
+
+function GlassSection({ children }: { children: React.ReactNode }) {
+    return (
+        <section className={GLASS_CARD}>
+            <div className="absolute inset-0 pointer-events-none" style={GLASS_GLOW} />
+            <div className="relative p-4">{children}</div>
+        </section>
+    )
+}
+
+function AgendaRow({ event, onClick, showDate = false }: { event: CalEvent; onClick: (e: CalEvent) => void; showDate?: boolean }) {
+    const c = glassCat(event.category)
+    const multiDay = !sameDay(event.start, event.end)
+    return (
+        <button
+            type="button"
+            onClick={() => onClick(event)}
+            className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-transform active:scale-[0.99] ${c.pill}`}
+        >
+            {showDate ? (
+                <span className="flex flex-col items-center w-9 shrink-0 leading-tight">
+                    <span className="text-[10px] uppercase text-white/35">{event.start.format('ddd')}</span>
+                    <span className="text-base font-bold text-white/80 tabular-nums">{event.start.format('D')}</span>
+                </span>
+            ) : (
+                <span className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`} />
+            )}
+            <span className="min-w-0 flex-1">
+                <span className={`flex items-center gap-1 text-sm font-semibold ${c.text}`}>
+                    {showDate && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />}
+                    <span className="truncate">{event.title}</span>
+                    {event.recurrence !== 'none' && <HiOutlineRefresh className="w-3 h-3 shrink-0 opacity-50" />}
+                    {event.projectId && <HiOutlineLink className="w-3 h-3 shrink-0 opacity-50" />}
+                </span>
+                <span className="block text-[11px] text-white/40 truncate">
+                    {getCat(event.category).label}{event.projectName ? ` · ${event.projectName}` : ''}
+                </span>
+            </span>
+            <span className="text-right shrink-0 tabular-nums">
+                <span className="block text-xs font-semibold text-white/70">
+                    {multiDay ? `Du ${event.start.format('D MMM')}` : event.start.format('HH:mm')}
+                </span>
+                <span className="block text-[10px] text-white/30">
+                    {multiDay ? `au ${event.end.format('D MMM')}` : event.end.format('HH:mm')}
+                </span>
+            </span>
+        </button>
+    )
+}
+
+function MobileAgenda({ date, events, direction, filtersActive, onSelectDay, onNavigate, onToday, onNew, onEdit, onRefresh, onOpenPanel }: {
+    date: Dayjs; events: CalEvent[]; direction: number; filtersActive: boolean
+    onSelectDay: (d: Dayjs) => void; onNavigate: (dir: number) => void; onToday: () => void
+    onNew: (start: Dayjs) => void; onEdit: (e: CalEvent) => void
+    onRefresh: () => void; onOpenPanel: () => void
+}) {
+    const today = dayjs()
+    const firstDay = date.startOf('month').isoWeekday() - 1
+    const cells: (Dayjs | null)[] = [
+        ...Array(firstDay).fill(null),
+        ...Array.from({ length: date.daysInMonth() }, (_, i) => date.date(i + 1)),
+    ]
+    while (cells.length % 7 !== 0) cells.push(null)
+
+    const monthCount = events.filter((e) => e.start.isSame(date, 'month')).length
+    const dayEvents = eventsOfDay(events, date)
+    const upcoming = events
+        .filter((e) => e.start.isAfter(date.endOf('day')))
+        .sort((a, b) => a.start.valueOf() - b.start.valueOf())
+        .slice(0, 5)
+    const isToday = sameDay(date, today)
+    const newStart = isToday ? today.add(1, 'hour').startOf('hour') : date.hour(9).minute(0)
+
+    // Au relâché d'un balayage, le navigateur « clique » le jour sous le doigt :
+    // sans ce drapeau, le mois change puis la sélection revient sur l'ancien.
+    const swiped = useRef(false)
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+                <h1 className="text-xl font-bold text-white">Calendrier</h1>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={onRefresh}
+                        aria-label="Rafraîchir"
+                        className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/60 active:bg-white/10"
+                    >
+                        <HiOutlineRefresh className="w-4 h-4" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onOpenPanel}
+                        aria-label="Filtres et actions"
+                        className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/60 active:bg-white/10"
+                    >
+                        <HiOutlineAdjustments className="w-5 h-5" />
+                        {filtersActive && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-sky-400" />}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onNew(newStart)}
+                        className="flex items-center gap-1.5 h-11 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-semibold shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-transform"
+                    >
+                        <HiOutlinePlus className="w-4 h-4" />
+                        Nouveau
+                    </button>
+                </div>
+            </div>
+
+            <GlassSection>
+                <div className="absolute -top-4 -left-4 -right-4 h-[2px] bg-gradient-to-r from-sky-500 to-blue-600 opacity-80" />
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500/20 to-blue-600/10 ring-1 ring-sky-500/20 text-sky-400">
+                            <HiOutlineCalendar className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="text-base font-bold text-white capitalize truncate">{date.format('MMMM YYYY')}</h2>
+                            <p className="text-[11px] text-white/40">
+                                {monthCount === 0 ? 'Aucun événement' : `${monthCount} événement${monthCount > 1 ? 's' : ''}`} ce mois
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center shrink-0">
+                        <button type="button" onClick={() => onNavigate(-1)} aria-label="Mois précédent" className="flex items-center justify-center w-10 h-10 rounded-lg text-white/40 active:bg-white/10">
+                            <HiOutlineChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={onToday} className="h-8 px-2.5 rounded-lg text-xs font-semibold text-sky-300 bg-sky-500/10 active:bg-sky-500/20">
+                            Auj.
+                        </button>
+                        <button type="button" onClick={() => onNavigate(1)} aria-label="Mois suivant" className="flex items-center justify-center w-10 h-10 rounded-lg text-white/40 active:bg-white/10">
+                            <HiOutlineChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.25}
+                    onPointerDownCapture={() => { swiped.current = false }}
+                    onDragStart={() => { swiped.current = true }}
+                    onDragEnd={(_, info) => {
+                        if (info.offset.x < -50) onNavigate(1)
+                        else if (info.offset.x > 50) onNavigate(-1)
+                    }}
+                    className="select-none"
+                >
+                    <div className="grid grid-cols-7 mb-1">
+                        {DAYS_FR.map((d) => (
+                            <div key={d} className="text-center text-[10px] font-medium text-white/30">{d.slice(0, 2)}</div>
+                        ))}
+                    </div>
+                    <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                            key={date.format('YYYY-MM')}
+                            initial={{ opacity: 0, x: direction * 30 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: direction * -30 }}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            className="grid grid-cols-7 gap-y-1"
+                        >
+                            {cells.map((day, i) => {
+                                if (!day) return <div key={i} />
+                                const isT = sameDay(day, today)
+                                const isSel = sameDay(day, date)
+                                const count = eventsOfDay(events, day).length
+                                const cats = [...new Set(eventsOfDay(events, day).map((e) => e.category))].slice(0, 3)
+                                return (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => { if (!swiped.current) onSelectDay(day) }}
+                                        aria-pressed={isSel}
+                                        aria-label={`${day.format('dddd D MMMM')}${count ? ` — ${count} événement${count > 1 ? 's' : ''}` : ''}`}
+                                        className={[
+                                            'relative h-11 rounded-xl text-sm tabular-nums flex items-center justify-center transition-colors',
+                                            isT
+                                                ? 'bg-sky-500 text-white font-bold shadow-lg shadow-sky-500/30'
+                                                : isSel
+                                                ? 'bg-white/10 ring-1 ring-sky-400/60 text-white font-semibold'
+                                                : count
+                                                ? 'text-white/80 font-semibold active:bg-white/5'
+                                                : 'text-white/40 active:bg-white/5',
+                                        ].join(' ')}
+                                    >
+                                        {day.date()}
+                                        {cats.length > 0 && (
+                                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                                {cats.map((c) => (
+                                                    <span key={c} className={`w-1 h-1 rounded-full ${isT ? 'bg-white/90' : glassCat(c).dot}`} />
+                                                ))}
+                                            </span>
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </motion.div>
+                    </AnimatePresence>
+                </motion.div>
+            </GlassSection>
+
+            <GlassSection>
+                <div className="flex items-end justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-wider text-white/35">
+                            {isToday ? "Aujourd'hui" : sameDay(date, today.add(1, 'day')) ? 'Demain' : 'Journée'}
+                        </div>
+                        <h3 className="text-base font-bold text-white capitalize truncate">{date.format('dddd D MMMM')}</h3>
+                    </div>
+                    {dayEvents.length > 0 && (
+                        <button type="button" onClick={() => onNew(newStart)} className="shrink-0 h-9 px-3 rounded-lg text-xs font-semibold text-sky-300 bg-sky-500/10 active:bg-sky-500/20">
+                            + Ajouter
+                        </button>
+                    )}
+                </div>
+                {dayEvents.length === 0 ? (
+                    <div className="text-center py-5">
+                        <BsCalendar3 className="w-7 h-7 mx-auto mb-2 text-white/15" />
+                        <p className="text-sm text-white/40">Aucun événement ce jour</p>
+                        <button type="button" onClick={() => onNew(newStart)} className="mt-3 h-10 px-4 rounded-xl text-sm font-semibold text-sky-300 bg-sky-500/10 active:bg-sky-500/20">
+                            + Ajouter un événement
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {dayEvents.map((ev) => <AgendaRow key={ev.id} event={ev} onClick={onEdit} />)}
+                    </div>
+                )}
+            </GlassSection>
+
+            {upcoming.length > 0 && (
+                <GlassSection>
+                    <div className="text-[10px] uppercase tracking-wider text-white/35 mb-2">À venir</div>
+                    <div className="space-y-2">
+                        {upcoming.map((ev) => <AgendaRow key={ev.id} event={ev} onClick={onEdit} showDate />)}
+                    </div>
+                </GlassSection>
+            )}
+        </div>
+    )
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 const CalendarPage = () => {
     const [events, setEvents] = useState<CalEvent[]>([])
@@ -1186,6 +1447,8 @@ const CalendarPage = () => {
     const [direction, setDirection] = useState(0)
     // Affichage seul : sous md le panneau latéral est replié derrière un bouton.
     const [panelOpen, setPanelOpen] = useState(false)
+    // Téléphone : agenda façon widget du tableau de bord (MobileAgenda)
+    const isPhone = useResponsive().smaller.md
 
     // ─── Drag & Drop state ──────────────────────────────────────────────────
     const dragRef = useRef<DragState | null>(null)
@@ -1291,9 +1554,9 @@ const CalendarPage = () => {
             return true
         })
 
-        // Expand recurring events for current view range
+        // Expand recurring events for current view range (le téléphone n'a que le mois)
         let rangeStart: Dayjs, rangeEnd: Dayjs
-        if (view === 'month') {
+        if (view === 'month' || isPhone) {
             rangeStart = date.startOf('month').subtract(7, 'day')
             rangeEnd = date.endOf('month').add(7, 'day')
         } else if (view === 'week') {
@@ -1305,7 +1568,7 @@ const CalendarPage = () => {
         }
 
         return expandRecurringEvents(filtered, rangeStart, rangeEnd)
-    }, [events, activeCategories, search, view, date])
+    }, [events, activeCategories, search, view, date, isPhone])
 
     // ─── CRUD handlers ──────────────────────────────────────────────────────
     const handleSave = async (data: Omit<CalEvent, 'id' | 'isSynced'>) => {
@@ -1707,6 +1970,109 @@ const CalendarPage = () => {
         ? `${date.startOf('isoWeek').format('D MMM')} – ${date.endOf('isoWeek').format('D MMM YYYY')}`
         : date.format('dddd D MMMM YYYY')
 
+    // ─── Blocs du panneau (latéral sur ordinateur, tiroir sur tablette et téléphone)
+    const searchField = (
+        <div className="relative">
+            <HiOutlineSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+                type="text"
+                placeholder="Rechercher..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 placeholder-gray-400"
+            />
+        </div>
+    )
+
+    const categoryFilter = (
+        <div className="space-y-1">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Catégories</p>
+            {CATEGORIES.map((c) => (
+                <button
+                    key={c.value}
+                    onClick={() => toggleCategory(c.value)}
+                    className={`flex items-center gap-2 w-full px-2 py-1 rounded-lg text-left transition-all ${
+                        activeCategories.has(c.value) ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'opacity-40'
+                    }`}
+                >
+                    <span className={`w-2.5 h-2.5 rounded-full ${c.dot} ${!activeCategories.has(c.value) ? 'opacity-30' : ''}`} />
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{c.label}</span>
+                </button>
+            ))}
+        </div>
+    )
+
+    const actionsBlock = (
+        <div className="space-y-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Actions</p>
+
+            {/* Import project deadlines */}
+            <button
+                onClick={importProjectDeadlines}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
+            >
+                <HiOutlineLink className="w-3.5 h-3.5 text-orange-500" />
+                Importer deadlines projets
+            </button>
+
+            {/* Export ICS */}
+            <button
+                onClick={handleExportICS}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
+            >
+                <HiOutlineDownload className="w-3.5 h-3.5 text-blue-500" />
+                Exporter .ics
+            </button>
+
+            {/* Import ICS */}
+            <button
+                onClick={handleImportICS}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
+            >
+                <HiOutlinePlus className="w-3.5 h-3.5 text-emerald-500" />
+                Importer .ics
+            </button>
+        </div>
+    )
+
+    const integrationsBlock = (
+        <div className="mt-auto space-y-1.5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Intégrations</p>
+            <button
+                onClick={() => setGoogleModal(true)}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
+            >
+                <BsGoogle className="w-3.5 h-3.5 text-red-500" />
+                Google Agenda
+            </button>
+        </div>
+    )
+
+    const modals = (
+        <>
+            {/* Event Modal */}
+            {modal.open && (
+                <EventModal
+                    event={modal.event}
+                    defaultStart={modal.defaultStart}
+                    defaultEnd={rangeEndRef.current}
+                    projects={projects}
+                    onSave={(data) => { rangeEndRef.current = null; handleSave(data) }}
+                    onDelete={() => { rangeEndRef.current = null; handleDelete() }}
+                    onClose={() => { rangeEndRef.current = null; setModal({ open: false, event: null, defaultStart: dayjs() }) }}
+                />
+            )}
+
+            {/* Google Calendar Modal */}
+            {googleModal && (
+                <GoogleCalendarModal
+                    onClose={() => setGoogleModal(false)}
+                    onExportICS={handleExportICS}
+                />
+            )}
+        </>
+    )
+
     if (loading) {
         return (
             <div className="flex h-screen peg-dvh items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -1714,6 +2080,72 @@ const CalendarPage = () => {
                     <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
                     <p className="text-sm text-gray-500">Chargement du calendrier...</p>
                 </div>
+            </div>
+        )
+    }
+
+    if (isPhone) {
+        const filtersActive = search !== '' || activeCategories.size < CATEGORIES.length
+        return (
+            <div className="pb-2">
+                <MobileAgenda
+                    date={date}
+                    events={filteredEvents}
+                    direction={direction}
+                    filtersActive={filtersActive}
+                    onSelectDay={(d) => { setDirection(0); setDate(d) }}
+                    onNavigate={(dir) => { setDirection(dir); setDate((d) => d.add(dir, 'month')) }}
+                    onToday={goToday}
+                    onNew={openNew}
+                    onEdit={openEdit}
+                    onRefresh={loadEvents}
+                    onOpenPanel={() => setPanelOpen(true)}
+                />
+
+                {/* Filtres et actions : tiroir fixé à l'écran (la page défile) */}
+                <AnimatePresence>
+                    {panelOpen && (
+                        <>
+                            <motion.div
+                                key="overlay"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setPanelOpen(false)}
+                                className="fixed inset-0 z-40 bg-black/50"
+                            />
+                            <motion.aside
+                                key="panel"
+                                initial={{ x: '-100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '-100%' }}
+                                transition={{ duration: 0.22, ease: 'easeOut' }}
+                                role="dialog"
+                                aria-label="Filtres et actions du calendrier"
+                                className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-gray-800 shadow-2xl flex flex-col gap-4 p-4 overflow-y-auto"
+                                style={{ paddingTop: 'calc(1rem + var(--peg-safe-top, 0px))', paddingBottom: 'calc(1rem + var(--peg-safe-bottom, 0px))' }}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">Filtres et actions</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPanelOpen(false)}
+                                        aria-label="Fermer"
+                                        className="flex items-center justify-center w-11 h-11 -mr-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
+                                        <HiOutlineX className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                {searchField}
+                                {categoryFilter}
+                                {actionsBlock}
+                                {integrationsBlock}
+                            </motion.aside>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {modals}
             </div>
         )
     }
@@ -1750,81 +2182,14 @@ const CalendarPage = () => {
                     Nouvel événement
                 </button>
 
-                {/* Search */}
-                <div className="relative">
-                    <HiOutlineSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Rechercher..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-8 pr-3 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 placeholder-gray-400"
-                    />
-                </div>
+                {searchField}
 
                 {/* Mini calendar */}
                 <MiniCalendar current={date} selected={date} onChange={(d) => setDate(d)} />
 
-                {/* Categories filter */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Catégories</p>
-                    {CATEGORIES.map((c) => (
-                        <button
-                            key={c.value}
-                            onClick={() => toggleCategory(c.value)}
-                            className={`flex items-center gap-2 w-full px-2 py-1 rounded-lg text-left transition-all ${
-                                activeCategories.has(c.value) ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'opacity-40'
-                            }`}
-                        >
-                            <span className={`w-2.5 h-2.5 rounded-full ${c.dot} ${!activeCategories.has(c.value) ? 'opacity-30' : ''}`} />
-                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">{c.label}</span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Actions</p>
-
-                    {/* Import project deadlines */}
-                    <button
-                        onClick={importProjectDeadlines}
-                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
-                    >
-                        <HiOutlineLink className="w-3.5 h-3.5 text-orange-500" />
-                        Importer deadlines projets
-                    </button>
-
-                    {/* Export ICS */}
-                    <button
-                        onClick={handleExportICS}
-                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
-                    >
-                        <HiOutlineDownload className="w-3.5 h-3.5 text-blue-500" />
-                        Exporter .ics
-                    </button>
-
-                    {/* Import ICS */}
-                    <button
-                        onClick={handleImportICS}
-                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
-                    >
-                        <HiOutlinePlus className="w-3.5 h-3.5 text-emerald-500" />
-                        Importer .ics
-                    </button>
-                </div>
-
-                {/* Integrations */}
-                <div className="mt-auto space-y-1.5">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Intégrations</p>
-                    <button
-                        onClick={() => setGoogleModal(true)}
-                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-xs font-medium text-gray-600 dark:text-gray-300"
-                    >
-                        <BsGoogle className="w-3.5 h-3.5 text-red-500" />
-                        Google Agenda
-                    </button>
-                </div>
+                {categoryFilter}
+                {actionsBlock}
+                {integrationsBlock}
             </aside>
 
             {panelOpen && (
@@ -1948,26 +2313,7 @@ const CalendarPage = () => {
                 </div>
             </main>
 
-            {/* Event Modal */}
-            {modal.open && (
-                <EventModal
-                    event={modal.event}
-                    defaultStart={modal.defaultStart}
-                    defaultEnd={rangeEndRef.current}
-                    projects={projects}
-                    onSave={(data) => { rangeEndRef.current = null; handleSave(data) }}
-                    onDelete={() => { rangeEndRef.current = null; handleDelete() }}
-                    onClose={() => { rangeEndRef.current = null; setModal({ open: false, event: null, defaultStart: dayjs() }) }}
-                />
-            )}
-
-            {/* Google Calendar Modal */}
-            {googleModal && (
-                <GoogleCalendarModal
-                    onClose={() => setGoogleModal(false)}
-                    onExportICS={handleExportICS}
-                />
-            )}
+            {modals}
         </div>
     )
 }
