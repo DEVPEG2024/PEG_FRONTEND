@@ -49,6 +49,22 @@ export function isOffersReserved(
   return premium === false && catalogAccess !== false;
 }
 
+/**
+ * Accueil client : les « Suggestions pour vous » (catalogue générique) laissent
+ * la place aux offres personnalisées dès que le client en a ET les voit
+ * (demande du 25/09/2026). Un client Standard, dont les offres sont réservées
+ * au Premium, garde les suggestions — sinon son accueil n'aurait ni l'un ni
+ * l'autre. Sans accès au catalogue : jamais de suggestions.
+ */
+export function showCatalogSuggestions(input: {
+  catalogAccess: boolean;
+  offersReserved: boolean;
+  offersCount: number;
+}): boolean {
+  if (!input.catalogAccess) return false;
+  return input.offersReserved || input.offersCount === 0;
+}
+
 export function resolveOffersView({
   hasCustomer,
   loading,

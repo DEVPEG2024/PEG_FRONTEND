@@ -34,7 +34,7 @@ import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
 } from './store';
-import { isOffersReserved } from '@/views/app/customer/products/lists/offersView';
+import { isOffersReserved, showCatalogSuggestions } from '@/views/app/customer/products/lists/offersView';
 
 injectReducer('dashboardCustomer', reducer);
 
@@ -181,10 +181,15 @@ const DashboardCustomer = () => {
     }
   }, [customer?.documentId, customer?.banner, customer?.customerCategory?.documentId]);
 
+  // Suggestions du catalogue : remplacées par les offres personnalisées quand le
+  // client en a et les voit (showCatalogSuggestions). On attend les données de
+  // l'accueil (client + offres) pour ne pas afficher puis retirer le bloc.
+  const suggestionsWanted = !!customer && showCatalogSuggestions({ catalogAccess, offersReserved, offersCount: products.length });
+
   // Récupère les produits du catalogue pour les suggestions
   // (uniquement si le client a accès au catalogue)
   useEffect(() => {
-    if (!catalogAccess) { setSuggestions([]); return; }
+    if (!suggestionsWanted) { setSuggestions([]); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -202,7 +207,7 @@ const DashboardCustomer = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [catalogAccess]);
+  }, [suggestionsWanted]);
 
   if (loading && !customer) {
     return (
@@ -429,7 +434,7 @@ const DashboardCustomer = () => {
           sub: [a.amount ? undefined : a.sub, dayjs(a.date).format('DD MMM')].filter(Boolean).join(' · '),
           right: a.amount,
         }))}
-        suggestions={catalogAccess ? suggestions.map(productCard) : []}
+        suggestions={suggestionsWanted ? suggestions.map(productCard) : []}
         onSeeCatalogue={catalogAccess ? () => navigate('/customer/catalogue') : undefined}
         offers={offersReserved ? [] : recommendedProducts.map(productCard)}
         onSeeOffers={() => navigate('/customer/products')}
@@ -647,7 +652,7 @@ const DashboardCustomer = () => {
             )}
 
             {/* ── Suggestions (carrousel auto-défilant, comme le panier) ── */}
-            {catalogAccess && suggestions.length > 0 && (
+            {suggestionsWanted && suggestions.length > 0 && (
               <SectionCard style={{ padding: '22px 0 22px 24px' }}>
                 <div style={{ paddingRight: '24px' }}>
                   <SectionHeader

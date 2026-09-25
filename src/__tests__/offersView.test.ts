@@ -4,6 +4,7 @@
  */
 import {
   isOffersReserved,
+  showCatalogSuggestions,
   resolveOffersView,
   ResolveOffersViewInput,
 } from '@/views/app/customer/products/lists/offersView';
@@ -128,5 +129,28 @@ describe('resolveOffersView', () => {
 
   test('catalogAccess undefined n’interdit pas le catalogue', () => {
     expect(view({ catalogAccess: undefined, premium: false })).toBe('standard');
+  });
+});
+
+describe('accueil client : suggestions ou offres personnalisées', () => {
+  const show = (catalogAccess: boolean, offersReserved: boolean, offersCount: number) =>
+    showCatalogSuggestions({ catalogAccess, offersReserved, offersCount });
+
+  test('des offres personnalisées visibles remplacent les suggestions', () => {
+    expect(show(true, false, 3)).toBe(false);
+    expect(show(true, false, 1)).toBe(false);
+  });
+
+  test('sans offre personnalisée : suggestions du catalogue', () => {
+    expect(show(true, false, 0)).toBe(true);
+  });
+
+  test('client Standard (offres réservées au Premium) : il garde les suggestions', () => {
+    expect(show(true, true, 4)).toBe(true);
+  });
+
+  test('sans accès au catalogue : jamais de suggestions', () => {
+    expect(show(false, false, 0)).toBe(false);
+    expect(show(false, false, 2)).toBe(false);
   });
 });
