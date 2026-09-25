@@ -3,7 +3,7 @@ import { Tooltip } from '@/components/ui';
 import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
 import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate, getCatalogueVisibilityIssues } from '@/utils/productHelpers';
-import { toTTC, fmtHT, fmtTTC, fmtNum, arePricesHidden } from '@/utils/priceHelpers';
+import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
 
 const ProductCard = memo(
@@ -22,12 +22,12 @@ const ProductCard = memo(
     const cardRef = useRef<HTMLDivElement>(null);
     const imageUrl = product.images[0]?.url;
     const initial = (product.name || '?').charAt(0).toUpperCase();
-    const price = arePricesHidden() ? '•••••' : fmtNum(getProductBasePrice(product));
+    const price = fmtNum(getProductBasePrice(product));
     const cost = getProductCost(product);
     const basePrice = getProductBasePrice(product);
     const unitMargin = getUnitMargin(basePrice, cost);
     const marginRate = getMarginRate(basePrice, cost);
-    const showMargin = cost > 0 && !arePricesHidden();
+    const showMargin = cost > 0;
     const visibilityIssues = getCatalogueVisibilityIssues(product);
 
     const handleMouseEnter = () => {

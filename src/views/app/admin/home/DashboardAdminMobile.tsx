@@ -6,9 +6,10 @@
  * Composant d'AFFICHAGE seulement : aucun calcul ici. DashboardAdmin (protégé)
  * calcule CA, encaissé, marges… et passe les valeurs déjà formatées avec leurs
  * libellés actuels — le calcul du CA et les libellés restent à un seul endroit.
- * Bannière admin, masquage des prix, pense-bête et widgets sont conservés.
+ * Bannière admin, masquage des chiffres, pense-bête et widgets sont conservés.
+ * Couleur du dégradé au choix (bouton palette), mémorisée sur l'appareil.
  */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   HiOutlineEye,
@@ -18,6 +19,7 @@ import {
   HiOutlineDocumentDuplicate,
   HiOutlineCube,
   HiOutlineChevronRight,
+  HiOutlineColorSwatch,
 } from 'react-icons/hi';
 
 export type MobileTile = {
@@ -73,8 +75,6 @@ type Props = {
 
 const CSS = `
 .pdm {
-  --pdm-lime: #c6f432;
-  --pdm-lime-2: #8fd629;
   --pdm-text: #f3f7ec;
   --pdm-muted: rgba(232, 242, 220, 0.55);
   --pdm-faint: rgba(232, 242, 220, 0.32);
@@ -86,8 +86,8 @@ const CSS = `
   color: var(--pdm-text);
   font-family: Inter, sans-serif;
   background:
-    radial-gradient(130% 60% at 100% 0%, rgba(198, 244, 50, 0.30) 0%, rgba(143, 214, 41, 0.10) 40%, transparent 70%),
-    radial-gradient(90% 40% at 0% 30%, rgba(143, 214, 41, 0.06) 0%, transparent 60%),
+    radial-gradient(130% 60% at 100% 0%, rgba(var(--pdm-accent-rgb), 0.30) 0%, rgba(var(--pdm-accent-rgb), 0.10) 40%, transparent 70%),
+    radial-gradient(90% 40% at 0% 30%, rgba(var(--pdm-accent-rgb), 0.06) 0%, transparent 60%),
     #070a08;
   overflow: hidden;
 }
@@ -95,14 +95,14 @@ const CSS = `
 .pdm-hello { min-width: 0; }
 .pdm-hello h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--pdm-text); }
 .pdm-hello p { margin: 3px 0 0; font-size: 12px; color: var(--pdm-muted); text-transform: none; }
-.pdm-icons { display: flex; gap: 8px; flex-shrink: 0; }
+.pdm-icons { display: flex; gap: 6px; flex-shrink: 0; }
 .pdm-icon-btn {
-  width: 40px; height: 40px; border-radius: 50%;
+  width: 38px; height: 38px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(255, 255, 255, 0.06); border: 1px solid var(--pdm-line);
   color: var(--pdm-text); font-size: 18px; cursor: pointer;
 }
-.pdm-icon-btn.is-on { color: #1a2105; background: var(--pdm-lime); border-color: transparent; }
+.pdm-icon-btn.is-on { color: var(--pdm-on-accent); background: var(--pdm-accent); border-color: transparent; }
 .pdm-icon-btn:active { transform: scale(0.94); }
 .pdm-spin { animation: pdm-spin 0.9s linear infinite; }
 @keyframes pdm-spin { to { transform: rotate(360deg); } }
@@ -126,7 +126,7 @@ const CSS = `
 .pdm-balance-value {
   margin-top: 8px; font-size: 44px; line-height: 1.05; font-weight: 800;
   letter-spacing: -0.03em; color: #fff; font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 40px rgba(198, 244, 50, 0.18);
+  text-shadow: 0 0 40px rgba(var(--pdm-accent-rgb), 0.18);
 }
 .pdm-balance-sub {
   margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;
@@ -134,7 +134,7 @@ const CSS = `
 }
 .pdm-eye {
   position: relative; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.06);
-  color: var(--pdm-lime); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 17px;
+  color: var(--pdm-accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 17px;
 }
 .pdm-eye::after { content: ''; position: absolute; inset: -4px; }
 
@@ -150,8 +150,8 @@ button.pdm-tile { cursor: pointer; font: inherit; }
 button.pdm-tile:active { transform: scale(0.98); }
 .pdm-tile-icon {
   width: 36px; height: 36px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
-  font-size: 18px; color: var(--pdm-lime); background: rgba(198, 244, 50, 0.10);
-  border: 1px solid rgba(198, 244, 50, 0.22);
+  font-size: 18px; color: var(--pdm-accent); background: rgba(var(--pdm-accent-rgb), 0.10);
+  border: 1px solid rgba(var(--pdm-accent-rgb), 0.22);
 }
 .pdm-tile[data-tone="amber"] .pdm-tile-icon { color: #fbbf24; background: rgba(251, 191, 36, 0.10); border-color: rgba(251, 191, 36, 0.25); }
 .pdm-tile[data-tone="rose"] .pdm-tile-icon { color: #fb7185; background: rgba(251, 113, 133, 0.10); border-color: rgba(251, 113, 133, 0.25); }
@@ -179,15 +179,15 @@ button.pdm-tile:active { transform: scale(0.98); }
   position: relative; width: 58px; height: 58px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 70%);
-  border: 1.5px solid rgba(198, 244, 50, 0.35);
-  box-shadow: 0 0 18px rgba(198, 244, 50, 0.10);
+  border: 1.5px solid rgba(var(--pdm-accent-rgb), 0.35);
+  box-shadow: 0 0 18px rgba(var(--pdm-accent-rgb), 0.10);
   font-size: 15px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums;
 }
 .pdm-stat.is-alert .pdm-stat-ring { border-color: rgba(251, 113, 133, 0.6); box-shadow: 0 0 18px rgba(251, 113, 133, 0.18); }
 .pdm-stat-icon {
   position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; font-size: 12px;
-  background: var(--pdm-lime); color: #1a2105; border: 2px solid #070a08;
+  background: var(--pdm-accent); color: var(--pdm-on-accent); border: 2px solid #070a08;
 }
 .pdm-stat.is-alert .pdm-stat-icon { background: #fb7185; color: #2a0a10; }
 .pdm-stat-label { font-size: 11px; line-height: 1.2; color: var(--pdm-muted); }
@@ -198,7 +198,7 @@ button.pdm-tile:active { transform: scale(0.98); }
 .pdm-row-icon {
   width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; font-size: 18px;
-  background: rgba(198, 244, 50, 0.10); color: var(--pdm-lime);
+  background: rgba(var(--pdm-accent-rgb), 0.10); color: var(--pdm-accent);
 }
 .pdm-row-icon.is-project { background: rgba(125, 211, 252, 0.10); color: #7dd3fc; }
 .pdm-row-main { flex: 1; min-width: 0; }
@@ -220,15 +220,78 @@ button.pdm-tile:active { transform: scale(0.98); }
 }
 @media (prefers-reduced-motion: reduce) { .pdm-spin, .pdm-skel { animation: none; } }
 
+.pdm-palette {
+  margin-top: 14px; padding: 14px 12px; border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pdm-line);
+}
+.pdm-palette-title { font-size: 12.5px; color: var(--pdm-muted); margin: 0 0 12px 2px; }
+.pdm-swatches { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.pdm-swatch {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: 0; padding: 0; color: var(--pdm-muted); font: inherit; font-size: 10.5px; cursor: pointer;
+}
+.pdm-swatch-dot { position: relative; width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12); overflow: hidden; }
+.pdm-swatch.is-on { color: #fff; font-weight: 600; }
+.pdm-swatch.is-on .pdm-swatch-dot { box-shadow: 0 0 0 2px #070a08, 0 0 0 4px #fff; }
+.pdm-swatch-custom .pdm-swatch-dot { background: conic-gradient(#f87171, #fbbf24, #a3e635, #22d3ee, #818cf8, #f472b6, #f87171); }
+.pdm-swatch-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+
 /* Tant que ce tableau de bord est affiché : en-tête et barre d'onglets fondus
    dans le même noir, onglet actif en citron — un seul bloc, comme une app. */
 body.peg-dash-dark .header { background: #070a08; border-color: rgba(255, 255, 255, 0.06); }
 body.peg-dash-dark .peg-dock { background: rgba(10, 13, 11, 0.92); border-top-color: rgba(255, 255, 255, 0.06); }
-body.peg-dash-dark .peg-dock-item.is-active .peg-dock-icon { background: rgba(198, 244, 50, 0.16); color: #c6f432; }
+body.peg-dash-dark .peg-dock-item.is-active .peg-dock-icon { background: rgba(var(--pdm-accent-rgb), 0.16); color: var(--pdm-accent); }
 body.peg-dash-dark .peg-app-main { background: #070a08; }
 `;
 
 const DARK = '#070a08';
+
+// ── Couleur du dégradé (et de l'accent) ─────────────────────────────────────
+const ACCENT_KEY = 'peg:dashboardAccent';
+const DEFAULT_ACCENT = '#c6f432';
+const ACCENTS = [
+  { name: 'Citron', hex: '#c6f432' },
+  { name: 'Menthe', hex: '#34d399' },
+  { name: 'Cyan', hex: '#22d3ee' },
+  { name: 'Violet', hex: '#a78bfa' },
+  { name: 'Rose', hex: '#f472b6' },
+  { name: 'Orange', hex: '#fb923c' },
+];
+const isHex = (v: string) => /^#[0-9a-f]{6}$/i.test(v);
+const loadAccent = (): string => {
+  try {
+    const v = localStorage.getItem(ACCENT_KEY);
+    return v && isHex(v) ? v.toLowerCase() : DEFAULT_ACCENT;
+  } catch {
+    return DEFAULT_ACCENT;
+  }
+};
+const rgbOf = (hex: string) =>
+  [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+// Texte posé SUR la couleur (pastilles, bouton actif) : sombre sur une teinte
+// claire, blanc sur une teinte foncée — lisible quelle que soit la couleur choisie.
+const onAccentOf = (hex: string) => {
+  const [r, g, b] = rgbOf(hex).map((c) => {
+    const x = c / 255;
+    return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#10140a' : '#ffffff';
+};
+
+// La couleur vit sur le body : la page, l'en-tête et la barre d'onglets la suivent
+const useAccentVars = (accent: string) => {
+  useEffect(() => {
+    const st = document.body.style;
+    st.setProperty('--pdm-accent', accent);
+    st.setProperty('--pdm-accent-rgb', rgbOf(accent).join(', '));
+    st.setProperty('--pdm-on-accent', onAccentOf(accent));
+    return () => {
+      st.removeProperty('--pdm-accent');
+      st.removeProperty('--pdm-accent-rgb');
+      st.removeProperty('--pdm-on-accent');
+    };
+  }, [accent]);
+};
 
 // Classe de page + barre d'état du téléphone au même noir, rétablies en sortant
 const useDarkShell = () => {
@@ -264,8 +327,33 @@ const DashboardAdminMobile = ({
   widgets,
 }: Props) => {
   useDarkShell();
+  const [accent, setAccent] = useState(loadAccent);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useAccentVars(accent);
+  const chooseAccent = (hex: string) => {
+    if (!isHex(hex)) return;
+    const next = hex.toLowerCase();
+    setAccent(next);
+    try {
+      localStorage.setItem(ACCENT_KEY, next);
+    } catch {
+      /* navigation privée : la couleur vaut pour la session */
+    }
+  };
+  const isPreset = ACCENTS.some((a) => a.hex === accent);
   return (
-    <div className="pdm">
+    <div
+      className="pdm"
+      // Variables posées aussi ici : la page a sa couleur dès le premier rendu
+      // (celles du body, pour l'en-tête et la barre d'onglets, suivent l'effet)
+      style={
+        {
+          '--pdm-accent': accent,
+          '--pdm-accent-rgb': rgbOf(accent).join(', '),
+          '--pdm-on-accent': onAccentOf(accent),
+        } as React.CSSProperties
+      }
+    >
       <style>{CSS}</style>
 
       <div className="pdm-top">
@@ -274,6 +362,26 @@ const DashboardAdminMobile = ({
           <p>{status}</p>
         </div>
         <div className="pdm-icons">
+          <button
+            type="button"
+            className={`pdm-icon-btn${hidePrices ? ' is-on' : ''}`}
+            onClick={onTogglePrices}
+            aria-pressed={hidePrices}
+            aria-label={
+              hidePrices ? 'Afficher les chiffres' : 'Masquer les chiffres'
+            }
+          >
+            {hidePrices ? <HiOutlineEyeOff /> : <HiOutlineEye />}
+          </button>
+          <button
+            type="button"
+            className={`pdm-icon-btn${paletteOpen ? ' is-on' : ''}`}
+            onClick={() => setPaletteOpen((o) => !o)}
+            aria-expanded={paletteOpen}
+            aria-label="Couleur du dégradé"
+          >
+            <HiOutlineColorSwatch />
+          </button>
           <button
             type="button"
             className="pdm-icon-btn"
@@ -293,6 +401,46 @@ const DashboardAdminMobile = ({
         </div>
       </div>
 
+      {paletteOpen && (
+        <div
+          className="pdm-palette"
+          role="group"
+          aria-label="Couleur du dégradé"
+        >
+          <p className="pdm-palette-title">Couleur du dégradé</p>
+          <div className="pdm-swatches">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.hex}
+                type="button"
+                className={`pdm-swatch${accent === a.hex ? ' is-on' : ''}`}
+                aria-pressed={accent === a.hex}
+                onClick={() => chooseAccent(a.hex)}
+              >
+                <span
+                  className="pdm-swatch-dot"
+                  style={{ background: a.hex }}
+                />
+                {a.name}
+              </button>
+            ))}
+            <label
+              className={`pdm-swatch pdm-swatch-custom${isPreset ? '' : ' is-on'}`}
+            >
+              <span className="pdm-swatch-dot">
+                <input
+                  type="color"
+                  value={accent}
+                  onChange={(e) => chooseAccent(e.target.value)}
+                  aria-label="Autre couleur"
+                />
+              </span>
+              Autre
+            </label>
+          </div>
+        </div>
+      )}
+
       {error && <div className="pdm-error">{error}</div>}
 
       {/* Solde : le CA, en grand, sur la bannière admin estompée */}
@@ -311,7 +459,9 @@ const DashboardAdminMobile = ({
             type="button"
             className="pdm-eye"
             onClick={onTogglePrices}
-            aria-label={hidePrices ? 'Afficher les prix' : 'Masquer les prix'}
+            aria-label={
+              hidePrices ? 'Afficher les chiffres' : 'Masquer les chiffres'
+            }
           >
             {hidePrices ? <HiOutlineEyeOff /> : <HiOutlineEye />}
           </button>

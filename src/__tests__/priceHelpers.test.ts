@@ -1,9 +1,9 @@
 /**
  * Tests unitaires — calculs de TVA et formatage de prix.
  *
- * priceHelpers lit `localStorage` (masquage des prix) et émet un événement
- * `window` au toggle. L'environnement de test étant Node, on installe des
- * stubs minimaux avant chaque test.
+ * Le masquage GLOBAL des prix a été retiré (25/09/2026) : seul le tableau de
+ * bord admin masque ses chiffres (dashboardFigures.test.ts). On garde les
+ * stubs navigateur pour vérifier que l'ancien réglage n'a plus d'effet.
  */
 
 import {
@@ -16,8 +16,6 @@ import {
   fmtHT,
   fmtTTC,
   fmtEur,
-  arePricesHidden,
-  togglePricesHidden,
 } from '@/utils/priceHelpers';
 
 // ── Stubs navigateur (localStorage + window.dispatchEvent/Event) ──
@@ -102,28 +100,14 @@ describe('Formatage prix — affichage normal', () => {
   });
 });
 
-describe('Masquage des prix', () => {
-  test('prix non masques par defaut', () => {
-    expect(arePricesHidden()).toBe(false);
-  });
-
-  test('toggle masque puis demasque', () => {
-    expect(togglePricesHidden()).toBe(true);
-    expect(arePricesHidden()).toBe(true);
-    expect(togglePricesHidden()).toBe(false);
-    expect(arePricesHidden()).toBe(false);
-  });
-
-  test('les formateurs renvoient le placeholder quand masque', () => {
-    togglePricesHidden(); // -> masque
-    expect(fmtPrice(50)).toBe('•••••');
-    expect(fmtHT(50)).toBe('•••••');
-    expect(fmtTTC(50)).toBe('•••••');
-    expect(fmtEur(50)).toBe('•••••');
-  });
-
-  test('le toggle emet un evenement window', () => {
-    togglePricesHidden();
-    expect((global as any).window.dispatchEvent).toHaveBeenCalled();
+describe('Aucun masquage global des prix', () => {
+  // L'œil du tableau de bord posait `peg:hidePrices`, lu par tous les
+  // formateurs : les prix disparaissaient dans toute l'application.
+  test("l'ancien réglage global n'a plus aucun effet", () => {
+    localStorage.setItem('peg:hidePrices', '1');
+    expect(fmtPrice(50)).not.toBe('•••••');
+    expect(fmtHT(50)).toContain('HT');
+    expect(fmtTTC(50)).toContain('TTC');
+    expect(fmtEur(50)).toContain('€');
   });
 });

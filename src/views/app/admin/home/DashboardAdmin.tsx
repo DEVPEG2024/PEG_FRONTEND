@@ -16,7 +16,8 @@ import { useAppSelector } from '@/store'
 import { apiGetDashboardSuperAdminInformations, apiGetProjectsAdditionalSales } from '@/services/DashboardSuperAdminService'
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
 import { env } from '@/configs/env.config'
-import { toHT, arePricesHidden, togglePricesHidden } from '@/utils/priceHelpers'
+import { toHT } from '@/utils/priceHelpers'
+import { areDashboardFiguresHidden, toggleDashboardFiguresHidden, DASHBOARD_FIGURES_EVENT, HIDDEN_FIGURE } from './dashboardFigures'
 import { statusTextData } from '@/views/app/common/projects/lists/constants'
 import useResponsive from '@/utils/hooks/useResponsive'
 import DashboardAdminMobile from './DashboardAdminMobile'
@@ -41,7 +42,8 @@ dayjs.extend(isoWeek); dayjs.extend(relativeTime); dayjs.locale('fr')
 /*  UTILS                                         */
 /* ═══════════════════════════════════════════════ */
 function safeDate(s?: string) { if (!s) return null; const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d }
-function eur(n: number) { if (arePricesHidden()) return '•••••'; try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) } catch { return `${Math.round(n)} €` } }
+// Masquage : chiffres de CE tableau de bord seulement (dashboardFigures.ts), jamais le reste de l'app
+function eur(n: number) { if (areDashboardFiguresHidden()) return HIDDEN_FIGURE; try { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n) } catch { return `${Math.round(n)} €` } }
 // « En cours (payé) » (pending_paid) : projet en production dont le prix est réglé → compté comme encaissé
 // même si paidPrice n'a pas été synchronisé (le serveur l'aligne aussi, ceinture et bretelles).
 const PAID_IN_PROGRESS_STATE = 'pending_paid'
@@ -68,7 +70,7 @@ function AnimatedSection({ children, className = '', immediate = false }: { chil
 function AnimatedValue({ value, format }: { value: number; format?: (n: number) => string }) {
   const [display, setDisplay] = useState(0); const prevRef = useRef(0); const formatter = format ?? String
   useEffect(() => { const start = prevRef.current; const end = value; const dur = 800; const t0 = performance.now(); const tick = (now: number) => { const p = Math.min((now - t0) / dur, 1); setDisplay(start + (end - start) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick) }; requestAnimationFrame(tick); prevRef.current = end }, [value])
-  if (arePricesHidden()) return <>{'•••••'}</>
+  if (areDashboardFiguresHidden()) return <>{HIDDEN_FIGURE}</>
   return <>{formatter(Math.round(display))}</>
 }
 
@@ -146,7 +148,7 @@ function AreaChart({ data }: { data: { label: string; ca: number; marge: number;
   const caA = `M${pL},${pT + pH} L${caP.split(' ').join(' L')} L${x(data.length - 1)},${pT + pH} Z`; const mgA = `M${pL},${pT + pH} L${mgP.split(' ').join(' L')} L${x(data.length - 1)},${pT + pH} Z`; const dpA = `M${pL},${pT + pH} L${dpP.split(' ').join(' L')} L${x(data.length - 1)},${pT + pH} Z`
   const ticks = Array.from({ length: 5 }, (_, i) => Math.round((mx / 4) * i))
   const hasDepenses = data.some(d => (d.depenses ?? 0) > 0)
-  return <div><div className="mb-3 flex items-center gap-5 text-xs"><span className="flex items-center gap-2 text-cyan-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600" />CA</span><span className="flex items-center gap-2 text-emerald-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />Marge</span>{hasDepenses && <span className="flex items-center gap-2 text-rose-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />Dépenses</span>}</div><svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxHeight: 220 }} onMouseLeave={() => setHi(null)}><defs><linearGradient id="caG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" /><stop offset="100%" stopColor="#22d3ee" stopOpacity="0" /></linearGradient><linearGradient id="mgG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity="0.2" /><stop offset="100%" stopColor="#34d399" stopOpacity="0" /></linearGradient><linearGradient id="dpG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fb7185" stopOpacity="0.2" /><stop offset="100%" stopColor="#fb7185" stopOpacity="0" /></linearGradient></defs>{ticks.map((v, i) => <g key={i}><line x1={pL} x2={W - pR} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,0.06)" /><text x={pL - 8} y={y(v) + 4} textAnchor="end" fontSize="10" fill="rgba(255,255,255,0.55)">{v >= 1000 ? `${Math.round(v / 1000)}k` : v}</text></g>)}<path d={caA} fill="url(#caG)" /><path d={mgA} fill="url(#mgG)" />{hasDepenses && <path d={dpA} fill="url(#dpG)" />}<polyline points={caP} fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))' }} /><polyline points={mgP} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.4))' }} />{hasDepenses && <polyline points={dpP} fill="none" stroke="#fb7185" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3" style={{ filter: 'drop-shadow(0 0 8px rgba(251,113,133,0.4))' }} />}{data.map((d, i) => { const cx = x(i); const zw = pW / Math.max(data.length, 1); const hov = hi === i; const dp = d.depenses ?? 0; const ttW = 130; const ttH = dp > 0 ? 50 : 36; const ttX = Math.max(pL, Math.min(cx - ttW / 2, W - pR - ttW)); return <g key={i}><rect x={cx - zw / 2} y={pT} width={zw} height={pH} fill="transparent" onMouseEnter={() => setHi(i)} />{hov && <line x1={cx} x2={cx} y1={pT} y2={pT + pH} stroke="rgba(255,255,255,0.15)" strokeDasharray="4 3" />}<circle cx={cx} cy={y(d.ca)} r={hov ? 6 : 4} fill="#22d3ee" stroke="#0f172a" strokeWidth="2" /><circle cx={cx} cy={y(d.marge)} r={hov ? 6 : 4} fill="#34d399" stroke="#0f172a" strokeWidth="2" />{dp > 0 && <circle cx={cx} cy={y(dp)} r={hov ? 6 : 4} fill="#fb7185" stroke="#0f172a" strokeWidth="2" />}<text x={cx} y={H - 12} textAnchor="middle" fontSize="11" fill={hov ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.45)'}>{d.label}</text>{hov && <g><rect x={ttX} y={pT - 2} width={ttW} height={ttH} rx={8} fill="rgba(15,23,42,0.92)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" /><text x={ttX + ttW / 2} y={pT + 13} textAnchor="middle" fontSize="10" fill="#22d3ee">CA: {eur(d.ca)}</text><text x={ttX + ttW / 2} y={pT + 27} textAnchor="middle" fontSize="10" fill="#34d399">Marge: {eur(d.marge)}</text>{dp > 0 && <text x={ttX + ttW / 2} y={pT + 41} textAnchor="middle" fontSize="10" fill="#fb7185">Dépenses: {eur(dp)}</text>}</g>}</g> })}</svg></div>
+  return <div><div className="mb-3 flex items-center gap-5 text-xs"><span className="flex items-center gap-2 text-cyan-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600" />CA</span><span className="flex items-center gap-2 text-emerald-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />Marge</span>{hasDepenses && <span className="flex items-center gap-2 text-rose-400"><span className="inline-block h-2 w-6 rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />Dépenses</span>}</div><svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxHeight: 220 }} onMouseLeave={() => setHi(null)}><defs><linearGradient id="caG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" /><stop offset="100%" stopColor="#22d3ee" stopOpacity="0" /></linearGradient><linearGradient id="mgG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#34d399" stopOpacity="0.2" /><stop offset="100%" stopColor="#34d399" stopOpacity="0" /></linearGradient><linearGradient id="dpG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#fb7185" stopOpacity="0.2" /><stop offset="100%" stopColor="#fb7185" stopOpacity="0" /></linearGradient></defs>{ticks.map((v, i) => <g key={i}><line x1={pL} x2={W - pR} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,0.06)" /><text x={pL - 8} y={y(v) + 4} textAnchor="end" fontSize="10" fill="rgba(255,255,255,0.55)">{areDashboardFiguresHidden() ? '•••' : v >= 1000 ? `${Math.round(v / 1000)}k` : v}</text></g>)}<path d={caA} fill="url(#caG)" /><path d={mgA} fill="url(#mgG)" />{hasDepenses && <path d={dpA} fill="url(#dpG)" />}<polyline points={caP} fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))' }} /><polyline points={mgP} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.4))' }} />{hasDepenses && <polyline points={dpP} fill="none" stroke="#fb7185" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3" style={{ filter: 'drop-shadow(0 0 8px rgba(251,113,133,0.4))' }} />}{data.map((d, i) => { const cx = x(i); const zw = pW / Math.max(data.length, 1); const hov = hi === i; const dp = d.depenses ?? 0; const ttW = 130; const ttH = dp > 0 ? 50 : 36; const ttX = Math.max(pL, Math.min(cx - ttW / 2, W - pR - ttW)); return <g key={i}><rect x={cx - zw / 2} y={pT} width={zw} height={pH} fill="transparent" onMouseEnter={() => setHi(i)} />{hov && <line x1={cx} x2={cx} y1={pT} y2={pT + pH} stroke="rgba(255,255,255,0.15)" strokeDasharray="4 3" />}<circle cx={cx} cy={y(d.ca)} r={hov ? 6 : 4} fill="#22d3ee" stroke="#0f172a" strokeWidth="2" /><circle cx={cx} cy={y(d.marge)} r={hov ? 6 : 4} fill="#34d399" stroke="#0f172a" strokeWidth="2" />{dp > 0 && <circle cx={cx} cy={y(dp)} r={hov ? 6 : 4} fill="#fb7185" stroke="#0f172a" strokeWidth="2" />}<text x={cx} y={H - 12} textAnchor="middle" fontSize="11" fill={hov ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.45)'}>{d.label}</text>{hov && <g><rect x={ttX} y={pT - 2} width={ttW} height={ttH} rx={8} fill="rgba(15,23,42,0.92)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" /><text x={ttX + ttW / 2} y={pT + 13} textAnchor="middle" fontSize="10" fill="#22d3ee">CA: {eur(d.ca)}</text><text x={ttX + ttW / 2} y={pT + 27} textAnchor="middle" fontSize="10" fill="#34d399">Marge: {eur(d.marge)}</text>{dp > 0 && <text x={ttX + ttW / 2} y={pT + 41} textAnchor="middle" fontSize="10" fill="#fb7185">Dépenses: {eur(dp)}</text>}</g>}</g> })}</svg></div>
 }
 
 const BC = ['#22d3ee', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#3b82f6', '#f97316']
@@ -354,11 +356,11 @@ export default function DashboardAdmin() {
   const fileRef = useRef<HTMLInputElement | null>(null)
   const { user } = useAppSelector((state) => state.auth.user)
 
-  const [hidePrices, setHidePrices] = useState(arePricesHidden)
+  const [hidePrices, setHidePrices] = useState(areDashboardFiguresHidden)
   useEffect(() => {
-    const onToggle = () => setHidePrices(arePricesHidden())
-    window.addEventListener('peg:pricesToggled', onToggle)
-    return () => window.removeEventListener('peg:pricesToggled', onToggle)
+    const onToggle = () => setHidePrices(areDashboardFiguresHidden())
+    window.addEventListener(DASHBOARD_FIGURES_EVENT, onToggle)
+    return () => window.removeEventListener(DASHBOARD_FIGURES_EVENT, onToggle)
   }, [])
 
   const [bannerUrl, setBannerUrl] = useState<string>(() => localStorage.getItem('peg:dashboardBanner') || '')
@@ -634,7 +636,7 @@ export default function DashboardAdmin() {
           bannerUrl={bannerUrl}
           onPickBanner={onPickBanner}
           hidePrices={hidePrices}
-          onTogglePrices={() => togglePricesHidden()}
+          onTogglePrices={() => toggleDashboardFiguresHidden()}
           onRefresh={() => setRefreshTick(t => t + 1)}
           refreshing={loading}
           error={error}
@@ -681,7 +683,7 @@ export default function DashboardAdmin() {
             </div>
             <div className="absolute right-4 md:right-5 top-4 md:top-5 flex items-center gap-2">
               {lastUpdatedText && <span className="text-[10px] text-white/30 hidden md:inline">Mis à jour {lastUpdatedText}</span>}
-              <button onClick={() => togglePricesHidden()} title={hidePrices ? 'Afficher les prix' : 'Masquer les prix'} className={`backdrop-blur-md border px-3 py-1.5 rounded-xl transition text-xs flex items-center gap-1.5 ${hidePrices ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-white/10 border-white/15 text-white/80 hover:bg-white/15'}`}>{hidePrices ? <HiOutlineEyeOff className="w-3.5 h-3.5" /> : <HiOutlineEye className="w-3.5 h-3.5" />}<span className="hidden md:inline">{hidePrices ? 'Prix masqués' : 'Prix'}</span></button>
+              <button onClick={() => toggleDashboardFiguresHidden()} title={hidePrices ? 'Afficher les chiffres' : 'Masquer les chiffres'} className={`backdrop-blur-md border px-3 py-1.5 rounded-xl transition text-xs flex items-center gap-1.5 ${hidePrices ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-white/10 border-white/15 text-white/80 hover:bg-white/15'}`}>{hidePrices ? <HiOutlineEyeOff className="w-3.5 h-3.5" /> : <HiOutlineEye className="w-3.5 h-3.5" />}<span className="hidden md:inline">{hidePrices ? 'Chiffres masqués' : 'Chiffres'}</span></button>
               <button onClick={() => setRefreshTick(t => t + 1)} className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-3 py-1.5 rounded-xl hover:bg-white/15 transition text-xs"><HiOutlineRefresh className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /></button>
               <button onClick={onPickBanner} className="bg-white/10 backdrop-blur-md border border-white/15 text-white/80 px-3 py-1.5 rounded-xl hover:bg-white/15 transition text-xs"><HiOutlinePhotograph className="w-3.5 h-3.5" /></button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => onBannerFile(e.target.files?.[0])} />

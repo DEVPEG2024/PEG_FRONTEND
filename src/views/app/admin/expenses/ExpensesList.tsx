@@ -1,6 +1,6 @@
 import { Container, EmptyState } from '@/components/shared';
 import { useEffect, useState } from 'react';
-import { fmtNum, arePricesHidden } from '@/utils/priceHelpers';
+import { fmtNum } from '@/utils/priceHelpers';
 import { injectReducer } from '@/store';
 import reducer, {
   getExpenses,
@@ -182,7 +182,7 @@ const ExpensesList = () => {
   const totalPending = expenses.filter((e) => effectiveStatus(e) === 'pending').reduce((s, e) => s + (e.totalAmount || 0), 0);
   const totalOverdue = expenses.filter((e) => effectiveStatus(e) === 'overdue').reduce((s, e) => s + (e.totalAmount || 0), 0);
 
-  const fmt = (n: number) => arePricesHidden() ? '•••••' : fmtNum(n);
+  const fmt = (n: number) => fmtNum(n);
 
   const handleOpenCreate = () => {
     dispatch(setSelectedExpense(null));
