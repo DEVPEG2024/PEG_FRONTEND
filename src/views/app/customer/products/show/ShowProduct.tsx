@@ -38,7 +38,7 @@ import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
-import { readChatPrefill } from '@/components/template/chatOffer';
+import { describeLines, readChatPrefill, selectionForLines } from '@/components/template/chatOffer';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 
 const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
@@ -167,12 +167,19 @@ const ShowProduct = () => {
     }
   }, [sizeAndColorsSelected, formCompleted, product, m2Width, m2Height, m2Quantity, isM2Pricing]);
 
-  // Offre préparée par l'assistant (bouton « Ajouter au panier » du chat) : la
-  // fiche arrive pré-remplie (quantité, taille/couleur, dimensions) et s'ouvre sur
-  // l'étape qui reste — le plus souvent la personnalisation. Appliqué une fois.
+  // Offre de l'assistant (carte produit ou « Finaliser » du chat) : la fiche arrive
+  // pré-remplie — quantité, tailles, couleurs, dimensions dites dans la conversation.
+  // On reste sur la sélection pour que le client la voie. Appliqué une fois.
   const location = useLocation();
   const chatPrefill = onEdition ? null : readChatPrefill(location.state);
   const chatPrefillApplied = useRef(false);
+  const prefillLines = chatPrefill?.lines ?? [];
+  const prefillM2 = prefillLines[0];
+  // Sélection reprise de l'offre (null si des tailles/couleurs restent à répartir).
+  const prefillSelection = chatPrefill && product && product.documentId === documentId && !isM2Pricing
+    ? selectionForLines(product, prefillLines)
+    : null;
+  const prefillComplete = isM2Pricing ? !!(prefillM2?.width && prefillM2?.height) : !!prefillSelection;
   // « Personnaliser » depuis le panier (article ajouté par l'assistant sans son
   // logo) : la fiche s'ouvre sur le formulaire et revient au panier une fois validé.
   const personalizeOnly = onEdition && !!(location.state as { openForm?: boolean } | null)?.openForm;
@@ -186,17 +193,13 @@ const ShowProduct = () => {
     if (!chatPrefill || chatPrefillApplied.current || !product || product.documentId !== documentId) return;
     chatPrefillApplied.current = true;
     if (isM2Pricing) {
-      if (chatPrefill.width) setM2Width(Math.round(chatPrefill.width * 100));
-      if (chatPrefill.height) setM2Height(Math.round(chatPrefill.height * 100));
-      setM2Quantity(chatPrefill.quantity);
-      if (chatPrefill.width && chatPrefill.height) setWizardStep(hasForm ? formStepIndex : recapStepIndex);
+      if (prefillM2?.width) setM2Width(Math.round(prefillM2.width * 100));
+      if (prefillM2?.height) setM2Height(Math.round(prefillM2.height * 100));
+      setM2Quantity(prefillM2?.quantity ?? chatPrefill.quantity);
       return;
     }
-    if (chatPrefill.sizeAndColors.length) {
-      dispatch(setSizeAndColorsSelected(chatPrefill.sizeAndColors));
-      setWizardStep(hasForm ? formStepIndex : recapStepIndex);
-    }
-  }, [chatPrefill, product, documentId, isM2Pricing, hasForm, formStepIndex, recapStepIndex, dispatch]);
+    if (prefillSelection) dispatch(setSizeAndColorsSelected(prefillSelection));
+  }, [chatPrefill, product, documentId, isM2Pricing, prefillM2, prefillSelection, dispatch]);
 
   const isAtLeastOneItemWanted = (): boolean =>
     sizeAndColorsSelected.reduce((qty, s) => qty + s.quantity, 0) > 0;
@@ -394,13 +397,14 @@ const ShowProduct = () => {
           <span>
             <strong style={{ color: '#fff' }}>
               Votre offre : {chatPrefill.quantity} × {product.name}
-              {chatPrefill.colorName ? ` · ${chatPrefill.colorName}` : ''}
-              {chatPrefill.sizeName ? ` · ${chatPrefill.sizeName}` : ''}
+              {describeLines(prefillLines) ? ` · ${describeLines(prefillLines)}` : ''}
             </strong>
             <br />
-            {isM2Pricing
-              ? (chatPrefill.width && chatPrefill.height ? 'Dimensions reprises de l’offre. ' : 'Indiquez les dimensions. ')
-              : chatPrefill.sizeAndColors.length ? '' : `Répartissez vos ${chatPrefill.quantity} pièces par taille${(product.colors?.length ?? 0) > 1 && !chatPrefill.colorName ? ' et couleur' : ''}. `}
+            {prefillComplete
+              ? (isM2Pricing ? 'Dimensions et quantité reprises de la conversation. ' : 'Quantité, tailles et couleurs reprises de la conversation. ')
+              : isM2Pricing
+                ? 'Indiquez les dimensions. '
+                : `Répartissez vos ${chatPrefill.quantity} pièces par taille${(product.colors?.length ?? 0) > 1 && prefillLines.some((l) => !l.colorDocumentId) ? ' et couleur' : ''}. `}
             {hasForm ? 'Ajoutez votre personnalisation, puis « Ajouter au panier ».' : 'Vérifiez, puis « Ajouter au panier ».'}
           </span>
         </div>

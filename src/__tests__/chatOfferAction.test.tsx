@@ -102,6 +102,15 @@ describe('ChatOfferAction — l’offre entre dans le panier', () => {
     expect(onGo).toHaveBeenCalledWith('/customer/product/tshirt', { chatOffer: expect.objectContaining({ quantity: 10 }) });
   });
 
+  it('répartition « 5 S et 5 M » → UNE ligne de panier à deux tailles (palier sur 10)', async () => {
+    const { cart } = await renderAndClick(offerOf([
+      { productDocumentId: 'tshirt', productName: 'T-shirt', quantity: 5, sizeDocumentId: 's', sizeName: 'S', totalHT: 25 },
+      { productDocumentId: 'tshirt', productName: 'T-shirt', quantity: 5, sizeDocumentId: 'm', sizeName: 'M', totalHT: 25 },
+    ]));
+    expect(cart).toHaveLength(1);
+    expect(cart[0].sizeAndColors.map((x) => `${x.quantity} ${x.size.name}`)).toEqual(['5 S', '5 M']);
+  });
+
   it('taille et couleur connues (10 t-shirts M) → dans le panier directement', async () => {
     const { cart } = await renderAndClick(offerOf([
       { productDocumentId: 'tshirt', productName: 'T-shirt', quantity: 10, sizeDocumentId: 'm', sizeName: 'M', totalHT: 50 },

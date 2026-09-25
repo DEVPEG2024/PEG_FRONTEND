@@ -10,7 +10,7 @@ import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatCard } from '@/components/template/ChatCardView';
 import ChatOfferAction from '@/components/template/ChatOfferAction';
-import { isChatOffer, type ChatOffer, type ChatPrefill } from '@/components/template/chatOffer';
+import { isChatOffer, prefillForProduct, type ChatOffer, type ChatPrefill } from '@/components/template/chatOffer';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
@@ -544,8 +544,22 @@ const ChatWidget = () => {
     navigate(path, state ? { state } : undefined);
   };
 
-  // Une carte interne navigue dans l'application sans recharger (la conversation reste ouverte).
-  const renderContent = (content: string, cards?: ChatCard[]) => renderChatMarkdown(content, { cards, onNavigate: navigate });
+  // Une carte interne navigue dans l'application sans recharger. Carte PRODUIT dont
+  // la conversation contient une offre (« 10 bonnets noirs ») : la fiche s'ouvre
+  // pré-remplie — quantité, tailles, couleurs — avec l'offre la plus récente pour ce
+  // produit, et le chat se referme (il recouvrait les boutons de la fiche).
+  const navigateFromChat = (path: string) => {
+    const productId = /^\/customer\/product\/([^/?#]+)/.exec(path)?.[1];
+    if (productId) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const offer = messages[i].offer;
+        const prefill = offer ? prefillForProduct(offer, productId) : null;
+        if (prefill) { goFromOffer(path, { chatOffer: prefill }); return; }
+      }
+    }
+    navigate(path);
+  };
+  const renderContent = (content: string, cards?: ChatCard[]) => renderChatMarkdown(content, { cards, onNavigate: navigateFromChat });
 
   const botAvatar = (size: number) => (
     <div className="pcw-avatar" style={{ width: size, height: size }} aria-hidden="true">

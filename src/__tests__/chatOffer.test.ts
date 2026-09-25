@@ -1,6 +1,9 @@
 import type { Product } from '@/@types/product';
 import {
+  describeLines,
   formRequiresInput,
+  prefillForProduct,
+  selectionForLines,
   isChatOffer,
   missingSteps,
   pendingFormAnswer,
@@ -98,7 +101,8 @@ describe('validation des données reçues', () => {
   it('readChatPrefill ignore un state de navigation étranger', () => {
     expect(readChatPrefill(null)).toBeNull();
     expect(readChatPrefill({ from: '/home' })).toBeNull();
-    expect(readChatPrefill({ chatOffer: { offerId: 'o', quantity: 3, sizeAndColors: [] } })?.quantity).toBe(3);
+    expect(readChatPrefill({ chatOffer: { offerId: 'o', quantity: 3, lines: [line({ quantity: 3 })] } })?.quantity).toBe(3);
+    expect(readChatPrefill({ chatOffer: { offerId: 'o', quantity: 3, lines: [] } })).toBeNull();
   });
 });
 
@@ -130,5 +134,44 @@ describe('personnalisation différée (panier)', () => {
     expect(fa.form.documentId).toBe('f1');
     expect(fa.answer.state).toBe('pending');
     expect(pendingFormAnswer(product())).toBeNull();
+  });
+});
+
+describe('répartition et pré-remplissage de la fiche', () => {
+  const tshirt = product({ sizes: [opt('s', 'S'), opt('m', 'M'), opt('l', 'L')] as never, colors: [opt('b', 'Blanc'), opt('n', 'Noir')] as never });
+
+  it('« 5 M et 5 L » en blanc → deux entrées, comme la fiche', () => {
+    const sel = selectionForLines(tshirt, [
+      line({ quantity: 5, sizeDocumentId: 'm', colorDocumentId: 'b' }),
+      line({ quantity: 5, sizeDocumentId: 'l', colorDocumentId: 'b' }),
+    ]);
+    expect(sel).toHaveLength(2);
+    expect(sel!.map((x) => `${x.quantity} ${x.size.name} ${x.color.name}`)).toEqual(['5 M Blanc', '5 L Blanc']);
+  });
+
+  it('même taille et couleur citées deux fois → quantités additionnées', () => {
+    const sel = selectionForLines(tshirt, [
+      line({ quantity: 3, sizeDocumentId: 'm', colorDocumentId: 'n' }),
+      line({ quantity: 2, sizeDocumentId: 'm', colorDocumentId: 'n' }),
+    ]);
+    expect(sel).toEqual([expect.objectContaining({ quantity: 5 })]);
+  });
+
+  it('une taille manquante dans la répartition → rien d’imposé (au client de répartir)', () => {
+    expect(selectionForLines(tshirt, [line({ quantity: 5, sizeDocumentId: 'm', colorDocumentId: 'b' }), line({ quantity: 5, colorDocumentId: 'b' })])).toBeNull();
+  });
+
+  it('prefillForProduct : lignes du produit et quantité totale ; describeLines lisible', () => {
+    const offer = { id: 'o', totalHT: 1, totalTTC: 1, lines: [
+      line({ productDocumentId: 'p1', quantity: 5, sizeName: 'M', colorName: 'Blanc' }),
+      line({ productDocumentId: 'autre', quantity: 2 }),
+      line({ productDocumentId: 'p1', quantity: 5, sizeName: 'L', colorName: 'Blanc' }),
+    ] };
+    const prefill = prefillForProduct(offer, 'p1')!;
+    expect(prefill.quantity).toBe(10);
+    expect(prefill.lines).toHaveLength(2);
+    expect(describeLines(prefill.lines)).toBe('5 M Blanc, 5 L Blanc');
+    expect(describeLines([line({ colorName: 'NOIR' })])).toBe('NOIR');
+    expect(prefillForProduct(offer, 'absent')).toBeNull();
   });
 });

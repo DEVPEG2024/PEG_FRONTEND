@@ -39,24 +39,23 @@ export type ChatOffer = {
 };
 
 /**
- * Pré-remplissage transmis à la fiche produit (state de navigation) quand une
- * ligne ne peut pas aller seule au panier : tailles/couleurs à répartir ou
- * dimensions manquantes (la personnalisation, elle, se complète depuis le panier).
+ * Pré-remplissage transmis à la fiche produit (state de navigation) : depuis une
+ * carte produit du chat (offre connue), ou quand une ligne ne peut pas aller seule
+ * au panier (tailles à répartir, dimensions manquantes). La fiche résout les lignes
+ * sur le produit chargé (selectionForLines) : quantité, tailles et couleurs dites
+ * dans le chat se mettent toutes seules.
  */
 export type ChatPrefill = {
   offerId: string;
+  /** Quantité totale de ce produit dans l'offre. */
   quantity: number;
-  /** Sélection complète (taille ET couleur résolues), sinon vide. */
-  sizeAndColors: SizeAndColorSelection[];
-  width?: number;
-  height?: number;
-  sizeName?: string;
-  colorName?: string;
+  /** Lignes de l'offre pour ce produit (une par taille/couleur en cas de répartition). */
+  lines: ChatOfferLine[];
 };
 
 export type PlannedLine =
-  | { kind: 'ready'; line: ChatOfferLine; product: Product; sizeAndColors: SizeAndColorSelection[]; formAnswer: Partial<FormAnswer> | null }
-  | { kind: 'complete'; line: ChatOfferLine; product: Product; prefill: ChatPrefill; missing: string[] };
+  | { kind: 'ready'; line: ChatOfferLine; lines: ChatOfferLine[]; product: Product; sizeAndColors: SizeAndColorSelection[]; formAnswer: Partial<FormAnswer> | null }
+  | { kind: 'complete'; line: ChatOfferLine; lines: ChatOfferLine[]; product: Product; prefill: ChatPrefill; missing: string[] };
 
 const DEFAULT_SIZE = DEFAULT_CHOICE as Size;
 const DEFAULT_COLOR = DEFAULT_CHOICE as Color;
@@ -74,31 +73,63 @@ const resolveOption = <T extends { documentId: string }>(options: T[] | undefine
   return null;
 };
 
-/** Sélection tailles/couleurs d'une ligne, identique à celle que produirait la fiche produit. */
-export const selectionForLine = (product: Product, line: ChatOfferLine): SizeAndColorSelection[] | null => {
+/**
+ * Sélection tailles/couleurs d'un produit à partir des lignes de l'offre, identique
+ * à celle que produirait la fiche : une entrée par taille×couleur (une répartition
+ * « 5 M et 5 L » donne deux entrées, le palier se calcule sur le total). null si
+ * une taille ou une couleur reste à choisir.
+ */
+export const selectionForLines = (product: Product, lines: ChatOfferLine[]): SizeAndColorSelection[] | null => {
+  if (!lines.length) return null;
   if (isProductM2Pricing(product)) {
-    if (!(Number(line.width) > 0 && Number(line.height) > 0)) return null;
+    if (!lines.every((l) => Number(l.width) > 0 && Number(l.height) > 0)) return null;
     // Même forme que ShowProduct.handleAddToCart pour le m² (dimensions en mètres).
-    return [{ size: {} as Size, color: {} as Color, quantity: line.quantity, width: line.width, height: line.height }];
+    return lines.map((l) => ({ size: {} as Size, color: {} as Color, quantity: l.quantity, width: l.width, height: l.height }));
   }
-  const size = resolveOption(product.sizes, line.sizeDocumentId, DEFAULT_SIZE);
-  const color = resolveOption(product.colors, line.colorDocumentId, DEFAULT_COLOR);
-  if (!size || !color) return null;
-  return [{ size, color, quantity: line.quantity }];
+  const merged = new Map<string, SizeAndColorSelection>();
+  for (const l of lines) {
+    const size = resolveOption(product.sizes, l.sizeDocumentId, DEFAULT_SIZE);
+    const color = resolveOption(product.colors, l.colorDocumentId, DEFAULT_COLOR);
+    if (!size || !color) return null;
+    // Même clé que la fiche (ShowProduct.determineNewSizeAndColors) : size.value + color.value.
+    const key = `${size.value}|${color.value}`;
+    const prev = merged.get(key);
+    merged.set(key, prev ? { ...prev, quantity: prev.quantity + l.quantity } : { size, color, quantity: l.quantity });
+  }
+  return [...merged.values()];
 };
 
-/** Ce qu'il reste à faire au client pour cette ligne (libellés affichés). */
-export const missingSteps = (product: Product, line: ChatOfferLine, selection: SizeAndColorSelection[] | null): string[] => {
+/** Sélection d'une seule ligne (cas simple). */
+export const selectionForLine = (product: Product, line: ChatOfferLine): SizeAndColorSelection[] | null =>
+  selectionForLines(product, [line]);
+
+/** Ce qu'il reste à faire au client pour ces lignes (libellés affichés). */
+export const missingSteps = (product: Product, lines: ChatOfferLine | ChatOfferLine[], selection: SizeAndColorSelection[] | null): string[] => {
+  const list = Array.isArray(lines) ? lines : [lines];
   const missing: string[] = [];
   if (!selection) {
     if (isProductM2Pricing(product)) missing.push('les dimensions');
     else {
-      if ((product.sizes?.length ?? 0) > 1 && !line.sizeDocumentId) missing.push('les tailles');
-      if ((product.colors?.length ?? 0) > 1 && !line.colorDocumentId) missing.push('la couleur');
+      if ((product.sizes?.length ?? 0) > 1 && list.some((l) => !l.sizeDocumentId)) missing.push('les tailles');
+      if ((product.colors?.length ?? 0) > 1 && list.some((l) => !l.colorDocumentId)) missing.push('la couleur');
     }
     if (!missing.length) missing.push('votre sélection');
   }
   return missing;
+};
+
+/** Pré-remplissage d'un produit de l'offre (null s'il n'y figure pas). */
+export const prefillForProduct = (offer: ChatOffer, productDocumentId: string): ChatPrefill | null => {
+  const lines = offer.lines.filter((l) => l.productDocumentId === productDocumentId);
+  if (!lines.length) return null;
+  return { offerId: offer.id, quantity: lines.reduce((n, l) => n + l.quantity, 0), lines };
+};
+
+/** Résumé lisible d'une répartition : « 5 M, 5 L » ou « NOIR ». */
+export const describeLines = (lines: ChatOfferLine[]): string => {
+  const label = (l: ChatOfferLine) => [l.sizeName, l.colorName].filter(Boolean).join(' ');
+  if (lines.length === 1) return label(lines[0]);
+  return lines.map((l) => `${l.quantity}${label(l) ? ` ${label(l)}` : ''}`).join(', ');
 };
 
 // ── Personnalisation différée ────────────────────────────────────────────────
@@ -153,35 +184,25 @@ export const personalizationStatus = (item: Pick<CartItem, 'product' | 'formAnsw
 };
 
 /**
- * Prépare chaque ligne de l'offre : prête à entrer telle quelle au panier, ou à
- * finaliser sur la fiche produit (pré-remplie). Charge le produit complet, comme
+ * Prépare l'offre produit par produit (une répartition « 5 M et 5 L » = UNE ligne
+ * de panier à deux sélections, comme sur la fiche) : prête à entrer telle quelle au
+ * panier, ou à finaliser sur la fiche pré-remplie. Charge le produit complet, comme
  * la fiche, pour que la ligne de panier soit strictement identique.
  */
 export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
+  const byProduct = new Map<string, ChatOfferLine[]>();
+  for (const line of offer.lines) byProduct.set(line.productDocumentId, [...(byProduct.get(line.productDocumentId) ?? []), line]);
   const planned: PlannedLine[] = [];
-  for (const line of offer.lines) {
+  for (const lines of byProduct.values()) {
+    const line = lines[0];
     const { product } = await unwrapData(apiGetProductForShowById(line.productDocumentId));
     if (!product) throw new Error(`Produit introuvable : ${line.productName}`);
-    const selection = selectionForLine(product, line);
-    const missing = missingSteps(product, line, selection);
+    const selection = selectionForLines(product, lines);
+    const missing = missingSteps(product, lines, selection);
     if (!missing.length && selection) {
-      planned.push({ kind: 'ready', line, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
+      planned.push({ kind: 'ready', line, lines, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
     } else {
-      planned.push({
-        kind: 'complete',
-        line,
-        product,
-        missing,
-        prefill: {
-          offerId: offer.id,
-          quantity: line.quantity,
-          sizeAndColors: selection ?? [],
-          width: line.width,
-          height: line.height,
-          sizeName: line.sizeName,
-          colorName: line.colorName,
-        },
-      });
+      planned.push({ kind: 'complete', line, lines, product, missing, prefill: prefillForProduct(offer, line.productDocumentId)! });
     }
   }
   return planned;
@@ -190,7 +211,7 @@ export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
 /** Lecture tolérante du state de navigation de la fiche produit. */
 export const readChatPrefill = (state: unknown): ChatPrefill | null => {
   const p = (state as { chatOffer?: ChatPrefill } | null)?.chatOffer;
-  return p && typeof p.offerId === 'string' && Number(p.quantity) > 0 && Array.isArray(p.sizeAndColors) ? p : null;
+  return p && typeof p.offerId === 'string' && Number(p.quantity) > 0 && Array.isArray(p.lines) && p.lines.length > 0 ? p : null;
 };
 
 /** Validation minimale d'une offre reçue du serveur (ou relue du sessionStorage). */
