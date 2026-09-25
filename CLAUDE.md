@@ -300,6 +300,18 @@ La base d'int est une copie de la prod (mêmes `documentId`) et peg-backend est 
 - **Backend Strapi d'abord** (int → prod) pour que les outils existent. Changements mutuellement rétro-compatibles, mais feature active seulement une fois le back **redéployé** (peg-prod = déploiement Heroku manuel). Nécessite `GROQ_API_KEY` (déjà présent).
 - Nouveaux outils = **lecture seule**. Actions d'écriture (créer un devis/ticket) volontairement **non implémentées** (décision produit).
 
+### 🎙️ Chat client à la voix (25/09/2026)
+Demande Nova : « échanger à la voix comme avec NOVA ». Même parcours que NOVA 3.3 :
+- **Un appui sur le micro = un tour.** Le micro remplace le bouton d'envoi tant que le champ est vide (ordinateur et téléphone). Barre d'enregistrement : annuler, durée, onde qui suit la voix, envoyer. **Arrêt tout seul** 1,2 s après la fin de la phrase ; 8 s sans parole → micro refermé sans rien envoyer ; 30 s au plus.
+- Transcription serveur (`POST /chatbot/voice/transcribe`, Whisper sur Groq, quota **distinct** du chatbot), puis le texte part **comme un message tapé** (`sendText(text, { voice: true })`) : outils, cartes, offre panier inchangés. La bulle porte un petit micro.
+- **Réponse lue phrase par phrase au fil du flux** (`POST /chatbot/voice/speak`, voix Rémy de NOVA) : `SentenceSplitter` coupe sur `. ! ?` + espace et chaque ligne (jamais dans le texte d'un lien, ni après « 1. » / « M. ») ; `speakableText` lit le **nom** d'un lien, jamais l'adresse, sans emphase/puces/emojis. Lecture **programmée à l'avance** sur l'horloge du contexte audio, silence d'encodeur sauté (leçon NOVA : enchaîner sur `onended` hachait la voix).
+- Seule une question **dictée** reçoit une réponse lue ; bouton haut-parleur de l'en-tête = couper/réactiver (`localStorage.peg_chat_voice_muted`). Bandeau « L'assistant vous répond · Arrêter » ; toucher le micro coupe la parole. Chat fermé → voix coupée, micro rendu.
+- **Pas de mode mains libres** (NOVA l'a retiré : micro resté ouvert, transcriptions facturées en pièce vide). Rien n'est envoyé sans parole détectée (`worthTranscribing`) ; analyseur muet (contexte iOS cassé) → la taille décide.
+- iPhone : contexte audio créé **dans le geste** du micro ; `navigator.audioSession.type = 'playback'` après l'enregistrement (sinon voix muette en mode silencieux) ; micro rendu tout de suite (sinon le son sort par l'écouteur).
+- Réservé aux comptes connectés (jeton requis, sinon pas de micro). ⚠️ `vercel.json` : `Permissions-Policy: microphone=(self)` — avec l'ancien `microphone=()` le navigateur refusait le micro sur tout le site.
+- Fichiers : `src/components/template/chatVoice.ts` (texte lu, appels, enregistreur, lecteur), `useChatVoice.ts`, `ChatVoiceBar.tsx`, `ChatWidget.tsx`. Tests : `src/__tests__/chatVoice.test.ts`, `chatWidgetVoice.test.tsx`. Serveur : `peg_strapi/src/services/voice.service.ts` + `voice-text.ts`.
+- Ordre de déploiement : **Strapi d'abord** (fait le 25/09, `34a30aa` int + prod).
+
 ---
 
 ## ✍️ Relecteur PEG — orthographe & fiches produit (ajout 24/09/2026)

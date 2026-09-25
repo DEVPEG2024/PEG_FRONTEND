@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment, MdAutoAwesome, MdKeyboardArrowDown } from 'react-icons/md';
+import { MdSend, MdClose, MdChatBubble, MdRefresh, MdAddComment, MdAutoAwesome, MdKeyboardArrowDown, MdMic, MdStop, MdVolumeOff, MdVolumeUp } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { useAppSelector } from '@/store';
@@ -11,13 +11,15 @@ import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatCard } from '@/components/template/ChatCardView';
 import ChatOfferAction from '@/components/template/ChatOfferAction';
 import { isChatOffer, prefillForProduct, type ChatNavState, type ChatOffer } from '@/components/template/chatOffer';
+import ChatVoiceBar from '@/components/template/ChatVoiceBar';
+import { useChatVoice, type SpokenReply } from '@/components/template/useChatVoice';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number; voice?: boolean };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
@@ -278,8 +280,38 @@ const CHAT_CSS = `
 
 .pcw--phone .pcw-bubble { font-size: 15px; }
 .pcw--phone .pcw-log { padding: 18px 12px 10px; }
+
+/* Voix : enregistrement, transcription, lecture de la réponse */
+.pcw-rec { align-items: center; gap: 9px; padding: 5px; border-color: rgba(239,68,68,0.5); box-shadow: 0 0 0 4px rgba(239,68,68,0.12); }
+.pcw-rec:focus-within { border-color: rgba(239,68,68,0.6); box-shadow: 0 0 0 4px rgba(239,68,68,0.16); }
+.pcw-rec-cancel { width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.08); }
+.pcw-rec-cancel:hover, .pcw-rec-cancel:focus-visible { background: rgba(255,255,255,0.14); color: #fff; outline: none; }
+.pcw-rec-dot { width: 9px; height: 9px; border-radius: 50%; background: #ef4444; flex-shrink: 0; animation: pcw-rec-blink 1.1s ease-in-out infinite; }
+@keyframes pcw-rec-blink { 50% { opacity: .25; } }
+.pcw-rec-time { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; min-width: 32px; }
+.pcw-rec-wave { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 3px; overflow: hidden; }
+.pcw-rec-wave i { flex: 1; max-width: 4px; min-width: 2px; height: 100%; border-radius: 3px; transform: scaleY(.14);
+  background: linear-gradient(180deg, #8ea8ff, var(--pcw-a2)); transition: transform .08s linear; }
+.pcw-busy { align-items: center; gap: 10px; padding: 15px 16px; font-size: 13.5px; color: var(--pcw-muted); }
+.pcw-spin { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.18); border-top-color: #fff; animation: pcw-spin .8s linear infinite; }
+@keyframes pcw-spin { to { transform: rotate(360deg); } }
+.pcw-speaking { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 6px 6px 6px 14px; border-radius: 999px;
+  font-size: 12.5px; color: #e0e7ff; background: rgba(124,92,255,0.13); border: 1px solid rgba(124,92,255,0.32); }
+.pcw-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.pcw-eq i { width: 3px; height: 100%; border-radius: 2px; background: #a5b4fc; transform-origin: bottom; animation: pcw-eq .9s ease-in-out infinite; }
+.pcw-eq i:nth-child(2) { animation-delay: .15s; } .pcw-eq i:nth-child(3) { animation-delay: .3s; } .pcw-eq i:nth-child(4) { animation-delay: .45s; }
+@keyframes pcw-eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+.pcw-speaking-stop { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; border: none;
+  cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.12); }
+.pcw-speaking-stop:hover, .pcw-speaking-stop:focus-visible { background: rgba(255,255,255,0.2); outline: none; }
+.pcw-voice-note { margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.4;
+  color: #fcd34d; background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.25); }
+.pcw-icon-btn[aria-pressed="true"] { color: #c7d2fe; }
+.pcw-time-mic { display: inline-block; vertical-align: -2px; margin-right: 3px; }
+.pcw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
-  .pcw, .pcw-row, .pcw-typing i { animation: none !important; }
+  .pcw, .pcw-row, .pcw-typing i, .pcw-rec-dot, .pcw-eq i { animation: none !important; }
 }
 `;
 
@@ -310,6 +342,12 @@ const ChatWidget = () => {
   const abortRef = useRef<AbortController | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
+  // Parler à l'assistant comme à NOVA : la question dictée part comme un message tapé,
+  // et la réponse est lue à voix haute.
+  const voice = useChatVoice({
+    token: sessionToken || getPersistedAuthToken(),
+    onQuestion: (text) => { void sendText(text, { voice: true }); },
+  });
 
   // Le backend interroge les vraies données PEG en direct (catalogue, projets,
   // commandes, compte) via ses outils, en identifiant le client par son JWT.
@@ -341,18 +379,29 @@ const ChatWidget = () => {
   // Annule une requête en cours si le widget est démonté (changement de layout).
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  const { stopSpeaking, cancelRecording } = voice;
   const resetConversation = useCallback(() => {
     abortRef.current?.abort();
+    stopSpeaking();
+    cancelRecording();
     setMessages([]);
     setAwaitingClose(false);
     setStreamingText('');
     setStatusLabel(null);
     setLoading(false);
     setConversationId(newConversationId());
-  }, []);
+  }, [stopSpeaking, cancelRecording]);
 
-  /** Envoie l'historique (sans les bulles d'erreur locales) et ajoute la réponse. */
-  const requestReply = async (history: Message[], isClosing: boolean) => {
+  // Chat refermé : micro rendu et voix coupée.
+  useEffect(() => {
+    if (!open) { stopSpeaking(); cancelRecording(); }
+  }, [open, stopSpeaking, cancelRecording]);
+
+  /**
+   * Envoie l'historique (sans les bulles d'erreur locales) et ajoute la réponse.
+   * `spoken` : question posée à la voix → la réponse est lue au fil du flux.
+   */
+  const requestReply = async (history: Message[], isClosing: boolean, spoken: SpokenReply | null = null) => {
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
@@ -371,7 +420,7 @@ const ChatWidget = () => {
       try {
         result = await chatStream(body, token, controller.signal, {
           onStatus: (label) => setStatusLabel(label),
-          onDelta: (text) => { setStatusLabel(null); setStreamingText((prev) => prev + text); },
+          onDelta: (text) => { setStatusLabel(null); setStreamingText((prev) => prev + text); spoken?.push(text); },
           onCards: setStreamingCards,
         });
       } catch (e) {
@@ -379,8 +428,9 @@ const ChatWidget = () => {
         setStreamingText('');
         result = await chatJson(body, token, controller.signal);
       }
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) { spoken?.cancel(); return; }
       const reply = (result.reply || '').trim();
+      spoken?.finish(reply || 'Aucune réponse reçue.');
       if (result.rateLimited || !reply) {
         setMessages([...history, { role: 'assistant', content: reply || 'Aucune réponse reçue.', error: true, at: Date.now() }]);
       } else {
@@ -398,7 +448,7 @@ const ChatWidget = () => {
       if (!openRef.current) setUnread((n) => n + 1);
     } catch (e: unknown) {
       const err = e as { name?: string; response?: { status?: number } };
-      if (controller.signal.aborted || err?.name === 'AbortError' || err?.name === 'CanceledError') return;
+      if (controller.signal.aborted || err?.name === 'AbortError' || err?.name === 'CanceledError') { spoken?.cancel(); return; }
       const status = err?.response?.status;
       const content = status === 429
         ? 'Beaucoup de demandes en ce moment : réessayez dans quelques secondes.'
@@ -406,6 +456,7 @@ const ChatWidget = () => {
           ? 'Vous semblez hors ligne. Vérifiez votre connexion puis réessayez.'
           : 'Le service est momentanément indisponible. Réessayez dans un instant.';
       setMessages([...history, { role: 'assistant', content, error: true, at: Date.now() }]);
+      spoken?.finish(content);
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
@@ -415,16 +466,17 @@ const ChatWidget = () => {
     }
   };
 
-  const sendText = async (raw: string) => {
+  const sendText = async (raw: string, opts: { voice?: boolean } = {}) => {
     const text = (raw || '').trim();
     if (!text || loading) return;
     // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
     const isClosing = awaitingClose && USER_NO_RE.test(text);
     // Les bulles d'erreur précédentes disparaissent dès qu'on renvoie un message.
-    const next: Message[] = [...messages.filter((m) => !m.error), { role: 'user', content: text, at: Date.now() }];
+    const next: Message[] = [...messages.filter((m) => !m.error), { role: 'user', content: text, at: Date.now(), ...(opts.voice ? { voice: true } : {}) }];
     setMessages(next);
-    setInput('');
-    await requestReply(next, isClosing);
+    if (!opts.voice) setInput('');
+    // Question dictée → réponse lue ; question tapée → réponse écrite seulement.
+    await requestReply(next, isClosing, opts.voice ? voice.beginSpokenReply() : null);
   };
 
   /** Réessaie la dernière question après une erreur, sans la ressaisir. */
@@ -622,9 +674,25 @@ const ChatWidget = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="pcw-title">Assistant PEG</div>
               <div className="pcw-sub" aria-live="polite">
-                {loading ? (statusLabel || 'Écrit…') : 'En ligne'}
+                {voice.phase === 'recording' ? 'Vous écoute…'
+                  : voice.phase === 'transcribing' ? 'Transcription…'
+                  : loading ? (statusLabel || 'Écrit…')
+                  : voice.speaking ? 'Vous répond…'
+                  : 'En ligne'}
               </div>
             </div>
+            {voice.supported && (
+              <button
+                type="button"
+                className="pcw-icon-btn"
+                onClick={voice.toggleMuted}
+                aria-pressed={!voice.muted}
+                aria-label={voice.muted ? 'Réponses vocales coupées — les réactiver' : 'Réponses lues à voix haute — les couper'}
+                title={voice.muted ? 'Réactiver la voix' : 'Couper la voix'}
+              >
+                {voice.muted ? <MdVolumeOff size={19} /> : <MdVolumeUp size={19} />}
+              </button>
+            )}
             {messages.length > 0 && (
               <button type="button" className="pcw-icon-btn" onClick={resetConversation} aria-label="Nouvelle conversation" title="Nouvelle conversation">
                 <MdAddComment size={19} />
@@ -641,7 +709,11 @@ const ChatWidget = () => {
               <div className="pcw-empty">
                 <div className="pcw-hero">{botAvatar(60)}</div>
                 <div className="pcw-hello">Bonjour {firstName} 👋</div>
-                <div className="pcw-intro">Commandes, produits, factures, devis… Posez votre question, je vous réponds tout de suite.</div>
+                <div className="pcw-intro">
+                  Commandes, produits, factures, devis… {voice.supported
+                    ? 'Écrivez, ou touchez le micro pour me parler : je vous réponds à voix haute.'
+                    : 'Posez votre question, je vous réponds tout de suite.'}
+                </div>
                 {/* Suggestions rapides — envoi direct au clic */}
                 <div className="pcw-sugg">
                   {SUGGESTIONS.map((q) => (
@@ -681,7 +753,10 @@ const ChatWidget = () => {
                     </div>
                   </div>
                   {lastOfGroup && msg.at && (
-                    <div className={`pcw-time${isUser ? ' pcw-time--user' : ''}`}>{fmtTime(msg.at)}</div>
+                    <div className={`pcw-time${isUser ? ' pcw-time--user' : ''}`}>
+                      {isUser && msg.voice && <MdMic size={12} className="pcw-time-mic" aria-label="Question dictée" />}
+                      {fmtTime(msg.at)}
+                    </div>
                   )}
                 </div>
               );
@@ -716,21 +791,47 @@ const ChatWidget = () => {
             // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
             paddingBottom: isPhone ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : '14px',
           }}>
-            <div className="pcw-field">
-              <textarea
-                ref={inputRef}
-                aria-label="Votre message"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Écrivez votre message…'}
-                rows={1}
-                maxLength={2000}
-              />
-              <button type="button" className="pcw-send" onClick={send} disabled={loading || !input.trim()} aria-label="Envoyer">
-                <MdSend size={17} />
-              </button>
-            </div>
+            {voice.notice && <div className="pcw-voice-note" role="alert">{voice.notice}</div>}
+            {voice.speaking && (
+              <div className="pcw-speaking" role="status">
+                <span className="pcw-eq" aria-hidden="true"><i /><i /><i /><i /></span>
+                L'assistant vous répond
+                <button type="button" className="pcw-speaking-stop" onClick={voice.stopSpeaking}>
+                  <MdStop size={15} /> Arrêter
+                </button>
+              </div>
+            )}
+            {voice.phase === 'recording' ? (
+              <ChatVoiceBar getLevel={voice.getLevel} onCancel={voice.cancelRecording} onSend={() => { void voice.finishRecording(); }} />
+            ) : voice.phase === 'transcribing' ? (
+              <div className="pcw-field pcw-busy" role="status">
+                <span className="pcw-spin" aria-hidden="true" />
+                Transcription de votre question…
+              </div>
+            ) : (
+              <div className="pcw-field">
+                <textarea
+                  ref={inputRef}
+                  aria-label="Votre message"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Écrivez votre message…'}
+                  rows={1}
+                  maxLength={2000}
+                />
+                {/* Champ vide : le micro prend la place du bouton d'envoi (comme une messagerie). */}
+                {voice.supported && !input.trim() ? (
+                  <button type="button" className="pcw-send" onClick={voice.startRecording} disabled={loading} aria-label="Parler à l'assistant" title="Parler à l'assistant">
+                    <MdMic size={20} />
+                  </button>
+                ) : (
+                  <button type="button" className="pcw-send" onClick={send} disabled={loading || !input.trim()} aria-label="Envoyer">
+                    <MdSend size={17} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
