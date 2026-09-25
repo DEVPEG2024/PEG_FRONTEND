@@ -357,6 +357,39 @@ Agent qui relit les **fiches produit** : corrige l'orthographe (appliqué d'offi
 
 ---
 
+## 📏 Agent Tailles — tailles proposées sur chaque produit (ajout 25/09/2026)
+
+### Concept
+Agent qui passe en revue les tailles rattachées à chaque produit et ajuste ce qui est juste. Écran : `/admin/ia/tailles` (menu IA → « Tailles »). Même modèle que le Relecteur : **le modèle propose, le code décide**.
+
+### Périmètre = la relation `product.sizes`, rien d'autre
+Jamais les tailles elles-mêmes (nom, catégories), les couleurs, les prix, ni les commandes passées (leur sélection est recopiée dans la commande). Produits Imbretex exclus (tailles du fournisseur).
+
+### Trois niveaux
+- **Rangement** (sans IA, **toujours appliqué**, annulable) : doublons (XXL à côté de 2XL, deux « M » → celle de la catégorie du produit est gardée) + ordre naturel XS → 4XL et pointures. Formats / orientations / « Taille unique » gardent l'ordre de l'admin. Le client voit déjà les tailles triées (`sizeSort.ts`), mais le chatbot et l'admin lisent l'ordre enregistré.
+- **Ajustements IA** : retirer une taille sans rapport (XS/S/M/L sur la gourde en prod), ajouter une taille que la fiche annonce. **Proposés** par défaut ; interrupteur « Ajustements appliqués d'office ».
+- **Signalements** : trou dans la gamme, « Taille unique » à côté de S/M/L, fiche « du S au 4XL » alors que XXS/XS sont proposées, nom de taille contradictoire (« 85x55mm vertical »).
+
+### Garde-fous (`peg_strapi/src/services/tailles-rules.ts`, tests `src/__tests__/taillesRules.test.ts`)
+- Jamais retirer une taille que la fiche annonce (citée ou dans une gamme « du XS au 4XL »).
+- Retrait = **famille entière** (toutes les tailles de vêtement d'une gourde). Raccourcir une gamme est refusé et devient un signalement : c'est peut-être la fiche qui est incomplète (cas réel : 2 hoodies).
+- Ajout = extrait **exact** de la fiche qui l'annonce + taille **déjà existante** (l'agent rattache, ne crée jamais).
+- Jamais d'écrasement (écriture seulement si le produit a encore les tailles relues, sinon « périmé » / 409).
+- Une décision refusée, annulée **ou défaite à la main dans la fiche** n'est jamais reprise — sinon, en mode d'office, l'agent et l'admin se renverraient la taille sans fin (testé).
+
+### Déclenchement & quota
+Désactivé par défaut. Actif → examen 30 s après chaque modification de produit (même middleware que le Relecteur, sur `sizes`/`productCategory`/`name`/`description`) + passe complète à **3 h 30** (`TAILLES_CRON`). **Même modèle, même budget du jour et même file d'appels que le Relecteur** (`paced`, exporté de `relecteur.service.ts`) : les deux agents ne se chevauchent jamais sur le quota Groq. Essai à blanc sur la prod (25/09) : ≈ 28 000 jetons pour tout le catalogue, ensuite seuls les produits modifiés coûtent un appel.
+
+### Fichiers clés
+- Back : `src/services/tailles.service.ts`, `src/services/tailles-rules.ts`, `src/api/tailles/`, `src/index.ts` (middleware + bootstrap), `config/cron-tasks.ts`
+- Front : `src/services/TaillesAgentServices.ts`, `src/views/app/admin/ia/IATaillesPage.tsx`
+- Tables : `tailles_review` (journal), `tailles_state` (empreintes), `tailles_settings`
+
+### ⚠️ Ordre de déploiement
+**Backend Strapi d'abord** (le bootstrap crée les tables). Front avant back → l'écran affiche « Agent Tailles indisponible », rien d'autre ne casse.
+
+---
+
 ## 👁️ Tracking des vues projet (mise à jour 03/04/2026)
 
 ### Endpoints (peg-backend Express)

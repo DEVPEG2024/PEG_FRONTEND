@@ -281,6 +281,12 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/ia/IARelecturePage")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  {
+    key: "admin.ia.tailles",
+    path: "/admin/ia/tailles",
+    component: lazy(() => import("@/views/app/admin/ia/IATaillesPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
 ];
 const protectedCustomersRoutes = [
   {
