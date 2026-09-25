@@ -153,8 +153,10 @@ describe('ChatWidget — parler à l’assistant', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.messages.at(-1)).toEqual({ role: 'user', content: 'Je veux 10 bonnets noirs' });
 
-    // Lue telle qu'affichée : le lien est prononcé par son nom, jamais son adresse.
-    expect(mockSaid).toEqual(['Bonjour Léa !', 'Voici le bonnet :', 'Bonnet noir', 'Prix : 8 € HT.']);
+    // Le lien est prononcé par son nom, jamais son adresse ; le prix, en TTC seulement.
+    expect(mockSaid).toEqual(['Bonjour Léa !', 'Voici le bonnet :', 'Bonnet noir', 'Prix : 9 euros 60 TTC.']);
+    // L'écrit, lui, reste celui de l'agent.
+    expect(container.querySelector('.pcw-bubble--bot')!.textContent).toContain('8 € HT');
     expect(mockPlayer.ended).toBe(true);
     expect(q('.pcw-speaking')!.textContent).toContain("L'assistant vous répond");
 

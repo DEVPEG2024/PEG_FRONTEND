@@ -1,4 +1,5 @@
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
+import { toTTC } from '@/utils/priceHelpers';
 
 /**
  * Chat client à la voix (demande Nova du 25/09/2026 : « échanger à la voix
@@ -9,7 +10,11 @@ import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
  *      texte part à l'agent comme un message tapé — outils, cartes et offre
  *      panier inchangés ;
  *   3. chaque phrase de la réponse est lue dès qu'elle arrive dans le flux
- *      (POST /chatbot/voice/speak, voix Rémy de NOVA), enchaînée sans blanc.
+ *      (POST /chatbot/voice/speak, voix française Henri), enchaînée sans blanc.
+ *
+ * Ce qui est PRONONCÉ diffère de ce qui est écrit (demande Nova du 25/09/2026 :
+ * « la voix ne doit pas parler anglais, elle doit annoncer seulement le prix
+ * TTC ») : prix en TTC uniquement, couleurs anglaises du catalogue en français.
  *
  * Pas de mode « mains libres » : NOVA l'a retiré (micro resté ouvert, relances
  * en boucle, transcriptions facturées en pièce vide). Un appui = un tour.
@@ -19,9 +24,89 @@ import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 
 const EMOJI_RE = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}]/gu;
 
+// ── Prix : la voix n'annonce que le TTC ──
+// Montant tel que l'écrit l'agent : « 106,80 € », « 1 234,50 € », « 89 euros ».
+// (Jamais au milieu d'un nombre : « 8.50 € » ne doit pas devenir « 8. » + « 50 € ».)
+const AMOUNT = String.raw`(?<![\d.,])(\d{1,3}(?:[ \u00a0\u202f.]\d{3})+|\d+)(?:[,.](\d{1,2}))?\s*(?:€|euros?(?![\p{L}])|EUR(?![\p{L}]))`;
+const TAX = String.raw`\s*(HT|TTC)(?![\p{L}])`;
+const MARK = '\u0001';
+
+type SpokenAmount = { value: number; tax: 'HT' | 'TTC' | null };
+
+const amountValue = (int: string, cents?: string): number =>
+  Number(int.replace(/[ \u00a0\u202f.]/g, '')) + (cents ? Number(cents.padEnd(2, '0')) / 100 : 0);
+
+/** 106,80 → « 106 euros 80 » : ce que dit un vendeur, au lieu de « virgule quatre-vingts ». */
+export function sayAmount(value: number): string {
+  const cents100 = Math.round(value * 100);
+  const euros = Math.floor(cents100 / 100);
+  const cents = cents100 % 100;
+  if (!euros) return `${cents} centimes`;
+  const unit = euros > 1 ? 'euros' : 'euro';
+  return cents ? `${euros} ${unit} ${cents}` : `${euros} ${unit}`;
+}
+
+/**
+ * Prix prononcés : TTC seulement. « 89 € HT (106,80 € TTC) » → « 106 euros 80
+ * TTC » ; un prix donné en HT seul (« dès 8,50 € HT ») est converti avec la
+ * règle du panier (toTTC, TVA 20 %). Un montant sans mention reste tel quel :
+ * l'agent a pour consigne d'écrire toujours HT ou TTC.
+ */
+export function spokenPrices(text: string): string {
+  const amounts: SpokenAmount[] = [];
+  const token = (a: SpokenAmount) => `${MARK}${amounts.push(a) - 1}${MARK}`;
+  let out = text
+    // « Total HT : 89 € » / « Total TTC : 106,80 € » : la mention AVANT le montant.
+    .replace(new RegExp(String.raw`\b(HT|TTC)\s*:\s*${AMOUNT}(?!${TAX})`, 'gu'), (_m, tax: 'HT' | 'TTC', int: string, cents?: string) =>
+      `: ${token({ value: amountValue(int, cents), tax })}`)
+    .replace(new RegExp(`${AMOUNT}(?:${TAX})?`, 'gu'), (_m, int: string, cents: string | undefined, tax?: 'HT' | 'TTC') =>
+      token({ value: amountValue(int, cents), tax: tax ?? null }));
+  const T = `${MARK}(\\d+)${MARK}`;
+  const isTax = (i: string, tax: string) => amounts[Number(i)].tax === tax;
+  // Un prix HT suivi (ou précédé) de son TTC : on ne garde que le TTC.
+  out = out
+    .replace(new RegExp(`${T}\\s*(?:\\(\\s*(?:soit\\s+)?${T}\\s*\\)|[,/–—-]?\\s*soit\\s+${T}|\\s*[/–—-]\\s*${T})`, 'g'),
+      (m, a: string, b?: string, c?: string, d?: string) => {
+        const other = b ?? c ?? d;
+        if (other === undefined) return m;
+        if (isTax(a, 'HT') && isTax(other, 'TTC')) return `${MARK}${other}${MARK}`;
+        if (isTax(a, 'TTC') && isTax(other, 'HT')) return `${MARK}${a}${MARK}`;
+        return m;
+      });
+  return out
+    .replace(new RegExp(T, 'g'), (_m, i: string) => {
+      const a = amounts[Number(i)];
+      if (a.tax === 'HT') return `${sayAmount(toTTC(a.value))} TTC`;
+      return a.tax === 'TTC' ? `${sayAmount(a.value)} TTC` : sayAmount(a.value);
+    })
+    .replace(/\s*\/\s*(mois|an|pièce|unité)\b/g, ' par $1')
+    .replace(/\s*\/\s*m[²2](?![\p{L}\d])/gu, ' le mètre carré');
+}
+
+// ── Mots anglais du catalogue : prononcés en français ──
+// Couleurs fournisseur (« HEATHER GREY », « BLACK ») ; la voix, française, les
+// massacrait. Les mots EN MAJUSCULES sont aussi lus comme des mots, pas épelés.
+const EN_COLORS: [RegExp, string][] = [
+  [/\bheather gr[ae]y\b/gi, 'gris chiné'], [/\bdark gr[ae]y\b/gi, 'gris foncé'], [/\blight gr[ae]y\b/gi, 'gris clair'],
+  [/\broyal blue\b/gi, 'bleu roi'], [/\bnavy(?: blue)?\b/gi, 'bleu marine'], [/\bsky blue\b/gi, 'bleu ciel'],
+  [/\bbottle green\b/gi, 'vert bouteille'], [/\bforest green\b/gi, 'vert forêt'], [/\bblack\b/gi, 'noir'],
+  [/\bwhite\b/gi, 'blanc'], [/\bred\b/gi, 'rouge'], [/\bgr[ae]y\b/gi, 'gris'], [/\bblue\b/gi, 'bleu'],
+  [/\bgreen\b/gi, 'vert'], [/\byellow\b/gi, 'jaune'], [/\bpink\b/gi, 'rose'], [/\bpurple\b/gi, 'violet'],
+  [/\bbrown\b/gi, 'marron'], [/\bburgundy\b/gi, 'bordeaux'], [/\bnatural\b/gi, 'naturel'], [/\bkhaki\b/gi, 'kaki'],
+  [/\bcharcoal\b/gi, 'anthracite'],
+];
+// Sigles qui se disent lettre par lettre (ou tels quels) : jamais mis en minuscules.
+const KEEP_UPPER = new Set(['TTC', 'BAT', 'PEG', 'SAV', 'PDF', 'TVA', 'SIRET', 'CGV', 'RIB', 'IBAN', 'DTF', 'PVC', 'XXL', 'XXXL', 'FAC']);
+
+export function frenchWords(text: string): string {
+  let out = text.replace(/(?<![\p{L}\d-])[\p{Lu}]{3,}(?![\p{L}\d])/gu, (w) => (KEEP_UPPER.has(w) ? w : w.toLowerCase()));
+  for (const [re, fr] of EN_COLORS) out = out.replace(re, fr);
+  return out;
+}
+
 /** Réponse markdown → texte à prononcer (liens, adresses, emphase, puces, emojis retirés). */
 export function speakableText(markdown: string): string {
-  return String(markdown || '')
+  const plain = String(markdown || '')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`([^`]*)`/g, '$1')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
@@ -36,6 +121,7 @@ export function speakableText(markdown: string): string {
     .replace(/\s*[→➜]\s*/g, ', ')
     .replace(/\s+/g, ' ')
     .trim();
+  return frenchWords(spokenPrices(plain)).replace(/\s+/g, ' ').trim();
 }
 
 const hasWords = (s: string) => /[\p{L}\p{N}]/u.test(s);
