@@ -27,7 +27,7 @@ import {
   HiOutlineRefresh,
 } from 'react-icons/hi';
 import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
-import useAutoAdvance from '@/utils/hooks/useAutoAdvance';
+import Carousel from '@/components/shared/Carousel';
 
 export const PCM_DARK = '#070a08';
 
@@ -173,18 +173,17 @@ const CSS = `
 .pcm-rise-4 { animation-delay: 0.24s; }
 @keyframes pcm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-.pcm-works {
-  display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px;
-  scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-}
-.pcm-works::-webkit-scrollbar { display: none; }
+/* Pistes : composant Carousel (fenêtre plein écran, cartes calées à 16px) */
+.pcm-works, .pcm-products { margin: 0 -16px; padding: 2px 16px 6px; }
+.pcm-work-slide { width: 64%; max-width: 260px; }
+.pcm-work-slide:only-child { width: 100%; max-width: none; }
 .pcm-work {
-  position: relative; flex: 0 0 64%; max-width: 260px; aspect-ratio: 4 / 5; scroll-snap-align: start;
+  position: relative; display: block; width: 100%; aspect-ratio: 4 / 5;
   border-radius: 24px; overflow: hidden; padding: 0; border: 1px solid var(--pdm-line);
   background: rgba(255, 255, 255, 0.04); cursor: pointer; font: inherit; color: inherit; text-align: left;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
-.pcm-work:only-child { flex-basis: 100%; max-width: none; aspect-ratio: 16 / 10; }
+.pcm-work-slide:only-child .pcm-work { aspect-ratio: 16 / 10; }
 .pcm-work:active { transform: scale(0.98); }
 .pcm-work img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pcm-work::after {
@@ -281,13 +280,9 @@ button.pcm-row { cursor: pointer; }
 }
 .pcm-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; font-size: 12.5px; color: var(--pdm-faint); }
 
-.pcm-products {
-  display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 6px;
-  scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-}
-.pcm-products::-webkit-scrollbar { display: none; }
+.pcm-product-slide { width: 150px; }
 .pcm-product {
-  flex: 0 0 150px; scroll-snap-align: start; text-align: left; overflow: hidden;
+  display: block; width: 100%; text-align: left; overflow: hidden;
   border-radius: 20px; border: 1px solid var(--pdm-line); padding: 0; cursor: pointer; font: inherit; color: inherit;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
@@ -458,12 +453,15 @@ const Row = ({ row }: { row: PcmRow }) => {
   );
 };
 
-// `autoPlay` : la piste avance seule (suggestions), comme le carrousel de l'ordinateur.
-const Products = ({ items, autoPlay = false }: { items: PcmProduct[]; autoPlay?: boolean }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useAutoAdvance(ref, autoPlay && items.length > 1);
-  return (
-  <div ref={ref} className="pcm-products">
+// `autoPlay` : la piste avance seule, carte par carte (suggestions).
+const Products = ({ items, label, autoPlay = false }: { items: PcmProduct[]; label: string; autoPlay?: boolean }) => (
+  <Carousel
+    label={label}
+    className="pcm-products"
+    slideClassName="pcm-product-slide"
+    autoplay={autoPlay ? 'step' : 'none'}
+    interval={3200}
+  >
     {items.map((p) => (
       <button key={p.key} type="button" className="pcm-product" onClick={p.onClick}>
         <span className="pcm-product-img" style={{ display: 'flex' }}>
@@ -473,6 +471,7 @@ const Products = ({ items, autoPlay = false }: { items: PcmProduct[]; autoPlay?:
               alt=""
               loading="lazy"
               decoding="async"
+              draggable={false}
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
             />
           ) : (
@@ -483,9 +482,8 @@ const Products = ({ items, autoPlay = false }: { items: PcmProduct[]; autoPlay?:
         <span className="pcm-product-price" style={{ display: 'block' }}>{p.price}</span>
       </button>
     ))}
-  </div>
-  );
-};
+  </Carousel>
+);
 
 const DashboardCustomerMobile = ({
   photo,
@@ -663,7 +661,7 @@ const DashboardCustomerMobile = ({
               <h2>Vos réalisations</h2>
               <button type="button" className="pcm-link" onClick={onSeeAllWorks}>Tout voir</button>
             </div>
-            <div className="pcm-works">
+            <Carousel label="Vos réalisations" className="pcm-works" slideClassName="pcm-work-slide">
               {works.map((w) => (
                 <button key={w.key} type="button" className="pcm-work" onClick={w.onClick}>
                   <img
@@ -671,6 +669,7 @@ const DashboardCustomerMobile = ({
                     alt=""
                     loading="lazy"
                     decoding="async"
+                    draggable={false}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
                   />
                   <span className="pcm-work-text">
@@ -679,7 +678,7 @@ const DashboardCustomerMobile = ({
                   </span>
                 </button>
               ))}
-            </div>
+            </Carousel>
           </div>
         )}
 
@@ -763,7 +762,7 @@ const DashboardCustomerMobile = ({
                 <button type="button" className="pcm-link" onClick={onSeeCatalogue}>Le catalogue</button>
               )}
             </div>
-            <Products items={suggestions} autoPlay />
+            <Products items={suggestions} label="Suggestions pour vous" autoPlay />
           </>
         )}
 
@@ -775,7 +774,7 @@ const DashboardCustomerMobile = ({
                 <button type="button" className="pcm-link" onClick={onSeeOffers}>Tout voir</button>
               )}
             </div>
-            <Products items={offers} />
+            <Products items={offers} label="Vos offres personnalisées" />
           </>
         )}
 

@@ -2,6 +2,7 @@ import { CartItem } from '@/@types/cart';
 import type { FormAnswer } from '@/@types/formAnswer';
 import { Product } from '@/@types/product';
 import { Container } from '@/components/shared';
+import Carousel from '@/components/shared/Carousel';
 import { RootState, useAppDispatch, useAppSelector } from '@/store';
 import { editFormAnswerCartItem, editItem, removeFromCart, type CartItemFormAnswerEdition } from '@/store/slices/base/cartSlice';
 import { apiGetProducts } from '@/services/ProductServices';
@@ -464,9 +465,6 @@ function Cart() {
     if (first) setPersonalizingId(first.id);
   }, [location.state]); // volontairement : ne réagit qu'à l'arrivée depuis le chat
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isPausedRef = useRef(false);
-  const animFrameRef = useRef<number | null>(null);
 
   const shippingRef = useRef<HTMLDivElement>(null);
   const [shippingOpen, setShippingOpen] = useState(false);
@@ -542,37 +540,6 @@ function Cart() {
     };
     fetchSuggestions();
   }, [cart.length]);
-
-  // Continuous auto-scroll carousel
-  useEffect(() => {
-    if (suggestions.length === 0) return;
-
-    // Wait for next frame so the DOM is painted
-    let raf: number | null = null;
-    const startTimeout = setTimeout(() => {
-      const el = scrollRef.current;
-      if (!el) return;
-
-      const step = () => {
-        if (!isPausedRef.current && el) {
-          el.scrollLeft += 0.6;
-          if (el.scrollLeft >= el.scrollWidth / 2) {
-            el.scrollLeft = 0;
-          }
-        }
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-      animFrameRef.current = raf;
-    }, 200);
-
-    return () => {
-      clearTimeout(startTimeout);
-      if (raf) cancelAnimationFrame(raf);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = null;
-    };
-  }, [suggestions.length, cart.length]);
 
   const handleEdit = (item: CartItem) => {
     dispatch(editItem(item));
@@ -1238,30 +1205,21 @@ function Cart() {
             />
           </div>
 
-          <div
-            ref={scrollRef}
-            onMouseEnter={() => {
-              isPausedRef.current = true;
-            }}
-            onMouseLeave={() => {
-              isPausedRef.current = false;
-            }}
-            style={{
-              display: 'flex',
-              gap: '14px',
-              overflowX: 'hidden',
-              scrollbarWidth: 'none',
-            }}
+          {/* Défilé continu, glissable au doigt, pause au survol (souris) */}
+          <Carousel
+            label="Complétez votre commande"
+            autoplay="continuous"
+            speed={0.6}
+            gap={14}
+            slideStyle={{ width: '260px' }}
           >
-            {[...suggestions, ...suggestions].map((product, idx) => (
+            {suggestions.map((product) => (
               <div
-                key={`${product.documentId}-${idx}`}
+                key={product.documentId}
                 onClick={() =>
                   navigate('/customer/product/' + product.documentId)
                 }
                 style={{
-                  flexShrink: 0,
-                  width: '260px',
                   background:
                     'linear-gradient(160deg, rgba(22,38,61,0.95) 0%, rgba(15,28,46,0.95) 100%)',
                   border: '1.5px solid rgba(255,255,255,0.06)',
@@ -1295,6 +1253,7 @@ function Cart() {
                     <img
                       src={product.images[0].url}
                       alt={product.name}
+                      draggable={false}
                       style={{
                         maxWidth: '100%',
                         maxHeight: '160px',
@@ -1357,7 +1316,7 @@ function Cart() {
                 </div>
               </div>
             ))}
-          </div>
+          </Carousel>
         </div>
       )}
 

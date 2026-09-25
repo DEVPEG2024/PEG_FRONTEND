@@ -861,6 +861,35 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ---
 
+## 🎠 Carrousels — un seul composant, testé dans Safari iOS (refonte 26/09/2026)
+
+### La règle
+**Tout carrousel passe par `src/components/shared/Carousel.tsx`** (Embla : piste déplacée par `transform`). Aucun défilement bricolé. Garde-fou CI : `src/__tests__/carouselGuard.test.ts`.
+
+### Pourquoi (quatre pannes, mesurées dans Safari iOS 26 — simulateur Xcode)
+| Carrousel | Ancienne mécanique | Panne au téléphone |
+|---|---|---|
+| Panier « Complétez votre commande » | `scrollLeft` + 0,6 px par image, `overflow: hidden` | Safari arrondit `scrollLeft` à l'entier → **piste figée à 0**, et impossible à glisser |
+| Accueil ordinateur / **iPad** | défilé CSS en boucle (`translateX(-50%)`), pause au `:hover` | ni glissable ni pausable au doigt |
+| Accueil téléphone (suggestions) | `scroll-snap` + `scrollBy` fluide (`useAutoAdvance`, supprimé) | 6 s de pause au moindre contact (même en faisant défiler la page), puis jusqu'à ~9 s d'immobilité ; rien du tout en « Réduire les animations » |
+| Fiche produit | `touchstart`/`touchend` à seuil | balayage sans retour visuel |
+
+### Mécanique
+- `Carousel` : `autoplay` = `'none'` (défaut) | `'step'` (carte par carte, `interval`) | `'continuous'` (défilé, `speed` px/60e s). Boucle par défaut dès qu'il y a un mouvement automatique ; largeur des cartes par `slideClassName` / `slideStyle`, espacement `gap` (marge droite, pas `gap` CSS : Embla mesure la marge pour la boucle). `setApi` / `onSelect` pour flèches et vignettes (`ProductImageCarousel`).
+- `useCarouselMotion` (`src/utils/hooks/`) décide seul quand bouger : rien hors écran ni onglet masqué ; un **vrai glisser** met en pause (reprise 1,5 s après), un doigt qui fait défiler la page ne l'arrête pas ; battement de contrôle (1,5 s) qui relance un mouvement qui aurait dû reprendre.
+- **« Réduire les animations »** : plus aucun glissement — la piste **saute** d'une carte toutes les 5 s au plus vite (le défilé continu passe en carte par carte).
+- ⚠️ **Pause au survol : jamais via les greffons Embla** (`stopOnMouseEnter`). iOS émule `mouseenter` à chaque tape et n'envoie jamais `mouseleave` → carrousel figé pour de bon. Le survol n'est écouté que si `(hover: hover) and (pointer: fine)`.
+- ⚠️ **Garde de tape** (`installTapGuard`) : Embla annule chaque `touchmove` horizontal dès le 1er pixel, et Safari iOS supprime alors le clic → une tape de 2 px sur une carte n'ouvrait rien. Sous 10 px (= `dragThreshold`), les micro-mouvements ne parviennent pas à Embla. Ne pas la retirer.
+- Images dans les cartes : `draggable={false}`.
+
+### Vérifier au téléphone (méthode du 26/09/2026)
+Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:useSimulator: true`) → vrais toucher dans Safari iOS. Pièges : les coordonnées ignorent le défilement de la fenêtre (faire défiler un conteneur interne) ; un geste vertical fige le pilote ; une commande interrompue aussi (fermer Safari : `xcrun simctl terminate <udid> com.apple.mobilesafari`). « Réduire les animations » : `xcrun simctl spawn <udid> defaults write com.apple.Accessibility ReduceMotionEnabled -int 1` + `notifyutil -p com.apple.accessibility.reduce.motion.status`. Android : Chromium + CDP `Input.dispatchTouchEvent`.
+
+### Fichiers clés
+`src/components/shared/Carousel.tsx`, `src/utils/hooks/useCarouselMotion.ts`, `src/components/shared/ProductImageCarousel.tsx` ; utilisé par `DashboardCustomerMobile.tsx` (réalisations, suggestions, offres), `DashboardCustomer.tsx` (suggestions ordinateur/iPad), `Cart.tsx`. Tests : `carouselMotion.test.tsx`, `carousel.test.tsx`, `carouselGuard.test.ts`.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

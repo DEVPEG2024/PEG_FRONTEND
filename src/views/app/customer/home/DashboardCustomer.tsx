@@ -1,4 +1,5 @@
 import { Container } from '@/components/shared';
+import Carousel from '@/components/shared/Carousel';
 import { RootState, injectReducer, useAppDispatch } from '@/store';
 import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -118,22 +119,9 @@ const DashboardCustomer = () => {
   // Standard ne voit ni le chiffre ni le bloc de ses offres. Même règle que la
   // page (isOffersReserved) : un client sans accès catalogue les garde.
   const offersReserved = isOffersReserved(user.customer?.premium, user.customer?.catalogAccess);
-  // Carrousel de suggestions : une piste animée en boucle ne se saisit pas au
-  // doigt (le :hover qui la met en pause n'existe pas au tactile) et ignore
-  // prefers-reduced-motion. Dans ces deux cas elle devient une piste défilante.
   const { smaller } = useResponsive();
   // Téléphone : photo de fond de l'accueil, téléversée par le client (pas de bannière)
   const dashboardPhoto = useDashboardPhoto(smaller.md ? user?.documentId : undefined);
-  const [reducedMotion, setReducedMotion] = useState(
-    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-  );
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setReducedMotion(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  const staticCarousel = smaller.md || reducedMotion;
 
   // Suggestions produits (carrousel auto-défilant, comme le panier)
   const [suggestions, setSuggestions] = useState<Product[]>([]);
@@ -661,31 +649,29 @@ const DashboardCustomer = () => {
                     action={catalogAccess ? <Link to="/customer/catalogue" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir le catalogue <HiArrowRight size={12} /></Link> : undefined}
                   />
                 </div>
-                <div className="dash-suggest-mask" style={{ overflow: 'hidden', paddingRight: '24px' }}>
-                  {/* Sous md (ou en mouvement réduit) : piste défilante au doigt,
-                      liste non dupliquée et aucune animation. Au-dessus de md, sans
-                      préférence de mouvement réduit, le carrousel est inchangé. */}
-                  <div
-                    className={staticCarousel ? 'peg-scroll-x' : 'dash-suggest-track'}
-                    style={staticCarousel
-                      // `overflowX` et `scrollSnapType` en ligne : .peg-scroll-x ne
-                      // s'applique que sous md et y force `scroll-snap-type: none`.
-                      ? { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory' }
-                      : { display: 'flex', width: 'max-content' }}
+                <div style={{ paddingRight: '24px' }}>
+                  {/* Défilé continu, glissable au doigt (iPad) comme à la souris ;
+                      pause au survol sur ordinateur. */}
+                  <Carousel
+                    label="Suggestions pour vous"
+                    autoplay="continuous"
+                    speed={0.9}
+                    gap={14}
+                    slideStyle={{ width: '210px' }}
                   >
-                    {(staticCarousel ? suggestions : [...suggestions, ...suggestions]).map((product, idx) => {
+                    {suggestions.map((product) => {
                       const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
                       return (
                         <div
-                          key={`${product.documentId}-${idx}`}
+                          key={product.documentId}
                           onClick={() => navigate(`/customer/product/${product.documentId}`)}
-                          style={{ flexShrink: 0, width: '210px', marginRight: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease', ...(staticCarousel ? { scrollSnapAlign: 'start' as const } : null) }}
+                          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '15px', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.2s ease, transform 0.2s ease' }}
                           onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(124,107,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                         >
                           <div style={{ height: '140px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {product.images?.[0]?.url
-                              ? <img loading="lazy" decoding="async"
+                              ? <img loading="lazy" decoding="async" draggable={false}
                                   src={product.images[0].url}
                                   alt=""
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -705,15 +691,7 @@ const DashboardCustomer = () => {
                         </div>
                       );
                     })}
-                  </div>
-                  <style>{`
-                    @keyframes dashSuggestScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-                    .dash-suggest-track { animation: dashSuggestScroll ${Math.max(20, suggestions.length * 4)}s linear infinite; }
-                    .dash-suggest-mask:hover .dash-suggest-track { animation-play-state: paused; }
-                    @media (prefers-reduced-motion: reduce) {
-                      .dash-suggest-track { animation: none; }
-                    }
-                  `}</style>
+                  </Carousel>
                 </div>
               </SectionCard>
             )}

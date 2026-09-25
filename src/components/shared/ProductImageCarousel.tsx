@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi';
+import type { EmblaCarouselType } from 'embla-carousel';
+import Carousel from '@/components/shared/Carousel';
 
 type CarouselImage = { url: string; name?: string };
 
@@ -16,11 +18,13 @@ type ProductImageCarouselProps = {
   lensSize?: number;
 };
 
-type LensState = { x: number; y: number; imgW: number; imgH: number; offsetX: number; offsetY: number };
+type LensState = { url: string; x: number; y: number; imgW: number; imgH: number; offsetX: number; offsetY: number };
 
 /**
- * Carrousel d'images produit : flèches, vignettes cliquables, swipe tactile, clavier, loupe au survol.
- * Dépendances : aucune (React + react-icons). Le champ `images` est déjà un tableau côté Strapi.
+ * Carrousel d'images produit : glisser au doigt (l'image suit le doigt), flèches,
+ * vignettes, clavier, loupe au survol (souris). La piste est le composant
+ * partagé `Carousel` ; le glisser n'est actif qu'au doigt pour que la souris
+ * garde la loupe. Le champ `images` est déjà un tableau côté Strapi.
  */
 const ProductImageCarousel = ({
   images,
@@ -32,46 +36,42 @@ const ProductImageCarousel = ({
 }: ProductImageCarouselProps) => {
   const [index, setIndex] = useState(0);
   const [lens, setLens] = useState<LensState | null>(null);
-  const touchStartX = useRef<number | null>(null);
+  const [api, setApi] = useState<EmblaCarouselType>();
   const isTouch = useRef(false);
   const stageRef = useRef<HTMLDivElement>(null);
 
   const count = images?.length ?? 0;
+  // Nouvelle liste d'images (autre produit) → la piste repart de la première
+  const imagesKey = (images ?? []).map((img) => img.url).join('|');
 
-  // Reste dans les bornes si la liste d'images change
-  useEffect(() => {
-    if (index > count - 1) setIndex(0);
-  }, [count, index]);
+  const onSelect = useCallback((i: number) => {
+    setIndex(i);
+    setLens(null);
+  }, []);
 
   if (count === 0) {
     return <div style={{ fontSize: '48px', opacity: 0.15 }}>📦</div>;
   }
 
-  const go = (dir: number) => {
-    setIndex((i) => (i + dir + count) % count);
+  const go = (dir: 1 | -1) => {
     setLens(null);
+    if (!api) return;
+    if (dir === 1) {
+      if (api.canScrollNext()) api.scrollNext();
+      else api.scrollTo(0);
+    } else if (api.canScrollPrev()) api.scrollPrev();
+    else api.scrollTo(count - 1);
   };
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    isTouch.current = true;
-    setLens(null);
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 40) go(delta < 0 ? 1 : -1);
-    touchStartX.current = null;
-  };
-
-  // Loupe : position du curseur dans l'image + décalage de l'image dans le conteneur
-  const onImageMove = (e: React.MouseEvent<HTMLImageElement>) => {
+  // Loupe : position du curseur dans l'image + décalage de l'image dans le cadre
+  const onImageMove = (e: React.MouseEvent<HTMLImageElement>, url: string) => {
     if (!zoomOnHover || isTouch.current) return;
     const stage = stageRef.current;
     if (!stage) return;
     const imgRect = e.currentTarget.getBoundingClientRect();
     const stageRect = stage.getBoundingClientRect();
     setLens({
+      url,
       x: e.clientX - imgRect.left,
       y: e.clientY - imgRect.top,
       imgW: imgRect.width,
@@ -81,7 +81,7 @@ const ProductImageCarousel = ({
     });
   };
 
-  const current = images[index];
+  const current = images[Math.min(index, count - 1)];
 
   return (
     <div
@@ -92,29 +92,49 @@ const ProductImageCarousel = ({
         if (e.key === 'ArrowRight') go(1);
       }}
     >
-      {/* Image principale + flèches */}
+      {/* Image principale + flèches (la loupe déborde du cadre : hors de la piste) */}
       <div
         ref={stageRef}
-        style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: `${maxImageHeight}px` }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
+        style={{ position: 'relative', width: '100%' }}
+        onTouchStart={() => {
+          isTouch.current = true;
+          setLens(null);
+        }}
       >
-        <img
-          key={current.url}
-          src={current.url}
-          alt={current.name || alt}
-          onMouseMove={onImageMove}
-          onMouseLeave={() => setLens(null)}
-          draggable={false}
-          style={{
-            maxWidth: '100%',
-            maxHeight: `${maxImageHeight}px`,
-            objectFit: 'contain',
-            borderRadius: '6px',
-            animation: 'pegCarouselFade 0.25s ease-out',
-            cursor: zoomOnHover ? 'zoom-in' : 'default',
-          }}
-        />
+        <Carousel
+          key={imagesKey}
+          label={alt ? `Photos — ${alt}` : 'Photos du produit'}
+          loop={count > 1}
+          gap={0}
+          touchOnlyDrag
+          slideStyle={{ width: '100%' }}
+          onSelect={onSelect}
+          setApi={setApi}
+        >
+          {images.map((img, i) => (
+            <div
+              key={img.url + i}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: `${maxImageHeight}px` }}
+            >
+              <img
+                src={img.url}
+                alt={img.name || alt}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                onMouseMove={(e) => onImageMove(e, img.url)}
+                onMouseLeave={() => setLens(null)}
+                draggable={false}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: `${maxImageHeight}px`,
+                  objectFit: 'contain',
+                  borderRadius: '6px',
+                  cursor: zoomOnHover ? 'zoom-in' : 'default',
+                }}
+              />
+            </div>
+          ))}
+        </Carousel>
 
         {/* Loupe */}
         {lens && (
@@ -131,7 +151,7 @@ const ProductImageCarousel = ({
               borderRadius: '50%',
               border: '2px solid rgba(255,255,255,0.9)',
               boxShadow: '0 6px 20px rgba(0,0,0,0.28)',
-              background: `#fff url("${current.url}") no-repeat`,
+              background: `#fff url("${lens.url}") no-repeat`,
               backgroundSize: `${lens.imgW * zoomFactor}px ${lens.imgH * zoomFactor}px`,
               backgroundPosition: `${lensSize / 2 - lens.x * zoomFactor}px ${lensSize / 2 - lens.y * zoomFactor}px`,
             }}
@@ -158,7 +178,11 @@ const ProductImageCarousel = ({
             </button>
 
             {/* Compteur */}
-            <div style={{ position: 'absolute', bottom: '6px', right: '8px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '10px', fontWeight: 600, padding: '2px 7px', borderRadius: '10px' }}>
+            <div
+              aria-live="polite"
+              aria-label={current?.name ? `Image ${index + 1} sur ${count} : ${current.name}` : undefined}
+              style={{ position: 'absolute', bottom: '6px', right: '8px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '10px', fontWeight: 600, padding: '2px 7px', borderRadius: '10px' }}
+            >
               {index + 1}/{count}
             </div>
           </>
@@ -172,8 +196,12 @@ const ProductImageCarousel = ({
             <button
               type="button"
               key={img.url + i}
-              onClick={() => setIndex(i)}
+              onClick={() => {
+                setLens(null);
+                api?.scrollTo(i);
+              }}
               aria-label={`Voir image ${i + 1}`}
+              aria-current={i === index ? 'true' : undefined}
               style={{
                 width: '44px', height: '44px', padding: '2px', cursor: 'pointer',
                 borderRadius: '6px', background: '#fff',
@@ -187,8 +215,6 @@ const ProductImageCarousel = ({
           ))}
         </div>
       )}
-
-      <style>{`@keyframes pegCarouselFade { from { opacity: 0 } to { opacity: 1 } }`}</style>
     </div>
   );
 };
@@ -198,6 +224,7 @@ const arrowStyle = (side: 'left' | 'right'): React.CSSProperties => ({
   [side]: '4px',
   top: '50%',
   transform: 'translateY(-50%)',
+  zIndex: 2,
   width: '32px',
   height: '32px',
   display: 'flex',
