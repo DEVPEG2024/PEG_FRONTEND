@@ -459,7 +459,7 @@ const ProjectsList = () => {
               { mode: 'table' as const, icon: <HiViewList size={16} />, radius: '0' },
               { mode: 'kanban' as const, icon: <HiViewBoards size={16} />, radius: '0 10px 10px 0' },
             ]).map(({ mode, icon, radius }) => (
-              <button key={mode} className="peg-tap-target" onClick={() => setViewMode(mode)} title={mode === 'kanban' ? 'Vue Kanban' : mode === 'table' ? 'Vue tableau' : 'Vue cartes'}
+              <button key={mode} className={viewMode === mode ? 'peg-tap-target peg-view-toggle is-active' : 'peg-tap-target peg-view-toggle'} onClick={() => setViewMode(mode)} title={mode === 'kanban' ? 'Vue Kanban' : mode === 'table' ? 'Vue tableau' : 'Vue cartes'}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', border: 'none', cursor: 'pointer', borderRadius: radius, background: viewMode === mode ? 'rgba(47,111,237,0.25)' : 'transparent', color: viewMode === mode ? '#6b9eff' : 'rgba(255,255,255,0.35)' }}
               >{icon}</button>
             ))}

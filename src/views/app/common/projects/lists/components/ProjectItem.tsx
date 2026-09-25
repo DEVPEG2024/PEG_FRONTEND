@@ -16,6 +16,8 @@ import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
 import { fmtHT, fmtPrice } from '@/utils/priceHelpers';
+import useResponsive from '@/utils/hooks/useResponsive';
+import ProjectCardMobile from './ProjectCardMobile';
 
 // Un délai et une priorité n'ont de sens que tant que le projet est en cours :
 // sur un projet terminé ou annulé, la date de fin est un fait, pas une alerte.
@@ -58,6 +60,7 @@ const ProjectItem = ({
   const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
+  const { smaller } = useResponsive();
 
   const duration = dayjs(project.endDate).diff(dayjs(), 'day');
   const status = statusStyles[project.state] ?? statusStyles.pending;
@@ -75,6 +78,83 @@ const ProjectItem = ({
       : 0;
 
   const handleNavigate = () => navigate(`/common/projects/details/${project.documentId}`);
+
+  const totalAdditionalSales = (project.additionalSales ?? []).reduce(
+    (s: number, e: any) => s + (Number(e?.amount) || 0),
+    0
+  );
+  const totalCA = (project.price ?? 0) + totalAdditionalSales;
+
+  const payProducerModal = isPayProducerOpen && (
+    <ModalPayProducer
+      project={project}
+      isPayProducerOpen={isPayProducerOpen}
+      onClosePayProducer={() => setIsPayProducerOpen(false)}
+    />
+  );
+
+  // Téléphone : carte au style des tableaux de bord, mêmes informations
+  if (smaller.md) {
+    const imageUrl =
+      project.orderItem?.product?.images?.[0]?.url || project.images?.[0]?.url;
+    const priority = isSuperAdmin && isActiveState ? priorityStyles[project.priority] : undefined;
+    const price = isSuperAdmin
+      ? {
+          amount: fmtPrice(totalCA),
+          title: totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined,
+          withAdditionalSales: totalAdditionalSales > 0,
+          sub: `Prod. ${fmtPrice(project.producerPrice ?? 0)}`,
+        }
+      : hasRole(user, [PRODUCER])
+        ? { amount: fmtPrice(project.producerPrice ?? 0) }
+        : hasRole(user, [CUSTOMER])
+          ? {
+              amount: fmtHT(totalCA),
+              sub: totalAdditionalSales > 0 ? `dont ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined,
+            }
+          : undefined;
+    return (
+      <>
+        <ProjectCardMobile
+          name={project.name}
+          image={imageUrl ? resolveUrl(imageUrl) : undefined}
+          status={status}
+          priority={priority}
+          deadline={
+            hasEndDate
+              ? isActiveState
+                ? { label: duration > 0 ? `${duration}j` : duration === 0 ? 'Auj.' : 'Dépassé', late: duration < 0 }
+                : { label: dayjs(project.endDate).format('DD/MM/YY'), late: false }
+              : undefined
+          }
+          lastSeen={isSuperAdmin && customerLastSeen ? formatLastSeen(customerLastSeen) : undefined}
+          progress={percentageComplete}
+          people={
+            <>
+              <AvatarName entity={project.customer} type="Client" />
+              {hasRole(user, [SUPER_ADMIN, PRODUCER]) ? (
+                <AvatarName entity={project.producer} type="Producteur" />
+              ) : hasRole(user, [CUSTOMER]) && (
+                <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as any} type="Producteur" />
+              )}
+            </>
+          }
+          price={price}
+          menu={
+            isSuperAdmin && handleDeleteProject ? (
+              <ProjectItemDropdown
+                project={project}
+                handleDeleteProject={handleDeleteProject}
+                setIsPayProducerOpen={setIsPayProducerOpen}
+              />
+            ) : undefined
+          }
+          onOpen={handleNavigate}
+        />
+        {payProducerModal}
+      </>
+    );
+  }
 
   return (
     <div
@@ -247,86 +327,71 @@ const ProjectItem = ({
           </div>
 
           {/* Prix */}
-          {(() => {
-            const totalAdditionalSales = (project.additionalSales ?? []).reduce(
-              (s: number, e: any) => s + (Number(e?.amount) || 0),
-              0
-            );
-            const totalCA = (project.price ?? 0) + totalAdditionalSales;
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                {isSuperAdmin && (
-                  <>
-                    <span
-                      title={totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined}
-                      style={{
-                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                        borderRadius: '100px', padding: '2px 9px',
-                        color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      }}
-                    >
-                      {fmtPrice(totalCA)}
-                      {totalAdditionalSales > 0 && (
-                        <span style={{ color: '#22d3ee', fontSize: '10px', fontWeight: 700 }}>+VA</span>
-                      )}
-                    </span>
-                    <span style={{
-                      background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
-                      borderRadius: '100px', padding: '2px 9px',
-                      color: '#a78bfa', fontSize: '11px', fontWeight: 600,
-                    }}>
-                      Prod. {fmtPrice(project.producerPrice ?? 0)}
-                    </span>
-                  </>
-                )}
-                {hasRole(user, [PRODUCER]) && (
-                  <span style={{
-                    background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+            {isSuperAdmin && (
+              <>
+                <span
+                  title={totalAdditionalSales > 0 ? `Prix projet ${fmtPrice(project.price ?? 0)} + Ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined}
+                  style={{
+                    background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
                     borderRadius: '100px', padding: '2px 9px',
-                    color: '#a78bfa', fontSize: '11px', fontWeight: 600,
-                  }}>
-                    {fmtPrice(project.producerPrice ?? 0)}
+                    color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  }}
+                >
+                  {fmtPrice(totalCA)}
+                  {totalAdditionalSales > 0 && (
+                    <span style={{ color: '#22d3ee', fontSize: '10px', fontWeight: 700 }}>+VA</span>
+                  )}
+                </span>
+                <span style={{
+                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                  borderRadius: '100px', padding: '2px 9px',
+                  color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+                }}>
+                  Prod. {fmtPrice(project.producerPrice ?? 0)}
+                </span>
+              </>
+            )}
+            {hasRole(user, [PRODUCER]) && (
+              <span style={{
+                background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                borderRadius: '100px', padding: '2px 9px',
+                color: '#a78bfa', fontSize: '11px', fontWeight: 600,
+              }}>
+                {fmtPrice(project.producerPrice ?? 0)}
+              </span>
+            )}
+            {hasRole(user, [CUSTOMER]) && (
+              /* Le total inclut les ventes additionnelles : la composition
+                 était expliquée dans un `title`, inaccessible au doigt, et
+                 l'accueil client affichait le seul prix projet — deux
+                 montants différents pour la même commande. */
+              <>
+                <span
+                  style={{
+                    background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
+                    borderRadius: '100px', padding: '2px 9px',
+                    color: '#6b9eff', fontSize: '11px', fontWeight: 600,
+                  }}
+                >
+                  {fmtHT(totalCA)}
+                </span>
+                {totalAdditionalSales > 0 && (
+                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    dont ventes add. {fmtPrice(totalAdditionalSales)}
                   </span>
                 )}
-                {hasRole(user, [CUSTOMER]) && (
-                  /* Le total inclut les ventes additionnelles : la composition
-                     était expliquée dans un `title`, inaccessible au doigt, et
-                     l'accueil client affichait le seul prix projet — deux
-                     montants différents pour la même commande. */
-                  <>
-                    <span
-                      style={{
-                        background: 'rgba(47,111,237,0.12)', border: '1px solid rgba(47,111,237,0.25)',
-                        borderRadius: '100px', padding: '2px 9px',
-                        color: '#6b9eff', fontSize: '11px', fontWeight: 600,
-                      }}
-                    >
-                      {fmtHT(totalCA)}
-                    </span>
-                    {totalAdditionalSales > 0 && (
-                      <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                        dont ventes add. {fmtPrice(totalAdditionalSales)}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })()}
+              </>
+            )}
+          </div>
         </div>
 
       </div>
 
       </div>
 
-      {isPayProducerOpen && (
-        <ModalPayProducer
-          project={project}
-          isPayProducerOpen={isPayProducerOpen}
-          onClosePayProducer={() => setIsPayProducerOpen(false)}
-        />
-      )}
+      {payProducerModal}
     </div>
   );
 };
