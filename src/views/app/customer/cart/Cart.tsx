@@ -438,6 +438,12 @@ function Cart() {
   );
   const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
+  // Continuer ses achats : le CATALOGUE (le bouton envoyait vers « Mes offres »,
+  // qui montre une sélection du catalogue aux clients Standard). Un client sans
+  // accès au catalogue ne commande que depuis ses offres — même règle que le
+  // bouton « Commander » de l'accueil.
+  const noCatalogue = user?.customer?.catalogAccess === false;
+  const shopPath = noCatalogue ? '/customer/products' : '/customer/catalogue';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -686,11 +692,11 @@ function Cart() {
                 margin: 0,
               }}
             >
-              Parcourez notre catalogue pour trouver vos produits
+              {noCatalogue ? 'Parcourez vos offres pour trouver vos produits' : 'Parcourez notre catalogue pour trouver vos produits'}
             </p>
           </div>
           <button
-            onClick={() => navigate('/customer/products')}
+            onClick={() => navigate(shopPath)}
             style={{
               marginTop: '4px',
               background: 'linear-gradient(135deg, #2f6fed 0%, #1f4bb6 100%)',
@@ -716,7 +722,7 @@ function Cart() {
                 '0 4px 20px rgba(47,111,237,0.35)';
             }}
           >
-            Voir le catalogue
+            {noCatalogue ? 'Voir mes offres' : 'Voir le catalogue'}
           </button>
         </div>
       </Container>
@@ -845,7 +851,7 @@ function Cart() {
 
           {/* Add more */}
           <button
-            onClick={() => navigate('/customer/products')}
+            onClick={() => navigate(shopPath)}
             style={{
               background: 'rgba(255,255,255,0.01)',
               border: '2px dashed rgba(255,255,255,0.07)',
