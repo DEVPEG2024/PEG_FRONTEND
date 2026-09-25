@@ -311,7 +311,9 @@ describe('ChatWidget — choix du style', () => {
     render();
     openChat();
     expect(q('button[aria-label="Nouvelle conversation"]')).toBeNull();
-    expect(toggle()!.classList.contains('pcw-style-toggle--compact')).toBe(false);
+    expect(toggle()!.classList.contains('pcw-style-toggle--compact')).toBe(
+      false
+    );
     expect(toggle()!.textContent).toBe('💬Conseil');
     await sendTyped('Bonjour');
     expect(q('button[aria-label="Nouvelle conversation"]')).not.toBeNull();

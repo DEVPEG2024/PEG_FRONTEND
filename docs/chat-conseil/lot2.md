@@ -60,6 +60,14 @@ Le client choisit comment l'assistant lui répond :
 - ⚠️ `ADVICE_GUIDANCE` ne contient aucun lien (`stripUnknownLinks` s'appuie sur le prompt pour conserver les liens connus).
 - Le style ne modifie que le serveur : le lot 3 lit lui-même `body.style` (interface I1), sans importer `chat-style.ts`.
 - Conseil est plus long : ≈ 300 tokens de prompt en plus par tour et des réponses de 2 à 5 lignes (surveiller `tokensIn` / `tokensOut`).
+- Téléphone de 360 px avec micro + « Nouvelle conversation » + fermeture : même en emoji seul, le titre n'a que ≈ 96 px (il lui en faut ≈ 111) → « Assistant P… » sur une ligne (ellipse). Tient en entier dès 375 px (≈ 111 px) et à 390 px (≈ 126 px). Mesures Chromium du 26/09.
+
+## Écarts au contrat (documentés)
+
+- **§7 En-tête** : le contrat prévoit « ⚡ Rapide » / « 💬 Conseil » sur ordinateur. Le libellé complet n'est gardé que tant que la conversation est vide ; dès le 1er message la bascule passe en emoji seul (`compact={isPhone || messages.length > 0}`), `aria-label`/`title` complets inchangés. Raison : relecture du 26/09 (fenêtre de 400 px, titre réduit à ≈ 70 px et sur deux lignes, statut d'outil tronqué). Seule la ligne insérée par le lot 2 (ancre après l.683) change.
+- **Titre de l'en-tête** : la règle `.pcw-head .pcw-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }` vit dans la feuille de style de `ChatStyleToggle` (présente seulement quand la bascule est affichée) : elle s'applique à un élément dessiné par `ChatWidget`, mais `CHAT_CSS` n'est pas modifié (interdit §4.3).
+- **§2.4 Strapi** : `chat-style.ts` exporte en plus `appliedChatStyle(style, { authenticated })`, et la ligne insérée après l.1938 devient `const style = appliedChatStyle(parseChatStyle(…), { authenticated: !!customer });` (même ancre, une seule ligne) pour que `meta.style` journalise le style APPLIQUÉ. `styleGuidance` garde sa signature et son résultat (prouvé par le test de cohérence).
+- **§2.5 front** : deux aides en plus dans `chatStyle.ts` (`otherChatStyle`, `subscribeChatServerFeatures`), sans changement des signatures prévues.
 
 ## Paragraphe proposé pour CLAUDE.md
 
