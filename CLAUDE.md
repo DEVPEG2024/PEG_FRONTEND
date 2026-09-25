@@ -768,6 +768,7 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 - **Puce taille/couleur** : le crayon ouvre l'édition ; la croix **retire de la catégorie courante uniquement** (sans supprimer ailleurs). La suppression définitive est dans le modal d'édition.
 - Badge `⛓ N` sur une puce = entité partagée par N catégories.
 - Tailles triées en **ordre naturel** (XS<S<M<L<XL<XXL<3XL, puis numérique). Couleurs : hex **validé + normalisé** (`#RGB` → `#RRGGBB`).
+- ⚠️ **Le `value` d'une couleur (son code hex) n'est PAS unique** : en prod, « NOIR » et « HEATHER GREY » du Bonnet sont tous deux `#000000`. Côté fiche produit / panier, comparer et indexer les options avec **`optionKey` / `sameOption`** (`src/utils/optionKey.ts` : documentId si les deux en ont, sinon valeur **et** nom) — **jamais** `a.value === b.value` (bug du 25/09/2026 : deux sélecteurs « Taille unique » affichés ensemble, quantité partagée). La requête `GetProduct` de la fiche demande `documentId` des tailles et couleurs.
 
 ### Fichiers clés
 - Backend : `peg_strapi/src/api/{size,color}/content-types/.../schema.json` + migration dans `peg_strapi/src/index.ts`
