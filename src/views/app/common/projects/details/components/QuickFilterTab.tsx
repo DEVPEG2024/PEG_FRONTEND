@@ -4,6 +4,7 @@ import { RootState, useAppSelector as useRootAppSelector } from '@/store';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
@@ -15,8 +16,18 @@ const QuickFilterTab = () => {
     (state: RootState) => state.auth.user
   );
 
+  // Téléphone : onglet actif à la couleur de l'app (comme les tableaux de bord)
+  const { smaller } = useResponsive();
+  const phone = smaller.md;
+
   const handleTabChange = (val: string) => {
     dispatch(setSelectedTab(val));
+    // Barre accrochée en haut : on remonte au début de la section choisie
+    if (phone) {
+      const bar = document.querySelector('.peg-pd-tabs');
+      const top = bar ? bar.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(bar).top) || 0) : 0;
+      if (window.scrollY > top) window.scrollTo({ top });
+    }
   };
 
   const isProducer = hasRole(user, [PRODUCER]);
@@ -75,17 +86,18 @@ const QuickFilterTab = () => {
               fontFamily: 'Inter, sans-serif',
               transition: 'all 0.15s ease',
               background: isActive
-                ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)'
+                ? phone ? 'var(--pdm-accent, #c6f432)' : 'linear-gradient(90deg, #2f6fed, #1f4bb6)'
                 : 'rgba(255,255,255,0.05)',
-              color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
-              boxShadow: isActive ? '0 3px 12px rgba(47,111,237,0.4)' : 'none',
+              color: isActive ? (phone ? 'var(--pdm-on-accent, #10140a)' : '#fff') : phone ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.5)',
+              boxShadow: isActive ? (phone ? '0 4px 14px rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.25)' : '0 3px 12px rgba(47,111,237,0.4)') : 'none',
+              ...(phone ? { flexShrink: 0, whiteSpace: 'nowrap' as const, fontWeight: isActive ? 700 : 600 } : null),
             }}
           >
             {tab}
             {count !== undefined && count > 0 && (
               <span style={{
-                background: isActive ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
+                background: isActive ? (phone ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.08)',
+                color: isActive ? (phone ? 'inherit' : '#fff') : 'rgba(255,255,255,0.6)',
                 borderRadius: '100px',
                 padding: '1px 7px',
                 fontSize: '10px',

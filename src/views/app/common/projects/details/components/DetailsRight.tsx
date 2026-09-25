@@ -28,6 +28,7 @@ import { Expense } from '@/@types/expense';
 import { Producer } from '@/@types/producer';
 import { toast } from 'react-toastify';
 import { fmtPrice } from '@/utils/priceHelpers';
+import useResponsive from '@/utils/hooks/useResponsive';
 
 /* ── Shared styles ── */
 
@@ -114,6 +115,9 @@ const DetailsRight = () => {
   );
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isCustomer = hasRole(user, [CUSTOMER]);
+  // Téléphone : pour le client, la carte « Équipe » redit l'en-tête (ProjectHeaderMobile)
+  const { smaller } = useResponsive();
+  const hideTeamCard = smaller.md && isCustomer;
 
   // Fetch project expenses (admin only)
   const [projectExpenses, setProjectExpenses] = useState<Expense[]>([]);
@@ -424,6 +428,7 @@ const DetailsRight = () => {
       )}
 
       {/* ── Card 4: People ── */}
+      {!hideTeamCard && (
       <div style={miniCard}>
         <p style={sectionLabel}>Équipe</p>
 
@@ -547,6 +552,7 @@ const DetailsRight = () => {
           )}
         </div>
       </div>
+      )}
 
     </div>
   );

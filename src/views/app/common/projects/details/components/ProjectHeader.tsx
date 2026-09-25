@@ -14,6 +14,12 @@ import { setEditCurrentProjectDialog, updateCurrentProject } from '../store';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import { HiOutlineEye } from 'react-icons/hi';
+import { useNavigate } from 'react-router-dom';
+import useResponsive from '@/utils/hooks/useResponsive';
+import ProjectHeaderMobile from './ProjectHeaderMobile';
+import { projectCoverUrl, projectProgress } from '../utils';
+import { useProjectPhotoUpload } from '../useProjectPhotoUpload';
+import { useAppSelector as useDetailsSelector } from '../store';
 
 const statusOptions = [
   { value: 'pending',   label: 'En cours',    color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
@@ -24,6 +30,13 @@ const statusOptions = [
   { value: 'sav',       label: 'SAV',         color: '#fb923c', bg: 'rgba(251,146,60,0.15)',  border: 'rgba(251,146,60,0.35)' },
   { value: 'unpaid',   label: 'Terminé impayé', color: '#e879f9', bg: 'rgba(232,121,249,0.15)', border: 'rgba(232,121,249,0.35)' },
 ];
+
+const priorityOptions: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  high:   { label: 'Urgent', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)' },
+  medium: { label: 'Moyen',  color: '#fbbf24', bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)' },
+  low:    { label: 'Faible', color: '#4ade80', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)' },
+};
+const ACTIVE_STATES = ['pending', 'pending_paid', 'waiting', 'sav'];
 
 const formatLastSeen = (dateStr: string) => {
   const d = dayjs(dateStr);
@@ -84,6 +97,128 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
   };
 
   const currentStatus = statusOptions.find((s) => s.value === project.state) ?? statusOptions[0];
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
+
+  // Row 2 — Status quick-change (admin only)
+  // Encadré + intitulé + puces à coins droits : cette rangée ÉCRIT en base, elle ne doit pas
+  // avoir l'aspect de la barre d'onglets qui la suit (mêmes pastilles arrondies, et deux
+  // libellés communs — « SAV »). L'écart vertical avec les onglets est aussi élargi.
+  const statusControl = isAdmin && (
+    <div style={{
+      background: 'rgba(255,255,255,0.035)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '12px',
+      padding: '9px 10px 10px',
+      marginBottom: '24px',
+    }}>
+      <p style={{
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        margin: '0 0 8px',
+      }}>
+        Statut du projet
+      </p>
+      <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '4px' }}>
+      {statusOptions.map((opt) => {
+        const isActive = project.state === opt.value;
+        return (
+          <button
+            key={opt.value}
+            className="peg-tap-target"
+            onClick={() => handleStatusChange(opt.value)}
+            style={{
+              padding: '4px 11px',
+              borderRadius: '7px',
+              border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.12)'}`,
+              // Inactif lisible et plein : à 0.35 sur fond transparent, ces boutons d'écriture
+              // avaient l'aspect de puces désactivées. Les couleurs de statut sont inchangées.
+              background: isActive ? opt.bg : 'rgba(255,255,255,0.05)',
+              color: isActive ? opt.color : 'rgba(255,255,255,0.62)',
+              fontSize: '10px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.15s',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+      </div>
+    </div>
+  );
+
+  // ── Téléphone : en-tête au style des cartes projet (ProjectHeaderMobile) ──
+  const { smaller } = useResponsive();
+  const navigate = useNavigate();
+  const { checklistPercent } = useDetailsSelector((state) => state.projectDetails.data);
+  const photoUpload = useProjectPhotoUpload(project);
+  if (smaller.md) {
+    const isActiveState = ACTIVE_STATES.includes(project.state);
+    const progress = projectProgress(project, checklistPercent);
+    const end = project.endDate ? dayjs(project.endDate) : null;
+    const daysLeft = end ? end.startOf('day').diff(dayjs().startOf('day'), 'day') : 0;
+    return (
+      <>
+        <ProjectHeaderMobile
+          name={project.name}
+          image={projectCoverUrl(project)}
+          status={currentStatus}
+          priority={isAdmin && isActiveState ? priorityOptions[project.priority] : undefined}
+          deadline={
+            end
+              ? isActiveState
+                ? {
+                    label: `Livraison ${end.format('D MMM')} · ${daysLeft > 0 ? `dans ${daysLeft} j` : daysLeft === 0 ? "aujourd'hui" : 'dépassée'}`,
+                    late: daysLeft < 0,
+                  }
+                : { label: `Livraison ${end.format('D MMM YYYY')}`, late: false }
+              : undefined
+          }
+          lastSeen={isAdmin && customerLastSeen ? formatLastSeen(customerLastSeen) : undefined}
+          progress={{ percent: progress.percent, label: progress.source === 'checklist' ? 'Checklist' : 'Tâches' }}
+          people={
+            <>
+              <AvatarName entity={project?.customer} type="Client" />
+              {hasRole(user, [SUPER_ADMIN, ADMIN, PRODUCER]) ? (
+                <AvatarName entity={project?.producer} type="Producteur" />
+              ) : hasRole(user, [CUSTOMER]) && (
+                <AvatarName entity={{ documentId: 'peg', name: 'PEG' } as unknown as Producer} type="Producteur" />
+              )}
+            </>
+          }
+          onBack={() => (window.history.length > 1 ? navigate(-1) : navigate('/common/projects'))}
+          onEdit={isAdmin ? handleEditProject : undefined}
+          photo={
+            isAdmin && !project.orderItem
+              ? {
+                  label: project.images?.[0]?.url ? 'Changer la photo' : 'Ajouter une photo',
+                  busy: photoUpload.uploading,
+                  onPick: () => photoUpload.inputRef.current?.click(),
+                  input: (
+                    <input
+                      ref={photoUpload.inputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/jpg,image/webp"
+                      onChange={photoUpload.onFileChange}
+                      disabled={photoUpload.uploading}
+                      style={{ display: 'none' }}
+                    />
+                  ),
+                }
+              : undefined
+          }
+          onAssign={hasRole(user, [PRODUCER]) && !project.producer ? assignMeAsProducer : undefined}
+          statusControl={statusControl || undefined}
+        />
+        {isAdmin && <ModalEditProject />}
+      </>
+    );
+  }
 
   return (
     <div style={{
@@ -187,58 +322,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
           </div>
         </div>
 
-        {/* Row 2 — Status quick-change (admin only)
-            Encadré + intitulé + puces à coins droits : cette rangée ÉCRIT en base, elle ne doit pas
-            avoir l'aspect de la barre d'onglets qui la suit (mêmes pastilles arrondies, et deux
-            libellés communs — « SAV »). L'écart vertical avec les onglets est aussi élargi. */}
-        {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-          <div style={{
-            background: 'rgba(255,255,255,0.035)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '12px',
-            padding: '9px 10px 10px',
-            marginBottom: '24px',
-          }}>
-            <p style={{
-              color: 'rgba(255,255,255,0.55)',
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              margin: '0 0 8px',
-            }}>
-              Statut du projet
-            </p>
-            <div className="peg-scroll-x md:flex-wrap" style={{ display: 'flex', gap: '4px' }}>
-            {statusOptions.map((opt) => {
-              const isActive = project.state === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  className="peg-tap-target"
-                  onClick={() => handleStatusChange(opt.value)}
-                  style={{
-                    padding: '4px 11px',
-                    borderRadius: '7px',
-                    border: `1.5px solid ${isActive ? opt.border : 'rgba(255,255,255,0.12)'}`,
-                    // Inactif lisible et plein : à 0.35 sur fond transparent, ces boutons d'écriture
-                    // avaient l'aspect de puces désactivées. Les couleurs de statut sont inchangées.
-                    background: isActive ? opt.bg : 'rgba(255,255,255,0.05)',
-                    color: isActive ? opt.color : 'rgba(255,255,255,0.62)',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-            </div>
-          </div>
-        )}
+        {statusControl}
 
         {/* Tabs */}
         <QuickFilterTab />

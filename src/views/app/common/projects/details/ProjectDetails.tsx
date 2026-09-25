@@ -24,6 +24,9 @@ import { pegBackendFetch } from '@/services/PegBackendClient';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
+import useResponsive from '@/utils/hooks/useResponsive';
+import QuickFilterTab from './components/QuickFilterTab';
+import { ProjectTabsMobile } from './components/ProjectHeaderMobile';
 
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
@@ -91,12 +94,22 @@ const ProjectDetails = () => {
     return () => clearInterval(iv);
   }, [isAdmin, documentId]);
   const customerDocId = project?.customer?.documentId;
+  // Téléphone : la page défile d'un bloc (l'en-tête part, les onglets restent
+  // accrochés) au lieu d'un contenu qui défile sous un en-tête figé, qui
+  // prenait la moitié de l'écran ; contenu avec des marges latérales.
+  const { smaller } = useResponsive();
+  const phone = smaller.md;
 
   return (
     project && (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
+      <div style={phone ? { display: 'flex', flexDirection: 'column' } : { display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
         <ProjectHeader project={project} customerLastSeen={customerLastSeen} />
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        {phone && (
+          <ProjectTabsMobile>
+            <QuickFilterTab />
+          </ProjectTabsMobile>
+        )}
+        <div style={phone ? { padding: '0 16px 8px' } : { flex: 1, overflow: 'auto' }}>
           <Container className="h-full">
             {selectedTab === 'Accueil' && <Summary project={project} />}
             {selectedTab === 'Commentaires' && <Comments />}

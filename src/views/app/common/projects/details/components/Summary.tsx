@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { env } from '@/configs/env.config';
-
-const resolveUrl = (url: string) => url.startsWith('http') ? url : env.API_ENDPOINT_URL + url;
 import Loading from '@/components/shared/Loading';
 import Container from '@/components/shared/Container';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { Project } from '@/@types/project';
-import { PegFile } from '@/@types/pegFile';
 import DetailsRight from './DetailsRight';
 import { Button } from '@/components/ui';
 import OrderItemDetails from './OrderItemDetails';
+import { projectCoverUrl, projectProgress } from '../utils';
+import { useProjectPhotoUpload } from '../useProjectPhotoUpload';
+import useResponsive from '@/utils/hooks/useResponsive';
 import { debounce } from 'lodash';
 import { HiPencil, HiPhotograph } from 'react-icons/hi';
 import { RichTextEditor } from '@/components/shared';
@@ -25,9 +24,7 @@ import {
   useAppSelector,
   updateCurrentProject,
   setEditDescription,
-  getProjectById,
 } from '../store';
-import { apiUploadFile } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 
 // Strip HTML via un document inerte (DOMParser) : contrairement à
@@ -105,10 +102,9 @@ const Summary = ({ project }: { project: Project }) => {
 
   const dispatch = useAppDispatch();
   const [description, setDescription] = useState(project.description);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const { uploading: uploadingPhoto, inputRef: photoInputRef, onFileChange: handlePhotoUpload } = useProjectPhotoUpload(project);
   // Fix #4 : état React pour le hover plutôt que manipulation DOM directe
   const [photoLabelHovered, setPhotoLabelHovered] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Fix #1 : debounce stabilisé via useMemo — plus recréé à chaque render
   const debounceFn = useMemo(
@@ -140,44 +136,12 @@ const Summary = ({ project }: { project: Project }) => {
     debounceFn(val);
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPhoto(true);
-    try {
-      const pegFile = await apiUploadFile(file);
-      await dispatch(
-        updateCurrentProject({
-          documentId: project.documentId,
-          // L'API attend des IDs de fichiers (number) pour la relation images en écriture GraphQL, pas des PegFile complets.
-          images: [pegFile.id] as unknown as PegFile[],
-        })
-      ).unwrap();
-      await dispatch(getProjectById(project.documentId));
-    } catch (err) {
-      toast.error("Échec de l'envoi de la photo");
-    } finally {
-      setUploadingPhoto(false);
-      if (photoInputRef.current) photoInputRef.current.value = '';
-    }
-  };
-
-  // Fix #3 : null guard cohérent sur tasks
-  const tasks = project.tasks ?? [];
-  const completedTasksCount = tasks.filter((task) => task.state === 'fulfilled').length;
-  const taskPercent = tasks.length > 0
-    ? Number(((completedTasksCount / tasks.length) * 100).toFixed(0))
-    : 0;
   // `checklistPercent` n'est alimenté qu'après ouverture de l'onglet Checklist :
   // à l'arrivée sur la fiche il vaut null et on retombait sur les tâches (0 %),
   // alors que la carte de liste affiche déjà l'avancement de la checklist.
   // Même calcul que ProjectItem, pour un seul avancement affiché partout.
-  const checklistItems = project.checklistItems ?? [];
-  const checklistItemsPercent = checklistItems.length > 0
-    ? Math.round((checklistItems.filter((i) => i.done).length / checklistItems.length) * 100)
-    : null;
-  const hasChecklist = checklistPercent !== null || checklistItemsPercent !== null;
-  const percentageComplete = checklistPercent ?? checklistItemsPercent ?? taskPercent;
+  const { percent: percentageComplete, source: progressSource } = projectProgress(project, checklistPercent);
+  const hasChecklist = progressSource === 'checklist';
 
   // Admin notes
   const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
@@ -206,11 +170,9 @@ const Summary = ({ project }: { project: Project }) => {
   }, [notesValue, project.adminNotes, project.documentId, dispatch]);
 
   const hasImage = project.orderItem?.product?.images?.[0]?.url || (!project.orderItem && project.images?.[0]?.url);
-  const imageUrl = project.orderItem?.product?.images?.[0]?.url
-    ? resolveUrl(project.orderItem.product.images[0].url)
-    : project.images?.[0]?.url
-      ? resolveUrl(project.images[0].url)
-      : null;
+  const imageUrl = projectCoverUrl(project);
+  // Téléphone : photo, avancement et nom sont dans l'en-tête (ProjectHeaderMobile)
+  const { smaller } = useResponsive();
 
   return (
     <Container className="h-full">
@@ -227,6 +189,7 @@ const Summary = ({ project }: { project: Project }) => {
           {/* Left column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Top row: Image + Progress circle + Project name */}
+            {!smaller.md && (
             <div className="peg-stack-mobile" style={{ ...cardStyle, display: 'flex', alignItems: 'stretch' }}>
               {/* Image column */}
               {(hasImage || !project.orderItem) && (
@@ -326,6 +289,7 @@ const Summary = ({ project }: { project: Project }) => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Description card */}
             {project.orderItem ? (

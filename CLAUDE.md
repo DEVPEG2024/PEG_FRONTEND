@@ -695,6 +695,15 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ---
 
+## 📱 Détail d'un projet sur téléphone (ajout 25/09/2026)
+
+- Sous 768px, `ProjectHeader` rend `ProjectHeaderMobile` (affichage seul ; la logique — statuts et leurs confirmations, attribution, modale d'édition — reste dans `ProjectHeader`). Il **prolonge la carte de la liste** : mêmes classes `peg-pcard*` (_mobile.css), photo « studio » avec statut/priorité posés dessus, **couleurs bleu nuit** (choix de Nova pour les cartes), nom en grand, « Livraison 2 oct. · dans 7 j », avancement, intervenants, bouton « ← Projets ». Admin : crayon d'édition sur la photo + rangée « Statut du projet » inchangée ; projet sans commande : « Ajouter / Changer la photo » (`useProjectPhotoUpload`, partagé avec l'onglet Accueil).
+- La page **défile d'un bloc** (plus de conteneur de hauteur fixe qui laissait la moitié de l'écran au contenu) et le contenu a 16px de marges. Les onglets (`ProjectTabsMobile`) sont **accrochés sous l'en-tête de l'app** (collant, 64px + barre d'état) ; ⚠️ ils doivent rester **enfants directs de la colonne de page** dans `ProjectDetails` — un élément collant ne tient que dans son parent. Onglet actif à la couleur de l'app (`--pdm-accent`).
+- Doublons retirés sur téléphone : carte photo/avancement/nom de l'onglet Accueil ; carte « Équipe » pour le **client** (l'admin la garde : elle porte le changement de producteur).
+- Avancement et photo : `projectProgress` / `projectCoverUrl` (`details/utils.ts`), mêmes calculs que la carte de liste. Bureau et tablette identiques au pixel.
+
+---
+
 ## 📱 Barre du bas du téléphone — défilante et personnalisable (ajout 25/09/2026)
 
 ### Comportement (< 768px, `src/components/template/MobileDock.tsx`)
