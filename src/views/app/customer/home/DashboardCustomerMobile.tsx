@@ -344,6 +344,10 @@ body.peg-dash-dark .header { background: ${PCM_DARK}; border-color: rgba(255, 25
 body.peg-dash-dark .peg-dock { background: rgba(10, 13, 11, 0.92); border-top-color: rgba(255, 255, 255, 0.06); }
 body.peg-dash-dark .peg-dock-item.is-active .peg-dock-icon { background: rgba(var(--pdm-accent-rgb), 0.16); color: var(--pdm-accent); }
 body.peg-dash-dark .peg-app-main { background: ${PCM_DARK}; }
+/* Fond « app » actif (MobileDock, _mobile.css) : le halo animé est fixé
+   derrière toute la page et la suit jusqu'en bas — ce fond s'efface devant lui. */
+body.peg-mobile-dark .pcm,
+body.peg-mobile-dark.peg-dash-dark .peg-app-main { background: transparent; }
 `;
 
 // ── Couleur d'accent : même réglage (et même clé) que l'admin sur téléphone ──

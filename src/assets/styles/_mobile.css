@@ -801,17 +801,99 @@
 
   /* FOND APP (MobileDock + utils/mobileShell.ts) : toutes les pages prennent
      le fond des tableaux de bord — noir, halo de la couleur choisie sur le
-     tableau de bord en haut à droite, sous l'en-tête — et l'en-tête, la barre
-     d'onglets et la barre d'état s'y fondent. Sur les tableaux de bord, leur
-     propre fond (.pdm / .pcm) reste devant : rien n'y change. */
+     tableau de bord — et l'en-tête, la barre d'onglets et la barre d'état s'y
+     fondent.
+
+     Le halo était peint dans .peg-app-main sur ~1 300 px : plus bas, la page
+     redevenait noire. Il vit désormais dans deux calques FIXÉS à l'écran
+     (body::before / ::after), derrière tout le contenu : il accompagne chaque
+     page jusqu'au bout du défilement. Ils portent des nuances de la couleur
+     choisie (la couleur, une nuance tirée vers le cyan, une vers le rose) qui
+     dérivent lentement ; au défilement, les deux calques glissent en sens
+     opposé et les nuances se croisent. Transformations seules (GPU), aucune
+     animation si l'utilisateur réduit les animations. La page et les
+     tableaux de bord (.pdm / .pcm) sont donc transparents. */
   body.peg-mobile-dark {
     background: #070a08;
   }
-  body.peg-mobile-dark .peg-app-main {
+  body.peg-mobile-dark::before,
+  body.peg-mobile-dark::after {
+    content: '';
+    position: fixed;
+    inset: -14% -20%;
+    z-index: -1;
+    pointer-events: none;
+    will-change: transform;
+  }
+  /* Repli (sans color-mix) : la couleur choisie seule, à différentes intensités */
+  body.peg-mobile-dark::before {
     background:
-      radial-gradient(130% 1100px at 100% calc(64px + var(--peg-safe-top)), rgba(var(--pdm-accent-rgb), 0.3) 0%, rgba(var(--pdm-accent-rgb), 0.1) 40%, transparent 70%),
-      radial-gradient(90% 740px at 0% 620px, rgba(var(--pdm-accent-rgb), 0.06) 0%, transparent 60%),
-      #070a08;
+      radial-gradient(42% 30% at 82% 18%, rgba(var(--pdm-accent-rgb), 0.3) 0%, rgba(var(--pdm-accent-rgb), 0.1) 45%, transparent 72%),
+      radial-gradient(40% 26% at 14% 56%, rgba(var(--pdm-accent-rgb), 0.18) 0%, transparent 70%),
+      radial-gradient(46% 30% at 72% 90%, rgba(var(--pdm-accent-rgb), 0.22) 0%, transparent 72%);
+    animation: peg-aura-a 26s ease-in-out infinite alternate;
+  }
+  body.peg-mobile-dark::after {
+    background:
+      radial-gradient(34% 22% at 26% 22%, rgba(var(--pdm-accent-rgb), 0.1) 0%, transparent 70%),
+      radial-gradient(40% 28% at 86% 60%, rgba(var(--pdm-accent-rgb), 0.15) 0%, transparent 70%),
+      radial-gradient(48% 30% at 28% 94%, rgba(var(--pdm-accent-rgb), 0.18) 0%, transparent 72%);
+    animation: peg-aura-b 34s ease-in-out infinite alternate;
+  }
+  /* Nuances : la couleur tirée vers le cyan (froide) et vers le rose (chaude).
+     Calculées ici depuis --pdm-accent-rgb : elles suivent la couleur quand on
+     la change sur le tableau de bord, sans code de plus. */
+  @supports (color: color-mix(in oklch, red 50%, blue)) {
+    body.peg-mobile-dark {
+      --peg-aura-cool: color-mix(in oklch, rgb(var(--pdm-accent-rgb)) 60%, #38bdf8);
+      --peg-aura-warm: color-mix(in oklch, rgb(var(--pdm-accent-rgb)) 60%, #f472b6);
+    }
+    body.peg-mobile-dark::before {
+      background:
+        radial-gradient(42% 30% at 82% 18%, rgba(var(--pdm-accent-rgb), 0.3) 0%, rgba(var(--pdm-accent-rgb), 0.1) 45%, transparent 72%),
+        radial-gradient(40% 26% at 14% 56%, color-mix(in srgb, var(--peg-aura-cool) 22%, transparent) 0%, transparent 70%),
+        radial-gradient(46% 30% at 72% 90%, color-mix(in srgb, var(--peg-aura-warm) 24%, transparent) 0%, transparent 72%);
+    }
+    body.peg-mobile-dark::after {
+      background:
+        radial-gradient(34% 22% at 26% 22%, color-mix(in srgb, var(--peg-aura-warm) 13%, transparent) 0%, transparent 70%),
+        radial-gradient(40% 28% at 86% 60%, rgba(var(--pdm-accent-rgb), 0.15) 0%, transparent 70%),
+        radial-gradient(48% 30% at 28% 94%, color-mix(in srgb, var(--peg-aura-cool) 20%, transparent) 0%, transparent 72%);
+    }
+  }
+  @keyframes peg-aura-a {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-4%, 3%, 0) scale(1.06); }
+    100% { transform: translate3d(3%, -2%, 0) scale(1.03); }
+  }
+  @keyframes peg-aura-b {
+    0% { transform: translate3d(0, 0, 0) scale(1.04); }
+    50% { transform: translate3d(5%, -3%, 0) scale(1); }
+    100% { transform: translate3d(-3%, 4%, 0) scale(1.07); }
+  }
+  /* Navigateurs qui savent lier une animation au défilement : les calques
+     glissent en sens opposé (propriété `translate`, qui se compose avec la
+     dérive en `transform`). Ailleurs, la dérive seule. */
+  @supports (animation-timeline: scroll()) {
+    body.peg-mobile-dark::before {
+      animation: peg-aura-a 26s ease-in-out infinite alternate, peg-aura-scroll-a linear both;
+      animation-timeline: auto, scroll(root);
+    }
+    body.peg-mobile-dark::after {
+      animation: peg-aura-b 34s ease-in-out infinite alternate, peg-aura-scroll-b linear both;
+      animation-timeline: auto, scroll(root);
+    }
+  }
+  @keyframes peg-aura-scroll-a {
+    from { translate: 0 0; }
+    to { translate: 0 -16%; }
+  }
+  @keyframes peg-aura-scroll-b {
+    from { translate: 0 0; }
+    to { translate: 0 12%; }
+  }
+  body.peg-mobile-dark .peg-app-main {
+    background: transparent;
   }
   body.peg-mobile-dark .header {
     background: #070a08;
@@ -1541,6 +1623,10 @@
 }
 
 @media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  body.peg-mobile-dark::before,
+  body.peg-mobile-dark::after {
+    animation: none;
+  }
   .peg-dock,
   .peg-dock-icon,
   .peg-dock-news,

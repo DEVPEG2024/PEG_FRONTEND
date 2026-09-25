@@ -242,6 +242,10 @@ body.peg-dash-dark .header { background: #070a08; border-color: rgba(255, 255, 2
 body.peg-dash-dark .peg-dock { background: rgba(10, 13, 11, 0.92); border-top-color: rgba(255, 255, 255, 0.06); }
 body.peg-dash-dark .peg-dock-item.is-active .peg-dock-icon { background: rgba(var(--pdm-accent-rgb), 0.16); color: var(--pdm-accent); }
 body.peg-dash-dark .peg-app-main { background: #070a08; }
+/* Fond « app » actif (MobileDock, _mobile.css) : le halo animé est fixé
+   derrière toute la page et la suit jusqu'en bas — ce fond s'efface devant lui. */
+body.peg-mobile-dark .pdm,
+body.peg-mobile-dark.peg-dash-dark .peg-app-main { background: transparent; }
 `;
 
 const DARK = '#070a08';
