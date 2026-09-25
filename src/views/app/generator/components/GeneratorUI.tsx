@@ -95,16 +95,19 @@ export const StatCard = ({
     accent?: string;
 }) => (
     <div
+        className="peg-kpi"
         style={{
             ...panelStyle,
             padding: '18px 20px',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '14px',
+            ['--peg-kpi-accent' as string]: accent,
         }}
     >
         {icon && (
             <div
+                className="peg-kpi-icon"
                 style={{
                     width: '40px',
                     height: '40px',
@@ -121,8 +124,9 @@ export const StatCard = ({
                 {icon}
             </div>
         )}
-        <div style={{ minWidth: 0 }}>
+        <div className="peg-kpi-body" style={{ minWidth: 0 }}>
             <p
+                className="peg-kpi-label"
                 style={{
                     color: 'rgba(255,255,255,0.5)',
                     fontSize: '10.5px',
@@ -135,6 +139,7 @@ export const StatCard = ({
                 {label}
             </p>
             <p
+                className="peg-kpi-value"
                 style={{
                     color: '#fff',
                     fontSize: '23px',
@@ -147,7 +152,7 @@ export const StatCard = ({
                 {value}
             </p>
             {hint && (
-                <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '11.5px', margin: '6px 0 0' }}>
+                <p className="peg-kpi-hint" style={{ color: 'rgba(255,255,255,0.32)', fontSize: '11.5px', margin: '6px 0 0' }}>
                     {hint}
                 </p>
             )}

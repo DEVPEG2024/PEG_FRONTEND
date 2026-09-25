@@ -74,14 +74,14 @@ const Panel = ({ title, action, children, style }: any) => (
 
 /* ── KPI card ── */
 const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: any) => (
-  <div style={{ flex: '1 1 200px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+  <div className="peg-kpi" style={{ flex: '1 1 200px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', ['--peg-kpi-accent' as string]: iconColor }}>
+    <div className="peg-kpi-icon" style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <span style={{ color: iconColor, display: 'flex' }}>{icon}</span>
     </div>
-    <div style={{ minWidth: 0 }}>
-      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
-      <p style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
+    <div className="peg-kpi-body" style={{ minWidth: 0 }}>
+      <p className="peg-kpi-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
+      <p className="peg-kpi-value" style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
+      <p className="peg-kpi-hint" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
     </div>
   </div>
 )
@@ -279,18 +279,18 @@ const InvoicesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Bannière ── */}
-      <div className="peg-pad-mobile" style={{
+      <div className="peg-pad-mobile peg-hero-compact" style={{
         position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
         padding: '34px 36px', marginTop: '24px', marginBottom: '24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px',
         background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
       }}>
         <div style={{ position: 'relative', zIndex: 2, minWidth: 0, maxWidth: '560px' }}>
-          <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>FINANCE</p>
-          <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+          <p className="peg-hero-eyebrow" style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>FINANCE</p>
+          <h1 className="peg-hero-title" style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
             FACTURES. PAIEMENTS. <span style={{ color: '#a78bfa' }}>SÉRÉNITÉ.</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
+          <p className="peg-hero-desc" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
             Retrouvez l'ensemble de vos factures, paiements et documents comptables en un seul endroit.
           </p>
         </div>
@@ -298,7 +298,7 @@ const InvoicesList = () => {
       </div>
 
       {/* ── KPI ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
         <KpiCard icon={<HiDocumentText size={24} />} iconBg="rgba(139,125,255,0.12)" iconBorder="rgba(139,125,255,0.28)" iconColor="#a99bff"
           label="Total facturé" value={fmtEur(stats.billed)} hint="Toutes factures confondues" />
         <KpiCard icon={<HiClock size={24} />} iconBg="rgba(251,191,36,0.12)" iconBorder="rgba(251,191,36,0.28)" iconColor="#fbbf24"

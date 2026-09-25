@@ -32,6 +32,7 @@ const StatWidget = ({
 }) => {
   const inner = (
     <div
+      className="peg-kpi"
       style={{
         background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
         borderRadius: '16px',
@@ -44,6 +45,7 @@ const StatWidget = ({
         fontFamily: 'Inter, sans-serif',
         cursor: href ? 'pointer' : 'default',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        ['--peg-kpi-accent' as string]: color.replace(/[\d.]+\)$/, '1)'),
       }}
       onMouseEnter={(e) => {
         if (!href) return;
@@ -56,23 +58,23 @@ const StatWidget = ({
         (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 24px rgba(0,0,0,0.3)';
       }}
     >
-      <div style={{
+      <div className="peg-kpi-icon" style={{
         width: '48px', height: '48px', borderRadius: '12px',
         background: color, display: 'flex', alignItems: 'center',
         justifyContent: 'center', flexShrink: 0,
       }}>
         {icon}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+      <div className="peg-kpi-body" style={{ flex: 1, minWidth: 0 }}>
+        <p className="peg-kpi-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
           {label}
         </p>
-        <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+        <p className="peg-kpi-value" style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
           {value}
         </p>
       </div>
       {href && (
-        <BsArrowRight size={18} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+        <BsArrowRight className="peg-hide-mobile" size={18} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
       )}
     </div>
   );
@@ -185,7 +187,7 @@ const DashboardProducer = () => {
           <div style={{ paddingTop: '28px', paddingBottom: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
             {/* Stat widgets */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="peg-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <StatWidget
                 icon={<HiOutlineClipboardList size={22} color="#6b9eff" />}
                 label="Projets en cours"

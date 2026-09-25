@@ -1,0 +1,137 @@
+/* =============================================================================
+   PEG — ÉCRANS TÉLÉPHONE « FAÇON TABLEAU DE BORD » (feuille ADDITIVE)
+   -----------------------------------------------------------------------------
+   Demande du 25/09/2026 : sur téléphone, chaque onglet reprend la mise en page
+   du tableau de bord et du calendrier — en-tête compact, indicateurs en grille
+   de deux, pastille d'icône — en GARDANT les couleurs bleu nuit des cartes
+   (décision du même jour : pas de fond « verre » hors tableau de bord et
+   calendrier).
+
+   Tout est enfermé sous 768px : sur ordinateur et tablette ces classes n'ont
+   aucun effet. Les vues étant stylées en `style={{…}}`, les règles portent
+   `!important` pour battre le style inline (cf. note de `_mobile.css`).
+
+   CLASSES
+   - peg-hero-compact   bandeau d'accroche → en-tête de page compact
+     · peg-hero-eyebrow  surtitre (FINANCE, DEVIS…)
+     · peg-hero-title    titre
+     · peg-hero-desc     phrase d'accroche (masquée : le titre suffit)
+     · peg-hero-cta      conteneur des boutons d'action
+   - peg-kpi-grid       rangée d'indicateurs → grille de deux colonnes
+   - peg-kpi            tuile d'indicateur façon tableau de bord : libellé en
+                        petites capitales, valeur en gras, pastille d'icône en
+                        haut à droite, filet de couleur en haut (--peg-kpi-accent)
+     · peg-kpi-icon / peg-kpi-body / peg-kpi-label / peg-kpi-value / peg-kpi-hint
+   ============================================================================= */
+
+@media (max-width: 767.98px) {
+  /* ── En-tête compact ─────────────────────────────────────────────────────── */
+  .peg-hero-compact {
+    padding: 16px 18px !important;
+    margin-top: 12px !important;
+    margin-bottom: 14px !important;
+    border-radius: 18px !important;
+    min-height: 0 !important;
+    gap: 12px !important;
+  }
+  .peg-hero-eyebrow {
+    margin: 0 0 6px !important;
+    font-size: 10px !important;
+  }
+  .peg-hero-title {
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+  }
+  .peg-hero-desc {
+    display: none !important;
+  }
+  .peg-hero-cta {
+    margin-top: 12px !important;
+  }
+
+  /* ── Indicateurs ─────────────────────────────────────────────────────────── */
+  .peg-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  .peg-kpi-grid > * {
+    min-width: 0;
+  }
+  /* Nombre impair d'indicateurs : le dernier prend toute la largeur (pas de trou).
+     `:has` couvre la tuile enveloppée dans un lien (accueil producteur). */
+  .peg-kpi-grid > .peg-kpi:last-child:nth-child(odd),
+  .peg-kpi-grid > :last-child:nth-child(odd):has(> .peg-kpi) {
+    grid-column: 1 / -1;
+  }
+
+  .peg-kpi {
+    position: relative;
+    overflow: hidden;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    padding: 14px !important;
+    min-width: 0 !important;
+    border-radius: 16px !important;
+  }
+  /* Filet de couleur en haut, comme les tuiles du tableau de bord */
+  .peg-kpi::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--peg-kpi-accent, transparent);
+    opacity: 0.8;
+  }
+  .peg-kpi-icon {
+    position: absolute !important;
+    top: 12px;
+    right: 12px;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .peg-kpi-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .peg-kpi-body {
+    min-width: 0;
+    width: 100%;
+  }
+  .peg-kpi-label {
+    margin: 0 0 8px !important;
+    padding-right: 38px;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45) !important;
+    line-height: 1.3 !important;
+    min-height: 2.6em;
+  }
+  .peg-kpi-value {
+    margin: 0 !important;
+    font-size: 20px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .peg-kpi-hint {
+    margin: 4px 0 0 !important;
+    font-size: 10.5px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

@@ -858,7 +858,7 @@ const GeneratorsAdminList = () => {
             </div>
 
             {/* Totaux */}
-            <div
+            <div className="peg-kpi-grid"
                 style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',

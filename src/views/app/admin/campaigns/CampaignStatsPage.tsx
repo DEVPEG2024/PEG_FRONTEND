@@ -216,7 +216,7 @@ const CampaignStatsPage = () => {
       )}
 
       {/* Indicateurs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '12px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '12px' }}>
         <Kpi label="Destinataires" value={fmtInt(stats.recipients)} sub={`${fmtInt(customers)} client${customers > 1 ? 's' : ''}`} />
         <Kpi label="Taux d’ouverture" value={pct(stats.openRate)} sub={`${fmtInt(stats.opened)} ouverture${stats.opened > 1 ? 's' : ''}`} />
         <Kpi label="Taux de clic" value={campaign.ctaLabel ? pct(stats.clickRate) : '—'} sub={campaign.ctaLabel ? `${fmtInt(stats.clicked)} clic${stats.clicked > 1 ? 's' : ''} sur « ${campaign.ctaLabel} »` : 'pas de bouton d’action'} />

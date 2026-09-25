@@ -76,15 +76,15 @@ function Avatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
 // ─── KPI card ──────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, sub, icon, accent }: { label: string; value: string; sub?: string; icon: React.ReactNode; accent: string }) {
     return (
-        <div className={`relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-5 shadow-sm`}>
+        <div className={`peg-kpi relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-5 shadow-sm`}>
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 -translate-y-6 translate-x-6 ${accent}`} />
-            <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</p>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</p>
-                    {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            <div className="peg-kpi-body flex items-start justify-between">
+                <div className="min-w-0">
+                    <p className="peg-kpi-label text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</p>
+                    <p className="peg-kpi-value text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</p>
+                    {sub && <p className="peg-kpi-hint text-xs text-gray-400 mt-0.5">{sub}</p>}
                 </div>
-                <div className={`p-2.5 rounded-xl ${accent} bg-opacity-20`}>{icon}</div>
+                <div className={`peg-kpi-icon p-2.5 rounded-xl ${accent} bg-opacity-20`}>{icon}</div>
             </div>
         </div>
     )
@@ -882,7 +882,7 @@ const LeadsPage = () => {
                 </div>
 
                 {/* KPIs */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                <div className="peg-kpi-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
                     <KpiCard label="Pipeline pondéré" value={fmtEur(kpis.pipeline)} sub="valeur × probabilité" icon={<HiOutlineCurrencyEuro className="w-5 h-5 text-blue-600" />} accent="bg-blue-500" />
                     <KpiCard label="Total leads" value={String(kpis.total)} sub={`${kpis.won} gagnés`} icon={<HiOutlineUser className="w-5 h-5 text-purple-600" />} accent="bg-purple-500" />
                     <KpiCard label="Taux de conversion" value={`${kpis.conversion}%`} sub="leads gagnés / closés" icon={<HiOutlineOfficeBuilding className="w-5 h-5 text-emerald-600" />} accent="bg-emerald-500" />

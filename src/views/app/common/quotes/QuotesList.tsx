@@ -55,14 +55,14 @@ const Panel = ({ title, action, children, style }: any) => (
 
 /* ── KPI card ── */
 const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: any) => (
-  <div style={{ flex: '1 1 200px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+  <div className="peg-kpi" style={{ flex: '1 1 200px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', ['--peg-kpi-accent' as string]: iconColor }}>
+    <div className="peg-kpi-icon" style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <span style={{ color: iconColor, display: 'flex' }}>{icon}</span>
     </div>
-    <div style={{ minWidth: 0 }}>
-      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
-      <p style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
+    <div className="peg-kpi-body" style={{ minWidth: 0 }}>
+      <p className="peg-kpi-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>{label}</p>
+      <p className="peg-kpi-value" style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
+      <p className="peg-kpi-hint" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', margin: 0 }}>{hint}</p>
     </div>
   </div>
 );
@@ -553,22 +553,22 @@ const QuotesList = () => {
   return (
     <Container style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* ── Bannière par défaut (comme Tickets / Fichiers) ── */}
-      <div className="peg-pad-mobile" style={{
+      <div className="peg-pad-mobile peg-hero-compact" style={{
         position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
         padding: '34px 36px', marginTop: '24px', marginBottom: '22px',
         background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
       }}>
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '560px' }}>
-          <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>DEVIS</p>
-          <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+          <p className="peg-hero-eyebrow" style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>DEVIS</p>
+          <h1 className="peg-hero-title" style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
             DEMANDEZ. COMPAREZ. <span style={{ color: '#a78bfa' }}>VALIDEZ.</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5, maxWidth: '460px' }}>
+          <p className="peg-hero-desc" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5, maxWidth: '460px' }}>
             Consultez, comparez et suivez vos demandes de devis en toute simplicité.
           </p>
         </div>
         {!isAdmin && (
-          <button onClick={() => navigate('/customer/devis')}
+          <button className="peg-hero-cta" onClick={() => navigate('/customer/devis')}
             style={{ ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #6d5dfc, #5a47e0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(109,93,252,0.35)' }}>
             <TbSend size={16} /> Demander un devis
           </button>
@@ -580,7 +580,7 @@ const QuotesList = () => {
       </div>
 
       {/* ── KPI ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '24px' }}>
         <KpiCard icon={<TbSparkles size={24} />} iconBg="rgba(139,125,255,0.12)" iconBorder="rgba(139,125,255,0.28)" iconColor="#a99bff"
           label="Total devis" value={stats.total} hint="Toutes demandes confondues" />
         <KpiCard icon={<TbClock size={24} />} iconBg="rgba(251,191,36,0.12)" iconBorder="rgba(251,191,36,0.28)" iconColor="#fbbf24"

@@ -227,19 +227,19 @@ const ExpensesList = () => {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
         {[
           { label: 'Total dépenses', value: fmt(totalExpenses), icon: <HiOutlineBanknotes size={20} />, color: '#6b9eff' },
           { label: 'Payé', value: fmt(totalPaid), icon: <HiOutlineCheckCircle size={20} />, color: '#4ade80' },
           { label: 'A payer', value: fmt(totalPending), icon: <HiOutlineClock size={20} />, color: '#fbbf24' },
           { label: 'En retard', value: fmt(totalOverdue), icon: <HiOutlineExclamationTriangle size={20} />, color: '#f87171' },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px 18px' }}>
+          <div key={kpi.label} className="peg-kpi" style={{ background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)', border: '1.5px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px 18px', ['--peg-kpi-accent' as string]: kpi.color }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <div style={{ color: kpi.color }}>{kpi.icon}</div>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 500 }}>{kpi.label}</span>
             </div>
-            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>{kpi.value} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>EUR</span></div>
+            <div className="peg-kpi-value" style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>{kpi.value} <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>EUR</span></div>
           </div>
         ))}
       </div>

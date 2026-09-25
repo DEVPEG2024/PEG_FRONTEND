@@ -79,10 +79,10 @@ export const StatusBadge = ({ status, archived }: { status: CampaignStatus; arch
 };
 
 export const Kpi = ({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) => (
-  <div style={{ ...PANEL, padding: '14px 16px', minWidth: 0 }}>
-    <div style={labelStyle}>{label}</div>
-    <div style={{ color: accent || '#fff', fontSize: '26px', fontWeight: 700, marginTop: '6px', lineHeight: 1.1 }}>{value}</div>
-    {sub && <div style={{ ...hintStyle, marginTop: '4px' }}>{sub}</div>}
+  <div className="peg-kpi" style={{ ...PANEL, padding: '14px 16px', minWidth: 0, ['--peg-kpi-accent' as string]: accent || '#8b5cf6' }}>
+    <div className="peg-kpi-label" style={labelStyle}>{label}</div>
+    <div className="peg-kpi-value" style={{ color: accent || '#fff', fontSize: '26px', fontWeight: 700, marginTop: '6px', lineHeight: 1.1 }}>{value}</div>
+    {sub && <div className="peg-kpi-hint" style={{ ...hintStyle, marginTop: '4px' }}>{sub}</div>}
   </div>
 );
 

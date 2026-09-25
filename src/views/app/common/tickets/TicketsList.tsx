@@ -117,14 +117,14 @@ const Panel = ({ title, action, children, style }: any) => (
 );
 
 const KpiCard = ({ icon, iconBg, iconBorder, iconColor, label, value, hint }: any) => (
-  <div style={{ flex: '1 1 220px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px 22px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+  <div className="peg-kpi" style={{ flex: '1 1 220px', minWidth: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px 22px', display: 'flex', alignItems: 'center', gap: '16px', ['--peg-kpi-accent' as string]: iconColor }}>
+    <div className="peg-kpi-icon" style={{ width: '52px', height: '52px', borderRadius: '14px', background: iconBg, border: `1px solid ${iconBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <span style={{ color: iconColor, display: 'flex' }}>{icon}</span>
     </div>
-    <div style={{ minWidth: 0 }}>
-      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 500, margin: '0 0 3px' }}>{label}</p>
-      <p style={{ color: '#fff', fontSize: '26px', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
-      <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '12px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hint}</p>
+    <div className="peg-kpi-body" style={{ minWidth: 0 }}>
+      <p className="peg-kpi-label" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 500, margin: '0 0 3px' }}>{label}</p>
+      <p className="peg-kpi-value" style={{ color: '#fff', fontSize: '26px', fontWeight: 800, margin: '0 0 2px', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</p>
+      <p className="peg-kpi-hint" style={{ color: 'rgba(255,255,255,0.32)', fontSize: '12px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hint}</p>
     </div>
   </div>
 );
@@ -776,21 +776,21 @@ const TicketsList = () => {
     return (
       <Container style={{ fontFamily: 'Inter, sans-serif', paddingBottom: '40px' }}>
         {/* HERO */}
-        <div className="peg-pad-mobile" style={{
+        <div className="peg-pad-mobile peg-hero-compact" style={{
           position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
           padding: '34px 36px', marginTop: '24px', marginBottom: '20px',
           background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
         }}>
           <div style={{ position: 'relative', zIndex: 2, maxWidth: '560px' }}>
-            <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>CENTRE D'ASSISTANCE</p>
-            <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+            <p className="peg-hero-eyebrow" style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>CENTRE D'ASSISTANCE</p>
+            <h1 className="peg-hero-title" style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
               ASSISTANCE. SUIVI. <span style={{ color: '#a78bfa' }}>RÉSOLUTION.</span>
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
+            <p className="peg-hero-desc" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
               Gérez et suivez l'ensemble des tickets de vos clients en un coup d'œil.
             </p>
           </div>
-          <button onClick={() => openWizard(undefined, 0)}
+          <button className="peg-hero-cta" onClick={() => openWizard(undefined, 0)}
             style={{ ...PRIMARY_BTN, ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
             <HiPlus size={16} /> Nouveau ticket
           </button>
@@ -798,7 +798,7 @@ const TicketsList = () => {
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <div className="peg-kpi-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
           <KpiCard icon={<MdHeadsetMic size={24} />} iconBg="rgba(139,125,255,0.12)" iconBorder="rgba(139,125,255,0.25)" iconColor="#a99bff"
             label="Tickets ouverts" value={loading ? '—' : adminStats.open} hint={adminStats.open === 0 ? 'Aucun ticket ouvert' : 'En cours de traitement'} />
           <KpiCard icon={<HiOutlineClock size={24} />} iconBg="rgba(251,191,36,0.12)" iconBorder="rgba(251,191,36,0.25)" iconColor="#fbbf24"
@@ -877,21 +877,21 @@ const TicketsList = () => {
     return (
       <Container style={{ fontFamily: 'Inter, sans-serif', paddingBottom: '40px' }}>
         {/* HERO */}
-        <div className="peg-pad-mobile" style={{
+        <div className="peg-pad-mobile peg-hero-compact" style={{
           position: 'relative', overflow: 'hidden', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)',
           padding: '34px 36px', marginTop: '24px', marginBottom: '20px',
           background: 'radial-gradient(120% 150% at 82% 0%, rgba(124,107,255,0.30) 0%, rgba(91,71,224,0.10) 38%, rgba(13,16,28,0.3) 72%), linear-gradient(160deg, #15172b 0%, #0d1018 100%)',
         }}>
           <div style={{ position: 'relative', zIndex: 2, maxWidth: '560px' }}>
-            <p style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>ASSISTANCE</p>
-            <h1 style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
+            <p className="peg-hero-eyebrow" style={{ color: '#a99bff', fontSize: '11px', fontWeight: 700, letterSpacing: '0.18em', margin: '0 0 12px' }}>ASSISTANCE</p>
+            <h1 className="peg-hero-title" style={{ color: '#fff', fontSize: '34px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, margin: 0 }}>
               ASSISTANCE. ÉCHANGE. <span style={{ color: '#a78bfa' }}>RÉSOLUTION.</span>
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
+            <p className="peg-hero-desc" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '14px 0 0', lineHeight: 1.5 }}>
               Notre équipe vous accompagne tout au long de vos projets.
             </p>
           </div>
-          <button onClick={() => openWizard(undefined, 0)}
+          <button className="peg-hero-cta" onClick={() => openWizard(undefined, 0)}
             style={{ ...PRIMARY_BTN, ...(larger.md ? { position: 'absolute', top: '28px', right: '32px' } : { position: 'relative', marginTop: '16px' }), zIndex: 3, padding: '12px 22px', fontSize: '14px' }}>
             <HiPlus size={16} /> Nouveau ticket
           </button>
@@ -899,7 +899,7 @@ const TicketsList = () => {
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <div className="peg-kpi-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
           <KpiCard icon={<MdHeadsetMic size={24} />} iconBg="rgba(139,125,255,0.12)" iconBorder="rgba(139,125,255,0.25)" iconColor="#a99bff"
             label="Tickets ouverts" value={loading ? '—' : kpis.open} hint={kpis.open === 0 ? 'Aucun ticket ouvert' : 'En cours de traitement'} />
           <KpiCard icon={<HiOutlineClock size={24} />} iconBg="rgba(251,191,36,0.12)" iconBorder="rgba(251,191,36,0.25)" iconColor="#fbbf24"

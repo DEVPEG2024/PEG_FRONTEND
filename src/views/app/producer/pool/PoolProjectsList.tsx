@@ -41,7 +41,7 @@ const StatWidget = ({
   color: string;
   sub?: string;
 }) => (
-  <div style={{
+  <div className="peg-kpi" style={{
     background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
     borderRadius: '16px',
     padding: '20px 24px',
@@ -51,23 +51,24 @@ const StatWidget = ({
     alignItems: 'center',
     gap: '16px',
     fontFamily: 'Inter, sans-serif',
+    ['--peg-kpi-accent' as string]: color.replace(/[\d.]+\)$/, '1)'),
   }}>
-    <div style={{
+    <div className="peg-kpi-icon" style={{
       width: '48px', height: '48px', borderRadius: '12px',
       background: color, display: 'flex', alignItems: 'center',
       justifyContent: 'center', flexShrink: 0,
     }}>
       {icon}
     </div>
-    <div>
-      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
+    <div className="peg-kpi-body">
+      <p className="peg-kpi-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>
         {label}
       </p>
-      <p style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+      <p className="peg-kpi-value" style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
         {value}
       </p>
       {sub && (
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginTop: '4px' }}>{sub}</p>
+        <p className="peg-kpi-hint" style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', marginTop: '4px' }}>{sub}</p>
       )}
     </div>
   </div>
@@ -143,7 +144,7 @@ const PoolProjectsList = () => {
       </div>
 
       {/* Widgets stat */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '28px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '28px' }}>
         <StatWidget
           icon={<HiOutlineClipboardList size={22} color="#a78bfa" />}
           label="Disponibles"

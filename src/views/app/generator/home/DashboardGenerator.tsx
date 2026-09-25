@@ -261,7 +261,7 @@ const DashboardGenerator = () => {
             </div>
 
             {/* Agrégats */}
-            <div
+            <div className="peg-kpi-grid"
                 style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',

@@ -262,7 +262,7 @@ const CampaignsList = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
+      <div className="peg-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
         <Kpi label="Campagnes envoyées" value={overview ? fmtInt(overview.sent) : '—'} sub={overview ? `${overview.sentLast30Days} ces 30 derniers jours` : undefined} />
         <Kpi label="Destinataires touchés" value={overview ? fmtInt(overview.recipients) : '—'} sub="comptes clients, toutes campagnes" />
         <Kpi label="Taux d’ouverture moyen" value={overview ? pct(overview.openRate) : '—'} sub="ouvertures / destinataires" />

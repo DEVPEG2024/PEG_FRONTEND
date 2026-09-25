@@ -6,3 +6,5 @@
 @import "./_mobile.css";
 /* Cartes adaptatives (container queries) — ADDITIF, même principe. */
 @import "./_cards.css";
+/* Téléphone : en-têtes compacts et indicateurs façon tableau de bord — ADDITIF. */
+@import "./_mobile-dashboard.css";
