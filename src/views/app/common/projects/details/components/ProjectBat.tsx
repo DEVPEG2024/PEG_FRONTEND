@@ -11,6 +11,7 @@ import { hasRole } from '@/utils/permissions';
 import { SUPER_ADMIN, ADMIN } from '@/constants/roles.constant';
 import { apiUploadFile } from '@/services/FileServices';
 import { apiUpdateBatFile, apiUpdateBatStatus } from '@/services/ProductServices';
+import { BAT_ACCEPT } from '@/utils/batFiles';
 
 const batStatusConfig = {
   pending: {
@@ -307,7 +308,7 @@ const ProjectBat = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp,.zip,.ai,.psd"
+                accept={BAT_ACCEPT}
                 onChange={handleFileSelected}
                 disabled={uploading}
                 style={{ display: 'none' }}

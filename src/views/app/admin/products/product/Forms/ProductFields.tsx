@@ -18,6 +18,7 @@ import { SUPER_ADMIN, ADMIN, PRODUCER } from '@/constants/roles.constant';
 import { useState } from 'react';
 import { apiAiFillProduct, apiGenerateProductImage } from '@/services/ChatbotServices';
 import { sameName } from '@/utils/nameMatch';
+import { BAT_ACCEPT, BAT_FORMATS_LABEL, isAcceptedBatFile } from '@/utils/batFiles';
 
 type Options = {
   label: string;
@@ -211,8 +212,9 @@ const ProductFields = (props: ProductFieldsProps) => {
   const handleBatFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'application/pdf') {
-      alert('Veuillez sélectionner un fichier PDF.');
+    if (!isAcceptedBatFile(file.name)) {
+      alert(`Format non accepté pour un BAT. Formats possibles : ${BAT_FORMATS_LABEL}.`);
+      e.target.value = '';
       return;
     }
     setBatFile({ file, name: file.name } as unknown as PegFile);
@@ -746,7 +748,7 @@ const ProductFields = (props: ProductFieldsProps) => {
 
         {requiresBat && (
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
-            <label style={{ ...fieldLabel, color: 'rgba(168,85,247,0.7)' }}>Fichier BAT (PDF)</label>
+            <label style={{ ...fieldLabel, color: 'rgba(168,85,247,0.7)' }}>Fichier BAT</label>
 
             {/* Current BAT */}
             {(batFile || currentBatUrl) && (
@@ -757,7 +759,7 @@ const ProductFields = (props: ProductFieldsProps) => {
                 </span>
                 {currentBatUrl && !batFile && (
                   <a href={currentBatUrl} target="_blank" rel="noreferrer" style={{ color: 'rgba(192,132,252,0.7)', fontSize: '11px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                    Voir PDF →
+                    Voir le BAT →
                   </a>
                 )}
                 <button
@@ -775,10 +777,10 @@ const ProductFields = (props: ProductFieldsProps) => {
             <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(168,85,247,0.04)', border: '1.5px dashed rgba(168,85,247,0.25)', borderRadius: '12px', padding: '20px', cursor: 'pointer' }}>
               <HiOutlineUpload size={22} style={{ color: 'rgba(192,132,252,0.5)' }} />
               <span style={{ color: 'rgba(192,132,252,0.7)', fontSize: '12px', fontWeight: 600, textAlign: 'center' }}>
-                {batFile ? 'Remplacer le PDF' : 'Déposer ou cliquer pour choisir un PDF'}
+                {batFile ? 'Remplacer le fichier' : 'Déposer ou cliquer pour choisir un fichier'}
               </span>
-              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px' }}>PDF uniquement</span>
-              <input type="file" accept="application/pdf" onChange={handleBatFileChange} style={{ display: 'none' }} />
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', textAlign: 'center' }}>{BAT_FORMATS_LABEL}</span>
+              <input type="file" accept={BAT_ACCEPT} onChange={handleBatFileChange} style={{ display: 'none' }} />
             </label>
           </div>
         )}
