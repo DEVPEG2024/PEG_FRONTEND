@@ -20,6 +20,7 @@ import ProjectHeaderMobile from './ProjectHeaderMobile';
 import { projectCoverUrl, projectProgress } from '../utils';
 import { useProjectPhotoUpload } from '../useProjectPhotoUpload';
 import { useAppSelector as useDetailsSelector } from '../store';
+import ProjectShippingBar from './shipping/ProjectShippingBar';
 
 const statusOptions = [
   { value: 'pending',   label: 'En cours',    color: '#6b9eff', bg: 'rgba(47,111,237,0.15)',  border: 'rgba(47,111,237,0.35)' },
@@ -215,6 +216,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
           onAssign={hasRole(user, [PRODUCER]) && !project.producer ? assignMeAsProducer : undefined}
           statusControl={statusControl || undefined}
           compact={selectedTab !== 'Accueil'}
+          shipping={<ProjectShippingBar project={project} variant="mobile" />}
         />
         {isAdmin && <ModalEditProject />}
       </>
@@ -324,6 +326,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
         </div>
 
         {statusControl}
+        <ProjectShippingBar project={project} />
 
         {/* Tabs */}
         <QuickFilterTab />

@@ -41,6 +41,8 @@ type Props = {
   statusControl?: ReactNode;
   /** Bande réduite (onglets autres qu'Accueil) */
   compact?: boolean;
+  /** Expédition (« Expédié le … », « Marquer comme expédié ») — carte héros seulement */
+  shipping?: ReactNode;
 };
 
 const CSS = `
@@ -125,6 +127,7 @@ const ProjectHeaderMobile = ({
   onAssign,
   statusControl,
   compact,
+  shipping,
 }: Props) => (
   <div className="peg-pd">
     <style>{CSS}</style>
@@ -223,6 +226,7 @@ const ProjectHeaderMobile = ({
             )}
           </div>
         )}
+            {shipping}
 
         <div>
           <div className="peg-pd-progress-label">
