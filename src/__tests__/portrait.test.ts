@@ -40,8 +40,23 @@ describe('téléphone en paysage', () => {
     expect(shouldAskPortrait(env)).toBe(true);
   });
 
-  it('clavier ouvert sur Android (fenêtre plus large que haute) : pas d’écran de rotation', () => {
-    expect(shouldAskPortrait(iphone({ mediaLandscape: true }))).toBe(false);
+  it('iPhone : la page s’élargit AVANT que la rotation soit annoncée → écran tout de suite', () => {
+    expect(shouldAskPortrait(iphone({ mediaLandscape: true }))).toBe(true);
+  });
+
+  it('clavier ouvert sur Android (fenêtre plus large que haute, saisie en cours) : pas d’écran de rotation', () => {
+    expect(shouldAskPortrait(iphone({ mediaLandscape: true }), true)).toBe(
+      false
+    );
+  });
+
+  it('téléphone réellement couché pendant une saisie : écran quand même', () => {
+    expect(
+      shouldAskPortrait(
+        iphone({ orientationType: 'landscape-primary', mediaLandscape: true }),
+        true
+      )
+    ).toBe(true);
   });
 
   it('ancien iOS sans screen.orientation : window.orientation fait foi', () => {

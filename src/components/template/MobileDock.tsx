@@ -49,6 +49,7 @@ import {
 } from '@/utils/navMenu';
 import type { DockEntry } from '@/utils/navMenu';
 import { accentVars, readAccent } from '@/utils/mobileShell';
+import { opensKeyboard } from '@/utils/keyboard';
 
 /*
  * Barre d'onglets du téléphone (< md) : la navigation d'une application native.
@@ -80,29 +81,6 @@ const EDGE_FADE_PX = 26;
 const SCROLL_HINT_STORAGE_KEY = 'peg_dock_hint_v1';
 // Couleur appliquée à la barre d'état (Android, Safari) : celle de l'en-tête
 const THEME_COLOR_SELECTOR = 'meta[name="theme-color"]';
-
-const NON_TEXT_INPUTS = new Set([
-  'checkbox',
-  'radio',
-  'button',
-  'submit',
-  'reset',
-  'range',
-  'color',
-  'file',
-  'image',
-  'hidden',
-]);
-
-// Un champ qui ouvre le clavier virtuel : la barre s'efface pour lui laisser la place
-const opensKeyboard = (el: EventTarget | Element | null): boolean => {
-  if (!(el instanceof HTMLElement)) return false;
-  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
-  return (
-    el.tagName === 'INPUT' &&
-    !NON_TEXT_INPUTS.has((el as HTMLInputElement).type)
-  );
-};
 
 const Dock = () => {
   const location = useLocation();

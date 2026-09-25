@@ -1787,7 +1787,7 @@
   position: fixed;
   inset: 0;
   z-index: 20000;
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1800,6 +1800,18 @@
   font-family: Inter, sans-serif;
   text-align: center;
   touch-action: none;
+}
+/* Affiché par le CSS dès que la fenêtre d'un téléphone est plus large que
+   haute — dans la même image que la mise en page paysage, avant même que le
+   navigateur annonce la rotation (Safari) ; hors saisie (clavier Android).
+   Et par le JS (`is-asked`) quand l'appareil est couché. */
+.peg-rotate.is-asked {
+  display: flex;
+}
+@media (orientation: landscape) {
+  html.peg-phone:not(.peg-typing) .peg-rotate {
+    display: flex;
+  }
 }
 .peg-rotate-logo {
   width: 92px;

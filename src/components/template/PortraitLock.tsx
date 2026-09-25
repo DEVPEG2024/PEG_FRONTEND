@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  isPhoneDevice,
+  TYPING_CLASS,
+  markPhoneDevice,
   readOrientationEnv,
   shouldAskPortrait,
 } from '@/utils/portrait';
+import { opensKeyboard } from '@/utils/keyboard';
 import { accentVars, readAccent } from '@/utils/mobileShell';
 import { isStandalone } from '@/utils/pwa';
 
@@ -28,21 +30,43 @@ const tryLockPortrait = () => {
 };
 
 const PortraitLock = () => {
+  // Téléphone : l'écran est toujours dans la page, et le CSS l'affiche dans
+  // la même image que la mise en page paysage (aucun aperçu de la version
+  // ordinateur). `ask` suit le même état en JS pour l'accessibilité.
+  const [phone, setPhone] = useState(markPhoneDevice);
+  const typing = useRef(false);
   const [ask, setAsk] = useState(() => shouldAskPortrait(readOrientationEnv()));
 
   useEffect(() => {
-    if (isStandalone() && isPhoneDevice(readOrientationEnv()))
-      tryLockPortrait();
-    const update = () => setAsk(shouldAskPortrait(readOrientationEnv()));
+    if (isStandalone() && phone) tryLockPortrait();
+    const update = () => {
+      setPhone(markPhoneDevice());
+      setAsk(shouldAskPortrait(readOrientationEnv(), typing.current));
+    };
+    const setTyping = (on: boolean) => {
+      typing.current = on;
+      document.documentElement.classList.toggle(TYPING_CLASS, on);
+      update();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      if (opensKeyboard(e.target)) setTyping(true);
+    };
+    const onFocusOut = () =>
+      setTimeout(() => setTyping(opensKeyboard(document.activeElement)), 120);
     const orientation = window.screen?.orientation;
     orientation?.addEventListener?.('change', update);
     window.addEventListener('orientationchange', update);
     window.addEventListener('resize', update);
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
     return () => {
       orientation?.removeEventListener?.('change', update);
       window.removeEventListener('orientationchange', update);
       window.removeEventListener('resize', update);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
     };
+    // Une seule fois : `phone` initial suffit pour tenter le verrouillage
   }, []);
 
   // Le reste de l'application est inerte et ne défile plus derrière l'écran
@@ -59,10 +83,10 @@ const PortraitLock = () => {
     };
   }, [ask]);
 
-  if (!ask) return null;
+  if (!phone) return null;
   return createPortal(
     <div
-      className="peg-rotate"
+      className={ask ? 'peg-rotate is-asked' : 'peg-rotate'}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="peg-rotate-title"

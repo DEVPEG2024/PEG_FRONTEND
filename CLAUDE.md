@@ -737,7 +737,9 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ### Téléphone en paysage (demande Nova 25/09/2026)
 - Tenu en paysage, un téléphone dépasse 768px de large → PEG passait en version ordinateur. Une page web ne peut PAS bloquer la rotation (Safari l'interdit) : `PortraitLock.tsx` (monté dans `App.tsx`, connexion comprise) recouvre alors tout d'un écran « Tournez votre téléphone » au style des tableaux de bord ; `#root` devient inerte. Application installée sur Android : `screen.orientation.lock('portrait-primary')` en plus.
-- Détection sur l'**appareil** (`src/utils/portrait.ts`, tests `portrait.test.ts`) : écran tactile dont le plus petit côté < 600px (tablettes ≥ 744 → jamais concernées), orientation lue sur `screen.orientation` / `window.orientation`. ⚠️ Pas `(orientation: landscape)` : le clavier Android rend la fenêtre plus large que haute et l'écran surgirait en pleine saisie.
+- Téléphone = écran tactile dont le plus petit côté < 600px (tablettes ≥ 744 → jamais concernées) → classe `html.peg-phone`, posée dans `main.tsx` AVANT le premier rendu (`src/utils/portrait.ts`, tests `portrait.test.ts`).
+- ⚠️ **L'écran est affiché par le CSS** (`@media (orientation: landscape)` sur `html.peg-phone:not(.peg-typing)`), dans la même image que la mise en page paysage : sur iPhone, Safari élargit la page AVANT d'annoncer la rotation — piloté par le seul JS, la version ordinateur se voyait ~15 images (correctif du 25/09). Le JS (`is-asked`, orientation de l'appareil) couvre le reste et gère l'inertie de `#root`.
+- `html.peg-typing` (champ de saisie actif, `utils/keyboard.ts` partagé avec la barre d'onglets) coupe la règle CSS : le clavier Android rend la fenêtre plus large que haute sans rotation.
 - Le manifeste garde `"orientation": "any"` : il vaut aussi pour les tablettes, qu'il ne faut pas bloquer.
 
 ### Fond « app » sur téléphone (demande Nova 25/09/2026)

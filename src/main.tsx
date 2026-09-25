@@ -7,6 +7,11 @@ import 'dayjs/locale/fr'
 dayjs.locale('fr')
 import './index.css'
 import { initAppVersionGuard } from './utils/appVersionGuard'
+import { markPhoneDevice } from './utils/portrait'
+
+// Téléphone : marqué avant le premier rendu, pour que l'écran « Tournez votre
+// téléphone » s'affiche en CSS dès la première image en paysage.
+markPhoneDevice()
 
 // Recharge l'app automatiquement après un nouveau déploiement (plus de hard refresh manuel).
 initAppVersionGuard()
