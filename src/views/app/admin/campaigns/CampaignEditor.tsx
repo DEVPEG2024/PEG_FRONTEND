@@ -440,7 +440,7 @@ const CampaignEditor = () => {
             <ChannelRow
               icon={<HiOutlineViewGridAdd size={20} />}
               title="Pop-up à la prochaine visite"
-              text="Une fois par client, une pop-up par visite au plus, jamais pendant un paiement."
+              text="Une fois sur chaque appareil du client (téléphone, ordinateur), une pop-up par visite au plus, jamais pendant un paiement."
               on={form.channelPopup}
               onChange={(v) => update({ channelPopup: v })}
             />

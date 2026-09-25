@@ -15,10 +15,13 @@ import { backdropMotion, cardMotion } from '@/components/campaign/popupMotion';
  *
  * Chargée à l'arrivée puis dès qu'une notification `campaign` apparaît dans la
  * cloche (le polling existant fait office de signal : pas de polling en plus).
- * Jamais pendant un paiement ni sur la page Actualités. Une campagne affichée
- * compte comme ouverte (canal « popup ») et ne revient pas. Une seule pop-up par
+ * Jamais pendant un paiement ni sur la page Actualités. **Une fois sur chaque
+ * appareil** (décision du 25/09/2026) : le serveur propose la campagne pendant
+ * toute sa période, même déjà vue sur un autre appareil ; l'appareil retient,
+ * par compte (localStorage), celles qu'il a montrées. Une seule pop-up par
  * visite (onglet) : les suivantes attendent la visite d'après — elles restent
- * dans la cloche et les Actualités.
+ * dans la cloche et les Actualités. Les statistiques comptent une ouverture par
+ * client (la première), pas par appareil.
  *
  * Réglages par campagne : délai d'ouverture (compté depuis l'arrivée sur
  * l'application), fermeture automatique (décompte suspendu tant que le client
@@ -27,28 +30,31 @@ import { backdropMotion, cardMotion } from '@/components/campaign/popupMotion';
  */
 
 const HIDDEN_ON = [/^\/customer\/cart/, /^\/customer\/checkout/, /^\/customer\/invoice\/[^/]+\/virement/, /^\/common\/news/];
-const SEEN_KEY = 'peg_campaign_popup_seen';
+// Mémoire de l'APPAREIL (localStorage), par compte : deux comptes sur le même
+// ordinateur ont chacun la leur.
+const deviceKey = (user: string) => `peg_campaign_popup_device:${user}`;
 const VISIT_KEY = 'peg_campaign_popup_visit';
 
 const shownThisVisit = () => {
   try { return sessionStorage.getItem(VISIT_KEY) === '1'; } catch { return false; }
 };
 
-const readSeen = (): Set<number> => {
+const readSeen = (user: string): Set<number> => {
   try {
-    return new Set<number>(JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]'));
+    return new Set<number>(JSON.parse(localStorage.getItem(deviceKey(user)) || '[]'));
   } catch {
     return new Set();
   }
 };
-const markSeen = (id: number) => {
+const markSeen = (user: string, id: number) => {
   try {
-    const seen = readSeen();
-    seen.add(id);
-    sessionStorage.setItem(SEEN_KEY, JSON.stringify(Array.from(seen)));
     sessionStorage.setItem(VISIT_KEY, '1');
+    const seen = Array.from(readSeen(user)).filter((x) => x !== id);
+    seen.push(id);
+    // Les 200 dernières suffisent (une campagne n'est proposée que pendant sa période).
+    localStorage.setItem(deviceKey(user), JSON.stringify(seen.slice(-200)));
   } catch {
-    /* stockage indisponible : le serveur empêche de toute façon le ré-affichage */
+    /* stockage indisponible (navigation privée…) : au pire, re-proposée à la visite suivante */
   }
 };
 
@@ -68,6 +74,7 @@ const CampaignPopup = () => {
   const reduced = !!useReducedMotion();
 
   const notifications = useAppSelector((s) => s.base.notification?.notifications ?? []);
+  const user = useAppSelector((s) => (s as { auth?: { user?: { user?: { documentId?: string } } } }).auth?.user?.user?.documentId) || 'anonyme';
   const latestCampaignNotif = useMemo(
     () => notifications.find((n) => n.eventType === 'campaign' && !n.read)?._id ?? null,
     [notifications],
@@ -77,13 +84,13 @@ const CampaignPopup = () => {
     if (unavailable.current) return;
     try {
       const res = await apiGetMyCampaigns();
-      const seen = readSeen();
+      const seen = readSeen(user);
       setQueue((res.data.popups || []).filter((c) => !seen.has(c.id)));
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 404 || status === 405) unavailable.current = true;
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const t = setTimeout(load, 1200);
@@ -102,14 +109,14 @@ const CampaignPopup = () => {
     const show = () => {
       if (shownThisVisit()) return;
       setCurrent(next);
-      markSeen(next.id);
+      markSeen(user, next.id);
       apiTrackCampaign(next.id, 'open', 'popup').catch(() => {});
     };
     const wait = arrivedAt.current + (next.popupDelay || 0) * 1000 - Date.now();
     if (wait <= 0) { show(); return; }
     const t = setTimeout(show, wait);
     return () => clearTimeout(t);
-  }, [current, hidden, queue]);
+  }, [current, hidden, queue, user]);
 
   // 'auto' : fermeture automatique (durée écoulée) — ni clic ni fermeture comptés.
   const close = useCallback((kind: 'dismiss' | 'click' | 'feed' | 'auto') => {

@@ -59,6 +59,7 @@ let root: Root;
 beforeEach(() => {
   jest.useFakeTimers();
   sessionStorage.clear();
+  localStorage.clear();
   mockGet.mockReset();
   mockTrack.mockClear();
   container = document.createElement('div');
@@ -140,11 +141,25 @@ test('jamais pendant un paiement : rien d’affiché ni de compté sur le panier
   expect(mockTrack).not.toHaveBeenCalled();
 });
 
-test('déjà affichée dans cet onglet : pas de seconde pop-up', async () => {
-  sessionStorage.setItem('peg_campaign_popup_seen', JSON.stringify([7]));
+test('déjà montrée sur cet appareil : plus jamais ici, même dans un nouvel onglet', async () => {
+  localStorage.setItem('peg_campaign_popup_device:anonyme', JSON.stringify([7]));
   mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
   await mount();
   expect(dialog()).toBeNull();
+});
+
+test('déjà vue sur un autre appareil (ouverte côté serveur) : s’affiche une fois sur celui-ci', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign({ openedAt: new Date().toISOString(), clickedAt: new Date().toISOString() })], campaigns: [], unread: 0 } });
+  await mount();
+  expect(dialog()?.textContent).toContain('Nouvelle collection');
+  expect(JSON.parse(localStorage.getItem('peg_campaign_popup_device:anonyme') || '[]')).toEqual([7]);
+});
+
+test('la mémoire de l’appareil est propre à chaque compte', async () => {
+  localStorage.setItem('peg_campaign_popup_device:un-autre-compte', JSON.stringify([7]));
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount();
+  expect(dialog()).not.toBeNull();
 });
 
 test('serveur sans la fonctionnalité (405) : aucune erreur, rien d’affiché', async () => {
