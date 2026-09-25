@@ -17,6 +17,7 @@ import { apiGetDashboardSuperAdminInformations, apiGetProjectsAdditionalSales } 
 import { apiGetAdminPreference, apiCreateAdminPreference, apiUpdateAdminPreference, apiUploadBanner } from '@/services/AdminPreferenceService'
 import { env } from '@/configs/env.config'
 import { toHT } from '@/utils/priceHelpers'
+import { shrinkImage } from '@/utils/imageShrink'
 import { areDashboardFiguresHidden, toggleDashboardFiguresHidden, DASHBOARD_FIGURES_EVENT, HIDDEN_FIGURE } from './dashboardFigures'
 import { statusTextData } from '@/views/app/common/projects/lists/constants'
 import useResponsive from '@/utils/hooks/useResponsive'
@@ -291,7 +292,10 @@ function loadHidden(): WidgetId[] {
 /*  MAIN DASHBOARD                                            */
 /* ═══════════════════════════════════════════════════════════ */
 
-const MAX_BANNER = 2 * 1024 * 1024
+// Bannière : jusqu'à 30 Mo acceptés (photos de téléphone) ; au-delà de 2 Mo elle
+// est réduite dans le navigateur avant envoi (utils/imageShrink.ts) — affichage
+// rapide, et pas d'envoi de 15 Mo en 4G qui dépasserait les 30 s d'Heroku.
+const MAX_BANNER_INPUT = 30 * 1024 * 1024
 
 /* ═══════════════════════════════════════════════ */
 /*  DÉTAIL « RESTE À ENCAISSER »                    */
@@ -503,11 +507,15 @@ export default function DashboardAdmin() {
   const ticketsByState = useMemo(() => { const m = new Map<string, number>(); for (const t of tickets) m.set((t?.state ?? 'inconnu').toString(), (m.get((t?.state ?? 'inconnu').toString()) ?? 0) + 1); return Array.from(m.entries()).map(([l, v]) => ({ label: l, value: v })).sort((a, b) => b.value - a.value) }, [tickets])
 
   const onPickBanner = () => fileRef.current?.click()
-  const onBannerFile = async (file?: File | null) => {
-    if (!file) return;
-    if (file.size > MAX_BANNER) { setError('Image trop lourde. Max 2MB.'); return }
-    // Preview immediately
-    const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; try { localStorage.setItem('peg:dashboardBanner', b); setBannerUrl(b) } catch {} }; r.readAsDataURL(file);
+  const onBannerFile = async (picked?: File | null) => {
+    if (fileRef.current) fileRef.current.value = '' // la même image peut être choisie à nouveau
+    if (!picked) return;
+    if (picked.size > MAX_BANNER_INPUT) { setError('Image trop lourde. Max 30 Mo.'); return }
+    let file: File
+    try { file = await shrinkImage(picked) } catch { setError('Image illisible : choisissez un JPG, un PNG ou un WebP.'); return }
+    setError(null)
+    // Preview immediately (l'aperçu s'affiche même si le stockage local est plein)
+    const r = new FileReader(); r.onload = e => { const b = e.target?.result as string; setBannerUrl(b); try { localStorage.setItem('peg:dashboardBanner', b) } catch {} }; r.readAsDataURL(file);
     // Upload to Strapi
     try {
       if (!prefDocIdRef.current && user?.documentId) {
