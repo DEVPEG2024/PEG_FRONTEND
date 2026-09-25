@@ -1775,6 +1775,98 @@
   }
 }
 
+/* -----------------------------------------------------------------------------
+   9. TÉLÉPHONE EN PAYSAGE (PortraitLock.tsx)
+   Tenu en paysage, un téléphone dépasse 768px de large et PEG passait en
+   version ordinateur. Une page web ne peut pas bloquer la rotation : cet écran
+   la recouvre et demande de tourner le téléphone. Hors media query car la
+   largeur est alors > md — mais l'élément n'existe QUE sur un téléphone en
+   paysage (décidé en JS sur l'appareil) : aucun effet ailleurs.
+   -------------------------------------------------------------------------- */
+.peg-rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: max(20px, var(--peg-safe-top)) max(24px, var(--peg-safe-right)) max(20px, var(--peg-safe-bottom)) max(24px, var(--peg-safe-left));
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.22) 0%, rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.06) 45%, transparent 75%),
+    #070a08;
+  color: #f3f7ec;
+  font-family: Inter, sans-serif;
+  text-align: center;
+  touch-action: none;
+}
+.peg-rotate-logo {
+  width: 92px;
+  height: auto;
+  fill: #fff;
+}
+.peg-rotate-dot {
+  fill: #6d5dfc;
+}
+/* Le téléphone dessiné passe de couché à debout, puis recommence */
+.peg-rotate-phone {
+  position: relative;
+  width: 34px;
+  height: 58px;
+  margin: 6px 0 4px;
+  border: 2.5px solid var(--pdm-accent, #c6f432);
+  border-radius: 9px;
+  box-shadow: 0 0 22px rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.25);
+  animation: peg-rotate-turn 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.peg-rotate-screen {
+  position: absolute;
+  inset: 5px 4px 9px;
+  border-radius: 4px;
+  background: rgba(var(--pdm-accent-rgb, 198, 244, 50), 0.14);
+}
+.peg-rotate-phone::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 8px;
+  height: 2px;
+  margin-left: -4px;
+  border-radius: 2px;
+  background: var(--pdm-accent, #c6f432);
+}
+@keyframes peg-rotate-turn {
+  0%,
+  20% {
+    transform: rotate(-90deg);
+  }
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+.peg-rotate-title {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.peg-rotate-text {
+  margin: 0;
+  max-width: 30em;
+  color: rgba(232, 242, 220, 0.6);
+  font-size: 14px;
+  line-height: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .peg-rotate-phone {
+    animation: none;
+  }
+}
+
 /* Application installée (écran d'accueil) : la page ne « rebondit » plus au-delà
    de ses bords — l'effet élastique trahit le site web sous l'app. */
 @media (max-width: 767.98px) and (display-mode: standalone) {

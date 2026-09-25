@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { PERSIST_STORE_NAME } from './constants/app.constant';
 import { ToastContainer } from 'react-toastify';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import PortraitLock from '@/components/template/PortraitLock';
 
 function App() {
   useEffect(() => {
@@ -28,6 +29,8 @@ function App() {
             <Theme>
               <Layout />
               <ToastContainer position="bottom-right" />
+              {/* Téléphone en paysage : « Tournez votre téléphone » */}
+              <PortraitLock />
             </Theme>
           </ErrorBoundary>
         </BrowserRouter>
