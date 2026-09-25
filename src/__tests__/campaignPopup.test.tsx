@@ -1,0 +1,142 @@
+/**
+ * @jest-environment jsdom
+ */
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import type { ClientCampaign } from '@/@types/campaign';
+
+// Pop-up des campagnes côté client : ce qui compte pour les statistiques
+// (ouverture comptée à l'affichage, clic, fermeture) et pour le client (jamais
+// pendant un paiement, rien si le serveur n'a pas encore la fonctionnalité).
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mockGet = jest.fn();
+const mockTrack = jest.fn(() => Promise.resolve({ data: { result: true } }));
+jest.mock('@/services/CampaignServices', () => ({
+  apiGetMyCampaigns: () => mockGet(),
+  apiTrackCampaign: (...args: unknown[]) => (mockTrack as (...a: unknown[]) => Promise<unknown>)(...args),
+}));
+jest.mock('@/store', () => ({
+  useAppSelector: (fn: (s: unknown) => unknown) => jest.requireActual('react-redux').useSelector(fn),
+}));
+
+// eslint-disable-next-line import/first
+import CampaignPopup from '@/components/template/CampaignPopup';
+
+const campaign = (over: Partial<ClientCampaign> = {}): ClientCampaign => ({
+  id: 7, title: 'Nouvelle collection', message: 'Découvrez **nos nouveautés**', tag: 'nouveaute',
+  images: [{ id: 1, url: 'https://s3.exemple/cover.jpg', width: 1200, height: 630, name: 'cover' }],
+  ctaLabel: 'Voir le catalogue', ctaUrl: '/customer/catalogue',
+  receivedAt: new Date().toISOString(), expiresAt: null, openedAt: null, clickedAt: null, dismissedAt: null,
+  popup: true, isTest: false, ...over,
+});
+
+const store = () =>
+  configureStore({
+    reducer: combineReducers({ base: combineReducers({ notification: () => ({ notifications: [] }) }) }),
+  });
+
+const Where = () => <span data-testid="where">{useLocation().pathname}</span>;
+
+let container: HTMLDivElement;
+let root: Root;
+beforeEach(() => {
+  jest.useFakeTimers();
+  sessionStorage.clear();
+  mockGet.mockReset();
+  mockTrack.mockClear();
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+afterEach(() => {
+  act(() => root.unmount());
+  container.remove();
+  jest.useRealTimers();
+});
+
+const mount = async (path = '/home') => {
+  await act(async () => {
+    root.render(
+      <Provider store={store()}>
+        <MemoryRouter initialEntries={[path]}>
+          <CampaignPopup />
+          <Routes><Route path="*" element={<Where />} /></Routes>
+        </MemoryRouter>
+      </Provider>,
+    );
+  });
+  // Chargement différé (1,2 s) puis résolution de la requête.
+  await act(async () => { jest.advanceTimersByTime(1300); });
+  await act(async () => { await Promise.resolve(); });
+};
+
+const dialog = () => document.querySelector('[role="dialog"]');
+const button = (label: string) =>
+  Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === label || b.getAttribute('aria-label') === label) as HTMLButtonElement;
+
+test('affiche la campagne et compte l’ouverture (canal pop-up)', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount();
+  expect(dialog()?.textContent).toContain('Nouvelle collection');
+  expect(dialog()?.querySelector('strong')?.textContent).toBe('nos nouveautés');
+  expect(mockTrack).toHaveBeenCalledWith(7, 'open', 'popup');
+});
+
+test('« Fermer » compte la fermeture et masque la pop-up', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount();
+  await act(async () => { button('Fermer').click(); });
+  expect(mockTrack).toHaveBeenCalledWith(7, 'dismiss', 'popup');
+  expect(dialog()).toBeNull();
+});
+
+test('le bouton d’action compte le clic et ouvre la page de l’espace client', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount();
+  await act(async () => { button('Voir le catalogue').click(); });
+  expect(mockTrack).toHaveBeenCalledWith(7, 'click', 'popup');
+  expect(document.querySelector('[data-testid="where"]')?.textContent).toBe('/customer/catalogue');
+  expect(dialog()).toBeNull();
+});
+
+test('une seule pop-up par visite : la suivante attend la visite d’après', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign(), campaign({ id: 8, title: 'Promo de rentrée' })], campaigns: [], unread: 2 } });
+  await mount();
+  await act(async () => { button('Fermer').click(); });
+  expect(dialog()).toBeNull();
+  expect(mockTrack).not.toHaveBeenCalledWith(8, 'open', 'popup');
+
+  // Nouvelle visite (nouvel onglet) : la seconde campagne s'affiche.
+  act(() => root.unmount());
+  sessionStorage.removeItem('peg_campaign_popup_visit');
+  root = createRoot(container);
+  mockGet.mockResolvedValue({ data: { popups: [campaign({ id: 8, title: 'Promo de rentrée' })], campaigns: [], unread: 1 } });
+  await mount();
+  expect(dialog()?.textContent).toContain('Promo de rentrée');
+  expect(mockTrack).toHaveBeenCalledWith(8, 'open', 'popup');
+});
+
+test('jamais pendant un paiement : rien d’affiché ni de compté sur le panier', async () => {
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount('/customer/cart');
+  expect(dialog()).toBeNull();
+  expect(mockTrack).not.toHaveBeenCalled();
+});
+
+test('déjà affichée dans cet onglet : pas de seconde pop-up', async () => {
+  sessionStorage.setItem('peg_campaign_popup_seen', JSON.stringify([7]));
+  mockGet.mockResolvedValue({ data: { popups: [campaign()], campaigns: [], unread: 1 } });
+  await mount();
+  expect(dialog()).toBeNull();
+});
+
+test('serveur sans la fonctionnalité (405) : aucune erreur, rien d’affiché', async () => {
+  mockGet.mockRejectedValue({ response: { status: 405 } });
+  await mount();
+  expect(dialog()).toBeNull();
+});

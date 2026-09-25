@@ -1,4 +1,6 @@
 import {
+    HiOutlineNewspaper,
+    HiOutlineSpeakerphone,
     HiOutlineViewGrid,
     HiOutlineClipboardList,
     HiOutlineCog,
@@ -67,6 +69,8 @@ const navigationIcon: NavigationIcons = {
     premium: <TbCrown />,
     planning: <TbCalendarStats />,
     generators: <TbShare3 />,
+    campaigns: <HiOutlineSpeakerphone />,
+    news: <HiOutlineNewspaper />,
 }
 
 export default navigationIcon

@@ -8,6 +8,7 @@ import View from "@/views";
 import OnlineUsersCount, { OnlinePing } from "../template/OnlineUsersCount";
 import NotificationBell from "../template/NotificationBell";
 import PwaInstallPrompt from "../template/PwaInstallPrompt";
+import CampaignPopup from "../template/CampaignPopup";
 import { MdShoppingCart } from "react-icons/md";
 import { Alert } from "../ui";
 import { RootState, useAppSelector } from "@/store";
@@ -80,6 +81,16 @@ const HeaderActionsEnd = () => {
   );
 };
 
+// Pop-up des campagnes : clients uniquement.
+const CustomerCampaignPopup = () => {
+  const userAuthority = useAppSelector((state) => state.auth.user.user.authority);
+  return (
+    <AuthorityCheck userAuthority={userAuthority as string[]} authority={["customer"]}>
+      <CampaignPopup />
+    </AuthorityCheck>
+  );
+};
+
 const ModernLayout = () => {
   return (
     <div className="app-layout-modern flex flex-auto flex-col">
@@ -96,6 +107,7 @@ const ModernLayout = () => {
       </div>
       <MobileDock />
       <PwaInstallPrompt />
+      <CustomerCampaignPopup />
     </div>
   );
 };

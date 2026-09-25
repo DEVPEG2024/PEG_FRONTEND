@@ -29,6 +29,7 @@ const EVENT_ICONS: Record<string, string> = {
   new_file: '📎',
   new_task: '✅',
   task_status_change: '🔄',
+  campaign: '📣',
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -41,6 +42,13 @@ const EVENT_COLORS: Record<string, string> = {
   new_file: 'bg-cyan-100 dark:bg-cyan-900/30',
   new_task: 'bg-teal-100 dark:bg-teal-900/30',
   task_status_change: 'bg-amber-100 dark:bg-amber-900/30',
+  campaign: 'bg-sky-100 dark:bg-sky-900/30',
+};
+
+/** Campagne clients : la photo de couverture remplace l'icône (URL https du serveur uniquement). */
+const campaignThumb = (notif: { eventType: string; metadata?: Record<string, any> }) => {
+  const url = notif.eventType === 'campaign' ? notif.metadata?.imageUrl : null;
+  return typeof url === 'string' && url.startsWith('https://') ? url : null;
 };
 
 function timeAgo(dateStr: string) {
@@ -290,8 +298,12 @@ const NotificationBell = () => {
                   }`}
                 >
                   {/* Icon badge */}
-                  <span className={`text-lg mt-0.5 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg ${EVENT_COLORS[notif.eventType] || 'bg-gray-100 dark:bg-gray-700'}`}>
-                    {EVENT_ICONS[notif.eventType] || '🔔'}
+                  <span className={`text-lg mt-0.5 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg overflow-hidden ${EVENT_COLORS[notif.eventType] || 'bg-gray-100 dark:bg-gray-700'}`}>
+                    {campaignThumb(notif) ? (
+                      <img src={campaignThumb(notif) as string} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      EVENT_ICONS[notif.eventType] || '🔔'
+                    )}
                   </span>
 
                   {/* Content */}

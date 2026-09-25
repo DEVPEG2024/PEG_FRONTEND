@@ -397,6 +397,16 @@ const navigationAdmin: NavigationTree[] = [
     authority: [SUPER_ADMIN, ADMIN],
     subMenu: [],
   },
+  {
+    key: "admin.campaigns",
+    path: "/admin/campaigns",
+    title: "Campagnes",
+    translateKey: "nav.campaigns",
+    icon: "campaigns",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [],
+  },
 
   // --- IA ---
   {

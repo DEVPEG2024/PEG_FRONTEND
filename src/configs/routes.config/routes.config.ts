@@ -211,6 +211,31 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/expenses/ExpensesList")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // campagnes clients (notifications, pop-up, e-mail + statistiques)
+  {
+    key: "admin.campaigns",
+    path: "/admin/campaigns",
+    component: lazy(() => import("@/views/app/admin/campaigns/CampaignsList")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.campaigns",
+    path: "/admin/campaigns/new",
+    component: lazy(() => import("@/views/app/admin/campaigns/CampaignEditor")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.campaigns",
+    path: "/admin/campaigns/:id/edit",
+    component: lazy(() => import("@/views/app/admin/campaigns/CampaignEditor")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.campaigns",
+    path: "/admin/campaigns/:id",
+    component: lazy(() => import("@/views/app/admin/campaigns/CampaignStatsPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   //banners
   {
     key: "admin.banners",
@@ -374,6 +399,19 @@ const protectedProducerRoutes = [
 ];
 
 const protectedCommonRoutes = [
+  // Actualités : campagnes reçues (clients ; admins pour leurs envois de test)
+  {
+    key: "common.news",
+    path: "/common/news",
+    component: lazy(() => import("@/views/app/common/news/NewsPage")),
+    authority: [CUSTOMER, ADMIN, SUPER_ADMIN],
+  },
+  {
+    key: "common.news",
+    path: "/common/news/:id",
+    component: lazy(() => import("@/views/app/common/news/NewsPage")),
+    authority: [CUSTOMER, ADMIN, SUPER_ADMIN],
+  },
   {
     key: "common.order.show",
     path: "/common/orderItem/:documentId",

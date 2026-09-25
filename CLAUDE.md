@@ -212,6 +212,37 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 
 ---
 
+## 📣 Campagnes clients — notifications de masse avec statistiques (ajout 25/09/2026)
+
+### Concept
+L'admin (`/admin/campaigns`, menu « Campagnes ») notifie **tous les clients, un segment (Premium / Standard × secteurs) ou une sélection** : type (Information / Nouveauté / Promotion / Important), titre, message (`**gras**`, liens https), **jusqu'à 6 photos**, bouton d'action (page de l'espace client ou lien https). Envoi immédiat ou **programmé**, retrait automatique facultatif, **envoi de test à soi-même**, relance des non-ouvreurs.
+
+### Canaux
+- **Cloche + push** : toujours — Strapi appelle `POST /notifications/event` de peg-backend (secret `INTERNAL_SECRET`, par paquets de 20), `eventType: 'campaign'`, lien `/common/news/:id?src=bell`, photo de couverture dans `metadata.imageUrl` (vignette dans la cloche). **Aucun changement Express nécessaire** (`/event` n'a pas de liste blanche d'eventType).
+- **Pop-up** (option) : `CampaignPopup.tsx`, monté pour les clients dans `ModernLayout`. Chargé à l'arrivée et à chaque notification `campaign` (pas de polling en plus). **Une pop-up par visite** au plus, jamais sur panier / paiement / virement / Actualités.
+- **E-mail** (option) : Mailjet (50 par appel), pixel d'ouverture, lien de clic suivi, **désinscription en un clic** (`List-Unsubscribe` + page). Les désinscrits sont exclus automatiquement.
+- **Actualités** (`/common/news`, menu client « Actualités », pastille `campaign`) : historique des campagnes reçues.
+
+### Backend — `peg_strapi/src/services/campaign.service.ts` (+ `campaign-text.ts`, fonctions pures testées)
+- Tables (bootstrap, knex) : `client_campaigns`, `client_campaign_receipts` (**un accusé par compte destinataire = source des stats**), `client_campaign_optouts`. **Pas de content-type** (rien en GraphQL, aucune permission à gérer).
+- Routes `/api/campaigns/*` en `auth: false` + JWT vérifié dans le contrôleur : `/admin/*` (rôle admin), `/me/*` (le compte connecté, **ses** accusés uniquement), `/t/:token/*` (liens d'e-mail, jeton aléatoire 128 bits, redirection **uniquement** vers le lien enregistré — pas de redirection ouverte).
+- Destinataires = comptes `role.type === 'customer'` non bloqués des clients visés ; **audience figée à l'envoi**.
+- Envoi en **tâche de fond, reprenable** : accusés créés en une transaction, puis cloche et e-mail ne traitent que les accusés non marqués. Cron chaque minute (`config/cron-tasks.ts`) : campagnes programmées échues + envois interrompus (> 5 min).
+- Statistiques : ouverture = première ouverture (pop-up affichée, actualité ouverte, pixel ou lien e-mail) ; taux sur les destinataires ; clic après ouverture ; canal de 1ʳᵉ ouverture ; courbe horaire (72 h) puis journalière. **Les envois de test ne comptent jamais.**
+- Une campagne envoyée ne se modifie ni ne se supprime (409) : la **retirer** (disparaît des pop-ups et Actualités, stats conservées), l'archiver ou la dupliquer.
+
+### ⚠️ Bac à sable hors production
+La base d'int est une copie de la prod (mêmes `documentId`) et peg-backend est **commun** : une campagne envoyée depuis int allumerait la cloche des **vrais** clients sur app.mypeg.fr. D'où : cloche et e-mail ne partent vers les clients **que si `FRONTEND_URL` = https://app.mypeg.fr** (forçable par `CAMPAIGNS_DELIVERY=live|sandbox`). Ailleurs, accusés et stats fonctionnent, seuls les **envois de test** (à l'admin) partent ; bandeau jaune dans l'écran. **Ne jamais mettre `CAMPAIGNS_DELIVERY=live` sur peg-int.**
+
+### Fichiers clés
+- Front : `src/views/app/admin/campaigns/` (liste, éditeur, statistiques, `components/`), `src/components/template/CampaignPopup.tsx`, `src/components/campaign/`, `src/views/app/common/news/NewsPage.tsx`, `src/services/CampaignServices.ts`, `src/utils/campaignFormat.ts`, `src/@types/campaign.ts`
+- Tests : front `src/__tests__/campaignFormat.test.ts`, `campaignPopup.test.tsx` ; back `src/__tests__/campaignText.test.ts` (`node --test`)
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (le bootstrap crée les tables). Front déployé avant : l'écran admin affiche « Module indisponible », la pop-up ne fait rien, les Actualités sont vides — rien ne casse.
+
+---
+
 ## 🤖 Chatbot client — Agent autonome (mise à jour 23/07/2026)
 
 ### Concept

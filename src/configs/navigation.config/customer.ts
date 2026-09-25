@@ -88,6 +88,16 @@ const navigationCustomer: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "customer.news",
+    path: "/common/news",
+    title: "Actualités",
+    translateKey: "nav.news",
+    icon: "news",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [CUSTOMER],
+    subMenu: [],
+  },
+  {
     key: "customer.support",
     path: "/support",
     title: "Tickets",
