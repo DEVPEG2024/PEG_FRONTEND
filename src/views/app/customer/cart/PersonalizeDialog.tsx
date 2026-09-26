@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { MdBrush, MdClose } from 'react-icons/md';
 import type { CartItem } from '@/@types/cart';
 import type { FormAnswer } from '@/@types/formAnswer';
+import { keepAssistantMetadata } from '@/components/template/chat/chatForm';
 
 const WizardShowForm = lazy(() => import('../products/modal/WizardShowForm'));
 
@@ -109,7 +110,13 @@ const PersonalizeDialog = ({ item, required, onClose, onSaved }: Props) => {
               fields={item.product.form.fields!}
               formAnswer={item.formAnswer}
               readOnly={false}
-              onSubmit={(submission) => onSaved({ form: item.product.form, answer: submission })}
+              onSubmit={(submission) =>
+                onSaved({
+                  form: item.product.form,
+                  // Personnalisation commencée dans le chat : sa trace est conservée.
+                  answer: keepAssistantMetadata(submission, item.formAnswer),
+                })
+              }
             />
           </Suspense>
         </div>

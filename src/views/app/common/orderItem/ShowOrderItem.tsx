@@ -20,6 +20,7 @@ import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { fmtPrice } from '@/utils/priceHelpers';
 import { HiCheck, HiClock } from 'react-icons/hi';
 import { MdChecklist } from 'react-icons/md';
+import { isAssistantFilled } from '@/components/template/chat/chatForm';
 
 injectReducer('showOrderItem', reducer);
 
@@ -141,6 +142,11 @@ const ShowOrderItem = () => {
                   )
                 )}
 
+                {isAssistantFilled(orderItem.formAnswer?.answer) && (
+                  <span className="mt-6 inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-semibold text-indigo-300">
+                    Rempli avec l&apos;assistant
+                  </span>
+                )}
                 {orderItem.formAnswer?.form && (
                   <Button
                     className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"

@@ -8,6 +8,10 @@ import axios from 'axios';
 import { EXPRESS_BACKEND_URL } from '@/configs/api.config';
 import { getPersistedAuthToken } from '@/store/tabSessionStorage';
 import { renderChatMarkdown } from '@/utils/chatMarkdown';
+import { useChatForm } from '@/components/template/chat/useChatForm';
+import ChatFormTurnView from '@/components/template/chat/ChatFormTurnView';
+import ChatAttachButton from '@/components/template/chat/ChatAttachButton';
+import type { ChatFormTurn } from '@/components/template/chat/chatFormTypes';
 import type { ChatCard } from '@/components/template/ChatCardView';
 import ChatOfferAction from '@/components/template/ChatOfferAction';
 import { isChatOffer, prefillForProduct, type ChatNavState, type ChatOffer } from '@/components/template/chatOffer';
@@ -19,7 +23,7 @@ import { useChatVoice, type SpokenReply } from '@/components/template/useChatVoi
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number; voice?: boolean };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number; voice?: boolean; form?: ChatFormTurn };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
@@ -96,7 +100,7 @@ const saveConversation = (key: string, conversationId: string, messages: Message
 
 // ── Transport ────────────────────────────────────────────────────────────────
 
-type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[]; offer?: unknown };
+type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[]; offer?: unknown; form?: unknown };
 type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void; onCards: (cards: ChatCard[]) => void };
 
 class StreamUnavailableError extends Error {}
@@ -142,7 +146,7 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
     if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
     else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
     else if (event === 'cards' && Array.isArray(data?.cards)) { lastCards = data.cards; h.onCards(data.cards); }
-    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined, offer: data.offer }; }
+    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined, offer: data.offer, form: data.form }; }
     else if (event === 'error') { throw new Error(data?.message || 'stream error'); }
   };
 
@@ -379,6 +383,11 @@ const ChatWidget = () => {
   // Annule une requête en cours si le widget est démonté (changement de layout).
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  const chatForm = useChatForm({
+    conversationId,
+    messages,
+    send: (text) => sendText(text),
+  });
   const { stopSpeaking, cancelRecording } = voice;
   const resetConversation = useCallback(() => {
     abortRef.current?.abort();
@@ -414,6 +423,7 @@ const ChatWidget = () => {
       userName,
       origin: window.location.origin,
       conversationId,
+      ...chatForm.requestFields(),
     };
     try {
       let result: ChatResult;
@@ -439,7 +449,9 @@ const ChatWidget = () => {
         const cards = (result.cards || []).filter((c) => reply.includes(`](${c.url})`));
         // Offre chiffrée → bouton « Ajouter au panier » sous la réponse.
         const offer = isChatOffer(result.offer) ? result.offer : undefined;
-        setMessages([...history, { role: 'assistant', content: reply, at: Date.now(), ...(cards.length ? { cards } : {}), ...(offer ? { offer } : {}) }]);
+        const form = chatForm.acceptTurn(result.form);
+        const shownOffer = offer ?? chatForm.recapOffer(form);
+        setMessages([...history, { role: 'assistant', content: reply, at: Date.now(), ...(cards.length ? { cards } : {}), ...(form ? { form } : {}), ...(shownOffer ? { offer: shownOffer } : {}) }]);
         // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
         setAuthWarn(Boolean(token) && result.authenticated === false);
         if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
@@ -565,8 +577,10 @@ const ChatWidget = () => {
   const lastIsError = messages.length > 0 && messages[messages.length - 1].error;
 
   /** Met à jour l'état du bouton panier d'un message (conservé avec la conversation). */
-  const updateOffer = (index: number, offer: ChatOffer) =>
+  const updateOffer = (index: number, offer: ChatOffer) => {
+    chatForm.onOfferChange(offer);
     setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, offer } : m)));
+  };
 
   // Le panier et la fiche produit sont sous la fenêtre du chat (en bas à droite,
   // là où se trouvent « Ajouter au panier » et « Payer ») : on la referme.
@@ -740,8 +754,19 @@ const ChatWidget = () => {
                     {!isUser && <div className="pcw-avatar-slot">{lastOfGroup && botAvatar(28)}</div>}
                     <div className={`pcw-bubble ${tone}${lastOfGroup ? ' pcw-tail' : ''}`}>
                       {msg.role === 'assistant' && !msg.error ? renderContent(msg.content, msg.cards) : msg.content}
+                      {msg.role === 'assistant' && !msg.error && msg.form && (
+                        <ChatFormTurnView
+                          turn={msg.form}
+                          offer={msg.offer}
+                          active={i === messages.length - 1}
+                          loading={loading}
+                          onAct={chatForm.act}
+                          onGo={goFromOffer}
+                          onOfferChange={(o) => updateOffer(i, o)}
+                        />
+                      )}
                       {msg.role === 'assistant' && !msg.error && msg.offer && (
-                        <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} />
+                        <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} formAnswers={chatForm.answersFor(msg)} />
                       )}
                       {msg.error && i === messages.length - 1 && (
                         <div style={{ marginTop: '8px' }}>
@@ -810,6 +835,14 @@ const ChatWidget = () => {
               </div>
             ) : (
               <div className="pcw-field">
+                {chatForm.canAttach && chatForm.attachAsk && (
+                  <ChatAttachButton
+                    ask={chatForm.attachAsk}
+                    disabled={loading}
+                    onAct={chatForm.act}
+                    variant="icon"
+                  />
+                )}
                 <textarea
                   ref={inputRef}
                   aria-label="Votre message"

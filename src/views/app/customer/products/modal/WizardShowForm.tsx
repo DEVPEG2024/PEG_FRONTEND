@@ -44,7 +44,7 @@ type FieldGroup = {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Recursively extract input fields from a component tree */
-function extractFields(components: any[]): NormalizedField[] {
+export function extractFields(components: any[]): NormalizedField[] {
   const result: NormalizedField[] = [];
   for (const c of components) {
     const t = c.type ?? '';
@@ -97,7 +97,7 @@ function extractFields(components: any[]): NormalizedField[] {
 }
 
 /** Build groups from the form structure — panels/sections become steps */
-function buildGroups(raw: JSONValue): FieldGroup[] {
+export function buildGroups(raw: JSONValue): FieldGroup[] {
   if (!raw) return [];
   const parsed: any = typeof raw === 'string' ? JSON.parse(raw) : JSON.parse(JSON.stringify(raw));
 

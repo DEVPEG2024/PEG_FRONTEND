@@ -1,0 +1,95 @@
+{
+  "description": "Fixture COMMUNE front/Strapi (copies IDENTIQUES : peg_strapi src/__tests__/fixtures et PEG_FRONTEND src/__tests__/fixtures). Formulaire Form.io de personnalisation réaliste. Strapi : extractFormFields(fields) doit donner exactement `expected` (clé, type, libellé). Front : WizardShowForm.buildGroups(fields), une fois retirés les champs de `excludedByChat` (que la fiche affiche mais que le chat ne peut pas remplir), doit donner les mêmes clés dans le même ordre.",
+  "fields": [
+    { "type": "htmlelement", "key": "intro", "input": false, "content": "<p>Personnalisez votre commande.</p>" },
+    {
+      "type": "panel", "key": "panelMarquage", "title": "Marquage", "input": false,
+      "components": [
+        { "id": "e1txt", "key": "texteABroder", "type": "textfield", "label": "Texte à broder", "input": true, "validate": { "required": true, "maxLength": 40 } },
+        { "id": "e2col", "key": "couleurFil", "type": "select", "label": "Couleur du fil", "input": true, "data": { "values": [ { "label": "Or", "value": "or" }, { "label": "Argent", "value": "argent" }, { "label": "Blanc", "value": "blanc" } ] } },
+        { "id": "e3pos", "key": "position", "type": "radio", "label": "Position", "input": true, "values": [ { "label": "Cœur", "value": "coeur" }, { "label": "Dos", "value": "dos" }, { "label": "Manche gauche", "value": "manche_gauche" } ], "validate": { "required": true } },
+        { "id": "e4tech", "key": "techniques", "type": "selectboxes", "label": "Techniques souhaitées", "input": true, "values": [ { "label": "Broderie", "value": "broderie" }, { "label": "Sérigraphie", "value": "serigraphie" }, { "label": "Transfert", "value": "transfert" } ] },
+        {
+          "type": "columns", "key": "colonnes", "input": false,
+          "columns": [
+            { "width": 6, "components": [ { "id": "e5lg", "key": "largeurCm", "type": "number", "label": "Largeur du marquage (cm)", "input": true, "validate": { "min": 1, "max": 40 } } ] },
+            { "width": 6, "components": [
+              { "type": "panel", "key": "panelDelai", "title": "Délai", "input": false, "components": [
+                { "id": "e6dt", "key": "dateSouhaitee", "type": "datetime", "label": "Date souhaitée", "input": true }
+              ] }
+            ] }
+          ]
+        },
+        { "id": "e7vide", "key": "choixDistant", "type": "select", "label": "Modèle de police", "input": true, "dataSrc": "url", "data": { "url": "https://exemple.invalid/polices" } }
+      ]
+    },
+    {
+      "type": "fieldset", "key": "fsFichiers", "legend": "Fichiers", "input": false,
+      "components": [
+        { "id": "e8logo", "key": "logo", "type": "file", "label": "Votre logo", "input": true, "storage": "url", "filePattern": ".png,.jpg,.jpeg,.pdf,.svg", "validate": { "required": true } },
+        { "id": "e9sig", "key": "signature", "type": "signature", "label": "Signature", "input": true, "validate": { "required": true } },
+        { "id": "e10bat", "key": "batNumerique", "type": "checkbox", "label": "J'accepte le BAT numérique", "input": true }
+      ]
+    },
+    {
+      "type": "panel", "key": "panelCoordonnees", "title": "Vos coordonnées", "input": false,
+      "components": [
+        { "id": "e11soc", "key": "societe", "type": "textfield", "label": "Nom de l'entreprise", "input": true },
+        { "id": "e12tel", "key": "telephone", "type": "phoneNumber", "label": "Téléphone", "input": true, "validate": { "required": true } },
+        { "id": "e13mail", "key": "email", "type": "email", "label": "E-mail", "input": true },
+        { "id": "e14web", "key": "siteWeb", "type": "url", "label": "Site web", "input": true },
+        {
+          "id": "e15adr", "key": "adresseLivraison", "type": "address", "label": "Adresse de livraison", "input": true,
+          "components": [
+            { "id": "e15a", "key": "address1", "type": "textfield", "label": "Adresse", "input": true },
+            { "id": "e15b", "key": "zip", "type": "textfield", "label": "Code postal", "input": true },
+            { "id": "e15c", "key": "city", "type": "textfield", "label": "Ville", "input": true },
+            { "id": "e15d", "key": "country", "type": "textfield", "label": "Pays", "input": true }
+          ]
+        },
+        { "key": "remarques", "type": "textarea", "label": "Remarques", "input": true },
+        { "id": "e17hid", "key": "reference", "type": "textfield", "label": "Référence interne", "input": true, "hidden": true },
+        { "id": "e18day", "key": "jourLivraison", "type": "day", "label": "Jour de livraison", "input": true },
+        { "type": "button", "key": "submit", "label": "Envoyer", "action": "submit", "input": true }
+      ]
+    },
+    {
+      "id": "e19tabs", "type": "tabs", "key": "onglets", "input": false,
+      "components": [
+        { "key": "ongletOptions", "label": "Options", "components": [
+          { "id": "e20emb", "key": "emballage", "type": "checkbox", "label": "Emballage individuel", "input": true }
+        ] }
+      ]
+    },
+    { "id": "e21cur", "key": "budget", "type": "currency", "label": "Budget indicatif", "input": true },
+    { "id": "e22note", "type": "content", "key": "noteFin", "input": false, "html": "<p>Merci !</p>" },
+    { "id": "e23adr", "key": "adresseFacturation", "type": "address", "label": "Adresse de facturation", "input": true }
+  ],
+  "expected": [
+    { "key": "e1txt", "kind": "text", "label": "Texte à broder" },
+    { "key": "e2col", "kind": "choice", "label": "Couleur du fil" },
+    { "key": "e3pos", "kind": "choice", "label": "Position" },
+    { "key": "e4tech", "kind": "multichoice", "label": "Techniques souhaitées" },
+    { "key": "e5lg", "kind": "number", "label": "Largeur du marquage (cm)" },
+    { "key": "e6dt", "kind": "datetime", "label": "Date souhaitée" },
+    { "key": "e8logo", "kind": "file", "label": "Votre logo" },
+    { "key": "e10bat", "kind": "boolean", "label": "J'accepte le BAT numérique" },
+    { "key": "e11soc", "kind": "text", "label": "Nom de l'entreprise" },
+    { "key": "e12tel", "kind": "phone", "label": "Téléphone" },
+    { "key": "e13mail", "kind": "email", "label": "E-mail" },
+    { "key": "e14web", "kind": "url", "label": "Site web" },
+    { "key": "e15a", "kind": "text", "label": "Adresse" },
+    { "key": "e15b", "kind": "text", "label": "Code postal" },
+    { "key": "e15c", "kind": "text", "label": "Ville" },
+    { "key": "e15d", "kind": "text", "label": "Pays" },
+    { "key": "remarques", "kind": "textarea", "label": "Remarques" },
+    { "key": "e18day", "kind": "date", "label": "Jour de livraison" },
+    { "key": "e20emb", "kind": "boolean", "label": "Emballage individuel" },
+    { "key": "e21cur", "kind": "number", "label": "Budget indicatif" },
+    { "key": "e23adr", "kind": "text", "label": "Adresse de facturation" }
+  ],
+  "excludedByChat": [
+    { "key": "e7vide", "formioType": "select", "reason": "liste sans options (remplie par une URL) : rien de vérifiable" },
+    { "key": "e9sig", "formioType": "signature", "reason": "signature : aucune saisie ne la remplit (NON_FILLABLE_TYPES)" }
+  ]
+}
