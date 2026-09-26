@@ -216,7 +216,13 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
           onAssign={hasRole(user, [PRODUCER]) && !project.producer ? assignMeAsProducer : undefined}
           statusControl={statusControl || undefined}
           compact={selectedTab !== 'Accueil'}
-          shipping={<ProjectShippingBar project={project} variant="mobile" />}
+          shipping={
+            <ProjectShippingBar
+              project={project}
+              variant="mobile"
+              userKey={user?.documentId}
+            />
+          }
         />
         {isAdmin && <ModalEditProject />}
       </>
@@ -326,7 +332,7 @@ const ProjectHeader = ({ project, customerLastSeen }: { project: Project; custom
         </div>
 
         {statusControl}
-        <ProjectShippingBar project={project} />
+        <ProjectShippingBar project={project} userKey={user?.documentId} />
 
         {/* Tabs */}
         <QuickFilterTab />

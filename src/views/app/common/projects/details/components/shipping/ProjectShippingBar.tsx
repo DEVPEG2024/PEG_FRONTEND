@@ -25,17 +25,27 @@ import ShipProjectDialog from './ShipProjectDialog';
 type Props = {
   project: Pick<Project, 'documentId' | 'name'>;
   variant?: 'desktop' | 'mobile';
+  /** Compte connecté (`user.documentId`) : la réponse gardée en mémoire lui est propre. */
+  userKey?: string | null;
 };
 
 const SAVE_FAILED = "Impossible d'enregistrer l'expédition";
 
-/** Toast après enregistrement, selon ce que le serveur a réellement envoyé. */
+/**
+ * Toast après enregistrement, selon ce que le serveur a réellement envoyé. Un
+ * envoi échoué (cloche et e-mail) est signalé : l'équipe peut le rattraper par
+ * « Modifier » → « Prévenir à nouveau le client ».
+ */
 const savedToast = ({ notified }: MarkProjectShippedResponse) => {
   if (notified?.bell === 'sent' || notified?.email === 'sent')
     toast.success('Expédition enregistrée — le client est prévenu');
   else if (notified?.bell === 'sandbox' || notified?.email === 'sandbox')
     toast.info(
       "Expédition enregistrée (bac à sable : le client n'est pas prévenu)"
+    );
+  else if (notified?.bell === 'failed' || notified?.email === 'failed')
+    toast.warning(
+      "Expédition enregistrée, mais le client n'a pas pu être prévenu"
     );
   else toast.success('Expédition enregistrée');
 };
@@ -76,9 +86,13 @@ const CSS = `
 .peg-ship-bar.is-mobile .peg-ship-btn.is-primary { justify-content: center; }
 `;
 
-const ProjectShippingBar = ({ project, variant = 'desktop' }: Props) => {
+const ProjectShippingBar = ({
+  project,
+  variant = 'desktop',
+  userKey,
+}: Props) => {
   const { available, shipping, canEdit, carriers, save, cancel } =
-    useProjectShipping(project?.documentId);
+    useProjectShipping(project?.documentId, userKey);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const closeDialog = useCallback(() => setDialogOpen(false), []);

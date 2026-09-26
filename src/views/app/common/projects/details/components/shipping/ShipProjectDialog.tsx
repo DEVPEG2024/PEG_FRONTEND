@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import dayjs from 'dayjs';
 import { MdClose, MdLocalShipping } from 'react-icons/md';
 import type {
   MarkProjectShippedRequest,
@@ -18,6 +17,38 @@ type Props = {
   /** Renvoie un message d'erreur à afficher, ou null si c'est enregistré. */
   onSubmit: (req: MarkProjectShippedRequest) => Promise<string | null>;
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Rattrapage maximal d'une date d'expédition (SHIPPED_AT_MAX_PAST_DAYS côté serveur). */
+const MAX_PAST_DAYS = 90;
+
+/** AAAA-MM-JJ à Paris — le serveur compare des jours calendaires de Paris. */
+const parisDay = (d: Date) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+
+/**
+ * Bornes du champ « Date d'expédition », alignées sur `parseShippedAt` (Strapi) :
+ * de J−90 à demain, en jours de Paris. En modification, le jour d'origine reste
+ * sélectionnable même s'il a plus de 90 jours : le serveur conserve alors la
+ * date d'origine (`resolveShippedAt`) — on peut corriger le numéro sans la changer.
+ */
+export function shippingDateBounds(
+  now: Date,
+  currentShippedAt?: string | null
+): { today: string; min: string; max: string; initial: string } {
+  const today = parisDay(now);
+  const max = parisDay(new Date(now.getTime() + DAY_MS));
+  let min = parisDay(new Date(now.getTime() - MAX_PAST_DAYS * DAY_MS));
+  const at = currentShippedAt ? new Date(currentShippedAt) : null;
+  const initial = at && !Number.isNaN(at.getTime()) ? parisDay(at) : today;
+  if (initial < min) min = initial;
+  return { today, min, max, initial };
+}
 
 /** Même règle que le serveur (normalizeTrackingNumber) : espaces retirés, majuscules. */
 const cleanNumber = (raw: string) => raw.replace(/\s+/g, '').toUpperCase();
@@ -61,14 +92,17 @@ const ShipProjectDialog = ({
   onSubmit,
 }: Props) => {
   const panelRef = useRef<HTMLDivElement>(null);
-  const today = dayjs().format('YYYY-MM-DD');
+  const [bounds] = useState(() =>
+    shippingDateBounds(new Date(), current?.shippedAt)
+  );
   const [carrier, setCarrier] = useState<ShippingCarrier | ''>(
     current?.carrier ?? ''
   );
   const [number, setNumber] = useState(current?.trackingNumber ?? '');
-  const [date, setDate] = useState(
-    current?.shippedAt ? dayjs(current.shippedAt).format('YYYY-MM-DD') : today
-  );
+  const [date, setDate] = useState(bounds.initial);
+  // Modification : renvoyer la cloche et l'e-mail (seul moyen de rattraper un envoi
+  // échoué — le serveur ne prévient pas si transporteur et numéro sont inchangés).
+  const [notifyAgain, setNotifyAgain] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -116,6 +150,7 @@ const ShipProjectDialog = ({
       carrier,
       trackingNumber,
       shippedAt: date,
+      ...(current && notifyAgain ? { notify: true } : {}),
     });
     setBusy(false);
     if (message) setError(message);
@@ -299,8 +334,8 @@ const ShipProjectDialog = ({
                 className="peg-ship-input"
                 type="date"
                 value={date}
-                max={dayjs().add(1, 'day').format('YYYY-MM-DD')}
-                min={dayjs().subtract(90, 'day').format('YYYY-MM-DD')}
+                max={bounds.max}
+                min={bounds.min}
                 onChange={(e) => {
                   setDate(e.target.value);
                   setError(null);
@@ -308,6 +343,28 @@ const ShipProjectDialog = ({
                 required
               />
             </label>
+
+            {current && (
+              <label
+                className="peg-ship-field"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={notifyAgain}
+                  onChange={(e) => setNotifyAgain(e.target.checked)}
+                  style={{ width: '18px', height: '18px', flexShrink: 0 }}
+                />
+                <span className="peg-ship-label">
+                  Prévenir à nouveau le client
+                </span>
+              </label>
+            )}
 
             {error && (
               <p

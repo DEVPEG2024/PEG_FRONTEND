@@ -3,10 +3,10 @@
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import dayjs from 'dayjs';
 import ProjectShippingBar from '@/views/app/common/projects/details/components/shipping/ProjectShippingBar';
 import ProjectHeaderMobile from '@/views/app/common/projects/details/components/ProjectHeaderMobile';
 import { resetProjectShippingCache } from '@/views/app/common/projects/details/components/shipping/useProjectShipping';
+import { shippingDateBounds } from '@/views/app/common/projects/details/components/shipping/ShipProjectDialog';
 import type {
   GetProjectShippingResponse,
   ProjectShipping,
@@ -20,12 +20,18 @@ import type {
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
+const toast = {
+  success: jest.fn(),
+  error: jest.fn(),
+  info: jest.fn(),
+  warning: jest.fn(),
+};
 jest.mock('react-toastify', () => ({
   toast: {
     success: (m: string) => toast.success(m),
     error: (m: string) => toast.error(m),
     info: (m: string) => toast.info(m),
+    warning: (m: string) => toast.warning(m),
   },
 }));
 const getShipping = jest.fn();
@@ -85,6 +91,7 @@ beforeEach(() => {
     toast.success,
     toast.error,
     toast.info,
+    toast.warning,
   ].forEach((m) => m.mockReset());
   resetProjectShippingCache();
   container = document.createElement('div');
@@ -96,6 +103,15 @@ afterEach(() => {
   container.remove();
   document.body.innerHTML = '';
 });
+
+/** Jour de Paris (le serveur compare des jours calendaires de Paris). */
+const parisToday = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 
 const flush = () =>
   act(async () => {
@@ -233,7 +249,7 @@ describe('Barre « Expédition » — admin / producteur attribué', () => {
     expect(dialog.textContent).toContain('Transporteur');
     expect(dialog.textContent).toContain("Date d'expédition");
     const date = dialog.querySelector('input[type="date"]') as HTMLInputElement;
-    expect(date.value).toBe(dayjs().format('YYYY-MM-DD'));
+    expect(date.value).toBe(parisToday());
     // Numéro demandé seulement pour un transporteur suivi.
     expect(dialog.textContent).not.toContain('Numéro de suivi (facultatif)');
     await setValue(
@@ -252,7 +268,7 @@ describe('Barre « Expédition » — admin / producteur attribué', () => {
     expect(markShipped).toHaveBeenCalledWith(project.documentId, {
       carrier: 'colissimo',
       trackingNumber: '6A123',
-      shippedAt: dayjs().format('YYYY-MM-DD'),
+      shippedAt: parisToday(),
     });
     expect(toast.info).toHaveBeenCalledWith(
       "Expédition enregistrée (bac à sable : le client n'est pas prévenu)"
@@ -290,7 +306,7 @@ describe('Barre « Expédition » — admin / producteur attribué', () => {
     expect(markShipped.mock.calls[0][1]).toEqual({
       carrier: 'pickup',
       trackingNumber: null,
-      shippedAt: dayjs().format('YYYY-MM-DD'),
+      shippedAt: parisToday(),
     });
     expect(toast.success).toHaveBeenCalledWith(
       'Expédition enregistrée — le client est prévenu'
@@ -360,7 +376,7 @@ describe('Barre « Expédition » — admin / producteur attribué', () => {
     ).toBe('6A123');
     expect(
       (dialog.querySelector('input[type="date"]') as HTMLInputElement).value
-    ).toBe(dayjs(COLISSIMO.shippedAt).format('YYYY-MM-DD'));
+    ).toBe('2026-10-02');
     click(button('Annuler')!);
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
@@ -446,5 +462,205 @@ describe('Téléphone', () => {
       container.querySelector('[data-testid="project-shipping"]')
     ).toBeNull();
     expect(getShipping).not.toHaveBeenCalled();
+  });
+});
+
+describe('Constats de relecture (non-régression)', () => {
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => {
+      resolve = r;
+    });
+    return { promise, resolve };
+  };
+
+  it('bornes de la date = jours de Paris, de J−90 à demain (comme le serveur)', () => {
+    // 4 oct., 00 h 30 à Paris : « demain » = 5 oct. même si l'UTC est encore le 3.
+    const b = shippingDateBounds(new Date('2026-10-03T22:30:00.000Z'));
+    expect(b).toEqual({
+      today: '2026-10-04',
+      max: '2026-10-05',
+      min: '2026-07-06',
+      initial: '2026-10-04',
+    });
+  });
+
+  it('« Modifier » une expédition de plus de 90 jours : sa date reste sélectionnable', () => {
+    const b = shippingDateBounds(
+      new Date('2026-10-03T14:00:00.000Z'),
+      '2026-06-10T09:15:00.000Z'
+    );
+    expect(b.initial).toBe('2026-06-10');
+    expect(b.min).toBe('2026-06-10');
+    expect(b.max).toBe('2026-10-04');
+  });
+
+  it('dialogue « Modifier » : la date d’origine ne sort jamais des bornes du champ', async () => {
+    getShipping.mockReturnValue(
+      reply({
+        shipping: { ...COLISSIMO, shippedAt: '2020-01-15T10:00:00.000Z' },
+        canEdit: true,
+        carriers: CARRIERS,
+      })
+    );
+    await render();
+    click(button('Modifier')!);
+    const date = document.querySelector(
+      '[role="dialog"] input[type="date"]'
+    ) as HTMLInputElement;
+    expect(date.value).toBe('2020-01-15');
+    expect(date.min <= date.value && date.value <= date.max).toBe(true);
+  });
+
+  it('cloche et e-mail en échec → toast d’avertissement', async () => {
+    getShipping.mockReturnValue(
+      reply({ shipping: NOT_SHIPPED, canEdit: true, carriers: CARRIERS })
+    );
+    markShipped.mockResolvedValue({
+      data: {
+        result: true,
+        shipping: COLISSIMO,
+        notified: { bell: 'failed', email: 'failed' },
+      },
+    });
+    await render();
+    click(button('Marquer comme expédié')!);
+    await setValue(
+      document.querySelector('[role="dialog"] select') as HTMLSelectElement,
+      'colissimo'
+    );
+    await submitDialog();
+    expect(toast.warning).toHaveBeenCalledWith(
+      "Expédition enregistrée, mais le client n'a pas pu être prévenu"
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('« Prévenir à nouveau le client » : seulement en modification, envoie notify: true', async () => {
+    getShipping.mockReturnValue(
+      reply({ shipping: NOT_SHIPPED, canEdit: true, carriers: CARRIERS })
+    );
+    await render();
+    click(button('Marquer comme expédié')!);
+    expect(document.body.textContent).not.toContain(
+      'Prévenir à nouveau le client'
+    );
+    click(button('Annuler')!);
+    act(() => root.unmount());
+
+    resetProjectShippingCache();
+    getShipping.mockReturnValue(
+      reply({ shipping: COLISSIMO, canEdit: true, carriers: CARRIERS })
+    );
+    markShipped.mockResolvedValue({
+      data: {
+        result: true,
+        shipping: COLISSIMO,
+        notified: { bell: 'sent', email: 'sent' },
+      },
+    });
+    root = createRoot(container);
+    await render();
+    click(button('Modifier')!);
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.textContent).toContain('Prévenir à nouveau le client');
+    // Non cochée → corps inchangé (pas de clé notify).
+    await submitDialog();
+    expect(markShipped.mock.calls[0][1]).toEqual({
+      carrier: 'colissimo',
+      trackingNumber: '6A123',
+      shippedAt: '2026-10-02',
+    });
+    click(button('Modifier')!);
+    const box = document.querySelector(
+      '[role="dialog"] input[type="checkbox"]'
+    ) as HTMLInputElement;
+    await act(async () => {
+      box.click();
+    });
+    await submitDialog();
+    expect(markShipped.mock.calls[1][1]).toEqual({
+      carrier: 'colissimo',
+      trackingNumber: '6A123',
+      shippedAt: '2026-10-02',
+      notify: true,
+    });
+    expect(toast.success).toHaveBeenLastCalledWith(
+      'Expédition enregistrée — le client est prévenu'
+    );
+  });
+
+  it('une lecture partie avant « Annuler l’expédition » ne rétablit pas l’ancien état', async () => {
+    getShipping.mockReturnValue(
+      reply({ shipping: COLISSIMO, canEdit: true, carriers: CARRIERS })
+    );
+    await render();
+    act(() => root.unmount());
+
+    // Retour sur l'onglet (téléphone) : affichage depuis le cache, relecture en vol.
+    const late = deferred<{ data: GetProjectShippingResponse }>();
+    getShipping.mockReturnValue(late.promise);
+    cancelShipping.mockResolvedValue({
+      data: { result: true, shipping: NOT_SHIPPED },
+    });
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<ProjectShippingBar project={project} />);
+    });
+    await act(async () => {
+      button("Annuler l'expédition")!.click();
+    });
+    await flush();
+    expect(button('Marquer comme expédié')).toBeDefined();
+
+    // La relecture (partie avant l'annulation) répond en dernier.
+    await act(async () => {
+      late.resolve({
+        data: {
+          result: true,
+          shipping: COLISSIMO,
+          canEdit: true,
+          carriers: CARRIERS,
+        },
+      });
+    });
+    await flush();
+    expect(container.textContent).not.toContain('Expédié le');
+    expect(button('Marquer comme expédié')).toBeDefined();
+    confirm.mockRestore();
+  });
+
+  it('la réponse gardée en mémoire est propre au compte connecté', async () => {
+    getShipping.mockReturnValue(
+      reply({ shipping: COLISSIMO, canEdit: true, carriers: CARRIERS })
+    );
+    await act(async () => {
+      root.render(<ProjectShippingBar project={project} userKey="admin0001" />);
+    });
+    await flush();
+    expect(button('Modifier')).toBeDefined();
+    act(() => root.unmount());
+
+    // Déconnexion sans rechargement, puis un client ouvre le même projet :
+    // tant que sa lecture n'a pas répondu, aucun bouton de l'admin.
+    const pending = deferred<{ data: GetProjectShippingResponse }>();
+    getShipping.mockReturnValue(pending.promise);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <ProjectShippingBar project={project} userKey="client0002" />
+      );
+    });
+    expect(button('Modifier')).toBeUndefined();
+    expect(button("Annuler l'expédition")).toBeUndefined();
+    await act(async () => {
+      pending.resolve({
+        data: { result: true, shipping: COLISSIMO, canEdit: false },
+      });
+    });
+    await flush();
+    expect(container.textContent).toContain('Expédié le 2 oct. · Colissimo');
+    expect(button('Modifier')).toBeUndefined();
   });
 });

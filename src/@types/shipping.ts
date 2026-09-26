@@ -50,6 +50,8 @@ export type MarkProjectShippedRequest = {
   carrier: ShippingCarrier;
   trackingNumber?: string | null;
   shippedAt?: string | null; /* AAAA-MM-JJ */
+  /** « Prévenir à nouveau le client » (modification) : cloche + e-mail renvoyés. */
+  notify?: boolean;
 };
 
 export type MarkProjectShippedResponse = {
