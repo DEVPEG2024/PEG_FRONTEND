@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { MdShoppingBag, MdEuro, MdForum } from 'react-icons/md';
 import { apiGetChatOrderStats } from '@/services/ChatTraceServices';
 import type { ChatOrderStatsResponse } from '@/components/template/chat/chatClosing';
@@ -48,7 +48,21 @@ const ChatOrderStats = () => {
 
   if (!stats) return null;
 
-  const tiles = [
+  // Sous-titre = MÊME mesure que le chiffre principal, sur 30 jours : les
+  // conversations closes (et non les conversations ayant un article du chat,
+  // closes ou non), sinon le sous-titre pourrait dépasser le total.
+  const closedRecent =
+    typeof stats.closedConversationsLast30Days === 'number'
+      ? fmtInt(stats.closedConversationsLast30Days)
+      : null;
+
+  const tiles: {
+    icon: ReactNode;
+    label: string;
+    value: string;
+    recent: string | null;
+    color: string;
+  }[] = [
     {
       icon: <MdShoppingBag size={18} />,
       label: "Commandes issues de l'assistant",
@@ -67,7 +81,7 @@ const ChatOrderStats = () => {
       icon: <MdForum size={18} />,
       label: 'Conversations conclues par une commande',
       value: fmtInt(stats.closedConversations),
-      recent: fmtInt(stats.last30Days.conversations),
+      recent: closedRecent,
       color: '#a78bfa',
     },
   ];
@@ -124,9 +138,11 @@ const ChatOrderStats = () => {
           >
             {t.value}
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11.5px' }}>
-            30 derniers jours : {t.recent}
-          </div>
+          {t.recent !== null && (
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11.5px' }}>
+              30 derniers jours : {t.recent}
+            </div>
+          )}
         </div>
       ))}
     </div>

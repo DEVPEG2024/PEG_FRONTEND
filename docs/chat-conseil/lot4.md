@@ -19,11 +19,11 @@ Aucune commande issue du chat → rien ne change (aucun appel réseau, aucun enr
 | Fichier | Rôle |
 |---|---|
 | `src/api/order-item/content-types/order-item/schema.json` | nouveau champ `chatConversationId` (string ≤ 64) |
-| `src/services/chat-closing-text.ts` | module **pur** (testé par `node --test`) : `isConversationId`, `sanitizeClosingBody`, `closingItemFromOrderItem`, `closingList`, `closingReply`, `aggregateChatOrders`, `parseJsonColumn` |
+| `src/services/chat-closing-text.ts` | module **pur** (testé par `node --test`) : `isConversationId`, `sanitizeClosingBody`, `closingItemFromOrderItem`, `closingList`, `closingReply`, `aggregateChatOrders`, `invoiceByOrderItem`, `chatOrderInvoiceId`, `parseJsonColumn` |
 | `src/services/chat-closing.service.ts` | `closeConversationAfterOrder(ctx, pool)` et `chatOrderStatsReport(pool)` (le pool pg du chatbot est passé par le contrôleur) |
 | `src/api/chatbot/routes/chatbot.ts` | `POST /chatbot/closing` (`chatbot.closeAfterOrder`), `GET /chatbot/stats/orders` (`chatbot.chatOrderStats`), `auth: false` |
 | `src/api/chatbot/controllers/chatbot.ts` | import ; 2 `ALTER TABLE chat_history` (`closed_at`, `closing`) dans `initChatbotTables` ; `closedAt` dans `getHistory` / `getConversation` ; 2 handlers minces en fin d'export |
-| `src/__tests__/chatClosingText.test.ts` | 23 tests |
+| `src/__tests__/chatClosingText.test.ts` | 25 tests |
 
 ### `POST /api/chatbot/closing`
 - Corps `{ conversationId, orderItemDocumentIds (1..30), mode: 'card' | 'deferred' }`.
@@ -39,11 +39,19 @@ Aucune commande issue du chat → rien ne change (aucun appel réseau, aucun enr
   (jeton absent/invalide uniquement) ; 500 en cas d'erreur inattendue (le widget affiche alors son repli).
 
 ### `GET /api/chatbot/stats/orders` (admin, `requireAdmin`)
-`{ result: true, stats: { allTime, last30Days, closedConversations, computedAt } }`, chaque période =
+`{ result: true, stats: { allTime, last30Days, closedConversations, closedConversationsLast30Days, computedAt } }`,
+chaque période =
 `{ orders, items, revenueHT, conversations }`. Un article compte si sa conversation est valide, son projet existe et
 n'est pas annulé, et la paire (conversation, client) figure dans `chat_history` (un client peut écrire n'importe quel
-`chatConversationId` sur ses articles : `order-item.create` lui est accordé). `orders` = factures distinctes (première
-facture du projet, sinon l'article). Lecture ORM paginée 200/page (5 000 max), cache mémoire 60 s.
+`chatConversationId` sur ses articles : `order-item.create` lui est accordé). `orders` = factures distinctes : la
+facture d'un article est lue par **`invoice.orderItems`** (relation à sens unique qui liste TOUS les articles du
+paiement), repli sur la première facture du projet, sinon l'article seul. ⚠️ Ne pas grouper par `project.invoices` :
+`invoice.project` est manyToOne, chaque `createProjectWithInvoice` d'une commande à plusieurs articles détache la
+facture des projets créés avant (un seul projet la garde) → une commande de 2 articles comptait pour 2.
+`closedConversations` = `COUNT(*) WHERE closed_at IS NOT NULL`, `closedConversationsLast30Days` = même mesure sur
+30 jours (sous-titre de la tuile « Conversations conclues par une commande »). Lecture ORM paginée 200/page, du plus
+récent au plus ancien (`createdAt:desc`) : au-delà de 5 000 articles, seuls les plus anciens manquent (avertissement
+journalisé) et la fenêtre de 30 jours reste juste. Cache mémoire 60 s.
 
 ## Front (PEG_FRONTEND)
 
@@ -51,7 +59,7 @@ facture du projet, sinon l'article). Lecture ORM paginée 200/page (5 000 max), 
 |---|---|
 | `src/components/template/chat/chatTrace.ts` | `chatUserKey`, `conversationForOffer`, `chatTraceFor`, `currentChatConversationId`, mémoire des articles créés avec leur conversation |
 | `src/components/template/chat/chatClosing.ts` | types du contrat, `prepareChatClosing`, `announceChatClosing`, verrou, `requestChatClosing` (fetch direct, 8 s) |
-| `src/components/template/chat/useChatClosing.ts` | hook du widget : traite une clôture ANNONCÉE (montage + événement `peg:chat-closing`), `locked` |
+| `src/components/template/chat/useChatClosing.ts` | hook du widget : traite une clôture ANNONCÉE (montage + événement `peg:chat-closing`), `locked` ; attend la fin d'une réponse du chat en cours (`waiting`) |
 | `src/components/template/chat/ChatClosedBar.tsx` | remplace la saisie d'une conversation close |
 | `src/services/ChatTraceServices.ts` | `createOrderItemWithTrace` (repli sans le champ, comme `fetchBannerGraphQL`), `apiGetChatOrderStats` |
 | `src/views/app/admin/chatbot/ChatOrderStats.tsx` | 3 tuiles (masquées si la route n'existe pas) |
@@ -59,7 +67,7 @@ facture du projet, sinon l'article). Lecture ORM paginée 200/page (5 000 max), 
 | `ChatOfferAction.tsx`, `ShowProduct.tsx` | la conversation de l'offre est posée sur l'article au moment de l'ajout |
 | `PaymentContent.tsx` | création des order-items via `createOrderItemWithTrace` ; `prepareChatClosing` après création ; `announceChatClosing` après le succès du paiement différé |
 | `Success.tsx` | `announceChatClosing(userKey, ids payés)` ; dans le `catch`, sans filtre |
-| `ChatWidget.tsx` | `useChatClosing` ; `sendText` bloqué si verrouillé ; `ChatClosedBar` à la place de la saisie |
+| `ChatWidget.tsx` | `useChatClosing` (`waiting: loading`) ; à la clôture : requête du chat en cours annulée, voix et micro coupés ; `sendText` bloqué si verrouillé ; `ChatClosedBar` à la place de la saisie |
 | `ChatbotPage.tsx`, `ChatbotServices.ts` | tuiles de stats, badge « Commande », `closedAt` |
 
 Déroulé : ajout au panier → `CartItem.chatConversationId` (conversation lue dans `sessionStorage`
@@ -69,6 +77,9 @@ widget appelle `POST /chatbot/closing`, s'ouvre, ajoute le remerciement (ou basc
 et pose `peg_chat_locked_v1:<userKey>`. « Nouvelle question » = `resetConversation()` : nouvel identifiant → verrou
 levé et clé effacée. Réponse `result:false` / 4xx → rien ; erreur réseau / 5xx / délai → remerciement de repli local
 + verrou. Une clôture non annoncée (paiement annulé) est écrasée au paiement suivant et ignorée après 2 h.
+Réponse du chat en cours au moment de l'annonce (paiement différé lancé chat ouvert) : la clôture attend qu'elle soit
+arrivée — le serveur l'a alors enregistrée, elle ne peut plus réécrire `chat_history.messages` après le remerciement.
+Une question envoyée PENDANT l'appel de clôture est abandonnée à l'arrivée du remerciement.
 
 Téléphone (< 768 px) : la barre de fin prend toute la largeur, bouton en pleine largeur, marge de la barre d'accueil
 de l'iPhone. Bureau et tablette : seule la zone de saisie d'une conversation close change.
@@ -95,8 +106,8 @@ Aucune variable nouvelle.
   commande », « 30 derniers jours : … », badge « Commande ».
 
 ## Tests
-- Strapi : `node --test src/__tests__/chatClosingText.test.ts` (23).
-- Front : `chatTrace.test.ts`, `chatTraceServices.test.ts`, `chatClosing.test.tsx` (22).
+- Strapi : `node --test src/__tests__/chatClosingText.test.ts` (25).
+- Front : `chatTrace.test.ts`, `chatTraceServices.test.ts`, `chatClosing.test.tsx` (26).
 
 ## Paragraphe proposé pour CLAUDE.md
 
@@ -111,7 +122,9 @@ Aucune variable nouvelle.
   s'ouvre tout seul, conversation verrouillée (`peg_chat_locked_v1`) jusqu'à « Nouvelle question ».
 - `chat_history.closed_at` fait foi (la colonne `meta` est réécrite à chaque tour) ; `closing` garde texte et articles.
 - Stats admin `GET /api/chatbot/stats/orders` : un article ne compte que si la paire (conversation, client) existe dans
-  `chat_history` et que son projet n'est pas annulé (`order-item.create` est ouvert aux clients).
+  `chat_history` et que son projet n'est pas annulé (`order-item.create` est ouvert aux clients). Une commande = une
+  facture, lue par `invoice.orderItems` — ⚠️ jamais par `project.invoices` (la facture d'une commande à plusieurs
+  articles n'est rattachée qu'à UN de ses projets).
 - ⚠️ Ne JAMAIS mettre `chatConversationId` dans une requête GraphQL hors `createOrderItemWithTrace` (champ inconnu = 400
   qui ferait échouer la commande). Le widget ne fait AUCUN appel au montage sans clôture annoncée.
 - Ordre de déploiement : Strapi d'abord ; front avant back = commande normale, pas de clôture, tuiles masquées.
@@ -129,9 +142,14 @@ Voir le compte rendu du lot (résultat structuré) — résumé :
 - Service de clôture : une **seconde** commande issue de la même conversation (deux offres) reçoit son propre
   remerciement (le contrat ne prévoyait que « déjà close → même texte ») ; `closing` contient en plus `reply`.
 - Tuile « Conversations conclues par une commande » : valeur = `closedConversations`, sous-titre 30 jours =
-  `last30Days.conversations` (conversations ayant mené à une commande validée sur 30 jours).
+  `closedConversationsLast30Days` (champ ajouté à la réponse du contrat §2.5, facultatif côté front : absent → sous-titre
+  masqué pour cette tuile). Avant correction, le sous-titre affichait `last30Days.conversations` (conversations ayant un
+  article du chat, closes ou non) et pouvait dépasser le total.
+- Une conversation close compte même si la commande est annulée ensuite (`closed_at` n'est pas retiré).
 - Limites acceptées : offre sortie des 40 derniers messages conservés → article non tracé ; clôture repliée si le
-  widget est démonté pendant la requête.
+  widget est démonté pendant la requête ; une question envoyée pendant l'appel de clôture est abandonnée côté écran,
+  mais le serveur peut encore finir son tour et réécrire `chat_history.messages` sans le remerciement (fenêtre de
+  quelques secondes ; `persistConversation` est hors du périmètre du lot 4, contrat §4.3).
 - ESLint (règle `prettier/prettier` seulement, fichiers déjà très loin de Prettier) : `ChatWidget.tsx` +36 erreurs,
   toutes dues au bloc de saisie enveloppé par `{closing.locked ? … : (<> … </>)}` SANS réindentation (imposé par le
   contrat §4.3, pour ne pas entrer en conflit avec les lots 2 et 3) ; `ChatOfferAction.tsx` +1 (la ligne insérée suit

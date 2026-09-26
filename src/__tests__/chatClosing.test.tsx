@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import cartReducer from '@/store/slices/base/cartSlice';
 import ChatWidget from '@/components/template/ChatWidget';
+import ChatOrderStats from '@/views/app/admin/chatbot/ChatOrderStats';
 import { noteTracedOrderItem } from '@/components/template/chat/chatTrace';
 import {
   CHAT_CLOSING_FALLBACK,
@@ -28,6 +29,11 @@ Element.prototype.scrollIntoView = jest.fn();
 jest.mock('@/utils/hooks/useResponsive', () => () => ({
   smaller: { md: false },
   larger: { md: true },
+}));
+const mockGetChatOrderStats = jest.fn();
+jest.mock('@/services/ChatTraceServices', () => ({
+  ...jest.requireActual('@/services/ChatTraceServices'),
+  apiGetChatOrderStats: () => mockGetChatOrderStats(),
 }));
 
 const CONV = '4f1e2d3c-aaaa-bbbb-cccc-1234567890ab';
@@ -140,6 +146,52 @@ const button = (label: string) =>
   [...container.querySelectorAll('button')].find(
     (b) => (b.textContent ?? '').trim() === label
   ) ?? null;
+
+// Réponse en flux SSE de l'agent (POST /chatbot/chat/stream).
+const sse = (reply: string) => {
+  const enc = new TextEncoder();
+  const events = [
+    `event: delta\ndata: ${JSON.stringify({ text: reply })}\n\n`,
+    `event: done\ndata: ${JSON.stringify({ reply, authenticated: true, cards: [] })}\n\n`,
+  ];
+  let i = 0;
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => 'text/event-stream' },
+    body: {
+      getReader: () => ({
+        read: async () =>
+          i < events.length
+            ? { value: enc.encode(events[i++]), done: false }
+            : { value: undefined, done: true },
+      }),
+    },
+  };
+};
+/** Promesse résolue à la main (réponse du serveur qui tarde). */
+const deferred = <T,>() => {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+};
+const typeAndSend = (text: string) => {
+  const field = q<HTMLTextAreaElement>('textarea')!;
+  act(() => {
+    Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value'
+    )!.set!.call(field, text);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  act(() => {
+    q('button[aria-label="Envoyer"]')!.click();
+  });
+};
+const isClosingCall = (call: unknown[]) =>
+  /\/chatbot\/closing$/.test(String(call[0]));
 
 /** Paiement d'une commande dont un article vient de l'offre du chat (conversation CONV). */
 const paidOrder = (paidIds: string[] = [OI1]) => {
@@ -333,6 +385,77 @@ describe('Chat — clôture après une commande issue du chat', () => {
     expect(readChatClosing('u1')).toBeNull();
   });
 
+  it('réponse du chat en cours : la clôture attend qu’elle arrive, puis le remerciement s’ajoute APRÈS elle', async () => {
+    sessionStorage.setItem(
+      'peg_chat_widget_v2:u1',
+      JSON.stringify(conversation())
+    );
+    const chat = deferred<unknown>();
+    fetchMock.mockImplementation((url: string) =>
+      /\/chatbot\/closing$/.test(url)
+        ? Promise.resolve(okReply())
+        : chat.promise
+    );
+    render();
+    act(() => {
+      q('button[aria-label="Ouvrir le chat assistant"]')!.click();
+    });
+    typeAndSend('Et le délai ?');
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(1); // la question part
+
+    act(() => paidOrder());
+    await flush();
+    // Réponse pas encore arrivée : aucun appel de clôture.
+    expect(fetchMock.mock.calls.filter(isClosingCall)).toHaveLength(0);
+
+    chat.resolve(sse('Livraison sous 10 jours ouvrés.'));
+    await flush();
+    await flush();
+    expect(fetchMock.mock.calls.filter(isClosingCall)).toHaveLength(1);
+    const texts = bot();
+    expect(texts[texts.length - 2]).toContain(
+      'Livraison sous 10 jours ouvrés.'
+    );
+    expect(texts[texts.length - 1]).toContain('Merci Léa !');
+    expect(q('textarea')).toBeNull();
+    const saved = JSON.parse(sessionStorage.getItem('peg_chat_widget_v2:u1')!);
+    expect(saved.messages.at(-1).content).toContain('Merci Léa !');
+  });
+
+  it('question envoyée pendant l’appel de clôture : abandonnée, sa réponse n’efface pas le remerciement', async () => {
+    sessionStorage.setItem(
+      'peg_chat_widget_v2:u1',
+      JSON.stringify(conversation())
+    );
+    const closingCall = deferred<unknown>();
+    const chat = deferred<unknown>();
+    fetchMock.mockImplementation((url: string) =>
+      /\/chatbot\/closing$/.test(url) ? closingCall.promise : chat.promise
+    );
+    render();
+    act(() => {
+      q('button[aria-label="Ouvrir le chat assistant"]')!.click();
+    });
+    act(() => paidOrder());
+    await flush();
+    typeAndSend('Et le délai ?');
+    await flush();
+    const chatInit = fetchMock.mock.calls.find((c) => !isClosingCall(c))![1];
+
+    closingCall.resolve(okReply());
+    await flush();
+    expect((chatInit.signal as AbortSignal).aborted).toBe(true);
+    expect(bot().pop()).toContain('Merci Léa !');
+
+    chat.resolve(sse('Réponse arrivée trop tard.'));
+    await flush();
+    expect(bot().join(' ')).not.toContain('Réponse arrivée trop tard.');
+    expect(bot().pop()).toContain('Merci Léa !');
+    expect(q('textarea')).toBeNull();
+    expect(button('Nouvelle question')).not.toBeNull();
+  });
+
   it('conversation verrouillée conservée après rechargement de l’onglet', async () => {
     sessionStorage.setItem(
       'peg_chat_widget_v2:u1',
@@ -346,5 +469,68 @@ describe('Chat — clôture après une commande issue du chat', () => {
     expect(q('textarea')).toBeNull();
     expect(button('Nouvelle question')).not.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('Statistiques de l’assistant (admin)', () => {
+  const bucket = (orders: number, conversations: number) => ({
+    orders,
+    items: orders,
+    revenueHT: orders * 100,
+    conversations,
+  });
+  const tile = (label: string) =>
+    [...container.querySelectorAll('div')].find(
+      (d) =>
+        d.children.length >= 2 &&
+        (d.children[0].textContent ?? '').trim() === label
+    ) ?? null;
+
+  it('« Conversations conclues par une commande » : le sous-titre mesure la même chose que le chiffre', async () => {
+    mockGetChatOrderStats.mockResolvedValue({
+      data: {
+        result: true,
+        stats: {
+          allTime: bucket(3, 5),
+          // Conversations ayant un article du chat, closes OU NON : jamais sous cette tuile.
+          last30Days: bucket(3, 5),
+          closedConversations: 3,
+          closedConversationsLast30Days: 2,
+          computedAt: '2026-09-26T12:00:00Z',
+        },
+      },
+    });
+    act(() => {
+      root.render(<ChatOrderStats />);
+    });
+    await flush();
+    const t = tile('Conversations conclues par une commande')!;
+    expect(t.children[1].textContent).toBe('3');
+    expect(t.textContent).toContain('30 derniers jours : 2');
+    expect(t.textContent).not.toContain('30 derniers jours : 5');
+  });
+
+  it('serveur sans le chiffre sur 30 jours : sous-titre masqué pour cette tuile seulement', async () => {
+    mockGetChatOrderStats.mockResolvedValue({
+      data: {
+        result: true,
+        stats: {
+          allTime: bucket(4, 4),
+          last30Days: bucket(1, 1),
+          closedConversations: 3,
+          computedAt: '2026-09-26T12:00:00Z',
+        },
+      },
+    });
+    act(() => {
+      root.render(<ChatOrderStats />);
+    });
+    await flush();
+    expect(
+      tile('Conversations conclues par une commande')!.textContent
+    ).not.toContain('30 derniers jours');
+    expect(tile("Commandes issues de l'assistant")!.textContent).toContain(
+      '30 derniers jours : 1'
+    );
   });
 });

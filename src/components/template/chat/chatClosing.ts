@@ -59,6 +59,8 @@ export type ChatOrderStatsResponse = {
     allTime: ChatOrderStatsBucket;
     last30Days: ChatOrderStatsBucket;
     closedConversations: number;
+    /** Même mesure que `closedConversations`, sur 30 jours (absent d'un serveur antérieur). */
+    closedConversationsLast30Days?: number;
     computedAt: string;
   };
 };

@@ -406,7 +406,16 @@ const ChatWidget = () => {
     userKey: chatUserKey(user),
     conversationId,
     token: sessionToken || getPersistedAuthToken(),
+    waiting: loading,
     onClosing: (c) => {
+      // Question partie pendant l'appel de clôture : abandonnée, sa réponse
+      // n'écrasera pas le remerciement ; micro et voix coupés (saisie remplacée).
+      abortRef.current?.abort();
+      setLoading(false);
+      setStreamingText('');
+      setStatusLabel(null);
+      stopSpeaking();
+      cancelRecording();
       const thanks: Message = {
         role: 'assistant',
         content: c.reply,

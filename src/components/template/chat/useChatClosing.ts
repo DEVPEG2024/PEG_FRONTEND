@@ -22,6 +22,12 @@ type Options = {
   /** Conversation affichée par le widget. */
   conversationId: string;
   token: string | null;
+  /**
+   * Réponse du chat en cours : la clôture attend qu'elle soit arrivée (le serveur
+   * l'a alors enregistrée), sinon cette réponse, écrite après coup, effacerait le
+   * remerciement de l'écran et de l'historique.
+   */
+  waiting?: boolean;
   onClosing: (c: ChatClosingDelivery) => void;
 };
 
@@ -35,6 +41,7 @@ export function useChatClosing({
   userKey,
   conversationId,
   token,
+  waiting = false,
   onClosing,
 }: Options): { locked: boolean } {
   // Verrou lu pour UN compte : après un changement de compte, celui de l'ancien ne compte plus.
@@ -47,6 +54,8 @@ export function useChatClosing({
   const busyRef = useRef(false);
   const tokenRef = useRef(token);
   tokenRef.current = token;
+  const waitingRef = useRef(waiting);
+  waitingRef.current = waiting;
 
   // Changement de compte dans l'onglet : verrou du nouveau compte.
   useEffect(() => {
@@ -67,8 +76,9 @@ export function useChatClosing({
   const process = useCallback(async () => {
     if (busyRef.current) return;
     const pending = announcedChatClosing(userKey);
-    // Jeton pas encore réhydraté (retour de Stripe) : on attendra le rendu suivant.
-    if (!pending || !tokenRef.current) return;
+    // Jeton pas encore réhydraté (retour de Stripe) ou réponse du chat en cours :
+    // on attendra le rendu suivant.
+    if (!pending || !tokenRef.current || waitingRef.current) return;
     busyRef.current = true;
     try {
       const outcome = await requestChatClosing(pending, tokenRef.current);
@@ -101,7 +111,7 @@ export function useChatClosing({
     };
     window.addEventListener(CHAT_CLOSING_EVENT, handler);
     return () => window.removeEventListener(CHAT_CLOSING_EVENT, handler);
-  }, [process, token]);
+  }, [process, token, waiting]);
 
   return { locked: !!lockedId && lockedId === conversationId };
 }
