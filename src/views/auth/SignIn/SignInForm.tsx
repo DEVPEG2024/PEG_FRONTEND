@@ -163,6 +163,12 @@ const SignInForm = (props: SignInFormProps) => {
                     id="signin-password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
+                    // Mot de passe affiché (œil) = champ texte : sans ces attributs,
+                    // le clavier du téléphone met une majuscule ou « corrige » le mot,
+                    // et un mot de passe juste est refusé (08/10/2026).
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     placeholder="••••••••"
                     style={{ ...inputStyle, paddingRight: '46px', borderColor: errors.password ? '#fca5a5' : '#e5e7eb' }}
                     onFocus={focusOn}

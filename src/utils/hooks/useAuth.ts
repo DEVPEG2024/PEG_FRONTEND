@@ -17,6 +17,20 @@ import { User } from '@/@types/user'
 
 type Status = 'success' | 'failed'
 
+/**
+ * Messages de connexion de Strapi (en anglais) → français. « Invalid identifier
+ * or password » s'affichait tel quel : un client sur téléphone, refusé pour une
+ * majuscule manquante au mot de passe, ne comprenait pas pourquoi (08/10/2026).
+ */
+const SIGN_IN_MESSAGES: [RegExp, string][] = [
+    [/invalid identifier or password/i, 'Adresse e-mail ou mot de passe incorrect. Attention : le mot de passe distingue les majuscules des minuscules.'],
+    [/email is not confirmed/i, 'Ce compte n’est pas encore confirmé : saisissez le code reçu par e-mail lors de l’inscription.'],
+    [/has been blocked/i, 'Ce compte est bloqué. Contactez PEG pour le réactiver.'],
+]
+
+const signInMessage = (raw: string): string =>
+    SIGN_IN_MESSAGES.find(([re]) => re.test(raw))?.[1] ?? raw
+
 function useAuth() {
     const dispatch = useAppDispatch()
 
@@ -85,10 +99,11 @@ function useAuth() {
             }
             return {
                 status: 'failed',
-                message:
+                message: signInMessage(
                     errors?.response?.data?.error?.message ||
-                    errors?.response?.data?.message ||
-                    errors.toString(),
+                        errors?.response?.data?.message ||
+                        errors.toString()
+                ),
             }
         }
     }
