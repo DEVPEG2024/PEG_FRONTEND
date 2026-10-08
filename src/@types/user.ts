@@ -27,5 +27,7 @@ export type User = {
   role: Role;
   authority: string[];
   blocked: boolean;
+  /** false = inscription par le formulaire public dont le code reçu par e-mail n'a pas été saisi. */
+  confirmed?: boolean;
   avatar?: PegFile;
 }

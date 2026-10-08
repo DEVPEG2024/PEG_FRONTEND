@@ -56,14 +56,17 @@ export async function apiGetUsers(data: GetUsersRequest = {pagination: {page: 1,
     // documentId non nul : une seule ligne insérée hors Strapi (sans documentId)
     // faisait échouer TOUTE la liste (« Cannot return null for non-nullable
     // field documentId ») ; un tel compte ne peut de toute façon pas être ouvert.
+    // Recherche sur l'identifiant OU l'e-mail : un compte inscrit par le
+    // formulaire public a souvent un identifiant différent de son adresse.
     const query = `
     query GetUsers($searchTerm: String, $pagination: PaginationArg) {
-        usersPermissionsUsers_connection(filters: {username: {containsi: $searchTerm}, documentId: {notNull: true}}, pagination: $pagination) {
+        usersPermissionsUsers_connection(filters: {or: [{username: {containsi: $searchTerm}}, {email: {containsi: $searchTerm}}], documentId: {notNull: true}}, pagination: $pagination) {
             nodes {
                 documentId
                 username
                 email
                 blocked
+                confirmed
                 firstName
                 lastName
                 customer {
@@ -116,6 +119,7 @@ export async function apiGetUserForEditById(documentId: string): Promise<AxiosRe
             username
             email
             blocked
+            confirmed
             firstName
             lastName
             customer {
@@ -208,6 +212,43 @@ export async function apiCreateUser(data: CreateUserRequest): Promise<AxiosRespo
             blocked: data.blocked || false,
         }
     })
+}
+
+/**
+ * Compte existant pour une adresse (comparaison insensible à la casse), ou null.
+ * Sert à expliquer un refus de création (« Cet email est déjà utilisé ») en
+ * nommant le compte qui occupe déjà l'adresse.
+ */
+export async function apiFindUserByEmail(email: string): Promise<User | null> {
+    const query = `
+    query FindUserByEmail($email: String) {
+        usersPermissionsUsers_connection(filters: {email: {eqi: $email}, documentId: {notNull: true}}, pagination: {pageSize: 1}) {
+            nodes {
+                documentId
+                username
+                email
+                blocked
+                confirmed
+                firstName
+                lastName
+                customer {
+                    documentId
+                    name
+                }
+                role {
+                    documentId
+                    name
+                }
+            }
+        }
+    }
+  `
+    const response = await ApiService.fetchData<ApiResponse<{usersPermissionsUsers_connection: {nodes: User[]}}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { email: email.trim() } }
+    })
+    return response.data?.data?.usersPermissionsUsers_connection?.nodes?.[0] ?? null
 }
 
 // get users permissions roles

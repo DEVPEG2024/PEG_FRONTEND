@@ -21,6 +21,8 @@ type UserFormProps = {
   customers: Options[];
   producers: Options[];
   roles: Options[];
+  /** Bandeau affiché sous le titre (adresse déjà utilisée, inscription non confirmée…). */
+  notice?: React.ReactNode;
 };
 
 const UserForm = (props: UserFormProps) => {
@@ -32,6 +34,7 @@ const UserForm = (props: UserFormProps) => {
     customers,
     producers,
     roles,
+    notice,
   } = props;
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -128,6 +131,8 @@ const UserForm = (props: UserFormProps) => {
           {onEdition ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
         </h2>
       </div>
+
+      {notice}
 
       {/* Step indicator */}
       <div className="peg-scroll-x" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>

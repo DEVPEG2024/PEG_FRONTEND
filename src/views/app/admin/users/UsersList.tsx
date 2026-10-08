@@ -131,6 +131,11 @@ const UsersList = () => {
                       </span>
                     )}
                     {user.blocked && <span style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '100px', padding: '1px 8px', color: '#f87171', fontSize: '11px', fontWeight: 600 }}>Bloqué</span>}
+                    {user.confirmed === false && (
+                      <span title="Inscrit par le formulaire public, code reçu par e-mail jamais saisi : ne peut pas se connecter" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '100px', padding: '1px 8px', color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>
+                        Non confirmé
+                      </span>
+                    )}
                   </div>
                   <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '12px' }}>{user.email}</span>
                 </div>
