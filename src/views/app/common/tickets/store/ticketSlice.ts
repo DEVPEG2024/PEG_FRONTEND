@@ -4,6 +4,7 @@ import {
   apiCreateTicket,
   apiDeleteTicket,
   apiUpdateTicket,
+  apiUpdateTicketState,
   GetTicketsRequest,
   GetTicketsResponse,
   apiGetTicketForEditById,
@@ -98,6 +99,15 @@ export const updateTicket = createAsyncThunk(
   }
 );
 
+// Statut seul (admin) : pas de `loading`, la carte du ticket reste ouverte
+export const updateTicketState = createAsyncThunk(
+  SLICE_NAME + '/updateTicketState',
+  async ({ documentId, state }: { documentId: string; state: string }) => {
+    const { updateTicket } = await unwrapData(apiUpdateTicketState(documentId, state));
+    return updateTicket;
+  }
+);
+
 const initialState: TicketState = {
   tickets: [],
   selectedTicket: null,
@@ -178,6 +188,16 @@ const projectListSlice = createSlice({
     });
     builder.addCase(updateTicket.rejected, (state) => {
       state.loading = false;
+    });
+
+    // UPDATE TICKET STATE
+    builder.addCase(updateTicketState.fulfilled, (state, action) => {
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.tickets = (state.tickets as unknown as Ticket[]).map((ticket) =>
+        ticket.documentId === action.payload.documentId
+          ? { ...ticket, state: action.payload.state }
+          : ticket
+      ) as any;
     });
 
     // DELETE TICKET

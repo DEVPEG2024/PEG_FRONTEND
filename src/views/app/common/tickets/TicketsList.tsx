@@ -1,7 +1,7 @@
 import { Container, EmptyState } from '@/components/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RootState, injectReducer, useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
-import reducer, { deleteTicket, getTickets, useAppSelector } from './store';
+import reducer, { deleteTicket, getTickets, updateTicketState, useAppSelector } from './store';
 import { createTicket } from './store/ticketSlice';
 import { Ticket, TicketMessage } from '@/@types/ticket';
 import { User } from '@/@types/user';
@@ -45,6 +45,12 @@ const STATE_CFG: Record<string, { label: string; bg: string; color: string }> = 
   closed:   { label: 'Fermé',   bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' },
   canceled: { label: 'Annulé',  bg: 'rgba(239,68,68,0.1)',    color: '#f87171' },
 };
+// Statuts que l'admin peut poser (enum Strapi `ticket.state`) et message au client
+const STATE_CHOICES: { value: string; toast: string; notice: string }[] = [
+  { value: 'pending', toast: 'Ticket rouvert', notice: 'a été rouvert' },
+  { value: 'fulfilled', toast: 'Ticket fermé', notice: 'a été fermé' },
+  { value: 'canceled', toast: 'Ticket annulé', notice: 'a été annulé' },
+];
 const TYPE_ICONS: Record<string, any> = {
   technical: MdCode, accounts: MdAccountCircle, features: MdExtension,
   subscriptions: MdPayment, integrations: MdSettings, content: MdArticle,
@@ -183,6 +189,7 @@ const TicketsList = () => {
   const msgFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const msgsEndRef = useRef<Record<string, HTMLDivElement | null>>({});
   const [msgSaving, setMsgSaving] = useState(false);
+  const [stateSaving, setStateSaving] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(getTickets({ request: { pagination: { page: currentPage, pageSize }, searchTerm }, user }));
@@ -374,6 +381,37 @@ const TicketsList = () => {
     setTimeout(() => msgsEndRef.current[ticket.documentId]?.scrollIntoView({ behavior: 'smooth' }), 200);
   };
 
+  // Changement de statut (admin) → le client propriétaire du ticket est prévenu
+  const changeState = async (ticket: Ticket, next: string) => {
+    if (!isAdmin || ticket.state === next || stateSaving) return;
+    const choice = STATE_CHOICES.find((c) => c.value === next);
+    if (!choice) return;
+    setStateSaving(ticket.documentId);
+    try {
+      await dispatch(updateTicketState({ documentId: ticket.documentId, state: next })).unwrap();
+      toast.success(choice.toast);
+      const rawSenderId = user?.documentId || (user as any)?.id || (user as any)?._id;
+      const senderId = rawSenderId != null ? String(rawSenderId) : undefined;
+      const ownerId = ticket.user?.documentId;
+      if (senderId && ownerId) {
+        triggerNotification({
+          eventType: 'new_ticket',
+          senderId,
+          recipients: [{ userId: ownerId }],
+          title: 'Statut de votre ticket',
+          message: `Votre ticket « ${ticket.name} » ${choice.notice}`,
+          link: '/support',
+          metadata: { ticketId: ticket.documentId, ticketName: ticket.name, ticketState: next },
+        });
+      }
+    } catch (err) {
+      console.error('[Ticket] State error:', err);
+      toast.error('Impossible de changer le statut');
+    } finally {
+      setStateSaving(null);
+    }
+  };
+
   const formatShortDate = (iso: string) => {
     const d = new Date(iso);
     const today = new Date();
@@ -439,6 +477,32 @@ const TicketsList = () => {
 
         {isExpanded && (
           <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            {isAdmin && (
+              <div style={{ marginTop: '14px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Statut</p>
+                <div role="radiogroup" aria-label="Statut du ticket" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '11px', padding: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  {STATE_CHOICES.map((c) => {
+                    const cfg = STATE_CFG[c.value];
+                    const active = (STATE_CFG[ticket.state] ?? STATE_CFG.pending).label === cfg.label;
+                    const busy = stateSaving === ticket.documentId;
+                    return (
+                      <button key={c.value} type="button" role="radio" aria-checked={active}
+                        onClick={() => changeState(ticket, c.value)} disabled={busy}
+                        className="peg-tap-target"
+                        style={{
+                          padding: '6px 14px', borderRadius: '8px', fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 700,
+                          border: '1px solid ' + (active ? cfg.color : 'transparent'),
+                          background: active ? cfg.bg : 'transparent',
+                          color: active ? cfg.color : 'rgba(255,255,255,0.55)',
+                          cursor: busy ? 'wait' : active ? 'default' : 'pointer', transition: 'all 0.15s',
+                        }}>
+                        {cfg.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {ticket.description && (
               <div style={{ marginTop: '14px' }}>
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>Description</p>

@@ -258,6 +258,24 @@ export async function apiUpdateTicketMessages(documentId: string, messages: impo
     })
 }
 
+// update ticket state only (admin) : Ouvert / Fermé / Annulé
+export async function apiUpdateTicketState(documentId: string, state: string): Promise<AxiosResponse<ApiResponse<{updateTicket: Pick<Ticket, 'documentId' | 'state'>}>>> {
+    const query = `
+    mutation UpdateTicketState($documentId: ID!, $data: TicketInput!) {
+        updateTicket(documentId: $documentId, data: $data) {
+            documentId
+            state
+        }
+    }
+  `,
+  variables = { documentId, data: { state } }
+    return ApiService.fetchData<ApiResponse<{updateTicket: Pick<Ticket, 'documentId' | 'state'>}>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables }
+    })
+}
+
 // delete ticket
 export type DeleteTicketResponse = {
     documentId: string
