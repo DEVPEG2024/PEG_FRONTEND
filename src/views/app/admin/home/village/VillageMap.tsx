@@ -6,6 +6,9 @@
 // étiquettes vivent dans un calque écran, à taille fixe, repositionnées à
 // chaque zoom et posées sans chevauchement (placeLabels).
 import { useMemo, type CSSProperties, type ReactNode } from 'react';
+import type { Ambiance, Particle } from './villageAmbiance';
+import type { VillageActivity } from './villageActivity';
+import { matchesFilter } from './villageModel';
 import {
   DECOR,
   DISTRICTS,
@@ -32,7 +35,12 @@ import {
   type SectionId,
 } from './villageScene';
 
-export type VillageFilter = 'tout' | 'traiter' | 'production' | 'livrer';
+export type VillageFilter =
+  | 'tout'
+  | 'urgent'
+  | 'traiter'
+  | 'production'
+  | 'livrer';
 
 export interface MapSection {
   title: string;
@@ -44,6 +52,8 @@ export interface MapSection {
   tags: VillageFilter[];
   /** Phrase lue par les lecteurs d'écran. */
   aria: string;
+  /** Vrai problème : halo rouge autour de la parcelle, drapeau à côté de l'étiquette. */
+  alert: string | null;
 }
 
 export const ZOOMS = [1, 1.4, 1.85] as const;
@@ -59,13 +69,25 @@ const CSS = `
 @keyframes vg-out{0%,49.8%{opacity:1}50%,100%{opacity:0}}
 @keyframes vg-back{0%,49.8%{opacity:0}50%,100%{opacity:1}}
 @keyframes vg-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+.vg-fall{position:absolute;top:-6%;animation:vg-fall linear infinite}
+@keyframes vg-fall{0%{transform:translate(0,0) rotate(0deg);opacity:0}8%{opacity:.95}92%{opacity:.95}100%{transform:translate(var(--drift),112vh) rotate(var(--spin));opacity:0}}
+.vg-alert-ring{animation:vg-alert 1.6s ease-in-out infinite}
+@keyframes vg-alert{0%,100%{stroke-opacity:.35;fill-opacity:.06}50%{stroke-opacity:1;fill-opacity:.16}}
+.vg-flag{transform-origin:2px 4px;animation:vg-flag 1.2s ease-in-out infinite}
+@keyframes vg-flag{0%,100%{transform:skewY(0deg) scaleX(1)}50%{transform:skewY(-6deg) scaleX(.9)}}
+.vg-ping{transform-box:fill-box;transform-origin:center;animation:vg-ping 1.5s ease-out 5 forwards}
+@keyframes vg-ping{0%{transform:scale(.92);stroke-opacity:.95}100%{transform:scale(1.22);stroke-opacity:0}}
+.vg-bubble{animation:vg-bubble 9s ease forwards}
+@keyframes vg-bubble{0%{opacity:0;transform:translateY(8px) scale(.9)}5%{opacity:1;transform:translateY(0) scale(1)}90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-6px)}}
+.vg-live{animation:vg-live 1s ease-in-out infinite}
+@keyframes vg-live{0%,100%{opacity:1}50%{opacity:.35}}
 .vg-pill,.vg-tag{transition:translate .6s cubic-bezier(.2,.8,.2,1),transform .22s cubic-bezier(.3,1.6,.5,1),opacity .3s ease,box-shadow .2s ease}
 .vg-pill:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,36,80,.2) !important}
 .vg-tag:hover{transform:translateY(-2px)}
 .vg-pill:focus-visible,.vg-tag:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){
-  .vg-walk-1,.vg-walk-2{display:none}
-  .vg-bob,.vg-out,.vg-back{animation:none}
+  .vg-walk-1,.vg-walk-2,.vg-fall{display:none}
+  .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live{animation:none}
   .vg-pill,.vg-tag,.vg-world{transition:none !important}
 }
 `;
@@ -91,6 +113,15 @@ interface Props {
   onSelectDistrict: (id: DistrictId) => void;
   /** Taille des étiquettes (réduites sur les cartes étroites). */
   labelScale?: number;
+  /**
+   * Heure et saison réelles : lumières et neige au sol. Le voile de nuit est
+   * posé par AdminVillage sur toute la carte (en-tête compris, sans démarcation).
+   */
+  ambiance?: Ambiance | null;
+  /** Feuilles, flocons ou pétales qui tombent (vide = rien). */
+  particles?: Particle[];
+  /** Notifications reçues à l'instant : bulle au-dessus du bâtiment. */
+  activity?: VillageActivity[];
   /** Commandes posées par-dessus la carte (titre, filtres, zoom…). */
   children?: ReactNode;
 }
@@ -105,6 +136,9 @@ const VillageMap = ({
   onSelect,
   onSelectDistrict,
   labelScale = 1,
+  ambiance = null,
+  particles = [],
+  activity = [],
   children,
 }: Props) => {
   const ground = useMemo(buildGround, []);
@@ -134,7 +168,7 @@ const VillageMap = ({
   ];
 
   const lit = (id: SectionId) =>
-    (filter === 'tout' || sections[id].tags.includes(filter)) &&
+    matchesFilter(sections[id], filter) &&
     (!district || districtOf(id) === district);
   const calm = filter === 'tout' && !district;
 
@@ -197,6 +231,22 @@ const VillageMap = ({
     LAYOUT.map((c) => [c.id, toScreen(...labelAnchor(c))])
   ) as Record<SectionId, [number, number]>;
 
+  // Lumières du soir : la lanterne de chaque lampadaire et les fenêtres de
+  // chaque bâtiment (en coordonnées carte, converties à l'affichage).
+  const lightSpots = useMemo(
+    () => [
+      ...DECOR.filter((d) => d.sprite === 'decor-lamp').map((d) => {
+        const [x, y] = toMap(d.u, d.v);
+        return { x, y: y - 40 * SPRITE_SCALE, r: 26, lamp: true };
+      }),
+      ...LAYOUT.map((c) => {
+        const [x, y] = toMap(c.u, c.v);
+        return { x, y: y - 34 * SPRITE_SCALE, r: 46, lamp: false };
+      }),
+    ],
+    []
+  );
+
   const selCell = LAYOUT.find((c) => c.id === selected);
   const ring = selCell && !district ? plotPath(selCell.u, selCell.v) : null;
 
@@ -247,6 +297,9 @@ const VillageMap = ({
               <path d={g.lit} fill={g.district.lit} />
               <path d={g.shaded} fill={g.district.shaded} />
               <path d={g.tiles} fill={g.district.tile} />
+              {!!ambiance?.snow && (
+                <path d={g.tiles} fill="#ffffff" opacity={ambiance.snow} />
+              )}
               <path d={g.plotLeft} fill={g.district.lit} />
               <path d={g.plotRight} fill={g.district.shaded} />
               <path d={g.plotTop} fill={g.district.plot} />
@@ -273,6 +326,33 @@ const VillageMap = ({
               strokeLinecap="round"
               strokeDasharray="8 11"
             />
+            {LAYOUT.filter((c) => sections[c.id].alert).map((c) => (
+              <path
+                key={`alert-${c.id}`}
+                className="vg-alert-ring"
+                d={plotPath(c.u, c.v)}
+                fill="#ef4444"
+                stroke="#ef4444"
+                strokeWidth={4}
+                strokeLinejoin="round"
+              />
+            ))}
+            {activity.map((a) => {
+              const c = LAYOUT.find((x) => x.id === a.id);
+              return (
+                c && (
+                  <path
+                    key={`ping-${a.key}`}
+                    className="vg-ping"
+                    d={plotPath(c.u, c.v)}
+                    fill="none"
+                    stroke="#6d5dfc"
+                    strokeWidth={5}
+                    strokeLinejoin="round"
+                  />
+                )
+              );
+            })}
             {ring && (
               <path
                 d={ring}
@@ -402,6 +482,63 @@ const VillageMap = ({
         })}
       </div>
 
+      {!!ambiance?.lights &&
+        lightSpots.map((spot, i) => {
+          const [x, y] = toScreen(spot.x, spot.y);
+          const r = spot.r * k;
+          return (
+            <span
+              key={`light-${i}`}
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: r * 2,
+                height: r * (spot.lamp ? 2 : 1.3),
+                translate: `${px(x - r)} ${px(y - r * (spot.lamp ? 1 : 0.65))}`,
+                transition:
+                  'translate .6s cubic-bezier(.2,.8,.2,1), width .6s, height .6s',
+                borderRadius: '50%',
+                background: spot.lamp
+                  ? 'radial-gradient(closest-side, rgba(255,214,130,0.95), rgba(255,190,90,0.35) 55%, rgba(255,190,90,0))'
+                  : 'radial-gradient(closest-side, rgba(255,226,160,0.75), rgba(255,210,130,0.25) 60%, rgba(255,210,130,0))',
+                mixBlendMode: 'screen',
+                opacity: ambiance.lights * (spot.lamp ? 1 : 0.85),
+                pointerEvents: 'none',
+                zIndex: 1600,
+              }}
+            />
+          );
+        })}
+      {particles.map((p, i) => (
+        <span
+          key={`fall-${i}`}
+          aria-hidden="true"
+          className="vg-fall"
+          style={
+            {
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size * (ambiance?.season === 'winter' ? 1 : 0.62),
+              borderRadius:
+                ambiance?.season === 'winter' ? '50%' : '80% 10% 80% 10%',
+              background: p.color,
+              boxShadow:
+                ambiance?.season === 'winter'
+                  ? '0 0 3px rgba(255,255,255,0.9)'
+                  : 'none',
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+              '--drift': `${p.drift}px`,
+              '--spin': `${p.rotate + 360}deg`,
+              pointerEvents: 'none',
+              zIndex: 1700,
+            } as CSSProperties
+          }
+        />
+      ))}
+
       {labels.map((l) => {
         const s = sections[l.id as SectionId];
         const on = lit(l.id as SectionId);
@@ -409,6 +546,31 @@ const VillageMap = ({
         const [ax, ay] = anchors[l.id as SectionId];
         return (
           <div key={`lab-${l.id}`}>
+            {s.alert && (
+              <svg
+                aria-hidden="true"
+                width={18 * labelScale}
+                height={24 * labelScale}
+                viewBox="0 0 18 24"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  translate: `${px(l.x - (labelWidth(s.title, s.badge) * labelScale) / 2 - 16 * labelScale)} ${px(l.y - 26 * labelScale)}`,
+                  transition: 'translate .6s cubic-bezier(.2,.8,.2,1)',
+                  zIndex: 2001,
+                  opacity: on ? 1 : 0.45,
+                  overflow: 'visible',
+                }}
+              >
+                <rect x="1" y="2" width="2" height="21" rx="1" fill="#7f1d1d" />
+                <path
+                  className="vg-flag"
+                  d="M3 3 L16 7.5 L3 12 Z"
+                  fill="#ef4444"
+                />
+              </svg>
+            )}
             {l.lift > 6 && (
               <span
                 aria-hidden="true"
@@ -449,7 +611,9 @@ const VillageMap = ({
                 borderRadius: 999,
                 border: isSel
                   ? '2px solid #6d5dfc'
-                  : '1px solid rgba(17,24,39,0.04)',
+                  : s.alert
+                    ? '2px solid #ef4444'
+                    : '1px solid rgba(17,24,39,0.04)',
                 background: '#ffffff',
                 color: '#111827',
                 fontSize: 13.5,
@@ -501,6 +665,95 @@ const VillageMap = ({
           </div>
         );
       })}
+
+      {activity.map((a) => {
+        const l = labels.find((x) => x.id === a.id);
+        if (!l) return null;
+        // Au-dessus de l'étiquette, ou dessous quand elle touche le haut de la carte.
+        const top = l.y - 32 * labelScale - 10;
+        const above = top - 40 > 0;
+        return (
+          <button
+            key={`bubble-${a.key}`}
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={() => onSelect(a.id)}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              translate: above
+                ? `calc(${px(l.x)} - 50%) calc(${px(top)} - 100%)`
+                : `calc(${px(l.x)} - 50%) ${px(l.y + 12)}`,
+              zIndex: 2100,
+              padding: 0,
+              border: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            <span
+              className="vg-bubble"
+              style={{
+                position: 'relative',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                maxWidth: 240,
+                padding: '7px 12px 7px 10px',
+                borderRadius: 14,
+                background: '#111827',
+                color: '#ffffff',
+                fontSize: 12.5 * Math.max(0.9, labelScale),
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 10px 22px rgba(17,24,39,0.28)',
+              }}
+            >
+              <span
+                className="vg-live"
+                style={{
+                  width: 8,
+                  height: 8,
+                  flexShrink: 0,
+                  borderRadius: '50%',
+                  background: '#4ade80',
+                }}
+              />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {a.text}
+              </span>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  ...(above ? { bottom: -4 } : { top: -4 }),
+                  width: 9,
+                  height: 9,
+                  marginLeft: -4.5,
+                  background: '#111827',
+                  transform: 'rotate(45deg)',
+                  borderRadius: 2,
+                }}
+              />
+            </span>
+          </button>
+        );
+      })}
+      <div
+        aria-live="polite"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {activity.map((a) => `${a.text} — ${sections[a.id].title}`).join('. ')}
+      </div>
 
       {DISTRICTS.map((d, i) => {
         const on = district === d.id;

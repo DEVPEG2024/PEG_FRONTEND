@@ -55,6 +55,53 @@ export interface RawInvoice {
   customer?: { name?: string | null } | null;
 }
 
+export interface RawTicket {
+  createdAt?: string | null;
+  /** Champ JSON Strapi : fil des messages, du plus ancien au plus récent. */
+  messages?: unknown;
+}
+
+type TicketMessage = { createdByRole?: string; createdAt?: string };
+
+const ticketMessages = (t: RawTicket): TicketMessage[] => {
+  let m = t.messages;
+  if (typeof m === 'string') {
+    try {
+      m = JSON.parse(m);
+    } catch {
+      m = [];
+    }
+  }
+  return Array.isArray(m) ? (m as TicketMessage[]) : [];
+};
+
+/**
+ * Depuis quand un ticket ouvert attend PEG : null si le dernier message vient
+ * de l'équipe ; sinon depuis le premier message du client qui suit la
+ * dernière réponse de l'équipe (ou depuis l'ouverture du ticket).
+ */
+export const ticketWaitingSince = (t: RawTicket): string | null => {
+  const msgs = ticketMessages(t);
+  if (msgs.length && msgs[msgs.length - 1].createdByRole === 'admin')
+    return null;
+  let lastAdmin = -1;
+  msgs.forEach((m, i) => {
+    if (m.createdByRole === 'admin') lastAdmin = i;
+  });
+  return lastAdmin >= 0
+    ? (msgs[lastAdmin + 1]?.createdAt ?? null)
+    : (t.createdAt ?? msgs[0]?.createdAt ?? null);
+};
+
+/** Tickets sans réponse de PEG depuis plus de 48 h. */
+export const staleTickets = (tickets: RawTicket[], now: Date) => {
+  const cutoff = dayjs(now).subtract(48, 'hour');
+  return tickets.filter((t) => {
+    const since = ticketWaitingSince(t);
+    return !!since && dayjs(since).isBefore(cutoff);
+  }).length;
+};
+
 export interface RawEvent {
   title: string;
   startDate: string;
@@ -78,8 +125,10 @@ export interface RawVillage {
   samples?: RawProject[];
   /** Projets dont le produit exige un BAT et dont le BAT n'est pas validé. */
   batCandidates?: RawProject[];
-  quotes?: { proposed: N; requested: N };
-  tickets?: { open: N };
+  /** requestedStale : demandes de devis sans réponse depuis 48 h. */
+  quotes?: { proposed: N; requested: N; requestedStale?: N };
+  /** stale : tickets ouverts sans activité depuis 48 h. */
+  tickets?: { open: N; stale?: N };
   customers?: { total: N; newMonth: N; subscribers: N; toProcess: N };
   producers?: { total: N };
   shop?: {
@@ -328,11 +377,17 @@ export const buildVillageData = (
         badge: inProgress ? String(inProgress) : null,
         tone: TONE.violet,
         tags: tags(
+          ['urgent', (num(pr.late) ?? 0) > 0],
           ['traiter', (num(pr.late) ?? 0) > 0 || (batCount ?? 0) > 0],
           ['production', (inProgress ?? 0) > 0],
           ['livrer', soon]
         ),
         attention: (num(pr.late) ?? 0) > 0 || (batCount ?? 0) > 0,
+        alert: pr.late
+          ? pr.late === 1
+            ? '1 projet a dépassé sa date de livraison.'
+            : `${pr.late} projets ont dépassé leur date de livraison.`
+          : null,
         chip:
           inProgress === null
             ? UNAVAILABLE
@@ -458,8 +513,16 @@ export const buildVillageData = (
     : section({
         badge: q.requested ? String(q.requested) : null,
         tone: TONE.amber,
-        tags: tags(['traiter', (q.requested ?? 0) > 0]),
+        tags: tags(
+          ['urgent', (q.requestedStale ?? 0) > 0],
+          ['traiter', (q.requested ?? 0) > 0]
+        ),
         attention: (q.requested ?? 0) > 0,
+        alert: q.requestedStale
+          ? q.requestedStale === 1
+            ? '1 demande de devis sans réponse depuis 48 h.'
+            : `${q.requestedStale} demandes de devis sans réponse depuis 48 h.`
+          : null,
         chip: q.requested
           ? `${plural(q.requested, 'devis', 'devis')} à préparer`
           : q.proposed
@@ -650,6 +713,9 @@ export const buildVillageData = (
       (i) => due(i) && dayjs(due(i) as string).isBefore(today.startOf('day'))
     );
     overdueCount = overdue.length;
+    const longOverdue = overdue.filter((i) =>
+      dayjs(due(i) as string).isBefore(today.startOf('day').subtract(30, 'day'))
+    ).length;
     const toConfirm = inv.unpaid.filter(
       (i) => i.paymentState === 'pending_transfer'
     ).length;
@@ -666,8 +732,16 @@ export const buildVillageData = (
     s.finance = section({
       badge: overdue.length ? String(overdue.length) : null,
       tone: TONE.orange,
-      tags: tags(['traiter', overdue.length > 0 || toConfirm > 0]),
+      tags: tags(
+        ['urgent', longOverdue > 0],
+        ['traiter', overdue.length > 0 || toConfirm > 0]
+      ),
       attention: overdue.length > 0 || toConfirm > 0,
+      alert: longOverdue
+        ? longOverdue === 1
+          ? '1 facture impayée depuis plus de 30 jours.'
+          : `${longOverdue} factures impayées depuis plus de 30 jours.`
+        : null,
       chip: overdue.length
         ? `${plural(overdue.length, 'facture')} en retard`
         : 'Aucune facture en retard',
@@ -774,8 +848,16 @@ export const buildVillageData = (
     : section({
         badge: tk.open ? String(tk.open) : null,
         tone: TONE.orange,
-        tags: tags(['traiter', (tk.open ?? 0) > 0]),
+        tags: tags(
+          ['urgent', (tk.stale ?? 0) > 0],
+          ['traiter', (tk.open ?? 0) > 0]
+        ),
         attention: (tk.open ?? 0) > 0,
+        alert: tk.stale
+          ? tk.stale === 1
+            ? '1 ticket sans réponse depuis 48 h.'
+            : `${tk.stale} tickets sans réponse depuis 48 h.`
+          : null,
         chip: tk.open
           ? `${plural(tk.open, 'ticket ouvert', 'tickets ouverts')}`
           : 'Aucun ticket ouvert',

@@ -10,6 +10,7 @@ import {
   type SectionId,
 } from './villageScene';
 import type { SectionData } from './villageModel';
+import { AlertFlag } from './VillagePanel';
 
 interface Props {
   sections: Record<
@@ -169,7 +170,11 @@ const VillageList = ({
                       ? '6px 30px 6px 6px'
                       : '6px 10px 6px 6px',
                     borderRadius: 16,
-                    border: isSel ? '2px solid #6d5dfc' : '1px solid #ece8e1',
+                    border: isSel
+                      ? '2px solid #6d5dfc'
+                      : s.data.alert
+                        ? '2px solid #ef4444'
+                        : '1px solid #ece8e1',
                     background: '#ffffff',
                     textAlign: 'left',
                     cursor: 'pointer',
@@ -209,6 +214,25 @@ const VillageList = ({
                     >
                       {s.data.chip}
                     </span>
+                    {s.data.alert && (
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 5,
+                          marginTop: 5,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          lineHeight: 1.3,
+                          color: '#b91c1c',
+                        }}
+                      >
+                        <span style={{ display: 'flex', paddingTop: 1 }}>
+                          <AlertFlag size={12} />
+                        </span>
+                        {s.data.alert}
+                      </span>
+                    )}
                   </span>
                   {s.data.badge && (
                     <span

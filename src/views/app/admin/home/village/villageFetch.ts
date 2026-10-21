@@ -28,11 +28,13 @@ import {
   countRisks,
 } from '@/utils/planning/scheduler';
 import type { Project } from '@/@types/project';
-import type {
-  RawEvent,
-  RawInvoice,
-  RawProject,
-  RawVillage,
+import {
+  staleTickets,
+  type RawEvent,
+  type RawInvoice,
+  type RawProject,
+  type RawTicket,
+  type RawVillage,
 } from './villageData';
 
 type Conn = { pageInfo?: { total?: number } } | null | undefined;
@@ -120,16 +122,33 @@ export const fetchBat = async (): Promise<
 export const fetchQuotesTickets = async (): Promise<
   Pick<RawVillage, 'quotes' | 'tickets'>
 > => {
-  const d = await gql<Record<string, Conn>>(
-    `query VillageQuotesTickets {
+  // « Sans réponse depuis 48 h » : une demande de devis encore « reçue » 48 h
+  // après sa création ; un ticket ouvert dont le client attend depuis 48 h
+  // (calculé sur le fil des messages : Strapi ne filtre pas sur l'auteur du
+  // dernier message). Un ticket de moins de 48 h ne peut pas être en retard.
+  const now = new Date();
+  const d = await gql<Record<string, Conn & { nodes?: RawTicket[] }>>(
+    `query VillageQuotesTickets($staleBefore: DateTime) {
       proposed: quotes_connection(filters: { status: { eq: "proposed" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       requested: quotes_connection(filters: { status: { eq: "requested" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
+      requestedStale: quotes_connection(filters: { status: { eq: "requested" }, createdAt: { lt: $staleBefore } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       ticketsOpen: tickets_connection(filters: { state: { eq: "pending" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
-    }`
+      ticketsOld: tickets_connection(filters: { state: { eq: "pending" }, createdAt: { lt: $staleBefore } }, sort: ["createdAt:asc"], pagination: { pageSize: 200 }) { nodes { createdAt messages } }
+    }`,
+    { staleBefore: dayjs(now).subtract(48, 'hour').toISOString() }
   );
   return {
-    quotes: { proposed: total(d?.proposed), requested: total(d?.requested) },
-    tickets: { open: total(d?.ticketsOpen) },
+    quotes: {
+      proposed: total(d?.proposed),
+      requested: total(d?.requested),
+      requestedStale: total(d?.requestedStale),
+    },
+    tickets: {
+      open: total(d?.ticketsOpen),
+      stale: d?.ticketsOld?.nodes
+        ? staleTickets(d.ticketsOld.nodes, now)
+        : null,
+    },
   };
 };
 
@@ -477,23 +496,64 @@ export const fetchTodos = async (
   return { todos };
 };
 
-/** Toutes les lectures, chacune isolée. */
-export const villageReaders = (userDocumentId?: string) => [
-  fetchProjects,
-  fetchSamples,
-  fetchBat,
-  fetchQuotesTickets,
-  fetchCustomers,
-  fetchShop,
-  fetchAttributes,
-  fetchUsers,
-  fetchInvoices,
-  fetchCalendar,
-  fetchPlanning,
-  fetchLeads,
-  fetchGenerators,
-  fetchCampaigns,
-  fetchIa,
-  fetchImbretex,
-  () => fetchTodos(userDocumentId),
+/** Le serveur n'a pas (encore) la route du résumé : inutile de la redemander. */
+let summaryMissing = false;
+
+/**
+ * Résumé calculé par Strapi en un seul appel (`GET /api/village/summary`),
+ * avec les bornes de dates de l'admin (heure locale, comme les lectures
+ * ci-dessous). null si la route n'existe pas ou échoue : le village relit
+ * alors tout lui-même.
+ */
+export const fetchVillageSummary = async (): Promise<RawVillage | null> => {
+  if (summaryMissing) return null;
+  try {
+    const res = await ApiService.fetchData<{
+      result?: boolean;
+      data?: RawVillage;
+    }>({
+      url: '/village/summary',
+      method: 'get',
+      params: {
+        dayStart: dayStart(),
+        monthStart: dayjs().startOf('month').toISOString(),
+        today: dayjs().format('YYYY-MM-DD'),
+      },
+    });
+    return res.data?.result && res.data.data ? res.data.data : null;
+  } catch (e) {
+    const status = (e as { response?: { status?: number } })?.response?.status;
+    if (status === 404 || status === 405) summaryMissing = true;
+    return null;
+  }
+};
+
+/**
+ * Toutes les lectures, chacune isolée, avec les parties de `RawVillage`
+ * qu'elle remplit : celles que le résumé du serveur a déjà fournies sont
+ * sautées (planning, Imbretex et pense-bête sont toujours lus ici).
+ */
+export const villageReaders = (
+  userDocumentId?: string
+): {
+  keys: (keyof RawVillage)[];
+  read: () => Promise<Partial<RawVillage>>;
+}[] => [
+  { keys: ['projects'], read: fetchProjects },
+  { keys: ['samples'], read: fetchSamples },
+  { keys: ['batCandidates'], read: fetchBat },
+  { keys: ['quotes', 'tickets'], read: fetchQuotesTickets },
+  { keys: ['customers', 'producers'], read: fetchCustomers },
+  { keys: ['shop'], read: fetchShop },
+  { keys: ['attributes', 'banners'], read: fetchAttributes },
+  { keys: ['users'], read: fetchUsers },
+  { keys: ['invoices'], read: fetchInvoices },
+  { keys: ['calendar'], read: fetchCalendar },
+  { keys: ['planning'], read: fetchPlanning },
+  { keys: ['leads'], read: fetchLeads },
+  { keys: ['generators'], read: fetchGenerators },
+  { keys: ['campaigns'], read: fetchCampaigns },
+  { keys: ['ia'], read: fetchIa },
+  { keys: ['imbretex'], read: fetchImbretex },
+  { keys: ['todos'], read: () => fetchTodos(userDocumentId) },
 ];

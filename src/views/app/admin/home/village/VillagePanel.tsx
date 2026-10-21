@@ -7,6 +7,20 @@ import type { District, SectionId } from './villageScene';
 import { spriteUrl, SPRITE_META } from './villageScene';
 import { TONE, type ProjectCard, type SectionData } from './villageModel';
 
+/** Petit drapeau rouge, le même que sur la carte. */
+export const AlertFlag = ({ size = 14 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 18 18"
+    aria-hidden="true"
+    style={{ flexShrink: 0 }}
+  >
+    <rect x="2" y="2" width="2" height="15" rx="1" fill="#7f1d1d" />
+    <path d="M4 3 L16 7.5 L4 12 Z" fill="#ef4444" />
+  </svg>
+);
+
 const CHIP: Record<
   ProjectCard['chipTone'],
   { bg: string; fg: string; dot: string }
@@ -202,6 +216,7 @@ const VillagePanel = ({
   if (district) {
     const { d, members } = district;
     const attention = members.filter((m) => m.data.attention).length;
+    const urgent = members.filter((m) => m.data.alert).length;
     return (
       <>
         <span
@@ -269,7 +284,17 @@ const VillagePanel = ({
             marginTop: 16,
           }}
         >
-          <Stat label="Bâtiments" value={String(members.length)} />
+          <Stat
+            label="Urgent"
+            value={
+              loading
+                ? '…'
+                : urgent
+                  ? `${urgent} alerte${urgent > 1 ? 's' : ''}`
+                  : 'Aucune'
+            }
+            color={urgent ? '#b91c1c' : '#15803d'}
+          />
           <Stat
             label="À traiter"
             value={
@@ -336,16 +361,25 @@ const VillagePanel = ({
                 </span>
                 <span
                   style={{
-                    display: 'block',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
                     marginTop: 2,
                     fontSize: 12.5,
-                    color: '#6b7280',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    fontWeight: m.data.alert ? 700 : 400,
+                    color: m.data.alert ? '#b91c1c' : '#6b7280',
                   }}
                 >
-                  {m.data.chip}
+                  {m.data.alert && <AlertFlag size={12} />}
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {m.data.alert ?? m.data.chip}
+                  </span>
                 </span>
               </span>
               {m.data.badge && (
@@ -741,6 +775,29 @@ const VillagePanel = ({
           }}
         >
           {section.sub}
+        </p>
+      )}
+      {data.alert && (
+        <p
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 9,
+            margin: '14px 0 0',
+            padding: '10px 12px',
+            borderRadius: 12,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            fontSize: 14,
+            fontWeight: 700,
+            lineHeight: 1.4,
+          }}
+        >
+          <span style={{ display: 'flex', paddingTop: 2 }}>
+            <AlertFlag size={15} />
+          </span>
+          {data.alert}
         </p>
       )}
       <div

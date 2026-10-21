@@ -36,6 +36,12 @@ export interface SectionData {
   items: SectionItem[];
   /** Vrai si la rubrique demande une action (compte « À traiter » du quartier). */
   attention: boolean;
+  /**
+   * Vrai problème (projet en retard, facture impayée depuis plus de 30 jours,
+   * ticket ou demande de devis sans réponse depuis 48 h) : drapeau rouge sur le
+   * bâtiment. La phrase s'affiche en tête de fiche.
+   */
+  alert: string | null;
 }
 
 export interface ProjectStep {
@@ -72,6 +78,14 @@ export interface VillageData {
   projects: ProjectCard[];
 }
 
+/** La rubrique répond-elle au filtre ? « Urgent » = rubrique en alerte. */
+export const matchesFilter = (
+  d: { tags: VillageFilter[]; alert: string | null },
+  filter: VillageFilter
+) =>
+  filter === 'tout' ||
+  (filter === 'urgent' ? !!d.alert : d.tags.includes(filter));
+
 /** Rubrique sans données (chargement ou lecture impossible). */
 export const emptySection = (chip: string): SectionData => ({
   badge: null,
@@ -82,6 +96,7 @@ export const emptySection = (chip: string): SectionData => ({
   stats: [],
   items: [],
   attention: false,
+  alert: null,
 });
 
 /** Pluriel français simple : plural(3, 'devis', 'devis'), plural(1, 'ticket'). */

@@ -2,19 +2,27 @@
 // 21/10/2026 : chiffres clés, village isométrique (un bâtiment par rubrique du
 // menu, 5 quartiers), fiche à droite, vue liste par quartier. Le tableau de
 // bord classique (bannière, pense-bête, widgets) reste à un clic.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  HiChevronLeft,
   HiChevronRight,
   HiOutlineMap,
+  HiOutlineMoon,
+  HiOutlineSun,
   HiOutlineViewGrid,
+  HiX,
 } from 'react-icons/hi';
-import { HiOutlineQueueList } from 'react-icons/hi2';
+import {
+  HiOutlineClipboardDocumentCheck,
+  HiOutlineQueueList,
+} from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
 import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
 import VillagePanel, { type PanelSection } from './VillagePanel';
 import VillageList from './VillageList';
 import { useElementWidth } from './useElementWidth';
+import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
 import { SECTION_INFO } from './villageSections';
 import {
@@ -25,10 +33,24 @@ import {
   type DistrictId,
   type SectionId,
 } from './villageScene';
-import { TONE, emptySection, type SectionData } from './villageModel';
+import {
+  TONE,
+  emptySection,
+  matchesFilter,
+  type SectionData,
+} from './villageModel';
+import { markSeen, readSeen, resumeIndex, tourSteps } from './villageTour';
+import {
+  NEUTRAL,
+  ambianceAt,
+  readAmbianceOn,
+  seasonParticles,
+  writeAmbianceOn,
+} from './villageAmbiance';
 
 const FILTERS: { id: VillageFilter; label: string; dot: string }[] = [
   { id: 'tout', label: 'Tout', dot: TONE.violet },
+  { id: 'urgent', label: 'Urgent', dot: TONE.red },
   { id: 'traiter', label: 'À traiter', dot: TONE.violet },
   { id: 'production', label: 'En production', dot: TONE.orange },
   { id: 'livrer', label: 'À livrer', dot: TONE.green },
@@ -50,7 +72,8 @@ interface Props {
 
 const AdminVillage = ({ onClassic }: Props) => {
   const navigate = useNavigate();
-  const { data, loading } = useVillageData();
+  const { data, loading, refresh } = useVillageData();
+  const activity = useVillageActivity(refresh);
   const [rootRef, rootW] = useElementWidth<HTMLDivElement>(1100);
   const [mapRef, mapW] = useElementWidth<HTMLDivElement>(760);
   // Carte et fiche côte à côte dès que la place le permet (la carte se met à
@@ -66,6 +89,24 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [district, setDistrict] = useState<DistrictId | null>(null);
   const [zoom, setZoom] = useState<0 | 1 | 2>(0);
   const [spotlightDone, setSpotlightDone] = useState(false);
+  const [tourIdx, setTourIdx] = useState<number | null>(null);
+  const [tourDone, setTourDone] = useState(false);
+  /** Étapes figées au départ : une relecture des données ne décale pas la tournée. */
+  const [tourList, setTourList] = useState<SectionId[]>([]);
+  const [seen, setSeen] = useState(readSeen);
+  const [ambianceOn, setAmbianceOn] = useState(readAmbianceOn);
+  const [now, setNow] = useState(() => new Date());
+
+  // L'heure avance : l'ambiance (aube, jour, crépuscule, nuit) suit.
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const ambiance = ambianceOn ? ambianceAt(now) : NEUTRAL;
+  const particles = useMemo(
+    () => (ambianceOn ? seasonParticles(ambiance.season) : []),
+    [ambianceOn, ambiance.season]
+  );
 
   // Premier affichage : la fiche du projet le plus urgent, comme sur la maquette.
   useEffect(() => {
@@ -88,7 +129,10 @@ const AdminVillage = ({ onClassic }: Props) => {
         badge: d.badge,
         tone: d.tone,
         tags: d.tags,
-        aria: d.badge ? `${info.title} — ${d.chip}` : info.title,
+        aria: [info.title, d.badge ? d.chip : '', d.alert ?? '']
+          .filter(Boolean)
+          .join(' — '),
+        alert: d.alert,
       };
       return [id, s];
     })
@@ -117,6 +161,31 @@ const AdminVillage = ({ onClassic }: Props) => {
     setFromSection(fromList);
   };
 
+  // « Ma tournée du jour » : les rubriques qui demandent une action, urgences d'abord.
+  const steps = data ? tourSteps(data.sections) : [];
+  const goToStep = (i: number, list = tourList) => {
+    const id = list[i];
+    if (!id) return;
+    setTourIdx(i);
+    selectSection(id);
+    setView('village');
+    setZoom(1);
+    setSeen(markSeen(id));
+  };
+  const startTour = () => {
+    setTourDone(false);
+    setTourList(steps);
+    goToStep(resumeIndex(steps, seen), steps);
+  };
+  const endTour = (finished: boolean) => {
+    setTourIdx(null);
+    setZoom(0);
+    if (finished) {
+      setTourDone(true);
+      window.setTimeout(() => setTourDone(false), 4500);
+    }
+  };
+
   const panelSection = (id: SectionId): PanelSection => ({
     id,
     title: SECTION_INFO[id].title,
@@ -131,7 +200,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     : null;
 
   const dimmed = (id: SectionId) =>
-    (filter !== 'tout' && !sectionData(id).tags.includes(filter)) ||
+    !matchesFilter(sectionData(id), filter) ||
     (!!district && districtOf(id) !== district);
 
   const kpis = data?.kpis;
@@ -236,6 +305,60 @@ const AdminVillage = ({ onClassic }: Props) => {
     cursor: 'pointer',
   });
 
+  const left = steps.filter((id) => !seen.includes(id)).length;
+  const tourButton = (
+    <button
+      type="button"
+      className="vgx-btn"
+      onClick={startTour}
+      disabled={!steps.length}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        height: 38 * ui,
+        marginTop: 10 * ui,
+        padding: `0 ${8 * ui}px 0 ${14 * ui}px`,
+        border: 0,
+        borderRadius: 999,
+        background: steps.length ? TONE.violet : '#e5e7eb',
+        color: steps.length ? '#ffffff' : '#6b7280',
+        fontSize: 14 * ui,
+        fontWeight: 800,
+        cursor: steps.length ? 'pointer' : 'default',
+        boxShadow: steps.length ? '0 8px 18px rgba(109,93,252,0.35)' : 'none',
+        pointerEvents: 'auto',
+      }}
+    >
+      <HiOutlineClipboardDocumentCheck aria-hidden="true" />
+      {!steps.length
+        ? 'Rien à traiter aujourd’hui'
+        : left
+          ? 'Ma tournée du jour'
+          : 'Tournée faite · la refaire'}
+      {!!steps.length && (
+        <span
+          style={{
+            minWidth: 24 * ui,
+            height: 24 * ui,
+            padding: '0 7px',
+            boxSizing: 'border-box',
+            borderRadius: 999,
+            background: '#ffffff',
+            color: TONE.violet,
+            fontSize: 12.5 * ui,
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {left || steps.length}
+        </span>
+      )}
+    </button>
+  );
+
   const title = (
     <div>
       <h1
@@ -244,7 +367,7 @@ const AdminVillage = ({ onClassic }: Props) => {
           fontSize: 34 * ui,
           fontWeight: 800,
           letterSpacing: '-0.03em',
-          color: '#111827',
+          color: ambiance.ink,
           lineHeight: 1.1,
         }}
       >
@@ -254,11 +377,12 @@ const AdminVillage = ({ onClassic }: Props) => {
         style={{
           margin: `${6 * ui}px 0 0`,
           fontSize: 15.5 * ui,
-          color: '#6b7280',
+          color: ambiance.muted,
         }}
       >
         Un bâtiment pour chaque partie de PEG.
       </p>
+      {tourButton}
     </div>
   );
   const toggle = (
@@ -316,7 +440,12 @@ const AdminVillage = ({ onClassic }: Props) => {
               top: 22 * ui - 8,
               padding: '8px 10px',
               borderRadius: 16,
-              background: zoom > 0 ? 'rgba(246,243,237,0.9)' : 'transparent',
+              background:
+                zoom > 0
+                  ? ambiance.phase === 'night'
+                    ? 'rgba(20,26,56,0.82)'
+                    : 'rgba(246,243,237,0.9)'
+                  : 'transparent',
               transition: 'background .3s ease',
               pointerEvents: 'none',
               zIndex: 2100,
@@ -336,43 +465,154 @@ const AdminVillage = ({ onClassic }: Props) => {
           </div>
         </>
       )}
-      <div
-        role="group"
-        aria-label="Filtrer le village"
-        style={{
-          position: 'absolute',
-          left: 20 * ui,
-          bottom: 18 * ui,
-          display: 'flex',
-          gap: 4,
-          padding: 5,
-          borderRadius: 999,
-          background: '#ffffff',
-          boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
-          zIndex: 2100,
-        }}
-      >
-        {FILTERS.map((f) => (
+      {tourIdx !== null && tourList[tourIdx] ? (
+        <div
+          role="region"
+          aria-label="Ma tournée du jour"
+          aria-live="polite"
+          style={{
+            position: 'absolute',
+            left: 20 * ui,
+            bottom: 18 * ui,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            maxWidth: `calc(100% - ${110 * ui}px)`,
+            padding: '6px 6px 6px 16px',
+            borderRadius: 999,
+            background: '#ffffff',
+            boxShadow: '0 10px 26px rgba(40,36,80,0.18)',
+            zIndex: 2150,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12.5 * ui,
+              fontWeight: 800,
+              color: TONE.violet,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Tournée · {tourIdx + 1}/{tourList.length}
+          </span>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 14 * ui,
+              fontWeight: 700,
+              color: sectionData(tourList[tourIdx]).alert
+                ? '#b91c1c'
+                : '#111827',
+            }}
+          >
+            {SECTION_INFO[tourList[tourIdx]].title} —{' '}
+            {sectionData(tourList[tourIdx]).alert ??
+              sectionData(tourList[tourIdx]).chip}
+          </span>
           <button
-            key={f.id}
             type="button"
             className="vgx-btn"
-            aria-pressed={filter === f.id}
-            onClick={() => setFilter(f.id)}
-            style={segment(filter === f.id)}
+            aria-label="Étape précédente"
+            disabled={tourIdx === 0}
+            onClick={() => goToStep(tourIdx - 1)}
+            style={{
+              ...segment(false),
+              padding: `0 ${10 * ui}px`,
+              opacity: tourIdx === 0 ? 0.35 : 1,
+            }}
           >
-            <span
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: '50%',
-                background: filter === f.id ? '#ffffff' : f.dot,
-              }}
-            />
-            {f.label}
+            <HiChevronLeft aria-hidden="true" />
           </button>
-        ))}
-      </div>
+          <button
+            type="button"
+            className="vgx-btn"
+            onClick={() =>
+              tourIdx + 1 < tourList.length
+                ? goToStep(tourIdx + 1)
+                : endTour(true)
+            }
+            style={segment(true)}
+          >
+            {tourIdx + 1 < tourList.length ? 'Suivant' : 'Terminer'}
+            <HiChevronRight aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="vgx-btn"
+            aria-label="Arrêter la tournée"
+            onClick={() => endTour(false)}
+            style={{ ...segment(false), padding: `0 ${10 * ui}px` }}
+          >
+            <HiX aria-hidden="true" />
+          </button>
+        </div>
+      ) : tourDone ? (
+        <div
+          role="status"
+          style={{
+            position: 'absolute',
+            left: 20 * ui,
+            bottom: 18 * ui,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            height: 50 * ui,
+            padding: `0 ${18 * ui}px`,
+            borderRadius: 999,
+            background: '#ffffff',
+            color: '#15803d',
+            fontSize: 14.5 * ui,
+            fontWeight: 800,
+            boxShadow: '0 10px 26px rgba(40,36,80,0.18)',
+            zIndex: 2150,
+          }}
+        >
+          Tournée terminée : {tourList.length} rubrique
+          {tourList.length > 1 ? 's' : ''} passée
+          {tourList.length > 1 ? 's' : ''} en revue.
+        </div>
+      ) : (
+        <div
+          role="group"
+          aria-label="Filtrer le village"
+          style={{
+            position: 'absolute',
+            left: 20 * ui,
+            bottom: 18 * ui,
+            display: 'flex',
+            gap: 4,
+            padding: 5,
+            borderRadius: 999,
+            background: '#ffffff',
+            boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+            zIndex: 2100,
+          }}
+        >
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="vgx-btn"
+              aria-pressed={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              style={segment(filter === f.id)}
+            >
+              <span
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
+                  background: filter === f.id ? '#ffffff' : f.dot,
+                }}
+              />
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
       {view === 'village' && (
         <div
           role="group"
@@ -390,6 +630,42 @@ const AdminVillage = ({ onClassic }: Props) => {
             zIndex: 2100,
           }}
         >
+          <button
+            type="button"
+            className="vgx-btn"
+            aria-pressed={ambianceOn}
+            aria-label={
+              ambianceOn
+                ? 'Ambiance réelle (heure et saison) : activée'
+                : 'Ambiance réelle (heure et saison) : coupée'
+            }
+            title={ambianceOn ? 'Couper l’ambiance' : 'Heure et saison réelles'}
+            onClick={() => {
+              writeAmbianceOn(!ambianceOn);
+              setAmbianceOn(!ambianceOn);
+            }}
+            style={{
+              width: 46 * ui,
+              height: 46 * ui,
+              border: 0,
+              background: 'transparent',
+              color: ambianceOn ? TONE.violet : '#9ca3af',
+              fontSize: 20 * ui,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {ambiance.phase === 'night' || ambiance.phase === 'dusk' ? (
+              <HiOutlineMoon aria-hidden="true" />
+            ) : (
+              <HiOutlineSun aria-hidden="true" />
+            )}
+          </button>
+          <span
+            style={{ height: 1, background: '#ece8e1', margin: '0 10px' }}
+          />
           <button
             type="button"
             className="vgx-btn"
@@ -543,15 +819,35 @@ const AdminVillage = ({ onClassic }: Props) => {
           style={{
             position: 'relative',
             borderRadius: 24,
-            background: '#f6f3ed',
+            background: ambiance.sky,
+            transition: 'background 1s ease',
             border: '1px solid #ebe5db',
             overflow: 'hidden',
             minHeight: mapHeight,
           }}
         >
+          {view === 'village' && ambiance.veil && (
+            // Voile de l'heure (nuit, aube, crépuscule) : sur le ciel et l'îlot,
+            // sous les étiquettes, les lumières et les commandes.
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 1,
+                background: ambiance.veil.color,
+                opacity: ambiance.veil.opacity,
+                mixBlendMode: 'multiply',
+                pointerEvents: 'none',
+                transition: 'opacity 1s ease, background 1s ease',
+              }}
+            />
+          )}
           {compact && (
             <div
               style={{
+                position: 'relative',
+                zIndex: 2,
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
@@ -575,6 +871,9 @@ const AdminVillage = ({ onClassic }: Props) => {
               onSelect={selectSection}
               onSelectDistrict={selectDistrict}
               labelScale={labelScale}
+              ambiance={ambianceOn ? ambiance : null}
+              particles={particles}
+              activity={activity}
             >
               {overlays}
             </VillageMap>
