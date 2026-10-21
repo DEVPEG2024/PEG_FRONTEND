@@ -50,6 +50,12 @@ export interface Trend {
   since: string;
 }
 
+/** « ▲ +4 en 7 jours », « ▼ −2 depuis hier », « Stable depuis hier ». */
+export const trendText = (t: Trend) =>
+  t.delta === 0
+    ? `Stable ${t.since}`
+    : `${t.delta > 0 ? '▲' : '▼'} ${t.text} ${t.since}`;
+
 export interface SectionStat {
   label: string;
   value: string;

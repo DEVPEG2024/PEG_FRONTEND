@@ -16,6 +16,8 @@ interface Props {
   height?: number;
   /** Unité lue avec la valeur (« livraisons »…). */
   unit?: [string, string];
+  /** Couleur des jours sans livraison (fond sombre : plus discrète). */
+  track?: string;
 }
 
 const PAD_X = 4;
@@ -41,6 +43,7 @@ const VillageSparkline = ({
   width = 76,
   height = 30,
   unit,
+  track = '#e5e7eb',
 }: Props) => {
   const [hover, setHover] = useState<number | null>(null);
   const values = points.map((p) => p.value);
@@ -164,7 +167,7 @@ const VillageSparkline = ({
                 width={barW}
                 height={h}
                 rx={v ? 2 : 1}
-                fill={i === 0 ? accent : v ? soft : '#e5e7eb'}
+                fill={i === 0 ? accent : v ? soft : track}
               />
             );
           })

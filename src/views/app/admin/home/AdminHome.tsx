@@ -4,9 +4,11 @@
 // composant choisit seulement quoi afficher. Sous 1024 px (téléphone,
 // tablette), le tableau de bord classique reste seul — il bascule lui-même sur
 // sa version téléphone. Au-delà, le village est la vue par défaut et la vue
-// classique reste à un clic ; le choix est retenu sur l'appareil.
+// classique reste à un clic ; le choix est retenu sur l'appareil. « ?mural=1 »
+// ouvre le village en écran mural (télévision), quel que soit ce choix.
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { HiOutlineMap } from 'react-icons/hi';
 import lazy from '@/utils/lazyWithRetry';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -17,6 +19,7 @@ const AdminVillage = lazy(() => import('./village/AdminVillage'));
 
 const AdminHome = () => {
   const { larger } = useResponsive();
+  const [params] = useSearchParams();
   const [view, setView] = useState<HomeView>(readHomeView);
   const choose = (next: HomeView) => {
     writeHomeView(next);
@@ -24,7 +27,7 @@ const AdminHome = () => {
   };
 
   if (!larger.lg) return <DashboardAdmin />;
-  if (view === 'village')
+  if (view === 'village' || params.get('mural') === '1')
     return <AdminVillage onClassic={() => choose('classic')} />;
 
   return (

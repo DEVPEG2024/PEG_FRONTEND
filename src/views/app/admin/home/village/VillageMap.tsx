@@ -125,7 +125,7 @@ const CSS = `
 @keyframes vg-live{0%,100%{opacity:1}50%{opacity:.35}}
 .vg-preview{animation:vg-preview .16s ease-out backwards}
 @keyframes vg-preview{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.vg-pill,.vg-tag{transition:translate .6s cubic-bezier(.2,.8,.2,1),transform .22s cubic-bezier(.3,1.6,.5,1),opacity .3s ease,box-shadow .2s ease}
+.vg-pill,.vg-tag{transition:translate var(--vg-cam),transform .22s cubic-bezier(.3,1.6,.5,1),opacity .3s ease,box-shadow .2s ease}
 .vg-pill:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,36,80,.2) !important}
 .vg-tag:hover{transform:translateY(-2px)}
 .vg-pill:focus-visible,.vg-tag:focus-visible,.vg-house:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
@@ -230,6 +230,11 @@ interface Props {
   festive?: boolean;
   /** Première visite de la session : le village se construit sous les yeux. */
   arrival?: boolean;
+  /**
+   * Durée d'un mouvement de caméra (ms). Lent (écran mural) : départ et
+   * arrivée en douceur, comme un plan de cinéma.
+   */
+  cameraMs?: number;
   /** Commandes posées par-dessus la carte (titre, filtres, zoom…). */
   children?: ReactNode;
 }
@@ -255,6 +260,7 @@ const VillageMap = ({
   life = null,
   festive = false,
   arrival = false,
+  cameraMs = 600,
   children,
 }: Props) => {
   const ground = useMemo(buildGround, []);
@@ -722,14 +728,23 @@ const VillageMap = ({
         e.preventDefault();
         e.stopPropagation();
       }}
-      style={{
-        position: 'relative',
-        width,
-        height,
-        overflow: 'hidden',
-        cursor: zoom > 1.001 ? (moving ? 'grabbing' : 'grab') : 'default',
-        touchAction: zoom > 1.001 ? 'none' : 'auto',
-      }}
+      style={
+        {
+          position: 'relative',
+          width,
+          height,
+          overflow: 'hidden',
+          cursor: zoom > 1.001 ? (moving ? 'grabbing' : 'grab') : 'default',
+          touchAction: zoom > 1.001 ? 'none' : 'auto',
+          // Rythme commun de tout ce qui suit la caméra (îlot, étiquettes,
+          // lumières, bulles) : ils restent alignés pendant le mouvement.
+          '--vg-cam': `${cameraMs}ms ${
+            cameraMs > 1000
+              ? 'cubic-bezier(.65,0,.35,1)'
+              : 'cubic-bezier(.2,.8,.2,1)'
+          }`,
+        } as CSSProperties
+      }
     >
       <style>{CSS}</style>
       <div
@@ -742,7 +757,7 @@ const VillageMap = ({
           height: MAP_H,
           transformOrigin: '0 0',
           transform: `translate(${px(tx)}, ${px(ty)}) scale(${k})`,
-          transition: 'transform .6s cubic-bezier(.2,.8,.2,1)',
+          transition: 'transform var(--vg-cam)',
         }}
       >
         <div
@@ -1150,7 +1165,7 @@ const VillageMap = ({
                 height: r * (spot.lamp ? 2 : 1.3),
                 translate: `${px(x - r)} ${px(y - r * (spot.lamp ? 1 : 0.65))}`,
                 transition:
-                  'translate .6s cubic-bezier(.2,.8,.2,1), width .6s, height .6s',
+                  'translate var(--vg-cam), width var(--vg-cam), height var(--vg-cam)',
                 borderRadius: '50%',
                 background: spot.lamp
                   ? 'radial-gradient(closest-side, rgba(255,214,130,0.95), rgba(255,190,90,0.35) 55%, rgba(255,190,90,0))'
@@ -1242,7 +1257,7 @@ const VillageMap = ({
                   left: 0,
                   top: 0,
                   translate: `${px(l.x - (w * labelScale) / 2 - 16 * labelScale)} ${px(l.y - 26 * labelScale)}`,
-                  transition: 'translate .6s cubic-bezier(.2,.8,.2,1)',
+                  transition: 'translate var(--vg-cam)',
                   zIndex: 2001,
                   opacity: on ? 1 : 0.45,
                   overflow: 'visible',
@@ -1617,6 +1632,8 @@ const VillageMap = ({
               translate: above
                 ? `calc(${px(l.x)} - 50%) calc(${px(top)} - 100%)`
                 : `calc(${px(l.x)} - 50%) ${px(l.y + 12)}`,
+              // La bulle suit la caméra au même rythme que son étiquette.
+              transition: 'translate var(--vg-cam)',
               zIndex: 2100,
               padding: 0,
               border: 0,

@@ -3,7 +3,7 @@
 // menu, 5 quartiers), fiche à droite, vue liste par quartier. Le tableau de
 // bord classique (bannière, pense-bête, widgets) reste à un clic.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   HiChevronLeft,
   HiChevronRight,
@@ -16,6 +16,7 @@ import {
 import {
   HiOutlineClipboardDocumentCheck,
   HiOutlineQueueList,
+  HiOutlineTv,
 } from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -25,6 +26,7 @@ import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
 import VillagePanel, { type PanelSection } from './VillagePanel';
 import VillageList from './VillageList';
 import VillageSparkline from './VillageSparkline';
+import VillageWall, { type WallKpi, type WallMapView } from './VillageWall';
 import { useElementWidth } from './useElementWidth';
 import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
@@ -52,6 +54,7 @@ import {
   TONE,
   emptySection,
   matchesFilter,
+  trendText,
   type SectionData,
   type SeriesPoint,
   type Trend,
@@ -90,12 +93,6 @@ export const TREND_COLORS: Record<Trend['tone'], { bg: string; fg: string }> = {
   neutral: { bg: '#f1f2f6', fg: '#4b5563' },
 };
 
-/** « ▲ +4 en 7 jours », « ▼ −2 depuis hier », « Stable depuis hier ». */
-export const trendText = (t: Trend) =>
-  t.delta === 0
-    ? `Stable ${t.since}`
-    : `${t.delta > 0 ? '▲' : '▼'} ${t.text} ${t.since}`;
-
 /** Pastille d'un chiffre clé : jamais plus large que sa carte. */
 const CHIP_FIT = {
   maxWidth: '100%',
@@ -120,6 +117,10 @@ interface Props {
 const AdminVillage = ({ onClassic }: Props) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  // Écran mural (télévision) : « ?mural=1 » dans l'adresse — un écran peut
+  // l'ouvrir directement et le retrouve après un rechargement.
+  const [params, setParams] = useSearchParams();
+  const wall = params.get('mural') === '1';
   const { data, loading, refresh } = useVillageData();
   const activity = useVillageActivity(refresh);
   const firstName = useAppSelector(
@@ -183,7 +184,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     }
   }, [arrival]);
   useEffect(() => {
-    if (!hint) return undefined;
+    if (!hint || wall) return undefined;
     try {
       localStorage.setItem(HINT_KEY, '1');
     } catch {
@@ -191,7 +192,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     }
     const t = window.setTimeout(() => setHint(false), 9000);
     return () => window.clearTimeout(t);
-  }, [hint]);
+  }, [hint, wall]);
 
   // L'heure avance : l'ambiance (aube, jour, crépuscule, nuit) suit.
   useEffect(() => {
@@ -292,6 +293,26 @@ const AdminVillage = ({ onClassic }: Props) => {
     if (a.link) navigate(a.link);
     else selectSection(a.id);
   };
+  const setWall = (on: boolean) =>
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p);
+        if (on) next.set('mural', '1');
+        else next.delete('mural');
+        return next;
+      },
+      { replace: true }
+    );
+  /** Plein écran demandé au clic même (le navigateur l'exige). */
+  const enterWall = () => {
+    document.documentElement.requestFullscreen?.()?.catch(() => undefined);
+    setWall(true);
+  };
+  const exitWall = () => {
+    if (document.fullscreenElement)
+      document.exitFullscreen?.()?.catch(() => undefined);
+    setWall(false);
+  };
 
   // « Ma tournée du jour » : les rubriques qui demandent une action, urgences d'abord.
   const steps = data ? tourSteps(data.sections) : [];
@@ -331,7 +352,8 @@ const AdminVillage = ({ onClassic }: Props) => {
   };
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => undefined);
   keyHandler.current = (e: KeyboardEvent) => {
-    if (view !== 'village' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (wall || view !== 'village' || e.ctrlKey || e.metaKey || e.altKey)
+      return;
     const t = e.target as HTMLElement | null;
     if (
       t &&
@@ -652,6 +674,15 @@ const AdminVillage = ({ onClassic }: Props) => {
       >
         <HiOutlineViewGrid aria-hidden="true" /> Vue classique
       </button>
+      <button
+        type="button"
+        className="vgx-btn"
+        onClick={enterWall}
+        title="Plein écran pour une télévision : le village fait seul son tour"
+        style={segment(false)}
+      >
+        <HiOutlineTv aria-hidden="true" /> Écran mural
+      </button>
     </div>
   );
 
@@ -970,6 +1001,41 @@ const AdminVillage = ({ onClassic }: Props) => {
     </>
   );
 
+  const wallKpis: WallKpi[] = kpiCards.map(
+    ({ label, value, sub, trend, series, kind, unit, icon: kpiIcon, ink }) => ({
+      label,
+      value,
+      sub,
+      trend,
+      series,
+      kind,
+      unit,
+      icon: kpiIcon,
+      ink,
+    })
+  );
+  const renderWallMap = (v: WallMapView) => (
+    <VillageMap
+      width={v.width}
+      sections={mapSections}
+      selected={null}
+      district={v.district}
+      filter="tout"
+      zoom={v.zoom}
+      focus={v.focus}
+      onSelect={() => undefined}
+      onSelectDistrict={() => undefined}
+      labelScale={v.labelScale}
+      ambiance={ambianceOn ? ambiance : null}
+      particles={particles}
+      activity={activity}
+      chantier={data?.chantier ?? []}
+      life={data?.life ?? null}
+      festive={festive}
+      cameraMs={v.cameraMs}
+    />
+  );
+
   return (
     <div
       ref={rootRef}
@@ -979,9 +1045,24 @@ const AdminVillage = ({ onClassic }: Props) => {
         color: '#111827',
         padding: '20px 24px 28px',
         boxSizing: 'border-box',
+        // Écran mural : la page reste montée (tailles, état) mais masquée —
+        // sa carte ne s'anime pas pour rien sous l'écran mural.
+        display: wall ? 'none' : undefined,
       }}
     >
       <style>{CSS}</style>
+      {wall && (
+        <VillageWall
+          data={data}
+          kpis={wallKpis}
+          journee={journee}
+          activity={activity}
+          ambiance={ambiance}
+          renderMap={renderWallMap}
+          onRefresh={refresh}
+          onExit={exitWall}
+        />
+      )}
       <div
         style={{
           display: 'grid',
