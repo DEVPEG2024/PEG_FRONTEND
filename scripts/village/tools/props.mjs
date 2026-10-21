@@ -40,6 +40,7 @@
 //   flowerBed(x, y, w, d, { z=0, seed=1 })  massif fleuri en bordure de pierre claire
 //   van(x, y, { facing='x'|'y' })      camionnette blanche à bande violette (≈ 52 × 22 × 34),
 //                                      roule vers +x (bas-droite) ou vers +y (bas-gauche)
+//   car(x, y, { facing='x'|'y', color='#ef4444' })  petite voiture (≈ 34 × 17 × 19), même convention
 //   Utilitaires : bounds(svg) → cadre écran d'un fragment ; manifest(id, title, box) → manifeste de
 //   décor { id, title, labelY, hit } ; PAL = palette ; BENCH_SEAT ; PALLET_H.
 import { P, poly, line, box, ellipse, cylinder, shade, tint, mix } from './iso.mjs';
@@ -810,5 +811,63 @@ export function van(x, y, o = {}) {
   }
   const sh = castShadow(rrect(x, y, ...dimsW(L / 2, sw), 3, 1), 0, 12, 0.14) +
     E.path(pathOf(rrect(x, y, ...dimsW(L / 2 - 2, sw - 1.5), 2, 1).map(([a, b]) => P(a, b, 0))), SHADOW, 0.12);
+  return item(x, y, sh, body);
+}
+
+/* ───────────────────────── voiture ───────────────────────── */
+
+/**
+ * Petite voiture de ville (garée devant la Boutique). Même repère que van() : u le long du sens de
+ * marche (F), s en travers (S = côté visible), h vers le haut.
+ */
+export function car(x, y, o = {}) {
+  const facing = o.facing ?? 'x', color = o.color ?? '#ef4444';
+  const F = facing === 'y' ? [0, 1] : [1, 0];
+  const S = facing === 'y' ? [1, 0] : [0, 1];
+  const L = 34, Wd = 17, sw = Wd / 2, R = 3.5;
+  const wpt = (u, s) => [x + u * F[0] + s * S[0], y + u * F[1] + s * S[1]];
+  const Q = (u, s, h) => { const [a, b] = wpt(u, s); return P(a, b, h); };
+  const dimsW = (lu, ls) => (facing === 'y' ? [ls, lu] : [lu, ls]);
+  const sideLit = S[1] === 1, frontLit = F[1] === 1;
+  const paint = { lit: color, dark: shade(color, 0.82), top: tint(color, 0.22) };
+  const glass = (lit) => (lit ? '#6f93dc' : '#5574bd');
+  let body = '';
+
+  const wheelsU = [-L / 2 + 7.5, L / 2 - 7.5];
+  const disc = (u, s, r, n = 12) => { const pts = []; for (let i = 0; i < n; i++) { const t = (i / n) * 2 * Math.PI; pts.push(Q(u + r * Math.cos(t), s, R + r * Math.sin(t))); } return pts; };
+  const wheel = (u, sIn, sOut, visible) => {
+    let g = E.face(hull([...disc(u, sIn, R), ...disc(u, sOut, R)]), '#262a3d', 0.3);
+    if (visible) g += E.face(disc(u, sOut, R), '#33384f', 0) + E.face(disc(u, sOut + 0.05, R * 0.55, 10), '#c3c9d6', 0);
+    return g;
+  };
+  for (const u of wheelsU) body += wheel(u, -sw + 0.8, -sw + 3.2, false);
+
+  // Caisse basse puis habitacle en retrait vers l'arrière
+  { const [cx, cy] = wpt(0, 0), [w, d] = dimsW(L, Wd); body += softBox(cx, cy, 2.6, w, d, 8.6, { ...paint, r: 2.4, c: 1.6, n: 2 }); }
+  const ucab = -3, lcab = 18, scab = sw - 1.4, z0 = 11.0, z1 = 18.6;
+  { const [cx, cy] = wpt(ucab, 0), [w, d] = dimsW(lcab, scab * 2); body += softBox(cx, cy, z0, w, d, z1 - z0, { ...paint, r: 2.2, c: 2.2, n: 2 }); }
+  // Vitres latérales (montant central) et pare-brise
+  const sv = scab + 0.02;
+  body += E.face([Q(ucab - lcab / 2 + 2.2, sv, z0 + 1.2), Q(ucab - 1.2, sv, z0 + 1.2), Q(ucab - 1.2, sv, z1 - 2.3), Q(ucab - lcab / 2 + 3.4, sv, z1 - 2.3)], glass(sideLit), 0.2);
+  body += E.face([Q(ucab + 0.6, sv, z0 + 1.2), Q(ucab + lcab / 2 - 1.6, sv, z0 + 1.2), Q(ucab + lcab / 2 - 3.2, sv, z1 - 2.3), Q(ucab + 0.6, sv, z1 - 2.3)], glass(sideLit), 0.2);
+  const uf = ucab + lcab / 2 + 0.03;
+  body += E.face([Q(uf, -scab + 1.6, z0 + 0.9), Q(uf, scab - 1.6, z0 + 0.9), Q(uf, scab - 1.9, z1 - 2.0), Q(uf, -scab + 1.9, z1 - 2.0)], glass(frontLit), 0.2);
+  body += E.face([Q(uf + 0.02, -scab + 3.2, z0 + 1.6), Q(uf + 0.02, -scab + 5.6, z0 + 1.6), Q(uf + 0.02, -scab + 4.6, z1 - 2.6), Q(uf + 0.02, -scab + 2.4, z1 - 2.6)], '#ffffff', 0, 0.3);
+  // Phares, calandre, ligne de portière
+  const ufr = L / 2 + 0.03;
+  for (const sgn of [-1, 1]) {
+    const a = sgn > 0 ? [sw - 4.2, sw - 1.4] : [-sw + 1.4, -sw + 4.2];
+    body += E.face([Q(ufr, a[0], 6.6), Q(ufr, a[1], 6.6), Q(ufr, a[1], 8.6), Q(ufr, a[0], 8.6)], '#ffe08a', 0.2);
+  }
+  body += E.face([Q(ufr, -sw + 5, 4.6), Q(ufr, sw - 5, 4.6), Q(ufr, sw - 5, 6.0), Q(ufr, -sw + 5, 6.0)], '#2b2f45', 0.2, 0.55);
+  body += E.stroke(pathOf([Q(ucab - 1.2, sw + 0.03, 3.6), Q(ucab - 1.2, sw + 0.03, 10.6)], false), shade(color, 0.7), 0.5, 0.6);
+  body += E.stroke(pathOf([Q(-L / 2 + 2, sw + 0.03, 10.9), Q(L / 2 - 2.5, sw + 0.03, 10.9)], false), '#ffffff', 0.7, 0.55);
+  for (const u of wheelsU) {
+    const arch = []; for (let i = 0; i <= 8; i++) { const t = Math.PI * (i / 8); arch.push([u + (R + 1.0) * Math.cos(t), R + (R + 1.0) * Math.sin(t)]); }
+    body += E.face(arch.map(([uu, h]) => Q(uu, sw + 0.03, h)), '#3a3f55', 0.2);
+    body += wheel(u, sw - 2.8, sw + 0.2, true);
+  }
+  const sh = castShadow(rrect(x, y, ...dimsW(L / 2, sw), 3, 1), 0, 9, 0.14) +
+    E.path(pathOf(rrect(x, y, ...dimsW(L / 2 - 1.5, sw - 1.2), 2, 1).map(([a, b]) => P(a, b, 0))), SHADOW, 0.12);
   return item(x, y, sh, body);
 }

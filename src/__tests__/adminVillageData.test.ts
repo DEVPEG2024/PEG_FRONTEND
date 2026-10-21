@@ -256,7 +256,9 @@ describe('village — rubriques', () => {
       projectsInProgress: null,
       batToValidate: null,
       nextDelivery: null,
+      nextDeliveryIn: null,
       overdueInvoices: null,
+      trends: {},
     });
     expect(Object.keys(empty.sections)).toHaveLength(20);
   });

@@ -15,7 +15,7 @@
 import manifest from './spriteManifest.json';
 
 /** À incrémenter quand les sprites changent (fichiers servis sans empreinte). */
-const SPRITES_VERSION = 1;
+const SPRITES_VERSION = 2;
 export const spriteUrl = (name: string) =>
   `/img/village/${name}.svg?v=${SPRITES_VERSION}`;
 
@@ -49,11 +49,13 @@ export type DistrictId =
   | 'admin';
 
 export const MAP_W = 1132;
-export const MAP_H = 772;
+// Une rangée de plus en haut (21/10/2026) : le Calendrier a reculé d'une case
+// pour laisser au chantier des projets la case juste derrière Projets.
+export const MAP_H = 853;
 const A = 140;
 const B = A * Math.tan(Math.PI / 6);
 const X0 = 566;
-const Y0 = 215;
+const Y0 = 296;
 const INSET = 0.5714;
 /** Échelle d'un sprite 400 × 400 sur la carte (≈ 0,533). */
 export const SPRITE_SCALE = (INSET * A) / 150;
@@ -76,9 +78,10 @@ export interface Cell {
 }
 
 // Les très hauts (Calendrier, Leads) sont aux rangées arrière : leur étiquette
-// ne retombe jamais sur un bâtiment situé derrière eux.
+// ne retombe jamais sur un bâtiment situé derrière eux. La case (0, 0), juste
+// derrière Projets, est le chantier des projets (CHANTIER, plus bas).
 export const LAYOUT: Cell[] = [
-  { id: 'calendrier', u: 0, v: 0, district: 'pilotage' },
+  { id: 'calendrier', u: -1, v: 0, district: 'pilotage' },
   { id: 'accueil', u: 0, v: 1, district: 'pilotage' },
   { id: 'planning', u: 1, v: 0, district: 'pilotage' },
   { id: 'projets', u: 1, v: 1, district: 'pilotage' },
@@ -131,7 +134,7 @@ export const DISTRICTS: District[] = [
     plot: '#f7f4fd',
     lit: '#d6cdee',
     shaded: '#c6bbe3',
-    tag: [430, 150],
+    tag: [720, 140],
   },
   {
     id: 'clients',
@@ -145,7 +148,7 @@ export const DISTRICTS: District[] = [
     plot: '#f3f8fc',
     lit: '#c9dbea',
     shaded: '#b6cbdf',
-    tag: [64, 214],
+    tag: [64, 295],
   },
   {
     id: 'catalogue',
@@ -159,7 +162,7 @@ export const DISTRICTS: District[] = [
     plot: '#fcf7ef',
     lit: '#e8d3b4',
     shaded: '#dbc19c',
-    tag: [286, 619],
+    tag: [286, 700],
   },
   {
     id: 'finances',
@@ -173,7 +176,7 @@ export const DISTRICTS: District[] = [
     plot: '#f4f9f2',
     lit: '#cbdfc6',
     shaded: '#b7d0b1',
-    tag: [1052, 560],
+    tag: [1052, 641],
   },
   {
     id: 'admin',
@@ -187,7 +190,7 @@ export const DISTRICTS: District[] = [
     plot: '#fbf4f7',
     lit: '#e4cbd6',
     shaded: '#d5b6c4',
-    tag: [1040, 150],
+    tag: [1040, 231],
   },
 ];
 
@@ -251,6 +254,137 @@ export const districtCenter = (district: DistrictId): [number, number] => {
   ];
 };
 
+// ── Chantier des projets ─────────────────────────────────────────────────────
+
+/** La case juste derrière le bâtiment Projets : le chantier (ce n'est pas une rubrique). */
+export const CHANTIER = { u: 0, v: 0, district: 'pilotage' as DistrictId };
+
+export type ChantierStage = 'fondations' | 'murs' | 'toit' | 'livre';
+
+export const CHANTIER_SPRITE: Record<ChantierStage, string> = {
+  fondations: 'chantier-fondations',
+  murs: 'chantier-murs',
+  toit: 'chantier-toit',
+  livre: 'chantier-livre',
+};
+
+/**
+ * Emplacements des maisons (cases), de gauche à droite, sur la ligne du milieu
+ * de la parcelle : l'avant de la parcelle passe sous l'étiquette de Projets.
+ */
+export const CHANTIER_SLOTS: [number, number][] = [
+  [-0.2, 0.2],
+  [0, 0],
+  [0.2, -0.2],
+];
+
+/** La grue, au fond de la parcelle ; sa flèche passe au-dessus des maisons. */
+export const CHANTIER_CRANE = { sprite: 'chantier-grue', u: -0.3, v: -0.3 };
+
+/** Haut de la grue dans sa toile (manifeste de chantier-grue.json). */
+const CRANE_TOP = 153;
+
+/** Pointe de l'étiquette « Chantiers », au-dessus de la grue. */
+export const chantierLabelAnchor = (): [number, number] => {
+  const [cx, cy] = toMap(CHANTIER_CRANE.u, CHANTIER_CRANE.v);
+  return [cx, cy - 300 * SPRITE_SCALE + CRANE_TOP * SPRITE_SCALE - 10];
+};
+
+/** Cadre cliquable commun aux quatre maisons (toile 400 × 400, d'après leurs manifestes). */
+export const CHANTIER_HIT = { x: 140, y: 246, w: 130, h: 90 };
+
+// ── Vie du village : détails liés aux données du jour ───────────────────────
+
+/** Point d'une toile de sprite (400 × 400, ancre 200, 300) posée sur la case (u, v). */
+export const spritePoint = (
+  u: number,
+  v: number,
+  x: number,
+  y: number
+): [number, number] => {
+  const [cx, cy] = toMap(u, v);
+  return [cx + (x - 200) * SPRITE_SCALE, cy + (y - 300) * SPRITE_SCALE];
+};
+
+/** Sommet de la cheminée de l'atelier (sprite Producteurs) : fumée quand la production tourne. */
+export const CHIMNEY = { id: 'producteurs' as SectionId, x: 187.9, y: 169 };
+
+/** Jet de la fontaine de la place (sprite Accueil). */
+export const FOUNTAIN_JET = { id: 'accueil' as SectionId, x: 200, y: 266 };
+
+/** Places devant la Boutique, le long de la rue : une voiture par commande du jour (3 au plus). */
+export const PARKING: Decor[] = [
+  { sprite: 'car-y-red', u: 1.35, v: 2.88 },
+  { sprite: 'car-y-blue', u: 1.35, v: 3.06 },
+  { sprite: 'car-y-amber', u: 1.35, v: 3.24 },
+];
+
+/**
+ * Livraisons du jour : des camionnettes partent de Projets vers le bas de
+ * l'îlot (elles remplacent alors la camionnette de passage de cette rue).
+ */
+export const DELIVERY_ROUTE: { from: [number, number]; to: [number, number] } =
+  {
+    from: [1.55, 1.25],
+    to: [1.55, 3.45],
+  };
+
+/** Coins avant de la parcelle d'une case (gauche, avant, droite), en pixels carte. */
+export const plotFront = (
+  u: number,
+  v: number
+): [[number, number], [number, number], [number, number]] => {
+  const [cx, cy] = toMap(u, v);
+  return [
+    [cx - A * INSET, cy],
+    [cx, cy + B * INSET],
+    [cx + A * INSET, cy],
+  ];
+};
+
+// ── Caméra ───────────────────────────────────────────────────────────────────
+
+/** Paliers des boutons + et − ; la molette zoome en continu entre 1 et ZOOM_MAX. */
+export const ZOOM_STEPS = [1, 1.4, 1.85, 2.4];
+export const ZOOM_MAX = ZOOM_STEPS[ZOOM_STEPS.length - 1];
+
+/** Décalage de la carte borné : le bord de la carte n'apparaît jamais. */
+export const clampOffset = (
+  width: number,
+  height: number,
+  k: number,
+  tx: number,
+  ty: number
+): [number, number] => [
+  Math.min(0, Math.max(width - MAP_W * k, tx)),
+  Math.min(0, Math.max(height - MAP_H * k, ty)),
+];
+
+/** Décalage qui centre le point (fx, fy) de la carte (un peu bas : on voit les toits). */
+export const cameraOffset = (
+  width: number,
+  height: number,
+  k: number,
+  fx: number,
+  fy: number
+) =>
+  clampOffset(width, height, k, width / 2 - fx * k, height / 2 - (fy - 50) * k);
+
+/** Point de la carte au centre de la vue pour un décalage donné (inverse de cameraOffset). */
+export const focusOf = (
+  width: number,
+  height: number,
+  k: number,
+  tx: number,
+  ty: number
+): [number, number] => [(width / 2 - tx) / k, (height / 2 - ty) / k + 50];
+
+/** Palier de zoom suivant (+1) ou précédent (−1). */
+export const stepZoom = (zoom: number, dir: 1 | -1) =>
+  dir > 0
+    ? (ZOOM_STEPS.find((z) => z > zoom + 0.01) ?? ZOOM_MAX)
+    : ([...ZOOM_STEPS].reverse().find((z) => z < zoom - 0.01) ?? 1);
+
 // ── Sol ──────────────────────────────────────────────────────────────────────
 
 export interface GroundLayer {
@@ -267,6 +401,8 @@ export interface Ground {
   layers: GroundLayer[];
   /** Allées en pas japonais : arêtes partagées entre deux cases. */
   stones: string;
+  /** Parcelle du chantier (terre battue) : dessus et tranches. */
+  lot: { top: string; left: string; right: string };
 }
 
 const pt = (p: [number, number]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
@@ -293,13 +429,15 @@ export const plotPath = (u: number, v: number): string => {
  * partagées (elles font aussi la frontière entre deux quartiers).
  */
 export const buildGround = (): Ground => {
-  const occupied = new Set(LAYOUT.map((c) => `${c.u},${c.v}`));
+  const cells = [...LAYOUT, CHANTIER];
+  const occupied = new Set(cells.map((c) => `${c.u},${c.v}`));
   const has = (u: number, v: number) => occupied.has(`${u},${v}`);
   const TH = 14;
   const PTH = 6;
   const byDistrict = new Map<DistrictId, GroundLayer>();
   let stones = '';
-  for (const c of LAYOUT) {
+  const lot = { top: '', left: '', right: '' };
+  for (const c of cells) {
     let layer = byDistrict.get(c.district);
     if (!layer) {
       layer = {
@@ -329,6 +467,13 @@ export const buildGround = (): Ground => {
     const r: [number, number] = [cx + A * INSET, cy];
     const b: [number, number] = [cx, cy + B * INSET];
     const l: [number, number] = [cx - A * INSET, cy];
+    const plot = c === CHANTIER ? lot : null;
+    if (plot) {
+      plot.top += poly([t, r, b, l]);
+      plot.left += poly([l, b, down(b, PTH), down(l, PTH)]);
+      plot.right += poly([b, r, down(r, PTH), down(b, PTH)]);
+      continue;
+    }
     layer.plotTop += poly([t, r, b, l]);
     layer.plotLeft += poly([l, b, down(b, PTH), down(l, PTH)]);
     layer.plotRight += poly([b, r, down(r, PTH), down(b, PTH)]);
@@ -336,6 +481,7 @@ export const buildGround = (): Ground => {
   return {
     layers: DISTRICTS.map((d) => byDistrict.get(d.id) as GroundLayer),
     stones,
+    lot,
   };
 };
 
@@ -362,9 +508,9 @@ export const DECOR: Decor[] = (
     ['group-chat', 1.33, 2.67],
     ['waver', 2.67, 1.33],
     ['pots', 1.32, -1],
-    ['decor-tree-round', -0.39, -0.2],
-    ['decor-tree-round', -0.39, 0.26],
-    ['decor-tree-cone', -0.2, -0.39],
+    ['decor-tree-round', -1.39, -0.2],
+    ['decor-tree-round', -1.39, 0.26],
+    ['decor-tree-cone', -1.2, -0.39],
     ['decor-tree-cone', 0.26, -0.39],
     ['decor-tree-cone', -1.39, 0.8],
     ['decor-tree-cone', -1.39, 1.26],

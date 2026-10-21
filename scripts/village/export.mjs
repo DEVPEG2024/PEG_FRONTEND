@@ -1,6 +1,6 @@
 // Régénère les sprites du Village PEG (accueil admin) et les publie dans le front.
 //   node scripts/village/export.mjs
-// 1. exécute buildings/*.build.mjs et extra/build.mjs (chaque SVG s'écrit à côté
+// 1. exécute buildings/*.build.mjs, extra/build.mjs et extra/*.build.mjs (chaque SVG s'écrit à côté
 //    de son script, avec un manifeste JSON : haut du toit et cadre cliquable) ;
 // 2. contrôle chaque SVG (tools/lint.mjs : en-tête 400 × 400, ni style, ni script,
 //    ni image externe, ≤ 70 Ko, coordonnées dans la toile) ;
@@ -36,7 +36,7 @@ const inDir = (dir, ext) =>
     .filter((f) => f.endsWith(ext))
     .map((f) => resolve(HERE, dir, f));
 
-for (const script of [...inDir('buildings', '.build.mjs'), resolve(HERE, 'extra/build.mjs')])
+for (const script of [...inDir('buildings', '.build.mjs'), resolve(HERE, 'extra/build.mjs'), ...inDir('extra', '.build.mjs')])
   execFileSync(process.execPath, [script], { stdio: 'inherit' });
 
 const svgs = [...inDir('buildings', '.svg'), ...inDir('extra', '.svg')];

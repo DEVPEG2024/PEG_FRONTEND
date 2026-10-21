@@ -10,14 +10,18 @@ import {
   projectProgress,
 } from '@/views/app/common/projects/details/utils';
 import type { VillageFilter } from './VillageMap';
-import { MENU_ORDER, type SectionId } from './villageScene';
+import { MENU_ORDER, type ChantierStage, type SectionId } from './villageScene';
 import {
   TONE,
   emptySection,
   plural,
+  type ActivityInfo,
+  type ChantierHouse,
   type ProjectCard,
   type SectionData,
   type SectionItem,
+  type Trend,
+  type TrendKey,
   type VillageData,
 } from './villageModel';
 
@@ -29,6 +33,8 @@ export interface RawProject {
   state: string;
   endDate?: string | null;
   createdAt?: string | null;
+  /** Projets livrés : date de passage en « Terminé » (à peu près). */
+  updatedAt?: string | null;
   customer?: { name?: string | null } | null;
   images?: { url: string }[] | null;
   checklistItems?: { done: boolean }[] | null;
@@ -121,8 +127,18 @@ export interface RawVillage {
     sav: N;
     late: N;
     next: RawProject | null;
+    /** Projets actifs dont la livraison est prévue aujourd'hui. */
+    dueToday?: N;
   };
   samples?: RawProject[];
+  /** Projets livrés ces 3 derniers jours (maison au drapeau du chantier). */
+  delivered?: RawProject[];
+  /** Activité des 30 derniers jours et des 3 périodes précédentes (serveur). */
+  activity?: Partial<
+    Record<SectionId, { current: number; previous: number[] }>
+  >;
+  /** Photo des chiffres d'un jour précédent (serveur), pour les tendances. */
+  trends?: { since: string; values: Partial<Record<TrendKey, number>> } | null;
   /** Projets dont le produit exige un BAT et dont le BAT n'est pas validé. */
   batCandidates?: RawProject[];
   /** requestedStale : demandes de devis sans réponse depuis 48 h. */
@@ -228,6 +244,213 @@ const quantityOf = (p: RawProject) =>
     (s, x) => s + (Number(x?.quantity) || 0),
     0
   );
+
+// ── Tendances ────────────────────────────────────────────────────────────────
+
+/** Mêmes chiffres que la photo quotidienne du serveur (village-summary.ts). */
+export const currentSnapshot = (
+  raw: RawVillage,
+  now: Date
+): Partial<Record<TrendKey, number>> => {
+  const v: Partial<Record<TrendKey, number>> = {};
+  const set = (k: TrendKey, n: unknown) => {
+    if (typeof n === 'number' && Number.isFinite(n)) v[k] = n;
+  };
+  const pr = raw.projects;
+  if (pr) {
+    if (typeof pr.pending === 'number' && typeof pr.pendingPaid === 'number')
+      set('projectsInProgress', pr.pending + pr.pendingPaid);
+    set('projectsLate', pr.late);
+  }
+  if (raw.batCandidates)
+    set('batToValidate', raw.batCandidates.filter(batAwaitingClient).length);
+  if (raw.invoices) {
+    const due = (i: RawInvoice) => i.dueDate || i.date;
+    const dayStart = dayjs(now).startOf('day');
+    set(
+      'overdueInvoices',
+      raw.invoices.unpaid.filter(
+        (i) => due(i) && dayjs(due(i) as string).isBefore(dayStart)
+      ).length
+    );
+    set(
+      'unpaidTotal',
+      Math.round(
+        raw.invoices.unpaid.reduce(
+          (sum, i) => sum + (Number(i.totalAmount) || 0),
+          0
+        )
+      )
+    );
+  }
+  set('ticketsOpen', raw.tickets?.open);
+  set('quotesRequested', raw.quotes?.requested);
+  set('customers', raw.customers?.total);
+  set('leadsToCall', raw.leads?.toCall);
+  set('ordersPending', raw.shop?.ordersPending);
+  set('productsActive', raw.shop?.productsActive);
+  set('commissionsPending', raw.generators?.pendingCount);
+  return v;
+};
+
+/** « depuis hier », « en 7 jours », « depuis le 14 octobre ». */
+export const sinceLabel = (since: string, now: Date) => {
+  const days = dayjs(now).startOf('day').diff(dayjs(since), 'day');
+  if (days <= 1) return 'depuis hier';
+  if (days === 7) return 'en 7 jours';
+  return `depuis le ${fmtDay(since)}`;
+};
+
+/**
+ * Évolution d'un chiffre. good : sens favorable (« down » pour les retards,
+ * « up » pour les clients) ; null si l'un des deux chiffres manque.
+ */
+export const trendOf = (
+  current: number | undefined,
+  past: number | undefined,
+  good: 'up' | 'down' | 'neutral',
+  since: string,
+  format: (n: number) => string = (n) => String(n)
+): Trend | null => {
+  if (typeof current !== 'number' || typeof past !== 'number') return null;
+  const delta = current - past;
+  const tone: Trend['tone'] =
+    delta === 0 || good === 'neutral'
+      ? 'neutral'
+      : delta > 0 === (good === 'up')
+        ? 'good'
+        : 'bad';
+  return {
+    delta,
+    text:
+      delta === 0 ? '=' : `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`,
+    tone,
+    since,
+  };
+};
+
+/** Chiffres de fiche suivis : [rubrique, libellé du chiffre, clé, sens favorable]. */
+const STAT_TRENDS: [SectionId, string, TrendKey, 'up' | 'down' | 'neutral'][] =
+  [
+    ['projets', 'En cours', 'projectsInProgress', 'up'],
+    ['projets', 'BAT à valider', 'batToValidate', 'down'],
+    ['projets', 'En retard', 'projectsLate', 'down'],
+    ['devis', 'À préparer', 'quotesRequested', 'neutral'],
+    ['leads', 'À rappeler', 'leadsToCall', 'down'],
+    ['clients', 'Clients', 'customers', 'up'],
+    ['boutique', 'En cours', 'ordersPending', 'neutral'],
+    ['boutique', 'Produits actifs', 'productsActive', 'neutral'],
+    ['finance', 'Reste à encaisser TTC', 'unpaidTotal', 'down'],
+    ['finance', 'En retard', 'overdueInvoices', 'down'],
+    ['generateurs', 'Commissions en attente', 'commissionsPending', 'neutral'],
+    ['tickets', 'Ouverts', 'ticketsOpen', 'down'],
+  ];
+
+// ── Activité du mois : bâtiments qui grandissent ─────────────────────────────
+
+/** Niveau d'activité : les 30 derniers jours face à la moyenne des 3 périodes d'avant. */
+export const activityLevel = (
+  current: number,
+  previous: number[]
+): ActivityInfo['level'] => {
+  const prev = previous.filter((n) => Number.isFinite(n));
+  const avg = prev.length ? prev.reduce((a, n) => a + n, 0) / prev.length : 0;
+  if (!(current > 0)) return 0;
+  const ratio = current / Math.max(avg, 1);
+  if (ratio >= 1.5 && current >= 5) return 3;
+  if (ratio >= 1.1) return 2;
+  if (ratio >= 0.75) return 1;
+  return 0;
+};
+
+const LEVEL_LABEL: Record<ActivityInfo['level'], string> = {
+  0: 'Plus calme que d’habitude',
+  1: 'Dans la moyenne',
+  2: 'En hausse',
+  3: 'Exceptionnel',
+};
+
+/** Ce que compte l'activité de chaque bâtiment suivi (singulier, pluriel). */
+const ACTIVITY_UNIT: Partial<Record<SectionId, [string, string]>> = {
+  projets: ['projet créé', 'projets créés'],
+  boutique: ['commande payée', 'commandes payées'],
+  finance: ['facturé TTC', 'facturés TTC'],
+  devis: ['demande de devis', 'demandes de devis'],
+  clients: ['nouveau client', 'nouveaux clients'],
+  leads: ['nouveau lead', 'nouveaux leads'],
+  premium: ['nouvel abonné', 'nouveaux abonnés'],
+  generateurs: ['commission', 'commissions'],
+  campagnes: ['campagne envoyée', 'campagnes envoyées'],
+  ia: ['conversation', 'conversations'],
+};
+
+export const activityInfo = (
+  id: SectionId,
+  a: { current: number; previous: number[] } | undefined,
+  hidden: boolean
+): ActivityInfo | null => {
+  const unit = ACTIVITY_UNIT[id];
+  if (!unit || !a || typeof a.current !== 'number') return null;
+  const level = activityLevel(a.current, a.previous ?? []);
+  const prev = (a.previous ?? []).filter((n) => Number.isFinite(n));
+  const avg = prev.length
+    ? Math.round(prev.reduce((x, n) => x + n, 0) / prev.length)
+    : 0;
+  const money = id === 'finance';
+  const fmt = (n: number) => (money ? eur(n, hidden) : String(n));
+  const what = money ? unit[0] : a.current > 1 ? unit[1] : unit[0];
+  return {
+    level,
+    label: LEVEL_LABEL[level],
+    text: `${fmt(a.current)} ${what} en 30 jours (moyenne ${fmt(avg)})`,
+  };
+};
+
+// ── Chantier des projets ─────────────────────────────────────────────────────
+
+const STAGE_LABEL: Record<ChantierStage, string> = {
+  fondations: 'BAT à valider',
+  murs: 'En production',
+  toit: 'Prêt à livrer',
+  livre: 'Livré',
+};
+
+/** Stade de la maison d'un projet : BAT, production, prêt, livré. */
+export const chantierStage = (p: RawProject): ChantierStage => {
+  if (p.state === 'fulfilled' || p.state === 'completed') return 'livre';
+  const needsBat = !!p.orderItem?.product?.requiresBat;
+  if (needsBat && p.orderItem?.batStatus !== 'approved') return 'fondations';
+  if (p.state === 'waiting') return 'fondations';
+  return projectProgress(p as unknown as Project).percent >= 100
+    ? 'toit'
+    : 'murs';
+};
+
+/**
+ * Les 3 maisons du chantier : les projets les plus urgents, et le dernier
+ * projet livré (3 derniers jours) à droite s'il y en a un.
+ */
+export const chantierHouses = (
+  ranked: RawProject[],
+  delivered: RawProject[],
+  now: Date
+): ChantierHouse[] => {
+  const last = delivered[0] ? [delivered[0]] : [];
+  return [...ranked.slice(0, 3 - last.length), ...last].map((p) => {
+    const stage = chantierStage(p);
+    return {
+      documentId: p.documentId,
+      name: p.name,
+      customer: p.customer?.name || 'Client non renseigné',
+      stage,
+      stageLabel:
+        stage === 'fondations' && p.state === 'waiting'
+          ? 'En attente'
+          : STAGE_LABEL[stage],
+      late: stage !== 'livre' && isLate(p, now),
+    };
+  });
+};
 
 // ── Projets mis en avant ─────────────────────────────────────────────────────
 
@@ -895,14 +1118,83 @@ export const buildVillageData = (
 
   for (const id of MENU_ORDER) if (!s[id]) s[id] = emptySection(UNAVAILABLE);
 
+  // Tendances : chiffres d'aujourd'hui face à la photo d'un jour précédent
+  const cur = currentSnapshot(raw, now);
+  const past = raw.trends?.values ?? {};
+  const since = raw.trends ? sinceLabel(raw.trends.since, now) : '';
+  const trend = (
+    k: TrendKey,
+    good: 'up' | 'down' | 'neutral',
+    money = false
+  ) =>
+    raw.trends
+      ? trendOf(cur[k], past[k], good, since, (n) =>
+          money ? eur(n, hidden) : String(n)
+        )
+      : null;
+  for (const [id, label, k, good] of STAT_TRENDS) {
+    const stat = s[id].stats.find((x) => x.label === label);
+    const t = stat && trend(k, good, k === 'unpaidTotal');
+    if (stat && t && t.delta !== 0) stat.trend = t;
+  }
+  const kpiTrends: VillageData['kpis']['trends'] = {};
+  for (const [k, good] of [
+    ['projectsInProgress', 'up'],
+    ['batToValidate', 'down'],
+    ['overdueInvoices', 'down'],
+  ] as const) {
+    const t = trend(k, good);
+    if (t) kpiTrends[k] = t;
+  }
+
+  // Activité du mois
+  for (const id of MENU_ORDER)
+    s[id].activity = activityInfo(id, raw.activity?.[id], hidden);
+
+  // Livraisons du jour : projets à livrer aujourd'hui ou livraisons du calendrier
+  const calendarDeliveries = (raw.calendar ?? []).filter(
+    (e) => e.category === 'livraison' && occursOn(e, now)
+  ).length;
+  const deliveries = Math.max(num(pr?.dueToday) ?? 0, calendarDeliveries);
+
   return {
     kpis: {
       projectsInProgress: inProgress,
       batToValidate: batCount,
       nextDelivery: nextDelivery ? fmtDay(nextDelivery) : pr ? 'Aucune' : null,
+      nextDeliveryIn: nextDelivery
+        ? (() => {
+            const days = dayjs(nextDelivery)
+              .startOf('day')
+              .diff(today.startOf('day'), 'day');
+            return days <= 0
+              ? 'aujourd’hui'
+              : days === 1
+                ? 'demain'
+                : `dans ${days} jours`;
+          })()
+        : null,
       overdueInvoices: overdueCount,
+      trends: kpiTrends,
     },
     sections: s,
     projects,
+    chantier: chantierHouses(
+      ranked.filter((p) => ACTIVE.includes(p.state)),
+      raw.delivered ?? [],
+      now
+    ),
+    life: {
+      smoke:
+        (inProgress ?? 0) >= 30
+          ? 3
+          : (inProgress ?? 0) >= 10
+            ? 2
+            : (inProgress ?? 0) > 0
+              ? 1
+              : 0,
+      cars: Math.min(3, num(raw.shop?.ordersToday) ?? 0),
+      vans: Math.min(3, deliveries),
+    },
   };
 };

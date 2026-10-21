@@ -5,7 +5,85 @@ import { HiCheck, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
 import { BsCalendar3 } from 'react-icons/bs';
 import type { District, SectionId } from './villageScene';
 import { spriteUrl, SPRITE_META } from './villageScene';
-import { TONE, type ProjectCard, type SectionData } from './villageModel';
+import {
+  TONE,
+  type ActivityInfo,
+  type ProjectCard,
+  type SectionData,
+  type Trend,
+} from './villageModel';
+
+const TREND_TONE: Record<Trend['tone'], { bg: string; fg: string }> = {
+  good: { bg: '#e8f7ee', fg: '#15803d' },
+  bad: { bg: '#fde8e8', fg: '#b91c1c' },
+  neutral: { bg: '#eceef3', fg: '#4b5563' },
+};
+
+/** Jauge d'activité du mois : trois barres, dorées quand c'est exceptionnel. */
+const ActivityBlock = ({ a }: { a: ActivityInfo }) => {
+  const color =
+    a.level === 3
+      ? '#f2b705'
+      : a.level === 2
+        ? '#16a34a'
+        : a.level === 1
+          ? '#6d5dfc'
+          : '#9ca3af';
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 14,
+        padding: '10px 13px',
+        borderRadius: 14,
+        background: a.level === 3 ? '#fff7e0' : '#f6f5f9',
+        border: a.level === 3 ? '1px solid #f6d77a' : '1px solid transparent',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 22 }}
+      >
+        {[1, 2, 3].map((n) => (
+          <span
+            key={n}
+            style={{
+              width: 6,
+              height: 8 + n * 4.5,
+              borderRadius: 3,
+              background: a.level >= n ? color : '#dcdde3',
+            }}
+          />
+        ))}
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span
+          style={{
+            display: 'block',
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: a.level === 3 ? '#a16207' : '#6b7280',
+          }}
+        >
+          Activité du mois · {a.label}
+        </span>
+        <span
+          style={{
+            display: 'block',
+            marginTop: 1,
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: '#111827',
+          }}
+        >
+          {a.text}
+        </span>
+      </span>
+    </div>
+  );
+};
 
 /** Petit drapeau rouge, le même que sur la carte. */
 export const AlertFlag = ({ size = 14 }: { size?: number }) => (
@@ -145,10 +223,12 @@ const Stat = ({
   label,
   value,
   color,
+  trend,
 }: {
   label: string;
   value: string;
   color?: string;
+  trend?: Trend;
 }) => (
   <div
     style={{ padding: '11px 13px', borderRadius: 14, background: '#f6f5f9' }}
@@ -158,15 +238,40 @@ const Stat = ({
     </span>
     <span
       style={{
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 6,
         marginTop: 3,
-        fontSize: 18,
-        fontWeight: 800,
-        letterSpacing: '-0.01em',
-        color: color ?? '#111827',
       }}
     >
-      {value}
+      <span
+        style={{
+          fontSize: 18,
+          fontWeight: 800,
+          letterSpacing: '-0.01em',
+          color: color ?? '#111827',
+        }}
+      >
+        {value}
+      </span>
+      {trend && (
+        <span
+          title={`Évolution ${trend.since}`}
+          aria-label={`${trend.text} ${trend.since}`}
+          style={{
+            padding: '1px 6px',
+            borderRadius: 999,
+            background: TREND_TONE[trend.tone].bg,
+            color: TREND_TONE[trend.tone].fg,
+            fontSize: 11.5,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {trend.delta > 0 ? '▲' : '▼'} {trend.text}
+        </span>
+      )}
     </span>
   </div>
 );
@@ -830,10 +935,16 @@ const VillagePanel = ({
           }}
         >
           {data.stats.map((s) => (
-            <Stat key={s.label} label={s.label} value={s.value} />
+            <Stat
+              key={s.label}
+              label={s.label}
+              value={s.value}
+              trend={s.trend}
+            />
           ))}
         </div>
       )}
+      {!loading && data.activity && <ActivityBlock a={data.activity} />}
       {data.items.length > 0 && (
         <>
           <h3

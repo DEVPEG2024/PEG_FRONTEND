@@ -5,34 +5,68 @@
 // MAP_W × MAP_H mis à l'échelle (ajustement au conteneur × zoom) ; les
 // étiquettes vivent dans un calque écran, à taille fixe, repositionnées à
 // chaque zoom et posées sans chevauchement (placeLabels).
-import { useMemo, type CSSProperties, type ReactNode } from 'react';
+//
+// Caméra : on déplace la carte en la faisant glisser et on zoome à la molette
+// autour du pointeur ; AdminVillage garde le zoom et le point visé (onCamera).
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
+import { MdConstruction } from 'react-icons/md';
 import type { Ambiance, Particle } from './villageAmbiance';
 import type { VillageActivity } from './villageActivity';
-import { matchesFilter } from './villageModel';
 import {
+  matchesFilter,
+  type ChantierHouse,
+  type VillageLife,
+} from './villageModel';
+import {
+  CHANTIER,
+  CHANTIER_CRANE,
+  CHANTIER_HIT,
+  CHANTIER_SLOTS,
+  CHANTIER_SPRITE,
+  CHIMNEY,
   DECOR,
+  DELIVERY_ROUTE,
   DISTRICTS,
+  FOUNTAIN_JET,
   LAYOUT,
   MAP_H,
   MAP_W,
+  PARKING,
   SPRITE_META,
   SPRITE_SCALE,
   SPRITE_SIZE,
   WALKERS,
+  ZOOM_MAX,
   buildGround,
+  cameraOffset,
+  chantierLabelAnchor,
+  clampOffset,
   depthZ,
+  districtById,
   districtCenter,
   districtOf,
   districtTagBox,
+  focusOf,
   labelAnchor,
   labelWidth,
   placeLabels,
+  plotFront,
   plotPath,
+  spritePoint,
   spriteUrl,
   toMap,
   type Box,
   type DistrictId,
   type SectionId,
+  type Walker,
 } from './villageScene';
 
 export type VillageFilter =
@@ -54,9 +88,12 @@ export interface MapSection {
   aria: string;
   /** Vrai problème : halo rouge autour de la parcelle, drapeau à côté de l'étiquette. */
   alert: string | null;
+  /**
+   * Activité du mois : 1 = fanions aux coins de la parcelle, 2 = guirlande de
+   * fanions, 3 = étoile dorée sur l'étiquette et scintillements.
+   */
+  level: 0 | 1 | 2 | 3;
 }
-
-export const ZOOMS = [1, 1.4, 1.85] as const;
 
 const CSS = `
 .vg-walk-1{animation:vg-walk linear infinite}
@@ -84,15 +121,35 @@ const CSS = `
 .vg-pill,.vg-tag{transition:translate .6s cubic-bezier(.2,.8,.2,1),transform .22s cubic-bezier(.3,1.6,.5,1),opacity .3s ease,box-shadow .2s ease}
 .vg-pill:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,36,80,.2) !important}
 .vg-tag:hover{transform:translateY(-2px)}
-.vg-pill:focus-visible,.vg-tag:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
+.vg-pill:focus-visible,.vg-tag:focus-visible,.vg-house:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
+.vg-moving .vg-world,.vg-moving .vg-pill,.vg-moving .vg-tag,.vg-moving .vg-follow{transition:none !important}
+.vg-arrive{animation:vg-rise .5s cubic-bezier(.2,1.5,.4,1) backwards;transform-origin:50% 75%}
+@keyframes vg-rise{from{opacity:0;transform:translateY(18px) scale(.7)}to{opacity:1;transform:none}}
+.vg-fade-in{animation:vg-fade .6s ease backwards}
+@keyframes vg-fade{from{opacity:0}to{opacity:1}}
+.vg-label-in{animation:vg-label .35s ease backwards}
+@keyframes vg-label{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.vg-smoke{position:absolute;border-radius:50%;background:radial-gradient(circle at 38% 35%,#ffffff,#d9dee9);box-shadow:0 0 6px rgba(255,255,255,.6);pointer-events:none;animation:vg-smoke 5.4s cubic-bezier(.3,.6,.5,1) infinite}
+@keyframes vg-smoke{0%{transform:translate(-50%,-50%) scale(.5);opacity:0}8%{opacity:.9}70%{opacity:.75}100%{transform:translate(calc(-50% + 26px),calc(-50% - 96px)) scale(3.2);opacity:0}}
+.vg-drop{position:absolute;width:2.4px;height:2.4px;margin:-1.2px 0 0 -1.2px;border-radius:50%;background:#cfe6ff;pointer-events:none;animation:vg-drop 1.3s ease-in infinite}
+@keyframes vg-drop{0%{transform:translate(0,0);opacity:0}10%{opacity:1}45%{transform:translate(calc(var(--dx) * .55),-5px)}100%{transform:translate(var(--dx),9px);opacity:0}}
+.vg-twinkle{transform-box:fill-box;transform-origin:center;animation:vg-twinkle 1.8s ease-in-out infinite}
+@keyframes vg-twinkle{0%,100%{opacity:.2;transform:scale(.55)}50%{opacity:1;transform:scale(1.1)}}
+.vg-pennant{transform-box:fill-box;transform-origin:0% 50%;animation:vg-pennant 1.6s ease-in-out infinite}
+.vg-pennant-r{transform-box:fill-box;transform-origin:100% 50%;animation:vg-pennant 1.6s ease-in-out infinite}
+@keyframes vg-pennant{0%,100%{transform:skewY(0deg) scaleX(1)}50%{transform:skewY(-8deg) scaleX(.86)}}
+.vg-bulb{animation:vg-bulb 1.4s steps(1) infinite}
+.vg-bulb-b{animation-delay:-.7s}
+@keyframes vg-bulb{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion: reduce){
-  .vg-walk-1,.vg-walk-2,.vg-fall{display:none}
-  .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live{animation:none}
-  .vg-pill,.vg-tag,.vg-world{transition:none !important}
+  .vg-walk-1,.vg-walk-2,.vg-fall,.vg-smoke,.vg-drop{display:none}
+  .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live,.vg-arrive,.vg-fade-in,.vg-label-in,.vg-twinkle,.vg-pennant,.vg-pennant-r,.vg-bulb{animation:none}
+  .vg-pill,.vg-tag,.vg-world,.vg-follow{transition:none !important}
 }
 `;
 
 const px = (n: number) => `${n.toFixed(1)}px`;
+const pt = (p: [number, number]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
 
 /** Réduit une boîte autour de son point d'ancrage (étiquettes réduites). */
 const scaleBox = (b: Box, [x, y]: [number, number], s: number): Box => ({
@@ -102,13 +159,46 @@ const scaleBox = (b: Box, [x, y]: [number, number], s: number): Box => ({
   y1: y + (b.y1 - y) * s,
 });
 
+/** Couleurs des fanions et des ampoules. */
+const FLAGS = ['#f6c445', '#ef8aa0', '#0ea5e9', '#16a34a', '#7c6bff'];
+const BULBS = ['#ff5a5f', '#ffd166', '#06d6a0', '#4cc9f0'];
+/** Hauteur des fanions et de la guirlande lumineuse au-dessus du sol (pixels carte). */
+const POLE_H = 20;
+const GARLAND_H = 13;
+
+/** Point d'une courbe quadratique a → b, creusée de `sag` pixels vers le bas. */
+const along = (
+  a: [number, number],
+  b: [number, number],
+  sag: number,
+  t: number
+): [number, number] => {
+  const c: [number, number] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + sag];
+  const u = 1 - t;
+  return [
+    u * u * a[0] + 2 * u * t * c[0] + t * t * b[0],
+    u * u * a[1] + 2 * u * t * c[1] + t * t * b[1],
+  ];
+};
+const curve = (a: [number, number], b: [number, number], sag: number) =>
+  `M${pt(a)} Q${pt([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + sag])} ${pt(b)}`;
+
+/** Étoile à quatre branches (scintillement), centrée en c. */
+const sparkle = ([x, y]: [number, number], r: number) =>
+  `M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r}Z`;
+
 interface Props {
   width: number;
   sections: Record<SectionId, MapSection>;
   selected: SectionId | null;
   district: DistrictId | null;
   filter: VillageFilter;
-  zoom: 0 | 1 | 2;
+  /** Zoom continu : 1 = tout le village, jusqu'à ZOOM_MAX. */
+  zoom: number;
+  /** Point de la carte visé (glisser, molette) ; null = bâtiment ou quartier choisi. */
+  focus?: [number, number] | null;
+  /** Nouveau cadrage demandé par la souris (glisser, molette). */
+  onCamera?: (camera: { zoom: number; focus: [number, number] }) => void;
   onSelect: (id: SectionId) => void;
   onSelectDistrict: (id: DistrictId) => void;
   /** Taille des étiquettes (réduites sur les cartes étroites). */
@@ -122,6 +212,15 @@ interface Props {
   particles?: Particle[];
   /** Notifications reçues à l'instant : bulle au-dessus du bâtiment. */
   activity?: VillageActivity[];
+  /** Maisons du chantier, derrière Projets : un projet chacune. */
+  chantier?: ChantierHouse[];
+  onOpenProject?: (documentId: string) => void;
+  /** Fumée de l'atelier, voitures devant la Boutique, camionnettes du jour. */
+  life?: VillageLife | null;
+  /** Guirlandes lumineuses sur les parcelles (fêtes de fin d'année). */
+  festive?: boolean;
+  /** Première visite de la session : le village se construit sous les yeux. */
+  arrival?: boolean;
   /** Commandes posées par-dessus la carte (titre, filtres, zoom…). */
   children?: ReactNode;
 }
@@ -133,76 +232,249 @@ const VillageMap = ({
   district,
   filter,
   zoom,
+  focus = null,
+  onCamera,
   onSelect,
   onSelectDistrict,
   labelScale = 1,
   ambiance = null,
   particles = [],
   activity = [],
+  chantier = [],
+  onOpenProject,
+  life = null,
+  festive = false,
+  arrival = false,
   children,
 }: Props) => {
   const ground = useMemo(buildGround, []);
   const fit = width / MAP_W;
   const height = Math.round(MAP_H * fit);
-  const k = fit * ZOOMS[zoom];
+  const k = fit * zoom;
 
-  // Zoom centré sur le quartier choisi, sinon sur le bâtiment choisi.
-  const [fx, fy] = district
-    ? districtCenter(district)
-    : (() => {
-        const cell =
-          LAYOUT.find((c) => c.id === selected) ??
-          LAYOUT.find((c) => c.id === 'projets')!;
-        return toMap(cell.u, cell.v);
-      })();
-  // Zoom centré sur la cible, sans jamais montrer le bord de la carte.
-  let tx = 0;
-  let ty = 0;
-  if (zoom > 0) {
-    tx = Math.min(0, Math.max(width - MAP_W * k, width / 2 - fx * k));
-    ty = Math.min(0, Math.max(height - MAP_H * k, height / 2 - (fy - 50) * k));
-  }
+  // Cadrage : le point visé à la souris, sinon le quartier ou le bâtiment choisi.
+  const target: [number, number] =
+    focus ??
+    (district
+      ? districtCenter(district)
+      : (() => {
+          const cell =
+            LAYOUT.find((c) => c.id === selected) ??
+            LAYOUT.find((c) => c.id === 'projets')!;
+          return toMap(cell.u, cell.v);
+        })());
+  const [tx, ty] =
+    zoom > 1.001
+      ? cameraOffset(width, height, k, target[0], target[1])
+      : [0, 0];
   const toScreen = (x: number, y: number): [number, number] => [
     x * k + tx,
     y * k + ty,
   ];
+
+  // ── Déplacement à la souris (glisser) et zoom à la molette ──
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cam = useRef({ zoom, k, tx, ty, width, height, fit });
+  cam.current = { zoom, k, tx, ty, width, height, fit };
+  const onCameraRef = useRef(onCamera);
+  onCameraRef.current = onCamera;
+  const drag = useRef<{
+    x: number;
+    y: number;
+    tx: number;
+    ty: number;
+    id: number;
+    moved: boolean;
+  } | null>(null);
+  const swallowClick = useRef(false);
+  const [moving, setMoving] = useState(false);
+  const idleTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return undefined;
+    const onWheel = (e: WheelEvent) => {
+      const send = onCameraRef.current;
+      if (!send) return;
+      const c = cam.current;
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const next = Math.min(
+        ZOOM_MAX,
+        Math.max(1, c.zoom * Math.exp(-delta * 0.0016))
+      );
+      // Aux bornes, la molette fait défiler la page comme d'habitude.
+      if (Math.abs(next - c.zoom) < 1e-4) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const px0 = e.clientX - r.left;
+      const py0 = e.clientY - r.top;
+      // Le point de la carte sous le pointeur reste sous le pointeur.
+      const mx = (px0 - c.tx) / c.k;
+      const my = (py0 - c.ty) / c.k;
+      const nk = c.fit * next;
+      const [ntx, nty] = clampOffset(
+        c.width,
+        c.height,
+        nk,
+        px0 - mx * nk,
+        py0 - my * nk
+      );
+      send({ zoom: next, focus: focusOf(c.width, c.height, nk, ntx, nty) });
+      setMoving(true);
+      window.clearTimeout(idleTimer.current);
+      idleTimer.current = window.setTimeout(() => setMoving(false), 180);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      window.clearTimeout(idleTimer.current);
+    };
+  }, []);
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || zoom <= 1.001 || !onCamera) return;
+    drag.current = {
+      x: e.clientX,
+      y: e.clientY,
+      tx,
+      ty,
+      id: e.pointerId,
+      moved: false,
+    };
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < 5) return;
+      d.moved = true;
+      setMoving(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    const c = cam.current;
+    const [ntx, nty] = clampOffset(
+      c.width,
+      c.height,
+      c.k,
+      d.tx + dx,
+      d.ty + dy
+    );
+    onCameraRef.current?.({
+      zoom: c.zoom,
+      focus: focusOf(c.width, c.height, c.k, ntx, nty),
+    });
+  };
+  const endDrag = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d?.moved) return;
+    setMoving(false);
+    // Le relâchement d'un glisser ne doit pas ouvrir le bâtiment sous la souris.
+    swallowClick.current = true;
+    window.setTimeout(() => {
+      swallowClick.current = false;
+    }, 0);
+  };
 
   const lit = (id: SectionId) =>
     matchesFilter(sections[id], filter) &&
     (!district || districtOf(id) === district);
   const calm = filter === 'tout' && !district;
 
-  // Bâtiments et décors, du fond vers l'avant.
+  // ── Bâtiments, décors, chantier et voitures, du fond vers l'avant ──
+  const houseKey = chantier.map((h) => `${h.documentId}:${h.stage}`).join('|');
+  const cars = Math.max(0, Math.min(PARKING.length, life?.cars ?? 0));
   const sprites = useMemo(() => {
+    const place = (
+      key: string,
+      kind: 'building' | 'decor' | 'chantier',
+      id: SectionId | null,
+      src: string,
+      u: number,
+      v: number
+    ) => {
+      const [x, y] = toMap(u, v);
+      return {
+        key,
+        kind,
+        id,
+        src,
+        x: x - 200 * SPRITE_SCALE,
+        y: y - 300 * SPRITE_SCALE,
+        z: depthZ(u + v),
+      };
+    };
     const list = [
-      ...LAYOUT.map((c) => {
-        const [cx, cy] = toMap(c.u, c.v);
-        return {
-          key: c.id,
-          id: c.id as SectionId | null,
-          src: spriteUrl(c.id),
-          x: cx - 200 * SPRITE_SCALE,
-          y: cy - 300 * SPRITE_SCALE,
-          z: depthZ(c.u + c.v),
-        };
-      }),
-      ...DECOR.map((d, i) => {
-        const [x, y] = toMap(d.u, d.v);
-        return {
-          key: `d${i}`,
-          id: null as SectionId | null,
-          src: spriteUrl(d.sprite),
-          x: x - 200 * SPRITE_SCALE,
-          y: y - 300 * SPRITE_SCALE,
-          z: depthZ(d.u + d.v),
-        };
-      }),
+      ...LAYOUT.map((c) =>
+        place(c.id, 'building', c.id, spriteUrl(c.id), c.u, c.v)
+      ),
+      ...DECOR.map((d, i) =>
+        place(`d${i}`, 'decor', null, spriteUrl(d.sprite), d.u, d.v)
+      ),
+      place(
+        'grue',
+        'chantier',
+        null,
+        spriteUrl(CHANTIER_CRANE.sprite),
+        CHANTIER_CRANE.u,
+        CHANTIER_CRANE.v
+      ),
+      ...houseKey
+        .split('|')
+        .filter(Boolean)
+        .map((entry, i) => {
+          const [documentId, stage] = entry.split(':');
+          const [du, dv] = CHANTIER_SLOTS[i];
+          return place(
+            `maison-${documentId}`,
+            'chantier',
+            null,
+            spriteUrl(CHANTIER_SPRITE[stage as keyof typeof CHANTIER_SPRITE]),
+            CHANTIER.u + du,
+            CHANTIER.v + dv
+          );
+        }),
+      ...PARKING.slice(0, cars).map((p, i) =>
+        place(`car${i}`, 'decor', null, spriteUrl(p.sprite), p.u, p.v)
+      ),
     ];
     return list.sort((a, b) => a.z - b.z);
-  }, []);
+  }, [houseKey, cars]);
+  /** Ordre de construction à l'arrivée : du fond vers l'avant. */
+  const buildOrder = useMemo(
+    () =>
+      new Map(
+        sprites
+          .filter((s) => s.kind === 'building')
+          .map((s, i) => [s.id as SectionId, i])
+      ),
+    [sprites]
+  );
+  const arriveDelay = (id: SectionId) => 150 + (buildOrder.get(id) ?? 0) * 45;
 
-  // Étiquettes à taille fixe : posées en coordonnées écran, sans chevauchement,
-  // en contournant les noms de quartier.
+  // Camionnettes des livraisons du jour (à la place de celle de passage).
+  const vans = Math.max(0, Math.min(3, life?.vans ?? 0));
+  const walkers: Walker[] = useMemo(
+    () =>
+      vans
+        ? [
+            ...WALKERS.filter((w) => w.sprite !== 'van-y'),
+            ...Array.from({ length: vans }, (_, i) => ({
+              sprite: 'van-y',
+              from: DELIVERY_ROUTE.from,
+              to: DELIVERY_ROUTE.to,
+              duration: 15,
+              delay: -(i * 15) / vans,
+              vehicle: true,
+            })),
+          ]
+        : WALKERS,
+    [vans]
+  );
+
+  // ── Étiquettes à taille fixe, en coordonnées écran, sans chevauchement ──
   const tagPos = DISTRICTS.map((d) => toScreen(d.tag[0], d.tag[1]));
   const tagBoxes = DISTRICTS.map((d, i) =>
     scaleBox(
@@ -211,25 +483,38 @@ const VillageMap = ({
       labelScale
     )
   );
+  const pillWidth = (s: MapSection) =>
+    labelWidth(s.title, s.badge) + (s.level === 3 ? 18 : 0);
+  const chantierAnchor = toScreen(...chantierLabelAnchor());
   const labels = placeLabels(
-    LAYOUT.map((c) => {
-      const [ax, ay] = labelAnchor(c);
-      const [x, y] = toScreen(ax, ay);
-      const s = sections[c.id];
-      return {
-        id: c.id,
-        x,
-        y,
-        w: labelWidth(s.title, s.badge) * labelScale,
+    [
+      ...LAYOUT.map((c) => {
+        const [ax, ay] = labelAnchor(c);
+        const [x, y] = toScreen(ax, ay);
+        return {
+          id: c.id as string,
+          x,
+          y,
+          w: pillWidth(sections[c.id]) * labelScale,
+          h: 32 * labelScale,
+          depth: c.u + c.v,
+        };
+      }),
+      {
+        id: 'chantier',
+        x: chantierAnchor[0],
+        y: chantierAnchor[1],
+        w: labelWidth('Chantiers', null) * labelScale,
         h: 32 * labelScale,
-        depth: c.u + c.v,
-      };
-    }),
+        depth: CHANTIER.u + CHANTIER.v,
+      },
+    ],
     tagBoxes
   );
-  const anchors = Object.fromEntries(
-    LAYOUT.map((c) => [c.id, toScreen(...labelAnchor(c))])
-  ) as Record<SectionId, [number, number]>;
+  const anchors = Object.fromEntries([
+    ...LAYOUT.map((c) => [c.id, toScreen(...labelAnchor(c))]),
+    ['chantier', chantierAnchor],
+  ]) as Record<string, [number, number]>;
 
   // Lumières du soir : la lanterne de chaque lampadaire et les fenêtres de
   // chaque bâtiment (en coordonnées carte, converties à l'affichage).
@@ -249,14 +534,169 @@ const VillageMap = ({
 
   const selCell = LAYOUT.find((c) => c.id === selected);
   const ring = selCell && !district ? plotPath(selCell.u, selCell.v) : null;
+  const [hoverHouse, setHoverHouse] = useState<number | null>(null);
+  const smoke = Math.max(0, Math.min(3, life?.smoke ?? 0));
+  const prodCell = LAYOUT.find((c) => c.id === CHIMNEY.id)!;
+  const fountainCell = LAYOUT.find((c) => c.id === FOUNTAIN_JET.id)!;
+
+  /** Fanions, guirlande de fanions, scintillements et guirlande lumineuse d'une parcelle. */
+  const plotDecor = (c: (typeof LAYOUT)[number]) => {
+    const s = sections[c.id];
+    const level = s.level;
+    if (!level && !festive) return null;
+    const [L, F, R] = plotFront(c.u, c.v);
+    const up = (p: [number, number], h: number): [number, number] => [
+      p[0],
+      p[1] - h,
+    ];
+    const hue = districtById(c.district).hue;
+    const hit = SPRITE_META[c.id].hit;
+    const top = spritePoint(c.u, c.v, hit.x, hit.y)[1];
+    const box = {
+      x: L[0] - 14,
+      y: Math.min(top - 12, L[1] - POLE_H - 12),
+      w: R[0] - L[0] + 28,
+      h: F[1] + 6 - Math.min(top - 12, L[1] - POLE_H - 12),
+    };
+    const flagsOn = (a: [number, number], b: [number, number], n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const t = (i + 0.5) / n;
+        const p = along(a, b, 7, t);
+        return (
+          <path
+            key={`${a[0]}-${t}`}
+            d={`M${pt([p[0] - 2.6, p[1]])} L${pt([p[0] + 2.6, p[1]])} L${pt([p[0], p[1] + 5.4])} Z`}
+            fill={FLAGS[(i + Math.round(a[0])) % FLAGS.length]}
+          />
+        );
+      });
+    const bulbsOn = (a: [number, number], b: [number, number], n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const t = (i + 0.5) / n;
+        const p = along(a, b, 5, t);
+        return (
+          <circle
+            key={`${a[0]}-${t}`}
+            className={i % 2 ? 'vg-bulb vg-bulb-b' : 'vg-bulb'}
+            cx={p[0].toFixed(1)}
+            cy={(p[1] + 1.4).toFixed(1)}
+            r={1.7}
+            fill={BULBS[i % BULBS.length]}
+          />
+        );
+      });
+    return (
+      <svg
+        key={`deco-${c.id}`}
+        aria-hidden="true"
+        width={box.w}
+        height={box.h}
+        viewBox={`${box.x.toFixed(1)} ${box.y.toFixed(1)} ${box.w.toFixed(1)} ${box.h.toFixed(1)}`}
+        className={arrival ? 'vg-fade-in' : undefined}
+        style={{
+          position: 'absolute',
+          left: box.x,
+          top: box.y,
+          zIndex: depthZ(c.u + c.v) + 2,
+          pointerEvents: 'none',
+          overflow: 'visible',
+          opacity: lit(c.id) ? 1 : 0.4,
+          transition: 'opacity .3s ease',
+          animationDelay: arrival ? `${arriveDelay(c.id) + 250}ms` : undefined,
+        }}
+      >
+        {level >= 1 && (
+          <g>
+            {[L, R].map((p, i) => (
+              <g key={i}>
+                <path
+                  d={`M${pt(p)} L${pt(up(p, POLE_H))}`}
+                  stroke="#6f7891"
+                  strokeWidth={1.3}
+                  strokeLinecap="round"
+                />
+                <path
+                  className={i ? 'vg-pennant' : 'vg-pennant-r'}
+                  d={
+                    i
+                      ? `M${pt(up(p, POLE_H))} l9 3.4 l-9 3.4 Z`
+                      : `M${pt(up(p, POLE_H))} l-9 3.4 l9 3.4 Z`
+                  }
+                  fill={hue}
+                />
+              </g>
+            ))}
+          </g>
+        )}
+        {level >= 2 && (
+          <g>
+            <path
+              d={`M${pt(F)} L${pt(up(F, POLE_H))}`}
+              stroke="#6f7891"
+              strokeWidth={1.3}
+              strokeLinecap="round"
+            />
+            <path
+              d={`${curve(up(L, POLE_H - 1), up(F, POLE_H - 1), 7)} ${curve(up(F, POLE_H - 1), up(R, POLE_H - 1), 7)}`}
+              fill="none"
+              stroke="#8a7a62"
+              strokeWidth={0.8}
+            />
+            {flagsOn(up(L, POLE_H - 1), up(F, POLE_H - 1), 6)}
+            {flagsOn(up(F, POLE_H - 1), up(R, POLE_H - 1), 6)}
+          </g>
+        )}
+        {level >= 3 &&
+          [
+            [hit.x + hit.w * 0.14, hit.y + hit.h * 0.3, 0],
+            [hit.x + hit.w * 0.86, hit.y + hit.h * 0.22, 0.6],
+            [hit.x + hit.w * 0.58, hit.y + 4, 1.2],
+          ].map(([x, y, delay]) => (
+            <path
+              key={`${x}-${y}`}
+              className="vg-twinkle"
+              d={sparkle(spritePoint(c.u, c.v, x, y), 5.5)}
+              fill="#ffd166"
+              style={{ animationDelay: `${delay}s` }}
+            />
+          ))}
+        {festive && (
+          <g>
+            <path
+              d={`${curve(up(L, GARLAND_H), up(F, GARLAND_H), 5)} ${curve(up(F, GARLAND_H), up(R, GARLAND_H), 5)}`}
+              fill="none"
+              stroke="#2f3a52"
+              strokeWidth={0.7}
+            />
+            {bulbsOn(up(L, GARLAND_H), up(F, GARLAND_H), 8)}
+            {bulbsOn(up(F, GARLAND_H), up(R, GARLAND_H), 8)}
+          </g>
+        )}
+      </svg>
+    );
+  };
 
   return (
     <div
+      ref={rootRef}
+      className={moving ? 'vg-moving' : undefined}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onClickCapture={(e) => {
+        if (!swallowClick.current) return;
+        swallowClick.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       style={{
         position: 'relative',
         width,
         height,
         overflow: 'hidden',
+        cursor: zoom > 1.001 ? (moving ? 'grabbing' : 'grab') : 'default',
+        touchAction: zoom > 1.001 ? 'none' : 'auto',
       }}
     >
       <style>{CSS}</style>
@@ -275,6 +715,7 @@ const VillageMap = ({
       >
         <div
           aria-hidden="true"
+          className={arrival ? 'vg-fade-in' : undefined}
           style={{
             position: 'absolute',
             inset: 0,
@@ -305,6 +746,31 @@ const VillageMap = ({
               <path d={g.plotTop} fill={g.district.plot} />
             </svg>
           ))}
+          <svg
+            width={MAP_W}
+            height={MAP_H}
+            viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: !district || district === CHANTIER.district ? 1 : 0.5,
+              transition: 'opacity .3s ease',
+            }}
+          >
+            {/* Parcelle du chantier : terre battue et barrière de chantier */}
+            <path d={ground.lot.left} fill="#d8c29b" />
+            <path d={ground.lot.right} fill="#cbb38a" />
+            <path d={ground.lot.top} fill="#ead9b6" />
+            <path
+              d={ground.lot.top}
+              fill="none"
+              stroke="#f08a4b"
+              strokeWidth={2.2}
+              strokeDasharray="7 5"
+              strokeLinejoin="round"
+              opacity={0.8}
+            />
+          </svg>
           <svg
             width={MAP_W}
             height={MAP_H}
@@ -365,8 +831,16 @@ const VillageMap = ({
           </svg>
         </div>
 
-        {sprites.map((s) => {
-          const on = s.id ? lit(s.id) : calm;
+        {sprites.map((s, i) => {
+          const on =
+            s.kind === 'chantier' ? lit('projets') : s.id ? lit(s.id) : calm;
+          const delay = !arrival
+            ? 0
+            : s.kind === 'building'
+              ? arriveDelay(s.id as SectionId)
+              : s.kind === 'chantier'
+                ? 1050 + (i % 4) * 90
+                : 900 + (i % 16) * 30;
           return (
             <img
               key={s.key}
@@ -374,6 +848,13 @@ const VillageMap = ({
               alt=""
               draggable={false}
               decoding="async"
+              className={
+                arrival
+                  ? s.kind === 'decor'
+                    ? 'vg-fade-in'
+                    : 'vg-arrive'
+                  : undefined
+              }
               style={{
                 position: 'absolute',
                 left: s.x,
@@ -381,76 +862,148 @@ const VillageMap = ({
                 width: SPRITE_SIZE,
                 height: SPRITE_SIZE,
                 zIndex: s.z,
-                opacity: s.id ? (on ? 1 : 0.32) : on ? 1 : 0.55,
+                opacity:
+                  s.id || s.kind === 'chantier'
+                    ? on
+                      ? 1
+                      : 0.32
+                    : on
+                      ? 1
+                      : 0.55,
                 filter:
                   s.id && on && filter !== 'tout'
                     ? 'drop-shadow(0 0 10px rgba(109,93,252,0.45))'
                     : 'none',
                 transition: 'opacity .3s ease, filter .3s ease',
                 pointerEvents: 'none',
+                animationDelay: arrival ? `${delay}ms` : undefined,
               }}
             />
           );
         })}
 
-        {WALKERS.map((w, i) => {
-          const [x0, y0] = toMap(...w.from);
-          const [x1, y1] = toMap(...w.to);
-          const timing = {
-            animationDuration: `${w.duration}s`,
-            animationDelay: `${w.delay}s`,
-          };
-          const img = {
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-          } as const;
+        {LAYOUT.map((c) => plotDecor(c))}
+
+        {/* Fumée de l'atelier quand la production tourne */}
+        {Array.from({ length: smoke }, (_, i) => {
+          const [x, y] = spritePoint(
+            prodCell.u,
+            prodCell.v,
+            CHIMNEY.x,
+            CHIMNEY.y
+          );
           return (
-            <div
-              key={`w${i}`}
-              className={w.back ? 'vg-walk-2' : 'vg-walk-1'}
+            <span
+              key={`smoke-${i}`}
               aria-hidden="true"
-              style={
-                {
-                  position: 'absolute',
-                  left: x0 - 200 * SPRITE_SCALE,
-                  top: y0 - 300 * SPRITE_SCALE,
-                  width: SPRITE_SIZE,
-                  height: SPRITE_SIZE,
-                  pointerEvents: 'none',
-                  '--dx': px(x1 - x0),
-                  '--dy': px(y1 - y0),
-                  '--z0': String(depthZ(w.from[0] + w.from[1]) + 2),
-                  '--z1': String(depthZ(w.to[0] + w.to[1]) + 2),
-                  ...timing,
-                } as CSSProperties
-              }
-            >
-              <div
-                className={w.vehicle ? undefined : 'vg-bob'}
-                style={{ position: 'absolute', inset: 0 }}
-              >
-                <img
-                  src={spriteUrl(w.sprite)}
-                  alt=""
-                  draggable={false}
-                  className={w.back ? 'vg-out' : undefined}
-                  style={{ ...img, ...timing }}
-                />
-                {w.back && (
-                  <img
-                    src={spriteUrl(w.back)}
-                    alt=""
-                    draggable={false}
-                    className="vg-back"
-                    style={{ ...img, ...timing }}
-                  />
-                )}
-              </div>
-            </div>
+              className="vg-smoke"
+              style={{
+                left: x,
+                top: y,
+                width: 9,
+                height: 9,
+                zIndex: depthZ(prodCell.u + prodCell.v) + 3,
+                animationDelay: `${-(i * 5.4) / smoke}s`,
+                opacity: lit('producteurs') ? undefined : 0.3,
+              }}
+            />
           );
         })}
+
+        {/* Gouttes de la fontaine de la place */}
+        {[-7, -4, -1.5, 1.5, 4, 7].map((dx, i) => {
+          const [x, y] = spritePoint(
+            fountainCell.u,
+            fountainCell.v,
+            FOUNTAIN_JET.x,
+            FOUNTAIN_JET.y
+          );
+          return (
+            <span
+              key={`drop-${dx}`}
+              aria-hidden="true"
+              className="vg-drop"
+              style={
+                {
+                  left: x,
+                  top: y,
+                  zIndex: depthZ(fountainCell.u + fountainCell.v) + 3,
+                  animationDelay: `${-i * 0.21}s`,
+                  '--dx': `${dx}px`,
+                } as CSSProperties
+              }
+            />
+          );
+        })}
+
+        <div
+          aria-hidden="true"
+          className={arrival ? 'vg-fade-in' : undefined}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            animationDelay: arrival ? '1300ms' : undefined,
+          }}
+        >
+          {walkers.map((w, i) => {
+            const [x0, y0] = toMap(...w.from);
+            const [x1, y1] = toMap(...w.to);
+            const timing = {
+              animationDuration: `${w.duration}s`,
+              animationDelay: `${w.delay}s`,
+            };
+            const img = {
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+            } as const;
+            return (
+              <div
+                key={`w${i}`}
+                className={w.back ? 'vg-walk-2' : 'vg-walk-1'}
+                style={
+                  {
+                    position: 'absolute',
+                    left: x0 - 200 * SPRITE_SCALE,
+                    top: y0 - 300 * SPRITE_SCALE,
+                    width: SPRITE_SIZE,
+                    height: SPRITE_SIZE,
+                    pointerEvents: 'none',
+                    '--dx': px(x1 - x0),
+                    '--dy': px(y1 - y0),
+                    '--z0': String(depthZ(w.from[0] + w.from[1]) + 2),
+                    '--z1': String(depthZ(w.to[0] + w.to[1]) + 2),
+                    ...timing,
+                  } as CSSProperties
+                }
+              >
+                <div
+                  className={w.vehicle ? undefined : 'vg-bob'}
+                  style={{ position: 'absolute', inset: 0 }}
+                >
+                  <img
+                    src={spriteUrl(w.sprite)}
+                    alt=""
+                    draggable={false}
+                    className={w.back ? 'vg-out' : undefined}
+                    style={{ ...img, ...timing }}
+                  />
+                  {w.back && (
+                    <img
+                      src={spriteUrl(w.back)}
+                      alt=""
+                      draggable={false}
+                      className="vg-back"
+                      style={{ ...img, ...timing }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {LAYOUT.map((c) => {
           const [cx, cy] = toMap(c.u, c.v);
@@ -480,37 +1033,40 @@ const VillageMap = ({
             />
           );
         })}
-      </div>
 
-      {!!ambiance?.lights &&
-        lightSpots.map((spot, i) => {
-          const [x, y] = toScreen(spot.x, spot.y);
-          const r = spot.r * k;
+        {/* Maisons du chantier : un projet chacune, clic = fiche du projet */}
+        {chantier.map((h, i) => {
+          const [du, dv] = CHANTIER_SLOTS[i];
+          const [cx, cy] = toMap(CHANTIER.u + du, CHANTIER.v + dv);
           return (
-            <span
-              key={`light-${i}`}
-              aria-hidden="true"
+            <button
+              key={`house-${h.documentId}`}
+              type="button"
+              className="vg-house"
+              aria-label={`Chantier : ${h.name} — ${h.stageLabel}${h.late ? ', en retard' : ''}`}
+              onClick={() => onOpenProject?.(h.documentId)}
+              onMouseEnter={() => setHoverHouse(i)}
+              onMouseLeave={() => setHoverHouse(null)}
+              onFocus={() => setHoverHouse(i)}
+              onBlur={() => setHoverHouse(null)}
               style={{
                 position: 'absolute',
-                left: 0,
-                top: 0,
-                width: r * 2,
-                height: r * (spot.lamp ? 2 : 1.3),
-                translate: `${px(x - r)} ${px(y - r * (spot.lamp ? 1 : 0.65))}`,
-                transition:
-                  'translate .6s cubic-bezier(.2,.8,.2,1), width .6s, height .6s',
-                borderRadius: '50%',
-                background: spot.lamp
-                  ? 'radial-gradient(closest-side, rgba(255,214,130,0.95), rgba(255,190,90,0.35) 55%, rgba(255,190,90,0))'
-                  : 'radial-gradient(closest-side, rgba(255,226,160,0.75), rgba(255,210,130,0.25) 60%, rgba(255,210,130,0))',
-                mixBlendMode: 'screen',
-                opacity: ambiance.lights * (spot.lamp ? 1 : 0.85),
-                pointerEvents: 'none',
-                zIndex: 1600,
+                left: cx - 200 * SPRITE_SCALE + CHANTIER_HIT.x * SPRITE_SCALE,
+                top: cy - 300 * SPRITE_SCALE + CHANTIER_HIT.y * SPRITE_SCALE,
+                width: CHANTIER_HIT.w * SPRITE_SCALE,
+                height: CHANTIER_HIT.h * SPRITE_SCALE,
+                zIndex: depthZ(CHANTIER.u + du + CHANTIER.v + dv) + 1,
+                padding: 0,
+                border: 0,
+                borderRadius: 8,
+                background: 'transparent',
+                cursor: 'pointer',
               }}
             />
           );
         })}
+      </div>
+
       {particles.map((p, i) => (
         <span
           key={`fall-${i}`}
@@ -538,25 +1094,115 @@ const VillageMap = ({
           }
         />
       ))}
+      {!!ambiance?.lights &&
+        lightSpots.map((spot, i) => {
+          const [x, y] = toScreen(spot.x, spot.y);
+          const r = spot.r * k;
+          return (
+            <span
+              key={`light-${i}`}
+              aria-hidden="true"
+              className="vg-follow"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: r * 2,
+                height: r * (spot.lamp ? 2 : 1.3),
+                translate: `${px(x - r)} ${px(y - r * (spot.lamp ? 1 : 0.65))}`,
+                transition:
+                  'translate .6s cubic-bezier(.2,.8,.2,1), width .6s, height .6s',
+                borderRadius: '50%',
+                background: spot.lamp
+                  ? 'radial-gradient(closest-side, rgba(255,214,130,0.95), rgba(255,190,90,0.35) 55%, rgba(255,190,90,0))'
+                  : 'radial-gradient(closest-side, rgba(255,226,160,0.75), rgba(255,210,130,0.25) 60%, rgba(255,210,130,0))',
+                mixBlendMode: 'screen',
+                opacity: ambiance.lights * (spot.lamp ? 1 : 0.85),
+                pointerEvents: 'none',
+                zIndex: 1600,
+              }}
+            />
+          );
+        })}
 
-      {labels.map((l) => {
-        const s = sections[l.id as SectionId];
-        const on = lit(l.id as SectionId);
-        const isSel = selected === l.id && !district;
-        const [ax, ay] = anchors[l.id as SectionId];
+      {labels.map((l, li) => {
+        if (l.id === 'chantier') {
+          const on = lit('projets');
+          return (
+            <button
+              key="lab-chantier"
+              type="button"
+              className={`vg-pill${arrival ? ' vg-label-in' : ''}`}
+              onClick={() => onSelect('projets')}
+              aria-label={`Chantiers : ${chantier.length ? chantier.map((h) => `${h.name} (${h.stageLabel.toLowerCase()})`).join(', ') : 'aucun projet en cours'}`}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                translate: `calc(${px(l.x)} - 50%) calc(${px(l.y)} - 100%)`,
+                scale: String(labelScale),
+                transformOrigin: '50% 100%',
+                zIndex: 2000,
+                opacity: on ? 1 : 0.45,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                height: 32,
+                boxSizing: 'border-box',
+                padding: '0 14px 0 11px',
+                borderRadius: 999,
+                border: '1px solid rgba(240,138,75,0.45)',
+                background: '#fff8ef',
+                color: '#111827',
+                fontSize: 13.5,
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 8px 20px rgba(40,36,80,0.14)',
+                cursor: 'pointer',
+                animationDelay: arrival ? '1300ms' : undefined,
+              }}
+            >
+              <span style={{ fontSize: 18, display: 'flex', color: '#e07a2f' }}>
+                <MdConstruction />
+              </span>
+              Chantiers
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: `calc(50% + ${-l.dx}px)`,
+                  bottom: -5,
+                  width: 10,
+                  height: 10,
+                  marginLeft: -5,
+                  background: '#fff8ef',
+                  transform: 'rotate(45deg)',
+                  borderRadius: 2,
+                }}
+              />
+            </button>
+          );
+        }
+        const id = l.id as SectionId;
+        const s = sections[id];
+        const on = lit(id);
+        const isSel = selected === id && !district;
+        const [ax, ay] = anchors[id];
+        const w = pillWidth(s);
         return (
-          <div key={`lab-${l.id}`}>
+          <div key={`lab-${id}`}>
             {s.alert && (
               <svg
                 aria-hidden="true"
                 width={18 * labelScale}
                 height={24 * labelScale}
                 viewBox="0 0 18 24"
+                className="vg-follow"
                 style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
-                  translate: `${px(l.x - (labelWidth(s.title, s.badge) * labelScale) / 2 - 16 * labelScale)} ${px(l.y - 26 * labelScale)}`,
+                  translate: `${px(l.x - (w * labelScale) / 2 - 16 * labelScale)} ${px(l.y - 26 * labelScale)}`,
                   transition: 'translate .6s cubic-bezier(.2,.8,.2,1)',
                   zIndex: 2001,
                   opacity: on ? 1 : 0.45,
@@ -589,8 +1235,8 @@ const VillageMap = ({
             )}
             <button
               type="button"
-              className="vg-pill"
-              onClick={() => onSelect(l.id as SectionId)}
+              className={`vg-pill${arrival ? ' vg-label-in' : ''}`}
+              onClick={() => onSelect(id)}
               aria-pressed={isSel}
               aria-label={s.aria}
               style={{
@@ -613,7 +1259,9 @@ const VillageMap = ({
                   ? '2px solid #6d5dfc'
                   : s.alert
                     ? '2px solid #ef4444'
-                    : '1px solid rgba(17,24,39,0.04)',
+                    : s.level === 3
+                      ? '1.5px solid #f6c445'
+                      : '1px solid rgba(17,24,39,0.04)',
                 background: '#ffffff',
                 color: '#111827',
                 fontSize: 13.5,
@@ -621,11 +1269,31 @@ const VillageMap = ({
                 whiteSpace: 'nowrap',
                 boxShadow: '0 8px 20px rgba(40,36,80,0.14)',
                 cursor: 'pointer',
+                animationDelay: arrival
+                  ? `${arriveDelay(id) + 300 + li * 5}ms`
+                  : undefined,
               }}
             >
               <span style={{ fontSize: 18, display: 'flex', color: s.tone }}>
                 {s.icon}
               </span>
+              {s.level === 3 && (
+                <svg
+                  aria-hidden="true"
+                  width={13}
+                  height={13}
+                  viewBox="0 0 24 24"
+                  style={{ marginLeft: -3, flexShrink: 0 }}
+                >
+                  <path
+                    d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"
+                    fill="#f6c445"
+                    stroke="#d99a1e"
+                    strokeWidth={1.2}
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
               {s.title}
               {s.badge && (
                 <span
@@ -665,6 +1333,55 @@ const VillageMap = ({
           </div>
         );
       })}
+
+      {hoverHouse !== null &&
+        chantier[hoverHouse] &&
+        (() => {
+          const h = chantier[hoverHouse];
+          const [du, dv] = CHANTIER_SLOTS[hoverHouse];
+          const [x, y] = toScreen(
+            ...spritePoint(
+              CHANTIER.u + du,
+              CHANTIER.v + dv,
+              205,
+              CHANTIER_HIT.y
+            )
+          );
+          return (
+            <div
+              role="tooltip"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                translate: `calc(${px(x)} - 50%) calc(${px(y - 6)} - 100%)`,
+                zIndex: 2120,
+                maxWidth: 260,
+                padding: '7px 11px',
+                borderRadius: 12,
+                background: '#111827',
+                color: '#ffffff',
+                fontSize: 12.5,
+                fontWeight: 600,
+                lineHeight: 1.35,
+                boxShadow: '0 10px 22px rgba(17,24,39,0.28)',
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <strong style={{ fontWeight: 800 }}>{h.name}</strong>
+              <span
+                style={{
+                  display: 'block',
+                  color: h.late ? '#fca5a5' : '#c7d2fe',
+                }}
+              >
+                {h.stageLabel}
+                {h.late ? ' · en retard' : ''} · {h.customer}
+              </span>
+            </div>
+          );
+        })()}
 
       {activity.map((a) => {
         const l = labels.find((x) => x.id === a.id);
@@ -762,7 +1479,7 @@ const VillageMap = ({
           <button
             key={`tag-${d.id}`}
             type="button"
-            className="vg-tag"
+            className={`vg-tag${arrival ? ' vg-label-in' : ''}`}
             onClick={() => onSelectDistrict(d.id)}
             aria-pressed={on}
             aria-label={`Quartier ${d.name} — ${d.place}`}
@@ -785,6 +1502,7 @@ const VillageMap = ({
               whiteSpace: 'nowrap',
               textAlign: 'left',
               cursor: 'pointer',
+              animationDelay: arrival ? '1150ms' : undefined,
             }}
           >
             <span

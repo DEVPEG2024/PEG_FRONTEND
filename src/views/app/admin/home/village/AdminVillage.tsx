@@ -2,7 +2,7 @@
 // 21/10/2026 : chiffres clés, village isométrique (un bâtiment par rubrique du
 // menu, 5 quartiers), fiche à droite, vue liste par quartier. Le tableau de
 // bord classique (bannière, pense-bête, widgets) reste à un clic.
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HiChevronLeft,
@@ -26,10 +26,19 @@ import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
 import { SECTION_INFO } from './villageSections';
 import {
+  DISTRICTS,
+  LAYOUT,
+  MAP_H,
+  MAP_W,
   MENU_ORDER,
+  ZOOM_MAX,
+  ZOOM_STEPS,
   districtById,
+  districtCenter,
   districtOf,
   membersOf,
+  stepZoom,
+  toMap,
   type DistrictId,
   type SectionId,
 } from './villageScene';
@@ -38,6 +47,7 @@ import {
   emptySection,
   matchesFilter,
   type SectionData,
+  type Trend,
 } from './villageModel';
 import { markSeen, readSeen, resumeIndex, tourSteps } from './villageTour';
 import {
@@ -66,6 +76,22 @@ const CSS = `
 const icon = (id: SectionId): ReactNode =>
   navigationIcon[SECTION_INFO[id].icon];
 
+/** Couleurs d'une évolution : verte si favorable, rouge sinon, grise si neutre. */
+export const TREND_COLORS: Record<Trend['tone'], { bg: string; fg: string }> = {
+  good: { bg: '#e8f7ee', fg: '#15803d' },
+  bad: { bg: '#fde8e8', fg: '#b91c1c' },
+  neutral: { bg: '#f1f2f6', fg: '#4b5563' },
+};
+
+/** « ▲ +4 en 7 jours », « ▼ −2 depuis hier », « Stable depuis hier ». */
+export const trendText = (t: Trend) =>
+  t.delta === 0
+    ? `Stable ${t.since}`
+    : `${t.delta > 0 ? '▲' : '▼'} ${t.text} ${t.since}`;
+
+const ARRIVED_KEY = 'peg:villageArrived';
+const HINT_KEY = 'peg:villageHint';
+
 interface Props {
   onClassic: () => void;
 }
@@ -87,7 +113,9 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [fromSection, setFromSection] = useState(false);
   const [district, setDistrict] = useState<DistrictId | null>(null);
-  const [zoom, setZoom] = useState<0 | 1 | 2>(0);
+  /** Zoom continu (1 = tout le village) et point visé à la souris (null = cible choisie). */
+  const [zoom, setZoom] = useState(1);
+  const [focus, setFocus] = useState<[number, number] | null>(null);
   const [spotlightDone, setSpotlightDone] = useState(false);
   const [tourIdx, setTourIdx] = useState<number | null>(null);
   const [tourDone, setTourDone] = useState(false);
@@ -96,6 +124,40 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [seen, setSeen] = useState(readSeen);
   const [ambianceOn, setAmbianceOn] = useState(readAmbianceOn);
   const [now, setNow] = useState(() => new Date());
+  // Première visite de la session : le village se construit sous les yeux.
+  const [arrival] = useState(() => {
+    try {
+      return !sessionStorage.getItem(ARRIVED_KEY);
+    } catch {
+      return false;
+    }
+  });
+  // Astuce de prise en main, une seule fois par appareil.
+  const [hint, setHint] = useState(() => {
+    try {
+      return !localStorage.getItem(HINT_KEY);
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (!arrival) return;
+    try {
+      sessionStorage.setItem(ARRIVED_KEY, '1');
+    } catch {
+      // stockage indisponible : l'arrivée se rejouera, rien d'autre
+    }
+  }, [arrival]);
+  useEffect(() => {
+    if (!hint) return undefined;
+    try {
+      localStorage.setItem(HINT_KEY, '1');
+    } catch {
+      // stockage indisponible : l'astuce reviendra
+    }
+    const t = window.setTimeout(() => setHint(false), 9000);
+    return () => window.clearTimeout(t);
+  }, [hint]);
 
   // L'heure avance : l'ambiance (aube, jour, crépuscule, nuit) suit.
   useEffect(() => {
@@ -129,10 +191,18 @@ const AdminVillage = ({ onClassic }: Props) => {
         badge: d.badge,
         tone: d.tone,
         tags: d.tags,
-        aria: [info.title, d.badge ? d.chip : '', d.alert ?? '']
+        aria: [
+          info.title,
+          d.badge ? d.chip : '',
+          d.alert ?? '',
+          d.activity && d.activity.level >= 2
+            ? `activité ${d.activity.label.toLowerCase()}`
+            : '',
+        ]
           .filter(Boolean)
           .join(' — '),
         alert: d.alert,
+        level: d.activity?.level ?? 0,
       };
       return [id, s];
     })
@@ -143,22 +213,31 @@ const AdminVillage = ({ onClassic }: Props) => {
     setProjectId(null);
     setFromSection(false);
     setDistrict(null);
+    setFocus(null);
   };
   const selectDistrict = (id: DistrictId) => {
+    setFocus(null);
     if (district === id) {
       setDistrict(null);
-      setZoom(0);
+      setZoom(1);
       return;
     }
     setDistrict(id);
     setProjectId(null);
-    setZoom((z) => (z === 0 ? 1 : z));
+    setZoom((z) => (z <= 1.001 ? ZOOM_STEPS[1] : z));
   };
   const openProject = (documentId: string, fromList = false) => {
     setSelected('projets');
     setDistrict(null);
+    setFocus(null);
     setProjectId(documentId);
     setFromSection(fromList);
+  };
+  /** Tout le village, sans quartier ni zoom. */
+  const resetView = () => {
+    setDistrict(null);
+    setFocus(null);
+    setZoom(1);
   };
 
   // « Ma tournée du jour » : les rubriques qui demandent une action, urgences d'abord.
@@ -169,7 +248,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     setTourIdx(i);
     selectSection(id);
     setView('village');
-    setZoom(1);
+    setZoom(ZOOM_STEPS[1]);
     setSeen(markSeen(id));
   };
   const startTour = () => {
@@ -179,12 +258,64 @@ const AdminVillage = ({ onClassic }: Props) => {
   };
   const endTour = (finished: boolean) => {
     setTourIdx(null);
-    setZoom(0);
+    setZoom(1);
+    setFocus(null);
     if (finished) {
       setTourDone(true);
       window.setTimeout(() => setTourDone(false), 4500);
     }
   };
+
+  // Raccourcis : 1 à 5 = quartiers, Échap = tout le village, + et − = zoom,
+  // flèches = se déplacer quand on a zoomé. Jamais pendant une saisie.
+  const viewFocus = (): [number, number] => {
+    if (focus) return focus;
+    if (district) return districtCenter(district);
+    const cell =
+      LAYOUT.find((c) => c.id === selected) ??
+      LAYOUT.find((c) => c.id === 'projets')!;
+    return toMap(cell.u, cell.v);
+  };
+  const keyHandler = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  keyHandler.current = (e: KeyboardEvent) => {
+    if (view !== 'village' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target as HTMLElement | null;
+    if (
+      t &&
+      (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))
+    )
+      return;
+    const n = Number(e.key);
+    if (Number.isInteger(n) && n >= 1 && n <= DISTRICTS.length) {
+      e.preventDefault();
+      selectDistrict(DISTRICTS[n - 1].id);
+    } else if (e.key === 'Escape') {
+      if (tourIdx !== null) endTour(false);
+      else resetView();
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      setZoom((z) => stepZoom(z, 1));
+    } else if (e.key === '-') {
+      e.preventDefault();
+      const next = stepZoom(zoom, -1);
+      setZoom(next);
+      if (next <= 1.001) setFocus(null);
+    } else if (zoom > 1.001 && e.key.startsWith('Arrow')) {
+      e.preventDefault();
+      const step = 90 / zoom;
+      const [fx, fy] = viewFocus();
+      setFocus([
+        fx +
+          (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0),
+        fy + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0),
+      ]);
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keyHandler.current(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const panelSection = (id: SectionId): PanelSection => ({
     id,
@@ -208,6 +339,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     {
       label: 'Projets en cours',
       value: kpis?.projectsInProgress,
+      trend: kpis?.trends.projectsInProgress,
       icon: navigationIcon.projects,
       soft: '#efedff',
       ink: TONE.violet,
@@ -216,6 +348,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     {
       label: 'BAT à valider',
       value: kpis?.batToValidate,
+      trend: kpis?.trends.batToValidate,
       icon: navigationIcon.quotes,
       soft: '#eaf1ff',
       ink: '#2563eb',
@@ -229,6 +362,8 @@ const AdminVillage = ({ onClassic }: Props) => {
     {
       label: 'Prochaine livraison',
       value: kpis?.nextDelivery,
+      trend: undefined as Trend | undefined,
+      sub: kpis?.nextDeliveryIn ?? null,
       icon: navigationIcon.calendar,
       soft: '#e8f7ee',
       ink: TONE.green,
@@ -240,6 +375,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     {
       label: 'Factures en retard',
       value: kpis?.overdueInvoices,
+      trend: kpis?.trends.overdueInvoices,
       icon: navigationIcon.invoices,
       soft: '#fff1e6',
       ink: TONE.orange,
@@ -247,9 +383,13 @@ const AdminVillage = ({ onClassic }: Props) => {
     },
   ];
 
-  const fit = mapW / 1132;
+  const fit = mapW / MAP_W;
   const ui = Math.min(1, Math.max(0.8, fit));
-  const mapHeight = Math.round(772 * fit);
+  const mapHeight = Math.round(MAP_H * fit);
+  /** Guirlandes lumineuses : décembre et jusqu'à l'Épiphanie (avec l'ambiance). */
+  const festive =
+    ambianceOn &&
+    (now.getMonth() === 11 || (now.getMonth() === 0 && now.getDate() <= 6));
   // Carte étroite : titre et choix de la vue passent dans un en-tête au-dessus
   // de la carte (posés dessus, ils couvriraient les étiquettes du haut).
   const compact = fit < 0.9;
@@ -275,10 +415,7 @@ const AdminVillage = ({ onClassic }: Props) => {
       onOpenProject={(id) => openProject(id, true)}
       onProjectPage={(id) => navigate(`/common/projects/details/${id}`)}
       onDistrict={selectDistrict}
-      onShowAll={() => {
-        setDistrict(null);
-        setZoom(0);
-      }}
+      onShowAll={resetView}
       onBack={() => {
         setProjectId(null);
         setFromSection(false);
@@ -441,7 +578,7 @@ const AdminVillage = ({ onClassic }: Props) => {
               padding: '8px 10px',
               borderRadius: 16,
               background:
-                zoom > 0
+                zoom > 1.001
                   ? ambiance.phase === 'night'
                     ? 'rgba(20,26,56,0.82)'
                     : 'rgba(246,243,237,0.9)'
@@ -613,6 +750,32 @@ const AdminVillage = ({ onClassic }: Props) => {
           ))}
         </div>
       )}
+      {view === 'village' && hint && (
+        <div
+          role="note"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: compact ? 10 : 84 * ui,
+            transform: 'translateX(-50%)',
+            maxWidth: '86%',
+            padding: '8px 14px',
+            borderRadius: 999,
+            background: 'rgba(17,24,39,0.86)',
+            color: '#ffffff',
+            fontSize: 12.5 * ui,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            zIndex: 2160,
+            pointerEvents: 'none',
+          }}
+        >
+          Astuce : glissez la carte pour vous déplacer · molette pour zoomer ·
+          touches 1 à 5 pour les quartiers · Échap pour tout revoir
+        </div>
+      )}
       {view === 'village' && (
         <div
           role="group"
@@ -670,16 +833,17 @@ const AdminVillage = ({ onClassic }: Props) => {
             type="button"
             className="vgx-btn"
             aria-label="Zoomer"
-            disabled={zoom === 2}
-            onClick={() => setZoom((z) => (z < 2 ? ((z + 1) as 1 | 2) : z))}
+            title="Zoomer (molette, touche +)"
+            disabled={zoom >= ZOOM_MAX - 0.01}
+            onClick={() => setZoom((z) => stepZoom(z, 1))}
             style={{
               width: 46 * ui,
               height: 46 * ui,
               border: 0,
               background: 'transparent',
-              color: zoom < 2 ? '#111827' : '#c4c4cc',
+              color: zoom < ZOOM_MAX - 0.01 ? '#111827' : '#c4c4cc',
               fontSize: 24 * ui,
-              cursor: zoom < 2 ? 'pointer' : 'default',
+              cursor: zoom < ZOOM_MAX - 0.01 ? 'pointer' : 'default',
             }}
           >
             +
@@ -691,16 +855,21 @@ const AdminVillage = ({ onClassic }: Props) => {
             type="button"
             className="vgx-btn"
             aria-label="Dézoomer"
-            disabled={zoom === 0}
-            onClick={() => setZoom((z) => (z > 0 ? ((z - 1) as 0 | 1) : z))}
+            title="Dézoomer (molette, touche −)"
+            disabled={zoom <= 1.001}
+            onClick={() => {
+              const next = stepZoom(zoom, -1);
+              setZoom(next);
+              if (next <= 1.001) setFocus(null);
+            }}
             style={{
               width: 46 * ui,
               height: 46 * ui,
               border: 0,
               background: 'transparent',
-              color: zoom > 0 ? '#111827' : '#c4c4cc',
+              color: zoom > 1.001 ? '#111827' : '#c4c4cc',
               fontSize: 24 * ui,
-              cursor: zoom > 0 ? 'pointer' : 'default',
+              cursor: zoom > 1.001 ? 'pointer' : 'default',
             }}
           >
             −
@@ -793,6 +962,41 @@ const AdminVillage = ({ onClassic }: Props) => {
               >
                 {k.value === undefined ? '…' : k.value === null ? '—' : k.value}
               </span>
+              {!k.trend && 'sub' in k && k.sub && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    marginTop: 3,
+                    padding: '1px 7px',
+                    borderRadius: 999,
+                    background: TREND_COLORS.neutral.bg,
+                    color: TREND_COLORS.neutral.fg,
+                    fontSize: kc ? 11 : 11.5,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {k.sub}
+                </span>
+              )}
+              {k.trend && (
+                <span
+                  title={`Évolution ${k.trend.since}`}
+                  style={{
+                    display: 'inline-block',
+                    marginTop: 3,
+                    padding: '1px 7px',
+                    borderRadius: 999,
+                    background: TREND_COLORS[k.trend.tone].bg,
+                    color: TREND_COLORS[k.trend.tone].fg,
+                    fontSize: kc ? 11 : 11.5,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {trendText(k.trend)}
+                </span>
+              )}
             </span>
             <HiChevronRight
               aria-hidden="true"
@@ -868,12 +1072,27 @@ const AdminVillage = ({ onClassic }: Props) => {
               district={district}
               filter={filter}
               zoom={zoom}
+              focus={focus}
+              onCamera={(c) => {
+                setZoom(c.zoom);
+                setFocus(c.zoom > 1.001 ? c.focus : null);
+                setHint(false);
+              }}
               onSelect={selectSection}
               onSelectDistrict={selectDistrict}
               labelScale={labelScale}
               ambiance={ambianceOn ? ambiance : null}
               particles={particles}
               activity={activity}
+              chantier={data?.chantier ?? []}
+              onOpenProject={(id) =>
+                data?.projects.some((p) => p.documentId === id)
+                  ? openProject(id)
+                  : navigate(`/common/projects/details/${id}`)
+              }
+              life={data?.life ?? null}
+              festive={festive}
+              arrival={arrival}
             >
               {overlays}
             </VillageMap>

@@ -4,22 +4,34 @@
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 import {
+  CHANTIER,
+  CHANTIER_CRANE,
+  CHANTIER_SLOTS,
+  CHANTIER_SPRITE,
   DECOR,
+  DELIVERY_ROUTE,
   DISTRICTS,
   LAYOUT,
+  MAP_H,
+  MAP_W,
   MENU_ORDER,
+  PARKING,
   SPRITE_META,
   WALKERS,
+  chantierLabelAnchor,
   districtTagBox,
   labelAnchor,
   labelWidth,
   membersOf,
   placeLabels,
+  type LabelInput,
 } from '@/views/app/admin/home/village/villageScene';
 
 const SPRITES = resolve(__dirname, '../../public/img/village');
 const onIsland = (u: number, v: number) =>
-  LAYOUT.some((c) => Math.abs(u - c.u) <= 0.5 && Math.abs(v - c.v) <= 0.5);
+  [...LAYOUT, CHANTIER].some(
+    (c) => Math.abs(u - c.u) <= 0.5 && Math.abs(v - c.v) <= 0.5
+  );
 
 describe('village PEG — disposition', () => {
   it('un bâtiment, et un seul, par rubrique du menu admin', () => {
@@ -28,14 +40,29 @@ describe('village PEG — disposition', () => {
     expect([...ids].sort()).toEqual([...MENU_ORDER].sort());
   });
 
-  it('deux bâtiments ne partagent jamais une case', () => {
-    const cells = LAYOUT.map((c) => `${c.u},${c.v}`);
+  it('deux bâtiments ne partagent jamais une case (chantier compris)', () => {
+    const cells = [...LAYOUT, CHANTIER].map((c) => `${c.u},${c.v}`);
     expect(new Set(cells).size).toBe(cells.length);
   });
 
-  it('chaque quartier est d’un seul tenant', () => {
+  it('le chantier est juste derrière le bâtiment Projets', () => {
+    const projets = LAYOUT.find((c) => c.id === 'projets')!;
+    expect([projets.u - CHANTIER.u, projets.v - CHANTIER.v]).toEqual([1, 1]);
+    for (const [du, dv] of [
+      ...CHANTIER_SLOTS,
+      [CHANTIER_CRANE.u, CHANTIER_CRANE.v],
+    ])
+      expect(Math.max(Math.abs(du), Math.abs(dv))).toBeLessThanOrEqual(0.3);
+    for (const name of [
+      ...Object.values(CHANTIER_SPRITE),
+      CHANTIER_CRANE.sprite,
+    ])
+      expect(existsSync(resolve(SPRITES, `${name}.svg`))).toBe(true);
+  });
+
+  it('chaque quartier est d’un seul tenant (le chantier fait partie du Pilotage)', () => {
     for (const d of DISTRICTS) {
-      const cells = LAYOUT.filter((c) => c.district === d.id);
+      const cells = [...LAYOUT, CHANTIER].filter((c) => c.district === d.id);
       expect(cells.length).toBeGreaterThan(0);
       const seen = new Set([`${cells[0].u},${cells[0].v}`]);
       const todo = [cells[0]];
@@ -108,6 +135,7 @@ describe('village PEG — décors et promeneurs', () => {
   it('tous les sprites utilisés existent', () => {
     const names = [
       ...DECOR.map((d) => d.sprite),
+      ...PARKING.map((d) => d.sprite),
       ...WALKERS.flatMap((w) => [w.sprite, w.back].filter(Boolean) as string[]),
     ];
     for (const n of names)
@@ -115,8 +143,9 @@ describe('village PEG — décors et promeneurs', () => {
   });
 
   it('décors et trajets restent sur l’îlot', () => {
-    for (const d of DECOR) expect(onIsland(d.u, d.v)).toBe(true);
-    for (const w of WALKERS) {
+    for (const d of [...DECOR, ...PARKING])
+      expect(onIsland(d.u, d.v)).toBe(true);
+    for (const w of [...WALKERS, DELIVERY_ROUTE]) {
       for (let t = 0; t <= 1; t += 0.05) {
         const u = w.from[0] + (w.to[0] - w.from[0]) * t;
         const v = w.from[1] + (w.to[1] - w.from[1]) * t;
@@ -126,11 +155,17 @@ describe('village PEG — décors et promeneurs', () => {
   });
 
   it('aucun décor immobile sur le trajet d’un promeneur', () => {
-    for (const d of DECOR) {
-      for (const w of WALKERS) {
+    for (const d of [...DECOR, ...PARKING]) {
+      for (const w of [...WALKERS, DELIVERY_ROUTE]) {
         expect(dist([d.u, d.v], w.from, w.to)).toBeGreaterThanOrEqual(0.079);
       }
     }
+  });
+
+  it('les voitures garées ne touchent aucun décor', () => {
+    for (const p of PARKING)
+      for (const d of DECOR)
+        expect(Math.hypot(p.u - d.u, p.v - d.v)).toBeGreaterThanOrEqual(0.15);
   });
 });
 
@@ -149,7 +184,7 @@ describe('village PEG — étiquettes', () => {
       const tags = DISTRICTS.map((d) =>
         districtTagBox(d, d.tag[0] * scale, d.tag[1] * scale)
       );
-      const items = LAYOUT.map((c) => {
+      const items: LabelInput[] = LAYOUT.map((c) => {
         const [x, y] = labelAnchor(c);
         return {
           id: c.id,
@@ -160,8 +195,21 @@ describe('village PEG — étiquettes', () => {
           depth: c.u + c.v,
         };
       });
+      const [cx, cy] = chantierLabelAnchor();
+      items.push({
+        id: 'chantier',
+        x: cx * scale,
+        y: cy * scale,
+        w: labelWidth('Chantiers', '3'),
+        h: 32,
+        depth: CHANTIER.u + CHANTIER.v,
+      });
       const placed = placeLabels(items, tags);
-      expect(placed).toHaveLength(20);
+      expect(placed).toHaveLength(21);
+      // Rien ne sort par le haut de la carte.
+      for (const p of placed) expect(p.y - 32).toBeGreaterThanOrEqual(0);
+      expect(MAP_W).toBe(1132);
+      expect(MAP_H).toBeGreaterThan(800);
       const boxes = placed.map((p) =>
         boxOf(p, items.find((i) => i.id === p.id)!.w, 32)
       );
