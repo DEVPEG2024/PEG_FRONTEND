@@ -800,6 +800,19 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 ---
 
+## 🎁 Accueil client « ludique » — offres à l'honneur (ajout 21/10/2026)
+
+Maquette validée par l'utilisateur le 21/10/2026 (« tout sauf vos économies » : le compteur d'économies de la maquette n'est **pas** codé). Ordinateur, tablette et téléphone.
+- **Offre à la une** (`components/FeaturedOffers.tsx`, carrousel partagé) : grande carte par offre, flèches + points, autocollant jaune « −N % vs catalogue », « Prix réservé », « Nouvelle offre ». **Escalier des paliers** (« Plus vous en prenez, moins c'est cher ») ; au m² ou en packs, une phrase à la place.
+- **Vos offres personnalisées** (`OffersGrid.tsx`) : cartes colorées filtrables par catégorie (pastilles seulement si ≥ 2 catégories), 8 au plus. Téléphone : grandes cartes à glisser juste sous la salutation.
+- Client **Standard** (offres réservées au Premium) : `PremiumTeaser.tsx` à la place (mêmes `PREMIUM_ADVANTAGES` / `PREMIUM_PRICE_HT` que la page Premium).
+- **Projets en cours** : avancement (`projectProgress`) + compte à rebours « J − N » avant `endDate` (rien si date passée) ; **réalisations** en polaroïds. Carte « Votre équipe PEG » aussi sur ordinateur.
+- Retirés (comme sur la maquette) : « Activité récente » (ordinateur et téléphone), tuiles « Mon activité » du téléphone (les chiffres restent sur ordinateur, sous « À faire »). Les « Suggestions pour vous » gardent la règle du 25/09 (`showCatalogSuggestions`).
+- Logique pure : `src/views/app/customer/home/offerShowcase.ts` (tests `src/__tests__/offerShowcase.test.ts`) — **même base de prix que « Mes offres »** (premier palier, `applyPremiumDiscount` avec le produit, `getCatalogSavingsPercent`) ; pas d'autocollant au m² (un produit au m² sans palier donnait « −100 % »). « Nouveau » = `createdAt` < 30 jours (champ ajouté à `apiGetCustomerProducts`, aucun changement Strapi).
+- Ordinateur : gouttière latérale ajoutée (la route `/home` est sans marge pour la bannière : le contenu collait au menu).
+
+---
+
 ## 📱 Détail d'un projet sur téléphone (ajout 25/09/2026)
 
 - Sous 768px, `ProjectHeader` rend `ProjectHeaderMobile` (affichage seul ; la logique — statuts et leurs confirmations, attribution, modale d'édition — reste dans `ProjectHeader`). Il **prolonge la carte de la liste** : mêmes classes `peg-pcard*` (_mobile.css), photo « studio » avec statut/priorité posés dessus, **couleurs bleu nuit** (choix de Nova pour les cartes), nom en grand, « Livraison 2 oct. · dans 7 j », avancement, intervenants, bouton « ← Projets ». Admin : crayon d'édition sur la photo + rangée « Statut du projet » inchangée ; projet sans commande : « Ajouter / Changer la photo » (`useProjectPhotoUpload`, partagé avec l'onglet Accueil).

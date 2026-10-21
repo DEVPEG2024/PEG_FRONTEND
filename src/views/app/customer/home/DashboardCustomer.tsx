@@ -7,30 +7,38 @@ import { apiGetSuggestedProducts } from '@/services/ProductServices';
 import { apiGetFallbackBanners } from '@/services/BannerServices';
 import { BannerVisual, pickDesktopImage, pickPhoneImage } from '@/utils/bannerVisual';
 import CustomerHomeBanner from './CustomerHomeBanner';
-import DashboardCustomerMobile, { PcmProduct, PcmRow } from './DashboardCustomerMobile';
+import DashboardCustomerMobile, { PcmProduct, PcmProject, PcmRow, PcmWork } from './DashboardCustomerMobile';
+import FeaturedOffers from './components/FeaturedOffers';
+import OffersGrid from './components/OffersGrid';
+import PremiumTeaser from './components/PremiumTeaser';
+import DeliveryCountdown from './components/DeliveryCountdown';
+import { OFFER_CSS, OFFER_ON_YELLOW, OFFER_YELLOW } from './components/OfferVisuals';
+import { MAX_FEATURED, buildOfferShowcase, daysUntil } from './offerShowcase';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '@/@types/user';
 import {
-  HiOutlineClock,
+  HiOutlineChatAlt2,
   HiOutlineCollection,
   HiOutlineShoppingCart,
   HiOutlineDocumentText,
+  HiOutlinePhone,
   HiOutlineSupport,
   HiOutlineFolder,
   HiOutlineDocumentDownload,
   HiOutlineCube,
+  HiOutlineStar,
   HiArrowRight,
-  HiChevronRight,
 } from 'react-icons/hi';
 import { Project } from '@/@types/project';
 import { Product } from '@/@types/product';
 import dayjs from 'dayjs';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { fmtHT, fmtPrice, fmtTTC } from '@/utils/priceHelpers';
+import { fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { apiGetCustomerInvoiceSummaries, CustomerInvoiceSummary } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding, isTransferPending } from '@/utils/invoiceStatus';
 import useResponsive from '@/utils/hooks/useResponsive';
 import useDashboardPhoto from '@/utils/hooks/useDashboardPhoto';
+import { projectCoverUrl, projectProgress } from '@/views/app/common/projects/details/utils';
 import reducer, {
   getDashboardCustomerInformations,
   useAppSelector,
@@ -45,6 +53,11 @@ const PEG_TEAM_PHONE = '06 59 25 28 23';
 const CARD_BG = 'linear-gradient(165deg, #161a2e 0%, #0e1120 100%)';
 const CARD_BORDER = '1px solid rgba(255,255,255,0.08)';
 const CARD_SHADOW = '0 10px 30px rgba(0,0,0,0.4)';
+// Cartes de l'accueil (maquette du 21/10/2026) : bleu nuit uni
+const PANEL = '#141a2e';
+const ACCENT = '#6d5dfc';
+const ACCENT_TEXT = '#a99bff';
+const MUTED = 'rgba(255,255,255,0.66)';
 
 const STATE_INFO: Record<string, { label: string; color: string }> = {
   pending: { label: 'En cours', color: '#7c6bff' },
@@ -80,35 +93,87 @@ const SectionHeader = ({ icon, title, action }: { icon?: ReactNode; title: strin
 );
 
 /** Une ligne du bloc « À faire » : un libellé, un motif, une action. */
-const TodoRow = ({ first, color, icon, title, sub, cta, onClick }: {
-  first: boolean; color: string; icon: ReactNode; title: string; sub: string; cta: string; onClick: () => void;
-}) => (
-  <div
-    onClick={onClick}
-    className="peg-stack-mobile"
+const TodoRow = ({ row, first }: { row: PcmRow; first: boolean }) => {
+  const color = row.color ?? ACCENT_TEXT;
+  return (
+    <button
+      type="button"
+      onClick={row.onClick}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 0', cursor: 'pointer',
+        border: 0, borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.07)', background: 'none',
+        color: '#fff', textAlign: 'left', fontFamily: FONT,
+      }}
+    >
+      <span style={{ width: '42px', height: '42px', flexShrink: 0, borderRadius: '13px', background: `${color}26`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+        {row.icon}
+      </span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.title}</span>
+        <span style={{ display: 'block', color: MUTED, fontSize: '12.5px', marginTop: '2px' }}>{row.sub}</span>
+      </span>
+      <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: '38px', padding: '0 14px', borderRadius: '11px', color, background: `${color}24`, border: `1px solid ${color}73`, fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+        {row.cta}
+      </span>
+    </button>
+  );
+};
+
+/** Un projet en cours : photo, statut, livraison, avancement et compte à rebours */
+const ProjectRow = ({ project, first }: { project: PcmProject; first: boolean }) => (
+  <button
+    type="button"
+    onClick={project.onClick}
     style={{
-      display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
-      padding: '13px 4px', borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.06)',
-      fontFamily: FONT,
+      width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 0', cursor: 'pointer',
+      border: 0, borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.07)', background: 'none',
+      color: '#fff', textAlign: 'left', fontFamily: FONT,
     }}
   >
-    <span style={{ width: '34px', height: '34px', flexShrink: 0, borderRadius: '10px', background: `${color}22`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {icon}
+    <span style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#eef0f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {project.image ? (
+        <img
+          src={project.image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px', boxSizing: 'border-box', mixBlendMode: 'multiply' }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+        />
+      ) : (
+        <HiOutlineCube size={22} color="rgba(20,26,46,0.3)" />
+      )}
     </span>
-    <span style={{ minWidth: 0, flex: 1 }}>
-      <span style={{ display: 'block', color: '#fff', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
-      <span style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '11.5px', marginTop: '2px' }}>{sub}</span>
+    <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <span style={{ fontSize: '14.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
+      <span style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <span style={{ fontSize: '11.5px', fontWeight: 700, color: project.pill.color, background: `${project.pill.color}26`, borderRadius: '8px', padding: '3px 8px' }}>{project.pill.label}</span>
+        {project.sub && <span style={{ fontSize: '12.5px', color: MUTED }}>{project.sub}</span>}
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span
+          role="progressbar"
+          aria-label="Avancement"
+          aria-valuenow={project.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}
+        >
+          <span style={{ display: 'block', height: '100%', width: `${project.progress}%`, borderRadius: '999px', background: ACCENT }} />
+        </span>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>{project.progress} %</span>
+      </span>
     </span>
-    <span className="peg-tap-target" style={{ flexShrink: 0, color, background: `${color}1f`, border: `1px solid ${color}55`, borderRadius: '9px', padding: '5px 12px', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-      {cta} →
-    </span>
-  </div>
+    {project.days !== null && (
+      <DeliveryCountdown days={project.days} size={62} accent={ACCENT_TEXT} soft="rgba(109,93,252,0.16)" line="rgba(109,93,252,0.42)" />
+    )}
+  </button>
 );
 
 const DashboardCustomer = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { customer, products, projects, loading } = useAppSelector(
+  const { customer, products, offersTotal, projects, loading } = useAppSelector(
     (state) => state.dashboardCustomer.data
   );
   const { user }: { user: User } = useSelector(
@@ -230,7 +295,7 @@ const DashboardCustomer = () => {
   const liveInvoices = invoices.filter((inv) => !isInvoiceCanceled(inv));
   const invoicesCount = liveInvoices.length;
   const outstandingInvoices = invoices.filter(isInvoiceOutstanding);
-  const offersCount = products.length;
+  const offersCount = Math.max(offersTotal, products.length);
 
   const sortedProjects = [...projects].sort(
     (a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime()
@@ -249,84 +314,110 @@ const DashboardCustomer = () => {
   const quotesToReview = projects.filter(
     (p) => (p.devis?.length || 0) > 0 && (p.invoices?.length || 0) === 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
   );
-  const todoCount = pendingBats.length + invoicesToPay.length + quotesToReview.length;
+  const todos: PcmRow[] = [
+    ...pendingBats.map((p) => ({
+      key: `bat-${p.documentId}`, title: p.name, sub: `${p.orderItem!.product.name} — Bon à Tirer à valider`,
+      icon: <HiOutlineDocumentText />, color: '#c084fc', cta: 'Valider',
+      onClick: () => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`),
+    })),
+    ...invoicesToPay.map((inv) => ({
+      key: `inv-${inv.documentId}`, title: inv.name || 'Facture', sub: `À régler — ${fmtTTC(inv.totalAmount ?? 0)}`,
+      icon: <HiOutlineDocumentDownload />, color: '#fbbf24', cta: 'Régler',
+      onClick: () => navigate('/customer/invoices'),
+    })),
+    ...quotesToReview.map((p) => ({
+      key: `dev-${p.documentId}`, title: p.name, sub: 'Devis à examiner',
+      icon: <HiOutlineDocumentText />, color: '#6b9eff', cta: 'Voir',
+      onClick: () => navigate('/customer/devis'),
+    })),
+  ];
+  const todoIntro = todos.length === 1
+    ? 'Une petite action et vos projets avancent.'
+    : `${todos.length} petites actions et vos projets avancent.`;
 
-  // Commandes réellement en cours : ni terminées, ni annulées.
+  // ── Offres personnalisées, mises en avant (maquette du 21/10/2026) ──
+  const offers = offersReserved ? [] : buildOfferShowcase(products, user?.customer);
+  const offersVisible = offers.length > 0;
+  const openProduct = (documentId: string) => navigate(`/customer/product/${documentId}`);
+  const seeAllOffers = () => navigate('/customer/products');
+
+  // Projets réellement en cours : ni terminés, ni annulés.
   const ongoingProjects = [...projects]
     .filter((p) => p.state !== 'fulfilled' && p.state !== 'canceled')
     .sort((a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime())
     .slice(0, 3);
-
-  // Flux d'activité récente (à partir des données réelles)
-  type Act = { id: string; color: string; icon: ReactNode; title: string; sub?: string; amount?: string; date: Date };
-  const activity: Act[] = [];
-  projects.forEach((p) => {
+  const projectCards: PcmProject[] = ongoingProjects.map((p) => {
     const si = getStateInfo(p.state);
-    activity.push({ id: `p-${p.documentId}`, color: si.color, icon: <HiOutlineShoppingCart size={16} />, title: `Commande ${p.name}`, sub: si.label, date: p.startDate });
-    (p.devis || []).forEach((_, i) => activity.push({
-      id: `d-${p.documentId}-${i}`, color: '#6b9eff', icon: <HiOutlineDocumentText size={16} />,
-      title: `Devis — ${p.name}`, date: p.startDate,
+    const batToValidate = pendingBats.some((b) => b.documentId === p.documentId);
+    return {
+      key: p.documentId,
+      title: p.name,
+      image: projectCoverUrl(p),
+      pill: { label: si.label, color: si.color },
+      sub: [
+        batToValidate ? 'BAT à valider' : undefined,
+        p.endDate ? `Livraison ${dayjs(p.endDate).format('D MMM')}` : undefined,
+      ].filter(Boolean).join(' · ') || undefined,
+      progress: projectProgress(p).percent,
+      days: daysUntil(p.endDate),
+      onClick: () => navigate(`/common/projects/details/${p.documentId}`),
+    };
+  });
+
+  // En-tête : la relation avec PEG, pas un montant (« créer du lien et faire beau »)
+  const liveProjects = projects.filter((p) => p.state !== 'canceled');
+  const firstStart = liveProjects
+    .map((p) => dayjs(p.startDate))
+    .filter((d) => d.isValid())
+    .sort((a, b) => a.valueOf() - b.valueOf())[0];
+  const doneCount = projects.filter((p) => p.state === 'fulfilled').length;
+  const facts = [
+    firstStart ? `Ensemble depuis ${firstStart.format('MMMM YYYY')}` : 'Bienvenue chez PEG',
+    ...(doneCount > 0 ? [`${doneCount} projet${doneCount > 1 ? 's' : ''} réalisé${doneCount > 1 ? 's' : ''}`] : []),
+  ];
+  const hello = new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
+  const firstName = user?.firstName || customer.name;
+  const premium = !!user.customer?.premium;
+
+  // Ses réalisations : les photos de ses projets (sinon celle du produit), les plus récents d'abord
+  const works: PcmWork[] = sortedProjects
+    .filter((p) => p.state !== 'canceled')
+    .map((p) => {
+      const own = p.images?.[0]?.url;
+      return { p, image: own || p.orderItem?.product?.images?.[0]?.url, contain: !own };
+    })
+    .filter((w): w is { p: Project; image: string; contain: boolean } => !!w.image)
+    .slice(0, 8)
+    .map(({ p, image, contain }) => ({
+      key: p.documentId,
+      image,
+      contain,
+      title: p.name,
+      caption: p.state === 'fulfilled'
+        ? `Livré · ${dayjs(p.endDate || p.startDate).format('MMMM YYYY')}`
+        : getStateInfo(p.state).label,
+      onClick: () => navigate(`/common/projects/details/${p.documentId}`),
     }));
-  });
-  liveInvoices.forEach((inv) => {
-    // totalAmount = TTC (la page Factures l'affiche ainsi)
-    const amount = inv.totalAmount ? fmtTTC(inv.totalAmount) : undefined;
-    activity.push({
-      id: `i-${inv.documentId}`, color: '#fbbf24', icon: <HiOutlineDocumentDownload size={16} />,
-      title: `Facture ${inv.name || ''}`.trim(), sub: amount, amount, date: inv.date,
-    });
-  });
-  const recentActivity = activity
-    .filter((a) => a.date)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
 
   const quickActions = [
-    { icon: <HiOutlineShoppingCart size={26} />, title: 'Commander', sub: 'Parcourir le catalogue', to: catalogAccess ? '/customer/catalogue' : '/customer/products', from: '#6d5dfc', to2: '#4f3fd1' },
-    { icon: <HiOutlineDocumentText size={26} />, title: 'Demander un devis', sub: 'Réponse rapide', to: '/customer/devis', from: '#2f6fed', to2: '#1f4bb6' },
-    { icon: <HiOutlineSupport size={26} />, title: 'Ouvrir un ticket', sub: 'Support dédié', to: '/support', from: '#0ea5a3', to2: '#0d7d7b' },
-    { icon: <HiOutlineFolder size={26} />, title: 'Mes fichiers', sub: 'Accéder à vos fichiers', to: '/customer/files', from: '#7c6bff', to2: '#4f3fd1' },
+    { icon: <HiOutlineShoppingCart size={24} />, title: 'Commander', to: catalogAccess ? '/customer/catalogue' : '/customer/products', color: ACCENT_TEXT },
+    { icon: <HiOutlineDocumentText size={24} />, title: 'Demander un devis', to: '/customer/devis', color: '#9dbdff' },
+    { icon: <HiOutlineSupport size={24} />, title: 'Ouvrir un ticket', to: '/support', color: '#5eead4' },
+    { icon: <HiOutlineFolder size={24} />, title: 'Mes fichiers', to: '/customer/files', color: '#d8b4fe' },
   ];
 
   const kpis = [
-    { icon: <HiOutlineShoppingCart size={22} />, label: 'Commandes', value: ordersCount, to: '/common/projects', link: "Voir l'historique", color: '#a99bff', bg: 'rgba(124,107,255,0.16)' },
-    { icon: <HiOutlineDocumentText size={22} />, label: 'Devis en attente', value: devisCount, to: '/customer/devis', link: 'Voir mes devis', color: '#6b9eff', bg: 'rgba(47,111,237,0.16)' },
-    { icon: <HiOutlineDocumentDownload size={22} />, label: 'Factures disponibles', value: invoicesCount, to: '/customer/invoices', link: 'Voir mes factures', color: '#4ade80', bg: 'rgba(34,197,94,0.16)' },
+    { icon: <HiOutlineShoppingCart size={22} />, label: 'Commandes', value: ordersCount, to: '/common/projects', link: "Voir l'historique", color: '#a99bff' },
+    { icon: <HiOutlineDocumentText size={22} />, label: 'Devis en attente', value: devisCount, to: '/customer/devis', link: 'Voir mes devis', color: '#9dbdff' },
+    { icon: <HiOutlineDocumentDownload size={22} />, label: 'Factures disponibles', value: invoicesCount, to: '/customer/invoices', link: 'Voir mes factures', color: '#4ade80' },
     ...(offersReserved ? [] : [
-      { icon: <HiOutlineCollection size={22} />, label: 'Offres personnalisées', value: offersCount, to: '/customer/products', link: 'Voir toutes les offres', color: '#fbbf24', bg: 'rgba(234,179,8,0.16)' },
+      { icon: <HiOutlineCollection size={22} />, label: 'Offres personnalisées', value: offersCount, to: '/customer/products', link: 'Voir toutes les offres', color: OFFER_YELLOW },
     ]),
   ];
-
-
-  const recommendedProducts = products.slice(0, 5);
 
   const bannerChain: BannerVisual[] = [customer.banner, ...fallbackBanners];
   const desktopBanner = pickDesktopImage(bannerChain);
   const phoneBanner = pickPhoneImage(bannerChain);
-
-
-  const ProductRow = ({ product }: { product: Product }) => {
-    const priceHT = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
-    return (
-      <div
-        onClick={() => navigate(`/customer/product/${product.documentId}`)}
-        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '12px', cursor: 'pointer', transition: 'background 0.15s' }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-      >
-        <div style={{ width: '46px', height: '46px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {product.images?.[0]?.url
-            ? <img loading="lazy" decoding="async" src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <HiOutlineCube size={20} color="rgba(255,255,255,0.25)" />}
-        </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
-          <p style={{ margin: '2px 0 0', color: '#a99bff', fontSize: '12px', fontWeight: 700 }}>{fmtHT(priceHT)}</p>
-        </div>
-        <HiChevronRight size={16} color="rgba(255,255,255,0.3)" />
-      </div>
-    );
-  };
 
   // ── Téléphone : rendu « app » (même langage que l'admin), mêmes données ──
   if (smaller.md) {
@@ -337,95 +428,33 @@ const DashboardCustomer = () => {
       image: product.images?.[0]?.url,
       onClick: () => navigate(`/customer/product/${product.documentId}`),
     });
-    // En-tête : la relation avec PEG, pas un montant (« créer du lien et faire beau »)
-    const liveProjects = projects.filter((p) => p.state !== 'canceled');
-    const firstStart = liveProjects
-      .map((p) => dayjs(p.startDate))
-      .filter((d) => d.isValid())
-      .sort((a, b) => a.valueOf() - b.valueOf())[0];
-    const doneCount = projects.filter((p) => p.state === 'fulfilled').length;
-    const facts = [
-      firstStart ? `Ensemble depuis ${firstStart.format('MMMM YYYY')}` : 'Bienvenue chez PEG',
-      ...(doneCount > 0 ? [`${doneCount} projet${doneCount > 1 ? 's' : ''} réalisé${doneCount > 1 ? 's' : ''}`] : []),
-    ];
-    // Ses réalisations : les photos de ses projets (sinon celle du produit), les plus récents d'abord
-    const works = sortedProjects
-      .filter((p) => p.state !== 'canceled')
-      .map((p) => ({ p, image: p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url }))
-      .filter((w): w is { p: Project; image: string } => !!w.image)
-      .slice(0, 8)
-      .map(({ p, image }) => ({
-        key: p.documentId,
-        image,
-        title: p.name,
-        caption: p.state === 'fulfilled'
-          ? `Livré · ${dayjs(p.endDate || p.startDate).format('MMMM YYYY')}`
-          : getStateInfo(p.state).label,
-        onClick: () => navigate(`/common/projects/details/${p.documentId}`),
-      }));
-    const todos: PcmRow[] = [
-      ...pendingBats.map((p) => ({
-        key: `bat-${p.documentId}`, title: p.name, sub: `${p.orderItem!.product.name} — Bon à Tirer à valider`,
-        icon: <HiOutlineDocumentText />, color: '#c084fc', cta: 'Valider',
-        onClick: () => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`),
-      })),
-      ...invoicesToPay.map((inv) => ({
-        key: `inv-${inv.documentId}`, title: inv.name || 'Facture', sub: `À régler — ${fmtTTC(inv.totalAmount ?? 0)}`,
-        icon: <HiOutlineDocumentDownload />, color: '#fbbf24', cta: 'Régler',
-        onClick: () => navigate('/customer/invoices'),
-      })),
-      ...quotesToReview.map((p) => ({
-        key: `dev-${p.documentId}`, title: p.name, sub: 'Devis à examiner',
-        icon: <HiOutlineDocumentText />, color: '#6b9eff', cta: 'Voir',
-        onClick: () => navigate('/customer/devis'),
-      })),
-    ];
     return (
       <DashboardCustomerMobile
         photo={dashboardPhoto}
         hero={{
           date: dayjs().format('dddd D MMMM'),
-          hello: new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour',
-          name: user?.firstName || customer.name,
+          hello,
+          name: firstName,
+          tagline: offersVisible ? 'Vos prix réservés vous attendent.' : undefined,
           facts,
-          premium: !!user.customer?.premium,
+          premium,
         }}
         onRefresh={refresh}
         refreshing={refreshing}
-        works={works}
-        onSeeAllWorks={() => navigate('/common/projects')}
-        todos={todos}
-        tiles={kpis.map((k, i) => ({
-          key: k.label, label: k.label, value: String(k.value), icon: k.icon,
-          tone: (['accent', 'sky', 'mint', 'amber'] as const)[i],
-          onClick: () => navigate(k.to),
-        }))}
+        offers={offers.map((o) => ({ ...o, onClick: () => openProduct(o.documentId) }))}
+        offersTotal={offersCount}
+        onSeeOffers={seeAllOffers}
+        onDiscoverPremium={offersReserved ? () => navigate('/customer/premium') : undefined}
         shortcuts={quickActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onClick: () => navigate(a.to) }))}
-        orders={ongoingProjects.map((p) => {
-          const si = getStateInfo(p.state);
-          const va = (p.additionalSales ?? []).reduce((s: number, e) => s + (Number(e?.amount) || 0), 0);
-          return {
-            key: p.documentId,
-            title: p.name,
-            image: p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url,
-            pill: { label: si.label, color: si.color },
-            sub: p.endDate ? `Livraison ${dayjs(p.endDate).format('DD MMM')}` : undefined,
-            right: fmtHT((p.price || 0) + va),
-            rightSub: va > 0 ? `dont ventes add. ${fmtPrice(va)}` : undefined,
-            onClick: () => navigate(`/common/projects/details/${p.documentId}`),
-          };
-        })}
-        onSeeAllOrders={() => navigate('/common/projects')}
+        todos={todos}
+        projects={projectCards}
+        onSeeAllProjects={() => navigate('/common/projects')}
         onOrder={() => navigate(catalogAccess ? '/customer/catalogue' : '/customer/products')}
-        activity={recentActivity.map((a) => ({
-          key: a.id, title: a.title, icon: a.icon, color: a.color,
-          sub: [a.amount ? undefined : a.sub, dayjs(a.date).format('DD MMM')].filter(Boolean).join(' · '),
-          right: a.amount,
-        }))}
+        works={works}
+        worksCount={doneCount}
+        onSeeAllWorks={() => navigate('/common/projects')}
         suggestions={suggestionsWanted ? suggestions.map(productCard) : []}
         onSeeCatalogue={catalogAccess ? () => navigate('/customer/catalogue') : undefined}
-        offers={offersReserved ? [] : recommendedProducts.map(productCard)}
-        onSeeOffers={() => navigate('/customer/products')}
         team={{ phone: PEG_TEAM_PHONE, onWrite: () => navigate('/support') }}
       />
     );
@@ -434,210 +463,185 @@ const DashboardCustomer = () => {
   return (
     customer && (
       <Suspense fallback={<></>}>
+        <style>{OFFER_CSS}</style>
         {/* Bannière : celle du client (customer.banner), puis celle de sa
             catégorie, puis NEW CUSTOMER — choisie image par image et appareil
             par appareil (utils/bannerVisual.ts). */}
         <CustomerHomeBanner desktop={desktopBanner} phone={phoneBanner} />
 
-        <Container style={{ fontFamily: FONT }}>
-          <div style={{ paddingTop: '28px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Gouttière latérale : la route /home est sans marge (bannière bord à
+            bord) — sans elle, titres et cartes collaient au menu et à l'écran. */}
+        <Container style={{ fontFamily: FONT, paddingLeft: 'clamp(16px, 2.5vw, 32px)', paddingRight: 'clamp(16px, 2.5vw, 32px)' }}>
+          <div style={{ paddingTop: '28px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '28px', color: '#fff' }}>
 
-            {/* ── En-tête : salutation + actions rapides sur une rangée ──
-                Les quatre pavés dégradés qui occupaient ~400px sur téléphone
-                dupliquaient le menu de gauche ; ils deviennent une rangée de
-                boutons compacts, défilante au doigt sous md. */}
-            <div>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: FONT }}>
-                Bonjour, {user?.firstName || customer?.name} 👋
-              </p>
-              <h1 style={{ color: '#fff', fontSize: 'var(--peg-fs-24)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, margin: '0 0 16px', fontFamily: FONT }}>
-                Votre <span style={{ color: '#a99bff' }}>espace client</span>
-              </h1>
-              <div className="peg-scroll-x" style={{ display: 'flex', gap: '10px' }}>
+            {/* ── Accueil : salutation, relation avec PEG, raccourcis ronds ── */}
+            <section aria-label="Bienvenue" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px' }}>
+              <div style={{ flex: '1 1 460px', minWidth: 0 }}>
+                <p style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.62)' }}>
+                  {dayjs().format('dddd D MMMM')}
+                </p>
+                <h1 style={{ margin: 0, color: '#fff', fontSize: 'clamp(30px, 3.2vw, 44px)', lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.035em' }}>
+                  {hello} {firstName},<br />
+                  {offersVisible
+                    ? <><span style={{ color: ACCENT_TEXT }}>vos prix réservés</span> vous attendent.</>
+                    : <>qu'est-ce qu'on <span style={{ color: ACCENT_TEXT }}>lance aujourd'hui</span>{'\u00a0'}?</>}
+                </h1>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '18px' }}>
+                  {premium && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '7px 13px', borderRadius: '999px', background: OFFER_YELLOW, color: OFFER_ON_YELLOW, fontSize: '12.5px', fontWeight: 800 }}>
+                      <HiOutlineStar size={15} aria-hidden="true" /> Client Premium
+                    </span>
+                  )}
+                  {facts.map((f) => (
+                    <span key={f} style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 13px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '12.5px', fontWeight: 600 }}>
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <nav aria-label="Raccourcis" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                 {quickActions.map((a) => (
                   <button
                     key={a.title}
                     type="button"
                     onClick={() => navigate(a.to)}
-                    className="peg-tap-target"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '9px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px', padding: '10px 15px', cursor: 'pointer',
-                      color: '#fff', fontSize: '13px', fontWeight: 600, fontFamily: FONT,
-                      whiteSpace: 'nowrap', transition: 'border-color 0.15s, background 0.15s',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${a.from}88`; e.currentTarget.style.background = `${a.from}1f`; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                    className="pco-round"
+                    style={{ width: '84px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px', padding: 0, border: 0, background: 'none', color: '#fff', cursor: 'pointer', fontFamily: FONT, textAlign: 'center' }}
                   >
-                    <span style={{ color: a.from, display: 'flex' }}>{a.icon}</span>
-                    {a.title}
+                    <span className="pco-round-icon" style={{ width: '60px', height: '60px', borderRadius: '50%', background: `${a.color}26`, border: `1px solid ${a.color}66`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {a.icon}
+                    </span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, lineHeight: 1.25 }}>{a.title}</span>
                   </button>
                 ))}
+              </nav>
+            </section>
+
+            {/* ── L'offre à la une (ou Premium pour un client Standard), et à
+                côté ce qui attend le client puis ses chiffres ──
+                « À faire » n'est rendu que s'il y a quelque chose à faire. */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
+              {offersVisible && (
+                <div style={{ flex: '2 1 560px', minWidth: 0 }}>
+                  <FeaturedOffers offers={offers.slice(0, MAX_FEATURED)} onOpen={openProduct} onSeeAll={seeAllOffers} />
+                </div>
+              )}
+              {offersReserved && <PremiumTeaser onDiscover={() => navigate('/customer/premium')} />}
+
+              <div style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {todos.length > 0 && (
+                  <section aria-labelledby="pco-todo-title" style={{ background: PANEL, border: '1px solid rgba(192,132,252,0.35)', borderRadius: '24px', padding: '22px 22px 8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      <h3 id="pco-todo-title" style={{ margin: 0, color: '#fff', fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em' }}>À faire</h3>
+                      <span style={{ minWidth: '28px', height: '28px', padding: '0 8px', boxSizing: 'border-box', borderRadius: '999px', background: 'rgba(192,132,252,0.18)', color: '#d8b4fe', fontSize: '13px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {todos.length}
+                      </span>
+                    </div>
+                    <p style={{ margin: '6px 0 4px', fontSize: '13.5px', color: MUTED }}>{todoIntro}</p>
+                    {todos.map((r, i) => <TodoRow key={r.key} row={r} first={i === 0} />)}
+                  </section>
+                )}
+
+                {/* Chiffres clés */}
+                <section aria-label="Mon activité" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '12px' }}>
+                  {kpis.map((k) => (
+                    <Link
+                      key={k.label}
+                      to={k.to}
+                      title={k.link}
+                      className="pco-lift"
+                      style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px 18px', borderRadius: '20px', background: PANEL, border: '1px solid rgba(255,255,255,0.08)' }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: k.color }}>
+                        <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.value}</span>
+                        <span aria-hidden="true" style={{ display: 'flex', opacity: 0.8 }}>{k.icon}</span>
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{k.label}</span>
+                    </Link>
+                  ))}
+                </section>
               </div>
             </div>
 
-            {/* ── « À faire » : ce qui attend une action du client ──
-                Rendu uniquement s'il y a quelque chose à faire : un panneau
-                vide n'apporte rien et coûtait un écran de défilement. */}
-            {todoCount > 0 && (
-              <SectionCard style={{ borderColor: 'rgba(168,85,247,0.3)' }}>
-                <SectionHeader
-                  icon={<HiOutlineClock size={18} />}
-                  title="À faire"
-                  action={<span style={{ color: '#c084fc', fontSize: '12px', fontWeight: 700, background: 'rgba(168,85,247,0.14)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '100px', padding: '3px 10px' }}>{todoCount}</span>}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {pendingBats.map((p, i) => (
-                    <TodoRow
-                      key={`bat-${p.documentId}`} first={i === 0} color="#c084fc"
-                      icon={<HiOutlineDocumentText size={16} />}
-                      title={p.name} sub={`${p.orderItem!.product.name} — Bon à Tirer à valider`} cta="Valider"
-                      onClick={() => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`)}
-                    />
-                  ))}
-                  {invoicesToPay.map((inv, i) => (
-                    <TodoRow
-                      key={`inv-${inv.documentId}`} first={pendingBats.length === 0 && i === 0} color="#fbbf24"
-                      icon={<HiOutlineDocumentDownload size={16} />}
-                      title={inv.name || 'Facture'} sub={`Facture à régler — ${fmtTTC(inv.totalAmount ?? 0)}`} cta="Régler"
-                      onClick={() => navigate('/customer/invoices')}
-                    />
-                  ))}
-                  {quotesToReview.map((p, i) => (
-                    <TodoRow
-                      key={`dev-${p.documentId}`} first={pendingBats.length === 0 && invoicesToPay.length === 0 && i === 0} color="#6b9eff"
-                      icon={<HiOutlineDocumentText size={16} />}
-                      title={p.name} sub="Devis à examiner" cta="Voir"
-                      onClick={() => navigate('/customer/devis')}
-                    />
-                  ))}
-                </div>
-              </SectionCard>
+            {/* ── Toutes ses offres, en cartes ── */}
+            {offersVisible && (
+              <OffersGrid
+                offers={offers}
+                total={offersCount}
+                customerName={customer.name}
+                onOpen={openProduct}
+                onSeeAll={seeAllOffers}
+              />
             )}
 
-            {/* ── Chiffres clés, en rangée compacte ──
-                Quatre cartes hautes occupaient ~700px sur téléphone pour
-                afficher quatre nombres. Une seule carte, quatre cellules. */}
-            <SectionCard style={{ padding: '6px 8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-                {kpis.map((k) => (
-                  <Link
-                    key={k.label}
-                    to={k.to}
-                    title={k.link}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 14px', borderRadius: '12px', transition: 'background 0.15s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <span style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '11px', background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {k.icon}
-                    </span>
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', color: '#fff', fontSize: '22px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{k.value}</span>
-                      <span style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginTop: '2px' }}>{k.label}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </SectionCard>
-
-            {/* ── Commandes en cours + Activité récente ──
-                « Ma dernière commande » affichait une carte pleine hauteur pour
-                dire « Aucune commande pour le moment ». On montre désormais les
-                commandes réellement en cours, et rien si l'activité est vide. */}
-            {/* `min(340px, 100%)` : auto-fit ne peut pas descendre sous le minimum
-                d'un minmax — à 360px de large la piste restait à 340px et débordait. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '20px' }}>
-              <SectionCard>
-                <SectionHeader
-                  icon={<HiOutlineShoppingCart size={18} />}
-                  title="Mes commandes en cours"
-                  action={ongoingProjects.length > 0 ? <Link to="/common/projects" className="peg-tap-target" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link> : undefined}
-                />
-                {ongoingProjects.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {ongoingProjects.map((p, i) => {
-                      const si = getStateInfo(p.state);
-                      const img = p.images?.[0]?.url || p.orderItem?.product?.images?.[0]?.url;
-                      return (
-                        <div
-                          key={p.documentId}
-                          onClick={() => navigate(`/common/projects/details/${p.documentId}`)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', cursor: 'pointer', borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)' }}
-                        >
-                          <div style={{ width: '46px', height: '46px', flexShrink: 0, borderRadius: '11px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {img
-                              ? <img loading="lazy" decoding="async" src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                              : <HiOutlineCube size={20} color="rgba(255,255,255,0.25)" />}
-                          </div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <p style={{ margin: 0, color: '#fff', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '10.5px', fontWeight: 700, color: si.color, background: `${si.color}22`, border: `1px solid ${si.color}55`, borderRadius: '7px', padding: '2px 7px' }}>{si.label}</span>
-                              {p.endDate && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11.5px' }}>Livraison {dayjs(p.endDate).format('DD MMM')}</span>}
-                            </div>
-                          </div>
-                          {/* Même base que la liste des commandes (prix projet +
-                              ventes additionnelles) : afficher ici le seul prix
-                              projet donnait deux totaux pour la même commande. */}
-                          {(() => {
-                            const va = (p.additionalSales ?? []).reduce((s: number, e: any) => s + (Number(e?.amount) || 0), 0);
-                            return (
-                              <span style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                                <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmtHT((p.price || 0) + va)}</span>
-                                {va > 0 && (
-                                  <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10.5px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                    dont ventes add. {fmtPrice(va)}
-                                  </span>
-                                )}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                      );
-                    })}
-                  </div>
+            {/* ── Projets en cours + réalisations ──
+                `min(…, 100%)` : un minimum plus large que l'écran déborderait. */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'stretch' }}>
+              <section aria-labelledby="pco-projects-title" style={{ flex: '1 1 440px', minWidth: 0, background: PANEL, border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '22px 22px 8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '6px' }}>
+                  <h3 id="pco-projects-title" style={{ margin: 0, color: '#fff', fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em' }}>Vos projets en cours</h3>
+                  {projectCards.length > 0 && (
+                    <Link to="/common/projects" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: ACCENT_TEXT, fontSize: '13px', fontWeight: 700 }}>
+                      Voir tout <HiArrowRight size={13} />
+                    </Link>
+                  )}
+                </div>
+                {projectCards.length > 0 ? (
+                  projectCards.map((p, i) => <ProjectRow key={p.key} project={p} first={i === 0} />)
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', margin: 0 }}>Aucune commande en cours.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '10px 0 16px' }}>
+                    <p style={{ color: MUTED, fontSize: '13.5px', margin: 0 }}>Aucun projet en cours.</p>
                     <button
                       type="button"
                       onClick={() => navigate(catalogAccess ? '/customer/catalogue' : '/customer/products')}
-                      className="peg-tap-target"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.35)', borderRadius: '10px', padding: '8px 14px', color: '#a99bff', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(124,107,255,0.14)', border: '1px solid rgba(124,107,255,0.35)', borderRadius: '11px', height: '40px', padding: '0 14px', color: ACCENT_TEXT, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}
                     >
                       Commander <HiArrowRight size={13} />
                     </button>
                   </div>
                 )}
-              </SectionCard>
-            </div>
+              </section>
 
-            {/* Activité récente — rendue seulement si elle a du contenu. */}
-            {recentActivity.length > 0 && (
-              <SectionCard>
-                <SectionHeader
-                  title="Activité récente"
-                  action={<Link to="/common/projects" className="peg-tap-target" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', color: '#a99bff', fontSize: '12px', fontWeight: 600 }}>Voir tout <HiArrowRight size={12} /></Link>}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {recentActivity.map((a, i) => (
-                      <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0, background: `${a.color}22`, color: a.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {a.icon}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</p>
-                          {a.sub && <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.45)', fontSize: '11.5px' }}>{a.sub}</p>}
-                        </div>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11.5px', whiteSpace: 'nowrap' }}>{dayjs(a.date).format('DD MMM')}</span>
-                      </div>
+              {works.length > 0 && (
+                <section aria-labelledby="pco-works-title" style={{ flex: '1 1 440px', minWidth: 0, background: PANEL, border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '18px' }}>
+                    <h3 id="pco-works-title" style={{ margin: 0, color: '#fff', fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em' }}>Vos réalisations</h3>
+                    {doneCount > 0 && (
+                      <span style={{ fontSize: '13px', color: MUTED }}>{doneCount} projet{doneCount > 1 ? 's' : ''} livré{doneCount > 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                  {/* Trois polaroïds légèrement penchés, redressés au survol */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px', padding: '0 4px 6px' }}>
+                    {works.slice(0, 3).map((w, i) => (
+                      <button
+                        key={w.key}
+                        type="button"
+                        onClick={w.onClick}
+                        className="pco-pola"
+                        style={{
+                          display: 'block', padding: '9px 9px 12px', border: 0, borderRadius: '6px', cursor: 'pointer', textAlign: 'left',
+                          background: '#f6f4ef', boxShadow: '0 10px 22px rgba(0,0,0,0.35)', fontFamily: FONT,
+                          transform: `rotate(${[-3, 2, -1.5][i % 3]}deg)`,
+                        }}
+                      >
+                        <span style={{ display: 'flex', aspectRatio: '1 / 1', borderRadius: '3px', overflow: 'hidden', background: '#eef0f5' }}>
+                          <img
+                            src={w.image}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            style={{ width: '100%', height: '100%', objectFit: w.contain ? 'contain' : 'cover', mixBlendMode: w.contain ? 'multiply' : undefined }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                          />
+                        </span>
+                        <span style={{ display: 'block', marginTop: '9px', fontSize: '13px', fontWeight: 700, color: '#1d2033', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.title}</span>
+                        <span style={{ display: 'block', marginTop: '2px', fontSize: '11.5px', color: '#4a4f63' }}>{w.caption}</span>
+                      </button>
                     ))}
-                </div>
-              </SectionCard>
-            )}
+                  </div>
+                </section>
+              )}
+            </div>
 
             {/* ── Suggestions (carrousel auto-défilant, comme le panier) ── */}
             {suggestionsWanted && suggestions.length > 0 && (
@@ -696,55 +700,33 @@ const DashboardCustomer = () => {
               </SectionCard>
             )}
 
-            {/* ── Offres personnalisées du client ──
-                Ce bloc s'appelait « Recommandé pour vous » et affichait en fait
-                les offres personnalisées (products), pendant que « Suggestions
-                pour vous » montrait le catalogue générique : deux blocs de
-                recommandation sans différence lisible. Le titre reprend le
-                libellé déjà employé plus haut dans la page. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
-              {!offersReserved && recommendedProducts.length > 0 && (
-                <SectionCard>
-                  <SectionHeader icon={<HiOutlineCube size={18} />} title="Vos offres personnalisées" />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    {recommendedProducts.map((product) => <ProductRow key={product.documentId} product={product} />)}
-                  </div>
-                  {/* Ces produits sont les offres personnalisées du client :
-                      le lien pointait à tort vers le catalogue générique. */}
-                  <Link to="/customer/products">
-                    <button className="peg-tap-target" style={{ marginTop: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '11px', padding: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: FONT }}>
-                      Voir toutes mes offres <HiArrowRight size={13} />
-                    </button>
-                  </Link>
-                </SectionCard>
-              )}
-
-            </div>
-
-            {/* ── CTA support ── */}
-            <div style={{
-              borderRadius: '20px',
-              border: '1px solid rgba(124,107,255,0.22)',
-              background: 'radial-gradient(120% 200% at 8% 50%, rgba(124,107,255,0.22) 0%, rgba(10,12,22,0.2) 60%), linear-gradient(160deg, #14152a 0%, #0a0c16 100%)',
-              padding: '26px 30px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '16px', flexShrink: 0, background: 'rgba(124,107,255,0.16)', border: '1px solid rgba(124,107,255,0.3)', color: '#a99bff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <HiOutlineSupport size={28} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, color: '#fff', fontSize: 'var(--peg-fs-18)', fontWeight: 700, letterSpacing: '-0.01em' }}>Besoin d'aide ou d'un conseil personnalisé ?</h3>
-                  <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.55)', fontSize: '13.5px' }}>Notre équipe est disponible pour vous accompagner dans tous vos projets.</p>
-                </div>
+            {/* ── Son équipe PEG (même carte que sur téléphone) ── */}
+            <section aria-labelledby="pco-team-title" style={{ borderRadius: '26px', background: PANEL, border: '1px solid rgba(255,255,255,0.08)', padding: '24px 26px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flex: '1 1 380px', minWidth: 0 }}>
+                <span aria-hidden="true" style={{ width: '58px', height: '58px', borderRadius: '50%', flexShrink: 0, background: '#a78bfa', color: PANEL, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 800 }}>
+                  PEG
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span id="pco-team-title" style={{ display: 'block', fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em' }}>Une idée, une question ? Votre équipe PEG vous répond.</span>
+                  <span style={{ display: 'block', marginTop: '5px', fontSize: '14px', color: MUTED }}>Appelez-nous ou écrivez-nous, on revient vers vous rapidement.</span>
+                </span>
               </div>
-              <button
-                onClick={() => navigate('/support')}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(90deg, #6d5dfc, #4f3fd1)', border: 'none', borderRadius: '12px', padding: '13px 22px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 26px rgba(79,63,209,0.4)', fontFamily: FONT }}
-              >
-                Contacter le support <HiArrowRight size={15} />
-              </button>
-            </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <a
+                  href={`tel:${PEG_TEAM_PHONE.replace(/\s/g, '')}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', height: '48px', padding: '0 20px', borderRadius: '14px', background: ACCENT, color: '#fff', fontSize: '14px', fontWeight: 700 }}
+                >
+                  <HiOutlinePhone size={18} /> Appeler · {PEG_TEAM_PHONE}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => navigate('/support')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', height: '48px', padding: '0 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.16)', background: 'transparent', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}
+                >
+                  <HiOutlineChatAlt2 size={18} /> Écrire un message
+                </button>
+              </div>
+            </section>
 
           </div>
         </Container>

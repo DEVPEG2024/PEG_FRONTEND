@@ -51,6 +51,8 @@ export type Product = {
    * les commandes. Rempli automatiquement à l'import catalogue (= prix fournisseur).
    */
   cost?: number | null;
+  /** Date de création (Strapi) — lue par les offres de l'accueil client (« Nouveau ») */
+  createdAt?: string;
 };
 
 /**

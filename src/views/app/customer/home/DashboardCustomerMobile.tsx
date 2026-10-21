@@ -5,6 +5,9 @@
  * transactions, couleur d'accent au choix. En tête, pas de montant : un accueil
  * qui crée du lien (« créer du lien et faire beau », Nova) — salutation, la
  * relation avec PEG, ses réalisations en photos, et son équipe en bas de page.
+ * Depuis le 21/10/2026 (maquette validée), ses offres personnalisées passent
+ * juste sous la salutation, en grandes cartes à glisser (prix, autocollant
+ * d'économie, escalier des paliers) ; un client Standard y voit Premium.
  *
  * Composant d'AFFICHAGE : DashboardCustomer calcule tout (mêmes valeurs et
  * mêmes libellés que l'ordinateur) et passe des données prêtes à afficher.
@@ -25,20 +28,16 @@ import {
   HiOutlinePhone,
   HiOutlinePhotograph,
   HiOutlineRefresh,
+  HiOutlineShoppingCart,
 } from 'react-icons/hi';
 import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
 import Carousel from '@/components/shared/Carousel';
+import type { OfferShowcaseItem } from './offerShowcase';
+import { OFFER_CSS, OFFER_ON_YELLOW, OFFER_YELLOW, OfferBadge, OfferSteps, OfferVisual, SavingsSticker } from './components/OfferVisuals';
+import PremiumTeaser from './components/PremiumTeaser';
+import DeliveryCountdown from './components/DeliveryCountdown';
 
 export const PCM_DARK = '#070a08';
-
-export type PcmTile = {
-  key: string;
-  label: string;
-  value: string;
-  icon: ReactNode;
-  tone?: 'accent' | 'amber' | 'sky' | 'mint';
-  onClick: () => void;
-};
 
 export type PcmShortcut = { key: string; label: string; icon: ReactNode; onClick: () => void };
 
@@ -62,8 +61,23 @@ export type PcmRow = {
 
 export type PcmProduct = { key: string; name: string; price: string; image?: string; onClick: () => void };
 
-/** Une réalisation : photo d'un projet du client */
-export type PcmWork = { key: string; image: string; title: string; caption: string; onClick: () => void };
+/** Une réalisation : photo d'un projet du client (`contain` : photo du produit, jamais rognée) */
+export type PcmWork = { key: string; image: string; contain?: boolean; title: string; caption: string; onClick: () => void };
+
+/** Une offre personnalisée, prête à afficher (offerShowcase.ts) */
+export type PcmOffer = OfferShowcaseItem & { onClick: () => void };
+
+/** Un projet en cours : statut, livraison, avancement (%) et jours avant livraison */
+export type PcmProject = {
+  key: string;
+  title: string;
+  image?: string | null;
+  pill: { label: string; color: string };
+  sub?: string;
+  progress: number;
+  days: number | null;
+  onClick: () => void;
+};
 
 type Props = {
   /** Photo de fond de l'accueil, téléversée par le client */
@@ -74,25 +88,31 @@ type Props = {
     /** « Bonjour » / « Bonsoir » */
     hello: string;
     name: string;
+    /** Phrase sous la salutation (« Vos prix réservés vous attendent. ») */
+    tagline?: string;
     /** Pastilles de relation (« Ensemble depuis… », « 12 projets réalisés ») */
     facts: string[];
     premium: boolean;
   };
   onRefresh: () => void;
   refreshing: boolean;
-  works: PcmWork[];
-  onSeeAllWorks: () => void;
-  todos: PcmRow[];
-  tiles: PcmTile[];
+  offers: PcmOffer[];
+  /** Nombre total d'offres (offers n'en porte que la première page) */
+  offersTotal: number;
+  onSeeOffers: () => void;
+  /** Client Standard : ses offres sont réservées au Premium → carte Premium */
+  onDiscoverPremium?: () => void;
   shortcuts: PcmShortcut[];
-  orders: PcmRow[];
-  onSeeAllOrders: () => void;
+  todos: PcmRow[];
+  projects: PcmProject[];
+  onSeeAllProjects: () => void;
   onOrder: () => void;
-  activity: PcmRow[];
+  works: PcmWork[];
+  /** Projets livrés */
+  worksCount: number;
+  onSeeAllWorks: () => void;
   suggestions: PcmProduct[];
   onSeeCatalogue?: () => void;
-  offers: PcmProduct[];
-  onSeeOffers?: () => void;
   team: { phone?: string; onWrite: () => void };
 };
 
@@ -174,25 +194,62 @@ const CSS = `
 @keyframes pcm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* Pistes : composant Carousel (fenêtre plein écran, cartes calées à 16px) */
-.pcm-works, .pcm-products { margin: 0 -16px; padding: 2px 16px 6px; }
-.pcm-work-slide { width: 64%; max-width: 260px; }
-.pcm-work-slide:only-child { width: 100%; max-width: none; }
-.pcm-work {
-  position: relative; display: block; width: 100%; aspect-ratio: 4 / 5;
-  border-radius: 24px; overflow: hidden; padding: 0; border: 1px solid var(--pdm-line);
-  background: rgba(255, 255, 255, 0.04); cursor: pointer; font: inherit; color: inherit; text-align: left;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+.pcm-offers, .pcm-works, .pcm-products { margin: 0 -16px; padding: 2px 16px 6px; }
+.pcm-hero-tagline { margin: 10px 0 0; font-size: 15px; color: rgba(255, 255, 255, 0.72); }
+
+/* Offres personnalisées : grandes cartes à glisser */
+.pcm-offer-slide { width: 84%; max-width: 320px; }
+.pcm-offer-slide:only-child { width: 100%; max-width: none; }
+.pcm-offer {
+  width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  padding: 0; border-radius: 26px; border: 1px solid rgba(255, 255, 255, 0.09); background: #141a2e;
+  color: #fff; font: inherit; text-align: left; cursor: pointer;
 }
-.pcm-work-slide:only-child .pcm-work { aspect-ratio: 16 / 10; }
-.pcm-work:active { transform: scale(0.98); }
-.pcm-work img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.pcm-work::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.78) 100%);
+.pcm-offer:active { transform: scale(0.985); }
+.pcm-offer-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.pcm-offer-cat { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
+.pcm-offer-name { font-size: 17px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.2; overflow-wrap: anywhere; }
+.pcm-offer-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.pcm-offer-price strong { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.pcm-offer-unit { font-size: 12.5px; color: rgba(255, 255, 255, 0.66); }
+.pcm-offer-was { font-size: 12.5px; color: rgba(255, 255, 255, 0.55); }
+.pcm-offer-note { border-radius: 14px; background: rgba(255, 255, 255, 0.05); padding: 12px; font-size: 12.5px; line-height: 1.45; color: rgba(255, 255, 255, 0.74); }
+.pcm-offer-cta {
+  margin-top: auto; min-height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--pdm-accent); color: var(--pdm-on-accent); font-size: 14.5px; font-weight: 700;
 }
-.pcm-work-text { position: absolute; left: 14px; right: 14px; bottom: 13px; z-index: 1; }
-.pcm-work-title { display: block; font-size: 14.5px; font-weight: 700; color: #fff; line-height: 1.25; overflow-wrap: anywhere; }
-.pcm-work-caption { display: block; margin-top: 4px; font-size: 11.5px; color: rgba(255, 255, 255, 0.72); }
+
+/* Projets en cours : cartes bleu nuit (couleurs des cartes projet, Nova) */
+.pcm-projects { display: flex; flex-direction: column; gap: 10px; }
+.pcm-project {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08); background: #11162a; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.pcm-project:active { transform: scale(0.985); }
+.pcm-project-img {
+  width: 60px; height: 60px; border-radius: 15px; flex-shrink: 0; overflow: hidden; background: #eef0f5;
+  display: flex; align-items: center; justify-content: center; color: rgba(20, 26, 46, 0.3); font-size: 22px;
+}
+.pcm-project-img img { width: 100%; height: 100%; object-fit: contain; padding: 5px; box-sizing: border-box; mix-blend-mode: multiply; }
+.pcm-project-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.pcm-project-title { font-size: 14px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcm-project-meta { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12px; color: rgba(255, 255, 255, 0.64); }
+.pcm-project-meta > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcm-progress { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: rgba(255, 255, 255, 0.75); }
+.pcm-progress-track { flex: 1; height: 7px; border-radius: 100px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.pcm-progress-track > span { display: block; height: 100%; border-radius: 100px; background: var(--pdm-accent); }
+
+/* Réalisations en polaroïds, légèrement penchés */
+.pcm-pola-slide { width: 148px; padding: 6px 0 12px; }
+.pcm-pola {
+  display: block; width: 100%; padding: 8px 8px 11px; border: 0; border-radius: 6px; background: #f6f4ef;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); text-align: left; font: inherit; cursor: pointer;
+}
+.pcm-pola-photo { display: flex; aspect-ratio: 1 / 1; border-radius: 3px; overflow: hidden; background: #eef0f5; }
+.pcm-pola-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pcm-pola-photo img.is-contain { object-fit: contain; mix-blend-mode: multiply; }
+.pcm-pola-title { display: block; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #1d2033; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcm-pola-caption { display: block; margin-top: 2px; font-size: 11px; color: #4a4f63; }
 .pcm-cta {
   margin-top: 16px; display: inline-flex; align-items: center; gap: 6px;
   border: 0; border-radius: 100px; padding: 11px 20px; cursor: pointer;
@@ -229,30 +286,6 @@ const CSS = `
 }
 .pcm-shortcut:active .pcm-shortcut-ring { transform: scale(0.94); }
 .pcm-shortcut-label { font-size: 11px; line-height: 1.2; color: var(--pdm-muted); }
-
-.pcm-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.pcm-tile {
-  position: relative; text-align: left; border-radius: 22px; padding: 14px 14px 15px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.025) 100%);
-  border: 1px solid var(--pdm-line); color: var(--pdm-text);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  display: flex; flex-direction: column; gap: 10px; min-width: 0;
-  cursor: pointer; font: inherit;
-}
-.pcm-tile:active { transform: scale(0.98); }
-/* Nombre impair de tuiles (client Standard : pas d'offres) : la dernière prend la rangée */
-.pcm-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.pcm-tile-icon {
-  width: 36px; height: 36px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
-  font-size: 18px; color: var(--pdm-accent); background: rgba(var(--pdm-accent-rgb), 0.10);
-  border: 1px solid rgba(var(--pdm-accent-rgb), 0.22);
-}
-.pcm-tile[data-tone="amber"] .pcm-tile-icon { color: #fbbf24; background: rgba(251, 191, 36, 0.10); border-color: rgba(251, 191, 36, 0.25); }
-.pcm-tile[data-tone="mint"] .pcm-tile-icon { color: #5eead4; background: rgba(94, 234, 212, 0.10); border-color: rgba(94, 234, 212, 0.25); }
-.pcm-tile[data-tone="sky"] .pcm-tile-icon { color: #7dd3fc; background: rgba(125, 211, 252, 0.10); border-color: rgba(125, 211, 252, 0.25); }
-.pcm-tile-label { font-size: 12px; color: var(--pdm-muted); line-height: 1.25; }
-.pcm-tile-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #fff; font-variant-numeric: tabular-nums; }
-.pcm-tile-go { position: absolute; top: 16px; right: 12px; color: var(--pdm-faint); font-size: 16px; }
 
 .pcm-list { border-radius: 22px; background: var(--pdm-card); border: 1px solid var(--pdm-line); padding: 4px 14px; }
 .pcm-row {
@@ -485,24 +518,100 @@ const Products = ({ items, label, autoPlay = false }: { items: PcmProduct[]; lab
   </Carousel>
 );
 
+/** Une offre en grande carte : photo studio, autocollant, prix, paliers, « Commander » */
+const OfferCard = ({ offer }: { offer: PcmOffer }) => (
+  <button type="button" className="pcm-offer" onClick={offer.onClick}>
+    <OfferVisual offer={offer} sizes="300px" padding="8%" style={{ height: '188px', flexShrink: 0 }}>
+      {offer.savings && <SavingsSticker percent={offer.savings} size={68} style={{ top: '12px', left: '12px' }} />}
+      {offer.isNew && <OfferBadge style={{ top: '14px', right: '14px' }}>Nouveau</OfferBadge>}
+    </OfferVisual>
+    <span className="pcm-offer-body">
+      {offer.category && <span className="pcm-offer-cat">{offer.category.name}</span>}
+      <span className="pcm-offer-name">{offer.name}</span>
+      <span className="pcm-offer-price">
+        <strong>{offer.price}</strong>
+        <span className="pcm-offer-unit">{offer.unit}</span>
+        {offer.catalogue && <s className="pcm-offer-was">{offer.catalogue}</s>}
+      </span>
+      {offer.steps.length > 0 && <OfferSteps steps={offer.steps} height={92} compact />}
+      {offer.steps.length === 0 && offer.note && <span className="pcm-offer-note">{offer.note}</span>}
+      <span className="pcm-offer-cta">
+        <HiOutlineShoppingCart /> Commander
+      </span>
+    </span>
+  </button>
+);
+
+const ProjectCard = ({ project }: { project: PcmProject }) => (
+  <button type="button" className="pcm-project" onClick={project.onClick}>
+    <span className="pcm-project-img">
+      {project.image ? (
+        <img
+          src={project.image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+        />
+      ) : (
+        <HiOutlineCube />
+      )}
+    </span>
+    <span className="pcm-project-main">
+      <span className="pcm-project-title">{project.title}</span>
+      <span className="pcm-project-meta">
+        <span className="pcm-pill" style={{ color: project.pill.color, background: `${project.pill.color}26`, flexShrink: 0 }}>
+          {project.pill.label}
+        </span>
+        {project.sub && <span>{project.sub}</span>}
+      </span>
+      <span className="pcm-progress">
+        <span
+          className="pcm-progress-track"
+          role="progressbar"
+          aria-label="Avancement"
+          aria-valuenow={project.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <span style={{ width: `${project.progress}%` }} />
+        </span>
+        {project.progress} %
+      </span>
+    </span>
+    {project.days !== null && (
+      <DeliveryCountdown
+        days={project.days}
+        size={54}
+        accent="var(--pdm-accent)"
+        soft="rgba(var(--pdm-accent-rgb), 0.14)"
+        line="rgba(var(--pdm-accent-rgb), 0.4)"
+      />
+    )}
+  </button>
+);
+
+const POLA_TILT = [-3, 2, -1.5, 2.5];
+
 const DashboardCustomerMobile = ({
   photo,
   hero,
   onRefresh,
   refreshing,
-  works,
-  onSeeAllWorks,
-  todos,
-  tiles,
+  offers,
+  offersTotal,
+  onSeeOffers,
+  onDiscoverPremium,
   shortcuts,
-  orders,
-  onSeeAllOrders,
+  todos,
+  projects,
+  onSeeAllProjects,
   onOrder,
-  activity,
+  works,
+  worksCount,
+  onSeeAllWorks,
   suggestions,
   onSeeCatalogue,
-  offers,
-  onSeeOffers,
   team,
 }: Props) => {
   const [accent, setAccent] = useState(loadAccent);
@@ -526,6 +635,7 @@ const DashboardCustomerMobile = ({
     // Variables posées aussi ici : la page a sa couleur dès le premier rendu
     <div className="pcm" style={accentVars(accent) as React.CSSProperties}>
       <style>{CSS}</style>
+      <style>{OFFER_CSS}</style>
 
       <div className="pcm-body">
         <section className="pcm-hero">
@@ -648,37 +758,31 @@ const DashboardCustomerMobile = ({
           {hero.hello},<br />
           <span className="pcm-hero-name">{hero.name}</span>
         </h1>
+        {hero.tagline && <p className="pcm-hero-tagline pcm-rise pcm-rise-2">{hero.tagline}</p>}
         <div className="pcm-facts pcm-rise pcm-rise-3">
           {hero.premium && <span className="pcm-fact is-accent">★ Client Premium</span>}
           {hero.facts.map((f) => <span key={f} className="pcm-fact">{f}</span>)}
         </div>
         </section>
 
-        {/* Ses réalisations, en photos */}
-        {works.length > 0 && (
+        {/* Ses offres personnalisées, en grandes cartes à glisser */}
+        {offers.length > 0 && (
           <div className="pcm-rise pcm-rise-4">
             <div className="pcm-section-head">
-              <h2>Vos réalisations</h2>
-              <button type="button" className="pcm-link" onClick={onSeeAllWorks}>Tout voir</button>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Vos offres personnalisées
+                <span className="pcm-count" style={{ background: OFFER_YELLOW, color: OFFER_ON_YELLOW }}>{offersTotal}</span>
+              </h2>
+              <button type="button" className="pcm-link" onClick={onSeeOffers}>Tout voir</button>
             </div>
-            <Carousel label="Vos réalisations" className="pcm-works" slideClassName="pcm-work-slide">
-              {works.map((w) => (
-                <button key={w.key} type="button" className="pcm-work" onClick={w.onClick}>
-                  <img
-                    src={w.image}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-                  />
-                  <span className="pcm-work-text">
-                    <span className="pcm-work-title">{w.title}</span>
-                    <span className="pcm-work-caption">{w.caption}</span>
-                  </span>
-                </button>
-              ))}
+            <Carousel label="Vos offres personnalisées" className="pcm-offers" slideClassName="pcm-offer-slide">
+              {offers.map((o) => <OfferCard key={o.documentId} offer={o} />)}
             </Carousel>
+          </div>
+        )}
+        {onDiscoverPremium && (
+          <div className="pcm-rise pcm-rise-4" style={{ marginTop: '22px', display: 'flex' }}>
+            <PremiumTeaser compact onDiscover={onDiscoverPremium} />
           </div>
         )}
 
@@ -708,49 +812,60 @@ const DashboardCustomerMobile = ({
           </>
         )}
 
-        {/* Chiffres clés */}
+        {/* Projets en cours : avancement et compte à rebours avant livraison */}
         <div className="pcm-section-head">
-          <h2>Mon activité</h2>
-        </div>
-        <div className="pcm-tiles">
-          {tiles.map((t) => (
-            <button key={t.key} type="button" className="pcm-tile" data-tone={t.tone} onClick={t.onClick}>
-              <span className="pcm-tile-icon">{t.icon}</span>
-              <span className="pcm-tile-label">{t.label}</span>
-              <span className="pcm-tile-value">{t.value}</span>
-              <HiOutlineChevronRight className="pcm-tile-go" />
-            </button>
-          ))}
-        </div>
-
-        {/* Commandes en cours */}
-        <div className="pcm-section-head">
-          <h2>Mes commandes en cours</h2>
-          {orders.length > 0 && (
-            <button type="button" className="pcm-link" onClick={onSeeAllOrders}>Voir tout</button>
+          <h2>Vos projets en cours</h2>
+          {projects.length > 0 && (
+            <button type="button" className="pcm-link" onClick={onSeeAllProjects}>Voir tout</button>
           )}
         </div>
-        <div className="pcm-list">
-          {orders.length > 0 ? (
-            orders.map((r) => <Row key={r.key} row={r} />)
-          ) : (
+        {projects.length > 0 ? (
+          <div className="pcm-projects">
+            {projects.map((p) => <ProjectCard key={p.key} project={p} />)}
+          </div>
+        ) : (
+          <div className="pcm-list">
             <div className="pcm-empty">
-              Aucune commande en cours.
+              Aucun projet en cours.
               <button type="button" className="pcm-link" onClick={onOrder}>Commander →</button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Activité récente, façon transactions */}
-        {activity.length > 0 && (
+        {/* Ses réalisations, en polaroïds */}
+        {works.length > 0 && (
           <>
             <div className="pcm-section-head">
-              <h2>Activité récente</h2>
-              <button type="button" className="pcm-link" onClick={onSeeAllOrders}>Voir tout</button>
+              <h2>Vos réalisations</h2>
+              <button type="button" className="pcm-link" onClick={onSeeAllWorks}>
+                {worksCount > 0 ? `${worksCount} livré${worksCount > 1 ? 's' : ''}` : 'Tout voir'}
+              </button>
             </div>
-            <div className="pcm-list">
-              {activity.map((r) => <Row key={r.key} row={r} />)}
-            </div>
+            <Carousel label="Vos réalisations" className="pcm-works" slideClassName="pcm-pola-slide" gap={14}>
+              {works.map((w, i) => (
+                <button
+                  key={w.key}
+                  type="button"
+                  className="pcm-pola"
+                  onClick={w.onClick}
+                  style={{ transform: `rotate(${POLA_TILT[i % POLA_TILT.length]}deg)` }}
+                >
+                  <span className="pcm-pola-photo">
+                    <img
+                      src={w.image}
+                      alt=""
+                      className={w.contain ? 'is-contain' : undefined}
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                    />
+                  </span>
+                  <span className="pcm-pola-title">{w.title}</span>
+                  <span className="pcm-pola-caption">{w.caption}</span>
+                </button>
+              ))}
+            </Carousel>
           </>
         )}
 
@@ -763,18 +878,6 @@ const DashboardCustomerMobile = ({
               )}
             </div>
             <Products items={suggestions} label="Suggestions pour vous" autoPlay />
-          </>
-        )}
-
-        {offers.length > 0 && (
-          <>
-            <div className="pcm-section-head">
-              <h2>Vos offres personnalisées</h2>
-              {onSeeOffers && (
-                <button type="button" className="pcm-link" onClick={onSeeOffers}>Tout voir</button>
-              )}
-            </div>
-            <Products items={offers} label="Vos offres personnalisées" />
           </>
         )}
 
