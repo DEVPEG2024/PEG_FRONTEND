@@ -622,7 +622,7 @@ Chaque ligne part désormais à Stripe comme **un article au montant TTC de la l
 ## 👑 Premium — Abonnement client (ajout 03/06/2026)
 
 ### Concept
-- Un client a un statut **`premium`** (booléen Strapi). Premium = accès aux **offres personnalisées** (« Mes offres ») + **−15 % automatique sur le catalogue standard**. Standard = catalogue seul, prix plein.
+- Un client a un statut **`premium`** (booléen Strapi). Premium = accès aux **offres personnalisées** (« Mes offres ») + **remise automatique sur le catalogue standard** (15 % par défaut, taux réglable par client dans l'onglet Premium — voir « Remise catalogue Premium »). Standard = catalogue seul, prix plein.
 - **Tarif : 250 € HT / mois** (abonnement Stripe `mode: subscription`, intervalle `month`). Source unique de vérité : `PREMIUM_PRICE_HT` (côté back **et** front — garder aligné).
 - ⚠️ Une migration bootstrap (`premium_defaults` dans `peg_strapi/src/index.ts`) a passé **tous les clients existants en `premium=true`** ; seuls les **nouveaux comptes** sont `false`. La carte d'upgrade ne s'affiche donc que pour les nouveaux comptes standard.
 
@@ -637,10 +637,20 @@ Chaque ligne part désormais à Stripe comme **un article au montant TTC de la l
 - `customer.subscription.deleted` **et** `invoice.payment_failed` → `downgradePremiumBySubscription()` repasse le client en `premium=false`.
 - **⚠️ Activer ces 3 événements sur le webhook Stripe** (dashboard) — sinon pas de rétrogradation.
 
-### Remise −15 % catalogue
+### Remise catalogue Premium — 15 % par défaut, taux réglable par client (21/10/2026)
+- **Taux propre à chaque client** (demande Nova 21/10/2026) : champ Strapi `customer.premiumDiscountPercent` (décimal, en **%**, borné **0–50** par le schéma ; **vide = 15 %**). Réglé dans l'onglet **Premium** (`PremiumDiscountEditor.tsx`, mutation GraphQL `updateCustomer`) ; écriture réservée à l'admin (`customer.update` révoqué aux autres rôles, `update-own-company` ne l'accepte pas).
+- Lecture du taux : `getPremiumDiscountRate(customer)` / `formatPremiumDiscount(customer)` (front, `productHelpers.ts`) et `premiumDiscountRate` / `premiumDiscountLabel` (serveur, `premium-pricing.ts`) — **même calcul, mêmes bornes**. **NE JAMAIS réécrire `0.15` / « −15 % » en dur** pour un client Premium : seul le texte de l'offre proposée aux Standard (SideNav, `PREMIUM_ADVANTAGES`, `PREMIUM_PCT`) garde le taux par défaut.
+- Côté client, le taux arrive par `/users/me` (champs simples de `customer`) ; le paiement relit la fiche client en base (`recalculateFromDB` → `serverLinePriceHT(product, sels, customer)`), le chatbot aussi (`resolveCustomer`).
+- Agents : « Offres Premium » chiffre l'offre au taux **du client** ; « Tarifs » juge la vente à perte au taux Premium **le plus élevé** accordé.
+- Liste admin : le taux est lu par une **requête à part** (`apiGetPremiumDiscounts`) — un Strapi sans le champ ne casse pas la liste (réglage masqué).
+- ⚠️ Le contrat Premium (`customer/premium/contract.ts`) annonce **−15 %** : l'écran prévient quand un taux plus bas est saisi (décision commerciale, non bloquée).
+- « Économies Premium » des factures : estimées au taux **actuel** du client (le taux de chaque facture n'est pas conservé).
+- Ordre de déploiement : indifférent (front sans back = réglage masqué, 15 % partout ; back sans front = rien à régler). Les **deux** doivent être en ligne avant de saisir un taux : un ancien front figerait un prix à −15 % dans l'order-item, que le paiement conserverait (il ne remonte qu'un prix inférieur).
+
+### Règle « catalogue public »
 - ⚠️ **Catalogue PUBLIC seulement** (demande Nova 25/09/2026) : une **offre préparée pour un client** (produit hors catalogue, réservé à lui ou à son secteur — « Mes offres ») **garde son prix**, même pour un Premium. Règle unique `isPremiumDiscountEligible(product)` = `product.inCatalogue !== false` (en prod au 25/09 : les 18 produits réservés sont tous hors catalogue, aucun produit du catalogue n'est réservé). Miroir serveur : `peg_strapi/src/services/premium-pricing.ts` (prix au paiement `serverLinePriceHT`, offres du chatbot) — **garder les deux alignés**.
-- Helper `applyPremiumDiscount(price, customer, product)` + `getPremiumMultiplier(customer, product)` dans `src/utils/productHelpers.ts` (`PREMIUM_DISCOUNT_RATE = 0.15`). Le produit est **obligatoire** : aucun écran ne peut oublier la règle. La requête de la fiche produit (`apiGetProductForShowById`) lit `inCatalogue` (le panier et les offres du chat en héritent).
-- « Économies Premium » des factures client : `premiumSavingsHT(invoice)` — seulement les lignes réellement remisées (catalogue, et offres facturées avant le 26/09/2026) ; une facture sans ligne de commande (devis, projet) n'en a pas.
+- Helper `applyPremiumDiscount(price, customer, product)` + `getPremiumMultiplier(customer, product)` dans `src/utils/productHelpers.ts` (taux du client, `PREMIUM_DISCOUNT_RATE = 0.15` par défaut). Le produit est **obligatoire** : aucun écran ne peut oublier la règle. La requête de la fiche produit (`apiGetProductForShowById`) lit `inCatalogue` (le panier et les offres du chat en héritent).
+- « Économies Premium » des factures client : `premiumSavingsHT(invoice, customer)` — seulement les lignes réellement remisées (catalogue, et offres facturées avant le 26/09/2026) ; une facture sans ligne de commande (devis, projet) n'en a pas.
 - Appliquée à l'**affichage** : `CustomerProductCard.tsx`, `ShowProduct.tsx`, `HomeProductsList.tsx`, `Cart.tsx`.
 - Appliquée au **prix facturé** : `PaymentContent.tsx` (le champ `orderItem.price`). **C'est le point critique** : le backend `recalculateFromDB` recalcule le montant Stripe à partir de `oi.price` en BDD — donc la remise doit être figée à la création de l'order-item.
 - Non appliquée à `ShowOrderItem.tsx` / `CartColumns.tsx` (vues commande/legacy : la remise serait basée sur le spectateur, pas sur le client de la commande).

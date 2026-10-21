@@ -11,6 +11,7 @@ import {
   PREMIUM_PRICE_HT,
   PREMIUM_MIN_MONTHS,
   PREMIUM_ADVANTAGES,
+  premiumAdvantages,
   canCancelPremium,
   premiumCancellableFrom,
 } from '@/services/PremiumServices';
@@ -21,16 +22,18 @@ import {
   downloadPremiumContract,
 } from './contract';
 import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
+import { formatPremiumDiscount } from '@/utils/productHelpers';
 import { redirectToHostedCheckout } from '@/utils/stripeClient';
 
 const GOLD = '#eab308';
 
-// Textes : PREMIUM_ADVANTAGES (PremiumServices), partagés avec « Mes offres ».
+// Textes : premiumAdvantages (PremiumServices), partagés avec « Mes offres ».
 const ADVANTAGE_ICONS = [TbDiscount, TbGift, TbCrown];
-const ADVANTAGES = PREMIUM_ADVANTAGES.map((a, i) => {
-  const Icon = ADVANTAGE_ICONS[i] ?? TbCrown;
-  return { ...a, icon: <Icon size={20} color={GOLD} /> };
-});
+const withIcons = (advantages: { title: string; desc: string }[]) =>
+  advantages.map((a, i) => {
+    const Icon = ADVANTAGE_ICONS[i] ?? TbCrown;
+    return { ...a, icon: <Icon size={20} color={GOLD} /> };
+  });
 
 const PremiumPage = () => {
   const navigate = useNavigate();
@@ -38,6 +41,10 @@ const PremiumPage = () => {
   const user = useAppSelector((state: RootState) => state.auth.user.user) as User | undefined;
   const { token } = useAppSelector((state: RootState) => state.auth.session);
   const isPremium = !!user?.customer?.premium;
+  // Client Premium : SA remise (réglée par PEG) ; sinon l'offre standard
+  const advantages = withIcons(
+    isPremium ? premiumAdvantages(formatPremiumDiscount(user?.customer)) : PREMIUM_ADVANTAGES
+  );
   const customerDocumentId = user?.customer?.documentId;
 
   const [busy, setBusy] = useState(false);
@@ -157,7 +164,7 @@ const PremiumPage = () => {
       }}>
         {/* Avantages */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {ADVANTAGES.map((a) => (
+          {advantages.map((a) => (
             <div key={a.title} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <div style={{
                 width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,

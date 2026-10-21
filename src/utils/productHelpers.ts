@@ -2,10 +2,42 @@ import { Product, SizeAndColorSelection } from '@/@types/product';
 import { Customer } from '@/@types/customer';
 
 /**
- * Remise automatique des clients Premium sur le CATALOGUE PUBLIC (-15 %).
+ * Remise automatique des clients Premium sur le CATALOGUE PUBLIC : 15 % par
+ * défaut, ou le taux propre au client (`customer.premiumDiscountPercent`,
+ * réglé par l'admin dans l'onglet Premium depuis le 21/10/2026).
  * Source unique de vérité côté front.
  */
 export const PREMIUM_DISCOUNT_RATE = 0.15;
+/** Plafond d'un taux personnalisé — même borne que le schéma Strapi `customer`. */
+export const PREMIUM_DISCOUNT_MAX_PERCENT = 50;
+
+type PremiumRateSource = Pick<Customer, 'premiumDiscountPercent'> | null | undefined;
+
+/**
+ * Taux de remise du client (0,15 = 15 %), qu'il soit Premium ou non.
+ * ⚠️ Miroir de `premiumDiscountRate` (services/premium-pricing.ts) : même
+ * calcul, mêmes bornes, sinon le panier et le montant débité divergent.
+ */
+export function getPremiumDiscountRate(customer: PremiumRateSource): number {
+  const raw = customer?.premiumDiscountPercent;
+  if (raw === null || raw === undefined || raw === '') return PREMIUM_DISCOUNT_RATE;
+  const pct = Number(raw);
+  if (!Number.isFinite(pct)) return PREMIUM_DISCOUNT_RATE;
+  return Math.min(PREMIUM_DISCOUNT_MAX_PERCENT, Math.max(0, pct)) / 100;
+}
+
+/** Taux affichable : « 15 », « 12,5 ». */
+export function formatPremiumDiscount(customer: PremiumRateSource): string {
+  return String(Math.round(getPremiumDiscountRate(customer) * 1000) / 10).replace('.', ',');
+}
+
+/** Saisie admin « 12,5 » ou « 12.5 » → 12.5 ; null si le serveur la refuserait. */
+export function parsePremiumDiscountInput(text: string): number | null {
+  const t = text.trim().replace(',', '.');
+  if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 0 && n <= PREMIUM_DISCOUNT_MAX_PERCENT ? n : null;
+}
 
 /** Drapeau du catalogue public — peut manquer selon la requête qui a lu le produit */
 type CatalogueFlag = { inCatalogue?: boolean | null };
@@ -30,7 +62,7 @@ export function getPremiumMultiplier(
   product: CatalogueFlag | null | undefined
 ): number {
   return customer?.premium && isPremiumDiscountEligible(product)
-    ? 1 - PREMIUM_DISCOUNT_RATE
+    ? 1 - getPremiumDiscountRate(customer)
     : 1;
 }
 
@@ -42,14 +74,18 @@ export const PREMIUM_OFFERS_EXCLUDED_SINCE = '2026-09-26';
  * ligne par ligne — produits du catalogue public, et offres facturées avant
  * PREMIUM_OFFERS_EXCLUDED_SINCE. Une facture sans ligne de commande (devis,
  * projet) n'a jamais eu de remise Premium : 0. Le prix d'une ligne est déjà
- * remisé → économie = prix × taux / (1 − taux).
+ * remisé → économie = prix × taux / (1 − taux), au taux ACTUEL du client (le
+ * taux appliqué à chaque facture n'est pas conservé : estimation).
  */
-export function premiumSavingsHT(invoice: {
-  date?: string | Date | null;
-  orderItems?:
-    | { price?: number | null; product?: CatalogueFlag | null }[]
-    | null;
-}): number {
+export function premiumSavingsHT(
+  invoice: {
+    date?: string | Date | null;
+    orderItems?:
+      | { price?: number | null; product?: CatalogueFlag | null }[]
+      | null;
+  },
+  customer?: PremiumRateSource
+): number {
   const issued = invoice.date ? new Date(invoice.date) : null;
   const before =
     !!issued &&
@@ -62,12 +98,13 @@ export function premiumSavingsHT(invoice: {
         : sum,
     0
   );
-  return (discounted * PREMIUM_DISCOUNT_RATE) / (1 - PREMIUM_DISCOUNT_RATE);
+  const rate = getPremiumDiscountRate(customer);
+  return (discounted * rate) / (1 - rate);
 }
 
 /**
- * Applique la remise Premium (-15 %) à un prix si le client est Premium et
- * que le produit est au catalogue public. Arrondi au centime. Le produit est
+ * Applique la remise Premium (taux du client, 15 % par défaut) à un prix si le
+ * client est Premium et que le produit est au catalogue public. Arrondi au centime. Le produit est
  * OBLIGATOIRE : aucun écran ne peut oublier la règle des offres.
  */
 export function applyPremiumDiscount(

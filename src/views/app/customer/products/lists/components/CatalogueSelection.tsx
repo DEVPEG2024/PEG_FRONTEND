@@ -7,9 +7,10 @@ import { Link } from 'react-router-dom';
 import { HiArrowRight, HiOutlineSparkles } from 'react-icons/hi';
 import { Product } from '@/@types/product';
 import { apiGetSuggestedProducts } from '@/services/ProductServices';
+import { RootState, useAppSelector } from '@/store';
+import { formatPremiumDiscount } from '@/utils/productHelpers';
 import CustomerProductCard from '../CustomerProductCard';
 import {
-  PREMIUM_PCT,
   PRODUCT_GRID_STYLE,
   SECTION_TITLE_STYLE,
   SELECTION_GRID_CLASS,
@@ -31,6 +32,7 @@ const CatalogueSelection = ({
   premiumNote = false,
   excludeIds,
 }: CatalogueSelectionProps) => {
+  const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [curated, setCurated] = useState(false);
@@ -93,7 +95,7 @@ const CatalogueSelection = ({
           >
             {subtitle}
             {premiumNote &&
-              ` · Votre remise Premium de -${PREMIUM_PCT} % s’y applique automatiquement.`}
+              ` · Votre remise Premium de -${formatPremiumDiscount(customer)} % s’y applique automatiquement.`}
           </p>
         </div>
         <Link

@@ -6,6 +6,7 @@ import { TOKEN_TYPE } from '@/constants/api.constant';
 import { pegBackendFetch } from './PegBackendClient';
 import { CustomerBanner, fetchBannerGraphQL } from './BannerServices';
 import type { StripeSessionResponse } from '@/utils/stripeClient';
+import { formatPremiumDiscount } from '@/utils/productHelpers';
 
 // Tarif Premium (HT mensuel) — doit rester aligné avec PREMIUM_PRICE_HT côté backend.
 export const PREMIUM_PRICE_HT = 250;
@@ -14,10 +15,13 @@ export const PREMIUM_PRICE_HT = 250;
 export const PREMIUM_MIN_MONTHS = 6;
 
 // Avantages Premium — source unique des textes (PremiumPage, « Mes offres »).
-// Sans JSX : chaque écran associe ses propres icônes par index.
-export const PREMIUM_ADVANTAGES: { title: string; desc: string }[] = [
+// Sans JSX : chaque écran associe ses propres icônes par index. `discount` =
+// remise affichée (« 15 », « 12,5 ») : celle du client Premium, sinon l'offre.
+export const premiumAdvantages = (
+  discount: string = formatPremiumDiscount(null)
+): { title: string; desc: string }[] => [
   {
-    title: '-15 % sur tout le catalogue',
+    title: `-${discount} % sur tout le catalogue`,
     desc: 'Remise automatique appliquée sur l’ensemble des produits standard.',
   },
   {
@@ -29,6 +33,9 @@ export const PREMIUM_ADVANTAGES: { title: string; desc: string }[] = [
     desc: 'Un suivi dédié pour vos projets.',
   },
 ];
+
+/** Avantages de l'offre Premium (remise par défaut) — pour les clients Standard. */
+export const PREMIUM_ADVANTAGES = premiumAdvantages();
 
 // Enregistre la preuve d'acceptation du contrat Premium (trace juridique horodatée côté peg-backend).
 // Route authentifiée (JWT via pegBackendFetch) : le serveur vérifie que `customerId`
@@ -146,6 +153,62 @@ export async function apiGetPremiumCustomers(): Promise<PremiumCustomer[]> {
     console.error('[Premium] Erreurs GraphQL apiGetPremiumCustomers:', res.data.errors);
   }
   return res?.data?.data?.customers_connection?.nodes ?? [];
+}
+
+// Remise catalogue de chaque client Premium (documentId → % saisi, null = 15 %).
+// Requête À PART : demander `premiumDiscountPercent` à un Strapi qui ne le
+// connaît pas encore ferait échouer toute la liste. null = champ inconnu du
+// serveur (réglage masqué), jamais d'exception.
+export async function apiGetPremiumDiscounts(): Promise<Record<string, number | string | null> | null> {
+  const query = `
+    query GetPremiumDiscounts {
+      customers_connection(
+        filters: { premium: { eq: true } }
+        pagination: { page: 1, pageSize: 1000 }
+      ) {
+        nodes { documentId premiumDiscountPercent }
+      }
+    }
+  `;
+  try {
+    const res: any = await ApiService.fetchData({ url: API_GRAPHQL_URL, method: 'post', data: { query } });
+    const nodes = res?.data?.data?.customers_connection?.nodes;
+    if (res?.data?.errors?.length || !Array.isArray(nodes)) return null;
+    return Object.fromEntries(
+      nodes.map((n: { documentId: string; premiumDiscountPercent?: number | string | null }) => [
+        n.documentId,
+        n.premiumDiscountPercent ?? null,
+      ])
+    );
+  } catch {
+    return null;
+  }
+}
+
+// Fixe la remise catalogue d'un client (en %, null = revenir aux 15 % par défaut).
+// Le serveur borne le champ à 0–50 et c'est lui qui l'applique au paiement.
+export async function apiSetPremiumDiscount(
+  documentId: string,
+  percent: number | null
+): Promise<number | string | null> {
+  const query = `
+    mutation SetPremiumDiscount($documentId: ID!, $data: CustomerInput!) {
+      updateCustomer(documentId: $documentId, data: $data) {
+        documentId
+        premiumDiscountPercent
+      }
+    }
+  `;
+  const res: any = await ApiService.fetchData({
+    url: API_GRAPHQL_URL,
+    method: 'post',
+    data: { query, variables: { documentId, data: { premiumDiscountPercent: percent } } },
+  });
+  const updated = res?.data?.data?.updateCustomer;
+  if (res?.data?.errors?.length || !updated) {
+    throw new Error(res?.data?.errors?.[0]?.message || 'Échec de la mise à jour de la remise');
+  }
+  return updated.premiumDiscountPercent ?? null;
 }
 
 // Marque un client Premium comme traité / non traité (offres personnalisées préparées)

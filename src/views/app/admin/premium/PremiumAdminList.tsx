@@ -4,6 +4,7 @@ import { TbCrown, TbCheck, TbRefresh, TbMail, TbPhone, TbMapPin, TbAlertCircle }
 import { env } from '@/configs/env.config';
 import {
   apiGetPremiumCustomers,
+  apiGetPremiumDiscounts,
   apiSetPremiumProcessed,
   PremiumCustomer,
   PREMIUM_MIN_MONTHS,
@@ -11,6 +12,8 @@ import {
   canCancelPremium,
 } from '@/services/PremiumServices';
 import PremiumBannerEditor from './PremiumBannerEditor';
+import PremiumDiscountEditor from './PremiumDiscountEditor';
+import { formatPremiumDiscount } from '@/utils/productHelpers';
 
 const GOLD = '#eab308';
 
@@ -32,14 +35,17 @@ function formatSince(iso?: string | null): string {
 
 const PremiumAdminList = () => {
   const [customers, setCustomers] = useState<PremiumCustomer[]>([]);
+  // Remise catalogue par client ; null = serveur pas encore à jour (réglage masqué)
+  const [discounts, setDiscounts] = useState<Record<string, number | string | null> | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const data = await apiGetPremiumCustomers();
+      const [data, rates] = await Promise.all([apiGetPremiumCustomers(), apiGetPremiumDiscounts()]);
       setCustomers(data);
+      setDiscounts(rates);
     } catch {
       toast.error('Erreur lors du chargement des clients Premium');
     } finally {
@@ -70,6 +76,7 @@ const PremiumAdminList = () => {
   const renderCard = (c: PremiumCustomer) => {
     const logo = resolveLogo(c.logo?.url);
     const ci = c.companyInformations;
+    const discount = discounts ? discounts[c.documentId] ?? null : undefined;
     return (
       <div
         key={c.documentId}
@@ -103,6 +110,7 @@ const PremiumAdminList = () => {
               borderRadius: '100px', padding: '2px 8px', color: GOLD, fontSize: '10px', fontWeight: 700,
             }}>
               <TbCrown size={11} /> Premium
+              {discount !== undefined && ` · −${formatPremiumDiscount({ premiumDiscountPercent: discount })} %`}
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '4px', color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>
@@ -153,6 +161,16 @@ const PremiumAdminList = () => {
           >
             <TbCheck size={14} /> Marquer comme traité
           </button>
+        )}
+
+        {/* Remise catalogue propre au client (vide = 15 %) */}
+        {discount !== undefined && (
+          <PremiumDiscountEditor
+            customerDocumentId={c.documentId}
+            customerName={c.name}
+            value={discount}
+            onChange={(value) => setDiscounts((prev) => ({ ...(prev ?? {}), [c.documentId]: value }))}
+          />
         )}
 
         {/* Bannière de l'accueil du client : ordinateur + téléphone */}

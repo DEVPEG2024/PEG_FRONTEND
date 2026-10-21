@@ -2,7 +2,9 @@
 import type { ChangeEvent, ReactNode, RefObject } from 'react';
 import { HiOutlineCube, HiSearch, HiX } from 'react-icons/hi';
 import { TbDiscount } from 'react-icons/tb';
-import { HERO_SUBTITLE_CLASS, PREMIUM_PCT, VIOLET_HERO_BG } from './offersUi';
+import { RootState, useAppSelector } from '@/store';
+import { formatPremiumDiscount } from '@/utils/productHelpers';
+import { HERO_SUBTITLE_CLASS, VIOLET_HERO_BG } from './offersUi';
 
 type OffersHeroProps = {
   customerName?: string;
@@ -58,6 +60,7 @@ const OffersHero = ({
   onClearSearch,
   inputRef,
 }: OffersHeroProps) => {
+  const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const hasOffers = (baseTotal ?? 0) > 0;
   const showSearch = hasOffers || searchTerm !== '';
 
@@ -140,7 +143,7 @@ const OffersHero = ({
                 icon={
                   <TbDiscount aria-hidden="true" size={15} color="#eab308" />
                 }
-                value={`-${PREMIUM_PCT} %`}
+                value={`-${formatPremiumDiscount(customer)} %`}
                 label="remise Premium appliquée"
               />
             )}

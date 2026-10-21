@@ -37,6 +37,11 @@ export type Customer = {
   premiumProcessed?: boolean;
   /** Date de passage en Premium (ISO). */
   premiumSince?: string;
+  /**
+   * Remise catalogue propre au client Premium, en % (20 = −20 %). Vide = 15 %.
+   * Décimal Strapi : peut arriver en chaîne. Lu par getPremiumDiscountRate.
+   */
+  premiumDiscountPercent?: number | string | null;
   /** Générateur (apporteur d'affaires) ayant parrainé ce client — rattachement permanent. */
   generator?: { documentId: string; name?: string } | null;
   /** Date de rattachement au générateur (ISO). */

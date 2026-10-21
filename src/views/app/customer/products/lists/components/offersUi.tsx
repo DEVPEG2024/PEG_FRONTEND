@@ -3,7 +3,11 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { PREMIUM_DISCOUNT_RATE } from '@/utils/productHelpers';
 
-/** Remise Premium en pourcentage entier (15) — dérivée de la constante, jamais en dur. */
+/**
+ * Remise Premium PAR DÉFAUT en pourcentage entier (15) — dérivée de la
+ * constante, jamais en dur. Pour l'offre proposée aux clients Standard ; un
+ * client Premium voit SON taux (formatPremiumDiscount).
+ */
 export const PREMIUM_PCT = Math.round(PREMIUM_DISCOUNT_RATE * 100);
 
 /** Classe portant l'animation `pulse` (coupée si prefers-reduced-motion). */

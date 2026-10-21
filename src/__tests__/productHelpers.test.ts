@@ -9,6 +9,9 @@
 import {
   PREMIUM_DISCOUNT_RATE,
   getPremiumMultiplier,
+  getPremiumDiscountRate,
+  formatPremiumDiscount,
+  parsePremiumDiscountInput,
   applyPremiumDiscount,
   isPremiumDiscountEligible,
   premiumSavingsHT,
@@ -81,6 +84,68 @@ describe('Remise Premium', () => {
   test('champ absent (requête du catalogue, ancien panier) : traité comme catalogue', () => {
     expect(isPremiumDiscountEligible({})).toBe(true);
     expect(applyPremiumDiscount(100, makeCustomer(true), null)).toBe(85);
+  });
+});
+
+describe('Remise Premium propre au client (onglet Premium)', () => {
+  const catalogue = { inCatalogue: true };
+  const offre = { inCatalogue: false };
+  const premiumAt = (premiumDiscountPercent: number | string | null) =>
+    ({ premium: true, premiumDiscountPercent } as Customer);
+
+  test('taux vide : 15 %, comme avant', () => {
+    expect(getPremiumDiscountRate(premiumAt(null))).toBe(0.15);
+    expect(getPremiumDiscountRate(premiumAt(''))).toBe(0.15);
+    expect(getPremiumDiscountRate(makeCustomer(true))).toBe(0.15);
+    expect(applyPremiumDiscount(100, premiumAt(null), catalogue)).toBe(85);
+  });
+
+  test('taux saisi : appliqué au catalogue, décimales et chaîne comprises', () => {
+    expect(applyPremiumDiscount(100, premiumAt(20), catalogue)).toBe(80);
+    expect(applyPremiumDiscount(100, premiumAt('12.5'), catalogue)).toBe(87.5);
+    expect(applyPremiumDiscount(100, premiumAt(0), catalogue)).toBe(100);
+  });
+
+  test('jamais sur une offre personnalisée, jamais pour un client Standard', () => {
+    expect(applyPremiumDiscount(100, premiumAt(30), offre)).toBe(100);
+    expect(
+      applyPremiumDiscount(100, { premium: false, premiumDiscountPercent: 30 } as Customer, catalogue)
+    ).toBe(100);
+  });
+
+  test('borné à 0–50 % comme le serveur, saisie illisible = 15 %', () => {
+    expect(getPremiumDiscountRate(premiumAt(80))).toBe(0.5);
+    expect(getPremiumDiscountRate(premiumAt(-5))).toBe(0);
+    expect(getPremiumDiscountRate(premiumAt('abc'))).toBe(0.15);
+  });
+
+  test('libellé', () => {
+    expect(formatPremiumDiscount(null)).toBe('15');
+    expect(formatPremiumDiscount(premiumAt(12.5))).toBe('12,5');
+    expect(formatPremiumDiscount(premiumAt('20.00'))).toBe('20');
+  });
+
+  test('saisie admin : entiers et décimales, virgule ou point', () => {
+    expect(parsePremiumDiscountInput('20')).toBe(20);
+    expect(parsePremiumDiscountInput(' 12,5 ')).toBe(12.5);
+    expect(parsePremiumDiscountInput('12.25')).toBe(12.25);
+    expect(parsePremiumDiscountInput('0')).toBe(0);
+    expect(parsePremiumDiscountInput('50')).toBe(50);
+  });
+
+  test('saisie admin : refuse ce que le serveur refuserait', () => {
+    for (const bad of ['51', '100', '-5', '15 %', 'abc', '']) {
+      expect(parsePremiumDiscountInput(bad)).toBeNull();
+    }
+  });
+
+  test('économie des factures au taux du client', () => {
+    // 80 € payés à −20 % → 100 € au catalogue → 20 € d'économie
+    const saved = premiumSavingsHT(
+      { date: '2026-10-22', orderItems: [{ price: 80, product: catalogue }] },
+      premiumAt(20)
+    );
+    expect(Math.round(saved * 100) / 100).toBe(20);
   });
 });
 

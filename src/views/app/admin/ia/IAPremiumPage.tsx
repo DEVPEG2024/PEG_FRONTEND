@@ -178,7 +178,7 @@ const IAPremiumPage = () => (
     ]}
     options={[
       { key: 'margeMin', label: 'Marge minimale', type: 'percent', min: 0, max: 90, hint: 'Un produit dont l’offre passerait sous ce seuil n’est pas proposé.' },
-      { key: 'remiseSupplementaire', label: 'Remise supplémentaire', type: 'percent', min: 0, max: 50, hint: 'En plus des −15 % Premium (0 par défaut).' },
+      { key: 'remiseSupplementaire', label: 'Remise supplémentaire', type: 'percent', min: 0, max: 50, hint: 'En plus de la remise Premium du client (15 % sauf taux réglé dans l’onglet Premium ; 0 par défaut).' },
       { key: 'maquettes', label: 'Maquettes avec le logo', type: 'boolean' },
       { key: 'seulementSansOffre', label: 'Seulement les clients sans offre', type: 'boolean', hint: 'Sinon, tous les clients Premium sont revus.' },
     ]}

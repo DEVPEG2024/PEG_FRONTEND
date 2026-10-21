@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck } from 'react-icons/hi';
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
-import { premiumSavingsHT } from '@/utils/productHelpers';
+import { formatPremiumDiscount, premiumSavingsHT } from '@/utils/productHelpers';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding } from '@/utils/invoiceStatus';
@@ -51,8 +51,9 @@ const TAB_STATES = [
 ]
 
 const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc']
-const PREMIUM_PERKS = [
-  '-15% sur tout le catalogue',
+// Première ligne : la remise du client (son taux s'il est Premium, sinon l'offre)
+const premiumPerks = (discount: string) => [
+  `-${discount}% sur tout le catalogue`,
   'Historique de factures illimité',
   'Export comptable simplifié',
   'Relances et suivi automatisés',
@@ -229,10 +230,10 @@ const InvoicesList = () => {
       else paid += ttc
       // Économie Premium : seulement sur les lignes réellement remisées
       // (catalogue public — les offres personnalisées gardent leur prix)
-      if (isPremium) premiumSavings += premiumSavingsHT(inv)
+      if (isPremium) premiumSavings += premiumSavingsHT(inv, customer)
     }
     return { billed, pending, paid, premiumSavings }
-  }, [invoices, isPremium]);
+  }, [invoices, isPremium, customer]);
 
   /* ── Années disponibles + données dépenses ── */
   const years = useMemo(() => {
@@ -565,7 +566,7 @@ const InvoicesList = () => {
         {/* Avantages Premium */}
         <Panel title="Vos avantages Premium" style={{ position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative', zIndex: 1 }}>
-            {PREMIUM_PERKS.map((perk) => (
+            {premiumPerks(formatPremiumDiscount(isPremium ? customer : null)).map((perk) => (
               <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
                 <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(52,211,153,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#34d399' }}>
                   <HiCheckCircle size={16} />
