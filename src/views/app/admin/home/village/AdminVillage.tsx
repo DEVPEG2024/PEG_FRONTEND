@@ -1,0 +1,634 @@
+// Accueil admin « Village PEG » (ordinateur, ≥ 1024 px) — maquette validée le
+// 21/10/2026 : chiffres clés, village isométrique (un bâtiment par rubrique du
+// menu, 5 quartiers), fiche à droite, vue liste par quartier. Le tableau de
+// bord classique (bannière, pense-bête, widgets) reste à un clic.
+import { useEffect, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  HiChevronRight,
+  HiOutlineMap,
+  HiOutlineViewGrid,
+} from 'react-icons/hi';
+import { HiOutlineQueueList } from 'react-icons/hi2';
+import navigationIcon from '@/configs/navigation-icon.config';
+import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
+import VillagePanel, { type PanelSection } from './VillagePanel';
+import VillageList from './VillageList';
+import { useElementWidth } from './useElementWidth';
+import useVillageData from './useVillageData';
+import { SECTION_INFO } from './villageSections';
+import {
+  MENU_ORDER,
+  districtById,
+  districtOf,
+  membersOf,
+  type DistrictId,
+  type SectionId,
+} from './villageScene';
+import { TONE, emptySection, type SectionData } from './villageModel';
+
+const FILTERS: { id: VillageFilter; label: string; dot: string }[] = [
+  { id: 'tout', label: 'Tout', dot: TONE.violet },
+  { id: 'traiter', label: 'À traiter', dot: TONE.violet },
+  { id: 'production', label: 'En production', dot: TONE.orange },
+  { id: 'livrer', label: 'À livrer', dot: TONE.green },
+];
+
+const CSS = `
+.vgx-card{transition:transform .2s ease,box-shadow .2s ease}
+.vgx-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(40,36,80,.10)}
+.vgx-btn:focus-visible,.vgx-card:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.vgx-card{transition:none}}
+`;
+
+const icon = (id: SectionId): ReactNode =>
+  navigationIcon[SECTION_INFO[id].icon];
+
+interface Props {
+  onClassic: () => void;
+}
+
+const AdminVillage = ({ onClassic }: Props) => {
+  const navigate = useNavigate();
+  const { data, loading } = useVillageData();
+  const [rootRef, rootW] = useElementWidth<HTMLDivElement>(1100);
+  const [mapRef, mapW] = useElementWidth<HTMLDivElement>(760);
+  // Carte et fiche côte à côte dès que la place le permet (la carte se met à
+  // l'échelle, les étiquettes rapetissent un peu) ; sinon la fiche passe dessous.
+  const sideBySide = rootW >= 1000;
+  const panelW = Math.round(Math.min(380, Math.max(320, (rootW - 48) * 0.3)));
+
+  const [view, setView] = useState<'village' | 'liste'>('village');
+  const [filter, setFilter] = useState<VillageFilter>('tout');
+  const [selected, setSelected] = useState<SectionId>('projets');
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [fromSection, setFromSection] = useState(false);
+  const [district, setDistrict] = useState<DistrictId | null>(null);
+  const [zoom, setZoom] = useState<0 | 1 | 2>(0);
+  const [spotlightDone, setSpotlightDone] = useState(false);
+
+  // Premier affichage : la fiche du projet le plus urgent, comme sur la maquette.
+  useEffect(() => {
+    if (spotlightDone || !data) return;
+    setSpotlightDone(true);
+    if (data.projects[0]) setProjectId(data.projects[0].documentId);
+  }, [data, spotlightDone]);
+
+  const sectionData = (id: SectionId): SectionData =>
+    data?.sections[id] ??
+    emptySection(loading ? 'Chargement…' : 'Données indisponibles');
+
+  const mapSections = Object.fromEntries(
+    MENU_ORDER.map((id) => {
+      const d = sectionData(id);
+      const info = SECTION_INFO[id];
+      const s: MapSection = {
+        title: info.title,
+        icon: icon(id),
+        badge: d.badge,
+        tone: d.tone,
+        tags: d.tags,
+        aria: d.badge ? `${info.title} — ${d.chip}` : info.title,
+      };
+      return [id, s];
+    })
+  ) as Record<SectionId, MapSection>;
+
+  const selectSection = (id: SectionId) => {
+    setSelected(id);
+    setProjectId(null);
+    setFromSection(false);
+    setDistrict(null);
+  };
+  const selectDistrict = (id: DistrictId) => {
+    if (district === id) {
+      setDistrict(null);
+      setZoom(0);
+      return;
+    }
+    setDistrict(id);
+    setProjectId(null);
+    setZoom((z) => (z === 0 ? 1 : z));
+  };
+  const openProject = (documentId: string, fromList = false) => {
+    setSelected('projets');
+    setDistrict(null);
+    setProjectId(documentId);
+    setFromSection(fromList);
+  };
+
+  const panelSection = (id: SectionId): PanelSection => ({
+    id,
+    title: SECTION_INFO[id].title,
+    sub: SECTION_INFO[id].sub,
+    icon: icon(id),
+    cta: SECTION_INFO[id].cta,
+    data: sectionData(id),
+    district: districtById(districtOf(id)),
+  });
+  const project = projectId
+    ? (data?.projects.find((p) => p.documentId === projectId) ?? null)
+    : null;
+
+  const dimmed = (id: SectionId) =>
+    (filter !== 'tout' && !sectionData(id).tags.includes(filter)) ||
+    (!!district && districtOf(id) !== district);
+
+  const kpis = data?.kpis;
+  const kpiCards = [
+    {
+      label: 'Projets en cours',
+      value: kpis?.projectsInProgress,
+      icon: navigationIcon.projects,
+      soft: '#efedff',
+      ink: TONE.violet,
+      go: () => selectSection('projets'),
+    },
+    {
+      label: 'BAT à valider',
+      value: kpis?.batToValidate,
+      icon: navigationIcon.quotes,
+      soft: '#eaf1ff',
+      ink: '#2563eb',
+      go: () => {
+        setFilter('traiter');
+        const bat = data?.projects.find((p) => p.chipTone === 'bat');
+        if (bat) openProject(bat.documentId);
+        else selectSection('projets');
+      },
+    },
+    {
+      label: 'Prochaine livraison',
+      value: kpis?.nextDelivery,
+      icon: navigationIcon.calendar,
+      soft: '#e8f7ee',
+      ink: TONE.green,
+      go: () => {
+        setFilter('livrer');
+        selectSection('calendrier');
+      },
+    },
+    {
+      label: 'Factures en retard',
+      value: kpis?.overdueInvoices,
+      icon: navigationIcon.invoices,
+      soft: '#fff1e6',
+      ink: TONE.orange,
+      go: () => selectSection('finance'),
+    },
+  ];
+
+  const fit = mapW / 1132;
+  const ui = Math.min(1, Math.max(0.8, fit));
+  const mapHeight = Math.round(772 * fit);
+  // Carte étroite : titre et choix de la vue passent dans un en-tête au-dessus
+  // de la carte (posés dessus, ils couvriraient les étiquettes du haut).
+  const compact = fit < 0.9;
+  /** Chiffres clés resserrés quand quatre cartes tiennent à peine sur la ligne. */
+  const kc = rootW < 1150;
+  const labelScale = Math.min(1, Math.max(0.82, fit / 0.85));
+
+  const panel = (
+    <VillagePanel
+      loading={loading}
+      district={
+        district
+          ? {
+              d: districtById(district),
+              members: membersOf(district).map(panelSection),
+            }
+          : null
+      }
+      project={district ? null : project}
+      fromSection={fromSection}
+      section={district || project ? null : panelSection(selected)}
+      onSelect={selectSection}
+      onOpenProject={(id) => openProject(id, true)}
+      onProjectPage={(id) => navigate(`/common/projects/details/${id}`)}
+      onDistrict={selectDistrict}
+      onShowAll={() => {
+        setDistrict(null);
+        setZoom(0);
+      }}
+      onBack={() => {
+        setProjectId(null);
+        setFromSection(false);
+      }}
+      onCta={(id) =>
+        id === 'accueil' ? onClassic() : navigate(SECTION_INFO[id].to)
+      }
+      onNavigate={(to) => navigate(to)}
+    />
+  );
+
+  const segment = (on: boolean) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    height: 40 * ui,
+    padding: `0 ${16 * ui}px`,
+    border: 0,
+    borderRadius: 999,
+    background: on ? TONE.violet : 'transparent',
+    color: on ? '#ffffff' : '#111827',
+    fontSize: 14 * ui,
+    fontWeight: 700,
+    cursor: 'pointer',
+  });
+
+  const title = (
+    <div>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 34 * ui,
+          fontWeight: 800,
+          letterSpacing: '-0.03em',
+          color: '#111827',
+          lineHeight: 1.1,
+        }}
+      >
+        Votre village PEG
+      </h1>
+      <p
+        style={{
+          margin: `${6 * ui}px 0 0`,
+          fontSize: 15.5 * ui,
+          color: '#6b7280',
+        }}
+      >
+        Un bâtiment pour chaque partie de PEG.
+      </p>
+    </div>
+  );
+  const toggle = (
+    <div
+      role="group"
+      aria-label="Affichage"
+      style={{
+        display: 'flex',
+        gap: 4,
+        padding: 5,
+        borderRadius: 999,
+        background: '#ffffff',
+        boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+        flexShrink: 0,
+      }}
+    >
+      <button
+        type="button"
+        className="vgx-btn"
+        aria-pressed={view === 'village'}
+        onClick={() => setView('village')}
+        style={segment(view === 'village')}
+      >
+        <HiOutlineMap aria-hidden="true" /> Vue village
+      </button>
+      <button
+        type="button"
+        className="vgx-btn"
+        aria-pressed={view === 'liste'}
+        onClick={() => setView('liste')}
+        style={segment(view === 'liste')}
+      >
+        <HiOutlineQueueList aria-hidden="true" /> Vue liste
+      </button>
+      <button
+        type="button"
+        className="vgx-btn"
+        onClick={onClassic}
+        title="Bannière, pense-bête et widgets"
+        style={segment(false)}
+      >
+        <HiOutlineViewGrid aria-hidden="true" /> Vue classique
+      </button>
+    </div>
+  );
+
+  const overlays = (
+    <>
+      {!compact && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              left: 26 * ui - 10,
+              top: 22 * ui - 8,
+              padding: '8px 10px',
+              borderRadius: 16,
+              background: zoom > 0 ? 'rgba(246,243,237,0.9)' : 'transparent',
+              transition: 'background .3s ease',
+              pointerEvents: 'none',
+              zIndex: 2100,
+            }}
+          >
+            {title}
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              right: 20 * ui,
+              top: 20 * ui,
+              zIndex: 2100,
+            }}
+          >
+            {toggle}
+          </div>
+        </>
+      )}
+      <div
+        role="group"
+        aria-label="Filtrer le village"
+        style={{
+          position: 'absolute',
+          left: 20 * ui,
+          bottom: 18 * ui,
+          display: 'flex',
+          gap: 4,
+          padding: 5,
+          borderRadius: 999,
+          background: '#ffffff',
+          boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+          zIndex: 2100,
+        }}
+      >
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className="vgx-btn"
+            aria-pressed={filter === f.id}
+            onClick={() => setFilter(f.id)}
+            style={segment(filter === f.id)}
+          >
+            <span
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: filter === f.id ? '#ffffff' : f.dot,
+              }}
+            />
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {view === 'village' && (
+        <div
+          role="group"
+          aria-label="Zoom"
+          style={{
+            position: 'absolute',
+            right: 20 * ui,
+            bottom: 18 * ui,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 16,
+            background: '#ffffff',
+            boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+            overflow: 'hidden',
+            zIndex: 2100,
+          }}
+        >
+          <button
+            type="button"
+            className="vgx-btn"
+            aria-label="Zoomer"
+            disabled={zoom === 2}
+            onClick={() => setZoom((z) => (z < 2 ? ((z + 1) as 1 | 2) : z))}
+            style={{
+              width: 46 * ui,
+              height: 46 * ui,
+              border: 0,
+              background: 'transparent',
+              color: zoom < 2 ? '#111827' : '#c4c4cc',
+              fontSize: 24 * ui,
+              cursor: zoom < 2 ? 'pointer' : 'default',
+            }}
+          >
+            +
+          </button>
+          <span
+            style={{ height: 1, background: '#ece8e1', margin: '0 10px' }}
+          />
+          <button
+            type="button"
+            className="vgx-btn"
+            aria-label="Dézoomer"
+            disabled={zoom === 0}
+            onClick={() => setZoom((z) => (z > 0 ? ((z - 1) as 0 | 1) : z))}
+            style={{
+              width: 46 * ui,
+              height: 46 * ui,
+              border: 0,
+              background: 'transparent',
+              color: zoom > 0 ? '#111827' : '#c4c4cc',
+              fontSize: 24 * ui,
+              cursor: zoom > 0 ? 'pointer' : 'default',
+            }}
+          >
+            −
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div
+      ref={rootRef}
+      style={{
+        minHeight: '100%',
+        background: '#f3f1ec',
+        color: '#111827',
+        padding: '20px 24px 28px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <style>{CSS}</style>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: 16,
+        }}
+      >
+        {kpiCards.map((k) => (
+          <button
+            key={k.label}
+            type="button"
+            className="vgx-card"
+            onClick={k.go}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: kc ? 10 : 14,
+              minHeight: 78,
+              padding: kc ? '0 12px' : '0 16px',
+              borderRadius: 18,
+              border: '1px solid #ece8e1',
+              background: '#ffffff',
+              color: '#111827',
+              textAlign: 'left',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(40,36,80,0.05)',
+            }}
+          >
+            <span
+              style={{
+                width: kc ? 40 : 48,
+                height: kc ? 40 : 48,
+                flexShrink: 0,
+                borderRadius: 14,
+                background: k.soft,
+                color: k.ink,
+                fontSize: kc ? 20 : 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {k.icon}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: kc ? 13 : 14,
+                  color: '#374151',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {k.label}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 2,
+                  fontSize: kc ? 21 : 24,
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {k.value === undefined ? '…' : k.value === null ? '—' : k.value}
+              </span>
+            </span>
+            <HiChevronRight
+              aria-hidden="true"
+              style={{ fontSize: 20, color: '#111827' }}
+            />
+          </button>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: sideBySide
+            ? `minmax(0, 1fr) ${panelW}px`
+            : 'minmax(0, 1fr)',
+          gap: 16,
+          marginTop: 16,
+          alignItems: 'start',
+        }}
+      >
+        <section
+          ref={mapRef}
+          aria-label="Votre village PEG"
+          style={{
+            position: 'relative',
+            borderRadius: 24,
+            background: '#f6f3ed',
+            border: '1px solid #ebe5db',
+            overflow: 'hidden',
+            minHeight: mapHeight,
+          }}
+        >
+          {compact && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
+                padding: '16px 18px 6px 20px',
+              }}
+            >
+              {title}
+              {toggle}
+            </div>
+          )}
+          {view === 'village' ? (
+            <VillageMap
+              width={mapW}
+              sections={mapSections}
+              selected={district || projectId ? null : selected}
+              district={district}
+              filter={filter}
+              zoom={zoom}
+              onSelect={selectSection}
+              onSelectDistrict={selectDistrict}
+              labelScale={labelScale}
+            >
+              {overlays}
+            </VillageMap>
+          ) : (
+            <div style={{ position: 'relative', minHeight: mapHeight }}>
+              <VillageList
+                top={compact ? 12 : 104}
+                sections={
+                  Object.fromEntries(
+                    MENU_ORDER.map((id) => [
+                      id,
+                      {
+                        title: SECTION_INFO[id].title,
+                        icon: icon(id),
+                        data: sectionData(id),
+                      },
+                    ])
+                  ) as Record<
+                    SectionId,
+                    { title: string; icon: ReactNode; data: SectionData }
+                  >
+                }
+                selected={district || projectId ? null : selected}
+                district={district}
+                dimmed={dimmed}
+                onSelect={selectSection}
+                onDistrict={selectDistrict}
+              />
+              {overlays}
+            </div>
+          )}
+        </section>
+
+        <aside
+          aria-label="Fiche"
+          style={{
+            position: sideBySide ? 'sticky' : 'relative',
+            top: 84,
+            boxSizing: 'border-box',
+            minHeight: sideBySide ? mapHeight : 0,
+            padding: '24px 24px 22px',
+            borderRadius: 24,
+            background: '#ffffff',
+            border: '1px solid #ece8e1',
+            boxShadow: '0 6px 20px rgba(40,36,80,0.05)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {panel}
+        </aside>
+      </div>
+    </div>
+  );
+};
+
+export default AdminVillage;

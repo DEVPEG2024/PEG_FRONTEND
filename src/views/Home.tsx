@@ -2,7 +2,7 @@ import { User } from '@/@types/user'
 import { useAppSelector } from '@/store'
 import { hasRole } from '@/utils/permissions'
 import { SUPER_ADMIN, ADMIN, CUSTOMER, PRODUCER, GENERATOR } from '@/constants/roles.constant'
-import DashboardAdmin from '@/views/app/admin/home/DashboardAdmin'
+import AdminHome from '@/views/app/admin/home/AdminHome'
 import DashboardCustomer from '@/views/app/customer/home/DashboardCustomer'
 import DashboardProducer from '@/views/app/producer/home/DashboardProducer'
 import DashboardGenerator from '@/views/app/generator/home/DashboardGenerator'
@@ -30,7 +30,7 @@ const Home = () => {
           route est sans marge pour laisser les bannières toucher les bords) —
           voir _mobile.css. `display: contents` : aucune boîte, rien ne bouge au-delà. */}
       <div className="peg-home" style={{ display: 'contents' }}>
-        {isAdmin && <DashboardAdmin />}
+        {isAdmin && <AdminHome />}
         {isCustomer && <DashboardCustomer />}
         {isProducer && <DashboardProducer />}
         {isGenerator && <DashboardGenerator />}

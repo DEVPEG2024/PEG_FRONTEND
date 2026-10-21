@@ -968,6 +968,35 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 
 ---
 
+## 🏘️ Accueil admin « Village PEG » (ajout 21/10/2026)
+
+### Concept
+- Maquette validée par l'utilisateur le 21/10/2026 (« ok pour cette version, implémente au dashboard admin ») : sur ordinateur (≥ 1024 px), l'accueil admin est un **village isométrique** — **un bâtiment par rubrique du menu admin** (20, libellés et icônes lus dans `navigation.config/admin.ts`), regroupés en **5 quartiers** : Pilotage (Accueil, Calendrier, Projets, Planning), Clients (Leads, Clients, Premium, Tickets), Catalogue (Producteurs, Boutique, Attributs, Fournisseurs), Finances (Devis, Finance, Générateurs), Administration (Utilisateurs, Paramètres, IA, Campagnes, Bannières).
+- Au-dessus : 4 chiffres clés (Projets en cours, BAT à valider, Prochaine livraison, Factures en retard). À droite : la **fiche** (projet le plus urgent au chargement, rubrique cliquée avec ses chiffres et « En ce moment », ou quartier). Filtres Tout / À traiter / En production / À livrer, zoom, Vue liste (une colonne par quartier), passants et camionnettes animés (coupés si le système demande de réduire les animations).
+
+### ⚠️ `DashboardAdmin.tsx` n'est PAS modifié (composant protégé)
+- `src/views/Home.tsx` rend `AdminHome` pour les admins ; `AdminHome` choisit : **< 1024 px → `DashboardAdmin`** (qui bascule lui-même sur sa version téléphone) ; au-delà, le village par défaut, la **« Vue classique »** (bannière, pense-bête, widgets) à un clic, avec un bouton flottant « Vue village » pour revenir. Choix retenu par appareil : `localStorage peg:adminHomeView`.
+- Le pense-bête n'est que **lu** (badge du bâtiment Accueil : copie locale `peg:dashboardTodos`, sinon `apiGetAdminPreference`) ; on l'édite dans la vue classique.
+
+### Données (`village/villageFetch.ts` → `village/villageData.ts`)
+- **Une lecture par domaine**, en parallèle (`Promise.allSettled`) : une requête refusée n'éteint que ses bâtiments (« Données indisponibles », jamais un faux 0). Comptes = `pagination: { pageSize: 1 }` + `pageInfo.total`.
+- Règles reprises des pages et du menu : En cours = `pending` + `pending_paid` ; BAT à valider = produit `requiresBat`, `batFile` déposé, `batStatus` null/pending ; pastille Devis = `requested` (comme le menu) ; Premium à traiter = `premium` et `premiumProcessed` false/null (comme le menu), abonnés = `premiumSince` non nul (la migration a passé tous les anciens clients `premium=true`) ; factures « réglées » = `fulfilled`/`transfer_received` ; Planning = moteur de la page Planning (`scheduler.ts`, horizon 2 semaines) ; Imbretex gardé 1 h en `sessionStorage`.
+- Montants masqués quand l'œil du tableau de bord classique les cache (`dashboardFigures.ts`).
+- Les rubriques sans page « parent » (Clients, Producteurs, Boutique) mènent à leur première sous-page ; Boutique → `/admin/store/orders`.
+
+### Sprites
+- `public/img/village/*.svg` (servis sans empreinte : **incrémenter `SPRITES_VERSION`** dans `villageScene.ts` à chaque changement) + `village/spriteManifest.json` (haut du toit, cadre cliquable).
+- Générateurs versionnés : `scripts/village/` (projection commune `tools/iso.mjs`, accessoires `tools/props.mjs`, un `*.build.mjs` par bâtiment) → `node scripts/village/export.mjs` régénère, contrôle (`tools/lint.mjs`) et publie.
+
+### Fichiers clés et tests
+- `src/views/app/admin/home/AdminHome.tsx`, `village/` : `AdminVillage.tsx` (page), `VillageMap.tsx` (carte), `VillagePanel.tsx` (fiche), `VillageList.tsx`, `villageScene.ts` (géométrie, quartiers, décors, pose des étiquettes), `villageSections.ts` (titres/icônes/pages depuis le menu), `villageModel.ts`, `villageData.ts`, `villageFetch.ts`, `useVillageData.ts`.
+- `src/__tests__/adminVillage.test.ts` (une case par rubrique, quartiers d'un seul tenant, décors hors des trajets et sur l'îlot, étiquettes sans chevauchement à 3 échelles, libellés exacts du menu) ; `adminVillageData.test.ts` (chiffres, accords, chiffres masqués, lectures manquantes).
+
+### Déploiement
+Front seul : aucune route ni champ backend nouveau. Si un champ manque sur un Strapi pas à jour, seuls les bâtiments concernés affichent « Données indisponibles ».
+
+---
+
 ## 📊 Dashboard admin — Calcul du CA (mise à jour 18/04/2026)
 
 ### Source de vérité : `project.price`
