@@ -756,7 +756,9 @@ const AdminVillage = ({ onClassic }: Props) => {
           style={{
             position: 'absolute',
             left: '50%',
-            top: compact ? 10 : 84 * ui,
+            // En bas, au-dessus des filtres : en haut, elle couvrait le bouton
+            // de la tournée sur les grands écrans.
+            bottom: 74 * ui,
             transform: 'translateX(-50%)',
             maxWidth: '86%',
             padding: '8px 14px',
