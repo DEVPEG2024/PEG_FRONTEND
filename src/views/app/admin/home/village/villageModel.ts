@@ -106,6 +106,12 @@ export interface ProjectCard {
   imageUrl: string | null;
 }
 
+/** Un point d'une petite courbe : jour AAAA-MM-JJ et valeur (null = pas de photo ce jour-là). */
+export interface SeriesPoint {
+  day: string;
+  value: number | null;
+}
+
 export interface VillageKpis {
   projectsInProgress: number | null;
   batToValidate: number | null;
@@ -116,6 +122,23 @@ export interface VillageKpis {
   trends: Partial<
     Record<'projectsInProgress' | 'batToValidate' | 'overdueInvoices', Trend>
   >;
+  /**
+   * Petites courbes : les 7 derniers jours (aujourd'hui = chiffre en direct)
+   * pour trois chiffres clés ; les 7 prochains jours pour les livraisons.
+   */
+  series: Partial<
+    Record<
+      'projectsInProgress' | 'batToValidate' | 'overdueInvoices' | 'deliveries',
+      SeriesPoint[]
+    >
+  >;
+}
+
+/** Une livraison du jour (fiche « Ma journée »). */
+export interface DayDelivery {
+  documentId: string;
+  name: string;
+  customer: string;
 }
 
 /** Une maison du chantier : un projet à son stade. */
@@ -147,6 +170,10 @@ export interface VillageData {
   /** Maisons du chantier, de gauche à droite (3 au plus). */
   chantier: ChantierHouse[];
   life: VillageLife;
+  /** Projets actifs dont la livraison est prévue aujourd'hui (fiche « Ma journée »), les premiers. */
+  todayDeliveries: DayDelivery[];
+  /** Leur nombre total (la liste peut en montrer moins). */
+  todayDeliveryCount: number;
 }
 
 /** La rubrique répond-elle au filtre ? « Urgent » = rubrique en alerte. */

@@ -29,6 +29,7 @@ import {
 } from '@/utils/planning/scheduler';
 import type { Project } from '@/@types/project';
 import {
+  bucketByDay,
   staleTickets,
   type RawEvent,
   type RawInvoice,
@@ -63,18 +64,20 @@ export const fetchProjects = async (): Promise<
   Pick<RawVillage, 'projects'>
 > => {
   const d = await gql<Record<string, Conn & { nodes?: RawProject[] }>>(
-    `query VillageProjects($dayStart: DateTime, $dayEnd: DateTime) {
+    `query VillageProjects($dayStart: DateTime, $dayEnd: DateTime, $weekEnd: DateTime) {
       pending: projects_connection(filters: { state: { eq: "pending" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       pendingPaid: projects_connection(filters: { state: { eq: "pending_paid" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       waiting: projects_connection(filters: { state: { eq: "waiting" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       sav: projects_connection(filters: { state: { eq: "sav" } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       late: projects_connection(filters: { state: { in: ${ACTIVE} }, endDate: { lt: $dayStart } }, pagination: { pageSize: 1 }) { pageInfo { total } }
       next: projects_connection(filters: { state: { in: ${ACTIVE} }, endDate: { gte: $dayStart } }, sort: ["endDate:asc"], pagination: { pageSize: 1 }) { nodes { documentId name endDate customer { name } } }
-      dueToday: projects_connection(filters: { state: { in: ${ACTIVE} }, endDate: { gte: $dayStart, lt: $dayEnd } }, pagination: { pageSize: 1 }) { pageInfo { total } }
+      dueToday: projects_connection(filters: { state: { in: ${ACTIVE} }, endDate: { gte: $dayStart, lt: $dayEnd } }, sort: ["endDate:asc"], pagination: { pageSize: 6 }) { pageInfo { total } nodes { documentId name endDate customer { name } } }
+      upcoming: projects_connection(filters: { state: { in: ${ACTIVE} }, endDate: { gte: $dayStart, lt: $weekEnd } }, pagination: { pageSize: 500 }) { nodes { endDate } }
     }`,
     {
       dayStart: dayStart(),
       dayEnd: dayjs().startOf('day').add(1, 'day').toISOString(),
+      weekEnd: dayjs().startOf('day').add(7, 'day').toISOString(),
     }
   );
   return {
@@ -86,6 +89,13 @@ export const fetchProjects = async (): Promise<
       late: total(d?.late),
       next: d?.next?.nodes?.[0] ?? null,
       dueToday: total(d?.dueToday),
+      todayList: d?.dueToday?.nodes,
+      dueNext7: d?.upcoming?.nodes
+        ? bucketByDay(
+            d.upcoming.nodes.map((p) => p.endDate),
+            new Date()
+          )
+        : undefined,
     },
   };
 };

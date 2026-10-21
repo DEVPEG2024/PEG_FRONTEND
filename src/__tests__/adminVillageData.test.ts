@@ -259,7 +259,11 @@ describe('village — rubriques', () => {
       nextDeliveryIn: null,
       overdueInvoices: null,
       trends: {},
+      // Aucune lecture : pas de courbe (jamais une ligne de zéros).
+      series: {},
     });
+    expect(empty.todayDeliveries).toEqual([]);
+    expect(empty.todayDeliveryCount).toBe(0);
     expect(Object.keys(empty.sections)).toHaveLength(20);
   });
 });

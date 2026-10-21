@@ -16,9 +16,25 @@ export interface ActivityNotification {
 export interface VillageActivity {
   /** Identifiant de la notification : relance l'animation à chaque nouvelle. */
   key: string;
+  /** Identifiant tel que le store le garde (nombre à l'exécution) : « lu » au clic. */
+  rawId: string | number;
   id: SectionId;
   text: string;
+  /** Page à ouvrir au clic (celle de la notification) ; null = la fiche du bâtiment. */
+  link: string | null;
 }
+
+/**
+ * Lien d'une notification utilisable dans l'application : chemin interne
+ * seulement, et les liens connus pour ne mener nulle part corrigés
+ * (Strapi envoie « /admin/tickets/<id> », la page des tickets est « /support »).
+ */
+export const safeLink = (link: string | null | undefined): string | null => {
+  if (!link || typeof link !== 'string') return null;
+  if (!link.startsWith('/') || link.startsWith('//')) return null;
+  if (link.startsWith('/admin/tickets')) return '/support';
+  return link;
+};
 
 /** Le lien de la notification désigne la rubrique (le plus précis d'abord). */
 const BY_LINK: [string, SectionId][] = [
@@ -93,8 +109,10 @@ export const activityBubbles = (
       if (!id || out.some((b) => b.id === id) || out.length >= max) return;
       out.push({
         key: String(n._id),
+        rawId: n._id,
         id,
         text: (n.title || 'Nouvelle activité').trim(),
+        link: safeLink(n.link),
       });
     });
   return out;

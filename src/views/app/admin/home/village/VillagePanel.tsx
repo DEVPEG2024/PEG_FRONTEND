@@ -1,7 +1,8 @@
-// Fiche à droite du village : un quartier, un projet ou une rubrique.
-// Affichage seul — AdminVillage choisit le contenu et reçoit les clics.
+// Fiche à droite du village : « Ma journée », un quartier, un projet ou une
+// rubrique. Affichage seul — AdminVillage choisit le contenu et reçoit les clics.
 import type { ReactNode } from 'react';
 import { HiCheck, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
+import { HiOutlineBell } from 'react-icons/hi2';
 import { BsCalendar3 } from 'react-icons/bs';
 import type { District, SectionId } from './villageScene';
 import { spriteUrl, SPRITE_META } from './villageScene';
@@ -12,6 +13,7 @@ import {
   type SectionData,
   type Trend,
 } from './villageModel';
+import type { Journee, JourneeRow } from './villageJournee';
 
 const TREND_TONE: Record<Trend['tone'], { bg: string; fg: string }> = {
   good: { bg: '#e8f7ee', fg: '#15803d' },
@@ -276,6 +278,173 @@ const Stat = ({
   </div>
 );
 
+/** Retour en haut de fiche : « ← Ma journée », « ← Projets ». */
+const BackLink = ({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    style={{
+      alignSelf: 'flex-start',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+      height: 30,
+      margin: '-6px 0 8px -8px',
+      padding: '0 10px',
+      border: 0,
+      borderRadius: 10,
+      background: 'transparent',
+      color: '#5b4ae8',
+      fontSize: 13.5,
+      fontWeight: 700,
+      cursor: 'pointer',
+    }}
+  >
+    <HiChevronLeft aria-hidden="true" /> {children}
+  </button>
+);
+
+const ellipsis = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
+/** Titre d'un bloc de « Ma journée », avec son nombre. */
+const DayGroup = ({
+  title,
+  count,
+  color,
+  children,
+}: {
+  title: string;
+  count?: number;
+  color?: string;
+  children: ReactNode;
+}) => (
+  <>
+    <h3
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        margin: '18px 0 2px',
+        fontSize: 15,
+        fontWeight: 800,
+        color: '#111827',
+      }}
+    >
+      {title}
+      {!!count && (
+        <span
+          style={{
+            minWidth: 21,
+            height: 21,
+            padding: '0 6px',
+            boxSizing: 'border-box',
+            borderRadius: 999,
+            background: color ?? '#eceef3',
+            color: color ? '#ffffff' : '#4b5563',
+            fontSize: 11.5,
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </h3>
+    {children}
+  </>
+);
+
+/** Une ligne de « Ma journée » : rubrique, projet ou page à ouvrir. */
+const DayRow = ({
+  r,
+  first,
+  urgent = false,
+  onClick,
+}: {
+  r: JourneeRow;
+  first: boolean;
+  urgent?: boolean;
+  onClick?: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={!onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 11,
+      width: '100%',
+      minHeight: 46,
+      padding: '6px 4px',
+      border: 0,
+      borderTop: first ? 0 : '1px solid #f0ede7',
+      background: 'transparent',
+      color: '#111827',
+      textAlign: 'left',
+      cursor: onClick ? 'pointer' : 'default',
+    }}
+  >
+    {urgent ? (
+      <AlertFlag size={14} />
+    ) : (
+      <span
+        style={{
+          width: 9,
+          height: 9,
+          flexShrink: 0,
+          borderRadius: '50%',
+          background: r.dot,
+        }}
+      />
+    )}
+    <span style={{ flex: 1, minWidth: 0 }}>
+      <span
+        style={{
+          display: 'block',
+          fontSize: 13.5,
+          fontWeight: 700,
+          lineHeight: 1.35,
+          color: urgent ? '#b91c1c' : '#111827',
+        }}
+      >
+        {r.text}
+      </span>
+      {r.sub && (
+        <span
+          style={{
+            display: 'block',
+            marginTop: 1,
+            fontSize: 12,
+            color: '#6b7280',
+            ...ellipsis,
+          }}
+        >
+          {r.sub}
+        </span>
+      )}
+    </span>
+    {onClick && (
+      <HiChevronRight
+        aria-hidden="true"
+        style={{ flexShrink: 0, color: '#9ca3af' }}
+      />
+    )}
+  </button>
+);
+
 export interface PanelSection {
   id: SectionId;
   title: string;
@@ -288,9 +457,14 @@ export interface PanelSection {
 
 interface Props {
   loading: boolean;
+  /** Fiche « Ma journée » (bâtiment Accueil) ; null le temps du chargement. */
+  journee: { day: Journee | null } | null;
+  /** Bouton de la tournée en bas de « Ma journée » ; null = rien à traiter. */
+  tour: { label: string; count: number } | null;
   district: { d: District; members: PanelSection[] } | null;
   project: ProjectCard | null;
-  fromSection: boolean;
+  /** Fiche où ramène le retour d'un projet (« Ma journée », « Projets »…). */
+  projectBack: string;
   section: PanelSection | null;
   onSelect: (id: SectionId) => void;
   onOpenProject: (documentId: string) => void;
@@ -298,15 +472,20 @@ interface Props {
   onDistrict: (id: District['id']) => void;
   onShowAll: () => void;
   onBack: () => void;
+  /** Retour à « Ma journée ». */
+  onHome: () => void;
+  onStartTour: () => void;
   onCta: (id: SectionId) => void;
   onNavigate: (to: string) => void;
 }
 
 const VillagePanel = ({
   loading,
+  journee,
+  tour,
   district,
   project,
-  fromSection,
+  projectBack,
   section,
   onSelect,
   onOpenProject,
@@ -314,9 +493,327 @@ const VillagePanel = ({
   onDistrict,
   onShowAll,
   onBack,
+  onHome,
+  onStartTour,
   onCta,
   onNavigate,
 }: Props) => {
+  // ── Ma journée ──
+  if (journee) {
+    const j = journee.day;
+    const rowClick = (r: JourneeRow) =>
+      r.projectId
+        ? () => onOpenProject(r.projectId as string)
+        : r.section
+          ? () => onSelect(r.section as SectionId)
+          : r.to
+            ? () => onNavigate(r.to as string)
+            : undefined;
+    const top = j?.topProject ?? null;
+    const topChip = top ? CHIP[top.chipTone] : null;
+    return (
+      <>
+        <span
+          style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            height: 30,
+            padding: '0 12px',
+            borderRadius: 9,
+            background: '#efedff',
+            color: '#4f3fd1',
+            fontSize: 13.5,
+            fontWeight: 700,
+          }}
+        >
+          <BsCalendar3 aria-hidden="true" />
+          Ma journée{j ? ` · ${j.dateLabel}` : ''}
+        </span>
+        <h2
+          style={{
+            margin: '14px 0 0',
+            fontSize: 28,
+            fontWeight: 800,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.12,
+            color: '#111827',
+          }}
+        >
+          {j ? j.greeting : 'Bonjour'}
+        </h2>
+        <p
+          style={{
+            margin: '6px 0 0',
+            fontSize: 15,
+            lineHeight: 1.45,
+            fontWeight: 600,
+            color: '#4b5563',
+          }}
+        >
+          {j
+            ? j.lead
+            : loading
+              ? 'Chargement de votre journée…'
+              : 'Données indisponibles pour le moment.'}
+        </p>
+        {top && topChip && (
+          <button
+            type="button"
+            onClick={() => onOpenProject(top.documentId)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              width: '100%',
+              marginTop: 16,
+              padding: 10,
+              borderRadius: 16,
+              border: '1px solid #ece8e1',
+              background: '#faf9f7',
+              color: '#111827',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
+            {top.imageUrl ? (
+              <span
+                style={{
+                  width: 58,
+                  height: 54,
+                  flexShrink: 0,
+                  borderRadius: 12,
+                  background: '#f1eee8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                <img
+                  src={top.imageUrl}
+                  alt=""
+                  style={{
+                    maxWidth: '86%',
+                    maxHeight: '86%',
+                    objectFit: 'contain',
+                    mixBlendMode: 'multiply',
+                  }}
+                />
+              </span>
+            ) : (
+              <BuildingThumb id="projets" w={58} h={54} bg="#efecfe" />
+            )}
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#6b7280',
+                }}
+              >
+                Le projet le plus urgent
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 1,
+                  fontSize: 14.5,
+                  fontWeight: 800,
+                  ...ellipsis,
+                }}
+              >
+                {top.name}
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 4,
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    flexShrink: 0,
+                    height: 20,
+                    padding: '0 7px',
+                    borderRadius: 6,
+                    background: topChip.bg,
+                    color: topChip.fg,
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: topChip.dot,
+                    }}
+                  />
+                  {top.chip}
+                </span>
+                <span style={{ fontSize: 12, color: '#6b7280', ...ellipsis }}>
+                  {top.customer}
+                </span>
+              </span>
+            </span>
+            <HiChevronRight
+              aria-hidden="true"
+              style={{ flexShrink: 0, color: '#9ca3af' }}
+            />
+          </button>
+        )}
+        {j && j.urgent.length > 0 && (
+          <DayGroup title="Urgent" count={j.urgent.length} color={TONE.red}>
+            {j.urgent.map((r, i) => (
+              <DayRow
+                key={r.key}
+                r={r}
+                first={!i}
+                urgent
+                onClick={rowClick(r)}
+              />
+            ))}
+          </DayGroup>
+        )}
+        {j && j.todo.length > 0 && (
+          <DayGroup title="À traiter" count={j.todo.length}>
+            {j.todo.map((r, i) => (
+              <DayRow key={r.key} r={r} first={!i} onClick={rowClick(r)} />
+            ))}
+          </DayGroup>
+        )}
+        {j && (
+          <DayGroup title="Aujourd’hui">
+            {j.today.map((r, i) => (
+              <DayRow key={r.key} r={r} first={!i} onClick={rowClick(r)} />
+            ))}
+            {!j.today.length && (
+              <p
+                style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}
+              >
+                Aucune livraison ni rendez-vous aujourd’hui.
+              </p>
+            )}
+            {j.nextDelivery && (
+              <p
+                style={{
+                  margin: '4px 0 0',
+                  fontSize: 13,
+                  color: '#4b5563',
+                }}
+              >
+                Prochaine livraison :{' '}
+                <strong style={{ fontWeight: 700, color: '#111827' }}>
+                  {j.nextDelivery}
+                </strong>
+              </p>
+            )}
+          </DayGroup>
+        )}
+        {j?.news && (
+          <DayGroup title="Depuis hier">
+            <p
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                margin: '4px 0 0',
+                fontSize: 13.5,
+                fontWeight: 600,
+                lineHeight: 1.4,
+                color: '#111827',
+              }}
+            >
+              <HiOutlineBell
+                aria-hidden="true"
+                style={{ flexShrink: 0, marginTop: 2, color: TONE.violet }}
+              />
+              {j.news}
+            </p>
+          </DayGroup>
+        )}
+        {j && j.memo.count > 0 && (
+          <DayGroup title="Pense-bête" count={j.memo.count}>
+            <ul
+              style={{
+                margin: '4px 0 0',
+                padding: '0 0 0 18px',
+                fontSize: 13.5,
+                lineHeight: 1.5,
+                color: '#111827',
+              }}
+            >
+              {j.memo.items.map((t, i) => (
+                <li key={`${t}-${i}`}>{t}</li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => onCta('accueil')}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                height: 30,
+                margin: '2px 0 0 -10px',
+                padding: '0 10px',
+                border: 0,
+                borderRadius: 10,
+                background: 'transparent',
+                color: '#5b4ae8',
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Ouvrir le pense-bête <HiChevronRight aria-hidden="true" />
+            </button>
+          </DayGroup>
+        )}
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          {tour ? (
+            <Primary onClick={onStartTour}>
+              {tour.label}
+              <span
+                style={{
+                  minWidth: 24,
+                  height: 24,
+                  padding: '0 7px',
+                  boxSizing: 'border-box',
+                  borderRadius: 999,
+                  background: '#ffffff',
+                  color: '#6d5dfc',
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {tour.count}
+              </span>
+            </Primary>
+          ) : (
+            <Secondary onClick={() => onCta('accueil')}>
+              Ouvrir la vue classique
+            </Secondary>
+          )}
+        </div>
+      </>
+    );
+  }
+
   // ── Quartier ──
   if (district) {
     const { d, members } = district;
@@ -324,6 +821,7 @@ const VillagePanel = ({
     const urgent = members.filter((m) => m.data.alert).length;
     return (
       <>
+        <BackLink onClick={onHome}>Ma journée</BackLink>
         <span
           style={{
             alignSelf: 'flex-start',
@@ -523,30 +1021,7 @@ const VillagePanel = ({
     const chip = CHIP[project.chipTone];
     return (
       <>
-        {fromSection && (
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              alignSelf: 'flex-start',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              height: 30,
-              margin: '-6px 0 8px -8px',
-              padding: '0 10px',
-              border: 0,
-              borderRadius: 10,
-              background: 'transparent',
-              color: '#5b4ae8',
-              fontSize: 13.5,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            <HiChevronLeft aria-hidden="true" /> Projets
-          </button>
-        )}
+        <BackLink onClick={onBack}>{projectBack}</BackLink>
         <span
           style={{
             alignSelf: 'flex-start',
@@ -810,6 +1285,7 @@ const VillagePanel = ({
   const chip = sectionChip(data);
   return (
     <>
+      <BackLink onClick={onHome}>Ma journée</BackLink>
       <span style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <span
           style={{

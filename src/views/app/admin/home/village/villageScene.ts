@@ -748,6 +748,52 @@ export const placeLabels = (
     });
 };
 
+/**
+ * Place de l'aperçu d'un bâtiment (survol) : au-dessus de son étiquette s'il
+ * y tient, sinon à côté, du côté le plus dégagé — jamais sur le bâtiment
+ * survolé, jamais hors de la carte (elle coupe ce qui dépasse).
+ */
+export const previewPlacement = (o: {
+  /** Centre horizontal et bas de l'étiquette, en pixels écran. */
+  x: number;
+  y: number;
+  pillW: number;
+  pillH: number;
+  cardW: number;
+  cardH: number;
+  mapW: number;
+  mapH: number;
+  /** Une bulle d'activité occupe déjà le dessus de l'étiquette. */
+  busyAbove?: boolean;
+}): { left: number; top: number; side: 'above' | 'right' | 'left' } => {
+  const m = 8;
+  const within = (v: number, lo: number, hi: number) =>
+    Math.min(Math.max(v, lo), Math.max(lo, hi));
+  const pillTop = o.y - o.pillH;
+  const aboveTop = pillTop - 8 - o.cardH;
+  if (!o.busyAbove && aboveTop >= m)
+    return {
+      left: within(o.x - o.cardW / 2, m, o.mapW - m - o.cardW),
+      top: aboveTop,
+      side: 'above',
+    };
+  const top = within(pillTop - 6, m, o.mapH - m - o.cardH);
+  const rightX = o.x + o.pillW / 2 + 12;
+  const roomRight = o.mapW - m - rightX;
+  const roomLeft = o.x - o.pillW / 2 - 12 - m;
+  if (roomRight >= o.cardW || roomRight >= roomLeft)
+    return {
+      left: Math.max(m, Math.min(rightX, o.mapW - m - o.cardW)),
+      top,
+      side: 'right',
+    };
+  return {
+    left: Math.max(m, o.x - o.pillW / 2 - 12 - o.cardW),
+    top,
+    side: 'left',
+  };
+};
+
 /** Largeur d'une pastille d'étiquette (texte 13,5 px gras, icône, pastille de compte). */
 export const labelWidth = (title: string, badge?: string | null) =>
   11 +

@@ -18,12 +18,18 @@ import {
   HiOutlineQueueList,
 } from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { markAsRead } from '@/store/slices/base/notificationSlice';
+import { markNotificationAsRead } from '@/services/NotificationService';
 import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
 import VillagePanel, { type PanelSection } from './VillagePanel';
 import VillageList from './VillageList';
+import VillageSparkline from './VillageSparkline';
 import { useElementWidth } from './useElementWidth';
 import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
+import type { VillageActivity } from './villageActivity';
+import { buildJournee, newsKey } from './villageJournee';
 import { SECTION_INFO } from './villageSections';
 import {
   DISTRICTS,
@@ -47,6 +53,7 @@ import {
   emptySection,
   matchesFilter,
   type SectionData,
+  type SeriesPoint,
   type Trend,
 } from './villageModel';
 import { markSeen, readSeen, resumeIndex, tourSteps } from './villageTour';
@@ -89,8 +96,22 @@ export const trendText = (t: Trend) =>
     ? `Stable ${t.since}`
     : `${t.delta > 0 ? '▲' : '▼'} ${t.text} ${t.since}`;
 
+/** Pastille d'un chiffre clé : jamais plus large que sa carte. */
+const CHIP_FIT = {
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  verticalAlign: 'top',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+} as const;
+
 const ARRIVED_KEY = 'peg:villageArrived';
 const HINT_KEY = 'peg:villageHint';
+
+const TITLES = Object.fromEntries(
+  MENU_ORDER.map((id) => [id, SECTION_INFO[id].title])
+) as Record<SectionId, string>;
 
 interface Props {
   onClassic: () => void;
@@ -98,8 +119,21 @@ interface Props {
 
 const AdminVillage = ({ onClassic }: Props) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { data, loading, refresh } = useVillageData();
   const activity = useVillageActivity(refresh);
+  const firstName = useAppSelector(
+    (s) => s.auth.user.user?.firstName?.trim() || null
+  );
+  // Nouveautés des dernières 24 h, lues dans la cloche (chaîne stable : pas de
+  // nouveau rendu à chaque passage du polling).
+  const news = useAppSelector((s) =>
+    newsKey(
+      s.base.notification?.notifications ?? [],
+      Date.now(),
+      !!s.base.notification?.hasMore
+    )
+  );
   const [rootRef, rootW] = useElementWidth<HTMLDivElement>(1100);
   const [mapRef, mapW] = useElementWidth<HTMLDivElement>(760);
   // Carte et fiche côte à côte dès que la place le permet (la carte se met à
@@ -109,14 +143,14 @@ const AdminVillage = ({ onClassic }: Props) => {
 
   const [view, setView] = useState<'village' | 'liste'>('village');
   const [filter, setFilter] = useState<VillageFilter>('tout');
-  const [selected, setSelected] = useState<SectionId>('projets');
+  // Arrivée sur l'Accueil : la fiche « Ma journée ».
+  const [selected, setSelected] = useState<SectionId>('accueil');
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [fromSection, setFromSection] = useState(false);
+  const [backTo, setBackTo] = useState<SectionId>('accueil');
   const [district, setDistrict] = useState<DistrictId | null>(null);
   /** Zoom continu (1 = tout le village) et point visé à la souris (null = cible choisie). */
   const [zoom, setZoom] = useState(1);
   const [focus, setFocus] = useState<[number, number] | null>(null);
-  const [spotlightDone, setSpotlightDone] = useState(false);
   const [tourIdx, setTourIdx] = useState<number | null>(null);
   const [tourDone, setTourDone] = useState(false);
   /** Étapes figées au départ : une relecture des données ne décale pas la tournée. */
@@ -170,12 +204,10 @@ const AdminVillage = ({ onClassic }: Props) => {
     [ambianceOn, ambiance.season]
   );
 
-  // Premier affichage : la fiche du projet le plus urgent, comme sur la maquette.
-  useEffect(() => {
-    if (spotlightDone || !data) return;
-    setSpotlightDone(true);
-    if (data.projects[0]) setProjectId(data.projects[0].documentId);
-  }, [data, spotlightDone]);
+  const journee = useMemo(
+    () => (data ? buildJournee(data, TITLES, news, firstName, now) : null),
+    [data, news, firstName, now]
+  );
 
   const sectionData = (id: SectionId): SectionData =>
     data?.sections[id] ??
@@ -203,6 +235,14 @@ const AdminVillage = ({ onClassic }: Props) => {
           .join(' — '),
         alert: d.alert,
         level: d.activity?.level ?? 0,
+        preview: {
+          chip: d.chip,
+          stats: d.stats.slice(0, 3),
+          activity:
+            d.activity && d.activity.level >= 2
+              ? `Activité du mois · ${d.activity.label}`
+              : null,
+        },
       };
       return [id, s];
     })
@@ -211,7 +251,6 @@ const AdminVillage = ({ onClassic }: Props) => {
   const selectSection = (id: SectionId) => {
     setSelected(id);
     setProjectId(null);
-    setFromSection(false);
     setDistrict(null);
     setFocus(null);
   };
@@ -226,18 +265,32 @@ const AdminVillage = ({ onClassic }: Props) => {
     setProjectId(null);
     setZoom((z) => (z <= 1.001 ? ZOOM_STEPS[1] : z));
   };
-  const openProject = (documentId: string, fromList = false) => {
+  /** Fiche d'un projet ; `from` = la fiche où ramène le retour (« Ma journée » par défaut). */
+  const openProject = (documentId: string, from: SectionId = 'accueil') => {
     setSelected('projets');
     setDistrict(null);
     setFocus(null);
     setProjectId(documentId);
-    setFromSection(fromList);
+    setBackTo(from);
   };
   /** Tout le village, sans quartier ni zoom. */
   const resetView = () => {
     setDistrict(null);
     setFocus(null);
     setZoom(1);
+  };
+  /**
+   * Bulle d'activité : la page de la notification, comme dans la cloche, et
+   * la notification passe en « lue » ; sans lien utilisable, la fiche du
+   * bâtiment.
+   */
+  const openActivity = (a: VillageActivity) => {
+    // Le store garde l'identifiant tel que le serveur l'envoie (un nombre) :
+    // markAsRead le compare strictement.
+    dispatch(markAsRead(a.rawId as string));
+    markNotificationAsRead(String(a.rawId)).catch(() => undefined);
+    if (a.link) navigate(a.link);
+    else selectSection(a.id);
   };
 
   // « Ma tournée du jour » : les rubriques qui demandent une action, urgences d'abord.
@@ -335,11 +388,27 @@ const AdminVillage = ({ onClassic }: Props) => {
     (!!district && districtOf(id) !== district);
 
   const kpis = data?.kpis;
-  const kpiCards = [
+  // Petite courbe de chaque chiffre : 7 derniers jours (ligne), ou 7 prochains
+  // jours pour les livraisons (barres).
+  const kpiCards: {
+    label: string;
+    value: string | number | null | undefined;
+    trend: Trend | undefined;
+    sub?: string | null;
+    series: SeriesPoint[] | undefined;
+    kind: 'past' | 'next';
+    unit?: [string, string];
+    icon: ReactNode;
+    soft: string;
+    ink: string;
+    go: () => void;
+  }[] = [
     {
       label: 'Projets en cours',
       value: kpis?.projectsInProgress,
       trend: kpis?.trends.projectsInProgress,
+      series: kpis?.series.projectsInProgress,
+      kind: 'past',
       icon: navigationIcon.projects,
       soft: '#efedff',
       ink: TONE.violet,
@@ -349,6 +418,8 @@ const AdminVillage = ({ onClassic }: Props) => {
       label: 'BAT à valider',
       value: kpis?.batToValidate,
       trend: kpis?.trends.batToValidate,
+      series: kpis?.series.batToValidate,
+      kind: 'past',
       icon: navigationIcon.quotes,
       soft: '#eaf1ff',
       ink: '#2563eb',
@@ -362,8 +433,11 @@ const AdminVillage = ({ onClassic }: Props) => {
     {
       label: 'Prochaine livraison',
       value: kpis?.nextDelivery,
-      trend: undefined as Trend | undefined,
+      trend: undefined,
       sub: kpis?.nextDeliveryIn ?? null,
+      series: kpis?.series.deliveries,
+      kind: 'next',
+      unit: ['livraison', 'livraisons'],
       icon: navigationIcon.calendar,
       soft: '#e8f7ee',
       ink: TONE.green,
@@ -376,6 +450,8 @@ const AdminVillage = ({ onClassic }: Props) => {
       label: 'Factures en retard',
       value: kpis?.overdueInvoices,
       trend: kpis?.trends.overdueInvoices,
+      series: kpis?.series.overdueInvoices,
+      kind: 'past',
       icon: navigationIcon.invoices,
       soft: '#fff1e6',
       ink: TONE.orange,
@@ -393,13 +469,26 @@ const AdminVillage = ({ onClassic }: Props) => {
   // Carte étroite : titre et choix de la vue passent dans un en-tête au-dessus
   // de la carte (posés dessus, ils couvriraient les étiquettes du haut).
   const compact = fit < 0.9;
+  /** Quatre chiffres clés sur une ligne s'ils y tiennent (courbe comprise), sinon deux. */
+  const kpiCols = rootW >= 1056 ? 4 : 2;
   /** Chiffres clés resserrés quand quatre cartes tiennent à peine sur la ligne. */
-  const kc = rootW < 1150;
+  const kc = kpiCols === 4 && rootW < 1150;
   const labelScale = Math.min(1, Math.max(0.82, fit / 0.85));
 
+  const home = !district && !project && selected === 'accueil';
+  const left = steps.filter((id) => !seen.includes(id)).length;
   const panel = (
     <VillagePanel
       loading={loading}
+      journee={home ? { day: journee } : null}
+      tour={
+        steps.length
+          ? {
+              label: left ? 'Commencer ma tournée' : 'Refaire ma tournée',
+              count: left || steps.length,
+            }
+          : null
+      }
       district={
         district
           ? {
@@ -409,17 +498,18 @@ const AdminVillage = ({ onClassic }: Props) => {
           : null
       }
       project={district ? null : project}
-      fromSection={fromSection}
-      section={district || project ? null : panelSection(selected)}
+      projectBack={
+        backTo === 'accueil' ? 'Ma journée' : SECTION_INFO[backTo].title
+      }
+      section={district || project || home ? null : panelSection(selected)}
       onSelect={selectSection}
-      onOpenProject={(id) => openProject(id, true)}
+      onOpenProject={(id) => openProject(id, selected)}
       onProjectPage={(id) => navigate(`/common/projects/details/${id}`)}
       onDistrict={selectDistrict}
       onShowAll={resetView}
-      onBack={() => {
-        setProjectId(null);
-        setFromSection(false);
-      }}
+      onBack={() => selectSection(backTo)}
+      onHome={() => selectSection('accueil')}
+      onStartTour={startTour}
       onCta={(id) =>
         id === 'accueil' ? onClassic() : navigate(SECTION_INFO[id].to)
       }
@@ -442,7 +532,6 @@ const AdminVillage = ({ onClassic }: Props) => {
     cursor: 'pointer',
   });
 
-  const left = steps.filter((id) => !seen.includes(id)).length;
   const tourButton = (
     <button
       type="button"
@@ -896,7 +985,7 @@ const AdminVillage = ({ onClassic }: Props) => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gridTemplateColumns: `repeat(${kpiCols}, minmax(0, 1fr))`,
           gap: 16,
         }}
       >
@@ -950,19 +1039,44 @@ const AdminVillage = ({ onClassic }: Props) => {
               >
                 {k.label}
               </span>
+              {/* Le chiffre partage sa ligne avec la petite courbe : le
+                  libellé et l'évolution gardent toute la largeur. */}
               <span
                 style={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                   marginTop: 2,
-                  fontSize: kc ? 21 : 24,
-                  fontWeight: 800,
-                  letterSpacing: '-0.02em',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
                 }}
               >
-                {k.value === undefined ? '…' : k.value === null ? '—' : k.value}
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: kc ? 21 : 24,
+                    fontWeight: 800,
+                    letterSpacing: '-0.02em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {k.value === undefined
+                    ? '…'
+                    : k.value === null
+                      ? '—'
+                      : k.value}
+                </span>
+                {k.series && (
+                  <VillageSparkline
+                    points={k.series}
+                    accent={k.ink}
+                    kind={k.kind}
+                    unit={k.unit}
+                    width={kc ? 58 : 76}
+                    height={kc ? 26 : 30}
+                  />
+                )}
               </span>
               {!k.trend && 'sub' in k && k.sub && (
                 <span
@@ -975,7 +1089,7 @@ const AdminVillage = ({ onClassic }: Props) => {
                     color: TREND_COLORS.neutral.fg,
                     fontSize: kc ? 11 : 11.5,
                     fontWeight: 700,
-                    whiteSpace: 'nowrap',
+                    ...CHIP_FIT,
                   }}
                 >
                   {k.sub}
@@ -993,17 +1107,19 @@ const AdminVillage = ({ onClassic }: Props) => {
                     color: TREND_COLORS[k.trend.tone].fg,
                     fontSize: kc ? 11 : 11.5,
                     fontWeight: 700,
-                    whiteSpace: 'nowrap',
+                    ...CHIP_FIT,
                   }}
                 >
                   {trendText(k.trend)}
                 </span>
               )}
             </span>
-            <HiChevronRight
-              aria-hidden="true"
-              style={{ fontSize: 20, color: '#111827' }}
-            />
+            {!k.series && (
+              <HiChevronRight
+                aria-hidden="true"
+                style={{ fontSize: 20, color: '#111827' }}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -1086,6 +1202,7 @@ const AdminVillage = ({ onClassic }: Props) => {
               ambiance={ambianceOn ? ambiance : null}
               particles={particles}
               activity={activity}
+              onOpenActivity={openActivity}
               chantier={data?.chantier ?? []}
               onOpenProject={(id) =>
                 data?.projects.some((p) => p.documentId === id)

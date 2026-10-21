@@ -297,7 +297,9 @@ describe('village — activité en direct', () => {
       { _id: 20, eventType: 'new_ticket', title: 'Nouveau ticket' },
       { _id: 21, eventType: 'new_ticket', title: '  Réponse  ' },
     ]);
-    expect(tickets).toEqual([{ key: '21', id: 'tickets', text: 'Réponse' }]);
+    expect(tickets).toEqual([
+      { key: '21', rawId: 21, id: 'tickets', text: 'Réponse', link: null },
+    ]);
   });
 });
 

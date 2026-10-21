@@ -17,7 +17,9 @@ import {
   plural,
   type ActivityInfo,
   type ChantierHouse,
+  type DayDelivery,
   type ProjectCard,
+  type SeriesPoint,
   type SectionData,
   type SectionItem,
   type Trend,
@@ -129,6 +131,10 @@ export interface RawVillage {
     next: RawProject | null;
     /** Projets actifs dont la livraison est prévue aujourd'hui. */
     dueToday?: N;
+    /** Les premiers de ces projets, nommés (fiche « Ma journée »). */
+    todayList?: RawProject[];
+    /** Livraisons prévues chacun des 7 prochains jours (aujourd'hui en premier). */
+    dueNext7?: number[];
   };
   samples?: RawProject[];
   /** Projets livrés ces 3 derniers jours (maison au drapeau du chantier). */
@@ -139,6 +145,8 @@ export interface RawVillage {
   >;
   /** Photo des chiffres d'un jour précédent (serveur), pour les tendances. */
   trends?: { since: string; values: Partial<Record<TrendKey, number>> } | null;
+  /** Photos des 13 jours précédents (serveur), pour les petites courbes. */
+  history?: { day: string; values: Partial<Record<TrendKey, number>> }[];
   /** Projets dont le produit exige un BAT et dont le BAT n'est pas validé. */
   batCandidates?: RawProject[];
   /** requestedStale : demandes de devis sans réponse depuis 48 h. */
@@ -345,6 +353,73 @@ const STAT_TRENDS: [SectionId, string, TrendKey, 'up' | 'down' | 'neutral'][] =
     ['generateurs', 'Commissions en attente', 'commissionsPending', 'neutral'],
     ['tickets', 'Ouverts', 'ticketsOpen', 'down'],
   ];
+
+// ── Petites courbes ──────────────────────────────────────────────────────────
+
+const ymd = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
+
+/**
+ * Les 7 derniers jours d'un chiffre : photos des jours précédents, chiffre en
+ * direct pour aujourd'hui ; null si la photo d'un jour manque. Rien (null) tant
+ * qu'il y a moins de deux points.
+ */
+export const pastSeries = (
+  history: RawVillage['history'],
+  key: TrendKey,
+  current: number | undefined,
+  now: Date
+): SeriesPoint[] | null => {
+  const today = dayjs(now).startOf('day');
+  const byDay = new Map((history ?? []).map((h) => [h.day, h.values[key]]));
+  const points: SeriesPoint[] = Array.from({ length: 7 }, (_, i) => {
+    const day = today.subtract(6 - i, 'day');
+    const v = i === 6 ? current : byDay.get(ymd(day));
+    return { day: ymd(day), value: typeof v === 'number' ? v : null };
+  });
+  return points.filter((p) => p.value !== null).length >= 2 ? points : null;
+};
+
+/** Nombre de dates tombant chacun des `days` jours à partir d'aujourd'hui. */
+export const bucketByDay = (
+  dates: (string | null | undefined)[],
+  now: Date,
+  days = 7
+): number[] => {
+  const start = dayjs(now).startOf('day');
+  const out = new Array(days).fill(0);
+  for (const d of dates) {
+    if (!d) continue;
+    const i = dayjs(d).startOf('day').diff(start, 'day');
+    if (i >= 0 && i < days) out[i] += 1;
+  }
+  return out;
+};
+
+/**
+ * Livraisons des 7 prochains jours : projets à livrer (serveur ou lecture du
+ * navigateur) ou livraisons du calendrier, le plus grand des deux chaque jour
+ * (une même livraison est souvent notée aux deux endroits). Sans le compte
+ * des projets (serveur pas encore à jour, lecture en échec), pas de barres :
+ * le calendrier seul afficherait de faux zéros.
+ */
+export const deliverySeries = (
+  dueNext7: number[] | undefined,
+  calendar: RawEvent[] | undefined,
+  now: Date
+): SeriesPoint[] | null => {
+  if (!dueNext7 || dueNext7.length < 7) return null;
+  const today = dayjs(now).startOf('day');
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = today.add(i, 'day');
+    const fromCalendar = (calendar ?? []).filter(
+      (e) => e.category === 'livraison' && occursOn(e, day.toDate())
+    ).length;
+    return {
+      day: ymd(day),
+      value: Math.max(dueNext7?.[i] ?? 0, fromCalendar),
+    };
+  });
+};
 
 // ── Activité du mois : bâtiments qui grandissent ─────────────────────────────
 
@@ -1151,6 +1226,40 @@ export const buildVillageData = (
   for (const id of MENU_ORDER)
     s[id].activity = activityInfo(id, raw.activity?.[id], hidden);
 
+  // Petites courbes des chiffres clés
+  const kpiSeries: VillageData['kpis']['series'] = {};
+  for (const k of [
+    'projectsInProgress',
+    'batToValidate',
+    'overdueInvoices',
+  ] as const) {
+    const sr = pastSeries(raw.history, k, cur[k], now);
+    if (sr) kpiSeries[k] = sr;
+  }
+  const deliveriesSr = deliverySeries(pr?.dueNext7, raw.calendar, now);
+  if (deliveriesSr) kpiSeries.deliveries = deliveriesSr;
+
+  // Livraisons du jour (fiche « Ma journée ») : la liste lue pour elles, sinon
+  // les projets mis en avant (un serveur plus ancien ne l'envoie pas) — le
+  // nombre complète ce que la liste ne montre pas.
+  const todayDeliveries: DayDelivery[] = (
+    pr?.todayList ??
+    ranked.filter(
+      (p) =>
+        ACTIVE.includes(p.state) &&
+        !!p.endDate &&
+        dayjs(p.endDate).isSame(today, 'day')
+    )
+  ).map((p) => ({
+    documentId: p.documentId,
+    name: p.name,
+    customer: p.customer?.name || 'Client non renseigné',
+  }));
+  const todayDeliveryCount = Math.max(
+    todayDeliveries.length,
+    num(pr?.dueToday) ?? 0
+  );
+
   // Livraisons du jour : projets à livrer aujourd'hui ou livraisons du calendrier
   const calendarDeliveries = (raw.calendar ?? []).filter(
     (e) => e.category === 'livraison' && occursOn(e, now)
@@ -1176,6 +1285,7 @@ export const buildVillageData = (
         : null,
       overdueInvoices: overdueCount,
       trends: kpiTrends,
+      series: kpiSeries,
     },
     sections: s,
     projects,
@@ -1184,6 +1294,8 @@ export const buildVillageData = (
       raw.delivered ?? [],
       now
     ),
+    todayDeliveries,
+    todayDeliveryCount,
     life: {
       smoke:
         (inProgress ?? 0) >= 30

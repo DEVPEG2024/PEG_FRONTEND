@@ -10,6 +10,7 @@
 // autour du pointeur ; AdminVillage garde le zoom et le point visé (onCamera).
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,6 +24,7 @@ import type { VillageActivity } from './villageActivity';
 import {
   matchesFilter,
   type ChantierHouse,
+  type SectionStat,
   type VillageLife,
 } from './villageModel';
 import {
@@ -60,6 +62,7 @@ import {
   placeLabels,
   plotFront,
   plotPath,
+  previewPlacement,
   spritePoint,
   spriteUrl,
   toMap,
@@ -93,6 +96,8 @@ export interface MapSection {
    * fanions, 3 = étoile dorée sur l'étiquette et scintillements.
    */
   level: 0 | 1 | 2 | 3;
+  /** Aperçu au survol : phrase courte, 2 ou 3 chiffres, activité du mois. */
+  preview: { chip: string; stats: SectionStat[]; activity: string | null };
 }
 
 const CSS = `
@@ -118,6 +123,8 @@ const CSS = `
 @keyframes vg-bubble{0%{opacity:0;transform:translateY(8px) scale(.9)}5%{opacity:1;transform:translateY(0) scale(1)}90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-6px)}}
 .vg-live{animation:vg-live 1s ease-in-out infinite}
 @keyframes vg-live{0%,100%{opacity:1}50%{opacity:.35}}
+.vg-preview{animation:vg-preview .16s ease-out backwards}
+@keyframes vg-preview{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .vg-pill,.vg-tag{transition:translate .6s cubic-bezier(.2,.8,.2,1),transform .22s cubic-bezier(.3,1.6,.5,1),opacity .3s ease,box-shadow .2s ease}
 .vg-pill:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(40,36,80,.2) !important}
 .vg-tag:hover{transform:translateY(-2px)}
@@ -143,7 +150,7 @@ const CSS = `
 @keyframes vg-bulb{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion: reduce){
   .vg-walk-1,.vg-walk-2,.vg-fall,.vg-smoke,.vg-drop{display:none}
-  .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live,.vg-arrive,.vg-fade-in,.vg-label-in,.vg-twinkle,.vg-pennant,.vg-pennant-r,.vg-bulb{animation:none}
+  .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live,.vg-arrive,.vg-fade-in,.vg-label-in,.vg-twinkle,.vg-pennant,.vg-pennant-r,.vg-bulb,.vg-preview{animation:none}
   .vg-pill,.vg-tag,.vg-world,.vg-follow{transition:none !important}
 }
 `;
@@ -212,6 +219,8 @@ interface Props {
   particles?: Particle[];
   /** Notifications reçues à l'instant : bulle au-dessus du bâtiment. */
   activity?: VillageActivity[];
+  /** Clic sur une bulle d'activité : ouvrir la page de la notification. */
+  onOpenActivity?: (a: VillageActivity) => void;
   /** Maisons du chantier, derrière Projets : un projet chacune. */
   chantier?: ChantierHouse[];
   onOpenProject?: (documentId: string) => void;
@@ -240,6 +249,7 @@ const VillageMap = ({
   ambiance = null,
   particles = [],
   activity = [],
+  onOpenActivity,
   chantier = [],
   onOpenProject,
   life = null,
@@ -535,6 +545,28 @@ const VillageMap = ({
   const selCell = LAYOUT.find((c) => c.id === selected);
   const ring = selCell && !district ? plotPath(selCell.u, selCell.v) : null;
   const [hoverHouse, setHoverHouse] = useState<number | null>(null);
+  // Aperçu au survol d'un bâtiment ou de son étiquette (petit délai : pas de
+  // bulle qui clignote quand on traverse la carte).
+  const [hoverId, setHoverId] = useState<SectionId | null>(null);
+  const hoverTimer = useRef<number | undefined>(undefined);
+  const startHover = (id: SectionId, delay = 140) => {
+    window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(() => setHoverId(id), delay);
+  };
+  const endHover = () => {
+    window.clearTimeout(hoverTimer.current);
+    setHoverId(null);
+  };
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
+  const previewId = moving ? null : hoverId;
+  // Hauteur réelle de l'aperçu, mesurée avant l'affichage : il se place
+  // au-dessus de l'étiquette s'il y tient, sinon à côté.
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewH, setPreviewH] = useState(240);
+  useLayoutEffect(() => {
+    const h = previewRef.current?.offsetHeight;
+    if (h) setPreviewH(h);
+  }, [previewId]);
   const smoke = Math.max(0, Math.min(3, life?.smoke ?? 0));
   const prodCell = LAYOUT.find((c) => c.id === CHIMNEY.id)!;
   const fountainCell = LAYOUT.find((c) => c.id === FOUNTAIN_JET.id)!;
@@ -871,10 +903,15 @@ const VillageMap = ({
                       ? 1
                       : 0.55,
                 filter:
-                  s.id && on && filter !== 'tout'
-                    ? 'drop-shadow(0 0 10px rgba(109,93,252,0.45))'
-                    : 'none',
-                transition: 'opacity .3s ease, filter .3s ease',
+                  s.id && s.id === previewId
+                    ? 'drop-shadow(0 10px 12px rgba(40,36,80,0.28)) brightness(1.04)'
+                    : s.id && on && filter !== 'tout'
+                      ? 'drop-shadow(0 0 10px rgba(109,93,252,0.45))'
+                      : 'none',
+                transform:
+                  s.id && s.id === previewId ? 'translateY(-6px)' : undefined,
+                transition:
+                  'opacity .3s ease, filter .25s ease, transform .2s cubic-bezier(.3,1.5,.5,1)',
                 pointerEvents: 'none',
                 animationDelay: arrival ? `${delay}ms` : undefined,
               }}
@@ -1017,6 +1054,8 @@ const VillageMap = ({
               tabIndex={-1}
               aria-hidden="true"
               onClick={() => onSelect(c.id)}
+              onMouseEnter={() => startHover(c.id)}
+              onMouseLeave={endHover}
               style={{
                 position: 'absolute',
                 left: left + h.x * SPRITE_SCALE,
@@ -1237,6 +1276,10 @@ const VillageMap = ({
               type="button"
               className={`vg-pill${arrival ? ' vg-label-in' : ''}`}
               onClick={() => onSelect(id)}
+              onMouseEnter={() => startHover(id, 80)}
+              onMouseLeave={endHover}
+              onFocus={() => startHover(id, 0)}
+              onBlur={endHover}
               aria-pressed={isSel}
               aria-label={s.aria}
               style={{
@@ -1334,6 +1377,174 @@ const VillageMap = ({
         );
       })}
 
+      {previewId &&
+        (() => {
+          const l = labels.find((x) => x.id === previewId);
+          if (!l) return null;
+          const s = sections[previewId];
+          const W = 248;
+          const at = previewPlacement({
+            x: l.x,
+            y: l.y,
+            pillW: pillWidth(s) * labelScale,
+            pillH: 32 * labelScale,
+            cardW: W,
+            cardH: previewH,
+            mapW: width,
+            mapH: height,
+            busyAbove: activity.some((a) => a.id === previewId),
+          });
+          return (
+            <div
+              key={`preview-${previewId}`}
+              ref={previewRef}
+              className="vg-preview"
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                translate: `${px(at.left)} ${px(at.top)}`,
+                width: W,
+                boxSizing: 'border-box',
+                padding: '11px 12px 10px',
+                borderRadius: 16,
+                background: '#ffffff',
+                boxShadow: '0 14px 32px rgba(40,36,80,0.22)',
+                border: s.alert
+                  ? '1.5px solid #fecaca'
+                  : '1px solid rgba(17,24,39,0.06)',
+                zIndex: 2130,
+                pointerEvents: 'none',
+                color: '#111827',
+              }}
+            >
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  fontSize: 14,
+                  fontWeight: 800,
+                }}
+              >
+                <span style={{ display: 'flex', fontSize: 17, color: s.tone }}>
+                  {s.icon}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>{s.title}</span>
+                {s.badge && (
+                  <span
+                    style={{
+                      minWidth: 22,
+                      height: 22,
+                      padding: '0 6px',
+                      boxSizing: 'border-box',
+                      borderRadius: 999,
+                      background: s.tone,
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {s.badge}
+                  </span>
+                )}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 3,
+                  fontSize: 12.5,
+                  color: '#6b7280',
+                }}
+              >
+                {s.preview.chip}
+              </span>
+              {s.alert && (
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 7,
+                    padding: '6px 8px',
+                    borderRadius: 9,
+                    background: '#fef2f2',
+                    color: '#b91c1c',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {s.alert}
+                </span>
+              )}
+              {s.preview.stats.length > 0 && (
+                <span style={{ display: 'block', marginTop: 8 }}>
+                  {s.preview.stats.map((st) => (
+                    <span
+                      key={st.label}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 6,
+                        padding: '3px 0',
+                        borderTop: '1px solid #f1eee8',
+                        fontSize: 12.5,
+                      }}
+                    >
+                      <span style={{ flex: 1, color: '#6b7280' }}>
+                        {st.label}
+                      </span>
+                      <strong style={{ fontWeight: 800 }}>{st.value}</strong>
+                      {st.trend && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color:
+                              st.trend.tone === 'good'
+                                ? '#15803d'
+                                : st.trend.tone === 'bad'
+                                  ? '#b91c1c'
+                                  : '#4b5563',
+                          }}
+                        >
+                          {st.trend.delta > 0 ? '▲' : '▼'} {st.trend.text}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </span>
+              )}
+              {s.preview.activity && (
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 6,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: s.level === 3 ? '#a16207' : '#4b5563',
+                  }}
+                >
+                  {s.preview.activity}
+                </span>
+              )}
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 7,
+                  fontSize: 11.5,
+                  color: '#9ca3af',
+                }}
+              >
+                Cliquez pour ouvrir la fiche
+              </span>
+            </div>
+          );
+        })()}
+
       {hoverHouse !== null &&
         chantier[hoverHouse] &&
         (() => {
@@ -1395,7 +1606,10 @@ const VillageMap = ({
             type="button"
             tabIndex={-1}
             aria-hidden="true"
-            onClick={() => onSelect(a.id)}
+            title={a.link ? 'Ouvrir' : undefined}
+            onClick={() =>
+              onOpenActivity ? onOpenActivity(a) : onSelect(a.id)
+            }
             style={{
               position: 'absolute',
               left: 0,
