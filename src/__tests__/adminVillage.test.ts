@@ -19,6 +19,7 @@ import {
   SPRITE_META,
   WALKERS,
   chantierLabelAnchor,
+  depthZ,
   districtTagBox,
   labelAnchor,
   labelWidth,
@@ -159,6 +160,25 @@ describe('village PEG — décors et promeneurs', () => {
       for (const w of [...WALKERS, DELIVERY_ROUTE]) {
         expect(dist([d.u, d.v], w.from, w.to)).toBeGreaterThanOrEqual(0.079);
       }
+    }
+  });
+
+  it('tout se dessine au-dessus du sol (profondeur toujours positive)', () => {
+    const depths = [
+      ...LAYOUT.map((c) => c.u + c.v),
+      ...DECOR.map((d) => d.u + d.v),
+      ...PARKING.map((d) => d.u + d.v),
+      ...CHANTIER_SLOTS.map(([du, dv]) => CHANTIER.u + du + CHANTIER.v + dv),
+      CHANTIER_CRANE.u + CHANTIER_CRANE.v,
+      ...[...WALKERS, DELIVERY_ROUTE].flatMap((w) => [
+        w.from[0] + w.from[1],
+        w.to[0] + w.to[1],
+      ]),
+    ];
+    for (const d of depths) {
+      expect(depthZ(d)).toBeGreaterThan(0);
+      // Sous les noms de quartier (1950) et les étiquettes (2000).
+      expect(depthZ(d) + 3).toBeLessThan(1950);
     }
   });
 

@@ -67,8 +67,12 @@ export const toMap = (u: number, v: number): [number, number] => [
   Y0 + (u + v) * B,
 ];
 
-/** z-index d'un objet posé à la profondeur u + v (toujours sous les étiquettes). */
-export const depthZ = (depth: number) => Math.round(depth * 100) + 50;
+/**
+ * z-index d'un objet posé à la profondeur u + v (toujours sous les étiquettes).
+ * Toujours positif : un z-index négatif passe SOUS le sol de l'îlot (calque sans
+ * z-index) — la tour du Calendrier, rangée −1, disparaissait ainsi.
+ */
+export const depthZ = (depth: number) => Math.round((depth + 3) * 100) + 50;
 
 export interface Cell {
   id: SectionId;
