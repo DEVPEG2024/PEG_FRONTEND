@@ -100,34 +100,16 @@ export const fetchProjects = async (): Promise<
   };
 };
 
-/**
- * Projets actifs à la livraison la plus proche (les plus anciennes dates
- * d'abord), et projets livrés ces 3 derniers jours (maison au drapeau).
- */
-export const fetchSamples = async (): Promise<
-  Pick<RawVillage, 'samples' | 'delivered'>
-> => {
-  const d = await gql<{
-    projects_connection?: { nodes?: RawProject[] };
-    delivered?: { nodes?: RawProject[] };
-  }>(
-    `query VillageSamples($since: DateTime, $endSince: DateTime) {
+/** Projets actifs à la livraison la plus proche (les plus anciennes dates d'abord). */
+export const fetchSamples = async (): Promise<Pick<RawVillage, 'samples'>> => {
+  const d = await gql<{ projects_connection?: { nodes?: RawProject[] } }>(
+    `query VillageSamples {
       projects_connection(filters: { state: { in: ${ACTIVE} } }, sort: ["endDate:asc"], pagination: { pageSize: 8 }) {
         nodes { ${PROJECT_FIELDS} }
       }
-      delivered: projects_connection(filters: { state: { eq: "fulfilled" }, updatedAt: { gte: $since }, endDate: { gte: $endSince } }, sort: ["updatedAt:desc"], pagination: { pageSize: 3 }) {
-        nodes { ${PROJECT_FIELDS} updatedAt }
-      }
-    }`,
-    {
-      since: dayjs().subtract(3, 'day').toISOString(),
-      endSince: dayjs().subtract(30, 'day').toISOString(),
-    }
+    }`
   );
-  return {
-    samples: d?.projects_connection?.nodes ?? [],
-    delivered: d?.delivered?.nodes ?? [],
-  };
+  return { samples: d?.projects_connection?.nodes ?? [] };
 };
 
 /**
@@ -573,7 +555,7 @@ export const villageReaders = (
   read: () => Promise<Partial<RawVillage>>;
 }[] => [
   { keys: ['projects'], read: fetchProjects },
-  { keys: ['samples', 'delivered'], read: fetchSamples },
+  { keys: ['samples'], read: fetchSamples },
   { keys: ['batCandidates'], read: fetchBat },
   { keys: ['quotes', 'tickets'], read: fetchQuotesTickets },
   { keys: ['customers', 'producers'], read: fetchCustomers },

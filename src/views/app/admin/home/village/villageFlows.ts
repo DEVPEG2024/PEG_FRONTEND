@@ -1,12 +1,18 @@
-// Flux d'activité : les rues deviennent des fibres optiques et des points de
-// lumière suivent le parcours d'une commande, sur l'avenue de l'Atelier —
-// commande (Boutique → Atelier), livraison (Atelier → sortie de la ville, la
-// route des camionnettes), facture (Atelier → Finance). Plus PEG tourne, plus
-// ça circule : le nombre de points suit les vrais chiffres. Fonctions pures,
-// testées.
-import { toMap } from './villageScene';
+// Échanges entre les bâtiments de la ville : des points lumineux ou des
+// documents circulent sur des chemins en pointillés, au rythme des vrais
+// chiffres — commandes (Boutique → Projets), demandes de devis (Clients →
+// Projets), dossiers en production (Projets → Production), factures (Projets
+// → Finance), tickets (Clients → Assistance). Les livraisons, elles, roulent
+// en camion (un par livraison du jour). Fonctions pures, testées.
+import { exchangeCurve, type DistrictId, type Exchange } from './villageScene';
 
-export type FlowId = 'commandes' | 'livraisons' | 'factures';
+export type FlowId =
+  | 'commandes'
+  | 'demandes'
+  | 'production'
+  | 'livraisons'
+  | 'factures'
+  | 'tickets';
 
 export interface FlowDef {
   id: FlowId;
@@ -16,12 +22,11 @@ export interface FlowDef {
   detail: string;
   /** Même chose en bref, après le nombre : « commandes (30 j) ». */
   short: string;
-  color: string;
-  /**
-   * Trajet le long des rues, en coordonnées de case (u, v) : les rues
-   * suivent les demi-entiers ; ±0,05 = la voie de droite ou de gauche.
-   */
-  route: [number, number][];
+  /** Chemin entre deux bâtiments ; absent = pas de chemin (camions). */
+  exchange?: Exchange & {
+    /** Point lumineux ou document. */
+    token: 'dot' | 'doc';
+  };
 }
 
 export const FLOW_DEFS: FlowDef[] = [
@@ -30,68 +35,63 @@ export const FLOW_DEFS: FlowDef[] = [
     label: 'Commandes',
     detail: 'payées sur 30 jours',
     short: 'commandes (30 j)',
-    color: '#8b5cf6',
-    // Porte avant de la Boutique → angle de l'avenue → porte de l'Atelier.
-    route: [
-      [1, 3.5],
-      [1.45, 3.5],
-      [1.45, 2],
-    ],
+    exchange: { from: 'boutique', to: 'projets', arc: 60, token: 'dot' },
+  },
+  {
+    id: 'demandes',
+    label: 'Demandes de devis',
+    detail: 'à préparer',
+    short: 'demandes de devis',
+    exchange: { from: 'clients', to: 'projets', arc: 60, token: 'dot' },
+  },
+  {
+    id: 'production',
+    label: 'En production',
+    detail: 'projets en cours',
+    short: 'projets en cours',
+    exchange: { from: 'projets', to: 'production', arc: 60, token: 'doc' },
   },
   {
     id: 'livraisons',
     label: 'Livraisons',
     detail: 'prévues sur 7 jours',
     short: 'livraisons (7 j)',
-    color: '#0ea5e9',
-    // Atelier → bas de l'avenue : la livraison quitte la ville.
-    route: [
-      [1.55, 2],
-      [1.55, 3.5],
-    ],
   },
   {
     id: 'factures',
     label: 'Factures',
     detail: 'à encaisser',
     short: 'factures à encaisser',
-    color: '#16a34a',
-    // Atelier → carrefour → porte de la Finance.
-    route: [
-      [1.55, 2],
-      [1.55, 2.45],
-      [2, 2.45],
-    ],
+    exchange: { from: 'projets', to: 'finance', arc: 46, token: 'doc' },
+  },
+  {
+    id: 'tickets',
+    label: 'Tickets',
+    detail: 'ouverts',
+    short: 'tickets ouverts',
+    exchange: { from: 'clients', to: 'assistance', arc: -150, token: 'dot' },
   },
 ];
 
-/** Points de lumière sur un trajet : racine du volume, de 1 à 9 (0 = rien). */
-export const flowDots = (count: number | null | undefined) =>
+/** Jetons sur un chemin : racine du volume ; 6 points ou 3 documents au plus. */
+export const flowDots = (
+  count: number | null | undefined,
+  token: 'dot' | 'doc' = 'dot'
+) =>
   !count || count <= 0
     ? 0
-    : Math.min(9, Math.max(1, Math.round(Math.sqrt(count) * 1.5)));
+    : Math.min(
+        token === 'doc' ? 3 : 6,
+        Math.max(1, Math.round(Math.sqrt(count) * 1.2))
+      );
 
-/** Vitesse des points (pixels de carte par seconde). */
-export const FLOW_SPEED = 42;
-
-/** Trajet en pixels de carte : chemin SVG et longueur. */
-export const flowPath = (route: [number, number][]) => {
-  const pts = route.map(([u, v]) => toMap(u, v));
-  const d = pts
-    .map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
-    .join(' ');
-  const length = pts
-    .slice(1)
-    .reduce(
-      (sum, p, i) => sum + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]),
-      0
-    );
-  return { d, length };
-};
+/** Vitesse des jetons (pixels de carte par seconde). */
+export const FLOW_SPEED = 46;
 
 export interface VillageFlow extends FlowDef {
-  /** null = chiffre illisible : ni points, ni nombre (jamais un faux 0). */
+  /** null = chiffre illisible : ni jeton ni nombre (jamais un faux 0). */
   count: number | null;
+  /** Jetons sur le chemin (0 sans chemin ou sans volume). */
   dots: number;
   d: string;
   length: number;
@@ -99,10 +99,35 @@ export interface VillageFlow extends FlowDef {
   duration: number;
 }
 
-const KEY = 'peg:villageFlows';
+export const villageFlows = (
+  counts: Partial<Record<FlowId, number | null>>
+): VillageFlow[] =>
+  FLOW_DEFS.map((f) => {
+    const raw = counts[f.id];
+    const count = typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+    if (!f.exchange)
+      return { ...f, count, dots: 0, d: '', length: 0, duration: 0 };
+    const { d, length } = exchangeCurve(f.exchange);
+    return {
+      ...f,
+      count,
+      dots: flowDots(count, f.exchange.token),
+      d,
+      length,
+      duration: Math.max(2.8, length / FLOW_SPEED),
+    };
+  });
 
-/** Flux affichés sur cet appareil (activés par défaut). */
-export const readFlowsOn = (): boolean => {
+/** Échanges qui touchent un quartier (aperçu au survol, fiche). */
+export const flowsOf = (flows: VillageFlow[], id: DistrictId) =>
+  flows.filter(
+    (f) => f.exchange && (f.exchange.from === id || f.exchange.to === id)
+  );
+
+const KEY = 'peg:villageAnimations';
+
+/** Animations de la ville affichées sur cet appareil (activées par défaut). */
+export const readAnimationsOn = (): boolean => {
   try {
     return localStorage.getItem(KEY) !== 'off';
   } catch {
@@ -110,27 +135,10 @@ export const readFlowsOn = (): boolean => {
   }
 };
 
-export const writeFlowsOn = (on: boolean) => {
+export const writeAnimationsOn = (on: boolean) => {
   try {
     localStorage.setItem(KEY, on ? 'on' : 'off');
   } catch {
     // stockage indisponible : le choix vaut pour la session
   }
 };
-
-export const villageFlows = (
-  counts: Partial<Record<FlowId, number | null>>
-): VillageFlow[] =>
-  FLOW_DEFS.map((f) => {
-    const raw = counts[f.id];
-    const count = typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
-    const { d, length } = flowPath(f.route);
-    return {
-      ...f,
-      count,
-      dots: flowDots(count),
-      d,
-      length,
-      duration: Math.max(2.5, length / FLOW_SPEED),
-    };
-  });

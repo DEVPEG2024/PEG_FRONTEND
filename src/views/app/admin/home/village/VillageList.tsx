@@ -1,16 +1,16 @@
-// Vue liste du village : une colonne par quartier, rubriques dans l'ordre du
-// menu, avec la vignette de chaque bâtiment.
+// Vue liste de la ville : une colonne par quartier (avec son bâtiment),
+// rubriques dans l'ordre du menu.
 import type { ReactNode } from 'react';
 import {
   DISTRICTS,
-  SPRITE_META,
+  buildingFrame,
   membersOf,
-  spriteUrl,
   type DistrictId,
   type SectionId,
 } from './villageScene';
 import type { SectionData } from './villageModel';
 import { AlertFlag } from './VillagePanel';
+import { BuildingArt } from './VillageBuildings';
 
 interface Props {
   sections: Record<
@@ -26,36 +26,19 @@ interface Props {
   top?: number;
 }
 
-const Thumb = ({ id }: { id: SectionId }) => {
-  const hit = SPRITE_META[id].hit;
-  const w = 54;
-  const h = 66;
-  const k = Math.min(w / hit.w, h / hit.h) * 0.96;
+/** Le bâtiment du quartier, tel qu'il est dessiné sur la carte. */
+const Building = ({ id }: { id: DistrictId }) => {
+  const [x, y, w, h] = buildingFrame(id);
   return (
-    <span
-      style={{
-        width: w,
-        height: h,
-        flexShrink: 0,
-        overflow: 'hidden',
-        position: 'relative',
-        display: 'block',
-      }}
+    <svg
+      width={46}
+      height={46}
+      viewBox={`${x} ${y} ${w} ${h}`}
+      aria-hidden="true"
+      style={{ display: 'block', flexShrink: 0 }}
     >
-      <img
-        src={spriteUrl(id)}
-        alt=""
-        loading="lazy"
-        style={{
-          position: 'absolute',
-          left: (w - hit.w * k) / 2 - hit.x * k,
-          top: (h - hit.h * k) / 2 - hit.y * k,
-          width: 400 * k,
-          height: 400 * k,
-          maxWidth: 'none',
-        }}
-      />
-    </span>
+      <BuildingArt id={id} />
+    </svg>
   );
 };
 
@@ -106,15 +89,7 @@ const VillageList = ({
               cursor: 'pointer',
             }}
           >
-            <span
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                background: d.hue,
-                flexShrink: 0,
-              }}
-            />
+            <Building id={d.id} />
             <span style={{ minWidth: 0 }}>
               <span
                 style={{
@@ -146,7 +121,7 @@ const VillageList = ({
                   color: d.ink,
                 }}
               >
-                {membersOf(d.id).length} bâtiments
+                {membersOf(d.id).length} rubriques
               </span>
             </span>
           </button>
@@ -165,7 +140,7 @@ const VillageList = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    minHeight: 84,
+                    minHeight: 64,
                     padding: s.data.badge
                       ? '6px 30px 6px 6px'
                       : '6px 10px 6px 6px',
@@ -174,7 +149,7 @@ const VillageList = ({
                       ? '2px solid #6d5dfc'
                       : s.data.alert
                         ? '2px solid #ef4444'
-                        : '1px solid #ece8e1',
+                        : '1px solid #eceef3',
                     background: '#ffffff',
                     textAlign: 'left',
                     cursor: 'pointer',
@@ -182,7 +157,22 @@ const VillageList = ({
                     boxShadow: '0 3px 10px rgba(40,36,80,0.05)',
                   }}
                 >
-                  <Thumb id={id} />
+                  <span
+                    style={{
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      borderRadius: 12,
+                      background: d.soft,
+                      color: d.ink,
+                      fontSize: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {s.icon}
+                  </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
                     <span
                       style={{
@@ -196,11 +186,6 @@ const VillageList = ({
                         overflowWrap: 'anywhere',
                       }}
                     >
-                      <span
-                        style={{ display: 'flex', fontSize: 15, color: d.ink }}
-                      >
-                        {s.icon}
-                      </span>
                       {s.title}
                     </span>
                     <span

@@ -1,17 +1,14 @@
-// Village PEG — ce qui grandit : tendances des chiffres, activité du mois,
-// chantier des projets, vie du jour (fumée, voitures, camionnettes) et caméra.
+// Ville PEG — ce qui grandit : tendances des chiffres, activité du mois,
+// camions de livraison du jour et caméra.
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import {
   activityInfo,
   activityLevel,
   buildVillageData,
-  chantierHouses,
-  chantierStage,
   currentSnapshot,
   sinceLabel,
   trendOf,
-  type RawProject,
   type RawVillage,
 } from '@/views/app/admin/home/village/villageData';
 import {
@@ -26,16 +23,6 @@ import {
 
 dayjs.locale('fr');
 const NOW = new Date('2026-10-21T10:00:00');
-
-const project = (over: Partial<RawProject> = {}): RawProject => ({
-  documentId: 'p',
-  name: 'Projet',
-  state: 'pending',
-  endDate: '2026-11-06T00:00:00',
-  createdAt: '2026-10-08T09:00:00',
-  customer: { name: 'Maison Brévent' },
-  ...over,
-});
 
 describe('village — tendances', () => {
   it('libellé de la période comparée', () => {
@@ -203,77 +190,8 @@ describe('village — activité du mois', () => {
   });
 });
 
-describe('village — chantier des projets', () => {
-  const bat = (over: Partial<RawProject> = {}) =>
-    project({
-      orderItem: {
-        batStatus: null,
-        product: { requiresBat: true, batFile: { url: '/bat.pdf' } },
-      },
-      ...over,
-    });
-
-  it('stade de chaque maison', () => {
-    expect(chantierStage(bat())).toBe('fondations');
-    expect(chantierStage(project({ state: 'waiting' }))).toBe('fondations');
-    expect(
-      chantierStage(
-        project({ checklistItems: [{ done: true }, { done: false }] })
-      )
-    ).toBe('murs');
-    expect(
-      chantierStage(
-        project({ checklistItems: [{ done: true }, { done: true }] })
-      )
-    ).toBe('toit');
-    expect(chantierStage(project({ state: 'fulfilled' }))).toBe('livre');
-  });
-
-  it('les plus urgents, et le dernier projet livré à droite', () => {
-    const ranked = [
-      bat({ documentId: 'a', name: 'A', endDate: '2026-10-19T00:00:00' }),
-      project({ documentId: 'b', name: 'B' }),
-      project({ documentId: 'c', name: 'C', state: 'waiting' }),
-      project({ documentId: 'd', name: 'D' }),
-    ];
-    const delivered = [
-      project({ documentId: 'z', name: 'Z', state: 'fulfilled' }),
-    ];
-    const houses = chantierHouses(ranked, delivered, NOW);
-    expect(houses.map((h) => h.documentId)).toEqual(['a', 'b', 'z']);
-    expect(houses[0]).toMatchObject({
-      stage: 'fondations',
-      stageLabel: 'BAT à valider',
-      late: true,
-    });
-    expect(houses[2]).toMatchObject({
-      stage: 'livre',
-      stageLabel: 'Livré',
-      late: false,
-    });
-    const noDelivery = chantierHouses(ranked, [], NOW);
-    expect(noDelivery.map((h) => h.documentId)).toEqual(['a', 'b', 'c']);
-    expect(noDelivery[2].stageLabel).toBe('En attente');
-  });
-
-  it('le village ne met que des projets actifs en chantier', () => {
-    const d = buildVillageData(
-      {
-        samples: [
-          project({ documentId: 'x', state: 'pending' }),
-          project({ documentId: 'y', state: 'sav' }),
-        ],
-        delivered: [project({ documentId: 'z', state: 'fulfilled' })],
-      },
-      NOW,
-      false
-    );
-    expect(d.chantier.map((h) => h.documentId)).toEqual(['x', 'z']);
-  });
-});
-
-describe('village — vie du jour', () => {
-  it('fumée, voitures et camionnettes suivent les données du jour', () => {
+describe('ville — camions du jour', () => {
+  it('un camion par livraison du jour (projets à livrer ou calendrier), 3 au plus', () => {
     const d = buildVillageData(
       {
         projects: {
@@ -302,7 +220,7 @@ describe('village — vie du jour', () => {
       NOW,
       false
     );
-    expect(d.life).toEqual({ smoke: 3, cars: 3, vans: 2 });
+    expect(d.life).toEqual({ vans: 2 });
     const calm = buildVillageData(
       {
         projects: {
@@ -317,7 +235,23 @@ describe('village — vie du jour', () => {
       NOW,
       false
     );
-    expect(calm.life).toEqual({ smoke: 0, cars: 0, vans: 0 });
+    expect(calm.life).toEqual({ vans: 0 });
+    const busy = buildVillageData(
+      {
+        projects: {
+          pending: 9,
+          pendingPaid: 0,
+          waiting: 0,
+          sav: 0,
+          late: 0,
+          next: null,
+          dueToday: 7,
+        },
+      },
+      NOW,
+      false
+    );
+    expect(busy.life.vans).toBe(3);
   });
 });
 

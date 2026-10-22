@@ -116,10 +116,11 @@ export const wallScale = (width: number, height: number) =>
 
 /**
  * Taille de la carte dans son cadre, proportions gardées : elle le remplit
- * (pas de bandes vides sur les côtés quand la caméra zoome), quitte à rogner
- * un peu de ciel — jamais plus de 8 % ; au-delà, elle tient entière.
+ * (pas de bande vide ni de bord coupé net quand la caméra zoome), quitte à
+ * rogner les coins du trottoir de la ville — jamais plus de 18 % ; au-delà,
+ * elle tient entière.
  */
-export const fitMap = (boxW: number, boxH: number, maxCrop = 0.08) => {
+export const fitMap = (boxW: number, boxH: number, maxCrop = 0.18) => {
   if (boxW <= 0 || boxH <= 0) return { w: 0, h: 0 };
   const ratio = MAP_W / MAP_H;
   const contain = Math.min(boxW, boxH * ratio);

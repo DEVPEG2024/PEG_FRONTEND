@@ -1,29 +1,28 @@
-// Accueil admin « Village PEG » (ordinateur, ≥ 1024 px) — maquette validée le
-// 21/10/2026 : chiffres clés, village isométrique (un bâtiment par rubrique du
-// menu, 5 quartiers), fiche à droite, vue liste par quartier. Le tableau de
-// bord classique (bannière, pense-bête, widgets) reste à un clic.
+// Accueil admin « Ville PEG » (ordinateur, ≥ 1024 px) : chiffres clés, petite
+// ville isométrique (six quartiers qui regroupent les vingt rubriques du menu,
+// refonte du 22/10/2026 d'après la maquette), fiche à droite, vue liste par
+// quartier. Le tableau de bord classique (bannière, pense-bête, widgets) reste
+// à un clic.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   HiChevronLeft,
   HiChevronRight,
   HiOutlineMap,
-  HiOutlineMoon,
-  HiOutlineSun,
   HiOutlineViewGrid,
   HiX,
 } from 'react-icons/hi';
 import {
-  HiOutlineBolt,
   HiOutlineClipboardDocumentCheck,
   HiOutlineQueueList,
+  HiOutlineSparkles,
   HiOutlineTv,
 } from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { markAsRead } from '@/store/slices/base/notificationSlice';
 import { markNotificationAsRead } from '@/services/NotificationService';
-import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
+import VillageMap, { type MapDistrict, type VillageFilter } from './VillageMap';
 import VillagePanel, { type PanelSection } from './VillagePanel';
 import VillageList from './VillageList';
 import VillageSparkline from './VillageSparkline';
@@ -33,14 +32,18 @@ import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
 import type { VillageActivity } from './villageActivity';
 import { buildJournee, newsKey } from './villageJournee';
-import { readFlowsOn, villageFlows, writeFlowsOn } from './villageFlows';
+import {
+  readAnimationsOn,
+  villageFlows,
+  writeAnimationsOn,
+} from './villageFlows';
 import { SECTION_INFO } from './villageSections';
 import {
   DISTRICTS,
-  LAYOUT,
   MAP_H,
   MAP_W,
   MENU_ORDER,
+  PRIMARY,
   ZOOM_MAX,
   ZOOM_STEPS,
   districtById,
@@ -48,7 +51,6 @@ import {
   districtOf,
   membersOf,
   stepZoom,
-  toMap,
   type DistrictId,
   type SectionId,
 } from './villageScene';
@@ -62,13 +64,6 @@ import {
   type Trend,
 } from './villageModel';
 import { markSeen, readSeen, resumeIndex, tourSteps } from './villageTour';
-import {
-  NEUTRAL,
-  ambianceAt,
-  readAmbianceOn,
-  seasonParticles,
-  writeAmbianceOn,
-} from './villageAmbiance';
 
 const FILTERS: { id: VillageFilter; label: string; dot: string }[] = [
   { id: 'tout', label: 'Tout', dot: TONE.violet },
@@ -159,11 +154,10 @@ const AdminVillage = ({ onClassic }: Props) => {
   /** Étapes figées au départ : une relecture des données ne décale pas la tournée. */
   const [tourList, setTourList] = useState<SectionId[]>([]);
   const [seen, setSeen] = useState(readSeen);
-  const [ambianceOn, setAmbianceOn] = useState(readAmbianceOn);
-  // Flux d'activité : les rues en fibres optiques, coupables sur l'appareil.
-  const [flowsOn, setFlowsOn] = useState(readFlowsOn);
+  // Camions, passants et échanges : coupables sur l'appareil.
+  const [animationsOn, setAnimationsOn] = useState(readAnimationsOn);
   const [now, setNow] = useState(() => new Date());
-  // Première visite de la session : le village se construit sous les yeux.
+  // Première visite de la session : la ville se construit sous les yeux.
   const [arrival] = useState(() => {
     try {
       return !sessionStorage.getItem(ARRIVED_KEY);
@@ -198,19 +192,15 @@ const AdminVillage = ({ onClassic }: Props) => {
     return () => window.clearTimeout(t);
   }, [hint, wall]);
 
-  // L'heure avance : l'ambiance (aube, jour, crépuscule, nuit) suit.
+  // L'heure avance : « Ma journée » (bonjour, bonsoir) suit.
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const ambiance = ambianceOn ? ambianceAt(now) : NEUTRAL;
-  const particles = useMemo(
-    () => (ambianceOn ? seasonParticles(ambiance.season) : []),
-    [ambianceOn, ambiance.season]
-  );
 
   const flows = useMemo(() => villageFlows(data?.flowCounts ?? {}), [data]);
-  const shownFlows = flowsOn ? flows : [];
+  /** Un camion par livraison du jour (3 au plus). */
+  const trucks = data?.life.vans ?? 0;
   const journee = useMemo(
     () => (data ? buildJournee(data, TITLES, news, firstName, now) : null),
     [data, news, firstName, now]
@@ -220,40 +210,42 @@ const AdminVillage = ({ onClassic }: Props) => {
     data?.sections[id] ??
     emptySection(loading ? 'Chargement…' : 'Données indisponibles');
 
-  const mapSections = Object.fromEntries(
-    MENU_ORDER.map((id) => {
-      const d = sectionData(id);
-      const info = SECTION_INFO[id];
-      const s: MapSection = {
-        title: info.title,
-        icon: icon(id),
-        badge: d.badge,
-        tone: d.tone,
-        tags: d.tags,
-        aria: [
-          info.title,
-          d.badge ? d.chip : '',
-          d.alert ?? '',
-          d.activity && d.activity.level >= 2
-            ? `activité ${d.activity.label.toLowerCase()}`
-            : '',
-        ]
+  /**
+   * Un quartier sur la carte : la pastille de sa rubrique principale, la
+   * première alerte de ses rubriques, et l'aperçu de chacune au survol.
+   */
+  const mapDistricts = Object.fromEntries(
+    DISTRICTS.map((dd) => {
+      const members = membersOf(dd.id);
+      const main = sectionData(PRIMARY[dd.id]);
+      const alerted = members.find((m) => sectionData(m).alert);
+      const alert = alerted ? sectionData(alerted).alert : null;
+      const level = Math.max(
+        0,
+        ...members.map((m) => sectionData(m).activity?.level ?? 0)
+      ) as MapDistrict['level'];
+      const md: MapDistrict = {
+        title: dd.name,
+        icon: icon(PRIMARY[dd.id]),
+        badge: main.badge,
+        tone: main.tone,
+        alert,
+        dimmed: !members.some((m) => matchesFilter(sectionData(m), filter)),
+        level,
+        aria: [`Quartier ${dd.name}`, main.badge ? main.chip : '', alert ?? '']
           .filter(Boolean)
           .join(' — '),
-        alert: d.alert,
-        level: d.activity?.level ?? 0,
-        preview: {
-          chip: d.chip,
-          stats: d.stats.slice(0, 3),
-          activity:
-            d.activity && d.activity.level >= 2
-              ? `Activité du mois · ${d.activity.label}`
-              : null,
-        },
+        lines: members.map((m) => ({
+          id: m,
+          title: SECTION_INFO[m].title,
+          text: sectionData(m).alert ?? sectionData(m).chip,
+          alert: !!sectionData(m).alert,
+          badge: sectionData(m).badge,
+        })),
       };
-      return [id, s];
+      return [dd.id, md];
     })
-  ) as Record<SectionId, MapSection>;
+  ) as Record<DistrictId, MapDistrict>;
 
   const selectSection = (id: SectionId) => {
     setSelected(id);
@@ -261,16 +253,16 @@ const AdminVillage = ({ onClassic }: Props) => {
     setDistrict(null);
     setFocus(null);
   };
-  const selectDistrict = (id: DistrictId) => {
+  /** Fiche d'un quartier (clic sur un bâtiment) ; un second clic la referme. */
+  const selectDistrict = (id: DistrictId, zoomIn = false) => {
     setFocus(null);
-    if (district === id) {
+    if (district === id && !zoomIn) {
       setDistrict(null);
-      setZoom(1);
       return;
     }
     setDistrict(id);
     setProjectId(null);
-    setZoom((z) => (z <= 1.001 ? ZOOM_STEPS[1] : z));
+    if (zoomIn) setZoom((z) => (z <= 1.001 ? ZOOM_STEPS[1] : z));
   };
   /** Fiche d'un projet ; `from` = la fiche où ramène le retour (« Ma journée » par défaut). */
   const openProject = (documentId: string, from: SectionId = 'accueil') => {
@@ -280,7 +272,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     setProjectId(documentId);
     setBackTo(from);
   };
-  /** Tout le village, sans quartier ni zoom. */
+  /** Toute la ville, sans quartier ni zoom. */
   const resetView = () => {
     setDistrict(null);
     setFocus(null);
@@ -346,15 +338,20 @@ const AdminVillage = ({ onClassic }: Props) => {
     }
   };
 
-  // Raccourcis : 1 à 5 = quartiers, Échap = tout le village, + et − = zoom,
+  /** Quartier mis en évidence : celui de la fiche ouverte (aucun pour « Ma journée »). */
+  const litDistrict: DistrictId | null =
+    district ??
+    (projectId
+      ? 'projets'
+      : selected === 'accueil'
+        ? null
+        : districtOf(selected));
+
+  // Raccourcis : 1 à 6 = quartiers, Échap = toute la ville, + et − = zoom,
   // flèches = se déplacer quand on a zoomé. Jamais pendant une saisie.
   const viewFocus = (): [number, number] => {
     if (focus) return focus;
-    if (district) return districtCenter(district);
-    const cell =
-      LAYOUT.find((c) => c.id === selected) ??
-      LAYOUT.find((c) => c.id === 'projets')!;
-    return toMap(cell.u, cell.v);
+    return districtCenter(litDistrict ?? 'projets');
   };
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => undefined);
   keyHandler.current = (e: KeyboardEvent) => {
@@ -369,7 +366,7 @@ const AdminVillage = ({ onClassic }: Props) => {
     const n = Number(e.key);
     if (Number.isInteger(n) && n >= 1 && n <= DISTRICTS.length) {
       e.preventDefault();
-      selectDistrict(DISTRICTS[n - 1].id);
+      selectDistrict(DISTRICTS[n - 1].id, true);
     } else if (e.key === 'Escape') {
       if (tourIdx !== null) endTour(false);
       else resetView();
@@ -490,13 +487,12 @@ const AdminVillage = ({ onClassic }: Props) => {
   const fit = mapW / MAP_W;
   const ui = Math.min(1, Math.max(0.8, fit));
   const mapHeight = Math.round(MAP_H * fit);
-  /** Guirlandes lumineuses : décembre et jusqu'à l'Épiphanie (avec l'ambiance). */
-  const festive =
-    ambianceOn &&
-    (now.getMonth() === 11 || (now.getMonth() === 0 && now.getDate() <= 6));
   // Carte étroite : titre et choix de la vue passent dans un en-tête au-dessus
   // de la carte (posés dessus, ils couvriraient les étiquettes du haut).
   const compact = fit < 0.9;
+  // Carte étroite : l'interrupteur des animations perd son libellé (les
+  // filtres gardent la place à gauche).
+  const tightControls = mapW < 720;
   /** Quatre chiffres clés sur une ligne s'ils y tiennent (courbe comprise), sinon deux. */
   const kpiCols = rootW >= 1056 ? 4 : 2;
   /** Chiffres clés resserrés quand quatre cartes tiennent à peine sur la ligne. */
@@ -621,20 +617,20 @@ const AdminVillage = ({ onClassic }: Props) => {
           fontSize: 34 * ui,
           fontWeight: 800,
           letterSpacing: '-0.03em',
-          color: ambiance.ink,
+          color: '#111827',
           lineHeight: 1.1,
         }}
       >
-        Votre village PEG
+        Votre ville PEG
       </h1>
       <p
         style={{
           margin: `${6 * ui}px 0 0`,
           fontSize: 15.5 * ui,
-          color: ambiance.muted,
+          color: '#6b7280',
         }}
       >
-        Un bâtiment pour chaque partie de PEG.
+        Six quartiers pour tout PEG.
       </p>
       {tourButton}
     </div>
@@ -660,7 +656,7 @@ const AdminVillage = ({ onClassic }: Props) => {
         onClick={() => setView('village')}
         style={segment(view === 'village')}
       >
-        <HiOutlineMap aria-hidden="true" /> Vue village
+        <HiOutlineMap aria-hidden="true" /> Vue ville
       </button>
       <button
         type="button"
@@ -684,7 +680,7 @@ const AdminVillage = ({ onClassic }: Props) => {
         type="button"
         className="vgx-btn"
         onClick={enterWall}
-        title="Plein écran pour une télévision : le village fait seul son tour"
+        title="Plein écran pour une télévision : la ville fait seule son tour"
         style={segment(false)}
       >
         <HiOutlineTv aria-hidden="true" /> Écran mural
@@ -704,11 +700,7 @@ const AdminVillage = ({ onClassic }: Props) => {
               padding: '8px 10px',
               borderRadius: 16,
               background:
-                zoom > 1.001
-                  ? ambiance.phase === 'night'
-                    ? 'rgba(20,26,56,0.82)'
-                    : 'rgba(246,243,237,0.9)'
-                  : 'transparent',
+                zoom > 1.001 ? 'rgba(246,247,251,0.92)' : 'transparent',
               transition: 'background .3s ease',
               pointerEvents: 'none',
               zIndex: 2100,
@@ -840,7 +832,7 @@ const AdminVillage = ({ onClassic }: Props) => {
       ) : (
         <div
           role="group"
-          aria-label="Filtrer le village"
+          aria-label="Filtrer la ville"
           style={{
             position: 'absolute',
             left: 20 * ui,
@@ -876,79 +868,6 @@ const AdminVillage = ({ onClassic }: Props) => {
           ))}
         </div>
       )}
-      {view === 'village' && (
-        // Légende des flux, qui sert aussi d'interrupteur (choix gardé sur
-        // l'appareil) : ce que portent les points de lumière dans les rues.
-        <button
-          type="button"
-          className="vgx-btn"
-          aria-pressed={flowsOn}
-          aria-label="Flux d’activité"
-          title={
-            flowsOn
-              ? `${flows
-                  .map((f) => `${f.label} : ${f.count ?? '—'} ${f.detail}`)
-                  .join(' · ')} — cliquer pour couper les flux`
-              : 'Afficher les flux : commandes, livraisons et factures en lumière dans les rues'
-          }
-          onClick={() => {
-            writeFlowsOn(!flowsOn);
-            setFlowsOn(!flowsOn);
-          }}
-          style={{
-            position: 'absolute',
-            right: 20 * ui,
-            top: compact ? 14 : 80 * ui,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12 * ui,
-            height: 32 * ui,
-            padding: `0 ${12 * ui}px`,
-            borderRadius: 999,
-            background: 'rgba(255,255,255,0.72)',
-            border: '1px solid rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(10px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(10px) saturate(1.6)',
-            boxShadow: '0 6px 18px rgba(40,36,80,0.10)',
-            color: '#0f172a',
-            fontSize: 12.5 * ui,
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            zIndex: 2100,
-          }}
-        >
-          <HiOutlineBolt
-            aria-hidden="true"
-            style={{
-              fontSize: 15 * ui,
-              color: flowsOn ? TONE.violet : '#9ca3af',
-            }}
-          />
-          {flowsOn ? (
-            flows.map((f) => (
-              <span
-                key={f.id}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: f.color,
-                    boxShadow: `0 0 6px ${f.color}`,
-                  }}
-                />
-                {f.label}
-                <strong style={{ fontWeight: 700 }}>{f.count ?? '—'}</strong>
-              </span>
-            ))
-          ) : (
-            <span style={{ color: '#6b7280' }}>Flux d’activité</span>
-          )}
-        </button>
-      )}
       {view === 'village' && hint && (
         <div
           role="note"
@@ -973,108 +892,135 @@ const AdminVillage = ({ onClassic }: Props) => {
             pointerEvents: 'none',
           }}
         >
-          Astuce : glissez la carte pour vous déplacer · molette pour zoomer ·
-          touches 1 à 5 pour les quartiers · Échap pour tout revoir
+          Astuce : survolez un bâtiment · molette pour zoomer · glissez pour
+          vous déplacer · touches 1 à 6 pour les quartiers · Échap pour tout
+          revoir
         </div>
       )}
       {view === 'village' && (
         <div
-          role="group"
-          aria-label="Zoom"
           style={{
             position: 'absolute',
             right: 20 * ui,
             bottom: 18 * ui,
             display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 16,
-            background: '#ffffff',
-            boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
-            overflow: 'hidden',
+            alignItems: 'center',
+            gap: 8 * ui,
             zIndex: 2100,
           }}
         >
+          {/* Animations : camions, passants et échanges (choix gardé sur l'appareil) */}
           <button
             type="button"
             className="vgx-btn"
-            aria-pressed={ambianceOn}
-            aria-label={
-              ambianceOn
-                ? 'Ambiance réelle (heure et saison) : activée'
-                : 'Ambiance réelle (heure et saison) : coupée'
-            }
-            title={ambianceOn ? 'Couper l’ambiance' : 'Heure et saison réelles'}
+            role="switch"
+            aria-checked={animationsOn}
+            aria-label="Animations"
             onClick={() => {
-              writeAmbianceOn(!ambianceOn);
-              setAmbianceOn(!ambianceOn);
+              writeAnimationsOn(!animationsOn);
+              setAnimationsOn(!animationsOn);
             }}
+            title={
+              animationsOn
+                ? 'Couper les camions, passants et échanges'
+                : 'Afficher les camions, passants et échanges'
+            }
             style={{
-              width: 46 * ui,
-              height: 46 * ui,
-              border: 0,
-              background: 'transparent',
-              color: ambianceOn ? TONE.violet : '#9ca3af',
-              fontSize: 20 * ui,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: (tightControls ? 7 : 10) * ui,
+              height: 44 * ui,
+              padding: `0 ${10 * ui}px 0 ${(tightControls ? 11 : 14) * ui}px`,
+              border: '1px solid #eceef3',
+              borderRadius: 14,
+              background: '#ffffff',
+              boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+              color: '#111827',
+              fontSize: 14 * ui,
+              fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            {ambiance.phase === 'night' || ambiance.phase === 'dusk' ? (
-              <HiOutlineMoon aria-hidden="true" />
+            {tightControls ? (
+              <HiOutlineSparkles
+                aria-hidden="true"
+                style={{ fontSize: 18 * ui, color: TONE.violet }}
+              />
             ) : (
-              <HiOutlineSun aria-hidden="true" />
+              'Animations'
             )}
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'relative',
+                width: 40 * ui,
+                height: 24 * ui,
+                borderRadius: 999,
+                background: animationsOn ? TONE.violet : '#d6d9e2',
+                transition: 'background .2s ease',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 3 * ui,
+                  left: animationsOn ? 19 * ui : 3 * ui,
+                  width: 18 * ui,
+                  height: 18 * ui,
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  transition: 'left .2s ease',
+                }}
+              />
+            </span>
           </button>
-          <span
-            style={{ height: 1, background: '#ece8e1', margin: '0 10px' }}
-          />
-          <button
-            type="button"
-            className="vgx-btn"
-            aria-label="Zoomer"
-            title="Zoomer (molette, touche +)"
-            disabled={zoom >= ZOOM_MAX - 0.01}
-            onClick={() => setZoom((z) => stepZoom(z, 1))}
-            style={{
-              width: 46 * ui,
-              height: 46 * ui,
-              border: 0,
-              background: 'transparent',
-              color: zoom < ZOOM_MAX - 0.01 ? '#111827' : '#c4c4cc',
-              fontSize: 24 * ui,
-              cursor: zoom < ZOOM_MAX - 0.01 ? 'pointer' : 'default',
-            }}
-          >
-            +
-          </button>
-          <span
-            style={{ height: 1, background: '#ece8e1', margin: '0 10px' }}
-          />
-          <button
-            type="button"
-            className="vgx-btn"
-            aria-label="Dézoomer"
-            title="Dézoomer (molette, touche −)"
-            disabled={zoom <= 1.001}
-            onClick={() => {
-              const next = stepZoom(zoom, -1);
-              setZoom(next);
-              if (next <= 1.001) setFocus(null);
-            }}
-            style={{
-              width: 46 * ui,
-              height: 46 * ui,
-              border: 0,
-              background: 'transparent',
-              color: zoom > 1.001 ? '#111827' : '#c4c4cc',
-              fontSize: 24 * ui,
-              cursor: zoom > 1.001 ? 'pointer' : 'default',
-            }}
-          >
-            −
-          </button>
+          {(
+            [
+              {
+                label: 'Zoomer',
+                title: 'Zoomer (molette, touche +)',
+                text: '+',
+                off: zoom >= ZOOM_MAX - 0.01,
+                go: () => setZoom((z) => stepZoom(z, 1)),
+              },
+              {
+                label: 'Dézoomer',
+                title: 'Dézoomer (molette, touche −)',
+                text: '−',
+                off: zoom <= 1.001,
+                go: () => {
+                  const next = stepZoom(zoom, -1);
+                  setZoom(next);
+                  if (next <= 1.001) setFocus(null);
+                },
+              },
+            ] as const
+          ).map((b) => (
+            <button
+              key={b.label}
+              type="button"
+              className="vgx-btn"
+              aria-label={b.label}
+              title={b.title}
+              disabled={b.off}
+              onClick={b.go}
+              style={{
+                width: 44 * ui,
+                height: 44 * ui,
+                border: '1px solid #eceef3',
+                borderRadius: 14,
+                background: '#ffffff',
+                boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+                color: b.off ? '#c4c4cc' : '#111827',
+                fontSize: 22 * ui,
+                lineHeight: 1,
+                cursor: b.off ? 'default' : 'pointer',
+              }}
+            >
+              {b.text}
+            </button>
+          ))}
         </div>
       )}
     </>
@@ -1096,24 +1042,19 @@ const AdminVillage = ({ onClassic }: Props) => {
   const renderWallMap = (v: WallMapView) => (
     <VillageMap
       width={v.width}
-      sections={mapSections}
-      selected={null}
-      district={v.district}
-      filter="tout"
+      districts={mapDistricts}
+      selected={v.district}
+      focusDistrict={v.district}
       zoom={v.zoom}
       focus={v.focus}
       onSelect={() => undefined}
-      onSelectDistrict={() => undefined}
       labelScale={v.labelScale}
-      ambiance={ambianceOn ? ambiance : null}
-      particles={particles}
       activity={activity}
-      chantier={data?.chantier ?? []}
-      life={data?.life ?? null}
-      festive={festive}
+      animations={animationsOn}
+      flows={flows}
+      trucks={trucks}
       cameraMs={v.cameraMs}
-      fibers={flowsOn}
-      flows={shownFlows}
+      edge="#f6f7fb"
     />
   );
 
@@ -1122,7 +1063,7 @@ const AdminVillage = ({ onClassic }: Props) => {
       ref={rootRef}
       style={{
         minHeight: '100%',
-        background: '#f3f1ec',
+        background: '#f5f6fa',
         color: '#111827',
         padding: '20px 24px 28px',
         boxSizing: 'border-box',
@@ -1138,9 +1079,8 @@ const AdminVillage = ({ onClassic }: Props) => {
           kpis={wallKpis}
           journee={journee}
           activity={activity}
-          ambiance={ambiance}
           renderMap={renderWallMap}
-          flows={shownFlows}
+          flows={animationsOn ? flows : []}
           onRefresh={refresh}
           onExit={exitWall}
         />
@@ -1165,7 +1105,7 @@ const AdminVillage = ({ onClassic }: Props) => {
               minHeight: 78,
               padding: kc ? '0 12px' : '0 16px',
               borderRadius: 18,
-              border: '1px solid #ece8e1',
+              border: '1px solid #eceef3',
               background: '#ffffff',
               color: '#111827',
               textAlign: 'left',
@@ -1300,34 +1240,17 @@ const AdminVillage = ({ onClassic }: Props) => {
       >
         <section
           ref={mapRef}
-          aria-label="Votre village PEG"
+          aria-label="Votre ville PEG"
           style={{
             position: 'relative',
             borderRadius: 24,
-            background: ambiance.sky,
-            transition: 'background 1s ease',
-            border: '1px solid #ebe5db',
+            background: '#ffffff',
+            border: '1px solid #eceef3',
+            boxShadow: '0 6px 20px rgba(40,36,80,0.05)',
             overflow: 'hidden',
             minHeight: mapHeight,
           }}
         >
-          {view === 'village' && ambiance.veil && (
-            // Voile de l'heure (nuit, aube, crépuscule) : sur le ciel et l'îlot,
-            // sous les étiquettes, les lumières et les commandes.
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 1,
-                background: ambiance.veil.color,
-                opacity: ambiance.veil.opacity,
-                mixBlendMode: 'multiply',
-                pointerEvents: 'none',
-                transition: 'opacity 1s ease, background 1s ease',
-              }}
-            />
-          )}
           {compact && (
             <div
               style={{
@@ -1348,10 +1271,9 @@ const AdminVillage = ({ onClassic }: Props) => {
           {view === 'village' ? (
             <VillageMap
               width={mapW}
-              sections={mapSections}
-              selected={district || projectId ? null : selected}
-              district={district}
-              filter={filter}
+              districts={mapDistricts}
+              selected={litDistrict}
+              focusDistrict={district}
               zoom={zoom}
               focus={focus}
               onCamera={(c) => {
@@ -1359,24 +1281,14 @@ const AdminVillage = ({ onClassic }: Props) => {
                 setFocus(c.zoom > 1.001 ? c.focus : null);
                 setHint(false);
               }}
-              onSelect={selectSection}
-              onSelectDistrict={selectDistrict}
+              onSelect={(id) => selectDistrict(id)}
               labelScale={labelScale}
-              ambiance={ambianceOn ? ambiance : null}
-              particles={particles}
               activity={activity}
               onOpenActivity={openActivity}
-              chantier={data?.chantier ?? []}
-              onOpenProject={(id) =>
-                data?.projects.some((p) => p.documentId === id)
-                  ? openProject(id)
-                  : navigate(`/common/projects/details/${id}`)
-              }
-              life={data?.life ?? null}
-              festive={festive}
+              animations={animationsOn}
+              flows={flows}
+              trucks={trucks}
               arrival={arrival}
-              fibers={flowsOn}
-              flows={shownFlows}
             >
               {overlays}
             </VillageMap>
@@ -1420,7 +1332,7 @@ const AdminVillage = ({ onClassic }: Props) => {
             padding: '24px 24px 22px',
             borderRadius: 24,
             background: '#ffffff',
-            border: '1px solid #ece8e1',
+            border: '1px solid #eceef3',
             boxShadow: '0 6px 20px rgba(40,36,80,0.05)',
             display: 'flex',
             flexDirection: 'column',

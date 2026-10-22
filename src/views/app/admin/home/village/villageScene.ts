@@ -1,23 +1,18 @@
-// Village PEG — scène isométrique du tableau de bord admin (21/10/2026).
+// Ville PEG — scène isométrique de l'accueil admin (refonte du 22/10/2026,
+// d'après la maquette « petite ville isométrique moderne »).
 //
-// Un bâtiment par rubrique du menu admin, regroupés en 5 quartiers d'un seul
-// tenant. Les cases (u, v) sont celles de la grille isométrique : u descend
-// vers la droite, v vers la gauche. Toute la géométrie est en pixels « carte »
-// (MAP_W × MAP_H) ; le composant met la carte à l'échelle de son conteneur.
+// Six quartiers sur une grille de 3 × 3 îlots : Projets au centre, sur la
+// place ; Clients, Production, Boutique, Assistance et Finance autour ; trois
+// petits parcs dans les coins. Les vingt rubriques du menu admin sont
+// rattachées à ces quartiers (aucune ne disparaît). Les rues passent entre
+// les îlots. Tout est dessiné par le code (SVG), sans image.
 //
-// Les sprites (public/img/village/*.svg) sont dessinés sur une toile 400 × 400
-// dont l'ancre au sol (centre de la parcelle) est le point (200, 300).
-// spriteManifest.json donne, pour chaque bâtiment et dans les coordonnées de
-// cette toile, le haut du toit (labelY) et le cadre cliquable (hit).
+// Coordonnées : (u, v) au sol, en îlots — l'îlot (i, j) couvre [i, i+1] ×
+// [j, j+1] ; u descend vers la droite, v vers la gauche ; z = hauteur en
+// pixels. La carte fait MAP_W × MAP_H pixels « carte » ; le composant la met
+// à l'échelle de son conteneur.
 //
 // Ce module ne dépend ni de React ni du navigateur : il est testé tel quel.
-
-import manifest from './spriteManifest.json';
-
-/** À incrémenter quand les sprites changent (fichiers servis sans empreinte). */
-const SPRITES_VERSION = 2;
-export const spriteUrl = (name: string) =>
-  `/img/village/${name}.svg?v=${SPRITES_VERSION}`;
 
 export type SectionId =
   | 'accueil'
@@ -42,167 +37,12 @@ export type SectionId =
   | 'parametres';
 
 export type DistrictId =
-  | 'pilotage'
+  | 'projets'
   | 'clients'
-  | 'catalogue'
-  | 'finances'
-  | 'admin';
-
-export const MAP_W = 1132;
-// Une rangée de plus en haut (21/10/2026) : le Calendrier a reculé d'une case
-// pour laisser au chantier des projets la case juste derrière Projets.
-export const MAP_H = 853;
-const A = 140;
-const B = A * Math.tan(Math.PI / 6);
-const X0 = 566;
-const Y0 = 296;
-const INSET = 0.5714;
-/** Échelle d'un sprite 400 × 400 sur la carte (≈ 0,533). */
-export const SPRITE_SCALE = (INSET * A) / 150;
-export const SPRITE_SIZE = 400 * SPRITE_SCALE;
-
-/** Case (u, v) → point de la carte (centre de la case, au sol). */
-export const toMap = (u: number, v: number): [number, number] => [
-  X0 + (u - v) * A,
-  Y0 + (u + v) * B,
-];
-
-/**
- * z-index d'un objet posé à la profondeur u + v (toujours sous les étiquettes).
- * Toujours positif : un z-index négatif passe SOUS le sol de l'îlot (calque sans
- * z-index) — la tour du Calendrier, rangée −1, disparaissait ainsi.
- */
-export const depthZ = (depth: number) => Math.round((depth + 3) * 100) + 50;
-
-export interface Cell {
-  id: SectionId;
-  u: number;
-  v: number;
-  district: DistrictId;
-}
-
-// Les très hauts (Calendrier, Leads) sont aux rangées arrière : leur étiquette
-// ne retombe jamais sur un bâtiment situé derrière eux. La case (0, 0), juste
-// derrière Projets, est le chantier des projets (CHANTIER, plus bas).
-export const LAYOUT: Cell[] = [
-  { id: 'calendrier', u: -1, v: 0, district: 'pilotage' },
-  { id: 'accueil', u: 0, v: 1, district: 'pilotage' },
-  { id: 'planning', u: 1, v: 0, district: 'pilotage' },
-  { id: 'projets', u: 1, v: 1, district: 'pilotage' },
-  { id: 'premium', u: -1, v: 1, district: 'clients' },
-  { id: 'leads', u: -1, v: 2, district: 'clients' },
-  { id: 'clients', u: 0, v: 2, district: 'clients' },
-  { id: 'tickets', u: 0, v: 3, district: 'clients' },
-  { id: 'producteurs', u: 1, v: 2, district: 'catalogue' },
-  { id: 'boutique', u: 1, v: 3, district: 'catalogue' },
-  { id: 'fournisseurs', u: 1, v: 4, district: 'catalogue' },
-  { id: 'attributs', u: 2, v: 3, district: 'catalogue' },
-  { id: 'finance', u: 2, v: 2, district: 'finances' },
-  { id: 'devis', u: 3, v: 1, district: 'finances' },
-  { id: 'generateurs', u: 3, v: 2, district: 'finances' },
-  { id: 'utilisateurs', u: 1, v: -1, district: 'admin' },
-  { id: 'ia', u: 2, v: -1, district: 'admin' },
-  { id: 'parametres', u: 2, v: 0, district: 'admin' },
-  { id: 'bannieres', u: 3, v: 0, district: 'admin' },
-  { id: 'campagnes', u: 2, v: 1, district: 'admin' },
-];
-
-export interface District {
-  id: DistrictId;
-  /** Nom court, affiché sur la carte : « Quartier Pilotage ». */
-  name: string;
-  /** Nom du lieu, titre de la fiche : « Centre-ville ». */
-  place: string;
-  desc: string;
-  hue: string;
-  ink: string;
-  soft: string;
-  tile: string;
-  plot: string;
-  lit: string;
-  shaded: string;
-  /** Emplacement du nom sur la carte : un creux de l'îlot, hors des toits. */
-  tag: [number, number];
-}
-
-export const DISTRICTS: District[] = [
-  {
-    id: 'pilotage',
-    name: 'Pilotage',
-    place: 'Centre-ville',
-    desc: 'Le quotidien de PEG : le tableau de bord, les projets, la charge des producteurs et les rendez-vous.',
-    hue: '#6d5dfc',
-    ink: '#4f3fd1',
-    soft: '#efecfe',
-    tile: '#e7e1f6',
-    plot: '#f7f4fd',
-    lit: '#d6cdee',
-    shaded: '#c6bbe3',
-    tag: [720, 140],
-  },
-  {
-    id: 'clients',
-    name: 'Clients',
-    place: 'Quartier des clients',
-    desc: 'La relation client : leads à rappeler, fiches clients, abonnés Premium et demandes d’assistance.',
-    hue: '#0ea5e9',
-    ink: '#0369a1',
-    soft: '#e6f4fb',
-    tile: '#dbe9f3',
-    plot: '#f3f8fc',
-    lit: '#c9dbea',
-    shaded: '#b6cbdf',
-    tag: [64, 295],
-  },
-  {
-    id: 'catalogue',
-    name: 'Catalogue',
-    place: 'Quartier des ateliers',
-    desc: 'Ce que PEG fabrique et vend : producteurs, boutique, attributs produit et fournisseurs.',
-    hue: '#f59e0b',
-    ink: '#b45309',
-    soft: '#fdf3e2',
-    tile: '#f5e4cb',
-    plot: '#fcf7ef',
-    lit: '#e8d3b4',
-    shaded: '#dbc19c',
-    tag: [286, 700],
-  },
-  {
-    id: 'finances',
-    name: 'Finances',
-    place: 'Quartier des finances',
-    desc: 'L’argent : devis en attente de réponse, factures à encaisser et commissions des générateurs.',
-    hue: '#16a34a',
-    ink: '#15803d',
-    soft: '#e8f6ec',
-    tile: '#ddecd9',
-    plot: '#f4f9f2',
-    lit: '#cbdfc6',
-    shaded: '#b7d0b1',
-    tag: [1052, 641],
-  },
-  {
-    id: 'admin',
-    name: 'Administration',
-    place: 'Quartier de la mairie',
-    desc: 'L’administration et la communication : comptes, réglages, IA, campagnes et bannières.',
-    hue: '#db2777',
-    ink: '#be185d',
-    soft: '#fcebf2',
-    tile: '#f3dfe7',
-    plot: '#fbf4f7',
-    lit: '#e4cbd6',
-    shaded: '#d5b6c4',
-    tag: [1040, 231],
-  },
-];
-
-export const districtById = (id: DistrictId): District =>
-  DISTRICTS.find((d) => d.id === id) as District;
-
-export const districtOf = (id: SectionId): DistrictId =>
-  (LAYOUT.find((c) => c.id === id) as Cell).district;
+  | 'boutique'
+  | 'production'
+  | 'finance'
+  | 'assistance';
 
 /** Ordre de la barre latérale admin (navigation.config/admin.ts). */
 export const MENU_ORDER: SectionId[] = [
@@ -228,122 +68,454 @@ export const MENU_ORDER: SectionId[] = [
   'parametres',
 ];
 
-/** Bâtiments d'un quartier, dans l'ordre du menu. */
-export const membersOf = (district: DistrictId): SectionId[] =>
-  LAYOUT.filter((c) => c.district === district)
-    .map((c) => c.id)
-    .sort((a, b) => MENU_ORDER.indexOf(a) - MENU_ORDER.indexOf(b));
-
-export interface SpriteMeta {
-  labelY: number;
-  hit: { x: number; y: number; w: number; h: number };
+export interface District {
+  id: DistrictId;
+  /** Nom du quartier, sur la carte : « Production ». */
+  name: string;
+  /** Nom du lieu, titre de la fiche : « Les ateliers ». */
+  place: string;
+  desc: string;
+  /** Couleur du quartier (icône, pastilles), encre lisible, fond doux. */
+  hue: string;
+  ink: string;
+  soft: string;
 }
-export const SPRITE_META = manifest as Record<SectionId, SpriteMeta>;
 
-/** Point de la carte où se pose la pointe de l'étiquette (juste au-dessus du toit). */
-export const labelAnchor = (cell: Cell): [number, number] => {
-  const [cx, cy] = toMap(cell.u, cell.v);
-  const top = cy - 300 * SPRITE_SCALE;
-  return [cx, top + SPRITE_META[cell.id].labelY * SPRITE_SCALE - 10];
-};
-
-/** Centre d'un quartier (moyenne de ses cases), pour y centrer le zoom. */
-export const districtCenter = (district: DistrictId): [number, number] => {
-  const pts = LAYOUT.filter((c) => c.district === district).map((c) =>
-    toMap(c.u, c.v)
-  );
-  return [
-    pts.reduce((s, p) => s + p[0], 0) / pts.length,
-    pts.reduce((s, p) => s + p[1], 0) / pts.length,
-  ];
-};
-
-// ── Chantier des projets ─────────────────────────────────────────────────────
-
-/** La case juste derrière le bâtiment Projets : le chantier (ce n'est pas une rubrique). */
-export const CHANTIER = { u: 0, v: 0, district: 'pilotage' as DistrictId };
-
-export type ChantierStage = 'fondations' | 'murs' | 'toit' | 'livre';
-
-export const CHANTIER_SPRITE: Record<ChantierStage, string> = {
-  fondations: 'chantier-fondations',
-  murs: 'chantier-murs',
-  toit: 'chantier-toit',
-  livre: 'chantier-livre',
-};
-
-/**
- * Emplacements des maisons (cases), de gauche à droite, sur la ligne du milieu
- * de la parcelle : l'avant de la parcelle passe sous l'étiquette de Projets.
- */
-export const CHANTIER_SLOTS: [number, number][] = [
-  [-0.2, 0.2],
-  [0, 0],
-  [0.2, -0.2],
-];
-
-/** La grue, au fond de la parcelle ; sa flèche passe au-dessus des maisons. */
-export const CHANTIER_CRANE = { sprite: 'chantier-grue', u: -0.3, v: -0.3 };
-
-/** Haut de la grue dans sa toile (manifeste de chantier-grue.json). */
-const CRANE_TOP = 153;
-
-/** Pointe de l'étiquette « Chantiers », au-dessus de la grue. */
-export const chantierLabelAnchor = (): [number, number] => {
-  const [cx, cy] = toMap(CHANTIER_CRANE.u, CHANTIER_CRANE.v);
-  return [cx, cy - 300 * SPRITE_SCALE + CRANE_TOP * SPRITE_SCALE - 10];
-};
-
-/** Cadre cliquable commun aux quatre maisons (toile 400 × 400, d'après leurs manifestes). */
-export const CHANTIER_HIT = { x: 140, y: 246, w: 130, h: 90 };
-
-// ── Vie du village : détails liés aux données du jour ───────────────────────
-
-/** Point d'une toile de sprite (400 × 400, ancre 200, 300) posée sur la case (u, v). */
-export const spritePoint = (
-  u: number,
-  v: number,
-  x: number,
-  y: number
-): [number, number] => {
-  const [cx, cy] = toMap(u, v);
-  return [cx + (x - 200) * SPRITE_SCALE, cy + (y - 300) * SPRITE_SCALE];
-};
-
-/** Sommet de la cheminée de l'atelier (sprite Producteurs) : fumée quand la production tourne. */
-export const CHIMNEY = { id: 'producteurs' as SectionId, x: 187.9, y: 169 };
-
-/** Jet de la fontaine de la place (sprite Accueil). */
-export const FOUNTAIN_JET = { id: 'accueil' as SectionId, x: 200, y: 266 };
-
-/** Places devant la Boutique, le long de la rue : une voiture par commande du jour (3 au plus). */
-export const PARKING: Decor[] = [
-  { sprite: 'car-y-red', u: 1.35, v: 2.88 },
-  { sprite: 'car-y-blue', u: 1.35, v: 3.06 },
-  { sprite: 'car-y-amber', u: 1.35, v: 3.24 },
-];
-
-/**
- * Livraisons du jour : des camionnettes partent de Projets vers le bas de
- * l'îlot (elles remplacent alors la camionnette de passage de cette rue).
- */
-export const DELIVERY_ROUTE: { from: [number, number]; to: [number, number] } =
+export const DISTRICTS: District[] = [
   {
-    from: [1.55, 1.25],
-    to: [1.55, 3.45],
-  };
+    id: 'projets',
+    name: 'Projets',
+    place: 'La place centrale',
+    desc: 'Le cœur de PEG : les projets en cours, les rendez-vous et livraisons du calendrier, le pense-bête.',
+    hue: '#6d5dfc',
+    ink: '#4f3fd1',
+    soft: '#efecfe',
+  },
+  {
+    id: 'clients',
+    name: 'Clients',
+    place: 'Le quartier des clients',
+    desc: 'La relation client : leads à rappeler, fiches clients, abonnés Premium et campagnes.',
+    hue: '#3b82f6',
+    ink: '#1d4ed8',
+    soft: '#e8f0fe',
+  },
+  {
+    id: 'boutique',
+    name: 'Boutique',
+    place: 'La rue commerçante',
+    desc: 'Ce que PEG vend : commandes et produits, attributs (tailles, couleurs, formulaires) et bannières.',
+    hue: '#ec4899',
+    ink: '#be185d',
+    soft: '#fdeaf3',
+  },
+  {
+    id: 'production',
+    name: 'Production',
+    place: 'Les ateliers',
+    desc: 'Ce que PEG fabrique : les producteurs, la charge de l’atelier (planning) et les fournisseurs.',
+    hue: '#f97316',
+    ink: '#c2410c',
+    soft: '#fff1e6',
+  },
+  {
+    id: 'finance',
+    name: 'Finance',
+    place: 'Le quartier des finances',
+    desc: 'L’argent : factures à encaisser, devis en attente de réponse et commissions des générateurs.',
+    hue: '#14b8a6',
+    ink: '#0f766e',
+    soft: '#e6f7f4',
+  },
+  {
+    id: 'assistance',
+    name: 'Assistance',
+    place: 'Le centre d’assistance',
+    desc: 'Le support et l’administration : tickets, IA, comptes utilisateurs et réglages.',
+    hue: '#6366f1',
+    ink: '#4338ca',
+    soft: '#eef0fe',
+  },
+];
 
-/** Coins avant de la parcelle d'une case (gauche, avant, droite), en pixels carte. */
-export const plotFront = (
-  u: number,
-  v: number
-): [[number, number], [number, number], [number, number]] => {
-  const [cx, cy] = toMap(u, v);
-  return [
-    [cx - A * INSET, cy],
-    [cx, cy + B * INSET],
-    [cx + A * INSET, cy],
+/** Les rubriques de chaque quartier (ordre du menu). */
+const MEMBERS: Record<DistrictId, SectionId[]> = {
+  projets: ['accueil', 'calendrier', 'projets'],
+  clients: ['leads', 'clients', 'premium', 'campagnes'],
+  boutique: ['boutique', 'attributs', 'bannieres'],
+  production: ['planning', 'producteurs', 'fournisseurs'],
+  finance: ['devis', 'generateurs', 'finance'],
+  assistance: ['ia', 'utilisateurs', 'tickets', 'parametres'],
+};
+
+/** La rubrique qui donne sa pastille au quartier, sur la carte. */
+export const PRIMARY: Record<DistrictId, SectionId> = {
+  projets: 'projets',
+  clients: 'clients',
+  boutique: 'boutique',
+  production: 'producteurs',
+  finance: 'finance',
+  assistance: 'tickets',
+};
+
+export const districtById = (id: DistrictId): District =>
+  DISTRICTS.find((d) => d.id === id) as District;
+
+export const districtOf = (id: SectionId): DistrictId =>
+  (Object.keys(MEMBERS) as DistrictId[]).find((d) =>
+    MEMBERS[d].includes(id)
+  ) as DistrictId;
+
+/** Rubriques d'un quartier, dans l'ordre du menu. */
+export const membersOf = (district: DistrictId): SectionId[] =>
+  [...MEMBERS[district]].sort(
+    (a, b) => MENU_ORDER.indexOf(a) - MENU_ORDER.indexOf(b)
+  );
+
+// ── Projection ────────────────────────────────────────────────────────────────
+
+export const MAP_W = 1200;
+export const MAP_H = 760;
+/** Demi-largeur d'un îlot à l'écran ; projection isométrique à 30°. */
+const A = 160;
+const B = A * Math.tan(Math.PI / 6);
+const X0 = 600;
+const Y0 = 100;
+
+/** Point du sol (u, v), à la hauteur z (pixels) → point de la carte. */
+export const iso = (u: number, v: number, z = 0): [number, number] => [
+  X0 + (u - v) * A,
+  Y0 + (u + v) * B - z,
+];
+
+const f1 = (n: number) => n.toFixed(1);
+/** Chemin SVG fermé passant par des points de la carte. */
+export const pathOf = (pts: [number, number][]) =>
+  `M${pts.map((p) => `${f1(p[0])} ${f1(p[1])}`).join(' L')} Z`;
+
+/**
+ * Rectangle aux coins arrondis posé au sol, à la hauteur z : le contour d'un
+ * îlot, d'une parcelle. Arcs approchés par `steps` segments.
+ */
+export const groundRect = (
+  u0: number,
+  v0: number,
+  u1: number,
+  v1: number,
+  r: number,
+  z = 0,
+  steps = 6
+): string => {
+  const pts: [number, number][] = [];
+  const arc = (cu: number, cv: number, start: number) => {
+    for (let s = 0; s <= steps; s++) {
+      const a = start + (s / steps) * (Math.PI / 2);
+      pts.push(iso(cu + r * Math.cos(a), cv + r * Math.sin(a), z));
+    }
+  };
+  arc(u1 - r, v1 - r, 0);
+  arc(u0 + r, v1 - r, Math.PI / 2);
+  arc(u0 + r, v0 + r, Math.PI);
+  arc(u1 - r, v0 + r, Math.PI * 1.5);
+  return pathOf(pts);
+};
+
+// ── La ville ─────────────────────────────────────────────────────────────────
+
+/** Trois îlots par trois ; les rues suivent les lignes entières 0 à 3. */
+export const GRID = 3;
+/** Demi-largeur d'une rue ; bord du trottoir extérieur. */
+export const ROAD = 0.12;
+export const CITY_EDGE = 0.22;
+/** Marge d'une parcelle dans son îlot (rue + trottoir). */
+export const PLOT_INSET = 0.16;
+
+/** Îlot de chaque quartier (i, j). */
+export const DISTRICT_BLOCK: Record<DistrictId, [number, number]> = {
+  production: [1, 0],
+  clients: [0, 1],
+  projets: [1, 1],
+  assistance: [2, 1],
+  boutique: [1, 2],
+  finance: [2, 2],
+};
+
+/** Les îlots sans quartier sont des parcs. */
+export const PARKS: [number, number][] = [
+  [0, 0],
+  [2, 0],
+  [0, 2],
+];
+
+/** Centre (u, v) de l'îlot d'un quartier. */
+export const blockCenter = (id: DistrictId): [number, number] => {
+  const [i, j] = DISTRICT_BLOCK[id];
+  return [i + 0.5, j + 0.5];
+};
+
+export interface BuildingSpec {
+  id: DistrictId;
+  /** Emprise au sol (le long de u, de v) et hauteur (px). */
+  w: number;
+  d: number;
+  h: number;
+  /** Décalage vers le fond de la parcelle (place libre devant). */
+  back: number;
+}
+
+export const BUILDINGS: Record<DistrictId, BuildingSpec> = {
+  projets: { id: 'projets', w: 0.42, d: 0.42, h: 168, back: 0.02 },
+  clients: { id: 'clients', w: 0.4, d: 0.36, h: 118, back: 0.05 },
+  production: { id: 'production', w: 0.46, d: 0.38, h: 96, back: 0.05 },
+  boutique: { id: 'boutique', w: 0.42, d: 0.34, h: 92, back: 0.05 },
+  finance: { id: 'finance', w: 0.4, d: 0.38, h: 104, back: 0.05 },
+  assistance: { id: 'assistance', w: 0.38, d: 0.36, h: 110, back: 0.05 },
+};
+
+/** Emprise d'un bâtiment : [u0, v0, u1, v1]. */
+export const footprint = (id: DistrictId): [number, number, number, number] => {
+  const [cu, cv] = blockCenter(id);
+  const b = BUILDINGS[id];
+  const u = cu - b.back;
+  const v = cv - b.back;
+  return [u - b.w / 2, v - b.d / 2, u + b.w / 2, v + b.d / 2];
+};
+
+/** Silhouette d'un bâtiment (pour le survol et le clic). */
+export const silhouette = (id: DistrictId): string => {
+  const [u0, v0, u1, v1] = footprint(id);
+  const h = BUILDINGS[id].h;
+  return pathOf([
+    iso(u0, v1, 0),
+    iso(u1, v1, 0),
+    iso(u1, v0, 0),
+    iso(u1, v0, h),
+    iso(u0, v0, h),
+    iso(u0, v1, h),
+  ]);
+};
+
+/** Cadre d'un bâtiment sur la carte [x, y, largeur, hauteur] : vignettes de la fiche. */
+export const buildingFrame = (
+  id: DistrictId
+): [number, number, number, number] => {
+  const [u0, v0, u1, v1] = footprint(id);
+  const h = BUILDINGS[id].h;
+  const pts = [
+    iso(u0, v1, 0),
+    iso(u1, v1, 0),
+    iso(u1, v0, 0),
+    iso(u0, v0, h + 50),
+    iso(u1, v0, h + 14),
+    iso(u0, v1, h + 14),
   ];
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const m = 14;
+  const x = Math.min(...xs) - m;
+  const y = Math.min(...ys) - m;
+  return [x, y, Math.max(...xs) + m - x, Math.max(...ys) + m - y];
+};
+
+/** Point de la carte où se pose la pointe de l'étiquette (au-dessus du toit). */
+export const labelAnchor = (id: DistrictId): [number, number] => {
+  const [u0, v0, u1, v1] = footprint(id);
+  return iso((u0 + u1) / 2, (v0 + v1) / 2, BUILDINGS[id].h + 30);
+};
+
+/** Point visé par la caméra pour un quartier (le milieu du bâtiment). */
+export const districtCenter = (id: DistrictId): [number, number] => {
+  const [cu, cv] = blockCenter(id);
+  return iso(cu, cv, BUILDINGS[id].h * 0.35);
+};
+
+/** Profondeur d'un objet posé en (u, v) : du fond vers l'avant. */
+export const depthOf = (u: number, v: number) => u + v;
+
+export interface Tree {
+  u: number;
+  v: number;
+  /** Taille relative (1 = arbre moyen). */
+  s: number;
+}
+
+/** Arbres : aux coins des parcelles, et nombreux dans les parcs. */
+export const TREES: Tree[] = [
+  // Parc du nord (0, 0)
+  { u: 0.3, v: 0.32, s: 1.1 },
+  { u: 0.55, v: 0.26, s: 0.9 },
+  { u: 0.28, v: 0.62, s: 0.95 },
+  { u: 0.72, v: 0.5, s: 1.15 },
+  { u: 0.55, v: 0.74, s: 0.85 },
+  // Parc de l'est (2, 0)
+  { u: 2.3, v: 0.3, s: 1 },
+  { u: 2.7, v: 0.32, s: 0.9 },
+  { u: 2.5, v: 0.62, s: 1.15 },
+  { u: 2.75, v: 0.72, s: 0.85 },
+  // Parc de l'ouest (0, 2)
+  { u: 0.3, v: 2.3, s: 0.95 },
+  { u: 0.32, v: 2.7, s: 1.1 },
+  { u: 0.62, v: 2.5, s: 0.9 },
+  { u: 0.74, v: 2.76, s: 1 },
+  // Autour des bâtiments (coins avant des parcelles, à l'écart des passants)
+  { u: 0.24, v: 1.78, s: 0.85 },
+  { u: 0.78, v: 1.77, s: 0.8 },
+  { u: 1.8, v: 0.22, s: 0.85 },
+  { u: 1.78, v: 0.77, s: 0.8 },
+  { u: 1.23, v: 1.77, s: 0.8 },
+  { u: 1.77, v: 1.23, s: 0.8 },
+  { u: 2.24, v: 1.77, s: 0.8 },
+  { u: 2.8, v: 1.78, s: 0.85 },
+  { u: 1.24, v: 2.8, s: 0.85 },
+  { u: 1.77, v: 2.78, s: 0.8 },
+  { u: 2.24, v: 2.8, s: 0.85 },
+  { u: 2.8, v: 2.24, s: 0.8 },
+];
+
+/** Bancs (le long d'une parcelle) : orientés le long de u ou de v. */
+export const BENCHES: { u: number; v: number; along: 'u' | 'v' }[] = [
+  { u: 0.62, v: 0.5, along: 'v' },
+  { u: 2.5, v: 0.76, along: 'u' },
+  { u: 0.5, v: 2.62, along: 'u' },
+  { u: 1.5, v: 2.8, along: 'u' },
+  { u: 2.78, v: 2.5, along: 'v' },
+];
+
+/** Marquages au sol : tirets blancs au milieu des rues, entre les carrefours. */
+export const laneDashes = (): string => {
+  const parts: string[] = [];
+  const seg = (a: [number, number], b: [number, number]) =>
+    parts.push(`M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}`);
+  for (let k = 0; k <= GRID; k++)
+    for (let j = 0; j < GRID; j++) {
+      seg(iso(k, j + ROAD + 0.04), iso(k, j + 1 - ROAD - 0.04));
+      seg(iso(j + ROAD + 0.04, k), iso(j + 1 - ROAD - 0.04, k));
+    }
+  return parts.join(' ');
+};
+
+/**
+ * Passages piétons autour de la place centrale (îlot Projets) : bandes
+ * blanches en travers de la rue, au milieu de chaque côté de la place.
+ */
+export const crosswalks = (): string => {
+  const [i, j] = DISTRICT_BLOCK.projets;
+  const stripes: string[] = [];
+  const band = (u0: number, v0: number, u1: number, v1: number) =>
+    stripes.push(pathOf([iso(u0, v0), iso(u1, v0), iso(u1, v1), iso(u0, v1)]));
+  for (const k of [i, i + 1]) // rues le long de v, de part et d'autre
+    for (let s = -2; s <= 2; s++) {
+      const u = k + s * 0.045;
+      band(u - 0.014, j + 0.42, u + 0.014, j + 0.58);
+    }
+  for (const k of [j, j + 1]) // rues le long de u
+    for (let s = -2; s <= 2; s++) {
+      const v = k + s * 0.045;
+      band(i + 0.42, v - 0.014, i + 0.58, v + 0.014);
+    }
+  return stripes.join(' ');
+};
+
+/** Trajet d'un passant ou d'un camion : points (u, v) le long des rues. */
+export interface Route {
+  pts: [number, number][];
+  /** Durée d'un passage (s). */
+  duration: number;
+}
+
+const routeLength = (pts: [number, number][]) =>
+  pts.slice(1).reduce((sum, p, i) => {
+    const a = iso(...pts[i]);
+    const b = iso(...p);
+    return sum + Math.hypot(b[0] - a[0], b[1] - a[1]);
+  }, 0);
+
+/** Chemin SVG d'un trajet au sol, en pixels carte. */
+export const routePath = (pts: [number, number][], z = 0) =>
+  pts
+    .map(([u, v], i) => {
+      const [x, y] = iso(u, v, z);
+      return `${i ? 'L' : 'M'}${f1(x)} ${f1(y)}`;
+    })
+    .join(' ');
+
+/** Passants : sur les trottoirs, au bord des parcelles (un sens chacun). */
+export const WALKERS: Route[] = [
+  [
+    [0.3, 1.85],
+    [2.7, 1.85],
+  ],
+  [
+    [1.86, 2.75],
+    [1.86, 0.3],
+  ],
+  [
+    [2.7, 0.86],
+    [0.35, 0.86],
+  ],
+  [
+    [1.14, 0.3],
+    [1.14, 2.7],
+  ],
+].map((pts) => ({
+  pts: pts as [number, number][],
+  duration: Math.round(routeLength(pts as [number, number][]) / 16),
+}));
+
+/**
+ * Camions de livraison : ils partent de la Production, longent la rue entre
+ * l'îlot de l'Assistance et le parc, et quittent la ville par l'est.
+ */
+export const TRUCK_ROUTE: Route = (() => {
+  const pts: [number, number][] = [
+    [1.55, 1.05],
+    [3.14, 1.05],
+  ];
+  return { pts, duration: Math.round(routeLength(pts) / 34) };
+})();
+
+// ── Échanges entre les bâtiments ─────────────────────────────────────────────
+
+export interface Exchange {
+  from: DistrictId;
+  to: DistrictId;
+  /**
+   * Bombé de la courbe (px) : positif = vers le haut de l'écran (au-dessus
+   * des rues), négatif = vers le bas (devant la place).
+   */
+  arc: number;
+}
+
+/** Courbe d'un échange (pixels carte) : départ, point de contrôle, arrivée. */
+export const exchangeCurve = (e: Exchange) => {
+  const a = iso(...blockCenter(e.from), 18);
+  const b = iso(...blockCenter(e.to), 18);
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  // Perpendiculaire tournée vers le haut (vers la gauche si le trajet est vertical).
+  let nx = (b[1] - a[1]) / len;
+  let ny = -(b[0] - a[0]) / len;
+  if (ny > 0 || (ny === 0 && nx > 0)) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const c: [number, number] = [
+    (a[0] + b[0]) / 2 + nx * e.arc,
+    (a[1] + b[1]) / 2 + ny * e.arc,
+  ];
+  const d = `M${f1(a[0])} ${f1(a[1])} Q${f1(c[0])} ${f1(c[1])} ${f1(b[0])} ${f1(b[1])}`;
+  // Longueur approchée (polyligne de la courbe).
+  let length = 0;
+  let prev = a;
+  for (let s = 1; s <= 24; s++) {
+    const t = s / 24;
+    const p: [number, number] = [
+      (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t ** 2 * b[0],
+      (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t ** 2 * b[1],
+    ];
+    length += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
+    prev = p;
+  }
+  return { d, length };
 };
 
 // ── Caméra ───────────────────────────────────────────────────────────────────
@@ -364,15 +536,14 @@ export const clampOffset = (
   Math.min(0, Math.max(height - MAP_H * k, ty)),
 ];
 
-/** Décalage qui centre le point (fx, fy) de la carte (un peu bas : on voit les toits). */
+/** Décalage qui centre le point (fx, fy) de la carte. */
 export const cameraOffset = (
   width: number,
   height: number,
   k: number,
   fx: number,
   fy: number
-) =>
-  clampOffset(width, height, k, width / 2 - fx * k, height / 2 - (fy - 50) * k);
+) => clampOffset(width, height, k, width / 2 - fx * k, height / 2 - fy * k);
 
 /** Point de la carte au centre de la vue pour un décalage donné (inverse de cameraOffset). */
 export const focusOf = (
@@ -381,7 +552,7 @@ export const focusOf = (
   k: number,
   tx: number,
   ty: number
-): [number, number] => [(width / 2 - tx) / k, (height / 2 - ty) / k + 50];
+): [number, number] => [(width / 2 - tx) / k, (height / 2 - ty) / k];
 
 /** Palier de zoom suivant (+1) ou précédent (−1). */
 export const stepZoom = (zoom: number, dir: 1 | -1) =>
@@ -389,364 +560,7 @@ export const stepZoom = (zoom: number, dir: 1 | -1) =>
     ? (ZOOM_STEPS.find((z) => z > zoom + 0.01) ?? ZOOM_MAX)
     : ([...ZOOM_STEPS].reverse().find((z) => z < zoom - 0.01) ?? 1);
 
-// ── Sol ──────────────────────────────────────────────────────────────────────
-
-export interface GroundLayer {
-  district: District;
-  tiles: string;
-  lit: string;
-  shaded: string;
-  plotTop: string;
-  plotLeft: string;
-  plotRight: string;
-}
-
-export interface Ground {
-  layers: GroundLayer[];
-  /** Allées en pas japonais : arêtes partagées entre deux cases. */
-  stones: string;
-  /** Parcelle du chantier (terre battue) : dessus et tranches. */
-  lot: { top: string; left: string; right: string };
-}
-
-const pt = (p: [number, number]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
-const poly = (pts: [number, number][]) => `M${pts.map(pt).join(' L')} Z`;
-const down = (p: [number, number], k: number): [number, number] => [
-  p[0],
-  p[1] + k,
-];
-
-/** Losange de la parcelle d'une case (là où se pose l'anneau de sélection). */
-export const plotPath = (u: number, v: number): string => {
-  const [cx, cy] = toMap(u, v);
-  return poly([
-    [cx, cy - B * INSET],
-    [cx + A * INSET, cy],
-    [cx, cy + B * INSET],
-    [cx - A * INSET, cy],
-  ]);
-};
-
-/**
- * L'îlot = union des cases, teinté par quartier, avec ses tranches visibles
- * (faces avant), les parcelles surélevées et les allées sur les arêtes
- * partagées (elles font aussi la frontière entre deux quartiers).
- */
-export const buildGround = (): Ground => {
-  const cells = [...LAYOUT, CHANTIER];
-  const occupied = new Set(cells.map((c) => `${c.u},${c.v}`));
-  const has = (u: number, v: number) => occupied.has(`${u},${v}`);
-  const TH = 14;
-  const PTH = 6;
-  const byDistrict = new Map<DistrictId, GroundLayer>();
-  let stones = '';
-  const lot = { top: '', left: '', right: '' };
-  for (const c of cells) {
-    let layer = byDistrict.get(c.district);
-    if (!layer) {
-      layer = {
-        district: districtById(c.district),
-        tiles: '',
-        lit: '',
-        shaded: '',
-        plotTop: '',
-        plotLeft: '',
-        plotRight: '',
-      };
-      byDistrict.set(c.district, layer);
-    }
-    const { u, v } = c;
-    const T = toMap(u - 0.5, v - 0.5);
-    const R = toMap(u + 0.5, v - 0.5);
-    const Bo = toMap(u + 0.5, v + 0.5);
-    const L = toMap(u - 0.5, v + 0.5);
-    layer.tiles += poly([T, R, Bo, L]);
-    if (!has(u, v + 1)) layer.lit += poly([L, Bo, down(Bo, TH), down(L, TH)]);
-    if (!has(u + 1, v))
-      layer.shaded += poly([Bo, R, down(R, TH), down(Bo, TH)]);
-    if (has(u + 1, v)) stones += `M${pt(R)} L${pt(Bo)} `;
-    if (has(u, v + 1)) stones += `M${pt(L)} L${pt(Bo)} `;
-    const [cx, cy] = toMap(u, v);
-    const t: [number, number] = [cx, cy - B * INSET];
-    const r: [number, number] = [cx + A * INSET, cy];
-    const b: [number, number] = [cx, cy + B * INSET];
-    const l: [number, number] = [cx - A * INSET, cy];
-    const plot = c === CHANTIER ? lot : null;
-    if (plot) {
-      plot.top += poly([t, r, b, l]);
-      plot.left += poly([l, b, down(b, PTH), down(l, PTH)]);
-      plot.right += poly([b, r, down(r, PTH), down(b, PTH)]);
-      continue;
-    }
-    layer.plotTop += poly([t, r, b, l]);
-    layer.plotLeft += poly([l, b, down(b, PTH), down(l, PTH)]);
-    layer.plotRight += poly([b, r, down(r, PTH), down(b, PTH)]);
-  }
-  return {
-    layers: DISTRICTS.map((d) => byDistrict.get(d.id) as GroundLayer),
-    stones,
-    lot,
-  };
-};
-
-// ── Décors et promeneurs ─────────────────────────────────────────────────────
-
-export interface Decor {
-  sprite: string;
-  u: number;
-  v: number;
-}
-
-// Placés hors des trajets des promeneurs : arbres sur les bords arrière de
-// l'îlot, massifs et buissons sur les bords avant (jamais devant une façade),
-// lampadaires au coin droit des carrefours, scènes de rue devant les façades.
-export const DECOR: Decor[] = (
-  [
-    ['bench-x', 0, 1.32],
-    ['waver', 1, 1.33],
-    ['group-chat', 0.67, 1.33],
-    ['waver', 0.32, 2],
-    ['bench-y', 1.32, 2],
-    ['delivery', 1.34, 4],
-    ['pots', 0.9, 3.32],
-    ['group-chat', 1.33, 2.67],
-    ['waver', 2.67, 1.33],
-    ['pots', 1.32, -1],
-    ['decor-tree-round', -1.39, -0.2],
-    ['decor-tree-round', -1.39, 0.26],
-    ['decor-tree-cone', -1.2, -0.39],
-    ['decor-tree-cone', 0.26, -0.39],
-    ['decor-tree-cone', -1.39, 0.8],
-    ['decor-tree-cone', -1.39, 1.26],
-    ['decor-tree-cone', -1.2, 0.61],
-    ['decor-tree-round', -0.74, 0.61],
-    ['decor-tree-cone', -1.39, 1.8],
-    ['decor-tree-cone', -1.39, 2.26],
-    ['flowers-x', -1.22, 2.4],
-    ['decor-tree-round', -0.39, 2.8],
-    ['decor-tree-cone', -0.39, 3.26],
-    ['decor-bush', -0.22, 3.4],
-    ['decor-tree-cone', 0.61, 3.8],
-    ['decor-tree-cone', 0.61, 4.26],
-    ['flowers-x', 0.78, 4.4],
-    ['flowers-y', 2.4, 2.78],
-    ['decor-bush', 1.78, 3.4],
-    ['decor-bush', 3.4, 0.78],
-    ['flowers-y', 3.4, 1.78],
-    ['flowers-x', 2.78, 2.4],
-    ['decor-tree-round', 0.61, -1.2],
-    ['decor-tree-cone', 0.61, -0.74],
-    ['decor-tree-round', 0.8, -1.39],
-    ['decor-tree-round', 1.26, -1.39],
-    ['decor-tree-round', 1.8, -1.39],
-    ['decor-tree-cone', 2.26, -1.39],
-    ['flowers-y', 2.4, -1.22],
-    ['decor-tree-cone', 2.8, -0.39],
-    ['decor-tree-cone', 3.26, -0.39],
-    ['decor-bush', 3.4, -0.22],
-    ['decor-lamp', 0.67, 0.33],
-    ['decor-tree-round', 0.33, 0.67],
-    ['decor-lamp', 0.67, 1.33],
-    ['decor-lamp', -0.33, 1.33],
-    ['decor-lamp', 1.67, -0.67],
-    ['decor-tree-round', 1.33, -0.33],
-    ['decor-lamp', 1.67, 1.33],
-    ['decor-lamp', 0.67, 2.33],
-    ['decor-tree-round', 0.33, 2.67],
-    ['decor-lamp', 1.67, 2.33],
-    ['decor-bush', 2.33, 0.67],
-  ] as [string, number, number][]
-).map(([sprite, u, v]) => ({ sprite, u, v }));
-
-export interface Walker {
-  /** Sprite de l'aller (tourné dans le sens de la marche). */
-  sprite: string;
-  /** Sprite du retour : présent = aller-retour ; absent = aller simple en fondu. */
-  back?: string;
-  from: [number, number];
-  to: [number, number];
-  /** Durée d'un cycle complet, en secondes. */
-  duration: number;
-  /** Décalage de départ (négatif = déjà en route au chargement). */
-  delay: number;
-  /** Véhicule : pas de balancement de la marche. */
-  vehicle?: boolean;
-}
-
-// Piétons à −0,05 de l'axe des rues, camionnettes à +0,05.
-export const WALKERS: Walker[] = [
-  {
-    sprite: 'walk-pair-go',
-    back: 'walk-pair-back',
-    from: [-1.3, 1.45],
-    to: [3.3, 1.45],
-    duration: 46,
-    delay: 0,
-  },
-  {
-    sprite: 'walk-amber-go',
-    back: 'walk-amber-back',
-    from: [1.45, -1.3],
-    to: [1.45, 4.2],
-    duration: 50,
-    delay: -20,
-  },
-  {
-    sprite: 'walk-red-go',
-    back: 'walk-red-back',
-    from: [-0.35, 0.45],
-    to: [3.35, 0.45],
-    duration: 34,
-    delay: -8,
-  },
-  {
-    sprite: 'walk-teal-go',
-    back: 'walk-teal-back',
-    from: [0.45, -0.35],
-    to: [0.45, 3.35],
-    duration: 36,
-    delay: -27,
-  },
-  {
-    sprite: 'walk-violet-go',
-    back: 'walk-violet-back',
-    from: [2.45, -0.35],
-    to: [2.45, 2.35],
-    duration: 28,
-    delay: -5,
-  },
-  {
-    sprite: 'walk-green-go',
-    back: 'walk-green-back',
-    from: [-0.35, 2.45],
-    to: [2.35, 2.45],
-    duration: 28,
-    delay: -16,
-  },
-  {
-    sprite: 'walk-family-go',
-    back: 'walk-family-back',
-    from: [0.6, -0.45],
-    to: [2.4, -0.45],
-    duration: 30,
-    delay: -3,
-  },
-  {
-    sprite: 'walk-courier',
-    from: [-1.3, 1.58],
-    to: [3.3, 1.58],
-    duration: 30,
-    delay: -12,
-  },
-  {
-    sprite: 'walk-navy',
-    from: [-0.45, 0.6],
-    to: [-0.45, 2.4],
-    duration: 14,
-    delay: -4,
-  },
-  {
-    sprite: 'decor-van',
-    from: [-0.45, 0.55],
-    to: [3.45, 0.55],
-    duration: 18,
-    delay: -5,
-    vehicle: true,
-  },
-  {
-    sprite: 'van-y',
-    from: [1.55, -1.4],
-    to: [1.55, 3.45],
-    duration: 20,
-    delay: -11,
-    vehicle: true,
-  },
-];
-
-// ── Étiquettes ───────────────────────────────────────────────────────────────
-
-export interface Box {
-  x0: number;
-  x1: number;
-  y0: number;
-  y1: number;
-}
-
-export interface LabelInput {
-  id: string;
-  /** Pointe de l'étiquette (bas-milieu), en pixels écran. */
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  /** Profondeur u + v : les étiquettes de devant gardent leur place. */
-  depth: number;
-}
-
-export interface PlacedLabel {
-  id: string;
-  /** Centre horizontal de la pastille et bas de la pastille. */
-  x: number;
-  y: number;
-  /** Décalage latéral de la pastille (sa pointe reste au-dessus du toit). */
-  dx: number;
-  /** Hauteur du trait de rappel quand la pastille a dû remonter (0 sinon). */
-  lift: number;
-}
-
-const overlaps = (a: Box, b: Box) =>
-  a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
-
-/**
- * Pose les étiquettes sans chevauchement. Celles de devant restent en place ;
- * celle de derrière qui gêne glisse d'abord de côté (sa pointe reste
- * au-dessus du toit), sinon remonte avec un trait de rappel. `fixed` = zones
- * déjà prises (noms des quartiers), que les étiquettes contournent.
- */
-export const placeLabels = (
-  items: LabelInput[],
-  fixed: Box[] = []
-): PlacedLabel[] => {
-  const placed: Box[] = [...fixed];
-  const boxAt = (it: LabelInput, x: number, bottom: number): Box => ({
-    x0: x - it.w / 2 - 6,
-    x1: x + it.w / 2 + 6,
-    y0: bottom - it.h - 4,
-    y1: bottom + 4,
-  });
-  const blocker = (b: Box) => placed.find((p) => overlaps(b, p));
-  return [...items]
-    .sort((a, b) => b.depth - a.depth || b.y - a.y)
-    .map((it) => {
-      let dx = 0;
-      let bottom = it.y;
-      let box: Box | null = null;
-      for (const d of [0, -16, 16, -32, 32, -48, 48]) {
-        if (Math.abs(d) > it.w / 2 - 20) continue;
-        const b = boxAt(it, it.x + d, it.y);
-        if (!blocker(b)) {
-          dx = d;
-          box = b;
-          break;
-        }
-      }
-      for (let k = 0; !box && k < 40; k++) {
-        const b = boxAt(it, it.x, bottom);
-        const hit = blocker(b);
-        if (!hit) box = b;
-        else bottom = hit.y0 - 8;
-      }
-      if (!box) box = boxAt(it, it.x, bottom);
-      placed.push(box);
-      return {
-        id: it.id,
-        x: it.x + dx,
-        y: bottom,
-        dx,
-        lift: Math.max(0, it.y - bottom),
-      };
-    });
-};
+// ── Aperçu au survol ─────────────────────────────────────────────────────────
 
 /**
  * Place de l'aperçu d'un bâtiment (survol) : au-dessus de son étiquette s'il
@@ -794,7 +608,7 @@ export const previewPlacement = (o: {
   };
 };
 
-/** Largeur d'une pastille d'étiquette (texte 13,5 px gras, icône, pastille de compte). */
+/** Largeur d'une étiquette (texte 13,5 px, icône, pastille de compte). */
 export const labelWidth = (title: string, badge?: string | null) =>
   11 +
   18 +
@@ -802,8 +616,77 @@ export const labelWidth = (title: string, badge?: string | null) =>
   title.length * 7.8 +
   (badge ? 13 + Math.max(22, 12 + badge.length * 7) : 14);
 
-/** Cadre occupé par le nom d'un quartier centré en (x, y), en pixels écran. */
-export const districtTagBox = (d: District, x: number, y: number): Box => {
-  const w = 41 + Math.max(61, d.name.length * 7.6);
-  return { x0: x - w / 2 - 6, x1: x + w / 2 + 6, y0: y - 21, y1: y + 21 };
+/** Étiquette à placer, en pixels écran : pointe en (x, y), pastille au-dessus. */
+export interface LabelBox {
+  id: DistrictId;
+  x: number;
+  y: number;
+  w: number;
+  /** Hauteur, pointe comprise. */
+  h: number;
+  /** Place prise à gauche de la pastille (drapeau d'alerte). */
+  left?: number;
+}
+
+/** Déplacement d'une étiquette : glissement latéral, montée (px écran). */
+export interface LabelPlace {
+  dx: number;
+  dy: number;
+}
+
+/**
+ * Place des étiquettes pour qu'aucune n'en chevauche une autre sur une carte
+ * étroite. Celle de Projets, au centre, ne bouge pas ; les autres glissent de
+ * côté (leur demi-largeur moins 20 px au plus : la pointe reste sous la
+ * pastille) et, s'il le faut, montent d'une hauteur d'étiquette au plus (une
+ * tige les relie alors au toit) — le plus petit déplacement l'emporte,
+ * glisser coûtant moins que monter. Jamais au-dessus du haut de la carte
+ * (`top`). Si rien ne suffit, le plus petit chevauchement l'emporte.
+ */
+export const placeLabels = (
+  items: LabelBox[],
+  gap = 6,
+  top = 4
+): Record<DistrictId, LabelPlace> => {
+  const box = (l: LabelBox, dx: number, dy: number) => ({
+    x0: l.x + dx - l.w / 2 - (l.left ?? 0),
+    x1: l.x + dx + l.w / 2,
+    y0: l.y + dy - l.h,
+    y1: l.y + dy,
+  });
+  type Box = ReturnType<typeof box>;
+  const overlap = (a: Box, b: Box) =>
+    Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + gap) *
+    Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + gap);
+  const order = [...items].sort((a, b) =>
+    a.id === 'projets' ? -1 : b.id === 'projets' ? 1 : a.y - b.y
+  );
+  const placed: Box[] = [];
+  const out = {} as Record<DistrictId, LabelPlace>;
+  for (const l of order) {
+    const maxX = Math.max(0, l.w / 2 - 20);
+    let best: LabelPlace = { dx: 0, dy: 0 };
+    let bestCost = Infinity;
+    // Plus on monte, plus ça coûte : on s'arrête dès que monter ne peut plus gagner.
+    for (let dy = 0; dy >= -l.h && 1.5 * -dy < bestCost; dy -= 2) {
+      for (let s = 0; ; s += 2) {
+        const step = Math.min(s, maxX);
+        for (const dx of step ? [-step, step] : [0]) {
+          const b = box(l, dx, dy);
+          const clash =
+            placed.reduce((sum, p) => sum + overlap(b, p), 0) +
+            Math.max(0, top - b.y0) * l.w;
+          const cost = clash * 1e4 + Math.abs(dx) + 1.5 * Math.abs(dy);
+          if (cost < bestCost) {
+            bestCost = cost;
+            best = { dx, dy };
+          }
+        }
+        if (step >= maxX) break;
+      }
+    }
+    out[l.id] = best;
+    placed.push(box(l, best.dx, best.dy));
+  }
+  return out;
 };

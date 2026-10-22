@@ -1,5 +1,5 @@
-// Village PEG — ce qui vit : bâtiments en alerte, tournée du jour, activité en
-// direct (notifications de la cloche) et ambiance (heure et saison réelles).
+// Ville PEG — ce qui vit : bâtiments en alerte, tournée du jour et activité en
+// direct (notifications de la cloche).
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import {
@@ -21,12 +21,6 @@ import {
   liveNotifications,
   maxNotificationId,
 } from '@/views/app/admin/home/village/villageActivity';
-import {
-  ambianceAt,
-  phaseAt,
-  seasonAt,
-  seasonParticles,
-} from '@/views/app/admin/home/village/villageAmbiance';
 
 dayjs.locale('fr');
 const NOW = new Date('2026-10-21T10:00:00');
@@ -300,53 +294,5 @@ describe('village — activité en direct', () => {
     expect(tickets).toEqual([
       { key: '21', rawId: 21, id: 'tickets', text: 'Réponse', link: null },
     ]);
-  });
-});
-
-describe('village — ambiance (heure et saison réelles)', () => {
-  const at = (iso: string) => new Date(iso);
-
-  it('jour, crépuscule, nuit et aube suivent le soleil d’Annecy', () => {
-    expect(phaseAt(at('2026-10-21T12:00:00'))).toBe('day');
-    expect(phaseAt(at('2026-10-21T18:30:00'))).toBe('dusk');
-    expect(phaseAt(at('2026-10-21T22:00:00'))).toBe('night');
-    expect(phaseAt(at('2026-10-21T05:00:00'))).toBe('night');
-    expect(phaseAt(at('2026-10-21T07:45:00'))).toBe('dawn');
-    // En juin, il fait encore jour à 20 h 30.
-    expect(phaseAt(at('2026-06-15T20:30:00'))).toBe('day');
-  });
-
-  it('saisons', () => {
-    expect(seasonAt(at('2026-10-21T12:00:00'))).toBe('autumn');
-    expect(seasonAt(at('2026-12-25T12:00:00'))).toBe('winter');
-    expect(seasonAt(at('2026-03-19T12:00:00'))).toBe('winter');
-    expect(seasonAt(at('2026-03-20T12:00:00'))).toBe('spring');
-    expect(seasonAt(at('2026-07-14T12:00:00'))).toBe('summer');
-  });
-
-  it('la nuit : voile, lumières allumées, titre en blanc ; neige au sol l’hiver', () => {
-    const night = ambianceAt(at('2026-12-20T23:00:00'));
-    expect(night.phase).toBe('night');
-    expect(night.veil).not.toBeNull();
-    expect(night.lights).toBe(1);
-    expect(night.ink).toBe('#ffffff');
-    expect(night.snow).toBe(0);
-    expect(ambianceAt(at('2026-01-10T23:00:00')).snow).toBeGreaterThan(0);
-    const noon = ambianceAt(at('2026-10-21T12:00:00'));
-    expect(noon.veil).toBeNull();
-    expect(noon.lights).toBe(0);
-  });
-
-  it('particules déterministes : feuilles l’automne, flocons l’hiver, rien l’été', () => {
-    const a = seasonParticles('autumn');
-    expect(a).toEqual(seasonParticles('autumn'));
-    expect(a.length).toBeGreaterThan(0);
-    a.forEach((p) => {
-      expect(p.left).toBeGreaterThanOrEqual(0);
-      expect(p.left).toBeLessThanOrEqual(100);
-      expect(p.color).toMatch(/^#/);
-    });
-    expect(seasonParticles('winter').length).toBeGreaterThan(a.length);
-    expect(seasonParticles('summer')).toEqual([]);
   });
 });

@@ -30,11 +30,10 @@ import VillageSparkline from './VillageSparkline';
 import { AlertFlag } from './VillagePanel';
 import { SECTION_INFO } from './villageSections';
 import {
-  LAYOUT,
   MAP_W,
   districtById,
+  districtCenter,
   districtOf,
-  toMap,
   type DistrictId,
   type SectionId,
 } from './villageScene';
@@ -48,7 +47,6 @@ import {
 import type { VillageActivity } from './villageActivity';
 import type { VillageFlow } from './villageFlows';
 import type { Journee } from './villageJournee';
-import type { Ambiance } from './villageAmbiance';
 import {
   WALL_LIVE_MS,
   WALL_ZOOM,
@@ -94,7 +92,6 @@ interface Props {
   kpis: WallKpi[];
   journee: Journee | null;
   activity: VillageActivity[];
-  ambiance: Ambiance;
   renderMap: (view: WallMapView) => ReactNode;
   /** Flux d'activité affichés (vide = coupés) : rappelés dans la vue d'ensemble. */
   flows: VillageFlow[];
@@ -253,7 +250,6 @@ const VillageWall = ({
   kpis,
   journee,
   activity,
-  ambiance,
   renderMap,
   flows,
   onRefresh,
@@ -326,17 +322,15 @@ const VillageWall = ({
     return () => window.clearTimeout(t);
   }, [live]);
 
-  const liveCell = live ? LAYOUT.find((c) => c.id === live.id) : undefined;
-  const view: Omit<WallMapView, 'width' | 'labelScale' | 'cameraMs'> =
-    live && liveCell
-      ? {
-          district: districtOf(live.id),
-          zoom: WALL_ZOOM.live,
-          focus: toMap(liveCell.u, liveCell.v),
-        }
-      : stop.kind === 'district'
-        ? { district: stop.id, zoom: WALL_ZOOM.district, focus: null }
-        : { district: null, zoom: WALL_ZOOM.overview, focus: null };
+  const view: Omit<WallMapView, 'width' | 'labelScale' | 'cameraMs'> = live
+    ? {
+        district: districtOf(live.id),
+        zoom: WALL_ZOOM.live,
+        focus: districtCenter(districtOf(live.id)),
+      }
+    : stop.kind === 'district'
+      ? { district: stop.id, zoom: WALL_ZOOM.district, focus: null }
+      : { district: null, zoom: WALL_ZOOM.overview, focus: null };
 
   // ── Commandes : visibles quand la souris bouge, sinon masquées ──
   const [idle, setIdle] = useState(false);
@@ -566,7 +560,7 @@ const VillageWall = ({
     return (
       <>
         <Eyebrow s={s} color="#a99fff">
-          Tout le village
+          Toute la ville
         </Eyebrow>
         <h2 style={title(s)}>Aujourd’hui</h2>
         <p
@@ -578,7 +572,7 @@ const VillageWall = ({
             lineHeight: 1.35,
           }}
         >
-          {journee ? journee.lead : 'Chargement du village…'}
+          {journee ? journee.lead : 'Chargement de la ville…'}
         </p>
         {journee?.urgent.slice(0, 4).map((r) => (
           <p
@@ -601,7 +595,7 @@ const VillageWall = ({
           </p>
         ))}
         {journee?.todo
-          .slice(0, Math.max(0, 7 - Math.min(4, journee.urgent.length)))
+          .slice(0, Math.max(0, 6 - Math.min(4, journee.urgent.length)))
           .slice(0, 3)
           .map((r) => (
             <p
@@ -665,9 +659,9 @@ const VillageWall = ({
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
-              gap: `${8 * s}px ${18 * s}px`,
+              gap: `${6 * s}px ${16 * s}px`,
               margin: `${14 * s}px 0 0`,
-              fontSize: 17 * s,
+              fontSize: 16 * s,
               color: MUTED,
             }}
           >
@@ -685,8 +679,8 @@ const VillageWall = ({
                     width: 10 * s,
                     height: 10 * s,
                     borderRadius: '50%',
-                    background: f.color,
-                    boxShadow: `0 0 ${8 * s}px ${f.color}`,
+                    background: '#a99fff',
+                    boxShadow: `0 0 ${8 * s}px #7c6cff`,
                   }}
                 />
                 <strong style={{ color: TEXT, fontWeight: 700 }}>
@@ -707,7 +701,7 @@ const VillageWall = ({
   return createPortal(
     <div
       role="region"
-      aria-label="Écran mural du village PEG"
+      aria-label="Écran mural de la ville PEG"
       className={`vw-root${idle ? ' vw-idle' : ''}`}
       onMouseMove={wake}
       style={{
@@ -745,7 +739,7 @@ const VillageWall = ({
               lineHeight: 1.1,
             }}
           >
-            Village PEG
+            Ville PEG
           </div>
           <div style={{ marginTop: 4 * s, fontSize: 19 * s, color: MUTED }}>
             {cap(dayjs(now).format('dddd D MMMM'))}
@@ -983,25 +977,10 @@ const VillageWall = ({
             justifyContent: 'center',
             borderRadius: 28 * s,
             overflow: 'hidden',
-            background: ambiance.sky,
+            background: '#f6f7fb',
             border: '1px solid rgba(255,255,255,0.12)',
-            transition: 'background 1s ease',
           }}
         >
-          {ambiance.veil && (
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 1,
-                background: ambiance.veil.color,
-                opacity: ambiance.veil.opacity,
-                mixBlendMode: 'multiply',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
           <div style={{ flexShrink: 0, pointerEvents: 'none' }}>
             {fit.w > 0 &&
               renderMap({

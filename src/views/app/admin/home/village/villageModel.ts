@@ -4,7 +4,7 @@
 // pastille, avec « Données indisponibles ».
 import type { VillageFilter } from './VillageMap';
 import type { FlowId } from './villageFlows';
-import type { ChantierStage, SectionId } from './villageScene';
+import type { SectionId } from './villageScene';
 
 export const TONE = {
   violet: '#6d5dfc',
@@ -148,24 +148,9 @@ export interface DayDelivery {
   customer: string;
 }
 
-/** Une maison du chantier : un projet à son stade. */
-export interface ChantierHouse {
-  documentId: string;
-  name: string;
-  customer: string;
-  stage: ChantierStage;
-  /** « BAT à valider », « En production », « Prêt à livrer », « Livré ». */
-  stageLabel: string;
-  late: boolean;
-}
-
 /** Détails animés liés aux données du jour. */
 export interface VillageLife {
-  /** Bouffées de fumée de l'atelier (0 = production à l'arrêt). */
-  smoke: number;
-  /** Voitures garées devant la Boutique (commandes du jour, 3 au plus). */
-  cars: number;
-  /** Camionnettes des livraisons du jour (3 au plus). */
+  /** Camions de livraison sur la route : un par livraison du jour (3 au plus). */
   vans: number;
 }
 
@@ -174,8 +159,6 @@ export interface VillageData {
   sections: Record<SectionId, SectionData>;
   /** Projets mis en avant (le plus urgent d'abord). */
   projects: ProjectCard[];
-  /** Maisons du chantier, de gauche à droite (3 au plus). */
-  chantier: ChantierHouse[];
   life: VillageLife;
   /** Projets actifs dont la livraison est prévue aujourd'hui (fiche « Ma journée »), les premiers. */
   todayDeliveries: DayDelivery[];

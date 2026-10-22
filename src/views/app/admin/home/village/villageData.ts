@@ -10,13 +10,12 @@ import {
   projectProgress,
 } from '@/views/app/common/projects/details/utils';
 import type { VillageFilter } from './VillageMap';
-import { MENU_ORDER, type ChantierStage, type SectionId } from './villageScene';
+import { MENU_ORDER, type SectionId } from './villageScene';
 import {
   TONE,
   emptySection,
   plural,
   type ActivityInfo,
-  type ChantierHouse,
   type DayDelivery,
   type ProjectCard,
   type SeriesPoint,
@@ -137,8 +136,6 @@ export interface RawVillage {
     dueNext7?: number[];
   };
   samples?: RawProject[];
-  /** Projets livrés ces 3 derniers jours (maison au drapeau du chantier). */
-  delivered?: RawProject[];
   /** Activité des 30 derniers jours et des 3 périodes précédentes (serveur). */
   activity?: Partial<
     Record<SectionId, { current: number; previous: number[] }>
@@ -479,52 +476,6 @@ export const activityInfo = (
     label: LEVEL_LABEL[level],
     text: `${fmt(a.current)} ${what} en 30 jours (moyenne ${fmt(avg)})`,
   };
-};
-
-// ── Chantier des projets ─────────────────────────────────────────────────────
-
-const STAGE_LABEL: Record<ChantierStage, string> = {
-  fondations: 'BAT à valider',
-  murs: 'En production',
-  toit: 'Prêt à livrer',
-  livre: 'Livré',
-};
-
-/** Stade de la maison d'un projet : BAT, production, prêt, livré. */
-export const chantierStage = (p: RawProject): ChantierStage => {
-  if (p.state === 'fulfilled' || p.state === 'completed') return 'livre';
-  const needsBat = !!p.orderItem?.product?.requiresBat;
-  if (needsBat && p.orderItem?.batStatus !== 'approved') return 'fondations';
-  if (p.state === 'waiting') return 'fondations';
-  return projectProgress(p as unknown as Project).percent >= 100
-    ? 'toit'
-    : 'murs';
-};
-
-/**
- * Les 3 maisons du chantier : les projets les plus urgents, et le dernier
- * projet livré (3 derniers jours) à droite s'il y en a un.
- */
-export const chantierHouses = (
-  ranked: RawProject[],
-  delivered: RawProject[],
-  now: Date
-): ChantierHouse[] => {
-  const last = delivered[0] ? [delivered[0]] : [];
-  return [...ranked.slice(0, 3 - last.length), ...last].map((p) => {
-    const stage = chantierStage(p);
-    return {
-      documentId: p.documentId,
-      name: p.name,
-      customer: p.customer?.name || 'Client non renseigné',
-      stage,
-      stageLabel:
-        stage === 'fondations' && p.state === 'waiting'
-          ? 'En attente'
-          : STAGE_LABEL[stage],
-      late: stage !== 'livre' && isLate(p, now),
-    };
-  });
 };
 
 // ── Projets mis en avant ─────────────────────────────────────────────────────
@@ -1289,11 +1240,6 @@ export const buildVillageData = (
     },
     sections: s,
     projects,
-    chantier: chantierHouses(
-      ranked.filter((p) => ACTIVE.includes(p.state)),
-      raw.delivered ?? [],
-      now
-    ),
     todayDeliveries,
     todayDeliveryCount,
     flowCounts: {
@@ -1305,18 +1251,10 @@ export const buildVillageData = (
         ? pr.dueNext7.reduce((sum, n) => sum + (Number(n) || 0), 0)
         : null,
       factures: raw.invoices ? raw.invoices.unpaid.length : null,
+      demandes: num(raw.quotes?.requested),
+      production: inProgress ?? null,
+      tickets: num(raw.tickets?.open),
     },
-    life: {
-      smoke:
-        (inProgress ?? 0) >= 30
-          ? 3
-          : (inProgress ?? 0) >= 10
-            ? 2
-            : (inProgress ?? 0) > 0
-              ? 1
-              : 0,
-      cars: Math.min(3, num(raw.shop?.ordersToday) ?? 0),
-      vans: Math.min(3, deliveries),
-    },
+    life: { vans: Math.min(3, deliveries) },
   };
 };

@@ -4,8 +4,14 @@ import type { ReactNode } from 'react';
 import { HiCheck, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
 import { HiOutlineBell } from 'react-icons/hi2';
 import { BsCalendar3 } from 'react-icons/bs';
-import type { District, SectionId } from './villageScene';
-import { spriteUrl, SPRITE_META } from './villageScene';
+import {
+  buildingFrame,
+  districtOf,
+  type District,
+  type DistrictId,
+  type SectionId,
+} from './villageScene';
+import { BuildingArt } from './VillageBuildings';
 import {
   TONE,
   type ActivityInfo,
@@ -121,20 +127,19 @@ const sectionChip = (d: SectionData) => {
   return { bg: '#eeebff', fg: '#4f3fd1' };
 };
 
-/** Vignette d'un bâtiment : son cadre cliquable ajusté dans la boîte. */
+/** Vignette : le bâtiment du quartier, tel qu'il est dessiné sur la carte. */
 const BuildingThumb = ({
   id,
   w,
   h,
   bg,
 }: {
-  id: SectionId;
+  id: DistrictId;
   w: number;
   h: number;
   bg: string;
 }) => {
-  const hit = SPRITE_META[id].hit;
-  const k = Math.min(w / hit.w, h / hit.h) * 0.96;
+  const [x, y, fw, fh] = buildingFrame(id);
   return (
     <span
       style={{
@@ -144,22 +149,19 @@ const BuildingThumb = ({
         borderRadius: 16,
         background: bg,
         overflow: 'hidden',
-        position: 'relative',
         display: 'block',
       }}
     >
-      <img
-        src={spriteUrl(id)}
-        alt=""
-        style={{
-          position: 'absolute',
-          left: (w - hit.w * k) / 2 - hit.x * k,
-          top: (h - hit.h * k) / 2 - hit.y * k,
-          width: 400 * k,
-          height: 400 * k,
-          maxWidth: 'none',
-        }}
-      />
+      <svg
+        width={w}
+        height={h}
+        viewBox={`${x} ${y} ${fw} ${fh}`}
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+        style={{ display: 'block' }}
+      >
+        <BuildingArt id={id} />
+      </svg>
     </span>
   );
 };
@@ -845,7 +847,7 @@ const VillagePanel = ({
               background: d.hue,
             }}
           />
-          Quartier · {members.length} bâtiments
+          Quartier · {members.length} rubriques
         </span>
         <h2
           style={{
@@ -869,16 +871,26 @@ const VillagePanel = ({
         >
           {d.name}
         </p>
-        <p
+        <div
           style={{
-            margin: '10px 0 0',
-            fontSize: 14.5,
-            lineHeight: 1.5,
-            color: '#4b5563',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            marginTop: 12,
           }}
         >
-          {d.desc}
-        </p>
+          <BuildingThumb id={d.id} w={104} h={96} bg={d.soft} />
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: '#4b5563',
+            }}
+          >
+            {d.desc}
+          </p>
+        </div>
         <div
           style={{
             display: 'grid',
@@ -922,95 +934,133 @@ const VillagePanel = ({
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {members.map((m, i) => (
-            <button
+            <div
               key={m.id}
-              type="button"
-              onClick={() => onSelect(m.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                minHeight: 50,
-                padding: '6px 4px',
-                border: 0,
+                gap: 6,
                 borderTop: i ? '1px solid #f0ede7' : 0,
-                background: 'transparent',
-                color: '#111827',
-                textAlign: 'left',
-                cursor: 'pointer',
               }}
             >
-              <span
+              <button
+                type="button"
+                onClick={() => onSelect(m.id)}
+                title="Voir le détail"
                 style={{
-                  width: 36,
-                  height: 36,
-                  flexShrink: 0,
-                  borderRadius: 11,
-                  background: d.soft,
-                  color: d.ink,
                   display: 'flex',
+                  flex: 1,
+                  minWidth: 0,
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 19,
+                  gap: 12,
+                  minHeight: 52,
+                  padding: '6px 4px',
+                  border: 0,
+                  background: 'transparent',
+                  color: '#111827',
+                  textAlign: 'left',
+                  cursor: 'pointer',
                 }}
               >
-                {m.icon}
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span
-                  style={{ display: 'block', fontSize: 14.5, fontWeight: 800 }}
-                >
-                  {m.title}
-                </span>
                 <span
                   style={{
+                    width: 36,
+                    height: 36,
+                    flexShrink: 0,
+                    borderRadius: 11,
+                    background: d.soft,
+                    color: d.ink,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    marginTop: 2,
-                    fontSize: 12.5,
-                    fontWeight: m.data.alert ? 700 : 400,
-                    color: m.data.alert ? '#b91c1c' : '#6b7280',
+                    justifyContent: 'center',
+                    fontSize: 19,
                   }}
                 >
-                  {m.data.alert && <AlertFlag size={12} />}
+                  {m.icon}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
                   <span
                     style={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      display: 'block',
+                      fontSize: 14.5,
+                      fontWeight: 800,
                     }}
                   >
-                    {m.data.alert ?? m.data.chip}
+                    {m.title}
+                  </span>
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      marginTop: 2,
+                      fontSize: 12.5,
+                      fontWeight: m.data.alert ? 700 : 400,
+                      color: m.data.alert ? '#b91c1c' : '#6b7280',
+                    }}
+                  >
+                    {m.data.alert && <AlertFlag size={12} />}
+                    <span
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {m.data.alert ?? m.data.chip}
+                    </span>
                   </span>
                 </span>
-              </span>
-              {m.data.badge && (
-                <span
-                  style={{
-                    minWidth: 22,
-                    height: 22,
-                    padding: '0 6px',
-                    boxSizing: 'border-box',
-                    borderRadius: 999,
-                    background: m.data.tone,
-                    color: '#ffffff',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {m.data.badge}
-                </span>
-              )}
-              <HiChevronRight aria-hidden="true" style={{ color: '#9ca3af' }} />
-            </button>
+                {m.data.badge && (
+                  <span
+                    style={{
+                      minWidth: 22,
+                      height: 22,
+                      padding: '0 6px',
+                      boxSizing: 'border-box',
+                      borderRadius: 999,
+                      background: m.data.tone,
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {m.data.badge}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => onCta(m.id)}
+                aria-label={`Ouvrir ${m.title}`}
+                title={m.cta}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  flexShrink: 0,
+                  height: 30,
+                  padding: '0 8px 0 10px',
+                  border: `1px solid ${d.soft}`,
+                  borderRadius: 999,
+                  background: d.soft,
+                  color: d.ink,
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Ouvrir
+                <HiChevronRight aria-hidden="true" />
+              </button>
+            </div>
           ))}
         </div>
         <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-          <Secondary onClick={onShowAll}>Voir tout le village</Secondary>
+          <Secondary onClick={onShowAll}>Voir toute la ville</Secondary>
         </div>
       </>
     );
@@ -1389,7 +1439,12 @@ const VillagePanel = ({
           marginTop: 16,
         }}
       >
-        <BuildingThumb id={section.id} w={112} h={104} bg={d.soft} />
+        <BuildingThumb
+          id={districtOf(section.id)}
+          w={112}
+          h={104}
+          bg={d.soft}
+        />
         <span
           style={{
             fontSize: 15,

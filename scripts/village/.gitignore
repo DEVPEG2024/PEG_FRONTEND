@@ -1,5 +1,0 @@
-# Sorties des générateurs (publiées par export.mjs dans public/img/village)
-buildings/*.svg
-buildings/*.json
-extra/*.svg
-extra/*.json

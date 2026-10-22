@@ -53,7 +53,7 @@ describe('écran mural — tour des quartiers', () => {
   it('un quartier en alerte reste plus longtemps à l’écran', () => {
     const s = sections({ finance: { alert: '1 facture impayée' } });
     expect(stopDuration({ kind: 'overview' }, s)).toBe(WALL_OVERVIEW_MS);
-    expect(stopDuration({ kind: 'district', id: 'finances' }, s)).toBe(
+    expect(stopDuration({ kind: 'district', id: 'finance' }, s)).toBe(
       WALL_ALERT_MS
     );
     expect(stopDuration({ kind: 'district', id: 'clients' }, s)).toBe(
@@ -77,7 +77,7 @@ describe('écran mural — légende d’un quartier', () => {
       },
       generateurs: { chip: '2 commissions à valider' },
     });
-    const lines = districtLines('finances', s);
+    const lines = districtLines('finance', s);
     expect(lines.map((l) => l.id)).toEqual(['finance', 'devis', 'generateurs']);
     expect(lines[0]).toEqual({
       id: 'finance',
@@ -172,12 +172,16 @@ describe('écran mural — taille sur la télévision', () => {
     expect(wallScale(800, 480)).toBe(0.6);
   });
 
-  it('la carte remplit son cadre en rognant un peu de ciel, sinon tient entière', () => {
-    // Cadre presque aux proportions du village : il est rempli (pas de bandes).
-    const near = fitMap(1188, 868);
+  it('la carte remplit son cadre en rognant les coins du trottoir, sinon tient entière', () => {
+    // Le cadre de l'écran 1920 × 1080 : rempli (ni bande vide ni bord coupé net).
+    const tv = fitMap(1188, 868);
+    expect(tv.w).toBe(Math.ceil((868 * MAP_W) / MAP_H));
+    expect(tv.w).toBeLessThanOrEqual(1188 * 1.18);
+    expect(tv.h).toBeGreaterThanOrEqual(868);
+    // Cadre plus large que la carte : rempli en largeur.
+    const near = fitMap(1188, 720);
     expect(near.w).toBe(1188);
-    expect(near.h).toBeGreaterThanOrEqual(868);
-    expect(near.h).toBe(Math.ceil((1188 * MAP_H) / MAP_W));
+    expect(near.h).toBeGreaterThanOrEqual(720);
     // Cadre très haut ou très large : il faudrait trop rogner, elle tient entière.
     const tall = fitMap(1200, 2000);
     expect(tall.w).toBe(1200);

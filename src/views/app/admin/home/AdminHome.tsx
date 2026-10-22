@@ -40,7 +40,7 @@ const AdminHome = () => {
           className="fixed bottom-6 right-6 z-30 inline-flex h-11 items-center gap-2 rounded-full bg-[#6d5dfc] px-5 text-sm font-bold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:bg-[#5b4ae8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           <HiOutlineMap className="text-lg" aria-hidden="true" />
-          Vue village
+          Vue ville
         </button>,
         document.body
       )}
