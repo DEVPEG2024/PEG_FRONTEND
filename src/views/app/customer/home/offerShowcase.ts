@@ -22,6 +22,12 @@ export const NEW_OFFER_DAYS = 30;
 export const MAX_STEPS = 4;
 /** Offres au plus dans l'offre à la une */
 export const MAX_FEATURED = 6;
+/**
+ * Offres chargées et affichées par l'accueil (trois rangées de quatre). Avant :
+ * 10 chargées, 8 affichées — la 9ᵉ offre d'ESDL DOUVAINE (sa bâche, produit
+ * plus ancien donc rangé après les nouveautés) n'apparaissait pas (23/10/2026).
+ */
+export const HOME_OFFERS = 12;
 
 /**
  * Fonds « studio » des visuels, en alternance. Très clairs : la photo est posée

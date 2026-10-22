@@ -9,6 +9,7 @@ import {
 import { Product } from '@/@types/product';
 import { Project } from '@/@types/project';
 import { apiGetCustomerProjects } from '@/services/ProjectServices';
+import { HOME_OFFERS } from '../offerShowcase';
 
 export const SLICE_NAME = 'dashboardCustomer';
 
@@ -42,7 +43,10 @@ export const getDashboardCustomerInformations = createAsyncThunk(
     let offersTotal = 0;
     if (customer?.customerCategory?.documentId) {
       const { products_connection }: { products_connection: CustomerProductsResponse } = await unwrapData(
-        apiGetCustomerProducts(customer.documentId, customer.customerCategory.documentId)
+        apiGetCustomerProducts(customer.documentId, customer.customerCategory.documentId, {
+          page: 1,
+          pageSize: HOME_OFFERS,
+        })
       );
       products = products_connection.nodes;
       offersTotal = Math.max(products_connection.pageInfo?.total ?? 0, products.length);

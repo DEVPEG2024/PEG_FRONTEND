@@ -863,7 +863,7 @@ Demander `mobileImage` à un Strapi qui ne le connaît pas fait échouer **toute
 
 Maquette validée par l'utilisateur le 21/10/2026 (« tout sauf vos économies » : le compteur d'économies de la maquette n'est **pas** codé). Ordinateur, tablette et téléphone.
 - **Offre à la une** (`components/FeaturedOffers.tsx`, carrousel partagé) : grande carte par offre, flèches + points, autocollant jaune « −N % vs catalogue », « Prix réservé », « Nouvelle offre ». **Escalier des paliers** (« Plus vous en prenez, moins c'est cher ») ; au m² ou en packs, une phrase à la place.
-- **Vos offres personnalisées** (`OffersGrid.tsx`) : cartes colorées filtrables par catégorie (pastilles seulement si ≥ 2 catégories), 8 au plus. Téléphone : grandes cartes à glisser juste sous la salutation.
+- **Vos offres personnalisées** (`OffersGrid.tsx`) : cartes colorées filtrables par catégorie (pastilles seulement si ≥ 2 catégories), **12 au plus, chargées comme affichées** (`HOME_OFFERS`) — à 8, la 9ᵉ offre d’ESDL (sa bâche) restait invisible (23/10/2026). Téléphone : grandes cartes à glisser juste sous la salutation.
 - Client **Standard** (offres réservées au Premium) : `PremiumTeaser.tsx` à la place (mêmes `PREMIUM_ADVANTAGES` / `PREMIUM_PRICE_HT` que la page Premium).
 - **Projets en cours** : avancement (`projectProgress`) + compte à rebours « J − N » avant `endDate` (rien si date passée) ; **réalisations** en polaroïds. Carte « Votre équipe PEG » aussi sur ordinateur.
 - Retirés (comme sur la maquette) : « Activité récente » (ordinateur et téléphone), tuiles « Mon activité » du téléphone (les chiffres restent sur ordinateur, sous « À faire »). Les « Suggestions pour vous » gardent la règle du 25/09 (`showCatalogSuggestions`).

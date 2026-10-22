@@ -4,11 +4,8 @@
  */
 import { useState } from 'react';
 import { HiArrowRight } from 'react-icons/hi';
-import { offerCategories, type OfferShowcaseItem } from '../offerShowcase';
+import { HOME_OFFERS, offerCategories, type OfferShowcaseItem } from '../offerShowcase';
 import { OfferBadge, OfferVisual, SavingsSticker } from './OfferVisuals';
-
-/** Deux rangées de quatre sur un écran large */
-const MAX_CARDS = 8;
 
 type Props = {
   offers: OfferShowcaseItem[];
@@ -23,7 +20,7 @@ const OffersGrid = ({ offers, total, customerName, onOpen, onSeeAll }: Props) =>
   const [category, setCategory] = useState<string>('all');
   const categories = offerCategories(offers);
   const active = categories.some((c) => c.id === category) ? category : 'all';
-  const shown = (active === 'all' ? offers : offers.filter((o) => o.category?.id === active)).slice(0, MAX_CARDS);
+  const shown = (active === 'all' ? offers : offers.filter((o) => o.category?.id === active)).slice(0, HOME_OFFERS);
   const chips = categories.length > 0 ? [{ id: 'all', name: 'Tout', count: offers.length }, ...categories] : [];
 
   return (
