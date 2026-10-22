@@ -11,6 +11,7 @@
  */
 
 import {
+  failedChunk,
   isChunkLoadError,
   MAX_STALE_RELOADS,
   STALE_RELOAD_BACKOFF_MS,
@@ -102,20 +103,20 @@ describe('rechargement après build périmé', () => {
     expect(JSON.parse(sessionStorage.getItem('peg_stale_build_reloads') || '[]')).toHaveLength(1);
   });
 
-  it('recharge encore après un premier rechargement récent (plus de blocage à 30 s)', () => {
+  it('recharge encore après un premier rechargement récent (plus de blocage à 30 s)', async () => {
     freshModule().reloadForStaleBuild(); // page 1 : tout de suite
     expect(reloadMock).toHaveBeenCalledTimes(1);
     jest.resetModules();
     expect(freshModule().reloadForStaleBuild()).toBe(true); // page 2, quelques secondes après
-    jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[1]);
+    await jest.advanceTimersByTimeAsync(STALE_RELOAD_BACKOFF_MS[1]);
     expect(reloadMock).toHaveBeenCalledTimes(2);
   });
 
-  it('s\'arrête au plafond pour ne jamais boucler', () => {
+  it('s\'arrête au plafond pour ne jamais boucler', async () => {
     for (let i = 0; i < MAX_STALE_RELOADS; i++) {
       jest.resetModules();
       expect(freshModule().reloadForStaleBuild()).toBe(true);
-      jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[i]);
+      await jest.advanceTimersByTimeAsync(STALE_RELOAD_BACKOFF_MS[i]);
     }
     jest.resetModules();
     expect(freshModule().reloadForStaleBuild()).toBe(false);
@@ -127,7 +128,7 @@ describe('rechargement après build périmé', () => {
    * fichiers que le CDN ne sert pas encore, pendant une minute environ. Trois rechargements
    * immédiats tombaient tous dans cette minute → « Connexion instable ».
    */
-  it("les rechargements s'espacent et couvrent la minute d'une mise en ligne", () => {
+  it("les rechargements s'espacent et couvrent la minute d'une mise en ligne", async () => {
     expect(STALE_RELOAD_BACKOFF_MS[0]).toBe(0);
     expect(STALE_RELOAD_BACKOFF_MS).toHaveLength(MAX_STALE_RELOADS);
     const span = STALE_RELOAD_BACKOFF_MS.reduce((a, b) => a + b, 0);
@@ -137,10 +138,86 @@ describe('rechargement après build périmé', () => {
     expect(reloadMock).toHaveBeenCalledTimes(1);
     jest.resetModules();
     freshModule().reloadForStaleBuild();
-    jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[1] - 1);
+    await jest.advanceTimersByTimeAsync(STALE_RELOAD_BACKOFF_MS[1] - 1);
     expect(reloadMock).toHaveBeenCalledTimes(1); // pas encore : on laisse le CDN finir
-    jest.advanceTimersByTime(1);
+    await jest.advanceTimersByTimeAsync(1);
     expect(reloadMock).toHaveBeenCalledTimes(2);
+  });
+
+  /**
+   * Incident du 22/10/2026 (2) : « Connexion instable » persistant dans un Chrome alors qu'un
+   * navigateur neuf chargeait tout. Dès le deuxième essai, et sur « Réessayer », on repart d'un
+   * cache propre : service worker désinscrit, caches de l'application vidés.
+   */
+  describe('cache de l\'application vidé quand un rechargement ne suffit pas', () => {
+    const unregister = jest.fn(async () => true);
+    const del = jest.fn(async () => true);
+    beforeEach(() => {
+      unregister.mockClear();
+      del.mockClear();
+      Object.defineProperty(navigator, 'serviceWorker', {
+        configurable: true,
+        value: { getRegistrations: async () => [{ unregister }] },
+      });
+      (globalThis as unknown as { caches: unknown }).caches = {
+        keys: async () => ['peg-v1-assets', 'peg-v2-assets'],
+        delete: del,
+      };
+    });
+    afterEach(() => {
+      delete (navigator as unknown as { serviceWorker?: unknown }).serviceWorker;
+      delete (globalThis as unknown as { caches?: unknown }).caches;
+    });
+
+    it('le premier rechargement garde le cache, le suivant le vide avant de recharger', async () => {
+      freshModule().reloadForStaleBuild();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(unregister).not.toHaveBeenCalled();
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+      jest.resetModules();
+      freshModule().reloadForStaleBuild();
+      await jest.advanceTimersByTimeAsync(STALE_RELOAD_BACKOFF_MS[1]);
+      expect(unregister).toHaveBeenCalledTimes(1);
+      expect(del).toHaveBeenCalledTimes(2);
+      expect(reloadMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('« Réessayer » : nouvelle série de rechargements, cache vidé', async () => {
+      const mod = freshModule();
+      for (let i = 0; i < MAX_STALE_RELOADS; i++) {
+        jest.resetModules();
+        freshModule().reloadForStaleBuild();
+        await jest.advanceTimersByTimeAsync(STALE_RELOAD_BACKOFF_MS[i]);
+      }
+      jest.resetModules();
+      expect(freshModule().reloadForStaleBuild()).toBe(false); // plafond
+      mod.resetStaleReloads();
+      await mod.clearAppCaches();
+      expect(del).toHaveBeenCalledWith('peg-v2-assets');
+      jest.resetModules();
+      expect(freshModule().reloadForStaleBuild()).toBe(true); // de nouveau permis
+    });
+
+    it('sans service worker ni caches (navigateur ancien, navigation privée), rien ne casse', async () => {
+      delete (navigator as unknown as { serviceWorker?: unknown }).serviceWorker;
+      delete (globalThis as unknown as { caches?: unknown }).caches;
+      await expect(freshModule().clearAppCaches()).resolves.toBeUndefined();
+    });
+  });
+
+  it("l'écran d'erreur nomme le fichier qui n'a pas pu se charger", () => {
+    expect(
+      failedChunk(
+        new Error(
+          'Failed to fetch dynamically imported module: https://app.mypeg.fr/assets/PegDistricts-BXweT1gB.js'
+        )
+      )
+    ).toBe('PegDistricts-BXweT1gB.js');
+    expect(failedChunk(new Error('Unable to preload CSS for /assets/index-W9B2SryK.css'))).toBe(
+      'index-W9B2SryK.css'
+    );
+    expect(failedChunk(new Error('Importing a module script failed.'))).toBeNull();
+    expect(failedChunk(null)).toBeNull();
   });
 
   it('un seul garde : aucun anti-boucle local dans les appelants', () => {

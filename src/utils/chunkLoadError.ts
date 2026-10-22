@@ -63,6 +63,37 @@ function readReloadLog(now: number): number[] {
 }
 
 /**
+ * Repartir d'un navigateur propre pour l'application : désinscrit le service worker et vide ses
+ * caches. Un fichier périmé ou abîmé gardé par un ancien worker ne peut plus bloquer le
+ * chargement. Jamais bloquant : au pire, on recharge sans avoir rien vidé.
+ */
+export async function clearAppCaches(): Promise<void> {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
+    await Promise.all(regs.map((r) => r.unregister()));
+  } catch {
+    /* service worker indisponible */
+  }
+  try {
+    if (typeof caches !== 'undefined') {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    /* caches indisponibles */
+  }
+}
+
+/** « Réessayer » : la fenêtre de rechargements repart de zéro. */
+export function resetStaleReloads(): void {
+  try {
+    sessionStorage.removeItem(STALE_RELOAD_LOG_KEY);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+
+/**
  * Recharge la page pour récupérer le dernier build. Renvoie `false` seulement si le plafond de
  * rechargements est atteint (vraie panne, pas un build périmé) : l'appelant affiche alors un
  * message avec un bouton plutôt que de boucler.
@@ -73,6 +104,9 @@ export function reloadForStaleBuild(): boolean {
   const log = readReloadLog(now);
   if (log.length >= MAX_STALE_RELOADS) return false;
   const delay = STALE_RELOAD_BACKOFF_MS[log.length] ?? 0;
+  // Si un premier rechargement n'a pas suffi, on vide aussi le cache de l'application (22/10/2026 :
+  // « Connexion instable » persistant dans un Chrome, alors qu'un navigateur neuf chargeait tout).
+  const clean = log.length > 0;
   log.push(now);
   try {
     sessionStorage.setItem(STALE_RELOAD_LOG_KEY, JSON.stringify(log));
@@ -80,8 +114,18 @@ export function reloadForStaleBuild(): boolean {
     /* stockage indisponible (navigation privée) : on recharge quand même */
   }
   reloadInFlight = true;
+  const reload = () => {
+    if (clean) clearAppCaches().finally(() => window.location.reload());
+    else window.location.reload();
+  };
   // Pendant l'attente, l'ErrorBoundary affiche « Mise à jour de l'application… ».
-  if (delay > 0) window.setTimeout(() => window.location.reload(), delay);
-  else window.location.reload();
+  if (delay > 0) window.setTimeout(reload, delay);
+  else reload();
   return true;
+}
+
+/** Le fichier qui n'a pas pu se charger, d'après le message d'erreur (affiché pour le support). */
+export function failedChunk(error: unknown): string | null {
+  const message = String((error as { message?: string } | null)?.message ?? '');
+  return message.match(/[\w.-]+\.(?:js|css)\b/)?.[0] ?? null;
 }

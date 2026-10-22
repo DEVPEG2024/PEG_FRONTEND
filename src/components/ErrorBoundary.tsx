@@ -1,5 +1,11 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
-import { isChunkLoadError, reloadForStaleBuild } from '@/utils/chunkLoadError'
+import {
+  clearAppCaches,
+  failedChunk,
+  isChunkLoadError,
+  reloadForStaleBuild,
+  resetStaleReloads,
+} from '@/utils/chunkLoadError'
 
 interface Props {
   children: ReactNode
@@ -40,6 +46,13 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: null, errorInfo: '', staleReloading: false })
   }
 
+  // « Réessayer » après une vraie panne : nouvelle série de rechargements, cache de
+  // l'application vidé (un fichier périmé gardé par le service worker ne bloque plus).
+  handleCleanReload = () => {
+    resetStaleReloads()
+    clearAppCaches().finally(() => window.location.reload())
+  }
+
   render() {
     if (this.state.hasError && isChunkLoadError(this.state.error)) {
       // Jamais le message technique (« Failed to fetch dynamically imported module… ») :
@@ -58,11 +71,14 @@ class ErrorBoundary extends Component<Props, State> {
                 <h2 className="text-xl font-semibold mb-2">Connexion instable</h2>
                 <p className="text-gray-500 mb-4">La page n'a pas pu se charger. Vérifiez votre connexion puis réessayez.</p>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={this.handleCleanReload}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                 >
                   Réessayer
                 </button>
+                {failedChunk(this.state.error) && (
+                  <p className="text-xs text-gray-400 mt-4">Fichier : {failedChunk(this.state.error)}</p>
+                )}
               </>
             )}
           </div>
