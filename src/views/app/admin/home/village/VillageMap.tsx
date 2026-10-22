@@ -21,18 +21,37 @@ import { flowsOf, type VillageFlow } from './villageFlows';
 import {
   BENCHES,
   BLOCK,
+  BUSHES,
+  CARS,
   CITY_EDGE,
+  CYCLISTS,
+  DUCKS,
+  FLOWERS,
   FOUNTAIN,
   GRID,
   MAP_H,
   MAP_W,
   MENU_ORDER,
+  PICNIC,
+  PLAYGROUND,
   PLAZA,
-  PLOT_INSET,
+  POND,
+  POND_WALK,
+  QUADS,
   SLIM_BELOW,
+  SPOTS,
+  TERRACE,
   TREES,
   TRUCK_ROUTE,
   WALKERS,
+  YARD,
+  avenues,
+  footpaths,
+  groundOval,
+  parkPaths,
+  pathOf,
+  plotOf,
+  quadPlot,
   ZOOM_MAX,
   buildingCenter,
   cameraOffset,
@@ -58,8 +77,17 @@ import {
 } from './villageScene';
 import {
   BenchArt,
+  BikeArt,
   BuildingArt,
+  BushArt,
+  CarArt,
+  CrateArt,
+  DuckArt,
+  FlowerArt,
   FountainArt,
+  PicnicArt,
+  PlaygroundArt,
+  TerraceArt,
   TreeArt,
   TruckArt,
   WalkerArt,
@@ -128,6 +156,11 @@ interface Props {
   arrival?: boolean;
   /** Durée d'un mouvement de caméra (ms) ; lent = plan de cinéma (écran mural). */
   cameraMs?: number;
+  /**
+   * Noms des bâtiments affichés en permanence ; sinon une pastille-icône
+   * au-dessus de chaque toit (la ville respire) et le nom au survol.
+   */
+  names?: boolean;
   /** Couleur du fond autour de la carte : fondu des bords quand on zoome. */
   edge?: string;
   /** Commandes posées par-dessus la carte (filtres, zoom…). */
@@ -138,6 +171,12 @@ const CSS = `
 .vg-world{will-change:transform}
 .vg-agent{position:absolute;left:0;top:0;pointer-events:none;offset-rotate:0deg;animation-name:vg-move;animation-timing-function:linear;animation-iteration-count:infinite}
 @keyframes vg-move{0%{offset-distance:0%;opacity:0}7%{opacity:1}93%{opacity:1}100%{offset-distance:100%;opacity:0}}
+.vg-loop{animation-name:vg-loop}
+@keyframes vg-loop{from{offset-distance:0%}to{offset-distance:100%}}
+.vg-bird{position:absolute;left:0;pointer-events:none;animation:vg-bird linear infinite}
+@keyframes vg-bird{from{transform:translateX(-40px)}to{transform:translateX(1240px)}}
+.vg-bird svg{animation:vg-flap .45s ease-in-out infinite alternate;transform-origin:50% 60%}
+@keyframes vg-flap{from{transform:scaleY(1)}to{transform:scaleY(.5)}}
 .vg-step{animation:vg-step .42s ease-in-out infinite alternate}
 @keyframes vg-step{from{transform:translateY(0)}to{transform:translateY(-1.5px)}}
 .vg-dash{animation:vg-dash 1.1s linear infinite}
@@ -145,6 +184,7 @@ const CSS = `
 .vg-spin{transform-box:view-box}
 .vg-animated .vg-spin{animation:vg-spin 5s linear infinite}
 .vg-animated .vg-spin-slow{animation-duration:12s}
+.vg-animated .vg-spin-rev{animation-direction:reverse;animation-duration:8.4s}
 @keyframes vg-spin{to{transform:rotate(360deg)}}
 .vg-animated .vg-twinkle{animation:vg-twinkle 1.8s ease-in-out infinite}
 .vg-animated .vg-twinkle2{animation-delay:-.9s}
@@ -172,7 +212,7 @@ const CSS = `
 @keyframes vg-flag{0%,100%{transform:skewY(0)}50%{transform:skewY(-8deg)}}
 @media (prefers-reduced-motion: reduce){
   .vg-agent,.vg-step,.vg-dash,.vg-rise,.vg-bubble,.vg-live,.vg-preview,.vg-flag,.vg-spin,.vg-twinkle,.vg-jet{animation:none !important}
-  .vg-agent{display:none}
+  .vg-agent,.vg-bird{display:none}
   .vg-bld,.vg-pill,.vg-world,.vg-follow{transition:none !important}
 }
 `;
@@ -194,28 +234,49 @@ const GLASS: CSSProperties = {
   WebkitFontSmoothing: 'antialiased',
 };
 
-/** Les 25 îlots : un bâtiment, la place ou un parc. */
-const CELLS = (() => {
-  const at = new Map<string, SectionId>();
-  MENU_ORDER.forEach((id) => at.set(BLOCK[id].join(','), id));
-  const cells: {
-    i: number;
-    j: number;
-    id: SectionId | null;
-    kind: 'building' | 'plaza' | 'park';
-  }[] = [];
-  for (let i = 0; i < GRID; i++)
-    for (let j = 0; j < GRID; j++) {
-      const id = at.get(`${i},${j}`) ?? null;
-      const kind = id
-        ? 'building'
-        : i === PLAZA[0] && j === PLAZA[1]
-          ? 'plaza'
-          : 'park';
-      cells.push({ i, j, id, kind });
-    }
-  return cells;
-})();
+/** Ce qui est posé au sol : parcelles des bâtiments, îlots libres, la place, les parcs. */
+type LotKind = 'building' | 'jardin' | 'cour' | 'terrasse' | 'place' | 'parc';
+const LOTS: {
+  key: string;
+  id: SectionId | null;
+  kind: LotKind;
+  rect: [number, number, number, number];
+}[] = [
+  ...MENU_ORDER.map((id) => ({
+    key: id,
+    id: id as SectionId | null,
+    kind: 'building' as LotKind,
+    rect: plotOf(...BLOCK[id]),
+  })),
+  ...SPOTS.map((sp) => ({
+    key: `spot-${sp.cell.join('-')}`,
+    id: null,
+    kind: sp.kind as LotKind,
+    rect: plotOf(...sp.cell),
+  })),
+  ...QUADS.filter((q) => q.kind === 'place' || q.kind === 'parc').map((q) => ({
+    key: `quad-${q.q.join('-')}`,
+    id: null,
+    kind: q.kind as LotKind,
+    rect: quadPlot(q.q),
+  })),
+];
+
+/** Couleurs du sol : dessus et bordure de chaque sorte de parcelle. */
+const LOT_COLORS: Record<Exclude<LotKind, 'building'>, [string, string]> = {
+  jardin: ['#d6ebcb', '#c2dbb4'],
+  cour: ['#ecebe7', '#d9d7d1'],
+  terrasse: ['#f4ece0', '#e2d5c1'],
+  place: ['#f4f1ec', '#e2dccf'],
+  parc: ['#d4eac8', '#bfd9b1'],
+};
+
+/** Oiseaux qui traversent le ciel de la ville (hauteur, durée, retard). */
+const BIRDS: [number, number, number][] = [
+  [70, 46, 0],
+  [96, 58, -21],
+  [58, 64, -40],
+];
 
 const VillageMap = ({
   width,
@@ -237,6 +298,7 @@ const VillageMap = ({
   arrival = false,
   cameraMs = 600,
   edge = '#ffffff',
+  names = true,
   children,
 }: Props) => {
   // Identifiants SVG propres à cette carte : l'écran mural en affiche une
@@ -396,39 +458,76 @@ const VillageMap = ({
   }, [shownPreview]);
 
   // ── Le décor, du fond vers l'avant (un objet devant en cache un autre) ──
-  const objects = useMemo(
-    () =>
-      [
-        ...TREES.map((t, i) => ({
-          key: `tree-${i}`,
-          depth: depthOf(t.u, t.v),
-          node: <TreeArt u={t.u} v={t.v} s={t.s} />,
-          id: null as SectionId | null,
-        })),
-        ...BENCHES.map((b, i) => ({
-          key: `bench-${i}`,
-          depth: depthOf(b.u, b.v),
-          node: <BenchArt u={b.u} v={b.v} along={b.along} />,
-          id: null as SectionId | null,
-        })),
-        {
-          key: 'fountain',
-          depth: depthOf(FOUNTAIN.u, FOUNTAIN.v),
-          node: <FountainArt />,
-          id: null as SectionId | null,
-        },
-        ...MENU_ORDER.map((id) => {
-          const [i, j] = BLOCK[id];
-          return {
-            key: `bld-${id}`,
-            depth: depthOf(i + 0.5, j + 0.5) + 0.1,
-            node: <BuildingArt id={id} />,
-            id: id as SectionId | null,
-          };
-        }),
-      ].sort((a, b) => a.depth - b.depth),
-    []
-  );
+  const objects = useMemo(() => {
+    const deco = (key: string, u: number, v: number, node: ReactNode) => ({
+      key,
+      depth: depthOf(u, v),
+      node,
+      id: null as SectionId | null,
+    });
+    return [
+      ...TREES.map((t, i) =>
+        deco(
+          `tree-${i}`,
+          t.u,
+          t.v,
+          <TreeArt u={t.u} v={t.v} s={t.s} kind={t.kind} />
+        )
+      ),
+      ...BUSHES.map((b, i) =>
+        deco(`bush-${i}`, b.u, b.v, <BushArt u={b.u} v={b.v} s={b.s} />)
+      ),
+      ...FLOWERS.map((f, i) =>
+        deco(
+          `flower-${i}`,
+          f.u,
+          f.v,
+          <FlowerArt u={f.u} v={f.v} color={f.color} />
+        )
+      ),
+      ...BENCHES.map((b, i) =>
+        deco(
+          `bench-${i}`,
+          b.u,
+          b.v,
+          <BenchArt u={b.u} v={b.v} along={b.along} />
+        )
+      ),
+      ...TERRACE.map((t, i) =>
+        deco(
+          `terrace-${i}`,
+          t.u,
+          t.v,
+          <TerraceArt u={t.u} v={t.v} color={t.color} />
+        )
+      ),
+      ...YARD.map((c, i) =>
+        deco(`crate-${i}`, c.u, c.v, <CrateArt u={c.u} v={c.v} h={c.h} />)
+      ),
+      deco('fountain', FOUNTAIN.u, FOUNTAIN.v, <FountainArt />),
+      deco(
+        'playground',
+        PLAYGROUND.u,
+        PLAYGROUND.v,
+        <PlaygroundArt u={PLAYGROUND.u} v={PLAYGROUND.v} />
+      ),
+      deco(
+        'picnic',
+        PICNIC.u,
+        PICNIC.v,
+        <PicnicArt u={PICNIC.u} v={PICNIC.v} />
+      ),
+      ...MENU_ORDER.map((id) => {
+        const [u0, v0, u1, v1] = plotOf(...BLOCK[id]);
+        return {
+          key: `bld-${id}`,
+          depth: depthOf((u0 + u1) / 2, (v0 + v1) / 2) + 0.05,
+          node: <BuildingArt id={id} />,
+          id: id as SectionId | null,
+        };
+      }),
+    ].sort((a, b) => a.depth - b.depth);
+  }, []);
   const ground = useMemo(
     () => ({
       slab: groundRect(
@@ -436,7 +535,7 @@ const VillageMap = ({
         -CITY_EDGE,
         GRID + CITY_EDGE,
         GRID + CITY_EDGE,
-        0.4,
+        0.45,
         0
       ),
       slabSide: groundRect(
@@ -444,47 +543,48 @@ const VillageMap = ({
         -CITY_EDGE,
         GRID + CITY_EDGE,
         GRID + CITY_EDGE,
-        0.4,
+        0.45,
         -14
       ),
+      avenues: avenues(),
+      footpaths: footpaths(),
       dashes: laneDashes(),
       zebras: crosswalks(),
-      plots: CELLS.map((c) => ({
-        ...c,
-        top: groundRect(
-          c.i + PLOT_INSET,
-          c.j + PLOT_INSET,
-          c.i + 1 - PLOT_INSET,
-          c.j + 1 - PLOT_INSET,
-          0.07,
-          5
-        ),
-        side: groundRect(
-          c.i + PLOT_INSET,
-          c.j + PLOT_INSET,
-          c.i + 1 - PLOT_INSET,
-          c.j + 1 - PLOT_INSET,
-          0.07,
-          0
-        ),
+      lots: LOTS.map((l) => ({
+        ...l,
+        top: groundRect(...l.rect, l.kind === 'building' ? 0.07 : 0.16, 4),
+        side: groundRect(...l.rect, l.kind === 'building' ? 0.07 : 0.16, 0),
       })),
-      plazaRings: [0.3, 0.22].map((r) =>
-        groundRect(
-          PLAZA[0] + 0.5 - r,
-          PLAZA[1] + 0.5 - r,
-          PLAZA[0] + 0.5 + r,
-          PLAZA[1] + 0.5 + r,
-          r * 0.9,
-          5
-        )
+      plazaRings: [0.36, 0.5].map((r) =>
+        pathOf(groundOval(FOUNTAIN.u, FOUNTAIN.v, r, r, 4))
       ),
+      pond: {
+        rim: pathOf(
+          groundOval(POND.u, POND.v, POND.ru + 0.05, POND.rv + 0.05, 4)
+        ),
+        water: pathOf(groundOval(POND.u, POND.v, POND.ru, POND.rv, 4)),
+        shine: pathOf(
+          groundOval(
+            POND.u - 0.08,
+            POND.v - 0.06,
+            POND.ru * 0.45,
+            POND.rv * 0.35,
+            4
+          )
+        ),
+        path: pathOf(groundOval(POND.u, POND.v, POND_WALK.ru, POND_WALK.rv, 4)),
+      },
+      parkPaths: parkPaths(),
       trucks: routePath(TRUCK_ROUTE.pts, 3),
       walkers: WALKERS.map((w) => routePath(w.pts, 5)),
+      cyclists: CYCLISTS.map((c) => routePath(c.pts, 3)),
+      cars: CARS.map((c) => routePath(c.pts, 2)),
+      ducks: routePath(DUCKS.pts, 4),
     }),
     []
   );
 
-  const plaza = iso(PLAZA[0] + 0.5, PLAZA[1] + 0.5, 5);
+  const plaza = iso(PLAZA[0] + 1, PLAZA[1] + 1, 5);
   const isLit = (id: SectionId) => !sections[id].dimmed;
   const active = (id: SectionId) => id === hot || id === selected;
   const truckCount = Math.max(0, Math.min(3, trucks));
@@ -528,9 +628,20 @@ const VillageMap = ({
         flagH: 24 * ls,
         flagLeft: 18 * ls,
       };
+  /** Pastille-icône (noms masqués) : son diamètre. */
+  const CHIP = 28;
   const pills = MENU_ORDER.map((id) => {
     const s = sections[id];
     const [x, y] = toScreen(...labelAnchor(id));
+    if (!names)
+      return {
+        id,
+        x,
+        y,
+        w: CHIP + (s.badge ? 14 : 0),
+        h: CHIP + 5,
+        left: 0,
+      };
     return {
       id,
       x,
@@ -630,54 +741,48 @@ const VillageMap = ({
             filter={ref('soft')}
             transform="translate(0 22)"
           />
-          <path d={ground.slabSide} fill="#d9dde7" />
-          <path d={ground.slab} fill="#e9ecf2" />
+          {/* L'île : pelouse, avenues, allées */}
+          <path d={ground.slabSide} fill="#c9dfbd" />
+          <path d={ground.slab} fill="#e2efd8" />
+          {ground.avenues.map((d, i) => (
+            <path key={`av-${i}`} d={d} fill="#e7eaf0" />
+          ))}
+          {ground.footpaths.map((d, i) => (
+            <path key={`fp-${i}`} d={d} fill="#efe6d8" />
+          ))}
           <path
             d={ground.dashes}
             stroke="#ffffff"
-            strokeWidth={2}
-            strokeDasharray="8 8"
+            strokeWidth={1.8}
+            strokeDasharray="7 7"
             strokeLinecap="round"
           />
           <path d={ground.zebras} fill="#ffffff" opacity={0.95} />
-          {ground.plots.map((p) => {
+          {ground.lots.map((p) => {
             const id = p.id;
             const d = id ? districtById(districtOf(id)) : null;
             const on = id ? active(id) : false;
             const inDistrict =
               !!id && !!district && districtOf(id) === district;
             const alert = id ? !!sections[id].alert : false;
-            const fill =
-              p.kind === 'park'
-                ? '#e4f2de'
-                : p.kind === 'plaza'
-                  ? '#f1edff'
-                  : on
-                    ? '#ffffff'
-                    : (d?.ground ?? '#f7f8fb');
+            const [top, side] =
+              p.kind === 'building'
+                ? [on ? '#ffffff' : (d?.ground ?? '#f7f8fb'), '#dde3d4']
+                : LOT_COLORS[p.kind];
             return (
               <g
-                key={`plot-${p.i}-${p.j}`}
+                key={`lot-${p.key}`}
                 opacity={id && !isLit(id) ? 0.5 : 1}
                 style={{ transition: 'opacity .3s ease' }}
                 onPointerEnter={id ? () => enter(id) : undefined}
                 onPointerLeave={id ? leave : undefined}
                 onClick={id ? () => onSelect(id) : undefined}
               >
-                <path
-                  d={p.side}
-                  fill={
-                    p.kind === 'park'
-                      ? '#cfe4c6'
-                      : p.kind === 'plaza'
-                        ? '#ddd5fb'
-                        : '#dfe3eb'
-                  }
-                />
+                <path d={p.side} fill={side} />
                 <path
                   className={id ? 'vg-plot' : undefined}
                   d={p.top}
-                  fill={fill}
+                  fill={top}
                   stroke={on || inDistrict ? d?.hue : 'none'}
                   strokeWidth={on ? 2.4 : inDistrict ? 1.6 : 0}
                   strokeOpacity={on ? 1 : 0.7}
@@ -696,13 +801,13 @@ const VillageMap = ({
               </g>
             );
           })}
-          {/* La place centrale : pavés en anneaux, halo violet */}
+          {/* La place centrale : pavés en anneaux autour de la fontaine, halo violet */}
           {ground.plazaRings.map((d, i) => (
             <path
               key={`ring-${i}`}
               d={d}
               fill="none"
-              stroke="#d9d0fb"
+              stroke="#e0d8c9"
               strokeWidth={1.4}
               pointerEvents="none"
             />
@@ -710,9 +815,28 @@ const VillageMap = ({
           <ellipse
             cx={plaza[0]}
             cy={plaza[1]}
-            rx={118}
-            ry={62}
+            rx={150}
+            ry={80}
             fill={ref('plaza')}
+            pointerEvents="none"
+          />
+          {/* Le bois : l'étang, le chemin qui en fait le tour, ses sentiers */}
+          {ground.parkPaths.map((d, i) => (
+            <path key={`pp-${i}`} d={d} fill="#ece2cf" pointerEvents="none" />
+          ))}
+          <path
+            d={ground.pond.path}
+            fill="none"
+            stroke="#ece2cf"
+            strokeWidth={5}
+            pointerEvents="none"
+          />
+          <path d={ground.pond.rim} fill="#e6e9ef" pointerEvents="none" />
+          <path d={ground.pond.water} fill="#9cc3f5" pointerEvents="none" />
+          <path
+            d={ground.pond.shine}
+            fill="#c7dcfb"
+            opacity={0.8}
             pointerEvents="none"
           />
           {/* Échanges : fils en pointillés dans les rues */}
@@ -820,15 +944,66 @@ const VillageMap = ({
                 </span>
               </span>
             ))}
+            {CARS.map((c, i) => (
+              <span
+                key={`car-${i}`}
+                className="vg-agent"
+                style={{
+                  offsetPath: `path('${ground.cars[i]}')`,
+                  animationDuration: `${c.duration}s`,
+                  animationDelay: `${-i * 7}s`,
+                }}
+              >
+                <span
+                  style={{ display: 'block', marginLeft: -17, marginTop: -19 }}
+                >
+                  <CarArt axis={c.axis} color={c.color} />
+                </span>
+              </span>
+            ))}
+            {CYCLISTS.map((c, i) => (
+              <span
+                key={`bike-${i}`}
+                className="vg-agent"
+                style={{
+                  offsetPath: `path('${ground.cyclists[i]}')`,
+                  animationDuration: `${c.duration}s`,
+                  animationDelay: `${-i * 9}s`,
+                }}
+              >
+                <span
+                  style={{ display: 'block', marginLeft: -8, marginTop: -17 }}
+                >
+                  <BikeArt shirt={SHIRTS[(i + 2) % SHIRTS.length]} />
+                </span>
+              </span>
+            ))}
+            {[0, 1].map((i) => (
+              <span
+                key={`duck-${i}`}
+                className="vg-agent vg-loop"
+                style={{
+                  offsetPath: `path('${ground.ducks}')`,
+                  animationDuration: `${DUCKS.duration}s`,
+                  animationDelay: `${(-i * DUCKS.duration) / 2}s`,
+                }}
+              >
+                <span
+                  style={{ display: 'block', marginLeft: -5, marginTop: -6 }}
+                >
+                  <DuckArt />
+                </span>
+              </span>
+            ))}
             {WALKERS.map((w, i) => (
               <span
                 key={`walker-${i}`}
-                className="vg-agent"
                 style={{
                   offsetPath: `path('${ground.walkers[i]}')`,
                   animationDuration: `${w.duration}s`,
                   animationDelay: `${-i * 6.5}s`,
                 }}
+                className={`vg-agent${w.pts.length > 8 ? ' vg-loop' : ''}`}
               >
                 <span
                   className="vg-step"
@@ -841,7 +1016,7 @@ const VillageMap = ({
           </div>
         )}
 
-        {/* Bâtiments, arbres, bancs et fontaine, du fond vers l'avant */}
+        {/* Bâtiments, arbres, buissons, fleurs, bancs, terrasse, aire de jeux, du fond vers l'avant */}
         <svg
           width={MAP_W}
           height={MAP_H}
@@ -895,26 +1070,50 @@ const VillageMap = ({
             );
           })}
         </svg>
+
+        {/* Quelques oiseaux traversent le ciel */}
+        {animations &&
+          BIRDS.map(([y, dur, delay], i) => (
+            <span
+              key={`bird-${i}`}
+              aria-hidden="true"
+              className="vg-bird"
+              style={{
+                top: y,
+                animationDuration: `${dur}s`,
+                animationDelay: `${delay}s`,
+              }}
+            >
+              <svg width={14} height={8} viewBox="0 0 14 8">
+                <path
+                  d="M1 3 Q4 0 7 4 Q10 0 13 3"
+                  stroke="#7b8494"
+                  strokeWidth={1.4}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+          ))}
       </div>
 
-      {/* Zoom : la ville se fond dans le fond en haut et en bas, sans coupe nette */}
-      {zoom > 1.001 &&
-        (['top', 'bottom'] as const).map((side) => (
-          <div
-            key={`fade-${side}`}
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              [side]: 0,
-              height: 30,
-              background: `linear-gradient(to ${side}, transparent, ${edge})`,
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          />
-        ))}
+      {/* La ville déborde de la carte : ses bords se fondent dans le fond, sans coupe nette */}
+      {(['top', 'bottom', 'left', 'right'] as const).map((side) => (
+        <div
+          key={`fade-${side}`}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            ...(side === 'top' || side === 'bottom'
+              ? { left: 0, right: 0, height: 34 }
+              : { top: 0, bottom: 0, width: 34 }),
+            [side]: 0,
+            background: `linear-gradient(to ${side}, transparent, ${edge})`,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+      ))}
 
       {/* Étiquettes : taille fixe à l'écran, en verre dépoli */}
       {MENU_ORDER.map((id) => {
@@ -927,6 +1126,103 @@ const VillageMap = ({
           : s.alert
             ? 'rgba(239,68,68,0.9)'
             : 'rgba(109,93,252,0.45)';
+        // Noms masqués : une pastille-icône, le nom au survol (ou fiche ouverte).
+        if (!names && !on)
+          return (
+            <button
+              key={`lab-${id}`}
+              type="button"
+              className="vg-pill"
+              onClick={() => onSelect(id)}
+              onMouseEnter={() => enter(id, 80)}
+              onMouseLeave={leave}
+              onFocus={() => enter(id, 0)}
+              onBlur={leave}
+              aria-pressed={selected === id}
+              aria-label={s.aria}
+              title={s.title}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                translate: `calc(${px(cx)} - 50%) calc(${px(cy)} - 100%)`,
+                zIndex: 2000,
+                opacity: isLit(id) ? 1 : 0.45,
+                width: CHIP,
+                height: CHIP,
+                padding: 0,
+                boxSizing: 'border-box',
+                borderRadius: 999,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...GLASS,
+                ...(s.alert ? { border: '2px solid rgba(239,68,68,0.9)' } : {}),
+                color: d.hue,
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+            >
+              {s.icon}
+              {s.badge && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -9,
+                    minWidth: 17,
+                    height: 17,
+                    padding: '0 4px',
+                    boxSizing: 'border-box',
+                    borderRadius: 999,
+                    background: s.tone,
+                    color: '#ffffff',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 0 0 2px #ffffff',
+                  }}
+                >
+                  {s.badge}
+                </span>
+              )}
+              <svg
+                aria-hidden="true"
+                width={8}
+                height={5}
+                viewBox="0 0 12 7"
+                preserveAspectRatio="none"
+                style={{
+                  position: 'absolute',
+                  left: `calc(50% - ${px(dx)})`,
+                  bottom: -4,
+                  marginLeft: -4,
+                  overflow: 'visible',
+                }}
+              >
+                <path d="M0 0 L6 7 L12 0 Z" fill="rgba(255,255,255,0.86)" />
+              </svg>
+              {dy < -1 && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% - ${px(dx)})`,
+                    top: '100%',
+                    marginTop: 3,
+                    marginLeft: -1,
+                    width: 2,
+                    height: -dy,
+                    borderRadius: 1,
+                    background: rim,
+                  }}
+                />
+              )}
+            </button>
+          );
         return (
           <div key={`lab-${id}`}>
             {s.alert && (

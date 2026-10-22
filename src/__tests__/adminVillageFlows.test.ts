@@ -14,7 +14,10 @@ import {
   type RawVillage,
 } from '@/views/app/admin/home/village/villageData';
 import {
+  BOULEVARDS,
   GRID,
+  MENU_ORDER,
+  blockCenter,
   doorOf,
   routeLength,
 } from '@/views/app/admin/home/village/villageScene';
@@ -42,7 +45,7 @@ describe('échanges — par les rues, d’un bâtiment à l’autre', () => {
     expect(route('livraisons')).toBeNull();
   });
 
-  it('chaque trajet va d’une porte à l’autre en suivant les rues, jamais à travers un îlot', () => {
+  it('chaque trajet va d’une porte à l’autre par les boulevards, jamais à travers un quartier', () => {
     for (const f of villageFlows({})) {
       if (!f.exchange) {
         expect(f.route).toEqual([]);
@@ -53,15 +56,17 @@ describe('échanges — par les rues, d’un bâtiment à l’autre', () => {
       for (let k = 1; k < f.route.length; k++) {
         const [u1, v1] = f.route[k - 1];
         const [u2, v2] = f.route[k];
-        // Un segment longe une rue : sa coordonnée fixe est un entier, dans la ville.
+        // Un segment suit un boulevard : sa coordonnée fixe est la sienne, dans la ville.
         const fixed = u1 === u2 ? u1 : v1 === v2 ? v1 : NaN;
-        expect({ flow: f.id, k, onStreet: Number.isInteger(fixed) }).toEqual({
+        expect({
           flow: f.id,
           k,
-          onStreet: true,
-        });
-        expect(fixed).toBeGreaterThanOrEqual(0);
-        expect(fixed).toBeLessThanOrEqual(GRID);
+          onBoulevard: BOULEVARDS.includes(fixed),
+        }).toEqual({ flow: f.id, k, onBoulevard: true });
+        for (const x of [u1, v1, u2, v2]) {
+          expect(x).toBeGreaterThanOrEqual(0);
+          expect(x).toBeLessThanOrEqual(GRID);
+        }
       }
       expect(f.d.startsWith('M')).toBe(true);
       expect(f.length).toBeCloseTo(routeLength(f.route), 6);
@@ -69,9 +74,18 @@ describe('échanges — par les rues, d’un bâtiment à l’autre', () => {
     }
   });
 
-  it('la porte d’un bâtiment est sur la rue devant sa façade', () => {
-    expect(doorOf('projets')).toEqual([1.5, 2]);
-    expect(doorOf('boutique')).toEqual([2.5, 4]);
+  it('la porte d’un bâtiment donne sur le boulevard le plus proche', () => {
+    for (const id of MENU_ORDER) {
+      const [u, v] = doorOf(id);
+      const [cu, cv] = blockCenter(id);
+      const onU = BOULEVARDS.includes(u);
+      expect(onU || BOULEVARDS.includes(v)).toBe(true);
+      // On sort tout droit du bâtiment jusqu'au boulevard, à moins d'un îlot.
+      expect(onU ? v : u).toBeCloseTo(onU ? cv : cu, 9);
+      expect(Math.abs(onU ? u - cu : v - cv)).toBeLessThanOrEqual(1);
+    }
+    expect(doorOf('projets')[0]).toBe(2.5);
+    expect(doorOf('boutique')[1]).toBe(5.5);
   });
 });
 

@@ -16,6 +16,7 @@ import {
   HiOutlineClipboardDocumentCheck,
   HiOutlineQueueList,
   HiOutlineSparkles,
+  HiOutlineTag,
   HiOutlineTv,
 } from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
@@ -101,6 +102,8 @@ const CHIP_FIT = {
 } as const;
 
 const ARRIVED_KEY = 'peg:villageArrived';
+/** Noms des bâtiments affichés en permanence (sinon : pastilles-icônes). */
+const NAMES_KEY = 'peg:villageNames';
 const HINT_KEY = 'peg:villageHint';
 
 const TITLES = Object.fromEntries(
@@ -158,6 +161,22 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [seen, setSeen] = useState(readSeen);
   // Camions, passants et échanges : coupables sur l'appareil.
   const [animationsOn, setAnimationsOn] = useState(readAnimationsOn);
+  // Noms des bâtiments : masqués par défaut (la ville respire), au choix.
+  const [namesOn, setNamesOn] = useState(() => {
+    try {
+      return localStorage.getItem(NAMES_KEY) === 'on';
+    } catch {
+      return false;
+    }
+  });
+  const toggleNames = () => {
+    try {
+      localStorage.setItem(NAMES_KEY, namesOn ? 'off' : 'on');
+    } catch {
+      // stockage indisponible : le choix vaut pour la session
+    }
+    setNamesOn(!namesOn);
+  };
   const [now, setNow] = useState(() => new Date());
   // Première visite de la session : la ville se construit sous les yeux.
   const [arrival] = useState(() => {
@@ -325,7 +344,8 @@ const AdminVillage = ({ onClassic }: Props) => {
   const viewFocus = (): [number, number] => {
     if (focus) return focus;
     if (litSection) return buildingCenter(litSection);
-    return districtCenter(district ?? 'projets');
+    if (district) return districtCenter(district);
+    return [MAP_W / 2, MAP_H / 2];
   };
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => undefined);
   keyHandler.current = (e: KeyboardEvent) => {
@@ -492,7 +512,7 @@ const AdminVillage = ({ onClassic }: Props) => {
   const mapHeight = Math.round(MAP_H * fit);
   // Carte étroite : l'interrupteur des animations perd son libellé (les
   // filtres gardent la place à gauche).
-  const tightControls = mapW < 720;
+  const tightControls = mapW < 860;
   /** Quatre chiffres clés sur une ligne s'ils y tiennent (courbe comprise), sinon deux. */
   const kpiCols = rootW >= 1056 ? 4 : 2;
   /** Chiffres clés resserrés quand quatre cartes tiennent à peine sur la ligne. */
@@ -744,6 +764,67 @@ const AdminVillage = ({ onClassic }: Props) => {
     </div>
   );
 
+  /** Interrupteur posé sur la carte (libellé remplacé par une icône quand la place manque). */
+  const switchButton = (
+    label: string,
+    glyph: ReactNode,
+    on: boolean,
+    toggle: () => void,
+    title: string
+  ) => (
+    <button
+      type="button"
+      className="vgx-btn"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={toggle}
+      title={title}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: (tightControls ? 7 : 10) * ui,
+        height: 44 * ui,
+        padding: `0 ${10 * ui}px 0 ${(tightControls ? 11 : 14) * ui}px`,
+        border: '1px solid #eceef3',
+        borderRadius: 14,
+        background: '#ffffff',
+        boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
+        color: '#111827',
+        fontSize: 14 * ui,
+        fontWeight: 600,
+        cursor: 'pointer',
+      }}
+    >
+      {tightControls ? glyph : label}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'relative',
+          width: 40 * ui,
+          height: 24 * ui,
+          borderRadius: 999,
+          background: on ? TONE.violet : '#d6d9e2',
+          transition: 'background .2s ease',
+        }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 3 * ui,
+            left: on ? 19 * ui : 3 * ui,
+            width: 18 * ui,
+            height: 18 * ui,
+            borderRadius: '50%',
+            background: '#ffffff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            transition: 'left .2s ease',
+          }}
+        />
+      </span>
+    </button>
+  );
+
   const overlays = (
     <>
       {tourIdx !== null && tourList[tourIdx] ? (
@@ -935,72 +1016,35 @@ const AdminVillage = ({ onClassic }: Props) => {
             zIndex: 2100,
           }}
         >
+          {/* Noms des bâtiments (choix gardé sur l'appareil) */}
+          {switchButton(
+            'Noms',
+            <HiOutlineTag
+              aria-hidden="true"
+              style={{ fontSize: 18 * ui, color: TONE.violet }}
+            />,
+            namesOn,
+            toggleNames,
+            namesOn
+              ? 'Masquer les noms : une pastille par bâtiment, le nom au survol'
+              : 'Afficher le nom de chaque bâtiment'
+          )}
           {/* Animations : camions, passants et échanges (choix gardé sur l'appareil) */}
-          <button
-            type="button"
-            className="vgx-btn"
-            role="switch"
-            aria-checked={animationsOn}
-            aria-label="Animations"
-            onClick={() => {
+          {switchButton(
+            'Animations',
+            <HiOutlineSparkles
+              aria-hidden="true"
+              style={{ fontSize: 18 * ui, color: TONE.violet }}
+            />,
+            animationsOn,
+            () => {
               writeAnimationsOn(!animationsOn);
               setAnimationsOn(!animationsOn);
-            }}
-            title={
-              animationsOn
-                ? 'Couper les camions, passants et échanges'
-                : 'Afficher les camions, passants et échanges'
-            }
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: (tightControls ? 7 : 10) * ui,
-              height: 44 * ui,
-              padding: `0 ${10 * ui}px 0 ${(tightControls ? 11 : 14) * ui}px`,
-              border: '1px solid #eceef3',
-              borderRadius: 14,
-              background: '#ffffff',
-              boxShadow: '0 6px 18px rgba(40,36,80,0.08)',
-              color: '#111827',
-              fontSize: 14 * ui,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {tightControls ? (
-              <HiOutlineSparkles
-                aria-hidden="true"
-                style={{ fontSize: 18 * ui, color: TONE.violet }}
-              />
-            ) : (
-              'Animations'
-            )}
-            <span
-              aria-hidden="true"
-              style={{
-                position: 'relative',
-                width: 40 * ui,
-                height: 24 * ui,
-                borderRadius: 999,
-                background: animationsOn ? TONE.violet : '#d6d9e2',
-                transition: 'background .2s ease',
-              }}
-            >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 3 * ui,
-                  left: animationsOn ? 19 * ui : 3 * ui,
-                  width: 18 * ui,
-                  height: 18 * ui,
-                  borderRadius: '50%',
-                  background: '#ffffff',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  transition: 'left .2s ease',
-                }}
-              />
-            </span>
-          </button>
+            },
+            animationsOn
+              ? 'Couper les camions, passants et échanges'
+              : 'Afficher les camions, passants et échanges'
+          )}
           {(
             [
               {
@@ -1337,6 +1381,7 @@ const AdminVillage = ({ onClassic }: Props) => {
               flows={flows}
               trucks={trucks}
               arrival={arrival}
+              names={namesOn}
             >
               {overlays}
             </VillageMap>
