@@ -5,8 +5,8 @@ import { apiGetProductForShowById } from '@/services/ProductServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { getProductPackOptions, isProductM2Pricing, isProductPackPricing } from '@/utils/productHelpers';
 import { DEFAULT_CHOICE } from '@/views/app/customer/products/show/SizeAndColorsChoice';
-import { optionKey } from '@/utils/optionKey';
-import { sortSizes } from '@/utils/sizeSort';
+import { optionKey, sameOption } from '@/utils/optionKey';
+import { sortSelections, sortSizes } from '@/utils/sizeSort';
 import type { ChatFormAnswer } from '@/components/template/chat/chatFormTypes';
 
 /**
@@ -196,6 +196,55 @@ export const describeMissing = (product: Product, lines: ChatOfferLine[]): strin
     ].filter(Boolean).join(', ');
     return `${l.quantity}${known ? ` ${known}` : ''} : ${what}`;
   });
+
+/**
+ * Ligne de l'offre à qui il ne manque qu'UNE dimension : la couleur (« 3 bonnets »
+ * sur un bonnet à 9 couleurs) ou la taille. La fiche en propose les options en un
+ * clic et y pose la quantité dite dans le chat — avant, rien n'était pré-rempli et
+ * le client ressaisissait la quantité (22/10/2026). Taille ET couleur manquantes :
+ * null, la répartition se fait dans le tableau.
+ */
+export type LineChoice = {
+  line: ChatOfferLine;
+  dimension: 'color' | 'size';
+  options: (Size | Color)[];
+  /** L'autre dimension, déjà connue. */
+  fixed: Size | Color;
+};
+
+export const lineChoiceFor = (product: Product, line: ChatOfferLine): LineChoice | null => {
+  if (isProductM2Pricing(product) || isProductPackPricing(product)) return null;
+  const size = resolveOption(product.sizes, line.sizeDocumentId, line.sizeName ?? line.requestedSize, DEFAULT_SIZE);
+  const color = resolveOption(product.colors, line.colorDocumentId, line.colorName ?? line.requestedColor, DEFAULT_COLOR);
+  if (size && !color && product.colors?.length) return { line, dimension: 'color', options: product.colors, fixed: size };
+  if (color && !size && product.sizes?.length) return { line, dimension: 'size', options: sortSizes(product.sizes), fixed: color };
+  return null;
+};
+
+/**
+ * Sélection après un choix : la quantité de la ligne quitte l'option choisie
+ * auparavant (`previous`) et va sur `option`. Les autres entrées — y compris ce que
+ * le client a saisi lui-même dans le tableau — sont conservées.
+ */
+export const applyLineChoice = (
+  selection: SizeAndColorSelection[],
+  choice: LineChoice,
+  option: Size | Color,
+  previous?: Size | Color | null,
+): SizeAndColorSelection[] => {
+  const pair = (o: Size | Color) => (choice.dimension === 'color'
+    ? { size: choice.fixed as Size, color: o as Color }
+    : { size: o as Size, color: choice.fixed as Color });
+  const shift = (list: SizeAndColorSelection[], o: Size | Color, delta: number): SizeAndColorSelection[] => {
+    const { size, color } = pair(o);
+    const i = list.findIndex((s) => sameOption(s.size, size) && sameOption(s.color, color));
+    if (i < 0) return delta > 0 ? [...list, { size, color, quantity: delta }] : list;
+    const quantity = list[i].quantity + delta;
+    return quantity > 0 ? list.map((s, j) => (j === i ? { ...s, quantity } : s)) : list.filter((_, j) => j !== i);
+  };
+  const released = previous ? shift(selection, previous, -choice.line.quantity) : selection;
+  return sortSelections(shift(released, option, choice.line.quantity));
+};
 
 /** Sélection d'une seule ligne (cas simple). */
 export const selectionForLine = (product: Product, line: ChatOfferLine): SizeAndColorSelection[] | null =>

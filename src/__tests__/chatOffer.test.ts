@@ -1,6 +1,8 @@
 import type { Product } from '@/@types/product';
 import {
+  applyLineChoice,
   canonOption,
+  lineChoiceFor,
   describeLines,
   describeMissing,
   describeOffer,
@@ -315,5 +317,62 @@ describe('produits vendus par packs (cartes de visite)', () => {
     ]);
     expect(parts).toHaveLength(2);
     expect(parts.map((p) => p[0].sizeDocumentId)).toEqual(['v', 'h']);
+  });
+});
+
+describe('choix en un clic sur la fiche (couleur ou taille manquante)', () => {
+  // Bonnet de prod : une taille, 9 couleurs — « 3 bonnets » sans couleur dans le chat.
+  const bonnet = product({
+    sizes: [opt('tu', 'Taille unique')] as never,
+    colors: [opt('noir', 'NOIR'), opt('blanc', 'BLANC'), opt('rouge', 'ROUGE')] as never,
+  });
+  const three = line({ quantity: 3, totalHT: 35.7 });
+
+  it('seule la couleur manque : ses couleurs sont proposées, la taille est connue', () => {
+    const choice = lineChoiceFor(bonnet, three)!;
+    expect(choice.dimension).toBe('color');
+    expect(choice.options.map((o) => o.name)).toEqual(['NOIR', 'BLANC', 'ROUGE']);
+    expect(choice.fixed.name).toBe('Taille unique');
+  });
+
+  it('seule la taille manque : tailles proposées dans l\'ordre naturel', () => {
+    const tshirt = product({ sizes: [opt('l', 'L'), opt('s', 'S'), opt('m', 'M')] as never, colors: [opt('noir', 'NOIR'), opt('blanc', 'BLANC')] as never });
+    const choice = lineChoiceFor(tshirt, line({ colorDocumentId: 'noir' }))!;
+    expect(choice.dimension).toBe('size');
+    expect(choice.options.map((o) => o.name)).toEqual(['S', 'M', 'L']);
+    expect(choice.fixed.name).toBe('NOIR');
+  });
+
+  it('couleur demandée introuvable : le choix est proposé quand même', () => {
+    expect(lineChoiceFor(bonnet, line({ requestedColor: 'VIOLET' }))?.dimension).toBe('color');
+  });
+
+  it('taille ET couleur manquantes, rien ne manque, ou m² : pas de choix en un clic', () => {
+    const both = product({ sizes: [opt('s', 'S'), opt('m', 'M')] as never, colors: [opt('noir', 'NOIR'), opt('blanc', 'BLANC')] as never });
+    expect(lineChoiceFor(both, line())).toBeNull();
+    expect(lineChoiceFor(bonnet, line({ colorDocumentId: 'noir' }))).toBeNull();
+    expect(lineChoiceFor(product({ pricingMode: 'm2' } as never), line())).toBeNull();
+  });
+
+  it('un clic pose la quantité de l\'offre sur la couleur, un autre clic l\'y déplace', () => {
+    const choice = lineChoiceFor(bonnet, three)!;
+    const [noir, blanc] = choice.options;
+    const first = applyLineChoice([], choice, noir);
+    expect(first).toEqual([{ size: choice.fixed, color: noir, quantity: 3 }]);
+    const moved = applyLineChoice(first, choice, blanc, noir);
+    expect(moved).toEqual([{ size: choice.fixed, color: blanc, quantity: 3 }]);
+  });
+
+  it('ce que le client a saisi lui-même dans le tableau est conservé', () => {
+    const choice = lineChoiceFor(bonnet, three)!;
+    const [noir, blanc, rouge] = choice.options;
+    const manual = [{ size: choice.fixed, color: rouge, quantity: 2 }, { size: choice.fixed, color: blanc, quantity: 1 }];
+    const added = applyLineChoice(manual as never, choice, blanc);
+    expect(added.find((s) => s.color.name === 'BLANC')?.quantity).toBe(4);
+    expect(added.find((s) => s.color.name === 'ROUGE')?.quantity).toBe(2);
+    const moved = applyLineChoice(added, choice, noir, blanc);
+    expect(moved.find((s) => s.color.name === 'BLANC')?.quantity).toBe(1);
+    expect(moved.find((s) => s.color.name === 'NOIR')?.quantity).toBe(3);
+    expect(moved.find((s) => s.color.name === 'ROUGE')?.quantity).toBe(2);
   });
 });

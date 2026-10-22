@@ -41,8 +41,8 @@ import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
-import { sameOption } from '@/utils/optionKey';
-import { describeLines, describeMissing, prefillSelection, readChatPrefill } from '@/components/template/chatOffer';
+import { optionKey, sameOption } from '@/utils/optionKey';
+import { applyLineChoice, describeLines, describeMissing, lineChoiceFor, prefillSelection, readChatPrefill, type LineChoice } from '@/components/template/chatOffer';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 
 const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
@@ -194,8 +194,21 @@ const ShowProduct = () => {
   const prefill = chatPrefill && product && product.documentId === documentId && !isM2Pricing
     ? prefillSelection(product, prefillLines)
     : null;
-  const prefillMissing = prefill && product ? describeMissing(product, prefill.missing) : [];
+  // Ligne à qui il ne manque que la couleur (ou que la taille) : choix en un clic dans
+  // le bandeau, la quantité de l'offre y est posée. Option choisie par ligne manquante.
+  const lineChoices = prefill && product ? prefill.missing.map((l) => lineChoiceFor(product, l)) : [];
+  const [chosenOptions, setChosenOptions] = useState<Record<number, string>>({});
+  const missingToFill = prefill ? prefill.missing.filter((_, i) => !lineChoices[i]) : [];
+  const choicesPending = lineChoices.some((c, i) => c && !chosenOptions[i]);
+  const prefillMissing = product ? describeMissing(product, missingToFill) : [];
   const prefillComplete = isM2Pricing ? !!(prefillM2?.width && prefillM2?.height) : !!prefill && !prefill.missing.length && prefill.selection.length > 0;
+  const prefillChosen = !!prefill && prefill.missing.length > 0 && !missingToFill.length && !choicesPending;
+  const chooseForLine = (index: number, choice: LineChoice, option: Size | Color) => {
+    const previous = choice.options.find((o) => optionKey(o) === chosenOptions[index]) ?? null;
+    setSizeAndColorsChanged(true);
+    dispatch(setSizeAndColorsSelected(applyLineChoice(sizeAndColorsSelected, choice, option, previous)));
+    setChosenOptions((chosen) => ({ ...chosen, [index]: optionKey(option) }));
+  };
   useEffect(() => {
     if (!chatPrefill || chatPrefillApplied.current || !product || product.documentId !== documentId) return;
     chatPrefillApplied.current = true;
@@ -410,7 +423,7 @@ const ShowProduct = () => {
       {chatPrefill && (
         <div role="status" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '14px', padding: '12px 16px', borderRadius: '14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', color: 'rgba(220,252,231,0.9)', fontSize: '13px', lineHeight: 1.5 }}>
           <HiShoppingCart size={18} style={{ color: '#4ade80', flexShrink: 0, marginTop: '1px' }} />
-          <span>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <strong style={{ color: '#fff' }}>
               Votre offre : {isPackPricing ? `pack de ${prefill?.selection[0]?.quantity ?? chatPrefill.quantity}` : chatPrefill.quantity} × {product.name}
               {describeLines(prefillLines) ? ` · ${describeLines(prefillLines)}` : ''}
@@ -418,15 +431,54 @@ const ShowProduct = () => {
             <br />
             {isPackPricing && prefill?.packFormatDefaulted
               ? `Pack sélectionné, au format « ${prefill.packFormatDefaulted.name} » par défaut : changez-le si besoin. `
-              : prefillComplete
+              : prefillComplete || prefillChosen
               ? (isM2Pricing ? 'Dimensions et quantité reprises de la conversation. ' : isPackPricing ? 'Pack et format repris de la conversation. ' : 'Quantité, tailles et couleurs reprises de la conversation. ')
               : isM2Pricing
                 ? 'Indiquez les dimensions. '
                 : prefillMissing.length
                   ? `${prefill?.selection.length ? 'Le reste est déjà sélectionné. ' : ''}À compléter : ${prefillMissing.join(' ; ')}. `
-                  : `Répartissez vos ${chatPrefill.quantity} pièces par taille${(product.colors?.length ?? 0) > 1 && prefillLines.some((l) => !l.colorDocumentId) ? ' et couleur' : ''}. `}
+                  : choicesPending
+                    ? `${prefill?.selection.length ? 'Le reste est déjà sélectionné. ' : ''}Choisissez ci-dessous : la quantité de l'offre y sera placée. `
+                    : `Répartissez vos ${chatPrefill.quantity} pièces par taille${(product.colors?.length ?? 0) > 1 && prefillLines.some((l) => !l.colorDocumentId) ? ' et couleur' : ''}. `}
             {hasForm ? 'Ajoutez votre personnalisation, puis « Ajouter au panier ».' : 'Vérifiez, puis « Ajouter au panier ».'}
-          </span>
+            {lineChoices.map((choice, index) => {
+              if (!choice) return null;
+              const what = choice.dimension === 'color' ? 'Couleur' : 'Taille';
+              const pieces = `${choice.line.quantity} pièce${choice.line.quantity > 1 ? 's' : ''}`;
+              return (
+                <div key={index} style={{ marginTop: '10px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
+                    {what} de vos {pieces} :
+                  </div>
+                  <div role="group" aria-label={`${what} de vos ${pieces}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {choice.options.map((option) => {
+                      const active = chosenOptions[index] === optionKey(option);
+                      return (
+                        <button
+                          key={optionKey(option)}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => chooseForLine(index, choice, option)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '6px', minHeight: '34px', padding: '6px 12px',
+                            borderRadius: '100px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600,
+                            color: active ? '#052e16' : '#fff',
+                            background: active ? '#4ade80' : 'rgba(255,255,255,0.06)',
+                            border: active ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.18)',
+                          }}
+                        >
+                          {choice.dimension === 'color' && (
+                            <span aria-hidden="true" style={{ width: '12px', height: '12px', borderRadius: '50%', flexShrink: 0, background: (option as Color).value || '#aaa', border: '1px solid rgba(255,255,255,0.4)' }} />
+                          )}
+                          {option.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
