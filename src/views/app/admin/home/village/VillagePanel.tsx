@@ -5,10 +5,9 @@ import { HiCheck, HiChevronLeft, HiChevronRight } from 'react-icons/hi';
 import { HiOutlineBell } from 'react-icons/hi2';
 import { BsCalendar3 } from 'react-icons/bs';
 import {
+  PRIMARY,
   buildingFrame,
-  districtOf,
   type District,
-  type DistrictId,
   type SectionId,
 } from './villageScene';
 import { BuildingArt } from './VillageBuildings';
@@ -127,14 +126,14 @@ const sectionChip = (d: SectionData) => {
   return { bg: '#eeebff', fg: '#4f3fd1' };
 };
 
-/** Vignette : le bâtiment du quartier, tel qu'il est dessiné sur la carte. */
+/** Vignette : le bâtiment d'un onglet, tel qu'il est dessiné sur la carte. */
 const BuildingThumb = ({
   id,
   w,
   h,
   bg,
 }: {
-  id: DistrictId;
+  id: SectionId;
   w: number;
   h: number;
   bg: string;
@@ -879,7 +878,7 @@ const VillagePanel = ({
             marginTop: 12,
           }}
         >
-          <BuildingThumb id={d.id} w={104} h={96} bg={d.soft} />
+          <BuildingThumb id={PRIMARY[d.id]} w={104} h={96} bg={d.soft} />
           <p
             style={{
               margin: 0,
@@ -962,22 +961,7 @@ const VillagePanel = ({
                   cursor: 'pointer',
                 }}
               >
-                <span
-                  style={{
-                    width: 36,
-                    height: 36,
-                    flexShrink: 0,
-                    borderRadius: 11,
-                    background: d.soft,
-                    color: d.ink,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 19,
-                  }}
-                >
-                  {m.icon}
-                </span>
+                <BuildingThumb id={m.id} w={40} h={42} bg={d.soft} />
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span
                     style={{
@@ -1439,12 +1423,7 @@ const VillagePanel = ({
           marginTop: 16,
         }}
       >
-        <BuildingThumb
-          id={districtOf(section.id)}
-          w={112}
-          h={104}
-          bg={d.soft}
-        />
+        <BuildingThumb id={section.id} w={112} h={104} bg={d.soft} />
         <span
           style={{
             fontSize: 15,

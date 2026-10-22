@@ -971,44 +971,45 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 ## 🏙️ Accueil admin « Ville PEG » (refonte du 22/10/2026 — ex-« Village PEG » du 21/10)
 
 ### Concept
-- Sur ordinateur (≥ 1024 px), l'accueil admin est une **petite ville isométrique moderne**, claire (blanc, gris clair, touches de violet), d'après la maquette envoyée le 22/10/2026 : **six quartiers = six bâtiments** sur une grille de 3 × 3 îlots, des rues reliées, la **place centrale** (Projets) et **trois parcs**. Tout est dessiné par le code (SVG + CSS, `VillageBuildings.tsx`) — plus aucune image.
-- Les **20 rubriques du menu admin** sont rangées dans les quartiers (aucune ne disparaît) — `villageScene.ts` (`MEMBERS`, `membersOf`, `districtOf`) :
-  - **Projets** (la place centrale) : Accueil, Calendrier, Projets
-  - **Clients** : Leads, Clients, Premium, Campagnes
-  - **Boutique** : Boutique, Attributs, Bannières
-  - **Production** (les ateliers) : Planning, Producteurs, Fournisseurs
-  - **Finance** : Devis, Générateurs, Finance
-  - **Assistance** : IA, Utilisateurs, Tickets, Paramètres
-- Étiquette du quartier = icône + nom + pastille de sa **rubrique principale** (`PRIMARY` : Projets, Clients, Boutique, Producteurs, Finance, Tickets) + drapeau rouge si une rubrique est en alerte + étoile dorée si son activité du mois est exceptionnelle.
-- **Survol** (bâtiment, parcelle ou étiquette) : le bâtiment se soulève avec un halo, la parcelle prend la couleur du quartier, puis un **aperçu** (une ligne par rubrique + les échanges du quartier avec leurs vrais chiffres). **Clic** : fiche du quartier dans le **panneau de droite** (« Quartier · N rubriques », vignette du bâtiment, Urgent / À traiter, chaque rubrique avec son détail et un bouton **« Ouvrir »** vers sa page). Touches **1 à 6** = quartiers (avec zoom), Échap = toute la ville.
-- Au-dessus : 4 chiffres clés. À droite : la fiche (« Ma journée » au chargement). Filtres Tout / Urgent / À traiter / En production / À livrer (un quartier sans rubrique retenue s'estompe), **zoom** (+ / −, molette), **déplacement** (glisser quand on a zoomé), **Vue liste** (une colonne par quartier, avec son bâtiment), **interrupteur « Animations »**.
+- Sur ordinateur (≥ 1024 px), l'accueil admin est une **petite ville isométrique moderne**, claire (blanc, gris clair, touches de violet), d'après la maquette envoyée le 22/10/2026. **Un bâtiment par onglet du menu admin (20)** — demande de l'utilisateur le 22/10 (« je veux un bâtiment par onglet du menu ») après une première version à 6 bâtiments —, chacun sur son îlot d'une **grille de 5 × 5** : la **place centrale** (fontaine, bancs) au milieu, un **grand parc au fond** (3 îlots) et un parc devant, des rues entre tous les îlots. Tout est dessiné par le code (SVG + CSS, `VillageBuildings.tsx`) — aucune image.
+- Les bâtiments sont rangés en **six quartiers d'îlots voisins**, au sol teinté de leur couleur (`District.ground`) — `villageScene.ts` (`BLOCK`, `MEMBERS`, `membersOf`, `districtOf`) :
+  - **Projets** (les trois îlots derrière la place) : Projets (la tour, la plus haute), Accueil, Calendrier
+  - **Clients** (à gauche) : Leads, Clients, Premium, Campagnes
+  - **Production** (à droite, au fond) : Planning, Producteurs, Fournisseurs
+  - **Assistance** (à droite, devant) : IA, Utilisateurs, Tickets, Paramètres
+  - **Finance** (devant la place) : Devis, Générateurs, Finance
+  - **Boutique** (à gauche, devant) : Boutique, Attributs, Bannières
+- Chaque bâtiment porte un **signe de son onglet** : maison au toit pointu (Accueil), page de calendrier, couronne dorée (Premium), éclair (Leads), panneau au mégaphone (Campagnes), atelier à cheminée (Producteurs), tableau de charge (Planning), entrepôt et cartons (Fournisseurs), store rayé (Boutique), nuancier (Attributs), affiche (Bannières), colonnes et fronton (Finance), feuille cochée (Devis), éolienne (Générateurs), bouée (Tickets), parabole (IA), balcons (Utilisateurs), roue dentée (Paramètres). Éolienne, roue, fontaine et étincelles bougent quand les animations sont allumées (classe `vg-animated`).
+- **Survol** (bâtiment, îlot ou étiquette) : le bâtiment se soulève avec un halo, son îlot prend la couleur du quartier, puis un **aperçu** (phrase, alerte, 3 chiffres avec évolution, activité du mois, échanges du bâtiment). **Clic** : la **fiche de l'onglet** dans le panneau de droite (chiffres, « En ce moment », bouton vers sa page) ; un second clic ramène à « Ma journée ».
+- **Barre des quartiers** sous le titre (à côté de « Ma tournée du jour ») : clic = fiche du quartier (ses rubriques avec leur bâtiment et un bouton « Ouvrir ») et zoom sur ses îlots, survol = ses îlots ressortent ; touches **1 à 6** ; Échap = toute la ville. L'en-tête (titre, vues, tournée, quartiers) est **toujours au-dessus de la carte** (posé dessus, il couvrirait les étiquettes du haut).
+- Filtres Tout / Urgent / À traiter / En production / À livrer (un bâtiment non retenu s'estompe), **zoom** (+ / −, molette), **déplacement** (glisser quand on a zoomé), **Vue liste** (une colonne par quartier, chaque rubrique avec son bâtiment), **interrupteur « Animations »** (libellé remplacé par une icône sous 720 px de carte).
 
 ### Échanges, camions, passants (animations discrètes)
-- `villageFlows.ts` (testé) — chemins en pointillés entre les bâtiments, des **points lumineux** ou des **documents** y circulent, au rythme des **vrais chiffres** (`VillageData.flowCounts`) :
+- `villageFlows.ts` (testé) — des **points lumineux** ou des **documents** circulent **par les rues**, de la porte d'un bâtiment à celle d'un autre (`streetRoute` : rue de départ, rue transversale, rue d'arrivée ; porte = `doorOf`, sur la rue devant la façade éclairée), au rythme des **vrais chiffres** (`VillageData.flowCounts`) :
   - **commandes** Boutique → Projets (commandes payées sur 30 jours, `activity.boutique.current`) ;
-  - **demandes de devis** Clients → Projets (`quotes.requested`) ;
-  - **projets en cours** Projets → Production (documents ; `pending + pending_paid`) ;
+  - **demandes de devis** Clients → Devis (`quotes.requested`) ;
+  - **projets en cours** Projets → Producteurs (documents ; `pending + pending_paid`) ;
   - **factures à encaisser** Projets → Finance (documents ; `invoices.unpaid`) ;
-  - **tickets ouverts** Clients → Assistance (`tickets.open`).
-- Nombre de jetons = racine du volume (6 points ou 3 documents au plus) ; chiffre illisible = aucun jeton et pas de nombre (jamais un faux 0).
-- **Camions** : un par **livraison du jour** (projets à livrer aujourd'hui ou livraisons du calendrier, 3 au plus — `life.vans`), de la Production vers la sortie est de la ville. **Passants** sur les trottoirs (4 trajets testés : jamais à travers un bâtiment, ni sur un arbre ou un banc).
-- Rendu : CSS `offset-path` dans un calque **sous les bâtiments** (un bâtiment devant une rue cache ce qui passe derrière) et **`pointer-events: none`** (sinon ce calque bloquait le survol et le clic des parcelles). Interrupteur « Animations » retenu par appareil (`localStorage peg:villageAnimations`) ; rien ne bouge si le système demande moins d'animations.
+  - **tickets ouverts** Clients → Tickets (`tickets.open`).
+- Nombre de jetons = racine du volume (6 points ou 3 documents au plus) ; chiffre illisible = aucun jeton et pas de nombre (jamais un faux 0). Fils en pointillés violets sur les rues empruntées.
+- **Camions** : un par **livraison du jour** (projets à livrer aujourd'hui ou livraisons du calendrier, 3 au plus — `life.vans`), des Producteurs vers la sortie est de la ville. **Passants** sur les trottoirs autour de la place (trajets testés : jamais à travers un bâtiment, ni sur un arbre ou un banc).
+- Rendu : CSS `offset-path` dans un calque **sous les bâtiments** (un bâtiment devant une rue cache ce qui passe derrière) et **`pointer-events: none`** (sinon ce calque bloquait le survol et le clic des îlots). Interrupteur « Animations » retenu par appareil (`localStorage peg:villageAnimations`) ; rien ne bouge si le système demande moins d'animations.
 - ⚠️ Les identifiants SVG (`filter`, dégradé) sont **propres à chaque carte** (`useId`) : l'écran mural affiche une seconde carte et un `url(#…)` résolu dans la carte masquée **effaçait le bâtiment** mis en évidence.
 
 ### Étiquettes
-- Verre dépoli clair, tailles calculées (`labelScale`, texte net) et graisses **600/700 seulement** (Inter n'est chargé qu'en 300/400/600/700).
-- Sur une carte étroite, `placeLabels` (pur, testé de 0,55 à 1 au pire cas) évite tout chevauchement : Projets ne bouge pas, les autres **glissent** de côté (la pointe reste au-dessus du toit), sinon **montent** d'une hauteur d'étiquette au plus, reliées au toit par une **tige**.
-- Alerte : drapeau + bordure rouge de l'étiquette + **liseré pointillé discret** sur la parcelle (plus de halo pulsé : la ville doit rester calme).
+- **Complètes** (icône, nom, pastille, étoile, drapeau) dès que la ville est assez grande à l'écran (échelle ≥ `SLIM_BELOW` = 0,8 : grand écran, ou dès qu'on zoome) ; **fines** en dessous (point du quartier, nom, pastille — `slimLabelWidth`) pour laisser voir les bâtiments.
+- `placeLabels` (pur, testé de 0,5 à 1,2 au pire cas : pastilles, étoiles et drapeaux partout) : pose du devant vers le fond puis trois reprises ; une étiquette qui en touche une autre **glisse** de côté (la pointe reste au-dessus du toit), sinon **monte** (une tige la relie au toit), jamais hors de la carte. Plan conçu pour cela : bâtiments plus hauts au fond, grand parc derrière la tour de Projets.
+- Verre dépoli clair, graisses **600/700 seulement** (Inter n'est chargé qu'en 300/400/600/700). Alerte : drapeau + bordure rouge + **liseré pointillé discret** sur l'îlot.
 
 ### Ce qui reste de la version « village » (inchangé)
 - **Alertes** (`alert`, `villageData.ts`) : projet actif en retard ; facture impayée **depuis plus de 30 jours** ; demande de devis `requested` depuis **48 h** ; ticket dont le client attend depuis **48 h** (fil `messages`, `ticketWaitingSince` — **pas `updatedAt`**). Un compte illisible ne lève jamais de drapeau.
-- **« Ma tournée du jour »** (`villageTour.ts`) : rubriques en alerte, puis à traiter, dans l'ordre du menu ; la caméra va au quartier de chaque étape ; étapes vues retenues par jour (`peg:villageTour`).
-- **Activité en direct** (`villageActivity.ts`, `useVillageActivity.ts`) : lit la liste de la cloche — **ne jamais rappeler `useNotifications()`**. Bulle au-dessus de l'étiquette du quartier (une par quartier), cliquable (ouvre la page, marque lue), annonce `aria-live`.
+- **« Ma tournée du jour »** (`villageTour.ts`) : rubriques en alerte, puis à traiter, dans l'ordre du menu ; la caméra va au bâtiment de chaque étape ; étapes vues retenues par jour (`peg:villageTour`).
+- **Activité en direct** (`villageActivity.ts`, `useVillageActivity.ts`) : lit la liste de la cloche — **ne jamais rappeler `useNotifications()`**. Bulle au-dessus de l'étiquette du bâtiment concerné (une par bâtiment, 4 au plus), cliquable (ouvre la page, marque lue), annonce `aria-live`.
 - **Tendances**, **activité du mois** (étoile à 3), **petites courbes** des chiffres clés, **Ma journée** (`villageJournee.ts`), aperçu placé par `previewPlacement`, **arrivée animée** (première visite de l'onglet).
-- **Écran mural** (`VillageWall.tsx`, `villageWallTour.ts`, `/home?mural=1`) : vue d'ensemble puis chaque quartier (6), « Ville PEG », six échanges rappelés en chiffres. La carte **remplit son cadre** (`fitMap` : rogne jusqu'à 18 % — les coins du trottoir de la ville —, sinon tient entière) ; bords fondus quand la caméra zoome (`edge` de `VillageMap`). ⚠️ Ne pas nommer un module `villageWall.ts` à côté de `VillageWall.tsx` (macOS confond les deux).
+- **Écran mural** (`VillageWall.tsx`, `villageWallTour.ts`, `/home?mural=1`) : vue d'ensemble puis chaque quartier (6, ses îlots ressortent), « Ville PEG », six échanges rappelés en chiffres ; une notification qui arrive = caméra sur **son bâtiment**. La carte **remplit son cadre** (`fitMap` : rogne jusqu'à 20 % — les coins du trottoir de la ville —, sinon tient entière) ; bords fondus quand la caméra zoome (`edge` de `VillageMap`). ⚠️ Ne pas nommer un module `villageWall.ts` à côté de `VillageWall.tsx` (macOS confond les deux).
 
 ### Retiré lors de la refonte (et pourquoi)
-- Les 20 sprites (`public/img/village/`, `spriteManifest.json`) et leurs générateurs (`scripts/village/`) : remplacés par 6 bâtiments dessinés en SVG.
+- Les 20 sprites (`public/img/village/`, `spriteManifest.json`) et leurs générateurs (`scripts/village/`) : remplacés par 20 bâtiments dessinés en SVG.
 - **Heure et saison** (nuit, neige, feuilles — `villageAmbiance.ts`) : incompatibles avec l'interface claire demandée.
 - **Chantier des projets**, fumée, fontaine, voitures garées, guirlandes, fanions d'activité : la maquette veut une ville simple et aérée ; le suivi des projets reste dans la fiche Projets et « Ma journée ».
 
@@ -1026,8 +1027,8 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 - Serveur : jours de l'admin = calendrier de Paris, **changements d'heure compris** (`dayStarts`).
 
 ### Fichiers clés et tests
-- `src/views/app/admin/home/AdminHome.tsx`, `village/` : `AdminVillage.tsx` (page), `VillageMap.tsx` (carte : sol, échanges, camions, passants, bâtiments, étiquettes, aperçu, caméra), `VillageBuildings.tsx` (dessins SVG des 6 bâtiments, arbres, bancs, camion, passant), `villageScene.ts` (quartiers, projection, plan, trajets, échanges, caméra, `placeLabels`), `villageFlows.ts` (échanges + interrupteur), `VillagePanel.tsx` (fiche), `VillageList.tsx`, `villageSections.ts`, `villageModel.ts`, `villageData.ts`, `villageFetch.ts`, `useVillageData.ts`, `villageTour.ts`, `villageActivity.ts` + `useVillageActivity.ts`, `villageJournee.ts`, `VillageSparkline.tsx`, `VillageWall.tsx` + `villageWallTour.ts`.
-- `src/__tests__/adminVillage.test.ts` (six quartiers couvrant tout le menu, plan, bâtiments sur leur parcelle, arbres/bancs hors rues et bâtiments, passants et camions, étiquettes sans chevauchement de 0,55 à 1, libellés exacts du menu) ; `adminVillageFlows.test.ts` (échanges, courbes, densité, vrais chiffres, interrupteur) ; `adminVillageData.test.ts` ; `adminVillageLive.test.ts` (alertes, tickets sans réponse, tournée, activité en direct) ; `adminVillageGrowth.test.ts` (tendances, activité du mois, camions du jour, caméra) ; `adminVillageDay.test.ts` ; `adminVillageWall.test.ts`. Back : `peg_strapi/src/__tests__/villageSummary.test.ts` (`node --test`).
+- `src/views/app/admin/home/AdminHome.tsx`, `village/` : `AdminVillage.tsx` (page, barre des quartiers), `VillageMap.tsx` (carte : îlots, échanges, camions, passants, bâtiments, étiquettes, aperçu, caméra), `VillageBuildings.tsx` (dessins SVG des 20 bâtiments, arbres, bancs, fontaine, camion, passant), `villageScene.ts` (quartiers, projection, plan 5 × 5, trajets, rues des échanges, caméra, `placeLabels`), `villageFlows.ts` (échanges + interrupteur), `VillagePanel.tsx` (fiche), `VillageList.tsx`, `villageSections.ts`, `villageModel.ts`, `villageData.ts`, `villageFetch.ts`, `useVillageData.ts`, `villageTour.ts`, `villageActivity.ts` + `useVillageActivity.ts`, `villageJournee.ts`, `VillageSparkline.tsx`, `VillageWall.tsx` + `villageWallTour.ts`.
+- `src/__tests__/adminVillage.test.ts` (un bâtiment par onglet, quartiers d'un seul tenant, Projets autour de la place, bâtiments sur leur îlot, arbres/bancs/fontaine dans les parcs et sur la place, passants et camions, étiquettes sans chevauchement de 0,5 à 1,2, libellés exacts du menu) ; `adminVillageFlows.test.ts` (échanges par les rues d'une porte à l'autre, densité, vrais chiffres, interrupteur) ; `adminVillageData.test.ts` ; `adminVillageLive.test.ts` (alertes, tickets sans réponse, tournée, activité en direct) ; `adminVillageGrowth.test.ts` (tendances, activité du mois, camions du jour, caméra) ; `adminVillageDay.test.ts` ; `adminVillageWall.test.ts`. Back : `peg_strapi/src/__tests__/villageSummary.test.ts` (`node --test`).
 
 ### Déploiement
 - Refonte **front seul** (aucun changement Strapi). Route `GET /api/village/summary` : Strapi `2099f2f` puis `67582fb` (déjà en ligne int + prod) ; **ordre indifférent** : sans la route, le navigateur relit tout lui-même.

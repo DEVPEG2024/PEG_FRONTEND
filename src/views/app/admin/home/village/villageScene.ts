@@ -1,11 +1,11 @@
-// Ville PEG — scène isométrique de l'accueil admin (refonte du 22/10/2026,
-// d'après la maquette « petite ville isométrique moderne »).
+// Ville PEG — scène isométrique de l'accueil admin (22/10/2026).
 //
-// Six quartiers sur une grille de 3 × 3 îlots : Projets au centre, sur la
-// place ; Clients, Production, Boutique, Assistance et Finance autour ; trois
-// petits parcs dans les coins. Les vingt rubriques du menu admin sont
-// rattachées à ces quartiers (aucune ne disparaît). Les rues passent entre
-// les îlots. Tout est dessiné par le code (SVG), sans image.
+// Un bâtiment par onglet du menu admin (20), chacun sur son îlot, sur une
+// grille de 5 × 5 : la place centrale au milieu, un parc à chaque coin, des
+// rues entre tous les îlots. Les bâtiments sont regroupés en six quartiers
+// d'îlots voisins, au sol teinté de leur couleur : Projets autour de la place,
+// Clients, Production, Assistance, Finance et Boutique tout autour. Tout est
+// dessiné par le code (SVG), sans image.
 //
 // Coordonnées : (u, v) au sol, en îlots — l'îlot (i, j) couvre [i, i+1] ×
 // [j, j+1] ; u descend vers la droite, v vers la gauche ; z = hauteur en
@@ -79,6 +79,8 @@ export interface District {
   hue: string;
   ink: string;
   soft: string;
+  /** Teinte du sol de ses îlots, à peine colorée. */
+  ground: string;
 }
 
 export const DISTRICTS: District[] = [
@@ -86,10 +88,11 @@ export const DISTRICTS: District[] = [
     id: 'projets',
     name: 'Projets',
     place: 'La place centrale',
-    desc: 'Le cœur de PEG : les projets en cours, les rendez-vous et livraisons du calendrier, le pense-bête.',
+    desc: 'Le cœur de PEG, autour de la place : les projets en cours, le calendrier des rendez-vous et livraisons, l’accueil et son pense-bête.',
     hue: '#6d5dfc',
     ink: '#4f3fd1',
     soft: '#efecfe',
+    ground: '#f4f2ff',
   },
   {
     id: 'clients',
@@ -99,6 +102,7 @@ export const DISTRICTS: District[] = [
     hue: '#3b82f6',
     ink: '#1d4ed8',
     soft: '#e8f0fe',
+    ground: '#eef4ff',
   },
   {
     id: 'boutique',
@@ -108,6 +112,7 @@ export const DISTRICTS: District[] = [
     hue: '#ec4899',
     ink: '#be185d',
     soft: '#fdeaf3',
+    ground: '#fdf1f6',
   },
   {
     id: 'production',
@@ -117,6 +122,7 @@ export const DISTRICTS: District[] = [
     hue: '#f97316',
     ink: '#c2410c',
     soft: '#fff1e6',
+    ground: '#fff3e8',
   },
   {
     id: 'finance',
@@ -126,6 +132,7 @@ export const DISTRICTS: District[] = [
     hue: '#14b8a6',
     ink: '#0f766e',
     soft: '#e6f7f4',
+    ground: '#ebf8f4',
   },
   {
     id: 'assistance',
@@ -135,6 +142,7 @@ export const DISTRICTS: District[] = [
     hue: '#6366f1',
     ink: '#4338ca',
     soft: '#eef0fe',
+    ground: '#f1f1fe',
   },
 ];
 
@@ -175,12 +183,12 @@ export const membersOf = (district: DistrictId): SectionId[] =>
 // ── Projection ────────────────────────────────────────────────────────────────
 
 export const MAP_W = 1200;
-export const MAP_H = 760;
+export const MAP_H = 740;
 /** Demi-largeur d'un îlot à l'écran ; projection isométrique à 30°. */
-const A = 160;
-const B = A * Math.tan(Math.PI / 6);
+export const A = 104;
+export const B = A * Math.tan(Math.PI / 6);
 const X0 = 600;
-const Y0 = 100;
+const Y0 = 80;
 
 /** Point du sol (u, v), à la hauteur z (pixels) → point de la carte. */
 export const iso = (u: number, v: number, z = 0): [number, number] => [
@@ -194,8 +202,8 @@ export const pathOf = (pts: [number, number][]) =>
   `M${pts.map((p) => `${f1(p[0])} ${f1(p[1])}`).join(' L')} Z`;
 
 /**
- * Rectangle aux coins arrondis posé au sol, à la hauteur z : le contour d'un
- * îlot, d'une parcelle. Arcs approchés par `steps` segments.
+ * Rectangle aux coins arrondis posé au sol, à la hauteur z : le contour de la
+ * ville, d'un îlot. Arcs approchés par `steps` segments.
  */
 export const groundRect = (
   u0: number,
@@ -222,111 +230,164 @@ export const groundRect = (
 
 // ── La ville ─────────────────────────────────────────────────────────────────
 
-/** Trois îlots par trois ; les rues suivent les lignes entières 0 à 3. */
-export const GRID = 3;
+/** Cinq îlots sur cinq ; les rues suivent les lignes entières 0 à 5. */
+export const GRID = 5;
 /** Demi-largeur d'une rue ; bord du trottoir extérieur. */
-export const ROAD = 0.12;
-export const CITY_EDGE = 0.22;
+export const ROAD = 0.1;
+export const CITY_EDGE = 0.18;
 /** Marge d'une parcelle dans son îlot (rue + trottoir). */
-export const PLOT_INSET = 0.16;
+export const PLOT_INSET = 0.14;
 
-/** Îlot de chaque quartier (i, j). */
-export const DISTRICT_BLOCK: Record<DistrictId, [number, number]> = {
-  production: [1, 0],
-  clients: [0, 1],
+/** Îlot (i, j) de chaque bâtiment. */
+export const BLOCK: Record<SectionId, [number, number]> = {
+  // Projets : les trois îlots derrière la place centrale
   projets: [1, 1],
-  assistance: [2, 1],
-  boutique: [1, 2],
-  finance: [2, 2],
+  accueil: [1, 2],
+  calendrier: [2, 1],
+  // Clients : à gauche
+  clients: [0, 2],
+  leads: [0, 3],
+  premium: [0, 4],
+  campagnes: [1, 3],
+  // Production : à droite, au fond
+  producteurs: [2, 0],
+  planning: [3, 0],
+  fournisseurs: [4, 0],
+  // Assistance : à droite, devant
+  tickets: [3, 1],
+  ia: [4, 1],
+  utilisateurs: [3, 2],
+  parametres: [4, 2],
+  // Finance : devant la place
+  finance: [3, 3],
+  generateurs: [4, 3],
+  devis: [3, 4],
+  // Boutique : à gauche, devant
+  boutique: [2, 3],
+  attributs: [1, 4],
+  bannieres: [2, 4],
 };
 
-/** Les îlots sans quartier sont des parcs. */
+/** La place centrale (quartier Projets), le grand parc du fond et celui de devant. */
+export const PLAZA: [number, number] = [2, 2];
 export const PARKS: [number, number][] = [
   [0, 0],
-  [2, 0],
-  [0, 2],
+  [1, 0],
+  [0, 1],
+  [4, 4],
 ];
 
-/** Centre (u, v) de l'îlot d'un quartier. */
-export const blockCenter = (id: DistrictId): [number, number] => {
-  const [i, j] = DISTRICT_BLOCK[id];
+/** Centre (u, v) d'un îlot. */
+export const blockCenter = (id: SectionId): [number, number] => {
+  const [i, j] = BLOCK[id];
   return [i + 0.5, j + 0.5];
 };
 
 export interface BuildingSpec {
-  id: DistrictId;
-  /** Emprise au sol (le long de u, de v) et hauteur (px). */
+  /** Emprise au sol (le long de u, de v) et hauteur des murs (px). */
   w: number;
   d: number;
   h: number;
-  /** Décalage vers le fond de la parcelle (place libre devant). */
-  back: number;
+  /** Ce qui dépasse du toit (px : toit pointu, couronne, éolienne…). */
+  top: number;
 }
 
-export const BUILDINGS: Record<DistrictId, BuildingSpec> = {
-  projets: { id: 'projets', w: 0.42, d: 0.42, h: 168, back: 0.02 },
-  clients: { id: 'clients', w: 0.4, d: 0.36, h: 118, back: 0.05 },
-  production: { id: 'production', w: 0.46, d: 0.38, h: 96, back: 0.05 },
-  boutique: { id: 'boutique', w: 0.42, d: 0.34, h: 92, back: 0.05 },
-  finance: { id: 'finance', w: 0.4, d: 0.38, h: 104, back: 0.05 },
-  assistance: { id: 'assistance', w: 0.38, d: 0.36, h: 110, back: 0.05 },
+/**
+ * Les vingt bâtiments : plus hauts au fond (en haut de l'écran), plus bas
+ * devant — personne n'en cache un autre, les étiquettes s'étagent. La tour
+ * de Projets domine la ville, le grand parc derrière elle.
+ */
+export const BUILDINGS: Record<SectionId, BuildingSpec> = {
+  projets: { w: 0.5, d: 0.5, h: 140, top: 14 },
+  accueil: { w: 0.52, d: 0.48, h: 64, top: 34 },
+  calendrier: { w: 0.5, d: 0.46, h: 92, top: 12 },
+  clients: { w: 0.54, d: 0.5, h: 112, top: 12 },
+  leads: { w: 0.46, d: 0.46, h: 94, top: 26 },
+  premium: { w: 0.48, d: 0.48, h: 84, top: 24 },
+  campagnes: { w: 0.5, d: 0.46, h: 68, top: 30 },
+  producteurs: { w: 0.56, d: 0.5, h: 84, top: 44 },
+  planning: { w: 0.48, d: 0.48, h: 94, top: 12 },
+  fournisseurs: { w: 0.58, d: 0.5, h: 62, top: 10 },
+  tickets: { w: 0.52, d: 0.5, h: 94, top: 12 },
+  ia: { w: 0.48, d: 0.48, h: 80, top: 26 },
+  utilisateurs: { w: 0.46, d: 0.46, h: 84, top: 10 },
+  parametres: { w: 0.48, d: 0.46, h: 56, top: 30 },
+  finance: { w: 0.54, d: 0.5, h: 80, top: 10 },
+  generateurs: { w: 0.46, d: 0.46, h: 54, top: 40 },
+  devis: { w: 0.48, d: 0.46, h: 60, top: 28 },
+  boutique: { w: 0.52, d: 0.48, h: 80, top: 12 },
+  attributs: { w: 0.48, d: 0.46, h: 72, top: 10 },
+  bannieres: { w: 0.48, d: 0.44, h: 62, top: 30 },
 };
 
+/** Recul des bâtiments vers le fond de leur îlot (place libre devant). */
+const BACK = 0.03;
+
 /** Emprise d'un bâtiment : [u0, v0, u1, v1]. */
-export const footprint = (id: DistrictId): [number, number, number, number] => {
+export const footprint = (id: SectionId): [number, number, number, number] => {
   const [cu, cv] = blockCenter(id);
   const b = BUILDINGS[id];
-  const u = cu - b.back;
-  const v = cv - b.back;
+  const u = cu - BACK;
+  const v = cv - BACK;
   return [u - b.w / 2, v - b.d / 2, u + b.w / 2, v + b.d / 2];
 };
 
-/** Silhouette d'un bâtiment (pour le survol et le clic). */
-export const silhouette = (id: DistrictId): string => {
+/** Silhouette d'un bâtiment, toit compris (pour le survol et le clic). */
+export const silhouette = (id: SectionId): string => {
   const [u0, v0, u1, v1] = footprint(id);
-  const h = BUILDINGS[id].h;
+  const { h, top } = BUILDINGS[id];
+  const t = h + top * 0.7;
   return pathOf([
     iso(u0, v1, 0),
     iso(u1, v1, 0),
     iso(u1, v0, 0),
-    iso(u1, v0, h),
-    iso(u0, v0, h),
-    iso(u0, v1, h),
+    iso(u1, v0, t),
+    iso(u0, v0, t),
+    iso(u0, v1, t),
   ]);
 };
 
-/** Cadre d'un bâtiment sur la carte [x, y, largeur, hauteur] : vignettes de la fiche. */
+/** Cadre d'un bâtiment sur la carte [x, y, largeur, hauteur] : vignettes. */
 export const buildingFrame = (
-  id: DistrictId
+  id: SectionId
 ): [number, number, number, number] => {
   const [u0, v0, u1, v1] = footprint(id);
-  const h = BUILDINGS[id].h;
+  const { h, top } = BUILDINGS[id];
   const pts = [
     iso(u0, v1, 0),
     iso(u1, v1, 0),
     iso(u1, v0, 0),
-    iso(u0, v0, h + 50),
-    iso(u1, v0, h + 14),
-    iso(u0, v1, h + 14),
+    iso(u0, v0, h + top + 6),
+    iso(u1, v0, h + top),
+    iso(u0, v1, h + top),
   ];
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
-  const m = 14;
+  const m = 10;
   const x = Math.min(...xs) - m;
   const y = Math.min(...ys) - m;
   return [x, y, Math.max(...xs) + m - x, Math.max(...ys) + m - y];
 };
 
 /** Point de la carte où se pose la pointe de l'étiquette (au-dessus du toit). */
-export const labelAnchor = (id: DistrictId): [number, number] => {
+export const labelAnchor = (id: SectionId): [number, number] => {
   const [u0, v0, u1, v1] = footprint(id);
-  return iso((u0 + u1) / 2, (v0 + v1) / 2, BUILDINGS[id].h + 30);
+  const { h, top } = BUILDINGS[id];
+  return iso((u0 + u1) / 2, (v0 + v1) / 2, h + top + 14);
 };
 
-/** Point visé par la caméra pour un quartier (le milieu du bâtiment). */
-export const districtCenter = (id: DistrictId): [number, number] => {
+/** Point visé par la caméra pour un bâtiment (le milieu de sa façade). */
+export const buildingCenter = (id: SectionId): [number, number] => {
   const [cu, cv] = blockCenter(id);
-  return iso(cu, cv, BUILDINGS[id].h * 0.35);
+  return iso(cu, cv, BUILDINGS[id].h * 0.45);
+};
+
+/** Point visé par la caméra pour un quartier (le milieu de ses îlots). */
+export const districtCenter = (id: DistrictId): [number, number] => {
+  const m = membersOf(id);
+  const u = m.reduce((s, x) => s + blockCenter(x)[0], 0) / m.length;
+  const v = m.reduce((s, x) => s + blockCenter(x)[1], 0) / m.length;
+  return iso(u, v, 40);
 };
 
 /** Profondeur d'un objet posé en (u, v) : du fond vers l'avant. */
@@ -339,47 +400,45 @@ export interface Tree {
   s: number;
 }
 
-/** Arbres : aux coins des parcelles, et nombreux dans les parcs. */
+/** Arbres : dans les parcs et aux angles de la place. */
 export const TREES: Tree[] = [
-  // Parc du nord (0, 0)
-  { u: 0.3, v: 0.32, s: 1.1 },
-  { u: 0.55, v: 0.26, s: 0.9 },
-  { u: 0.28, v: 0.62, s: 0.95 },
-  { u: 0.72, v: 0.5, s: 1.15 },
-  { u: 0.55, v: 0.74, s: 0.85 },
-  // Parc de l'est (2, 0)
-  { u: 2.3, v: 0.3, s: 1 },
-  { u: 2.7, v: 0.32, s: 0.9 },
-  { u: 2.5, v: 0.62, s: 1.15 },
-  { u: 2.75, v: 0.72, s: 0.85 },
-  // Parc de l'ouest (0, 2)
-  { u: 0.3, v: 2.3, s: 0.95 },
-  { u: 0.32, v: 2.7, s: 1.1 },
-  { u: 0.62, v: 2.5, s: 0.9 },
-  { u: 0.74, v: 2.76, s: 1 },
-  // Autour des bâtiments (coins avant des parcelles, à l'écart des passants)
-  { u: 0.24, v: 1.78, s: 0.85 },
-  { u: 0.78, v: 1.77, s: 0.8 },
-  { u: 1.8, v: 0.22, s: 0.85 },
-  { u: 1.78, v: 0.77, s: 0.8 },
-  { u: 1.23, v: 1.77, s: 0.8 },
-  { u: 1.77, v: 1.23, s: 0.8 },
-  { u: 2.24, v: 1.77, s: 0.8 },
-  { u: 2.8, v: 1.78, s: 0.85 },
-  { u: 1.24, v: 2.8, s: 0.85 },
-  { u: 1.77, v: 2.78, s: 0.8 },
-  { u: 2.24, v: 2.8, s: 0.85 },
-  { u: 2.8, v: 2.24, s: 0.8 },
+  // Grand parc du fond : (0, 0), (1, 0), (0, 1)
+  { u: 0.32, v: 0.3, s: 0.8 },
+  { u: 0.7, v: 0.36, s: 0.68 },
+  { u: 0.36, v: 0.72, s: 0.72 },
+  { u: 0.74, v: 0.74, s: 0.84 },
+  { u: 1.3, v: 0.3, s: 0.74 },
+  { u: 1.7, v: 0.34, s: 0.66 },
+  { u: 1.36, v: 0.72, s: 0.8 },
+  { u: 1.7, v: 0.72, s: 0.68 },
+  { u: 0.3, v: 1.32, s: 0.7 },
+  { u: 0.7, v: 1.3, s: 0.8 },
+  { u: 0.34, v: 1.7, s: 0.66 },
+  { u: 0.72, v: 1.7, s: 0.74 },
+  // Parc de devant (4, 4)
+  { u: 4.3, v: 4.3, s: 0.76 },
+  { u: 4.72, v: 4.34, s: 0.66 },
+  { u: 4.34, v: 4.72, s: 0.7 },
+  { u: 4.7, v: 4.7, s: 0.8 },
+  // Angles de la place
+  { u: 2.24, v: 2.24, s: 0.56 },
+  { u: 2.76, v: 2.24, s: 0.56 },
+  { u: 2.24, v: 2.76, s: 0.56 },
+  { u: 2.76, v: 2.76, s: 0.56 },
 ];
 
-/** Bancs (le long d'une parcelle) : orientés le long de u ou de v. */
+/** Bancs : orientés le long de u ou de v. */
 export const BENCHES: { u: number; v: number; along: 'u' | 'v' }[] = [
-  { u: 0.62, v: 0.5, along: 'v' },
-  { u: 2.5, v: 0.76, along: 'u' },
-  { u: 0.5, v: 2.62, along: 'u' },
-  { u: 1.5, v: 2.8, along: 'u' },
-  { u: 2.78, v: 2.5, along: 'v' },
+  { u: 0.52, v: 0.54, along: 'u' },
+  { u: 1.52, v: 0.52, along: 'v' },
+  { u: 0.52, v: 1.5, along: 'u' },
+  { u: 4.52, v: 4.5, along: 'u' },
+  { u: 2.5, v: 2.2, along: 'u' },
+  { u: 2.2, v: 2.5, along: 'v' },
 ];
+
+/** La fontaine, au milieu de la place. */
+export const FOUNTAIN = { u: 2.5, v: 2.5, r: 0.16 };
 
 /** Marquages au sol : tirets blancs au milieu des rues, entre les carrefours. */
 export const laneDashes = (): string => {
@@ -388,30 +447,30 @@ export const laneDashes = (): string => {
     parts.push(`M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}`);
   for (let k = 0; k <= GRID; k++)
     for (let j = 0; j < GRID; j++) {
-      seg(iso(k, j + ROAD + 0.04), iso(k, j + 1 - ROAD - 0.04));
-      seg(iso(j + ROAD + 0.04, k), iso(j + 1 - ROAD - 0.04, k));
+      seg(iso(k, j + ROAD + 0.06), iso(k, j + 1 - ROAD - 0.06));
+      seg(iso(j + ROAD + 0.06, k), iso(j + 1 - ROAD - 0.06, k));
     }
   return parts.join(' ');
 };
 
 /**
- * Passages piétons autour de la place centrale (îlot Projets) : bandes
- * blanches en travers de la rue, au milieu de chaque côté de la place.
+ * Passages piétons autour de la place centrale : bandes blanches en travers
+ * de la rue, au milieu de chaque côté de la place.
  */
 export const crosswalks = (): string => {
-  const [i, j] = DISTRICT_BLOCK.projets;
+  const [i, j] = PLAZA;
   const stripes: string[] = [];
   const band = (u0: number, v0: number, u1: number, v1: number) =>
     stripes.push(pathOf([iso(u0, v0), iso(u1, v0), iso(u1, v1), iso(u0, v1)]));
   for (const k of [i, i + 1]) // rues le long de v, de part et d'autre
     for (let s = -2; s <= 2; s++) {
-      const u = k + s * 0.045;
-      band(u - 0.014, j + 0.42, u + 0.014, j + 0.58);
+      const u = k + s * 0.038;
+      band(u - 0.012, j + 0.4, u + 0.012, j + 0.6);
     }
   for (const k of [j, j + 1]) // rues le long de u
     for (let s = -2; s <= 2; s++) {
-      const v = k + s * 0.045;
-      band(i + 0.42, v - 0.014, i + 0.58, v + 0.014);
+      const v = k + s * 0.038;
+      band(i + 0.4, v - 0.012, i + 0.6, v + 0.012);
     }
   return stripes.join(' ');
 };
@@ -423,7 +482,8 @@ export interface Route {
   duration: number;
 }
 
-const routeLength = (pts: [number, number][]) =>
+/** Longueur d'un trajet au sol, en pixels carte. */
+export const routeLength = (pts: [number, number][]) =>
   pts.slice(1).reduce((sum, p, i) => {
     const a = iso(...pts[i]);
     const b = iso(...p);
@@ -439,23 +499,23 @@ export const routePath = (pts: [number, number][], z = 0) =>
     })
     .join(' ');
 
-/** Passants : sur les trottoirs, au bord des parcelles (un sens chacun). */
+/** Passants : sur les trottoirs des rues qui entourent la place (un sens chacun). */
 export const WALKERS: Route[] = [
   [
-    [0.3, 1.85],
-    [2.7, 1.85],
+    [0.25, 1.88],
+    [4.75, 1.88],
   ],
   [
-    [1.86, 2.75],
-    [1.86, 0.3],
+    [3.12, 4.75],
+    [3.12, 0.25],
   ],
   [
-    [2.7, 0.86],
-    [0.35, 0.86],
+    [4.75, 3.12],
+    [0.25, 3.12],
   ],
   [
-    [1.14, 0.3],
-    [1.14, 2.7],
+    [1.88, 0.25],
+    [1.88, 4.75],
   ],
 ].map((pts) => ({
   pts: pts as [number, number][],
@@ -463,59 +523,48 @@ export const WALKERS: Route[] = [
 }));
 
 /**
- * Camions de livraison : ils partent de la Production, longent la rue entre
- * l'îlot de l'Assistance et le parc, et quittent la ville par l'est.
+ * Camions de livraison : ils partent des ateliers (Producteurs), longent la
+ * rue devant le Planning et les Fournisseurs, et quittent la ville par l'est.
  */
 export const TRUCK_ROUTE: Route = (() => {
   const pts: [number, number][] = [
-    [1.55, 1.05],
-    [3.14, 1.05],
+    [2.45, 1.04],
+    [5.3, 1.04],
   ];
-  return { pts, duration: Math.round(routeLength(pts) / 34) };
+  return { pts, duration: Math.round(routeLength(pts) / 30) };
 })();
 
 // ── Échanges entre les bâtiments ─────────────────────────────────────────────
 
-export interface Exchange {
-  from: DistrictId;
-  to: DistrictId;
-  /**
-   * Bombé de la courbe (px) : positif = vers le haut de l'écran (au-dessus
-   * des rues), négatif = vers le bas (devant la place).
-   */
-  arc: number;
-}
+/** Porte d'un bâtiment : sur la rue devant sa façade éclairée (côté +v). */
+export const doorOf = (id: SectionId): [number, number] => {
+  const [i, j] = BLOCK[id];
+  return [i + 0.5, j + 1];
+};
 
-/** Courbe d'un échange (pixels carte) : départ, point de contrôle, arrivée. */
-export const exchangeCurve = (e: Exchange) => {
-  const a = iso(...blockCenter(e.from), 18);
-  const b = iso(...blockCenter(e.to), 18);
-  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
-  // Perpendiculaire tournée vers le haut (vers la gauche si le trajet est vertical).
-  let nx = (b[1] - a[1]) / len;
-  let ny = -(b[0] - a[0]) / len;
-  if (ny > 0 || (ny === 0 && nx > 0)) {
-    nx = -nx;
-    ny = -ny;
-  }
-  const c: [number, number] = [
-    (a[0] + b[0]) / 2 + nx * e.arc,
-    (a[1] + b[1]) / 2 + ny * e.arc,
-  ];
-  const d = `M${f1(a[0])} ${f1(a[1])} Q${f1(c[0])} ${f1(c[1])} ${f1(b[0])} ${f1(b[1])}`;
-  // Longueur approchée (polyligne de la courbe).
-  let length = 0;
-  let prev = a;
-  for (let s = 1; s <= 24; s++) {
-    const t = s / 24;
-    const p: [number, number] = [
-      (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t ** 2 * b[0],
-      (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t ** 2 * b[1],
+/**
+ * Trajet par les rues d'une porte à l'autre : la rue de départ jusqu'au
+ * carrefour le plus proche de l'arrivée, la rue transversale, puis la rue
+ * d'arrivée.
+ */
+export const streetRoute = (
+  from: SectionId,
+  to: SectionId
+): [number, number][] => {
+  const [ua, va] = doorOf(from);
+  const [ub, vb] = doorOf(to);
+  if (va === vb)
+    return [
+      [ua, va],
+      [ub, vb],
     ];
-    length += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
-    prev = p;
-  }
-  return { d, length };
+  const k = ub > ua ? Math.floor(ub) : Math.ceil(ub);
+  return [
+    [ua, va],
+    [k, va],
+    [k, vb],
+    [ub, vb],
+  ];
 };
 
 // ── Caméra ───────────────────────────────────────────────────────────────────
@@ -616,9 +665,20 @@ export const labelWidth = (title: string, badge?: string | null) =>
   title.length * 7.8 +
   (badge ? 13 + Math.max(22, 12 + badge.length * 7) : 14);
 
+/** Largeur d'une étiquette fine (carte étroite : point du quartier, nom, pastille). */
+export const slimLabelWidth = (title: string, badge?: string | null) =>
+  8 +
+  6 +
+  5 +
+  title.length * 6.8 +
+  (badge ? 5 + Math.max(16, 10 + badge.length * 6.2) + 4 : 9);
+
+/** En dessous de cette échelle à l'écran, les étiquettes passent en fines. */
+export const SLIM_BELOW = 0.8;
+
 /** Étiquette à placer, en pixels écran : pointe en (x, y), pastille au-dessus. */
 export interface LabelBox {
-  id: DistrictId;
+  id: string;
   x: number;
   y: number;
   w: number;
@@ -635,19 +695,19 @@ export interface LabelPlace {
 }
 
 /**
- * Place des étiquettes pour qu'aucune n'en chevauche une autre sur une carte
- * étroite. Celle de Projets, au centre, ne bouge pas ; les autres glissent de
- * côté (leur demi-largeur moins 20 px au plus : la pointe reste sous la
- * pastille) et, s'il le faut, montent d'une hauteur d'étiquette au plus (une
- * tige les relie alors au toit) — le plus petit déplacement l'emporte,
- * glisser coûtant moins que monter. Jamais au-dessus du haut de la carte
- * (`top`). Si rien ne suffit, le plus petit chevauchement l'emporte.
+ * Place des étiquettes pour qu'aucune n'en chevauche une autre : on pose
+ * d'abord celles du devant (en bas), puis on remonte. Une étiquette qui en
+ * touche une autre glisse de côté (de sa demi-largeur moins 20 px au plus :
+ * la pointe reste sous la pastille) et, s'il le faut, monte d'une hauteur et
+ * demie au plus (une tige la relie alors au toit) — le plus petit déplacement
+ * l'emporte, glisser coûtant moins que monter. Jamais au-dessus du haut de la
+ * carte (`top`). Si rien ne suffit, le plus petit chevauchement l'emporte.
  */
 export const placeLabels = (
   items: LabelBox[],
-  gap = 6,
+  gap = 5,
   top = 4
-): Record<DistrictId, LabelPlace> => {
+): Record<string, LabelPlace> => {
   const box = (l: LabelBox, dx: number, dy: number) => ({
     x0: l.x + dx - l.w / 2 - (l.left ?? 0),
     x1: l.x + dx + l.w / 2,
@@ -658,23 +718,23 @@ export const placeLabels = (
   const overlap = (a: Box, b: Box) =>
     Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + gap) *
     Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + gap);
-  const order = [...items].sort((a, b) =>
-    a.id === 'projets' ? -1 : b.id === 'projets' ? 1 : a.y - b.y
-  );
-  const placed: Box[] = [];
-  const out = {} as Record<DistrictId, LabelPlace>;
-  for (const l of order) {
+  const order = [...items].sort((a, b) => b.y - a.y);
+  const boxes = new Map<string, Box>();
+  const out: Record<string, LabelPlace> = {};
+  /** Meilleure place d'une étiquette face à toutes les autres déjà posées. */
+  const settle = (l: LabelBox) => {
+    const others = [...boxes].filter(([id]) => id !== l.id).map(([, b]) => b);
     const maxX = Math.max(0, l.w / 2 - 20);
     let best: LabelPlace = { dx: 0, dy: 0 };
     let bestCost = Infinity;
     // Plus on monte, plus ça coûte : on s'arrête dès que monter ne peut plus gagner.
-    for (let dy = 0; dy >= -l.h && 1.5 * -dy < bestCost; dy -= 2) {
+    for (let dy = 0; dy >= -1.5 * l.h && 1.5 * -dy < bestCost; dy -= 2) {
       for (let s = 0; ; s += 2) {
         const step = Math.min(s, maxX);
         for (const dx of step ? [-step, step] : [0]) {
           const b = box(l, dx, dy);
           const clash =
-            placed.reduce((sum, p) => sum + overlap(b, p), 0) +
+            others.reduce((sum, p) => sum + overlap(b, p), 0) +
             Math.max(0, top - b.y0) * l.w;
           const cost = clash * 1e4 + Math.abs(dx) + 1.5 * Math.abs(dy);
           if (cost < bestCost) {
@@ -686,7 +746,11 @@ export const placeLabels = (
       }
     }
     out[l.id] = best;
-    placed.push(box(l, best.dx, best.dy));
-  }
+    boxes.set(l.id, box(l, best.dx, best.dy));
+  };
+  // Une première pose du devant vers le fond, puis quelques reprises : une
+  // étiquette déjà posée peut encore s'écarter pour celles qui l'entourent.
+  order.forEach(settle);
+  for (let pass = 0; pass < 3; pass++) order.forEach(settle);
   return out;
 };

@@ -1,8 +1,9 @@
-// Vue liste de la ville : une colonne par quartier (avec son bâtiment),
-// rubriques dans l'ordre du menu.
+// Vue liste de la ville : une colonne par quartier, ses rubriques dans
+// l'ordre du menu, chacune avec son bâtiment tel qu'il est dessiné sur la carte.
 import type { ReactNode } from 'react';
 import {
   DISTRICTS,
+  PRIMARY,
   buildingFrame,
   membersOf,
   type DistrictId,
@@ -26,13 +27,13 @@ interface Props {
   top?: number;
 }
 
-/** Le bâtiment du quartier, tel qu'il est dessiné sur la carte. */
-const Building = ({ id }: { id: DistrictId }) => {
+/** Le bâtiment d'un onglet, tel qu'il est dessiné sur la carte. */
+const Building = ({ id, size = 46 }: { id: SectionId; size?: number }) => {
   const [x, y, w, h] = buildingFrame(id);
   return (
     <svg
-      width={46}
-      height={46}
+      width={size}
+      height={size}
       viewBox={`${x} ${y} ${w} ${h}`}
       aria-hidden="true"
       style={{ display: 'block', flexShrink: 0 }}
@@ -89,7 +90,7 @@ const VillageList = ({
               cursor: 'pointer',
             }}
           >
-            <Building id={d.id} />
+            <Building id={PRIMARY[d.id]} />
             <span style={{ minWidth: 0 }}>
               <span
                 style={{
@@ -159,19 +160,17 @@ const VillageList = ({
                 >
                   <span
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 42,
+                      height: 46,
                       flexShrink: 0,
                       borderRadius: 12,
                       background: d.soft,
-                      color: d.ink,
-                      fontSize: 20,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    {s.icon}
+                    <Building id={id} size={40} />
                   </span>
                   <span style={{ minWidth: 0, flex: 1 }}>
                     <span
@@ -186,6 +185,11 @@ const VillageList = ({
                         overflowWrap: 'anywhere',
                       }}
                     >
+                      <span
+                        style={{ display: 'flex', fontSize: 15, color: d.ink }}
+                      >
+                        {s.icon}
+                      </span>
                       {s.title}
                     </span>
                     <span

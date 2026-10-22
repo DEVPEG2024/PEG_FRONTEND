@@ -1,8 +1,8 @@
 // Accueil admin « Ville PEG » (ordinateur, ≥ 1024 px) : chiffres clés, petite
-// ville isométrique (six quartiers qui regroupent les vingt rubriques du menu,
-// refonte du 22/10/2026 d'après la maquette), fiche à droite, vue liste par
-// quartier. Le tableau de bord classique (bannière, pense-bête, widgets) reste
-// à un clic.
+// ville isométrique (un bâtiment par onglet du menu, vingt, rangés en six
+// quartiers — d'après la maquette du 22/10/2026), fiche à droite, vue liste
+// par quartier. Le tableau de bord classique (bannière, pense-bête, widgets)
+// reste à un clic.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -22,8 +22,8 @@ import navigationIcon from '@/configs/navigation-icon.config';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { markAsRead } from '@/store/slices/base/notificationSlice';
 import { markNotificationAsRead } from '@/services/NotificationService';
-import VillageMap, { type MapDistrict, type VillageFilter } from './VillageMap';
-import VillagePanel, { type PanelSection } from './VillagePanel';
+import VillageMap, { type MapSection, type VillageFilter } from './VillageMap';
+import VillagePanel, { AlertFlag, type PanelSection } from './VillagePanel';
 import VillageList from './VillageList';
 import VillageSparkline from './VillageSparkline';
 import VillageWall, { type WallKpi, type WallMapView } from './VillageWall';
@@ -43,9 +43,9 @@ import {
   MAP_H,
   MAP_W,
   MENU_ORDER,
-  PRIMARY,
   ZOOM_MAX,
   ZOOM_STEPS,
+  buildingCenter,
   districtById,
   districtCenter,
   districtOf,
@@ -146,6 +146,8 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [backTo, setBackTo] = useState<SectionId>('accueil');
   const [district, setDistrict] = useState<DistrictId | null>(null);
+  /** Quartier survolé dans la barre des quartiers : ses îlots ressortent. */
+  const [hoverDistrict, setHoverDistrict] = useState<DistrictId | null>(null);
   /** Zoom continu (1 = tout le village) et point visé à la souris (null = cible choisie). */
   const [zoom, setZoom] = useState(1);
   const [focus, setFocus] = useState<[number, number] | null>(null);
@@ -210,50 +212,18 @@ const AdminVillage = ({ onClassic }: Props) => {
     data?.sections[id] ??
     emptySection(loading ? 'Chargement…' : 'Données indisponibles');
 
-  /**
-   * Un quartier sur la carte : la pastille de sa rubrique principale, la
-   * première alerte de ses rubriques, et l'aperçu de chacune au survol.
-   */
-  const mapDistricts = Object.fromEntries(
-    DISTRICTS.map((dd) => {
-      const members = membersOf(dd.id);
-      const main = sectionData(PRIMARY[dd.id]);
-      const alerted = members.find((m) => sectionData(m).alert);
-      const alert = alerted ? sectionData(alerted).alert : null;
-      const level = Math.max(
-        0,
-        ...members.map((m) => sectionData(m).activity?.level ?? 0)
-      ) as MapDistrict['level'];
-      const md: MapDistrict = {
-        title: dd.name,
-        icon: icon(PRIMARY[dd.id]),
-        badge: main.badge,
-        tone: main.tone,
-        alert,
-        dimmed: !members.some((m) => matchesFilter(sectionData(m), filter)),
-        level,
-        aria: [`Quartier ${dd.name}`, main.badge ? main.chip : '', alert ?? '']
-          .filter(Boolean)
-          .join(' — '),
-        lines: members.map((m) => ({
-          id: m,
-          title: SECTION_INFO[m].title,
-          text: sectionData(m).alert ?? sectionData(m).chip,
-          alert: !!sectionData(m).alert,
-          badge: sectionData(m).badge,
-        })),
-      };
-      return [dd.id, md];
-    })
-  ) as Record<DistrictId, MapDistrict>;
-
   const selectSection = (id: SectionId) => {
     setSelected(id);
     setProjectId(null);
     setDistrict(null);
     setFocus(null);
   };
-  /** Fiche d'un quartier (clic sur un bâtiment) ; un second clic la referme. */
+  /** Clic sur un bâtiment : sa fiche ; un second clic ramène à « Ma journée ». */
+  const pickBuilding = (id: SectionId) => {
+    if (!district && !projectId && selected === id) selectSection('accueil');
+    else selectSection(id);
+  };
+  /** Fiche d'un quartier ; un second clic la referme. */
   const selectDistrict = (id: DistrictId, zoomIn = false) => {
     setFocus(null);
     if (district === id && !zoomIn) {
@@ -338,20 +308,24 @@ const AdminVillage = ({ onClassic }: Props) => {
     }
   };
 
-  /** Quartier mis en évidence : celui de la fiche ouverte (aucun pour « Ma journée »). */
-  const litDistrict: DistrictId | null =
-    district ??
-    (projectId
+  /**
+   * Bâtiment mis en évidence : celui de la fiche ouverte (aucun pour « Ma
+   * journée » ou la fiche d'un quartier — ses îlots ressortent alors).
+   */
+  const litSection: SectionId | null = district
+    ? null
+    : projectId
       ? 'projets'
       : selected === 'accueil'
         ? null
-        : districtOf(selected));
+        : selected;
 
   // Raccourcis : 1 à 6 = quartiers, Échap = toute la ville, + et − = zoom,
   // flèches = se déplacer quand on a zoomé. Jamais pendant une saisie.
   const viewFocus = (): [number, number] => {
     if (focus) return focus;
-    return districtCenter(litDistrict ?? 'projets');
+    if (litSection) return buildingCenter(litSection);
+    return districtCenter(district ?? 'projets');
   };
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => undefined);
   keyHandler.current = (e: KeyboardEvent) => {
@@ -411,6 +385,35 @@ const AdminVillage = ({ onClassic }: Props) => {
   const dimmed = (id: SectionId) =>
     !matchesFilter(sectionData(id), filter) ||
     (!!district && districtOf(id) !== district);
+
+  /** Chaque onglet sur la carte : son bâtiment, son étiquette, son aperçu. */
+  const mapSections = Object.fromEntries(
+    MENU_ORDER.map((id) => {
+      const sd = sectionData(id);
+      const ms: MapSection = {
+        title: SECTION_INFO[id].title,
+        icon: icon(id),
+        badge: sd.badge,
+        tone: sd.tone,
+        alert: sd.alert,
+        dimmed: dimmed(id),
+        level: sd.activity?.level ?? 0,
+        aria: [SECTION_INFO[id].title, sd.badge ? sd.chip : '', sd.alert ?? '']
+          .filter(Boolean)
+          .join(' — '),
+        chip: sd.chip,
+        stats: sd.stats.map((st) => ({
+          label: st.label,
+          value: st.value,
+          trend: st.trend
+            ? { text: st.trend.text, tone: st.trend.tone }
+            : undefined,
+        })),
+        activity: sd.activity?.text ?? null,
+      };
+      return [id, ms];
+    })
+  ) as Record<SectionId, MapSection>;
 
   const kpis = data?.kpis;
   // Petite courbe de chaque chiffre : 7 derniers jours (ligne), ou 7 prochains
@@ -487,9 +490,6 @@ const AdminVillage = ({ onClassic }: Props) => {
   const fit = mapW / MAP_W;
   const ui = Math.min(1, Math.max(0.8, fit));
   const mapHeight = Math.round(MAP_H * fit);
-  // Carte étroite : titre et choix de la vue passent dans un en-tête au-dessus
-  // de la carte (posés dessus, ils couvriraient les étiquettes du haut).
-  const compact = fit < 0.9;
   // Carte étroite : l'interrupteur des animations perd son libellé (les
   // filtres gardent la place à gauche).
   const tightControls = mapW < 720;
@@ -567,7 +567,6 @@ const AdminVillage = ({ onClassic }: Props) => {
         alignItems: 'center',
         gap: 8,
         height: 38 * ui,
-        marginTop: 10 * ui,
         padding: `0 ${8 * ui}px 0 ${14 * ui}px`,
         border: 0,
         borderRadius: 999,
@@ -630,9 +629,8 @@ const AdminVillage = ({ onClassic }: Props) => {
           color: '#6b7280',
         }}
       >
-        Six quartiers pour tout PEG.
+        Un bâtiment par onglet du menu, en six quartiers.
       </p>
-      {tourButton}
     </div>
   );
   const toggle = (
@@ -688,38 +686,66 @@ const AdminVillage = ({ onClassic }: Props) => {
     </div>
   );
 
+  /** Les six quartiers (touches 1 à 6) : clic = sa fiche, survol = ses îlots ressortent. */
+  const districtBar = (
+    <div
+      role="group"
+      aria-label="Quartiers"
+      style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}
+    >
+      {DISTRICTS.map((dd, n) => {
+        const on = district === dd.id;
+        const members = membersOf(dd.id);
+        const alerts = members.filter((m) => sectionData(m).alert).length;
+        return (
+          <button
+            key={dd.id}
+            type="button"
+            className="vgx-btn"
+            aria-pressed={on}
+            title={`${dd.place} · ${members.map((m) => SECTION_INFO[m].title).join(', ')} — touche ${n + 1}`}
+            onClick={() => (on ? resetView() : selectDistrict(dd.id, true))}
+            onMouseEnter={() => setHoverDistrict(dd.id)}
+            onMouseLeave={() => setHoverDistrict(null)}
+            onFocus={() => setHoverDistrict(dd.id)}
+            onBlur={() => setHoverDistrict(null)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              height: 32 * ui,
+              padding: `0 ${12 * ui}px 0 ${10 * ui}px`,
+              borderRadius: 999,
+              border: on ? `1.5px solid ${dd.hue}` : '1px solid #eceef3',
+              background: on ? dd.soft : '#ffffff',
+              color: '#111827',
+              fontSize: 13.5 * ui,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(40,36,80,0.05)',
+            }}
+          >
+            <span
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: dd.hue,
+              }}
+            />
+            {dd.name}
+            <span style={{ color: '#9ca3af', fontWeight: 600 }}>
+              {members.length}
+            </span>
+            {alerts > 0 && <AlertFlag size={11} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const overlays = (
     <>
-      {!compact && (
-        <>
-          <div
-            style={{
-              position: 'absolute',
-              left: 26 * ui - 10,
-              top: 22 * ui - 8,
-              padding: '8px 10px',
-              borderRadius: 16,
-              background:
-                zoom > 1.001 ? 'rgba(246,247,251,0.92)' : 'transparent',
-              transition: 'background .3s ease',
-              pointerEvents: 'none',
-              zIndex: 2100,
-            }}
-          >
-            {title}
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              right: 20 * ui,
-              top: 20 * ui,
-              zIndex: 2100,
-            }}
-          >
-            {toggle}
-          </div>
-        </>
-      )}
       {tourIdx !== null && tourList[tourIdx] ? (
         <div
           role="region"
@@ -1039,11 +1065,17 @@ const AdminVillage = ({ onClassic }: Props) => {
       ink,
     })
   );
+  // Écran mural : rien d'estompé, le quartier ou le bâtiment visé ressort.
+  const wallSections = Object.fromEntries(
+    MENU_ORDER.map((id) => [id, { ...mapSections[id], dimmed: false }])
+  ) as Record<SectionId, MapSection>;
   const renderWallMap = (v: WallMapView) => (
     <VillageMap
       width={v.width}
-      districts={mapDistricts}
-      selected={v.district}
+      sections={wallSections}
+      selected={v.section}
+      district={v.district}
+      focusSection={v.section}
       focusDistrict={v.district}
       zoom={v.zoom}
       focus={v.focus}
@@ -1251,28 +1283,44 @@ const AdminVillage = ({ onClassic }: Props) => {
             minHeight: mapHeight,
           }}
         >
-          {compact && (
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 2,
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-                flexWrap: 'wrap',
-                padding: '16px 18px 6px 20px',
-              }}
-            >
-              {title}
-              {toggle}
-            </div>
-          )}
+          {/* En-tête au-dessus de la carte (posé dessus, il couvrirait les
+              étiquettes du haut) : titre, choix de la vue, quartiers. */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+              padding: '16px 18px 6px 20px',
+            }}
+          >
+            {title}
+            {toggle}
+          </div>
+          {/* La tournée, puis les quartiers (sur la même ligne s'il y a la place) */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 10,
+              padding: '4px 18px 4px 20px',
+            }}
+          >
+            {tourButton}
+            {districtBar}
+          </div>
           {view === 'village' ? (
             <VillageMap
               width={mapW}
-              districts={mapDistricts}
-              selected={litDistrict}
+              sections={mapSections}
+              selected={litSection}
+              district={district ?? hoverDistrict}
               focusDistrict={district}
               zoom={zoom}
               focus={focus}
@@ -1281,7 +1329,7 @@ const AdminVillage = ({ onClassic }: Props) => {
                 setFocus(c.zoom > 1.001 ? c.focus : null);
                 setHint(false);
               }}
-              onSelect={(id) => selectDistrict(id)}
+              onSelect={pickBuilding}
               labelScale={labelScale}
               activity={activity}
               onOpenActivity={openActivity}
@@ -1295,7 +1343,7 @@ const AdminVillage = ({ onClassic }: Props) => {
           ) : (
             <div style={{ position: 'relative', minHeight: mapHeight }}>
               <VillageList
-                top={compact ? 12 : 104}
+                top={12}
                 sections={
                   Object.fromEntries(
                     MENU_ORDER.map((id) => [

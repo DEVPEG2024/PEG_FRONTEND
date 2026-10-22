@@ -1,10 +1,10 @@
-// Carte de la ville PEG (refonte du 22/10/2026, maquette « petite ville
-// isométrique moderne ») : six quartiers, des rues, une place centrale, des
-// parcs — tout en SVG. Camions, passants et échanges (points lumineux,
-// documents) circulent entre les bâtiments au rythme des vraies données ;
-// un interrupteur les coupe. Survol = bâtiment mis en évidence et aperçu ;
-// clic = fiche du quartier à droite. Zoom à la molette et aux boutons,
-// déplacement en glissant. Affichage seul : AdminVillage choisit et reçoit.
+// Carte de la ville PEG : un bâtiment par onglet du menu (vingt), sur ses
+// îlots, regroupés en six quartiers ; des rues, la place centrale, des parcs
+// — tout en SVG. Camions, passants et échanges (points lumineux, documents)
+// circulent dans les rues au rythme des vraies données ; un interrupteur les
+// coupe. Survol = bâtiment mis en évidence et aperçu ; clic = fiche de
+// l'onglet à droite. Zoom à la molette et aux boutons, déplacement en
+// glissant. Affichage seul : AdminVillage choisit et reçoit.
 import {
   useEffect,
   useId,
@@ -17,22 +17,24 @@ import {
   type ReactNode,
 } from 'react';
 import type { VillageActivity } from './villageActivity';
-import type { VillageFlow } from './villageFlows';
+import { flowsOf, type VillageFlow } from './villageFlows';
 import {
   BENCHES,
+  BLOCK,
   CITY_EDGE,
-  DISTRICTS,
-  DISTRICT_BLOCK,
+  FOUNTAIN,
   GRID,
   MAP_H,
   MAP_W,
-  PARKS,
+  MENU_ORDER,
+  PLAZA,
   PLOT_INSET,
+  SLIM_BELOW,
   TREES,
   TRUCK_ROUTE,
   WALKERS,
   ZOOM_MAX,
-  blockCenter,
+  buildingCenter,
   cameraOffset,
   clampOffset,
   crosswalks,
@@ -50,12 +52,14 @@ import {
   previewPlacement,
   routePath,
   silhouette,
+  slimLabelWidth,
   type DistrictId,
   type SectionId,
 } from './villageScene';
 import {
   BenchArt,
   BuildingArt,
+  FountainArt,
   TreeArt,
   TruckArt,
   WalkerArt,
@@ -68,35 +72,38 @@ export type VillageFilter =
   | 'production'
   | 'livrer';
 
-export interface MapDistrict {
+/** Ce que la carte montre d'un onglet du menu (son bâtiment). */
+export interface MapSection {
   title: string;
   icon: ReactNode;
-  /** Pastille de la rubrique principale du quartier. */
   badge: string | null;
   tone: string;
-  /** Première alerte d'une rubrique du quartier (drapeau rouge). */
+  /** Alerte de la rubrique (drapeau rouge). */
   alert: string | null;
-  /** Le filtre en cours ne retient aucune rubrique du quartier. */
+  /** Le filtre (ou le quartier ouvert) ne retient pas la rubrique. */
   dimmed: boolean;
-  /** Activité du mois la plus forte du quartier (étoile dorée à 3). */
+  /** Activité du mois (étoile dorée à 3). */
   level: 0 | 1 | 2 | 3;
   aria: string;
-  /** Aperçu au survol : une ligne par rubrique. */
-  lines: {
-    id: SectionId;
-    title: string;
-    text: string;
-    alert: boolean;
-    badge: string | null;
+  /** Aperçu au survol : la phrase de la rubrique et ses chiffres. */
+  chip: string;
+  stats: {
+    label: string;
+    value: string;
+    trend?: { text: string; tone: 'good' | 'bad' | 'neutral' };
   }[];
+  activity: string | null;
 }
 
 interface Props {
   width: number;
-  districts: Record<DistrictId, MapDistrict>;
-  /** Quartier dont la fiche est ouverte (mis en évidence). */
-  selected: DistrictId | null;
-  /** Quartier visé par la caméra quand on zoome (null = le point visé ou le centre). */
+  sections: Record<SectionId, MapSection>;
+  /** Onglet dont la fiche est ouverte (bâtiment mis en évidence). */
+  selected: SectionId | null;
+  /** Quartier dont la fiche est ouverte : ses îlots ressortent. */
+  district?: DistrictId | null;
+  /** Ce que la caméra vise quand on zoome : un bâtiment, sinon un quartier. */
+  focusSection?: SectionId | null;
   focusDistrict?: DistrictId | null;
   /** Zoom continu : 1 = toute la ville, jusqu'à ZOOM_MAX. */
   zoom: number;
@@ -104,14 +111,14 @@ interface Props {
   focus?: [number, number] | null;
   /** Nouveau cadrage demandé par la souris (glisser, molette). */
   onCamera?: (camera: { zoom: number; focus: [number, number] }) => void;
-  onSelect: (id: DistrictId) => void;
+  onSelect: (id: SectionId) => void;
   /** Taille des étiquettes (réduites sur les cartes étroites). */
   labelScale?: number;
-  /** Notifications reçues à l'instant : bulle au-dessus du quartier. */
+  /** Notifications reçues à l'instant : bulle au-dessus du bâtiment. */
   activity?: VillageActivity[];
   /** Clic sur une bulle : ouvrir la page de la notification. */
   onOpenActivity?: (a: VillageActivity) => void;
-  /** Camions, passants et échanges (interrupteur « Animations »). */
+  /** Camions, passants, échanges et pièces qui tournent (interrupteur « Animations »). */
   animations?: boolean;
   /** Échanges entre les bâtiments (vrais chiffres). */
   flows?: VillageFlow[];
@@ -123,20 +130,30 @@ interface Props {
   cameraMs?: number;
   /** Couleur du fond autour de la carte : fondu des bords quand on zoome. */
   edge?: string;
-  /** Commandes posées par-dessus la carte (titre, filtres, zoom…). */
+  /** Commandes posées par-dessus la carte (filtres, zoom…). */
   children?: ReactNode;
 }
 
 const CSS = `
 .vg-world{will-change:transform}
 .vg-agent{position:absolute;left:0;top:0;pointer-events:none;offset-rotate:0deg;animation-name:vg-move;animation-timing-function:linear;animation-iteration-count:infinite}
-@keyframes vg-move{0%{offset-distance:0%;opacity:0}9%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes vg-move{0%{offset-distance:0%;opacity:0}7%{opacity:1}93%{opacity:1}100%{offset-distance:100%;opacity:0}}
 .vg-step{animation:vg-step .42s ease-in-out infinite alternate}
 @keyframes vg-step{from{transform:translateY(0)}to{transform:translateY(-1.5px)}}
 .vg-dash{animation:vg-dash 1.1s linear infinite}
 @keyframes vg-dash{to{stroke-dashoffset:-18}}
+.vg-spin{transform-box:view-box}
+.vg-animated .vg-spin{animation:vg-spin 5s linear infinite}
+.vg-animated .vg-spin-slow{animation-duration:12s}
+@keyframes vg-spin{to{transform:rotate(360deg)}}
+.vg-animated .vg-twinkle{animation:vg-twinkle 1.8s ease-in-out infinite}
+.vg-animated .vg-twinkle2{animation-delay:-.9s}
+@keyframes vg-twinkle{0%,100%{opacity:1}50%{opacity:.25}}
+.vg-jet{transform-box:view-box}
+.vg-animated .vg-jet{animation:vg-jet 1.6s ease-in-out infinite}
+@keyframes vg-jet{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.82)}}
 .vg-bld{transition:transform .22s cubic-bezier(.3,1.5,.5,1),filter .2s ease,opacity .3s ease;transform-box:fill-box;transform-origin:50% 100%;cursor:pointer}
-.vg-bld.vg-lift{transform:translateY(-7px)}
+.vg-bld.vg-lift{transform:translateY(-6px)}
 .vg-plot{transition:fill .2s ease,stroke .2s ease;cursor:pointer}
 .vg-rise{animation:vg-rise .55s cubic-bezier(.2,1.4,.4,1) backwards}
 @keyframes vg-rise{from{opacity:0;transform:translateY(22px) scale(.92)}to{opacity:1;transform:none}}
@@ -154,7 +171,7 @@ const CSS = `
 .vg-flag{transform-box:fill-box;transform-origin:0% 50%;animation:vg-flag 1.4s ease-in-out infinite}
 @keyframes vg-flag{0%,100%{transform:skewY(0)}50%{transform:skewY(-8deg)}}
 @media (prefers-reduced-motion: reduce){
-  .vg-agent,.vg-step,.vg-dash,.vg-rise,.vg-bubble,.vg-live,.vg-preview,.vg-flag{animation:none}
+  .vg-agent,.vg-step,.vg-dash,.vg-rise,.vg-bubble,.vg-live,.vg-preview,.vg-flag,.vg-spin,.vg-twinkle,.vg-jet{animation:none !important}
   .vg-agent{display:none}
   .vg-bld,.vg-pill,.vg-world,.vg-follow{transition:none !important}
 }
@@ -162,10 +179,11 @@ const CSS = `
 
 const px = (n: number) => `${n.toFixed(1)}px`;
 const SHIRTS = ['#6d5dfc', '#3b82f6', '#ec4899', '#14b8a6'];
+const TREND_INK = { good: '#15803d', bad: '#b91c1c', neutral: '#6b7280' };
 
 /** Le verre des étiquettes : clair, net (graisses 600/700 chargées pour Inter). */
 const GLASS: CSSProperties = {
-  background: 'rgba(255,255,255,0.78)',
+  background: 'rgba(255,255,255,0.8)',
   border: '1px solid rgba(255,255,255,0.95)',
   backdropFilter: 'blur(10px) saturate(1.6)',
   WebkitBackdropFilter: 'blur(10px) saturate(1.6)',
@@ -176,10 +194,35 @@ const GLASS: CSSProperties = {
   WebkitFontSmoothing: 'antialiased',
 };
 
+/** Les 25 îlots : un bâtiment, la place ou un parc. */
+const CELLS = (() => {
+  const at = new Map<string, SectionId>();
+  MENU_ORDER.forEach((id) => at.set(BLOCK[id].join(','), id));
+  const cells: {
+    i: number;
+    j: number;
+    id: SectionId | null;
+    kind: 'building' | 'plaza' | 'park';
+  }[] = [];
+  for (let i = 0; i < GRID; i++)
+    for (let j = 0; j < GRID; j++) {
+      const id = at.get(`${i},${j}`) ?? null;
+      const kind = id
+        ? 'building'
+        : i === PLAZA[0] && j === PLAZA[1]
+          ? 'plaza'
+          : 'park';
+      cells.push({ i, j, id, kind });
+    }
+  return cells;
+})();
+
 const VillageMap = ({
   width,
-  districts,
+  sections,
   selected,
+  district = null,
+  focusSection = null,
   focusDistrict = null,
   zoom,
   focus = null,
@@ -205,10 +248,15 @@ const VillageMap = ({
   const k = fit * zoom;
   const ls = labelScale;
 
-  // Cadrage : le point visé à la souris, sinon le quartier visé ou choisi.
-  const aim = focusDistrict ?? selected;
+  // Cadrage : le point visé à la souris, sinon le bâtiment ou le quartier visé.
+  const aimSection = focusSection ?? (focusDistrict ? null : selected);
   const target: [number, number] =
-    focus ?? (aim ? districtCenter(aim) : [MAP_W / 2, MAP_H / 2]);
+    focus ??
+    (aimSection
+      ? buildingCenter(aimSection)
+      : focusDistrict
+        ? districtCenter(focusDistrict)
+        : [MAP_W / 2, MAP_H / 2]);
   const [tx, ty] =
     zoom > 1.001
       ? cameraOffset(width, height, k, target[0], target[1])
@@ -325,10 +373,10 @@ const VillageMap = ({
   };
 
   // ── Survol : bâtiment mis en évidence tout de suite, aperçu après un instant ──
-  const [hot, setHot] = useState<DistrictId | null>(null);
-  const [previewId, setPreviewId] = useState<DistrictId | null>(null);
+  const [hot, setHot] = useState<SectionId | null>(null);
+  const [previewId, setPreviewId] = useState<SectionId | null>(null);
   const hoverTimer = useRef<number | undefined>(undefined);
-  const enter = (id: DistrictId, delay = 160) => {
+  const enter = (id: SectionId, delay = 160) => {
     setHot(id);
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => setPreviewId(id), delay);
@@ -355,21 +403,27 @@ const VillageMap = ({
           key: `tree-${i}`,
           depth: depthOf(t.u, t.v),
           node: <TreeArt u={t.u} v={t.v} s={t.s} />,
-          id: null as DistrictId | null,
+          id: null as SectionId | null,
         })),
         ...BENCHES.map((b, i) => ({
           key: `bench-${i}`,
           depth: depthOf(b.u, b.v),
           node: <BenchArt u={b.u} v={b.v} along={b.along} />,
-          id: null as DistrictId | null,
+          id: null as SectionId | null,
         })),
-        ...DISTRICTS.map((d) => {
-          const [cu, cv] = blockCenter(d.id);
+        {
+          key: 'fountain',
+          depth: depthOf(FOUNTAIN.u, FOUNTAIN.v),
+          node: <FountainArt />,
+          id: null as SectionId | null,
+        },
+        ...MENU_ORDER.map((id) => {
+          const [i, j] = BLOCK[id];
           return {
-            key: `bld-${d.id}`,
-            depth: depthOf(cu, cv) + 0.2,
-            node: <BuildingArt id={d.id} />,
-            id: d.id as DistrictId | null,
+            key: `bld-${id}`,
+            depth: depthOf(i + 0.5, j + 0.5) + 0.1,
+            node: <BuildingArt id={id} />,
+            id: id as SectionId | null,
           };
         }),
       ].sort((a, b) => a.depth - b.depth),
@@ -382,7 +436,7 @@ const VillageMap = ({
         -CITY_EDGE,
         GRID + CITY_EDGE,
         GRID + CITY_EDGE,
-        0.34,
+        0.4,
         0
       ),
       slabSide: groundRect(
@@ -390,83 +444,121 @@ const VillageMap = ({
         -CITY_EDGE,
         GRID + CITY_EDGE,
         GRID + CITY_EDGE,
-        0.34,
+        0.4,
         -14
       ),
       dashes: laneDashes(),
       zebras: crosswalks(),
-      plots: [
-        ...DISTRICTS.map((d) => {
-          const [i, j] = DISTRICT_BLOCK[d.id];
-          return { id: d.id as DistrictId | null, i, j };
-        }),
-        ...PARKS.map(([i, j]) => ({ id: null as DistrictId | null, i, j })),
-      ].map((p) => ({
-        ...p,
+      plots: CELLS.map((c) => ({
+        ...c,
         top: groundRect(
-          p.i + PLOT_INSET,
-          p.j + PLOT_INSET,
-          p.i + 1 - PLOT_INSET,
-          p.j + 1 - PLOT_INSET,
-          0.08,
-          6
+          c.i + PLOT_INSET,
+          c.j + PLOT_INSET,
+          c.i + 1 - PLOT_INSET,
+          c.j + 1 - PLOT_INSET,
+          0.07,
+          5
         ),
         side: groundRect(
-          p.i + PLOT_INSET,
-          p.j + PLOT_INSET,
-          p.i + 1 - PLOT_INSET,
-          p.j + 1 - PLOT_INSET,
-          0.08,
+          c.i + PLOT_INSET,
+          c.j + PLOT_INSET,
+          c.i + 1 - PLOT_INSET,
+          c.j + 1 - PLOT_INSET,
+          0.07,
           0
         ),
       })),
-      trucks: routePath(TRUCK_ROUTE.pts, 4),
-      walkers: WALKERS.map((w) => routePath(w.pts, 6)),
+      plazaRings: [0.3, 0.22].map((r) =>
+        groundRect(
+          PLAZA[0] + 0.5 - r,
+          PLAZA[1] + 0.5 - r,
+          PLAZA[0] + 0.5 + r,
+          PLAZA[1] + 0.5 + r,
+          r * 0.9,
+          5
+        )
+      ),
+      trucks: routePath(TRUCK_ROUTE.pts, 3),
+      walkers: WALKERS.map((w) => routePath(w.pts, 5)),
     }),
     []
   );
-  const plaza = iso(...blockCenter('projets'), 6);
 
-  const isLit = (id: DistrictId) => !districts[id].dimmed;
-  const active = (id: DistrictId) => id === hot || id === selected;
+  const plaza = iso(PLAZA[0] + 0.5, PLAZA[1] + 0.5, 5);
+  const isLit = (id: SectionId) => !sections[id].dimmed;
+  const active = (id: SectionId) => id === hot || id === selected;
   const truckCount = Math.max(0, Math.min(3, trucks));
   const liveFlows = flows.filter((f) => f.exchange && f.dots > 0);
 
   // ── Étiquettes : à l'aplomb de leur toit, écartées (ou montées) si elles se touchent ──
-  const pills = DISTRICTS.map((d) => {
-    const s = districts[d.id];
-    const [x, y] = toScreen(...labelAnchor(d.id));
+  // Complètes (icône, nom, pastille) dès que la ville est assez grande à
+  // l'écran ; fines (point du quartier, nom, pastille) sur une carte étroite,
+  // pour laisser voir les bâtiments — le zoom les rend complètes.
+  const slim = k < SLIM_BELOW;
+  const L = slim
+    ? {
+        h: 22,
+        font: 12,
+        gap: 5,
+        padL: 8,
+        padR: 9,
+        padRBadge: 4,
+        badge: 16,
+        badgeFont: 10.5,
+        badgePad: 5,
+        ptrW: 8,
+        ptrH: 5,
+        flagW: 12,
+        flagH: 16,
+        flagLeft: 13,
+      }
+    : {
+        h: 34 * ls,
+        font: 14 * ls,
+        gap: 7 * ls,
+        padL: 12 * ls,
+        padR: 15 * ls,
+        padRBadge: 6 * ls,
+        badge: 24 * ls,
+        badgeFont: 12.5 * ls,
+        badgePad: 7 * ls,
+        ptrW: 12 * ls,
+        ptrH: 7 * ls,
+        flagW: 18 * ls,
+        flagH: 24 * ls,
+        flagLeft: 18 * ls,
+      };
+  const pills = MENU_ORDER.map((id) => {
+    const s = sections[id];
+    const [x, y] = toScreen(...labelAnchor(id));
     return {
-      id: d.id,
+      id,
       x,
       y,
-      w: (labelWidth(s.title, s.badge) + (s.level === 3 ? 18 : 0)) * ls,
-      h: 41 * ls,
-      left: s.alert ? 18 * ls : 0,
+      w: slim
+        ? slimLabelWidth(s.title, s.badge)
+        : (labelWidth(s.title, s.badge) + (s.level === 3 ? 18 : 0)) * ls,
+      h: L.h + L.ptrH,
+      left: s.alert ? L.flagLeft : 0,
     };
   });
   const placed = placeLabels(pills);
   /** Pastille placée : centre (cx), bas (cy), largeur, déplacement. */
-  const pillOf = (id: DistrictId) => {
+  const pillOf = (id: SectionId) => {
     const p = pills.find((q) => q.id === id) as (typeof pills)[number];
     const { dx, dy } = placed[id];
     return { ...p, dx, dy, cx: p.x + dx, cy: p.y + dy };
   };
 
-  // ── Bulles d'activité : une par quartier (la plus récente) ──
-  const bubbles = activity.reduce<(VillageActivity & { d: DistrictId })[]>(
-    (acc, a) => {
-      const d = districtOf(a.id);
-      if (!acc.some((b) => b.d === d)) acc.push({ ...a, d });
-      return acc;
-    },
-    []
-  );
+  // ── Bulles d'activité : une par bâtiment (la plus récente), 4 au plus ──
+  const bubbles = activity
+    .filter((a, i, all) => all.findIndex((b) => b.id === a.id) === i)
+    .slice(0, 4);
 
   return (
     <div
       ref={rootRef}
-      className={moving ? 'vg-moving' : undefined}
+      className={`${moving ? 'vg-moving ' : ''}${animations ? 'vg-animated' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -485,7 +577,7 @@ const VillageMap = ({
           overflow: 'hidden',
           cursor: zoom > 1.001 ? (moving ? 'grabbing' : 'grab') : 'default',
           touchAction: zoom > 1.001 ? 'none' : 'auto',
-          // Rythme commun de tout ce qui suit la caméra (îlot, étiquettes,
+          // Rythme commun de tout ce qui suit la caméra (ville, étiquettes,
           // bulles) : ils restent alignés pendant le mouvement.
           '--vg-cam': `${cameraMs}ms ${
             cameraMs > 1000
@@ -509,7 +601,7 @@ const VillageMap = ({
           transition: 'transform var(--vg-cam)',
         }}
       >
-        {/* Le sol : l'îlot, les rues et leurs marquages, les parcelles */}
+        {/* Le sol : la ville, ses rues et leurs marquages, les îlots */}
         <svg
           width={MAP_W}
           height={MAP_H}
@@ -518,8 +610,8 @@ const VillageMap = ({
         >
           <defs>
             <radialGradient id={`${uid}plaza`}>
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.32} />
-              <stop offset="60%" stopColor="#8b5cf6" stopOpacity={0.1} />
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.26} />
+              <stop offset="65%" stopColor="#8b5cf6" stopOpacity={0.08} />
               <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
             </radialGradient>
             <filter
@@ -543,22 +635,30 @@ const VillageMap = ({
           <path
             d={ground.dashes}
             stroke="#ffffff"
-            strokeWidth={2.4}
-            strokeDasharray="11 10"
+            strokeWidth={2}
+            strokeDasharray="8 8"
             strokeLinecap="round"
           />
           <path d={ground.zebras} fill="#ffffff" opacity={0.95} />
           {ground.plots.map((p) => {
             const id = p.id;
-            const park = !id;
-            const isPlaza = id === 'projets';
+            const d = id ? districtById(districtOf(id)) : null;
             const on = id ? active(id) : false;
-            const alert = id ? !!districts[id].alert : false;
-            const hue = id ? districtById(id).hue : '#86c77f';
+            const inDistrict =
+              !!id && !!district && districtOf(id) === district;
+            const alert = id ? !!sections[id].alert : false;
+            const fill =
+              p.kind === 'park'
+                ? '#e4f2de'
+                : p.kind === 'plaza'
+                  ? '#f1edff'
+                  : on
+                    ? '#ffffff'
+                    : (d?.ground ?? '#f7f8fb');
             return (
               <g
                 key={`plot-${p.i}-${p.j}`}
-                opacity={id && !isLit(id) ? 0.45 : 1}
+                opacity={id && !isLit(id) ? 0.5 : 1}
                 style={{ transition: 'opacity .3s ease' }}
                 onPointerEnter={id ? () => enter(id) : undefined}
                 onPointerLeave={id ? leave : undefined}
@@ -566,24 +666,21 @@ const VillageMap = ({
               >
                 <path
                   d={p.side}
-                  fill={park ? '#cfe4c6' : isPlaza ? '#ddd5fb' : '#e1e4ec'}
+                  fill={
+                    p.kind === 'park'
+                      ? '#cfe4c6'
+                      : p.kind === 'plaza'
+                        ? '#ddd5fb'
+                        : '#dfe3eb'
+                  }
                 />
                 <path
                   className={id ? 'vg-plot' : undefined}
                   d={p.top}
-                  fill={
-                    park
-                      ? '#e4f2de'
-                      : isPlaza
-                        ? '#f3f0ff'
-                        : on
-                          ? '#fbfaff'
-                          : alert
-                            ? '#fff7f7'
-                            : '#f7f8fb'
-                  }
-                  stroke={on ? hue : 'none'}
-                  strokeWidth={on ? 2.5 : 0}
+                  fill={fill}
+                  stroke={on || inDistrict ? d?.hue : 'none'}
+                  strokeWidth={on ? 2.4 : inDistrict ? 1.6 : 0}
+                  strokeOpacity={on ? 1 : 0.7}
                 />
                 {/* Alerte : liseré discret (le drapeau et l'étiquette disent le reste) */}
                 {alert && !on && (
@@ -591,23 +688,34 @@ const VillageMap = ({
                     d={p.top}
                     fill="none"
                     stroke="#f87171"
-                    strokeOpacity={0.7}
-                    strokeWidth={1.5}
-                    strokeDasharray="7 6"
+                    strokeOpacity={0.75}
+                    strokeWidth={1.4}
+                    strokeDasharray="6 5"
                   />
                 )}
               </g>
             );
           })}
+          {/* La place centrale : pavés en anneaux, halo violet */}
+          {ground.plazaRings.map((d, i) => (
+            <path
+              key={`ring-${i}`}
+              d={d}
+              fill="none"
+              stroke="#d9d0fb"
+              strokeWidth={1.4}
+              pointerEvents="none"
+            />
+          ))}
           <ellipse
             cx={plaza[0]}
             cy={plaza[1]}
-            rx={150}
-            ry={76}
+            rx={118}
+            ry={62}
             fill={ref('plaza')}
             pointerEvents="none"
           />
-          {/* Échanges : chemins en pointillés entre les bâtiments */}
+          {/* Échanges : fils en pointillés dans les rues */}
           {flows
             .filter((f) => f.exchange && f.count !== null)
             .map((f) => (
@@ -617,17 +725,18 @@ const VillageMap = ({
                 d={f.d}
                 fill="none"
                 stroke="#7c6cff"
-                strokeOpacity={f.dots > 0 ? 0.55 : 0.18}
-                strokeWidth={2.2}
+                strokeOpacity={f.dots > 0 ? 0.5 : 0.16}
+                strokeWidth={2}
                 strokeDasharray="3 6"
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 pointerEvents="none"
               />
             ))}
         </svg>
 
         {/* Ce qui circule : sous les bâtiments, au-dessus du sol (le survol
-            et le clic passent au travers, jusqu'aux parcelles) */}
+            et le clic passent au travers, jusqu'aux îlots) */}
         {animations && (
           <div
             aria-hidden="true"
@@ -650,17 +759,17 @@ const VillageMap = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: 20,
-                        height: 22,
-                        marginLeft: -10,
-                        marginTop: -11,
-                        borderRadius: 6,
+                        width: 16,
+                        height: 18,
+                        marginLeft: -8,
+                        marginTop: -14,
+                        borderRadius: 5,
                         background: '#ffffff',
                         border: '1.5px solid #8b7dff',
                         boxShadow: '0 4px 10px rgba(76,63,214,0.25)',
                       }}
                     >
-                      <svg width={11} height={13} viewBox="0 0 11 13">
+                      <svg width={9} height={11} viewBox="0 0 11 13">
                         <path
                           d="M1 1 h6 l3 3 v8 h-9 z"
                           fill="#efecfe"
@@ -680,10 +789,10 @@ const VillageMap = ({
                     <span
                       style={{
                         display: 'block',
-                        width: 10,
-                        height: 10,
-                        marginLeft: -5,
-                        marginTop: -5,
+                        width: 9,
+                        height: 9,
+                        marginLeft: -4.5,
+                        marginTop: -6,
                         borderRadius: '50%',
                         background: '#7c6cff',
                         border: '2px solid #ffffff',
@@ -705,7 +814,7 @@ const VillageMap = ({
                 }}
               >
                 <span
-                  style={{ display: 'block', marginLeft: -30, marginTop: -30 }}
+                  style={{ display: 'block', marginLeft: -21, marginTop: -24 }}
                 >
                   <TruckArt />
                 </span>
@@ -723,7 +832,7 @@ const VillageMap = ({
               >
                 <span
                   className="vg-step"
-                  style={{ display: 'block', marginLeft: -6, marginTop: -21 }}
+                  style={{ display: 'block', marginLeft: -5, marginTop: -18 }}
                 >
                   <WalkerArt shirt={SHIRTS[i % SHIRTS.length]} />
                 </span>
@@ -732,7 +841,7 @@ const VillageMap = ({
           </div>
         )}
 
-        {/* Bâtiments, arbres et bancs, du fond vers l'avant */}
+        {/* Bâtiments, arbres, bancs et fontaine, du fond vers l'avant */}
         <svg
           width={MAP_W}
           height={MAP_H}
@@ -754,10 +863,10 @@ const VillageMap = ({
             >
               <feDropShadow
                 dx="0"
-                dy="10"
-                stdDeviation="9"
+                dy="8"
+                stdDeviation="7"
                 floodColor="#6d5dfc"
-                floodOpacity="0.32"
+                floodOpacity="0.34"
               />
             </filter>
           </defs>
@@ -769,11 +878,11 @@ const VillageMap = ({
               <g
                 key={o.key}
                 className={`vg-bld${id === hot ? ' vg-lift' : ''}${arrival ? ' vg-rise' : ''}`}
-                opacity={isLit(id) ? 1 : 0.45}
+                opacity={isLit(id) ? 1 : 0.42}
                 filter={on ? ref('glow') : undefined}
                 style={{
                   pointerEvents: 'auto',
-                  animationDelay: arrival ? `${idx * 40}ms` : undefined,
+                  animationDelay: arrival ? `${idx * 30}ms` : undefined,
                 }}
                 onPointerEnter={() => enter(id)}
                 onPointerLeave={leave}
@@ -808,31 +917,32 @@ const VillageMap = ({
         ))}
 
       {/* Étiquettes : taille fixe à l'écran, en verre dépoli */}
-      {DISTRICTS.map((d) => {
-        const s = districts[d.id];
-        const { cx, cy, w, dx, dy } = pillOf(d.id);
-        const on = active(d.id);
+      {MENU_ORDER.map((id) => {
+        const s = sections[id];
+        const d = districtById(districtOf(id));
+        const { cx, cy, w, dx, dy } = pillOf(id);
+        const on = active(id);
         const rim = on
           ? d.hue
           : s.alert
             ? 'rgba(239,68,68,0.9)'
             : 'rgba(109,93,252,0.45)';
         return (
-          <div key={`lab-${d.id}`}>
+          <div key={`lab-${id}`}>
             {s.alert && (
               <svg
                 aria-hidden="true"
-                width={18 * ls}
-                height={24 * ls}
+                width={L.flagW}
+                height={L.flagH}
                 viewBox="0 0 18 24"
                 className="vg-follow"
                 style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
-                  translate: `${px(cx - w / 2 - 16 * ls)} ${px(cy - 26 * ls)}`,
+                  translate: `${px(cx - w / 2 - L.flagW + 2)} ${px(cy - L.h * 0.76)}`,
                   zIndex: 2001,
-                  opacity: isLit(d.id) ? 1 : 0.45,
+                  opacity: isLit(id) ? 1 : 0.45,
                   overflow: 'visible',
                 }}
               >
@@ -846,44 +956,59 @@ const VillageMap = ({
             )}
             <button
               type="button"
-              className={`vg-pill${d.id === hot ? ' vg-hot' : ''}`}
-              onClick={() => onSelect(d.id)}
-              onMouseEnter={() => enter(d.id, 80)}
+              className={`vg-pill${id === hot ? ' vg-hot' : ''}`}
+              onClick={() => onSelect(id)}
+              onMouseEnter={() => enter(id, 80)}
               onMouseLeave={leave}
-              onFocus={() => enter(d.id, 0)}
+              onFocus={() => enter(id, 0)}
               onBlur={leave}
-              aria-pressed={selected === d.id}
+              aria-pressed={selected === id}
               aria-label={s.aria}
               style={{
                 position: 'absolute',
                 left: 0,
                 top: 0,
                 translate: `calc(${px(cx)} - 50%) calc(${px(cy)} - 100%)`,
-                zIndex: 2000,
-                opacity: isLit(d.id) ? 1 : 0.45,
+                zIndex: on ? 2002 : 2000,
+                opacity: isLit(id) ? 1 : 0.45,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 7 * ls,
-                height: 34 * ls,
+                gap: L.gap,
+                height: L.h,
                 boxSizing: 'border-box',
-                padding: s.badge
-                  ? `0 ${6 * ls}px 0 ${12 * ls}px`
-                  : `0 ${15 * ls}px 0 ${12 * ls}px`,
+                padding: `0 ${s.badge ? L.padRBadge : L.padR}px 0 ${L.padL}px`,
                 borderRadius: 999,
                 ...GLASS,
-                ...(on || s.alert ? { border: `2px solid ${rim}` } : {}),
-                fontSize: 14 * ls,
+                ...(slim
+                  ? { boxShadow: '0 4px 12px rgba(40,36,80,0.14)' }
+                  : {}),
+                ...(on || s.alert
+                  ? { border: `${slim ? 1.5 : 2}px solid ${rim}` }
+                  : {}),
+                fontSize: L.font,
                 fontWeight: 700,
                 whiteSpace: 'nowrap',
                 cursor: 'pointer',
               }}
             >
-              <span
-                style={{ fontSize: 18 * ls, display: 'flex', color: d.hue }}
-              >
-                {s.icon}
-              </span>
-              {s.level === 3 && (
+              {slim ? (
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    background: d.hue,
+                  }}
+                />
+              ) : (
+                <span
+                  style={{ fontSize: 18 * ls, display: 'flex', color: d.hue }}
+                >
+                  {s.icon}
+                </span>
+              )}
+              {!slim && s.level === 3 && (
                 <svg
                   aria-hidden="true"
                   width={13 * ls}
@@ -904,14 +1029,14 @@ const VillageMap = ({
               {s.badge && (
                 <span
                   style={{
-                    minWidth: 24 * ls,
-                    height: 24 * ls,
-                    padding: `0 ${7 * ls}px`,
+                    minWidth: L.badge,
+                    height: L.badge,
+                    padding: `0 ${L.badgePad}px`,
                     boxSizing: 'border-box',
                     borderRadius: 999,
                     background: s.tone,
                     color: '#ffffff',
-                    fontSize: 12.5 * ls,
+                    fontSize: L.badgeFont,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
                     display: 'inline-flex',
@@ -924,15 +1049,16 @@ const VillageMap = ({
               )}
               <svg
                 aria-hidden="true"
-                width={12 * ls}
-                height={7 * ls}
+                width={L.ptrW}
+                height={L.ptrH}
                 viewBox="0 0 12 7"
+                preserveAspectRatio="none"
                 style={{
                   position: 'absolute',
                   // La pointe reste au-dessus du toit si la pastille a glissé.
                   left: `calc(50% - ${px(dx)})`,
-                  bottom: -7 * ls + 1,
-                  marginLeft: -6 * ls,
+                  bottom: -L.ptrH + 1,
+                  marginLeft: -L.ptrW / 2,
                   overflow: 'visible',
                 }}
               >
@@ -946,7 +1072,7 @@ const VillageMap = ({
                     position: 'absolute',
                     left: `calc(50% - ${px(dx)})`,
                     top: '100%',
-                    marginTop: 6 * ls - 1,
+                    marginTop: L.ptrH - 2,
                     marginLeft: -1,
                     width: 2,
                     height: -dy,
@@ -972,34 +1098,29 @@ const VillageMap = ({
         );
       })}
 
-      {/* Aperçu au survol : les rubriques du quartier et ses échanges */}
+      {/* Aperçu au survol : la rubrique, ses chiffres et ses échanges */}
       {shownPreview &&
         (() => {
-          const s = districts[shownPreview];
-          const d = districtById(shownPreview);
-          const pill = pillOf(shownPreview);
+          const id = shownPreview;
+          const s = sections[id];
+          const d = districtById(districtOf(id));
+          const pill = pillOf(id);
           const W = 262;
           const at = previewPlacement({
             x: pill.cx,
             y: pill.cy,
-            pillW: pill.w + 8 * ls,
-            pillH: 34 * ls,
+            pillW: pill.w + 8,
+            pillH: L.h,
             cardW: W,
             cardH: previewH,
             mapW: width,
             mapH: height,
-            busyAbove: bubbles.some((b) => b.d === shownPreview),
+            busyAbove: bubbles.some((b) => b.id === id),
           });
-          const exchanges = flows.filter(
-            (f) =>
-              f.exchange &&
-              f.count !== null &&
-              (f.exchange.from === shownPreview ||
-                f.exchange.to === shownPreview)
-          );
+          const exchanges = flowsOf(flows, id).filter((f) => f.count !== null);
           return (
             <div
-              key={`preview-${shownPreview}`}
+              key={`preview-${id}`}
               ref={previewRef}
               className="vg-preview"
               aria-hidden="true"
@@ -1036,43 +1157,83 @@ const VillageMap = ({
                 </span>
                 <span style={{ flex: 1 }}>{s.title}</span>
                 <span
-                  style={{ fontSize: 11.5, fontWeight: 600, color: '#6b7280' }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: d.ink,
+                  }}
                 >
-                  {s.lines.length} rubriques
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      background: d.hue,
+                    }}
+                  />
+                  {d.name}
                 </span>
               </span>
-              <span style={{ display: 'block', marginTop: 6 }}>
-                {s.lines.map((l) => (
-                  <span
-                    key={l.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      gap: 6,
-                      padding: '4px 0',
-                      borderTop: '1px solid #f1eee8',
-                      fontSize: 12.5,
-                    }}
-                  >
-                    <span style={{ width: 92, flexShrink: 0, fontWeight: 700 }}>
-                      {l.title}
-                    </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 6,
+                  fontSize: 12.5,
+                  lineHeight: 1.4,
+                  color: s.alert ? '#b91c1c' : '#4b5563',
+                  fontWeight: s.alert ? 700 : 400,
+                }}
+              >
+                {s.alert ?? s.chip}
+              </span>
+              {s.stats.length > 0 && (
+                <span style={{ display: 'block', marginTop: 6 }}>
+                  {s.stats.slice(0, 3).map((st) => (
                     <span
+                      key={st.label}
                       style={{
-                        flex: 1,
-                        minWidth: 0,
-                        color: l.alert ? '#b91c1c' : '#6b7280',
-                        fontWeight: l.alert ? 700 : 400,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 6,
+                        padding: '3px 0',
+                        borderTop: '1px solid #f1eee8',
+                        fontSize: 12.5,
                       }}
                     >
-                      {l.text}
+                      <span style={{ flex: 1, minWidth: 0, color: '#6b7280' }}>
+                        {st.label}
+                      </span>
+                      <strong style={{ fontWeight: 700 }}>{st.value}</strong>
+                      {st.trend && (
+                        <span
+                          style={{
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            color: TREND_INK[st.trend.tone],
+                          }}
+                        >
+                          {st.trend.text}
+                        </span>
+                      )}
                     </span>
-                  </span>
-                ))}
-              </span>
+                  ))}
+                </span>
+              )}
+              {s.activity && (
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: '#a16207',
+                  }}
+                >
+                  {s.activity}
+                </span>
+              )}
               {exchanges.length > 0 && (
                 <span
                   style={{
@@ -1082,42 +1243,41 @@ const VillageMap = ({
                     borderTop: '1px solid #f1eee8',
                   }}
                 >
-                  {exchanges.map((f) => (
-                    <span
-                      key={f.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 12,
-                        color: '#4b5563',
-                        padding: '1px 0',
-                      }}
-                    >
+                  {exchanges.map((f) => {
+                    const out = f.exchange?.from === id;
+                    const other = (
+                      out ? f.exchange?.to : f.exchange?.from
+                    ) as SectionId;
+                    return (
                       <span
+                        key={f.id}
                         style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: '50%',
-                          background: '#7c6cff',
-                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 12,
+                          color: '#4b5563',
+                          padding: '1px 0',
                         }}
-                      />
-                      {f.exchange?.from === shownPreview ? '→ ' : '← '}
-                      {
-                        districtById(
-                          f.exchange?.from === shownPreview
-                            ? (f.exchange?.to as DistrictId)
-                            : (f.exchange?.from as DistrictId)
-                        ).name
-                      }{' '}
-                      ·{' '}
-                      <strong style={{ fontWeight: 700, color: '#111827' }}>
-                        {f.count}
-                      </strong>{' '}
-                      {f.short}
-                    </span>
-                  ))}
+                      >
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            background: '#7c6cff',
+                            flexShrink: 0,
+                          }}
+                        />
+                        {out ? '→ ' : '← '}
+                        {sections[other].title} ·{' '}
+                        <strong style={{ fontWeight: 700, color: '#111827' }}>
+                          {f.count}
+                        </strong>{' '}
+                        {f.short}
+                      </span>
+                    );
+                  })}
                 </span>
               )}
               <span
@@ -1128,7 +1288,7 @@ const VillageMap = ({
                   color: '#9ca3af',
                 }}
               >
-                Cliquez pour ouvrir le quartier
+                Cliquez pour ouvrir la fiche
               </span>
             </div>
           );
@@ -1136,8 +1296,8 @@ const VillageMap = ({
 
       {/* Bulles d'activité en direct */}
       {bubbles.map((a) => {
-        const { cx: x, cy } = pillOf(a.d);
-        const top = cy - 34 * ls - 10;
+        const { cx: x, cy } = pillOf(a.id);
+        const top = cy - L.h - 10;
         return (
           <button
             key={`bubble-${a.key}`}
@@ -1145,7 +1305,9 @@ const VillageMap = ({
             tabIndex={-1}
             aria-hidden="true"
             title={a.link ? 'Ouvrir' : undefined}
-            onClick={() => (onOpenActivity ? onOpenActivity(a) : onSelect(a.d))}
+            onClick={() =>
+              onOpenActivity ? onOpenActivity(a) : onSelect(a.id)
+            }
             style={{
               position: 'absolute',
               left: 0,
@@ -1220,7 +1382,7 @@ const VillageMap = ({
         }}
       >
         {bubbles[0]
-          ? `Nouvelle activité, ${districtById(bubbles[0].d).name} : ${bubbles[0].text}`
+          ? `Nouvelle activité, ${sections[bubbles[0].id].title} : ${bubbles[0].text}`
           : ''}
       </span>
 

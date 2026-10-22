@@ -176,7 +176,7 @@ describe('écran mural — taille sur la télévision', () => {
     // Le cadre de l'écran 1920 × 1080 : rempli (ni bande vide ni bord coupé net).
     const tv = fitMap(1188, 868);
     expect(tv.w).toBe(Math.ceil((868 * MAP_W) / MAP_H));
-    expect(tv.w).toBeLessThanOrEqual(1188 * 1.18);
+    expect(tv.w).toBeLessThanOrEqual(1188 * 1.2);
     expect(tv.h).toBeGreaterThanOrEqual(868);
     // Cadre plus large que la carte : rempli en largeur.
     const near = fitMap(1188, 720);

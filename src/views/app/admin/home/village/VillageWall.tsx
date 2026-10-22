@@ -32,7 +32,7 @@ import { SECTION_INFO } from './villageSections';
 import {
   MAP_W,
   districtById,
-  districtCenter,
+  buildingCenter,
   districtOf,
   type DistrictId,
   type SectionId,
@@ -80,7 +80,10 @@ export interface WallKpi {
 /** Cadrage demandé à la carte. */
 export interface WallMapView {
   width: number;
+  /** Quartier de l'étape (ses îlots ressortent). */
   district: DistrictId | null;
+  /** Bâtiment visé (notification qui arrive). */
+  section: SectionId | null;
   zoom: number;
   focus: [number, number] | null;
   labelScale: number;
@@ -324,13 +327,24 @@ const VillageWall = ({
 
   const view: Omit<WallMapView, 'width' | 'labelScale' | 'cameraMs'> = live
     ? {
-        district: districtOf(live.id),
+        district: null,
+        section: live.id,
         zoom: WALL_ZOOM.live,
-        focus: districtCenter(districtOf(live.id)),
+        focus: buildingCenter(live.id),
       }
     : stop.kind === 'district'
-      ? { district: stop.id, zoom: WALL_ZOOM.district, focus: null }
-      : { district: null, zoom: WALL_ZOOM.overview, focus: null };
+      ? {
+          district: stop.id,
+          section: null,
+          zoom: WALL_ZOOM.district,
+          focus: null,
+        }
+      : {
+          district: null,
+          section: null,
+          zoom: WALL_ZOOM.overview,
+          focus: null,
+        };
 
   // ── Commandes : visibles quand la souris bouge, sinon masquées ──
   const [idle, setIdle] = useState(false);

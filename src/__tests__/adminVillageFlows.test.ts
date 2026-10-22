@@ -14,21 +14,13 @@ import {
   type RawVillage,
 } from '@/views/app/admin/home/village/villageData';
 import {
-  MAP_H,
-  MAP_W,
-  blockCenter,
-  exchangeCurve,
-  iso,
+  GRID,
+  doorOf,
+  routeLength,
 } from '@/views/app/admin/home/village/villageScene';
 
-/** Départ, point de contrôle et arrivée d'une courbe « M a Q c b ». */
-const points = (d: string) => {
-  const n = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
-  return { a: [n[0], n[1]], c: [n[2], n[3]], b: [n[4], n[5]] };
-};
-
-describe('échanges — chemins entre les bâtiments', () => {
-  it('le parcours d’une commande : Boutique → Projets → Production, Projets → Finance', () => {
+describe('échanges — par les rues, d’un bâtiment à l’autre', () => {
+  it('le parcours d’une commande : Boutique → Projets → Producteurs, Projets → Finance', () => {
     expect(FLOW_DEFS.map((f) => f.id)).toEqual([
       'commandes',
       'demandes',
@@ -42,46 +34,44 @@ describe('échanges — chemins entre les bâtiments', () => {
       return e ? [e.from, e.to] : null;
     };
     expect(route('commandes')).toEqual(['boutique', 'projets']);
-    expect(route('demandes')).toEqual(['clients', 'projets']);
-    expect(route('production')).toEqual(['projets', 'production']);
+    expect(route('demandes')).toEqual(['clients', 'devis']);
+    expect(route('production')).toEqual(['projets', 'producteurs']);
     expect(route('factures')).toEqual(['projets', 'finance']);
-    expect(route('tickets')).toEqual(['clients', 'assistance']);
+    expect(route('tickets')).toEqual(['clients', 'tickets']);
     // Les livraisons roulent en camion, sans chemin.
     expect(route('livraisons')).toBeNull();
   });
 
-  it('chaque courbe va du centre d’un îlot à celui de l’autre, sans sortir de la carte', () => {
-    for (const f of FLOW_DEFS) {
-      if (!f.exchange) continue;
-      const { d, length } = exchangeCurve(f.exchange);
-      const { a, c, b } = points(d);
-      const from = iso(...blockCenter(f.exchange.from), 18);
-      const to = iso(...blockCenter(f.exchange.to), 18);
-      expect(a[0]).toBeCloseTo(from[0], 0);
-      expect(a[1]).toBeCloseTo(from[1], 0);
-      expect(b[0]).toBeCloseTo(to[0], 0);
-      expect(b[1]).toBeCloseTo(to[1], 0);
-      // La courbe reste dans le triangle départ-contrôle-arrivée.
-      for (const [x, y] of [a, c, b]) {
-        expect(x).toBeGreaterThan(0);
-        expect(x).toBeLessThan(MAP_W);
-        expect(y).toBeGreaterThan(0);
-        expect(y).toBeLessThan(MAP_H);
+  it('chaque trajet va d’une porte à l’autre en suivant les rues, jamais à travers un îlot', () => {
+    for (const f of villageFlows({})) {
+      if (!f.exchange) {
+        expect(f.route).toEqual([]);
+        continue;
       }
-      expect(length).toBeGreaterThan(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      expect(f.route[0]).toEqual(doorOf(f.exchange.from));
+      expect(f.route[f.route.length - 1]).toEqual(doorOf(f.exchange.to));
+      for (let k = 1; k < f.route.length; k++) {
+        const [u1, v1] = f.route[k - 1];
+        const [u2, v2] = f.route[k];
+        // Un segment longe une rue : sa coordonnée fixe est un entier, dans la ville.
+        const fixed = u1 === u2 ? u1 : v1 === v2 ? v1 : NaN;
+        expect({ flow: f.id, k, onStreet: Number.isInteger(fixed) }).toEqual({
+          flow: f.id,
+          k,
+          onStreet: true,
+        });
+        expect(fixed).toBeGreaterThanOrEqual(0);
+        expect(fixed).toBeLessThanOrEqual(GRID);
+      }
+      expect(f.d.startsWith('M')).toBe(true);
+      expect(f.length).toBeCloseTo(routeLength(f.route), 6);
+      expect(f.length).toBeGreaterThan(0);
     }
   });
 
-  it('bombé positif vers le haut de l’écran, négatif vers le bas', () => {
-    const up = points(
-      exchangeCurve({ from: 'boutique', to: 'projets', arc: 60 }).d
-    );
-    const down = points(
-      exchangeCurve({ from: 'boutique', to: 'projets', arc: -60 }).d
-    );
-    const midY = (p: typeof up) => (p.a[1] + p.b[1]) / 2;
-    expect(up.c[1]).toBeLessThan(midY(up));
-    expect(down.c[1]).toBeGreaterThan(midY(down));
+  it('la porte d’un bâtiment est sur la rue devant sa façade', () => {
+    expect(doorOf('projets')).toEqual([1.5, 2]);
+    expect(doorOf('boutique')).toEqual([2.5, 4]);
   });
 });
 
@@ -124,19 +114,16 @@ describe('échanges — plus PEG tourne, plus ça circule', () => {
     }
   });
 
-  it('les échanges d’un quartier (aperçu au survol)', () => {
+  it('les échanges d’un bâtiment (aperçu au survol)', () => {
     const flows = villageFlows({});
     const ids = (d: Parameters<typeof flowsOf>[1]) =>
       flowsOf(flows, d).map((f) => f.id);
-    expect(ids('projets')).toEqual([
-      'commandes',
-      'demandes',
-      'production',
-      'factures',
-    ]);
+    expect(ids('projets')).toEqual(['commandes', 'production', 'factures']);
     expect(ids('clients')).toEqual(['demandes', 'tickets']);
-    expect(ids('assistance')).toEqual(['tickets']);
-    expect(ids('production')).toEqual(['production']);
+    expect(ids('tickets')).toEqual(['tickets']);
+    expect(ids('producteurs')).toEqual(['production']);
+    expect(ids('devis')).toEqual(['demandes']);
+    expect(ids('ia')).toEqual([]);
   });
 
   it('volumes lus avec la ville : les vrais chiffres de chaque échange', () => {
