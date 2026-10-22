@@ -5,6 +5,7 @@ import deepParseJson from '@/utils/deepParseJson'
 import store, { signOutSuccess } from '../store'
 import { getPersistedAuthToken } from '../store/tabSessionStorage'
 import { API_BASE_URL } from '@/configs/api.config'
+import { isPublicAuthRequest } from './publicAuthRoutes'
 
 const unauthorizedCode = [401]
 
@@ -33,6 +34,12 @@ BaseService.interceptors.request.use(
         // il fait FOI : on ne l'écrase jamais avec le token de session. Cela
         // garantit que /users/me part avec le token du compte qui se connecte.
         if (config.headers?.[REQUEST_HEADER_AUTH_KEY]) {
+            return config
+        }
+
+        // Connexion, inscription, mot de passe oublié : jamais de jeton (une
+        // ancienne session refusée par Strapi bloquait la reconnexion).
+        if (isPublicAuthRequest(config.url)) {
             return config
         }
 

@@ -26,6 +26,9 @@ const SIGN_IN_MESSAGES: [RegExp, string][] = [
     [/invalid identifier or password/i, 'Adresse e-mail ou mot de passe incorrect. Attention : le mot de passe distingue les majuscules des minuscules.'],
     [/email is not confirmed/i, 'Ce compte n’est pas encore confirmé : saisissez le code reçu par e-mail lors de l’inscription.'],
     [/has been blocked/i, 'Ce compte est bloqué. Contactez PEG pour le réactiver.'],
+    // Session refusée juste après la connexion (serveur surchargé, 22/10/2026) :
+    // jamais le message brut de Strapi.
+    [/missing or invalid credentials/i, 'Le serveur n’a pas pu ouvrir votre session. Réessayez dans un instant.'],
 ]
 
 const signInMessage = (raw: string): string =>
