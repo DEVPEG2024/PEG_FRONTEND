@@ -1,6 +1,8 @@
 import type { Product } from '@/@types/product';
 import {
+  answerChatQuestion,
   applyLineChoice,
+  chatQuestionFor,
   canonOption,
   lineChoiceFor,
   describeLines,
@@ -18,6 +20,7 @@ import {
   personalizationStatus,
   readChatPrefill,
   selectionForLine,
+  type ChatOffer,
   type ChatOfferLine,
 } from '@/components/template/chatOffer';
 
@@ -374,5 +377,74 @@ describe('choix en un clic sur la fiche (couleur ou taille manquante)', () => {
     expect(moved.find((s) => s.color.name === 'BLANC')?.quantity).toBe(1);
     expect(moved.find((s) => s.color.name === 'NOIR')?.quantity).toBe(3);
     expect(moved.find((s) => s.color.name === 'ROUGE')?.quantity).toBe(2);
+  });
+});
+
+describe('question posée dans le chat avant le panier (couleur, taille, format)', () => {
+  // « Il ne faut pas sortir du chat sans savoir la couleur, ensuite tout doit être
+  // rempli automatiquement » (23/10/2026).
+  const offer = (lines: ChatOfferLine[]): ChatOffer => ({ id: 'o', lines, totalHT: 0, totalTTC: 0 });
+  const bonnet = product({ sizes: [opt('tu', 'Taille unique')] as never, colors: [opt('noir', 'NOIR'), opt('rouge', 'ROUGE')] as never });
+  const polo = product({ sizes: [opt('l', 'L'), opt('s', 'S')] as never, colors: [opt('marine', 'MARINE'), opt('blanc', 'BLANC')] as never });
+
+  it('couleur non dite → couleur demandée, quantité des lignes sans couleur', () => {
+    const q = chatQuestionFor(bonnet, offer([line({ quantity: 10 })]), 'p1')!;
+    expect(q).toMatchObject({ dimension: 'color', label: 'couleur', quantity: 10, productName: 'Produit' });
+    expect(q.options.map((o) => o.name)).toEqual(['NOIR', 'ROUGE']);
+  });
+
+  it('couleur introuvable (« VIOLET ») → demandée aussi ; couleur unique ou connue → rien', () => {
+    expect(chatQuestionFor(bonnet, offer([line({ requestedColor: 'VIOLET' })]), 'p1')?.dimension).toBe('color');
+    expect(chatQuestionFor(bonnet, offer([line({ colorDocumentId: 'noir' })]), 'p1')).toBeNull();
+    expect(chatQuestionFor(bonnet, offer([line({ colorName: 'rouge' })]), 'p1')).toBeNull();
+    const casquette = product({ sizes: [opt('tu', 'Taille unique')] as never, colors: [opt('noir', 'NOIR')] as never });
+    expect(chatQuestionFor(casquette, offer([line()]), 'p1')).toBeNull();
+  });
+
+  it('taille ET couleur manquantes → la couleur d’abord, puis la taille (ordre naturel)', () => {
+    const o = offer([line({ quantity: 6 })]);
+    const q1 = chatQuestionFor(polo, o, 'p1')!;
+    expect(q1.dimension).toBe('color');
+    const o2 = answerChatQuestion(o, polo, q1, polo.colors[0]);
+    expect(o2.lines[0]).toMatchObject({ colorDocumentId: 'marine', colorName: 'MARINE' });
+    const q2 = chatQuestionFor(polo, o2, 'p1')!;
+    expect(q2).toMatchObject({ dimension: 'size', label: 'taille', quantity: 6 });
+    expect(q2.options.map((x) => x.name)).toEqual(['S', 'L']);
+    const o3 = answerChatQuestion(o2, polo, q2, q2.options[1]);
+    expect(chatQuestionFor(polo, o3, 'p1')).toBeNull();
+    expect(selectionForLines(polo, o3.lines)).toEqual([expect.objectContaining({ quantity: 6, size: expect.objectContaining({ name: 'L' }), color: expect.objectContaining({ name: 'MARINE' }) })]);
+  });
+
+  it('la réponse ne touche que les lignes de CE produit qui en manquaient, et remplace une valeur introuvable', () => {
+    const o = offer([
+      line({ quantity: 5, colorDocumentId: 'blanc', colorName: 'BLANC' }),
+      line({ quantity: 3, requestedColor: 'VIOLET' }),
+      line({ productDocumentId: 'autre', productName: 'Autre', quantity: 4 }),
+    ]);
+    const q = chatQuestionFor(polo, o, 'p1')!;
+    expect(q.quantity).toBe(3);
+    const next = answerChatQuestion(o, polo, q, polo.colors[0]);
+    expect(next.lines[0]).toEqual(o.lines[0]);
+    expect(next.lines[1]).toMatchObject({ colorDocumentId: 'marine', colorName: 'MARINE' });
+    expect(next.lines[1].requestedColor).toBeUndefined();
+    expect(next.lines[2]).toEqual(o.lines[2]);
+  });
+
+  it('pack sans format dit → « format » demandé (la fiche le présélectionnait sans le dire)', () => {
+    const cartes = product({
+      pricingMode: 'packs',
+      priceTiers: [{ minQuantity: 100, price: 90 }, { minQuantity: 500, price: 180 }],
+      sizes: [opt('v', '85x55mm vertical'), opt('h', '55x85mm horizontal')],
+    } as never);
+    const q = chatQuestionFor(cartes, offer([line({ quantity: 500 })]), 'p1')!;
+    expect(q).toMatchObject({ dimension: 'size', label: 'format', quantity: 500 });
+    const next = answerChatQuestion(offer([line({ quantity: 500 })]), cartes, q, q.options[0]);
+    expect(chatQuestionFor(cartes, next, 'p1')).toBeNull();
+    expect(missingSteps(cartes, next.lines, selectionForLines(cartes, next.lines))).toEqual([]);
+  });
+
+  it('m² : rien à demander dans le chat (les dimensions restent sur la fiche)', () => {
+    const bache = product({ pricingMode: 'm2', colors: [opt('a', 'A'), opt('b', 'B')] } as never);
+    expect(chatQuestionFor(bache, offer([line()]), 'p1')).toBeNull();
   });
 });

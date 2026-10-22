@@ -7,8 +7,29 @@ import { chatTraceFor } from './chat/chatTrace';
 import { RECAP_OFFER_SUFFIX } from './chat/chatForm';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
-import { describeOffer, planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
+import type { Color, Product, Size } from '@/@types/product';
+import { answerChatQuestion, chatQuestionFor, describeOffer, planOffer, type ChatNavState, type ChatOffer, type ChatQuestion } from './chatOffer';
 import type { ChatFormAnswer } from './chat/chatFormTypes';
+
+/**
+ * Question en cours sous l'offre : le produit chargé sert à compléter les lignes.
+ * `offer` = l'offre déjà complétée par les réponses précédentes (couleur puis taille),
+ * sans attendre que le message du chat soit relu.
+ */
+type PendingQuestion = { question: ChatQuestion; product: Product; lineIds?: string[]; offer: ChatOffer };
+
+const HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+// Pastilles au même dessin que celles de la question couleur du serveur (ChatChoiceView) : 40 px sur téléphone.
+const CHIP_CSS = `
+.pco-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 7px 13px; border-radius: 999px;
+  cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; line-height: 1.25; color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); transition: background .15s, border-color .15s; }
+.pco-chip:hover:not(:disabled), .pco-chip:focus-visible { background: rgba(255,255,255,0.12); border-color: rgba(124,92,255,0.55); outline: none; }
+.pco-chip:disabled { opacity: .6; cursor: not-allowed; }
+.pco-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.45); }
+@media (max-width: 767.98px) { .pco-chip { min-height: 40px; font-size: 14px; } }
+`;
 
 type Props = {
   offer: ChatOffer;
@@ -42,6 +63,7 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   const user = useAppSelector((state) => state.auth.user.user);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [pending, setPending] = useState<PendingQuestion | null>(null);
   const userCart = useUserCart(user?.documentId ?? '');
 
   // Une ligne à finaliser est considérée faite dès qu'une NOUVELLE ligne du même
@@ -62,14 +84,30 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   // Offre du récapitulatif de personnalisation : « Modifier » l'a ouverte sur la fiche.
   const fromRecap = offer.id.endsWith(RECAP_OFFER_SUFFIX);
 
-  /** Planifie les lignes demandées, ajoute celles qui sont prêtes, ouvre la première à finaliser. */
-  const run = async (lineIds?: string[]) => {
+  /**
+   * Planifie les lignes demandées, ajoute celles qui sont prêtes, ouvre la première à
+   * finaliser. Une couleur, une taille ou un format manque : la question est posée ICI,
+   * sous l'offre, avant tout ajout — on ne quitte jamais le chat sans la couleur.
+   * `current` : l'offre complétée par une réponse (la prop n'est pas encore à jour).
+   * `toSheet` : « Répartir les tailles sur la fiche » (plusieurs tailles pour un produit).
+   */
+  const run = async (lineIds?: string[], current: ChatOffer = offer, opts: { toSheet?: boolean } = {}) => {
     if (busy || !user?.documentId) return;
     setBusy(true);
     setError(false);
     try {
-      const subset = lineIds ? { ...offer, lines: offer.lines.filter((l) => lineIds.includes(l.productDocumentId)) } : offer;
+      const subset = lineIds ? { ...current, lines: current.lines.filter((l) => lineIds.includes(l.productDocumentId)) } : current;
       const plan = await planOffer(subset, { answers: formAnswers });
+      for (const p of plan) {
+        if (p.kind !== 'complete') continue;
+        const question = chatQuestionFor(p.product, current, p.line.productDocumentId);
+        // La taille peut se répartir sur la fiche ; la couleur, jamais sans l'avoir dite.
+        if (question && !(opts.toSheet && question.label === 'taille')) {
+          setPending({ question, product: p.product, lineIds, offer: current });
+          return;
+        }
+      }
+      setPending(null);
       const ready = plan.filter((p) => p.kind === 'ready');
       const todo = plan.filter((p) => p.kind === 'complete');
       const addedIds: string[] = [];
@@ -83,15 +121,15 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
           formAnswer: r.formAnswer,
           sizeAndColors: r.sizeAndColors,
           userDocumentId: user.documentId,
-          ...chatTraceFor(offer.id, user),
+          ...chatTraceFor(current.id, user),
         } as unknown as CartItem));
       }
       const toPersonalize = ready.some((r) => r.kind === 'ready' && r.formAnswer);
       if (!todo.length) {
         // La pop-up « Ajoutez votre logo » s'ouvre d'elle-même au panier si besoin.
         toast.success(ready.length > 1 ? 'Offre ajoutée au panier' : 'Article ajouté au panier');
-        const remaining = lineIds ? (offer.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : [];
-        onChange(remaining.length ? { ...offer, pendingIds: remaining } : { ...offer, status: 'added', pendingIds: [] });
+        const remaining = lineIds ? (current.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : [];
+        onChange(remaining.length ? { ...current, pendingIds: remaining } : { ...current, status: 'added', pendingIds: [] });
         // Article à personnaliser : le panier ouvre directement la pop-up « Ajoutez votre logo ».
         onGo('/customer/cart', toPersonalize ? { openPersonalization: true } : undefined);
         return;
@@ -99,11 +137,11 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
       const first = todo[0];
       if (first.kind !== 'complete') return;
       onChange({
-        ...offer,
+        ...current,
         status: 'completing',
         // « Finaliser » d'une seule ligne : les autres lignes en attente le restent.
         pendingIds: Array.from(new Set([
-          ...(lineIds ? (offer.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : []),
+          ...(lineIds ? (current.pendingIds ?? []).filter((id) => !lineIds.includes(id)) : []),
           ...todo.map((t) => t.line.productDocumentId),
         ])),
         // Inclut les lignes « prêtes » qu'on vient d'ajouter (dispatch synchrone) : elles ne
@@ -120,13 +158,49 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
     }
   };
 
+  /** Réponse à la question : les lignes sont complétées puis l'ajout reprend (nouvelle question ou panier). */
+  const answer = (option: Size | Color) => {
+    if (!pending || busy) return;
+    const next = answerChatQuestion(pending.offer, pending.product, pending.question, option);
+    onChange(next);
+    run(pending.lineIds, next);
+  };
+
+  const q = pending?.question;
+  // Espaces insécables : le « ? » ne passe jamais seul à la ligne (comme la question du serveur).
+  const nb = '\u00a0';
+  const pieces = q ? `${q.quantity > 1 ? `vos ${q.quantity} pièces` : 'votre pièce'} «${nb}${q.productName}${nb}»${nb}` : '';
+
   return (
     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '6px', whiteSpace: 'normal' }}>
       <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.65)' }}>
         {summary} — <strong style={{ color: '#fff' }}>{fmt(offer.totalHT)} HT</strong> · {fmt(offer.totalTTC)} TTC
       </div>
 
-      {offer.status === 'added' ? (
+      {q && <style>{CHIP_CSS}</style>}
+      {q ? (
+        <div role="group" aria-label={`Choisir ${q.label === 'format' ? 'le' : 'la'} ${q.label} — ${q.productName}`} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ fontSize: '12.5px', color: '#fff', fontWeight: 600 }}>
+            {q.label === 'format' ? 'Quel' : 'Quelle'} {q.label} pour {pieces}?
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {q.options.map((o) => {
+              const hex = q.dimension === 'color' && HEX_RE.test(String(o.value ?? '').trim()) ? String(o.value).trim() : null;
+              return (
+                <button key={o.documentId ?? o.name} type="button" className="pco-chip" disabled={busy} onClick={() => answer(o)}>
+                  {hex && <span className="pco-dot" aria-hidden="true" style={{ background: hex }} />}
+                  {o.name}
+                </button>
+              );
+            })}
+          </div>
+          {q.label === 'taille' && (
+            <button type="button" style={btn(false)} disabled={busy} onClick={() => pending && run(pending.lineIds, pending.offer, { toSheet: true })}>
+              Plusieurs tailles ? Répartir sur la fiche <MdArrowForward size={15} />
+            </button>
+          )}
+        </div>
+      ) : offer.status === 'added' ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80', fontSize: '12.5px', fontWeight: 600 }}>
             <MdCheckCircle size={16} /> Dans votre panier
@@ -140,7 +214,7 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
           <div style={{ fontSize: '12px', color: '#fcd34d' }}>
             {fromRecap
               ? 'Votre personnalisation est ouverte sur la fiche produit.'
-              : 'Plus qu’une étape sur la fiche : choisir la taille ou la couleur manquante.'}
+              : 'Plus qu’une étape sur la fiche : répartir les tailles, indiquer les dimensions ou valider le BAT.'}
           </div>
           {pendingLines.map((l) => (
             <button key={l.productDocumentId} type="button" style={btn(true)} disabled={busy} onClick={() => run([l.productDocumentId])}>

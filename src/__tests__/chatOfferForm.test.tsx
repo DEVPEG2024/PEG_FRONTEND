@@ -188,7 +188,18 @@ const clickAdd = async (
     ).click();
   });
   await flush();
-  return { cart: cartOf(store), onGo, onChange };
+  return { cart: cartOf(store), store, onGo, onChange };
+};
+
+const clickButton = async (label: string | RegExp) => {
+  const b = [...container.querySelectorAll('button')].find((x) =>
+    typeof label === 'string' ? x.textContent?.trim() === label : label.test(x.textContent ?? '')
+  );
+  expect(b).toBeDefined();
+  await act(async () => {
+    b!.click();
+  });
+  await flush();
 };
 
 describe('ChatOfferAction — personnalisation remplie dans le chat', () => {
@@ -236,9 +247,22 @@ describe('ChatOfferAction — personnalisation remplie dans le chat', () => {
     expect(personalizationStatus(cart[0])).toBe('required');
   });
 
-  it('tailles à répartir : la fiche s’ouvre avec la réponse du chat, rien n’est ajouté', async () => {
-    const { cart, onGo } = await clickAdd(offerOf([polo()]), { polo1: answer });
+  it('taille non dite : demandée dans le chat ; un clic → au panier AVEC la réponse du chat', async () => {
+    const { cart, store, onGo } = await clickAdd(offerOf([polo()]), { polo1: answer });
     expect(cart).toHaveLength(0);
+    expect(onGo).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Quelle taille pour vos 20 pièces');
+    await clickButton('M');
+    const items = cartOf(store);
+    expect(items).toHaveLength(1);
+    expect(items[0].sizeAndColors).toEqual([expect.objectContaining({ quantity: 20, size: expect.objectContaining({ name: 'M' }) })]);
+    expect((items[0].formAnswer as unknown as { answer: ChatFormAnswer }).answer).toEqual(answer);
+  });
+
+  it('tailles à répartir : « Répartir sur la fiche » ouvre la fiche avec la réponse du chat, rien n’est ajouté', async () => {
+    const { store, onGo } = await clickAdd(offerOf([polo()]), { polo1: answer });
+    await clickButton(/Répartir sur la fiche/);
+    expect(cartOf(store)).toHaveLength(0);
     expect(onGo).toHaveBeenCalledWith('/customer/product/polo1', {
       chatOffer: expect.objectContaining({
         offerId: 'o1-perso',

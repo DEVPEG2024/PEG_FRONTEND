@@ -246,6 +246,82 @@ export const applyLineChoice = (
   return sortSelections(shift(released, option, choice.line.quantity));
 };
 
+/**
+ * Question posée DANS LE CHAT au clic « Ajouter au panier » (demande du 23/10/2026 :
+ * « il ne faut pas sortir du chat sans savoir la couleur, ensuite tout doit être
+ * rempli automatiquement »). Couleur d'abord, puis taille (ou format d'un pack) :
+ * une fois répondu, les lignes de l'offre sont complétées et entrent directement au
+ * panier. Couvre les offres où le serveur n'a pas demandé la couleur (anciens
+ * messages) et les tailles, qu'il ne demande pas. null : rien à demander, ou une
+ * étape que seule la fiche sait faire (dimensions au m², validation du BAT).
+ */
+export type ChatQuestion = {
+  productDocumentId: string;
+  productName: string;
+  dimension: 'color' | 'size';
+  /** Mot affiché : « couleur », « taille » ou « format » (pack). */
+  label: 'couleur' | 'taille' | 'format';
+  /** Pièces concernées (lignes de ce produit sans cette dimension). */
+  quantity: number;
+  options: (Size | Color)[];
+};
+
+export const chatQuestionFor = (product: Product, offer: ChatOffer, productDocumentId: string): ChatQuestion | null => {
+  if (isProductM2Pricing(product)) return null;
+  const lines = offer.lines.filter((l) => l.productDocumentId === productDocumentId);
+  const ask = (dimension: 'color' | 'size', label: ChatQuestion['label'], options: (Size | Color)[], without: ChatOfferLine[]): ChatQuestion | null =>
+    without.length ? {
+      productDocumentId,
+      productName: lines[0]?.productName || product.name,
+      dimension, label, options,
+      quantity: without.reduce((n, l) => n + l.quantity, 0),
+    } : null;
+  const colors = product.colors ?? [];
+  if (colors.length > 1) {
+    const q = ask('color', 'couleur', colors, lines.filter((l) => !resolveOption(colors, l.colorDocumentId, l.colorName ?? l.requestedColor, DEFAULT_COLOR)));
+    if (q) return q;
+  }
+  const sizes = product.sizes ?? [];
+  if (sizes.length > 1) {
+    // Pack sans format dit : la fiche le présélectionnait au format par défaut, sans le dire.
+    const pack = isProductPackPricing(product);
+    const without = pack
+      ? lines.filter((l) => !l.sizeDocumentId && !l.sizeName && !l.requestedSize)
+      : lines.filter((l) => !resolveOption(sizes, l.sizeDocumentId, l.sizeName ?? l.requestedSize, DEFAULT_SIZE));
+    return ask('size', pack ? 'format' : 'taille', sortSizes(sizes), without);
+  }
+  return null;
+};
+
+/**
+ * Réponse à la question : l'option va sur les lignes de ce produit qui ne l'avaient
+ * pas (une valeur introuvable est remplacée) ; les autres lignes ne bougent pas.
+ */
+export const answerChatQuestion = (offer: ChatOffer, product: Product, question: ChatQuestion, option: Size | Color): ChatOffer => {
+  const isColor = question.dimension === 'color';
+  const list = (isColor ? product.colors : product.sizes) ?? [];
+  const pack = !isColor && isProductPackPricing(product);
+  const lacks = (l: ChatOfferLine) => (isColor
+    ? !resolveOption(list, l.colorDocumentId, l.colorName ?? l.requestedColor, DEFAULT_COLOR)
+    : pack
+      ? !l.sizeDocumentId && !l.sizeName && !l.requestedSize
+      : !resolveOption(list, l.sizeDocumentId, l.sizeName ?? l.requestedSize, DEFAULT_SIZE));
+  return {
+    ...offer,
+    lines: offer.lines.map((l) => {
+      if (l.productDocumentId !== question.productDocumentId || !lacks(l)) return l;
+      if (isColor) {
+        const next: ChatOfferLine = { ...l, colorDocumentId: option.documentId, colorName: option.name };
+        delete next.requestedColor;
+        return next;
+      }
+      const next: ChatOfferLine = { ...l, sizeDocumentId: option.documentId, sizeName: option.name };
+      delete next.requestedSize;
+      return next;
+    }),
+  };
+};
+
 /** Sélection d'une seule ligne (cas simple). */
 export const selectionForLine = (product: Product, line: ChatOfferLine): SizeAndColorSelection[] | null =>
   selectionForLines(product, [line]);

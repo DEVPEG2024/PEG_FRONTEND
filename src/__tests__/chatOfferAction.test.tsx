@@ -32,6 +32,25 @@ const products: Record<string, unknown> = {
     colors: [{ documentId: 'blanc', name: 'BLANC', value: '#fff' }],
     form: { documentId: 'f53', fields: [] },
   },
+  // Offres ESDL DOUVAINE (prod, 22/10/2026) : une seule couleur pour la casquette.
+  casquette: {
+    documentId: 'casquette', name: 'Casquette ESDL', pricingMode: 'tiers', priceTiers: [{ minQuantity: 1, price: 12.5 }, { minQuantity: 10, price: 11.3 }],
+    sizes: [{ documentId: 'tu', name: 'Taille unique', value: 'Taille unique' }],
+    colors: [{ documentId: 'noir', name: 'NOIR', value: '#000000' }],
+    form: null,
+  },
+  bonnetEsdl: {
+    documentId: 'bonnetEsdl', name: 'Bonnet ESDL', pricingMode: 'tiers', priceTiers: [{ minQuantity: 1, price: 21.04 }, { minQuantity: 10, price: 12.5 }],
+    sizes: [{ documentId: 'tu', name: 'Taille unique', value: 'Taille unique' }],
+    colors: [{ documentId: 'noir', name: 'NOIR', value: '#000000' }, { documentId: 'rouge', name: 'ROUGE', value: '#ec0e0e' }],
+    form: null,
+  },
+  polo: {
+    documentId: 'polo', name: 'Polo', pricingMode: 'tiers', priceTiers: [{ minQuantity: 1, price: 15 }],
+    sizes: [{ documentId: 'l', name: 'L', value: 'L' }, { documentId: 's', name: 'S', value: 'S' }],
+    colors: [{ documentId: 'marine', name: 'MARINE', value: '#1b2a4a' }, { documentId: 'blanc', name: 'BLANC', value: '#fff' }],
+    form: null,
+  },
 };
 
 jest.mock('@/services/ProductServices', () => ({
@@ -78,8 +97,19 @@ const renderAndClick = async (offer: ChatOffer) => {
   await act(async () => { button.click(); });
   // laisse se résoudre le chargement (simulé) des produits
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
-  return { cart: (store.getState() as { base: { cart: { cart: CartItem[] } } }).base.cart.cart, onGo, onChange };
+  const cartOf = () => (store.getState() as { base: { cart: { cart: CartItem[] } } }).base.cart.cart;
+  return { cart: cartOf(), cartOf, onGo, onChange };
 };
+
+/** Texte de la question posée sous l'offre, ou null. */
+const questionText = () => container.querySelector('[role="group"]')?.textContent ?? null;
+const click = async (label: string | RegExp) => {
+  const b = [...container.querySelectorAll('button')].find((x) => (typeof label === 'string' ? x.textContent?.trim() === label : label.test(x.textContent ?? '')));
+  expect(b).toBeDefined();
+  await act(async () => { b!.click(); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+};
+const qty = (item: CartItem) => item.sizeAndColors.map((x) => `${x.quantity} ${x.size.name} ${x.color.name}`);
 
 describe('ChatOfferAction — l’offre entre dans le panier', () => {
   it('produit à personnaliser (10 bonnets noirs) → dans le panier, personnalisation en attente, ouverture du panier', async () => {
@@ -95,12 +125,74 @@ describe('ChatOfferAction — l’offre entre dans le panier', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'added' }));
   });
 
-  it('tailles à répartir (10 t-shirts sans taille) → fiche pré-remplie, rien d’ajouté', async () => {
-    const { cart, onGo } = await renderAndClick(offerOf([
+  it('taille non dite (10 t-shirts) → la taille est demandée DANS le chat, un clic → panier', async () => {
+    const { cart, cartOf, onGo } = await renderAndClick(offerOf([
       { productDocumentId: 'tshirt', productName: 'T-shirt', quantity: 10, totalHT: 50 },
     ]));
     expect(cart).toHaveLength(0);
+    expect(onGo).not.toHaveBeenCalled();
+    expect(questionText()).toContain('Quelle taille pour vos 10 pièces');
+    await click('M');
+    expect(cartOf()).toHaveLength(1);
+    expect(qty(cartOf()[0])).toEqual(['10 M BLANC']);
+    // T-shirt à personnaliser : le panier ouvre la pop-up logo, comme une offre complète.
+    expect(onGo).toHaveBeenCalledWith('/customer/cart', { openPersonalization: true });
+  });
+
+  it('plusieurs tailles voulues → « Répartir sur la fiche » ouvre la fiche pré-remplie', async () => {
+    const { cartOf, onGo } = await renderAndClick(offerOf([
+      { productDocumentId: 'tshirt', productName: 'T-shirt', quantity: 10, totalHT: 50 },
+    ]));
+    await click(/Répartir sur la fiche/);
+    expect(cartOf()).toHaveLength(0);
     expect(onGo).toHaveBeenCalledWith('/customer/product/tshirt', { chatOffer: expect.objectContaining({ quantity: 10 }) });
+  });
+
+  it('cas ESDL : 10 Bonnet ESDL (2 couleurs) + 10 Casquette ESDL → couleur demandée, rien ne sort du chat, puis les DEUX au panier', async () => {
+    const { cart, cartOf, onGo } = await renderAndClick(offerOf([
+      { productDocumentId: 'bonnetEsdl', productName: 'Bonnet ESDL', quantity: 10, totalHT: 125 },
+      { productDocumentId: 'casquette', productName: 'Casquette ESDL', quantity: 10, totalHT: 113 },
+    ]));
+    // Avant : la casquette entrait seule et la fiche du bonnet s'ouvrait avec 0 pièce.
+    expect(cart).toHaveLength(0);
+    expect(onGo).not.toHaveBeenCalled();
+    expect(questionText()).toContain('Quelle couleur pour vos 10 pièces');
+    expect(questionText()).toContain('Bonnet ESDL');
+    expect(container.querySelector('button[aria-label="Ajouter l\'offre au panier"]')).toBeNull();
+    await click('ROUGE');
+    const items = cartOf();
+    expect(items.map((i) => i.product.name)).toEqual(['Bonnet ESDL', 'Casquette ESDL']);
+    expect(qty(items[0])).toEqual(['10 Taille unique ROUGE']);
+    expect(qty(items[1])).toEqual(['10 Taille unique NOIR']);
+    expect(onGo).toHaveBeenCalledTimes(1);
+    expect(onGo).toHaveBeenCalledWith('/customer/cart', undefined);
+  });
+
+  it('taille ET couleur manquantes → couleur puis taille, puis panier (aucune fiche)', async () => {
+    const { cartOf, onGo, onChange } = await renderAndClick(offerOf([
+      { productDocumentId: 'polo', productName: 'Polo', quantity: 6, totalHT: 90 },
+    ]));
+    expect(questionText()).toContain('Quelle couleur pour vos 6 pièces');
+    await click('MARINE');
+    expect(cartOf()).toHaveLength(0);
+    expect(questionText()).toContain('Quelle taille pour vos 6 pièces');
+    // Tailles dans l'ordre naturel, pas dans l'ordre de la base.
+    expect([...container.querySelectorAll('[role="group"] button')].map((b) => b.textContent?.trim()).slice(0, 2)).toEqual(['S', 'L']);
+    await click('L');
+    expect(qty(cartOf()[0])).toEqual(['6 L MARINE']);
+    expect(onGo).toHaveBeenCalledWith('/customer/cart', undefined);
+    // L'offre mémorisée dans le message porte la couleur et la taille choisies.
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'added' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ lines: [expect.objectContaining({ colorName: 'MARINE', sizeName: 'L' })] }));
+  });
+
+  it('couleur demandée introuvable (« VIOLET ») → reposée dans le chat, remplacée par le choix', async () => {
+    const { cartOf } = await renderAndClick(offerOf([
+      { productDocumentId: 'bonnetEsdl', productName: 'Bonnet ESDL', quantity: 3, requestedColor: 'VIOLET', totalHT: 63 },
+    ]));
+    expect(questionText()).toContain('Quelle couleur pour vos 3 pièces');
+    await click('NOIR');
+    expect(qty(cartOf()[0])).toEqual(['3 Taille unique NOIR']);
   });
 
   it('répartition « 5 S et 5 M » → UNE ligne de panier à deux tailles (palier sur 10)', async () => {
