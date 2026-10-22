@@ -786,7 +786,8 @@ export async function apiGetOrderItem(documentId: string) {
 // update BAT file on product (admin uploads new BAT) + reset orderItem status to pending
 // `batFileId` : id NUMÉRIQUE du fichier envoyé (relation média Strapi) — un
 // documentId faisait échouer la mutation, le BAT du projet ne partait jamais.
-export async function apiUpdateBatFile(productDocumentId: string, orderItemDocumentId: string, batFileId: string | number) {
+// `null` supprime le BAT du produit.
+export async function apiUpdateBatFile(productDocumentId: string, orderItemDocumentId: string, batFileId: string | number | null) {
     const updateProductQuery = `
     mutation UpdateProductBatFile($documentId: ID!, $data: ProductInput!) {
         updateProduct(documentId: $documentId, data: $data) {

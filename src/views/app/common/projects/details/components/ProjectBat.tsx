@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { MdDownload, MdUploadFile, MdCheckCircle, MdCancel, MdHourglassEmpty, MdFullscreen } from 'react-icons/md';
+import { MdDownload, MdUploadFile, MdCheckCircle, MdCancel, MdHourglassEmpty, MdFullscreen, MdDeleteOutline } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
@@ -40,6 +40,14 @@ const batStatusConfig = {
   },
 };
 
+// Aucun fichier (pas encore déposé, ou supprimé) : rien n'attend le client.
+const noBatConfig = {
+  color: 'rgba(255,255,255,0.6)',
+  bg: 'rgba(255,255,255,0.05)',
+  border: 'rgba(255,255,255,0.12)',
+  Icon: MdHourglassEmpty,
+};
+
 const ProjectBat = () => {
   const dispatch = useAppDispatch();
   const { project } = useAppSelector((state) => state.projectDetails.data);
@@ -55,6 +63,7 @@ const ProjectBat = () => {
   const [batCommentInput, setBatCommentInput] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   // Même garde que dans l'aperçu plein écran : l'approbation d'un BAT est un
   // accord de production, elle ne doit pas pouvoir être donnée sans que le
   // fichier ait été ouvert au moins une fois (l'aperçu peut rester blanc).
@@ -69,7 +78,9 @@ const ProjectBat = () => {
   const batFile = bat?.file;
   const batStatus = bat?.status ?? 'pending';
   const batComment = bat?.comment;
-  const statusCfg = batStatusConfig[batStatus] ?? batStatusConfig.pending;
+  const statusCfg = batFile?.url
+    ? batStatusConfig[batStatus] ?? batStatusConfig.pending
+    : { ...noBatConfig, label: isSuperAdmin ? 'Aucun BAT déposé' : 'BAT en préparation' };
   const { Icon } = statusCfg;
   const projectLink = `/common/projects/details/${project?.documentId}?tab=BAT`;
   const rawSenderId = user?.documentId || user?.id || user?._id;
@@ -105,6 +116,31 @@ const ProjectBat = () => {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Admin : suppression à tout moment, BAT validé compris. Sur une commande, le
+  // BAT est celui du produit commandé : il quitte aussi sa fiche (dit avant).
+  const handleDeleteBat = async () => {
+    if (!project || !bat?.file) return;
+    const message = onProduct
+      ? `Supprimer le BAT « ${batFile?.name} » ?\n\nC'est le BAT du produit « ${product?.name} » : il sera aussi retiré de sa fiche.`
+      : `Supprimer le BAT « ${batFile?.name} » ?`;
+    if (!window.confirm(message)) return;
+    setDeleting(true);
+    try {
+      if (onProduct) {
+        await apiUpdateBatFile(product!.documentId, orderItem!.documentId, null);
+      } else {
+        await apiUpdateProjectBat(project.documentId, { batFile: null, batStatus: null, batComment: null });
+      }
+      await dispatch(getProjectById(project.documentId));
+      setBatOpened(false);
+      toast.success('BAT supprimé');
+    } catch {
+      toast.error('Échec de la suppression du BAT');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -239,7 +275,7 @@ const ProjectBat = () => {
                   {batFile.name}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setPreviewOpen(true)}
                   style={{
@@ -263,6 +299,21 @@ const ProjectBat = () => {
                   }}>
                   Télécharger
                 </a>
+                {isSuperAdmin && (
+                  <button
+                    onClick={handleDeleteBat}
+                    disabled={deleting}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '8px', padding: '6px 14px',
+                      color: '#f87171', fontSize: '13px', fontWeight: 600,
+                      cursor: deleting ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    <MdDeleteOutline size={16} /> {deleting ? 'Suppression...' : 'Supprimer'}
+                  </button>
+                )}
               </div>
             </div>
           ) : (

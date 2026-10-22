@@ -62,7 +62,8 @@ type ProductFormProps = {
   type: 'edit' | 'new';
   onDiscard?: () => void;
   onDelete?: OnDelete;
-  onFormSubmit: (formData: ProductFormModel, batFile: PegFile | null) => void;
+  /** `batRemoved` : le BAT déjà enregistré est à retirer du produit */
+  onFormSubmit: (formData: ProductFormModel, batFile: PegFile | null, batRemoved?: boolean) => void;
   sizes: Options[];
   colors: Options[];
   /** Noms des tailles/couleurs déjà rencontrées (valeurs hors catégorie) */
@@ -151,6 +152,7 @@ const ProductForm = (props: ProductFormProps) => {
   } = props;
 
   const [batFile, setBatFile] = useState<PegFile | null>(null);
+  const [batRemoved, setBatRemoved] = useState(false);
   const [watermarkTarget, setWatermarkTarget] = useState<{ file: File; index: number } | null>(null);
   // Store originals before watermark so user can undo
   const [originals, setOriginals] = useState<Map<string, PegFile>>(new Map());
@@ -169,7 +171,7 @@ const ProductForm = (props: ProductFormProps) => {
 
   const onSubmit = async (values: ProductFormModel) => {
     const formData = cloneDeep(values);
-    await onFormSubmit(formData, batFile);
+    await onFormSubmit(formData, batFile, batRemoved);
   };
 
   const onFileAdd = async (file: File) => {
@@ -355,6 +357,8 @@ const ProductForm = (props: ProductFormProps) => {
               batFile={batFile}
               setBatFile={setBatFile}
               currentBatUrl={currentBatUrl}
+              batRemoved={batRemoved}
+              setBatRemoved={setBatRemoved}
               showSuggested={showSuggested}
               currentStep={currentStep}
             />

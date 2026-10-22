@@ -320,7 +320,7 @@ const EditProduct = () => {
     return createProduct;
   };
 
-  const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null) => {
+  const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null, batRemoved = false) => {
     try {
       // Média Strapi : la relation attend l'id NUMÉRIQUE du fichier (comme les images),
       // pas son documentId.
@@ -364,8 +364,10 @@ const EditProduct = () => {
       }
       // `batFile` : seulement l'id numérique d'un NOUVEL envoi — jamais l'objet lu du
       // produit. Avant, il était toujours retiré : aucun BAT n'était jamais rattaché.
+      // `null` détache le BAT supprimé (croix sur « BAT actuel »).
       delete data.batFile;
       if (batFileId !== undefined) data.batFile = batFileId;
+      else if (batRemoved) data.batFile = null;
       // Champs CŒUR du schéma produit (backend prod désormais aligné sur `main`) :
       // jamais retirés du payload. C'est le correctif du bug « Packs/m² ne
       // s'enregistre pas » — pricingMode & consorts étaient stripés silencieusement.

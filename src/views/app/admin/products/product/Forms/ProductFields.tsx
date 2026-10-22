@@ -49,6 +49,9 @@ type ProductFieldsProps = {
   batFile: PegFile | null;
   setBatFile: (f: PegFile | null) => void;
   currentBatUrl?: string | null;
+  /** BAT enregistré retiré (appliqué à l'enregistrement de la fiche) */
+  batRemoved?: boolean;
+  setBatRemoved?: (removed: boolean) => void;
   /** Affiche le toggle « Suggestion client » (champ suggested déployé côté Strapi) */
   showSuggested?: boolean;
   currentStep?: number;
@@ -121,6 +124,8 @@ const ProductFields = (props: ProductFieldsProps) => {
     batFile,
     setBatFile,
     currentBatUrl,
+    batRemoved,
+    setBatRemoved,
     showSuggested,
     currentStep,
   } = props;
@@ -795,8 +800,9 @@ const ProductFields = (props: ProductFieldsProps) => {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
             <label style={{ ...fieldLabel, color: 'rgba(168,85,247,0.7)' }}>Fichier BAT</label>
 
-            {/* Current BAT */}
-            {(batFile || currentBatUrl) && (
+            {/* Current BAT — la croix annule un nouvel envoi, sinon retire le BAT
+                enregistré (appliqué à l'enregistrement de la fiche) */}
+            {(batFile || (currentBatUrl && !batRemoved)) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px' }}>
                 <HiOutlineDocumentText size={18} style={{ color: '#c084fc', flexShrink: 0 }} />
                 <span style={{ color: '#c084fc', fontSize: '13px', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -809,11 +815,26 @@ const ProductFields = (props: ProductFieldsProps) => {
                 )}
                 <button
                   type="button"
-                  onClick={() => setBatFile(null)}
+                  onClick={() => (batFile ? setBatFile(null) : setBatRemoved?.(true))}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', display: 'flex', padding: '2px' }}
-                  title="Retirer le fichier"
+                  title={batFile ? 'Annuler ce fichier' : 'Supprimer le BAT'}
+                  aria-label={batFile ? 'Annuler ce fichier' : 'Supprimer le BAT'}
                 >
                   <HiX size={14} />
+                </button>
+              </div>
+            )}
+            {currentBatUrl && batRemoved && !batFile && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px' }}>
+                <span style={{ color: '#f87171', fontSize: '12.5px', fontWeight: 600 }}>
+                  BAT supprimé à l'enregistrement de la fiche
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBatRemoved?.(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, padding: 0 }}
+                >
+                  Annuler
                 </button>
               </div>
             )}

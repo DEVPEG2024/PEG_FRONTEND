@@ -1036,7 +1036,7 @@ export async function apiGetCustomerProjectBats(customerDocumentId: string): Pro
 // client (`batStatus` + `batComment`).
 export async function apiUpdateProjectBat(
     documentId: string,
-    data: { batFile?: string | number; batStatus: BatStatus; batComment: string | null }
+    data: { batFile?: string | number | null; batStatus: BatStatus | null; batComment: string | null }
 ): Promise<ProjectBatFields> {
     const query = `
     mutation UpdateProjectBat($documentId: ID!, $data: ProjectInput!) {
