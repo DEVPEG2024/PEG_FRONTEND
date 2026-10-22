@@ -2450,8 +2450,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                 color: INK,
               }}
             >
-              <span style={{ color: VIOLET }}>{DISTRICTS.length} —</span> PEG
-              DISTRICTS
+              PEG DISTRICTS
             </h1>
             <p style={{ margin: 0, fontSize: 16, color: MUTED }}>
               Un écosystème connecté pour aller plus loin, ensemble.
