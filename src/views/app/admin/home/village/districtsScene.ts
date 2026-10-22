@@ -71,26 +71,32 @@ export const CONVEYOR_SHORT: Pt[] = [
  * Les pôles du réseau, sur le toit des bâtiments d'où partent et où arrivent
  * les arcs des échanges (pixels de l'image) : le bâtiment rond des clients
  * (le haut de la tour est sous leur carte), le cube de verre du campus des
- * projets, le toit planté de la boutique, l'atelier, l'immeuble de la
- * finance (qui reçoit aussi les devis), le pavillon de l'assistance.
+ * projets, le toit planté de la boutique, les trois entrepôts (atelier,
+ * planning, fournisseurs — à côté de leur repère numéroté), l'immeuble de la
+ * finance (les devis à gauche du toit, la finance à droite), le pavillon de
+ * l'assistance (tickets et IA).
  */
 export const ROOFS: Partial<Record<SectionId, Pt>> = {
   clients: [338, 190],
   projets: [920, 178],
   boutique: [1385, 240],
   producteurs: [440, 470],
-  devis: [1365, 632],
-  finance: [1365, 632],
+  planning: [700, 415],
+  fournisseurs: [850, 565],
+  devis: [1310, 650],
+  finance: [1408, 628],
   tickets: [1210, 745],
+  ia: [1210, 745],
 };
 
 /**
  * Arc d'un échange entre deux toits : une courbe qui monte d'autant plus
  * haut que les bâtiments sont loin l'un de l'autre — assez bas pour ne pas
- * passer sur un troisième pôle.
+ * passer sur un troisième pôle. `bend` < 1 : une courbe plus basse, pour
+ * l'échange retour entre deux mêmes bâtiments (les deux arcs font un œil).
  */
-export const arcPath = (a: Pt, b: Pt) => {
-  const lift = 50 + Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.2;
+export const arcPath = (a: Pt, b: Pt, bend = 1) => {
+  const lift = (50 + Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.2) * bend;
   const c: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - lift];
   return `M${a[0]} ${a[1]} Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${b[0]} ${b[1]}`;
 };

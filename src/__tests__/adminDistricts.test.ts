@@ -41,6 +41,10 @@ import {
 } from '@/views/app/admin/home/village/districtsScene';
 import { FLOW_DEFS } from '@/views/app/admin/home/village/villageFlows';
 import {
+  NETWORK,
+  linkCount,
+} from '@/views/app/admin/home/village/districtsNetwork';
+import {
   DISTRICTS,
   MENU_ORDER,
   membersOf,
@@ -133,6 +137,86 @@ describe('PEG DISTRICTS — le réseau et la vie de la ville', () => {
   });
 });
 
+describe('PEG DISTRICTS — le réseau des liens entre bâtiments', () => {
+  it('douze liens, chacun avec son nom, sa couleur, et deux pôles distincts sur l’image', () => {
+    expect(NETWORK).toHaveLength(12);
+    expect(new Set(NETWORK.map((l) => l.id)).size).toBe(NETWORK.length);
+    expect(new Set(NETWORK.map((l) => l.color)).size).toBe(NETWORK.length);
+    for (const l of NETWORK) {
+      const a = ROOFS[l.from];
+      const b = ROOFS[l.to];
+      expect({ id: l.id, a: !!a && inImage(a), b: !!b && inImage(b) }).toEqual({
+        id: l.id,
+        a: true,
+        b: true,
+      });
+      expect(a?.join()).not.toBe(b?.join());
+    }
+  });
+
+  it('jamais deux liens sur la même courbe : le retour passe plus bas', () => {
+    const curves = NETWORK.map((l) => {
+      const a = ROOFS[l.from] as [number, number];
+      const b = ROOFS[l.to] as [number, number];
+      return arcPath(a, b, l.bend);
+    });
+    expect(new Set(curves).size).toBe(curves.length);
+    // Entre deux mêmes bâtiments, dans les deux sens : des courbes différentes.
+    for (const l of NETWORK) {
+      const back = NETWORK.filter(
+        (m) =>
+          ROOFS[m.from]?.join() === ROOFS[l.to]?.join() &&
+          ROOFS[m.to]?.join() === ROOFS[l.from]?.join()
+      );
+      for (const m of back) expect(m.bend).not.toBe(l.bend);
+    }
+  });
+
+  it('chaque lien lit son vrai chiffre ; un chiffre illisible ne devient jamais un faux 0', () => {
+    const data = {
+      flowCounts: {
+        commandes: 42,
+        demandes: 2,
+        production: 38,
+        livraisons: 8,
+        factures: 4,
+        tickets: null,
+      },
+      sections: {
+        boutique: { stats: [{ label: 'Aujourd’hui', value: '4' }] },
+        devis: { stats: [{ label: 'En attente du client', value: '3' }] },
+        planning: { stats: [{ label: 'Producteurs occupés', value: '5' }] },
+        projets: { stats: [{ label: 'BAT à valider', value: '2' }] },
+        finance: { stats: [{ label: 'Virements à confirmer', value: '—' }] },
+        ia: { stats: [{ label: 'Conversations aujourd’hui', value: '1 038' }] },
+      },
+    } as unknown as VillageData;
+    const n = Object.fromEntries(
+      NETWORK.map((l) => [l.id, linkCount(l, data)])
+    );
+    expect(n).toEqual({
+      commandes: 42,
+      'commandes-jour': 4,
+      demandes: 2,
+      'devis-envoyes': 3,
+      production: 38,
+      planning: 5,
+      bat: 2,
+      livraisons: 8,
+      factures: 4,
+      virements: null,
+      tickets: null,
+      ia: 1038,
+    });
+    expect(linkCount(NETWORK[0], null)).toBeNull();
+  });
+
+  it('les six échanges de la ville dessinée sont dans le réseau, mêmes noms', () => {
+    for (const f of FLOW_DEFS)
+      expect(NETWORK.find((l) => l.id === f.id)?.label).toBe(f.label);
+  });
+});
+
 describe('PEG DISTRICTS — drones, fontaines, façades, eau', () => {
   it('tout ce qui vit sur la ville est posé sur l’image', () => {
     const all: [string, [number, number]][] = [
@@ -172,8 +256,9 @@ describe('PEG DISTRICTS — drones, fontaines, façades, eau', () => {
     for (const id of MENU_ORDER)
       expect({ id, in: inImage(sectionAnchor(id)) }).toEqual({ id, in: true });
     expect(sectionAnchor('boutique')).toEqual(ROOFS.boutique);
-    expect(sectionAnchor('planning')).toEqual(
-      PRODUCTION_SITES.find((s) => s.id === 'planning')?.at
+    expect(sectionAnchor('planning')).toEqual(ROOFS.planning);
+    expect(sectionAnchor('leads')).toEqual(
+      DISTRICT_SPOTS.find((d) => d.id === 'clients')?.glow
     );
   });
 });

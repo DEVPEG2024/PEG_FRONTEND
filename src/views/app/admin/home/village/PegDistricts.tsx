@@ -61,13 +61,8 @@ import {
   type SectionId,
 } from './villageScene';
 import { emptySection, type SectionData, type Trend } from './villageModel';
-import {
-  FLOW_DEFS,
-  flowDots,
-  readAnimationsOn,
-  writeAnimationsOn,
-  type FlowId,
-} from './villageFlows';
+import { flowDots, readAnimationsOn, writeAnimationsOn } from './villageFlows';
+import { NETWORK, linkCount } from './districtsNetwork';
 import {
   BEACONS,
   BIRD_PATHS,
@@ -235,25 +230,9 @@ const FLOCK: [number, number][] = [
   [-22, 11],
 ];
 
-/** Couleur de chaque échange : arc, jetons, légende. */
-const FLOW_COLOR: Record<FlowId, string> = {
-  commandes: '#8b5cf6',
-  demandes: '#14b8a6',
-  production: '#f97316',
-  livraisons: '#0ea5e9',
-  factures: '#f59e0b',
-  tickets: '#f43f5e',
-};
-
-/** D'où vient et où va chaque échange, en mots (légende). */
-const FLOW_ROUTE: Record<FlowId, string> = {
-  commandes: 'Boutique → Projets',
-  demandes: 'Clients → Devis',
-  production: 'Projets → Producteurs',
-  livraisons: 'Ateliers → clients, en camion',
-  factures: 'Projets → Finance',
-  tickets: 'Clients → Tickets',
-};
+/** La couleur des livraisons : leur lien, leur route au sol et les camions. */
+const DELIVERY_COLOR =
+  NETWORK.find((l) => l.id === 'livraisons')?.color ?? '#0ea5e9';
 
 const DISTRICT_ICON: Record<DistrictId, ReactNode> = {
   clients: <HiOutlineUsers />,
@@ -347,7 +326,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
   // Ville sortie de l'écran (page défilée) : rien ne bouge, rien ne coûte.
   const [inView, setInView] = useState(true);
   const motion = animOn && !reduced && inView;
-  const [hotFlow, setHotFlow] = useState<FlowId | null>(null);
+  const [hotFlow, setHotFlow] = useState<string | null>(null);
   const uid = useId().replace(/:/g, '');
 
   /**
@@ -355,28 +334,28 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
    * densité de l'écran mural, toujours proportionnelle) : sans volume, ou
    * chiffre illisible, l'arc reste tracé, pâle et immobile.
    */
-  const arcs = FLOW_DEFS.flatMap((f) => {
-    const ex = f.exchange;
-    const a = ex && ROOFS[ex.from];
-    const b = ex && ROOFS[ex.to];
-    if (!ex || !a || !b) return [];
-    const count = data?.flowCounts[f.id] ?? null;
-    const doc = ex.token === 'doc';
+  const arcs = NETWORK.flatMap((l) => {
+    const a = ROOFS[l.from];
+    const b = ROOFS[l.to];
+    if (!a || !b) return [];
+    const count = linkCount(l, data);
+    const doc = l.token === 'doc';
     return [
       {
-        id: f.id,
+        id: l.id,
         a,
         b,
-        d: arcPath(a, b),
-        dots: Math.min(doc ? 6 : 12, flowDots(count, ex.token) * 2),
+        color: l.color,
+        d: arcPath(a, b, l.bend),
+        dots: Math.min(doc ? 6 : 12, flowDots(count, l.token) * 2),
         doc,
         dur: Math.max(4, (Math.hypot(b[0] - a[0], b[1] - a[1]) * 1.1) / 90),
-        districts: [districtOf(ex.from), districtOf(ex.to)],
+        districts: [districtOf(l.from), districtOf(l.to)],
       },
     ];
   });
   /** Un échange ressort quand on le survole dans la légende, ou son quartier sur la carte. */
-  const arcLit = (x: { id: FlowId; districts: DistrictId[] }) =>
+  const arcLit = (x: { id: string; districts: DistrictId[] }) =>
     hotFlow ? x.id === hotFlow : hot ? x.districts.includes(hot) : true;
   /**
    * Les pôles : un par toit relié, allumé si l'un de ses échanges l'est,
@@ -422,15 +401,12 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
     )
   );
   const pulses: { at: [number, number]; color: string }[] = [
-    { id: 'commandes' as const, at: ROOFS.boutique },
-    { id: 'tickets' as const, at: ROOFS.tickets },
-    { id: 'factures' as const, at: ROOFS.finance },
-    { id: 'demandes' as const, at: ROOFS.clients },
-  ].flatMap((p) =>
-    p.at && (data?.flowCounts[p.id] ?? 0) > 0
-      ? [{ at: p.at, color: FLOW_COLOR[p.id] }]
-      : []
-  );
+    ...new Map(
+      arcs
+        .filter((x) => x.dots > 0)
+        .map((x) => [x.b.join(), { at: x.b, color: x.color }])
+    ).values(),
+  ];
 
   const section = (id: SectionId): SectionData =>
     data?.sections[id] ??
@@ -871,7 +847,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             <path
               d={DELIVERY.d}
               fill="none"
-              stroke={FLOW_COLOR.livraisons}
+              stroke={DELIVERY_COLOR}
               strokeOpacity={0.16}
               strokeWidth={10}
               strokeLinecap="round"
@@ -879,7 +855,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             <path
               d={DELIVERY.d}
               fill="none"
-              stroke={FLOW_COLOR.livraisons}
+              stroke={DELIVERY_COLOR}
               strokeOpacity={0.8}
               strokeWidth={4}
               strokeLinecap="round"
@@ -889,7 +865,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
 
           {/* Le réseau des échanges : il se trace à l'arrivée, puis reste */}
           {arcs.map((a, i) => {
-            const color = FLOW_COLOR[a.id];
+            const color = a.color;
             const draw = motion
               ? {
                   className: 'pd-draw',
@@ -1159,7 +1135,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                         width={6}
                         height={7}
                         rx={1.8}
-                        fill={FLOW_COLOR.livraisons}
+                        fill={DELIVERY_COLOR}
                       />
                       <circle cx={10.2} cy={-2.1} r={1.1} fill="#fef9c3" />
                       <circle cx={10.2} cy={2.1} r={1.1} fill="#fef9c3" />
@@ -1283,7 +1259,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
 
               {/* Le courant file sur les arcs, les jetons circulent */}
               {arcs.map((a) => {
-                const color = FLOW_COLOR[a.id];
+                const color = a.color;
                 if (!a.dots) return null;
                 return (
                   <g
@@ -2347,8 +2323,8 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             gap: 6,
           }}
         >
-          {FLOW_DEFS.map((f) => {
-            const count = data?.flowCounts[f.id] ?? null;
+          {NETWORK.map((f) => {
+            const count = linkCount(f, data);
             const on = hotFlow === f.id;
             return (
               <li key={f.id}>
@@ -2368,7 +2344,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: 12,
-                    border: `1px solid ${on ? FLOW_COLOR[f.id] : 'transparent'}`,
+                    border: `1px solid ${on ? f.color : 'transparent'}`,
                     background: on ? '#faf9ff' : 'transparent',
                     textAlign: 'left',
                     cursor: 'pointer',
@@ -2381,8 +2357,8 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                       height: 4,
                       flexShrink: 0,
                       borderRadius: 2,
-                      background: FLOW_COLOR[f.id],
-                      boxShadow: `0 0 8px ${FLOW_COLOR[f.id]}`,
+                      background: f.color,
+                      boxShadow: `0 0 8px ${f.color}`,
                     }}
                   />
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -2406,7 +2382,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {FLOW_ROUTE[f.id]}
+                      {f.route}
                     </span>
                   </span>
                   <span
