@@ -66,6 +66,8 @@ const CSS = `
 }
 .peg-ship-summary svg { flex-shrink: 0; }
 .peg-ship-sep { opacity: 0.55; }
+/* « · Suivre le colis » passe à la ligne d'un bloc (sinon le point restait seul en fin de ligne). */
+.peg-ship-track { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .peg-ship-link { color: #e0f2fe; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .peg-ship-actions { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .peg-ship-btn {
@@ -82,6 +84,8 @@ const CSS = `
 /* Téléphone : dans la carte héros, pleine largeur, cibles de 40px */
 .peg-ship-bar.is-mobile { flex-direction: column; align-items: stretch; gap: 10px; }
 .peg-ship-bar.is-mobile .peg-ship-summary { border-radius: 14px; padding: 10px 12px; font-size: 13px; }
+.peg-ship-bar.is-mobile .peg-ship-track { flex-basis: 100%; padding-left: 22px; }
+.peg-ship-bar.is-mobile .peg-ship-sep { display: none; }
 .peg-ship-bar.is-mobile .peg-ship-btn { min-height: 40px; padding: 9px 14px; border-radius: 100px; font-size: 12.5px; }
 .peg-ship-bar.is-mobile .peg-ship-btn.is-primary { justify-content: center; }
 `;
@@ -147,7 +151,7 @@ const ProjectShippingBar = ({
           <Icon size={variant === 'mobile' ? 16 : 14} aria-hidden="true" />
           <span>{shipping.summary}</span>
           {link && (
-            <>
+            <span className="peg-ship-track">
               <span className="peg-ship-sep" aria-hidden="true">
                 ·
               </span>
@@ -159,7 +163,7 @@ const ProjectShippingBar = ({
               >
                 Suivre le colis
               </a>
-            </>
+            </span>
           )}
         </span>
       ) : null}
