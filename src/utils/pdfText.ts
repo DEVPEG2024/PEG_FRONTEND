@@ -1,16 +1,10 @@
 // Extraction du texte d'un PDF côté navigateur.
 // pdfjs est chargé à la demande (dynamic import) pour ne pas alourdir le bundle
 // principal — seul l'admin qui importe un questionnaire télécharge la lib.
-
-let workerConfigured = false;
+import { loadPdfjs } from './pdfPages';
 
 export async function extractPdfText(file: File): Promise<string> {
-  const pdfjs = await import('pdfjs-dist');
-  if (!workerConfigured) {
-    const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    workerConfigured = true;
-  }
+  const pdfjs = await loadPdfjs();
 
   const data = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data }).promise;

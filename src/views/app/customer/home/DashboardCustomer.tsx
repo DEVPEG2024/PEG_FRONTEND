@@ -335,7 +335,7 @@ const DashboardCustomer = () => {
       icon: <HiOutlineDocumentText />, color: '#c084fc', cta: 'Valider',
       onClick: () => navigate(bat!.source === 'product'
         ? `/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`
-        : `/common/projects/details/${p.documentId}?tab=BAT`),
+        : `/common/projects/details/${p.documentId}?tab=Accueil`),
     })),
     ...invoicesToPay.map((inv) => ({
       key: `inv-${inv.documentId}`, title: inv.name || 'Facture', sub: `À régler — ${fmtTTC(inv.totalAmount ?? 0)}`,

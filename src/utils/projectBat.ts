@@ -89,3 +89,40 @@ export const batSummaryLabel = (bat: ProjectBat | null): string | null => {
   if (bat.file) return 'En attente de validation';
   return bat.source === 'product' ? 'En préparation' : null;
 };
+
+// ─── Refus du client : texte + photos (bloc BAT de l'Accueil, 22/10/2026) ───
+// Le motif reste dans `batComment` (projet ou commande). Les photos jointes
+// voyagent dans un commentaire du projet écrit par le client — écriture que
+// la garde serveur autorise déjà (ses commentaires, des fichiers frais) — qui
+// commence par ce préfixe : la demande apparaît aussi dans « Commentaires ».
+
+export const BAT_REFUSAL_PREFIX = 'Modifications demandées sur le BAT :';
+
+export const batRefusalCommentContent = (text: string): string =>
+  `${BAT_REFUSAL_PREFIX}\n${text.trim()}`;
+
+type RefusalCommentLike = {
+  content?: string | null;
+  createdAt?: string | Date | null;
+};
+
+/**
+ * Commentaire du refus EN COURS : le plus récent dont le texte est exactement
+ * le motif enregistré. Un refus antérieur (autre texte) ne prête jamais ses
+ * photos au refus actuel ; un refus fait sans commentaire n'en a pas.
+ */
+export const findBatRefusalComment = <C extends RefusalCommentLike>(
+  comments: C[] | null | undefined,
+  batComment: string | null | undefined
+): C | null => {
+  if (!batComment?.trim()) return null;
+  const expected = batRefusalCommentContent(batComment);
+  const matches = (comments ?? []).filter((c) => (c.content ?? '').trim() === expected);
+  if (!matches.length) return null;
+  const time = (c: C) => (c.createdAt ? new Date(c.createdAt).getTime() : 0);
+  return matches.reduce((latest, c) => (time(c) >= time(latest) ? c : latest));
+};
+
+/** Onglet « Modifications » : affiché tant que le client a refusé le BAT déposé. */
+export const showsModificationsTab = (bat: ProjectBat | null): boolean =>
+  !!bat?.file && bat.status === 'rejected';

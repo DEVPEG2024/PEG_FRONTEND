@@ -927,6 +927,14 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 - Champs BAT du projet lus par une **requête à part** (`apiGetProjectBat`, `apiGetCustomerProjectBats`) : avant le déploiement Strapi elle échoue seule, champs `undefined` → comportement d'avant. **Ne pas les ajouter à la requête principale du projet.** Les réponses de mutation ne les renvoient pas → `keepProjectBat` dans `projectDetailsSlice` les conserve.
 - L'accueil admin « Ville PEG » (`villageData.ts`, `village-summary.ts`) ne compte encore que les BAT de **commandes**.
 
+### Bloc BAT dans l'Accueil + onglet « Modifications » (22/10/2026, maquette validée par Nova)
+- `components/bat/BatHomeBlock.tsx`, **sous la description** de l'Accueil (`Summary`), pour les deux sources : aperçu du fichier, puis pour le **client** deux boutons **Valider le BAT** (confirmation « Oui, je valide ») / **Refuser** → panneau « Modifications demandées » (texte obligatoire + jusqu'à 4 photos). **Admin** : « Déposer un BAT », « Remplacer », et après un refus la demande du client + « Envoyer la nouvelle version au client ». Producteur : lecture seule.
+- **Aperçu** (`bat/BatDocumentPreview.tsx`) : image telle quelle ; **PDF rendu page par page par pdfjs** (`utils/pdfPages.ts`, 12 pages max) et **toutes les pages visibles en même temps** — 2 pages côte à côte sur ordinateur, l'une sous l'autre sur téléphone ; « Agrandir » = mêmes pages en plein écran ; autres formats (AI, PSD, ZIP) = lien. Le PDF est lu en `fetch` CORS : le bucket S3 autorise app.mypeg.fr, int.mypeg.fr, localhost:5173/4173 — **un nouveau domaine doit y être ajouté**, sinon repli « Ouvrir le PDF ».
+- « Valider » reste grisé tant que le fichier n'a pas été vu (aperçu affiché, ou téléchargé quand il ne s'affiche pas) : accord de production.
+- **Photos du refus = un commentaire du projet** écrit par le client (visibilité `customer`), contenu `Modifications demandées sur le BAT :\n<texte>` (`batRefusalCommentContent`). Le motif reste dans `batComment`. `findBatRefusalComment` ne rattache au refus en cours QUE le commentaire au texte identique : un ancien refus ne prête jamais ses photos. Choix délibéré : aucune écriture nouvelle côté serveur, la garde `[write-guard]` autorise déjà ses commentaires et des fichiers frais.
+- Onglet **« Modifications »** : visible tant que le BAT déposé est refusé (`showsModificationsTab`), pastille « 1 » pour l'admin ; même bloc. Liens : « BAT à valider » → `?tab=Accueil`, « BAT refusé » → `?tab=Modifications`.
+- Actions BAT (dépôt, suppression, réponse) dans **un seul hook** `bat/useProjectBatActions.ts`, utilisé aussi par l'onglet BAT : ne pas les recopier.
+
 ### Ordre de déploiement
 **Backend Strapi d'abord** (3 champs sur `project`, aucune migration). Front avant back = sans risque (vérifié : le projet se charge, pas d'onglet BAT sur un projet de devis).
 

@@ -2,11 +2,16 @@
 // à BAT, projet issu d'un devis (BAT porté par le projet), et backend qui ne
 // connaît pas encore les champs BAT du projet.
 import {
+  BAT_REFUSAL_PREFIX,
+  batRefusalCommentContent,
   batSummaryLabel,
+  findBatRefusalComment,
   getProjectBat,
   isBatAwaitingClient,
   showsBatTab,
+  showsModificationsTab,
 } from '@/utils/projectBat';
+import { batFileKind } from '@/views/app/common/projects/details/components/bat/BatDocumentPreview';
 
 const file = { url: 'https://s3/bat.pdf', name: 'bat.pdf' };
 const productOrder = (batStatus: 'pending' | 'approved' | 'rejected' | null, batFile: typeof file | null = file) => ({
@@ -92,5 +97,51 @@ describe('getProjectBat — backend sans champs BAT de projet (avant déploiemen
 
   test('projet non chargé', () => {
     expect(getProjectBat(undefined)).toBeNull();
+  });
+});
+
+describe('refus du client — texte et photos (bloc BAT de l’Accueil)', () => {
+  const refusal = (text: string, createdAt: string, images: { url: string }[] = []) => ({
+    content: batRefusalCommentContent(text), createdAt, images,
+  });
+
+  test('le commentaire porte le préfixe puis le texte saisi', () => {
+    expect(batRefusalCommentContent('  Logo plus grand  ')).toBe(`${BAT_REFUSAL_PREFIX}\nLogo plus grand`);
+  });
+
+  test('retrouve le commentaire du refus en cours, le plus récent', () => {
+    const comments = [
+      { content: 'Bonjour', createdAt: '2026-10-22T10:00:00Z', images: [] },
+      refusal('Logo plus grand', '2026-10-22T11:00:00Z', [{ url: 'a.jpg' }]),
+      refusal('Logo plus grand', '2026-10-22T12:00:00Z', [{ url: 'b.jpg' }]),
+    ];
+    expect(findBatRefusalComment(comments, 'Logo plus grand')?.images).toEqual([{ url: 'b.jpg' }]);
+  });
+
+  test('un refus antérieur (autre texte) ne prête jamais ses photos', () => {
+    const comments = [refusal('Couleur trop claire', '2026-10-20T09:00:00Z', [{ url: 'v1.jpg' }])];
+    expect(findBatRefusalComment(comments, 'Logo plus grand')).toBeNull();
+    expect(findBatRefusalComment(comments, null)).toBeNull();
+    expect(findBatRefusalComment(undefined, 'Logo plus grand')).toBeNull();
+  });
+
+  test('onglet Modifications : seulement quand un BAT déposé est refusé', () => {
+    const project = (batStatus: 'pending' | 'approved' | 'rejected' | null, batFile: typeof file | null = file) =>
+      getProjectBat({ batStatus, batFile, batComment: null });
+    expect(showsModificationsTab(project('rejected'))).toBe(true);
+    expect(showsModificationsTab(project('pending'))).toBe(false);
+    expect(showsModificationsTab(project('approved'))).toBe(false);
+    expect(showsModificationsTab(project('rejected', null))).toBe(false);
+    expect(showsModificationsTab(null)).toBe(false);
+  });
+});
+
+describe('aperçu du BAT : type de fichier', () => {
+  test('PDF, image ou autre format, par le type ou par le nom', () => {
+    expect(batFileKind({ url: 'https://s3/x', name: 'bat-v2.PDF' })).toBe('pdf');
+    expect(batFileKind({ url: 'https://s3/x', name: 'x', mime: 'application/pdf' })).toBe('pdf');
+    expect(batFileKind({ url: 'https://s3/x.webp', name: 'maquette.webp' })).toBe('image');
+    expect(batFileKind({ url: 'https://s3/x', name: 'logo.ai' })).toBe('other');
+    expect(batFileKind({ url: 'https://s3/x', name: 'fichiers.zip' })).toBe('other');
   });
 });

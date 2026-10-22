@@ -10,6 +10,7 @@ import Devis from './components/Devis';
 import Invoices from './components/Invoices';
 import ProjectChecklist from './components/ProjectChecklist';
 import ProjectBat from './components/ProjectBat';
+import BatModificationsTab from './components/bat/BatModificationsTab';
 import ProjectSav from './components/ProjectSav';
 import ProjectExpenses from './components/ProjectExpenses';
 import AdditionalSales from './components/AdditionalSales';
@@ -54,7 +55,7 @@ const ProjectDetails = () => {
     };
   }, [dispatch, documentId]);
 
-  // Lien direct vers un onglet (notification « BAT à valider », accueil client) : ?tab=BAT
+  // Lien direct vers un onglet (notifications BAT, accueil client) : ?tab=Accueil, ?tab=Modifications…
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   useEffect(() => {
@@ -134,6 +135,7 @@ const ProjectDetails = () => {
             )}
             {selectedTab === 'Checklist' && <ProjectChecklist />}
             {selectedTab === 'BAT' && <ProjectBat />}
+            {selectedTab === 'Modifications' && <BatModificationsTab />}
             {selectedTab === 'Devis' && <Devis />}
             {selectedTab === 'Factures' && <Invoices />}
             {selectedTab === 'Dépenses' && isAdmin && <ProjectExpenses />}

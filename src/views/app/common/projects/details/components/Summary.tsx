@@ -6,6 +6,7 @@ import { Project } from '@/@types/project';
 import DetailsRight from './DetailsRight';
 import { Button } from '@/components/ui';
 import OrderItemDetails from './OrderItemDetails';
+import BatHomeBlock from './bat/BatHomeBlock';
 import { projectCoverUrl, projectProgress } from '../utils';
 import { useProjectPhotoUpload } from '../useProjectPhotoUpload';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -333,6 +334,9 @@ const Summary = ({ project }: { project: Project }) => {
                 )}
               </div>
             )}
+
+            {/* Bon à tirer : aperçu + Valider / Refuser (client), dépôt (admin) */}
+            <BatHomeBlock />
 
             {/* Admin Notes card */}
             {isAdmin && (

@@ -4,17 +4,8 @@ import { toast } from 'react-toastify';
 import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
 import BatPreviewModal from './BatPreviewModal';
-import { useAppSelector, getProjectById, useAppDispatch } from '../store';
-import { RootState, useAppSelector as useRootAppSelector } from '@/store';
-import { User } from '@/@types/user';
-import { hasRole } from '@/utils/permissions';
-import { SUPER_ADMIN, ADMIN, CUSTOMER } from '@/constants/roles.constant';
-import { apiUploadFile } from '@/services/FileServices';
-import { apiUpdateBatFile, apiUpdateBatStatus } from '@/services/ProductServices';
-import { apiUpdateProjectBat } from '@/services/ProjectServices';
-import { triggerNotification } from '@/services/NotificationService';
 import { BAT_ACCEPT } from '@/utils/batFiles';
-import { getProjectBat } from '@/utils/projectBat';
+import { useProjectBatActions } from './bat/useProjectBatActions';
 
 const batStatusConfig = {
   pending: {
@@ -49,32 +40,20 @@ const noBatConfig = {
 };
 
 const ProjectBat = () => {
-  const dispatch = useAppDispatch();
-  const { project } = useAppSelector((state) => state.projectDetails.data);
-  const { user }: { user: User } = useRootAppSelector(
-    (state: RootState) => state.auth.user
-  );
-  const isSuperAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
-  // Seul le client répond au BAT (le producteur le consulte).
-  const isCustomer = hasRole(user, [CUSTOMER]);
+  const {
+    project, bat, onProduct, product, isAdmin: isSuperAdmin, isCustomer,
+    uploading, deleting, uploadBat, deleteBat, submitDecision: submitBatDecision,
+  } = useProjectBatActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [batAction, setBatAction] = useState<'approve' | 'reject' | null>(null);
   const [batCommentInput, setBatCommentInput] = useState('');
   const [batSubmitting, setBatSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   // Même garde que dans l'aperçu plein écran : l'approbation d'un BAT est un
   // accord de production, elle ne doit pas pouvoir être donnée sans que le
   // fichier ait été ouvert au moins une fois (l'aperçu peut rester blanc).
   const [batOpened, setBatOpened] = useState(false);
 
-  // Commande d'un produit à BAT : fichier sur le produit, statut sur la commande.
-  // Tout autre projet (devis, création admin) : BAT porté par le projet.
-  const bat = getProjectBat(project);
-  const orderItem = project?.orderItem;
-  const product = orderItem?.product;
-  const onProduct = bat?.source === 'product';
   const batFile = bat?.file;
   const batStatus = bat?.status ?? 'pending';
   const batComment = bat?.comment;
@@ -82,95 +61,19 @@ const ProjectBat = () => {
     ? batStatusConfig[batStatus] ?? batStatusConfig.pending
     : { ...noBatConfig, label: isSuperAdmin ? 'Aucun BAT déposé' : 'BAT en préparation' };
   const { Icon } = statusCfg;
-  const projectLink = `/common/projects/details/${project?.documentId}?tab=BAT`;
-  const rawSenderId = user?.documentId || user?.id || user?._id;
-  const senderId = rawSenderId != null ? String(rawSenderId) : undefined;
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !project || !bat) return;
-    setUploading(true);
-    try {
-      // Relation média Strapi : id NUMÉRIQUE du fichier envoyé, jamais son documentId.
-      const uploaded = await apiUploadFile(file);
-      if (onProduct) {
-        await apiUpdateBatFile(product!.documentId, orderItem!.documentId, uploaded.id);
-      } else {
-        await apiUpdateProjectBat(project.documentId, { batFile: uploaded.id, batStatus: 'pending', batComment: null });
-      }
-      await dispatch(getProjectById(project.documentId));
-      toast.success('Nouveau BAT soumis au client');
-      if (senderId && project.customer?.documentId) {
-        triggerNotification({
-          eventType: 'new_file',
-          senderId,
-          customerRecipient: project.customer.documentId,
-          title: 'BAT à valider',
-          message: `Un bon à tirer attend votre validation pour le projet "${project.name}"`,
-          link: projectLink,
-          metadata: { projectId: project.documentId },
-        });
-      }
-    } catch (err) {
-      toast.error("Échec de l'envoi du BAT");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    if (file) await uploadBat(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Admin : suppression à tout moment, BAT validé compris. Sur une commande, le
-  // BAT est celui du produit commandé : il quitte aussi sa fiche (dit avant).
   const handleDeleteBat = async () => {
-    if (!project || !bat?.file) return;
-    const message = onProduct
-      ? `Supprimer le BAT « ${batFile?.name} » ?\n\nC'est le BAT du produit « ${product?.name} » : il sera aussi retiré de sa fiche.`
-      : `Supprimer le BAT « ${batFile?.name} » ?`;
-    if (!window.confirm(message)) return;
-    setDeleting(true);
-    try {
-      if (onProduct) {
-        await apiUpdateBatFile(product!.documentId, orderItem!.documentId, null);
-      } else {
-        await apiUpdateProjectBat(project.documentId, { batFile: null, batStatus: null, batComment: null });
-      }
-      await dispatch(getProjectById(project.documentId));
-      setBatOpened(false);
-      toast.success('BAT supprimé');
-    } catch {
-      toast.error('Échec de la suppression du BAT');
-    } finally {
-      setDeleting(false);
-    }
+    if (await deleteBat()) setBatOpened(false);
   };
 
   const handleUploadClick = () => {
     if (!uploading) fileInputRef.current?.click();
-  };
-
-  // Réponse du client — boutons de la page et aperçu plein écran.
-  const submitBatDecision = async (status: 'approved' | 'rejected', comment: string | null) => {
-    if (!project || !bat) return;
-    if (onProduct) {
-      await apiUpdateBatStatus(orderItem!.documentId, status, comment);
-    } else {
-      await apiUpdateProjectBat(project.documentId, { batStatus: status, batComment: comment });
-    }
-    toast.success(status === 'approved' ? 'BAT approuvé' : 'BAT refusé');
-    await dispatch(getProjectById(project.documentId));
-    if (senderId) {
-      triggerNotification({
-        eventType: 'project_status_change',
-        senderId,
-        notifyAdmins: true,
-        title: status === 'approved' ? 'BAT validé' : 'BAT refusé',
-        message: status === 'approved'
-          ? `Le client a validé le BAT du projet "${project.name}"`
-          : `Le client a refusé le BAT du projet "${project.name}" : ${comment}`,
-        link: projectLink,
-        metadata: { projectId: project.documentId },
-      });
-    }
   };
 
   const handleBatSubmit = async () => {

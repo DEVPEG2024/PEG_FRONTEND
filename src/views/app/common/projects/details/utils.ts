@@ -8,6 +8,7 @@ export const labelList = [
   'Fichiers client',
   'Checklist',
   'BAT',
+  'Modifications',
   'Devis',
   'Factures',
   'Dépenses',
