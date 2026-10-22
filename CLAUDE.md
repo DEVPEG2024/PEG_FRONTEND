@@ -336,6 +336,48 @@ Demande Nova : « échanger à la voix comme avec NOVA ». Même parcours que NO
 
 ---
 
+## 💬 Chat Conseil — style, personnalisation guidée, clôture après commande (conçu le 26/09, intégré le 22/10/2026)
+
+Notes de conception détaillées par lot : `docs/chat-conseil/lot{1..4}.md` (le lot 1 = Expédition, section suivante).
+
+### Style de réponse ⚡ Rapide / 💬 Conseil
+- Choisi par le client à la 1re ouverture (bulle d'accueil), bascule dans l'en-tête (emoji seul sur téléphone et dès que la conversation a commencé). Mémorisé **par compte et par appareil** (`localStorage peg_chat_style:<user.documentId>`). Écrit sans choisir → Conseil. Visiteur non connecté : ignoré.
+- `style` envoyé à chaque message (`/chatbot/chat` et `/chat/stream`). Serveur : `src/services/chat-style.ts`. **Rapide = chaîne vide = prompt identique octet pour octet** (cache de prompt) — ne jamais y ajouter de consigne. Conseil (`ADVICE_GUIDANCE`) prime sur les consignes de longueur/ton (prompt admin compris), **jamais** sur les règles de données. `meta.style` = style **appliqué**.
+- SSE `open` annonce `features: ['style']` ; sans elle (backend antérieur) le widget masque la bascule (`sessionStorage peg_chat_features_v1`).
+
+### Personnalisation guidée — le formulaire du produit rempli dans le chat
+- Après une offre, l'assistant remplit avec le client le formulaire de personnalisation. Brouillon **dans le navigateur** (`sessionStorage peg_chat_form_v1:<conversationId>`), renvoyé à chaque message (`formDraft`, null sans brouillon) et **revalidé** par le serveur contre le formulaire réel (`chat-form-text.ts`, pur, testé) : une valeur glissée dans le brouillon qui n'est pas une option exacte est retirée.
+- « Le modèle propose, le code décide » : outil `remplir_personnalisation` ; un fichier n'est jamais fourni par le modèle, seulement **téléversé chez PEG** (📎) ou pris dans « Mes fichiers » (`chatTrustedHosts`). Un clic (`formInput`) reçoit une réponse **écrite par le serveur, sans IA** ; un champ texte ne se remplit pas par un clic.
+- Récapitulatif → offre `<offre>-perso` → panier avec `state: 'submitted'` (`'pending'` si logo plus tard) et `metadata.source: 'assistant'` + `filledAt` → badge « Rempli avec l'assistant » sur la commande. ⚠️ `pendingFormAnswer` porte déjà `source: 'assistant'` **sans** `filledAt` : ne pas s'en servir pour le badge. Fixture commune front/Strapi `src/__tests__/fixtures/chat-form-fixture.json` (copies identiques, `cmp`).
+
+### Clôture après une commande issue du chat + statistiques
+- Article ajouté depuis une offre du chat → `CartItem.chatConversationId` → `order-item.chatConversationId` via `createOrderItemWithTrace` (`ChatTraceServices.ts`, repli sans le champ si le serveur ne le connaît pas). ⚠️ Ne jamais mettre ce champ dans une autre requête GraphQL. ⚠️ Côté Strapi il figure dans la **liste blanche** `ORDER_ITEM_CUSTOMER_CREATE` (`write-rules.ts`, format vérifié) : absent, la garde en écriture le retirait sans erreur et aucune clôture n'avait lieu (corrigé à l'intégration).
+- Paiement réussi (page Success, ou paiement différé) → `POST /api/chatbot/closing` (JWT, propriété et conversation vérifiés) → remerciement **écrit par le serveur**, chat ouvert tout seul et verrouillé jusqu'à « Nouvelle question ». `chat_history.closed_at` fait foi (`meta` est réécrite à chaque tour).
+- `persistConversation` ne réécrit que la ligne **du même compte** (ou encore anonyme) : une requête portant l'identifiant de conversation d'un autre crée sa propre ligne au lieu d'écraser l'historique (correctif du 22/10/2026).
+- Stats `GET /api/chatbot/stats/orders` (admin, tuiles de `/admin/ia/chatbot` + badge « Commande » dans l'historique) : un article compte si la paire (conversation, client) existe dans `chat_history` et que son projet n'est pas annulé. Une commande = une facture, lue par `invoice.orderItems` — **jamais** par `project.invoices` (la facture d'une commande à plusieurs articles n'est rattachée qu'à un de ses projets).
+
+### Fichiers clés
+- Back : `src/services/{chat-style,chat-form-text,chat-form.service,chat-closing-text,chat-closing.service}.ts`, `src/api/chatbot/`, `src/services/write-rules.ts`
+- Front : `src/components/template/chat/` (style, formulaire, trace, clôture), `ChatWidget.tsx`, `ChatOfferAction.tsx`, `chatOffer.ts`, `src/services/ChatTraceServices.ts`, `src/views/app/admin/chatbot/ChatOrderStats.tsx`
+- Tests : back `chatStyle`, `chatFormText`, `chatClosingText`, `writeRules` (`node --test`) ; front `chatStyle`, `chatForm*`, `chatOfferForm`, `chatTrace*`, `chatClosing`
+
+### Ordre de déploiement
+**Strapi d'abord** : le démarrage crée `order_items.chat_conversation_id`, `chat_history.closed_at/closing` et les colonnes d'expédition. Front avant back = sans risque (bascule masquée après la 1re réponse, aucune personnalisation proposée, commande normale sans clôture, tuiles masquées).
+
+---
+
+## 📦 Expédition d'un projet (conçue le 26/09, intégrée le 22/10/2026)
+
+- 3 champs sur `project` : `shippedAt`, `shippingCarrier` (colissimo, chronopost, dpd, gls, ups, dhl, fedex_tnt, peg_delivery, pickup), `trackingNumber`. **Pas de nouveau statut** : « Expédié » = `shippedAt` renseigné.
+- Écriture **uniquement** par `/api/shipping/projects/:documentId` (`auth: false` + JWT dans le contrôleur) : GET admin / producteur attribué / client propriétaire ; POST / DELETE admin et producteur attribué. 401 seulement jeton invalide, 403 autre producteur, 404 projet d'autrui, 409 projet annulé. Ces champs sont **absents** de `PROJECT_WRITABLE` (`write-rules.ts`) : toute écriture REST/GraphQL d'un client ou d'un producteur les retire. **Ne jamais les lire ni les écrire en GraphQL côté front.**
+- Le lien « Suivre le colis » est **construit par le serveur** (`TRACKING_URL_TEMPLATES`, `src/services/shipping-text.ts`), jamais saisi ; un modèle faux se corrige en une ligne et profite aux expéditions déjà saisies.
+- Client prévenu (cloche `project_status_change` + push + e-mail) au 1er marquage, si transporteur/numéro change, ou sur demande (« Prévenir à nouveau le client ») ; annulation silencieuse. **Bac à sable** comme les campagnes : seulement si `FRONTEND_URL` = https://app.mypeg.fr (ou `CAMPAIGNS_DELIVERY=live`). Échec d'envoi → toast d'avertissement.
+- Date d'expédition : de J−90 à demain en **jours de Paris**, front et serveur alignés.
+- Front : `ProjectShippingBar` dans l'en-tête projet (ordinateur sous le contrôle de statut, téléphone dans la carte héros) ; route absente → barre masquée. Chat : `mes_projets`, `etat_projet_detaille`, `mes_commandes` renvoient `expedition`.
+- Ordre : **Strapi d'abord** ; front avant back sans risque.
+
+---
+
 ## ✍️ Relecteur PEG — orthographe & fiches produit (ajout 24/09/2026)
 
 ### Concept

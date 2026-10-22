@@ -871,63 +871,65 @@ const ChatWidget = () => {
             </div>
           )}
 
-          {closing.locked ? <ChatClosedBar onNew={resetConversation} isPhone={isPhone} /> : (<>
-          {/* Saisie */}
-          <div className="pcw-compose" style={{
-            // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
-            paddingBottom: isPhone ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : '14px',
-          }}>
-            {voice.notice && <div className="pcw-voice-note" role="alert">{voice.notice}</div>}
-            {voice.speaking && (
-              <div className="pcw-speaking" role="status">
-                <span className="pcw-eq" aria-hidden="true"><i /><i /><i /><i /></span>
-                L'assistant vous répond
-                <button type="button" className="pcw-speaking-stop" onClick={voice.stopSpeaking}>
-                  <MdStop size={15} /> Arrêter
-                </button>
-              </div>
-            )}
-            {voice.phase === 'recording' ? (
-              <ChatVoiceBar getLevel={voice.getLevel} onCancel={voice.cancelRecording} onSend={() => { void voice.finishRecording(); }} />
-            ) : voice.phase === 'transcribing' ? (
-              <div className="pcw-field pcw-busy" role="status">
-                <span className="pcw-spin" aria-hidden="true" />
-                Transcription de votre question…
-              </div>
-            ) : (
-              <div className="pcw-field">
-                {chatForm.canAttach && chatForm.attachAsk && (
-                  <ChatAttachButton
-                    ask={chatForm.attachAsk}
-                    disabled={loading}
-                    onAct={chatForm.act}
-                    variant="icon"
+          {/* Saisie — remplacée par la barre de fin une fois la conversation conclue */}
+          {closing.locked ? (
+            <ChatClosedBar onNew={resetConversation} isPhone={isPhone} />
+          ) : (
+            <div className="pcw-compose" style={{
+              // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
+              paddingBottom: isPhone ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : '14px',
+            }}>
+              {voice.notice && <div className="pcw-voice-note" role="alert">{voice.notice}</div>}
+              {voice.speaking && (
+                <div className="pcw-speaking" role="status">
+                  <span className="pcw-eq" aria-hidden="true"><i /><i /><i /><i /></span>
+                  L'assistant vous répond
+                  <button type="button" className="pcw-speaking-stop" onClick={voice.stopSpeaking}>
+                    <MdStop size={15} /> Arrêter
+                  </button>
+                </div>
+              )}
+              {voice.phase === 'recording' ? (
+                <ChatVoiceBar getLevel={voice.getLevel} onCancel={voice.cancelRecording} onSend={() => { void voice.finishRecording(); }} />
+              ) : voice.phase === 'transcribing' ? (
+                <div className="pcw-field pcw-busy" role="status">
+                  <span className="pcw-spin" aria-hidden="true" />
+                  Transcription de votre question…
+                </div>
+              ) : (
+                <div className="pcw-field">
+                  {chatForm.canAttach && chatForm.attachAsk && (
+                    <ChatAttachButton
+                      ask={chatForm.attachAsk}
+                      disabled={loading}
+                      onAct={chatForm.act}
+                      variant="icon"
+                    />
+                  )}
+                  <textarea
+                    ref={inputRef}
+                    aria-label="Votre message"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKey}
+                    placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Écrivez votre message…'}
+                    rows={1}
+                    maxLength={2000}
                   />
-                )}
-                <textarea
-                  ref={inputRef}
-                  aria-label="Votre message"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKey}
-                  placeholder={lastIsError ? 'Réessayez ou reformulez…' : 'Écrivez votre message…'}
-                  rows={1}
-                  maxLength={2000}
-                />
-                {/* Champ vide : le micro prend la place du bouton d'envoi (comme une messagerie). */}
-                {voice.supported && !input.trim() ? (
-                  <button type="button" className="pcw-send" onClick={voice.startRecording} disabled={loading} aria-label="Parler à l'assistant" title="Parler à l'assistant">
-                    <MdMic size={20} />
-                  </button>
-                ) : (
-                  <button type="button" className="pcw-send" onClick={send} disabled={loading || !input.trim()} aria-label="Envoyer">
-                    <MdSend size={17} />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          </>)}
+                  {/* Champ vide : le micro prend la place du bouton d'envoi (comme une messagerie). */}
+                  {voice.supported && !input.trim() ? (
+                    <button type="button" className="pcw-send" onClick={voice.startRecording} disabled={loading} aria-label="Parler à l'assistant" title="Parler à l'assistant">
+                      <MdMic size={20} />
+                    </button>
+                  ) : (
+                    <button type="button" className="pcw-send" onClick={send} disabled={loading || !input.trim()} aria-label="Envoyer">
+                      <MdSend size={17} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

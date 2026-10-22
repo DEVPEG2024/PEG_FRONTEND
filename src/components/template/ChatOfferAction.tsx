@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { addToCart } from '@/store/slices/base/cartSlice';
 import { chatTraceFor } from './chat/chatTrace';
+import { RECAP_OFFER_SUFFIX } from './chat/chatForm';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
 import { describeOffer, planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
@@ -58,6 +59,8 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   // Tailles et couleurs visibles : le client vérifie que sa demande est respectée.
   const summary = describeOffer(offer);
   const pendingLines = offer.lines.filter((l) => offer.pendingIds?.includes(l.productDocumentId));
+  // Offre du récapitulatif de personnalisation : « Modifier » l'a ouverte sur la fiche.
+  const fromRecap = offer.id.endsWith(RECAP_OFFER_SUFFIX);
 
   /** Planifie les lignes demandées, ajoute celles qui sont prêtes, ouvre la première à finaliser. */
   const run = async (lineIds?: string[]) => {
@@ -134,7 +137,11 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
         </>
       ) : offer.status === 'completing' && pendingLines.length ? (
         <>
-          <div style={{ fontSize: '12px', color: '#fcd34d' }}>Plus qu’une étape sur la fiche : choisir la taille ou la couleur manquante.</div>
+          <div style={{ fontSize: '12px', color: '#fcd34d' }}>
+            {fromRecap
+              ? 'Votre personnalisation est ouverte sur la fiche produit.'
+              : 'Plus qu’une étape sur la fiche : choisir la taille ou la couleur manquante.'}
+          </div>
           {pendingLines.map((l) => (
             <button key={l.productDocumentId} type="button" style={btn(true)} disabled={busy} onClick={() => run([l.productDocumentId])}>
               Finaliser {l.productName} <MdArrowForward size={15} />
