@@ -21,6 +21,7 @@ import {
 import { MdConstruction } from 'react-icons/md';
 import type { Ambiance, Particle } from './villageAmbiance';
 import type { VillageActivity } from './villageActivity';
+import type { VillageFlow } from './villageFlows';
 import {
   matchesFilter,
   type ChantierHouse,
@@ -135,6 +136,8 @@ const CSS = `
 .vg-fade-in{animation:vg-fade .6s ease backwards}
 @keyframes vg-fade{from{opacity:0}to{opacity:1}}
 .vg-label-in{animation:vg-label .35s ease backwards}
+.vg-flow{animation:vg-flow linear infinite}
+@keyframes vg-flow{0%{offset-distance:0%;opacity:0}12%{opacity:1}86%{opacity:1}100%{offset-distance:100%;opacity:0}}
 @keyframes vg-label{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .vg-smoke{position:absolute;border-radius:50%;background:radial-gradient(circle at 38% 35%,#ffffff,#d9dee9);box-shadow:0 0 6px rgba(255,255,255,.6);pointer-events:none;animation:vg-smoke 5.4s cubic-bezier(.3,.6,.5,1) infinite}
 @keyframes vg-smoke{0%{transform:translate(-50%,-50%) scale(.5);opacity:0}8%{opacity:.9}70%{opacity:.75}100%{transform:translate(calc(-50% + 26px),calc(-50% - 96px)) scale(3.2);opacity:0}}
@@ -152,6 +155,7 @@ const CSS = `
   .vg-walk-1,.vg-walk-2,.vg-fall,.vg-smoke,.vg-drop{display:none}
   .vg-bob,.vg-out,.vg-back,.vg-alert-ring,.vg-flag,.vg-ping,.vg-bubble,.vg-live,.vg-arrive,.vg-fade-in,.vg-label-in,.vg-twinkle,.vg-pennant,.vg-pennant-r,.vg-bulb,.vg-preview{animation:none}
   .vg-pill,.vg-tag,.vg-world,.vg-follow{transition:none !important}
+  .vg-flow{display:none}
 }
 `;
 
@@ -235,6 +239,10 @@ interface Props {
    * arrivée en douceur, comme un plan de cinéma.
    */
   cameraMs?: number;
+  /** Rues en fibres optiques (flux d'activité affichés). */
+  fibers?: boolean;
+  /** Flux d'activité : points de lumière le long des rues. */
+  flows?: VillageFlow[];
   /** Commandes posées par-dessus la carte (titre, filtres, zoom…). */
   children?: ReactNode;
 }
@@ -261,6 +269,8 @@ const VillageMap = ({
   festive = false,
   arrival = false,
   cameraMs = 600,
+  fibers = false,
+  flows = [],
   children,
 }: Props) => {
   const ground = useMemo(buildGround, []);
@@ -531,6 +541,59 @@ const VillageMap = ({
     ...LAYOUT.map((c) => [c.id, toScreen(...labelAnchor(c))]),
     ['chantier', chantierAnchor],
   ]) as Record<string, [number, number]>;
+
+  // Étiquettes en verre dépoli : clair le jour, sombre la nuit. Tailles
+  // calculées (pas de mise à l'échelle CSS : texte net) ; graisses 600 et 700,
+  // les seules chargées pour Inter (800 serait simulée, donc empâtée).
+  const ls = labelScale;
+  const night = ambiance?.phase === 'night';
+  const glass = night
+    ? {
+        bg: 'rgba(15,20,48,0.58)',
+        border: 'rgba(255,255,255,0.16)',
+        ink: '#f1f5f9',
+        shadow:
+          '0 8px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+        stem: 'rgba(255,255,255,0.4)',
+      }
+    : {
+        bg: 'rgba(255,255,255,0.64)',
+        border: 'rgba(255,255,255,0.85)',
+        ink: '#0f172a',
+        shadow:
+          '0 8px 22px rgba(40,36,80,0.16), inset 0 1px 0 rgba(255,255,255,0.75)',
+        stem: 'rgba(255,255,255,0.9)',
+      };
+  const blur = 'blur(10px) saturate(1.6)';
+  const glassPill = (bg: string, border: string): CSSProperties => ({
+    background: bg,
+    border,
+    backdropFilter: blur,
+    WebkitBackdropFilter: blur,
+    boxShadow: glass.shadow,
+    color: glass.ink,
+    letterSpacing: '-0.006em',
+    WebkitFontSmoothing: 'antialiased',
+    MozOsxFontSmoothing: 'grayscale',
+  });
+  /** Pointe de l'étiquette vers son toit, au verre de l'étiquette. */
+  const pointer = (dx: number, fill: string) => (
+    <svg
+      aria-hidden="true"
+      width={12 * ls}
+      height={7 * ls}
+      viewBox="0 0 12 7"
+      style={{
+        position: 'absolute',
+        left: `calc(50% + ${-dx}px)`,
+        bottom: -7 * ls + 1,
+        marginLeft: -6 * ls,
+        overflow: 'visible',
+      }}
+    >
+      <path d="M0 0 L6 7 L12 0 Z" fill={fill} />
+    </svg>
+  );
 
   // Lumières du soir : la lanterne de chaque lampadaire et les fenêtres de
   // chaque bâtiment (en coordonnées carte, converties à l'affichage).
@@ -831,14 +894,16 @@ const VillageMap = ({
               strokeWidth={16}
               strokeLinecap="round"
             />
-            <path
-              d={ground.stones}
-              fill="none"
-              stroke="rgba(255,255,255,0.92)"
-              strokeWidth={7}
-              strokeLinecap="round"
-              strokeDasharray="8 11"
-            />
+            {!fibers && (
+              <path
+                d={ground.stones}
+                fill="none"
+                stroke="rgba(255,255,255,0.92)"
+                strokeWidth={7}
+                strokeLinecap="round"
+                strokeDasharray="8 11"
+              />
+            )}
             {LAYOUT.filter((c) => sections[c.id].alert).map((c) => (
               <path
                 key={`alert-${c.id}`}
@@ -877,6 +942,90 @@ const VillageMap = ({
             )}
           </svg>
         </div>
+
+        {fibers && (
+          // Les rues en fibres optiques : un fil lumineux dans chaque allée,
+          // et le trajet des flux actifs à leur couleur. Sous les bâtiments
+          // (un bâtiment devant une rue la cache), au-dessus du sol.
+          <svg
+            aria-hidden="true"
+            width={MAP_W}
+            height={MAP_H}
+            viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              overflow: 'visible',
+            }}
+          >
+            <path
+              d={ground.stones}
+              fill="none"
+              stroke="rgba(56,189,248,0.24)"
+              strokeWidth={6}
+              strokeLinecap="round"
+            />
+            <path
+              d={ground.stones}
+              fill="none"
+              stroke="rgba(14,165,233,0.7)"
+              strokeWidth={1.6}
+              strokeLinecap="round"
+            />
+            {flows
+              .filter((f) => f.dots > 0)
+              .map((f) => (
+                <g key={f.id}>
+                  <path
+                    d={f.d}
+                    fill="none"
+                    stroke={f.color}
+                    strokeOpacity={0.2}
+                    strokeWidth={10}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={f.d}
+                    fill="none"
+                    stroke={f.color}
+                    strokeOpacity={0.75}
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              ))}
+          </svg>
+        )}
+        {fibers &&
+          flows.flatMap((f) =>
+            Array.from({ length: f.dots }, (_, i) => (
+              <span
+                key={`flow-${f.id}-${i}`}
+                aria-hidden="true"
+                className="vg-flow"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: 28,
+                  height: 7,
+                  borderRadius: 999,
+                  background: `linear-gradient(90deg, ${f.color}00 0%, ${f.color} 55%, #ffffff 100%)`,
+                  boxShadow: `0 0 12px 3px ${f.color}aa`,
+                  offsetPath: `path('${f.d}')`,
+                  offsetRotate: 'auto',
+                  animationDuration: `${f.duration}s`,
+                  animationDelay: `${(-i * f.duration) / f.dots}s`,
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                }}
+              />
+            ))
+          )}
 
         {sprites.map((s, i) => {
           const on =
@@ -1194,46 +1343,33 @@ const VillageMap = ({
                 left: 0,
                 top: 0,
                 translate: `calc(${px(l.x)} - 50%) calc(${px(l.y)} - 100%)`,
-                scale: String(labelScale),
-                transformOrigin: '50% 100%',
                 zIndex: 2000,
                 opacity: on ? 1 : 0.45,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 7,
-                height: 32,
+                gap: 7 * ls,
+                height: 32 * ls,
                 boxSizing: 'border-box',
-                padding: '0 14px 0 11px',
+                padding: `0 ${14 * ls}px 0 ${11 * ls}px`,
                 borderRadius: 999,
-                border: '1px solid rgba(240,138,75,0.45)',
-                background: '#fff8ef',
-                color: '#111827',
-                fontSize: 13.5,
-                fontWeight: 700,
+                ...glassPill(
+                  night ? glass.bg : 'rgba(255,248,239,0.7)',
+                  '1px solid rgba(240,138,75,0.5)'
+                ),
+                fontSize: 13.5 * ls,
+                fontWeight: 600,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 8px 20px rgba(40,36,80,0.14)',
                 cursor: 'pointer',
                 animationDelay: arrival ? '1300ms' : undefined,
               }}
             >
-              <span style={{ fontSize: 18, display: 'flex', color: '#e07a2f' }}>
+              <span
+                style={{ fontSize: 18 * ls, display: 'flex', color: '#e07a2f' }}
+              >
                 <MdConstruction />
               </span>
               Chantiers
-              <span
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  left: `calc(50% + ${-l.dx}px)`,
-                  bottom: -5,
-                  width: 10,
-                  height: 10,
-                  marginLeft: -5,
-                  background: '#fff8ef',
-                  transform: 'rotate(45deg)',
-                  borderRadius: 2,
-                }}
-              />
+              {pointer(l.dx, night ? glass.bg : 'rgba(255,248,239,0.7)')}
             </button>
           );
         }
@@ -1280,7 +1416,7 @@ const VillageMap = ({
                   top: l.y,
                   width: 2,
                   height: Math.max(0, ay - l.y + 8),
-                  background: 'rgba(255,255,255,0.95)',
+                  background: glass.stem,
                   boxShadow: '0 0 0 1px rgba(40,36,80,0.08)',
                   zIndex: 1999,
                   opacity: on ? 1 : 0.45,
@@ -1302,46 +1438,52 @@ const VillageMap = ({
                 left: 0,
                 top: 0,
                 translate: `calc(${px(l.x)} - 50%) calc(${px(l.y)} - 100%)`,
-                scale: String(labelScale),
-                transformOrigin: '50% 100%',
                 zIndex: 2000,
                 opacity: on ? 1 : 0.45,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 7,
-                height: 32,
+                gap: 7 * ls,
+                height: 32 * ls,
                 boxSizing: 'border-box',
-                padding: s.badge ? '0 6px 0 11px' : '0 14px 0 11px',
+                padding: s.badge
+                  ? `0 ${6 * ls}px 0 ${11 * ls}px`
+                  : `0 ${14 * ls}px 0 ${11 * ls}px`,
                 borderRadius: 999,
-                border: isSel
-                  ? '2px solid #6d5dfc'
-                  : s.alert
-                    ? '2px solid #ef4444'
-                    : s.level === 3
-                      ? '1.5px solid #f6c445'
-                      : '1px solid rgba(17,24,39,0.04)',
-                background: '#ffffff',
-                color: '#111827',
-                fontSize: 13.5,
-                fontWeight: 700,
+                ...glassPill(
+                  isSel
+                    ? night
+                      ? 'rgba(109,93,252,0.38)'
+                      : 'rgba(255,255,255,0.84)'
+                    : glass.bg,
+                  isSel
+                    ? `2px solid ${night ? '#a99fff' : '#6d5dfc'}`
+                    : s.alert
+                      ? '2px solid rgba(239,68,68,0.9)'
+                      : s.level === 3
+                        ? '1.5px solid #f6c445'
+                        : `1px solid ${glass.border}`
+                ),
+                fontSize: 13.5 * ls,
+                fontWeight: 600,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 8px 20px rgba(40,36,80,0.14)',
                 cursor: 'pointer',
                 animationDelay: arrival
                   ? `${arriveDelay(id) + 300 + li * 5}ms`
                   : undefined,
               }}
             >
-              <span style={{ fontSize: 18, display: 'flex', color: s.tone }}>
+              <span
+                style={{ fontSize: 18 * ls, display: 'flex', color: s.tone }}
+              >
                 {s.icon}
               </span>
               {s.level === 3 && (
                 <svg
                   aria-hidden="true"
-                  width={13}
-                  height={13}
+                  width={13 * ls}
+                  height={13 * ls}
                   viewBox="0 0 24 24"
-                  style={{ marginLeft: -3, flexShrink: 0 }}
+                  style={{ marginLeft: -3 * ls, flexShrink: 0 }}
                 >
                   <path
                     d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"
@@ -1356,15 +1498,16 @@ const VillageMap = ({
               {s.badge && (
                 <span
                   style={{
-                    minWidth: 22,
-                    height: 22,
-                    padding: '0 6px',
+                    minWidth: 22 * ls,
+                    height: 22 * ls,
+                    padding: `0 ${6 * ls}px`,
                     boxSizing: 'border-box',
                     borderRadius: 999,
                     background: s.tone,
                     color: '#ffffff',
-                    fontSize: 12,
-                    fontWeight: 800,
+                    fontSize: 12 * ls,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1373,20 +1516,14 @@ const VillageMap = ({
                   {s.badge}
                 </span>
               )}
-              <span
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  left: `calc(50% + ${-l.dx}px)`,
-                  bottom: -5,
-                  width: 10,
-                  height: 10,
-                  marginLeft: -5,
-                  background: '#ffffff',
-                  transform: 'rotate(45deg)',
-                  borderRadius: 2,
-                }}
-              />
+              {pointer(
+                l.dx,
+                isSel
+                  ? night
+                    ? 'rgba(109,93,252,0.38)'
+                    : 'rgba(255,255,255,0.84)'
+                  : glass.bg
+              )}
             </button>
           </div>
         );
@@ -1719,17 +1856,17 @@ const VillageMap = ({
               left: 0,
               top: 0,
               translate: `calc(${px(x)} - 50%) calc(${px(y)} - 50%)`,
-              scale: String(labelScale),
               zIndex: 1950,
               opacity: !district || on ? 1 : 0.6,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '5px 13px 6px 10px',
-              borderRadius: 12,
-              border: on ? `2px solid ${d.hue}` : `1.5px solid ${d.hue}55`,
-              background: on ? d.soft : 'rgba(255,255,255,0.94)',
-              boxShadow: '0 6px 16px rgba(40,36,80,0.10)',
+              gap: 8 * ls,
+              padding: `${5 * ls}px ${13 * ls}px ${6 * ls}px ${10 * ls}px`,
+              borderRadius: 12 * ls,
+              ...glassPill(
+                on ? (night ? `${d.hue}47` : `${d.soft}e0`) : glass.bg,
+                on ? `2px solid ${d.hue}` : `1.5px solid ${d.hue}66`
+              ),
               whiteSpace: 'nowrap',
               textAlign: 'left',
               cursor: 'pointer',
@@ -1738,8 +1875,8 @@ const VillageMap = ({
           >
             <span
               style={{
-                width: 10,
-                height: 10,
+                width: 10 * ls,
+                height: 10 * ls,
                 borderRadius: '50%',
                 background: d.hue,
                 flexShrink: 0,
@@ -1749,10 +1886,10 @@ const VillageMap = ({
               <span
                 style={{
                   display: 'block',
-                  fontSize: 9,
-                  fontWeight: 800,
+                  fontSize: 9 * ls,
+                  fontWeight: 700,
                   letterSpacing: '0.14em',
-                  color: d.ink,
+                  color: night ? d.hue : d.ink,
                 }}
               >
                 QUARTIER
@@ -1760,9 +1897,9 @@ const VillageMap = ({
               <span
                 style={{
                   display: 'block',
-                  fontSize: 13.5,
-                  fontWeight: 800,
-                  color: '#111827',
+                  fontSize: 13.5 * ls,
+                  fontWeight: 700,
+                  color: glass.ink,
                 }}
               >
                 {d.name}

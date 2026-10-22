@@ -14,6 +14,7 @@ import {
   HiX,
 } from 'react-icons/hi';
 import {
+  HiOutlineBolt,
   HiOutlineClipboardDocumentCheck,
   HiOutlineQueueList,
   HiOutlineTv,
@@ -32,6 +33,7 @@ import useVillageActivity from './useVillageActivity';
 import useVillageData from './useVillageData';
 import type { VillageActivity } from './villageActivity';
 import { buildJournee, newsKey } from './villageJournee';
+import { readFlowsOn, villageFlows, writeFlowsOn } from './villageFlows';
 import { SECTION_INFO } from './villageSections';
 import {
   DISTRICTS,
@@ -158,6 +160,8 @@ const AdminVillage = ({ onClassic }: Props) => {
   const [tourList, setTourList] = useState<SectionId[]>([]);
   const [seen, setSeen] = useState(readSeen);
   const [ambianceOn, setAmbianceOn] = useState(readAmbianceOn);
+  // Flux d'activité : les rues en fibres optiques, coupables sur l'appareil.
+  const [flowsOn, setFlowsOn] = useState(readFlowsOn);
   const [now, setNow] = useState(() => new Date());
   // Première visite de la session : le village se construit sous les yeux.
   const [arrival] = useState(() => {
@@ -205,6 +209,8 @@ const AdminVillage = ({ onClassic }: Props) => {
     [ambianceOn, ambiance.season]
   );
 
+  const flows = useMemo(() => villageFlows(data?.flowCounts ?? {}), [data]);
+  const shownFlows = flowsOn ? flows : [];
   const journee = useMemo(
     () => (data ? buildJournee(data, TITLES, news, firstName, now) : null),
     [data, news, firstName, now]
@@ -870,6 +876,79 @@ const AdminVillage = ({ onClassic }: Props) => {
           ))}
         </div>
       )}
+      {view === 'village' && (
+        // Légende des flux, qui sert aussi d'interrupteur (choix gardé sur
+        // l'appareil) : ce que portent les points de lumière dans les rues.
+        <button
+          type="button"
+          className="vgx-btn"
+          aria-pressed={flowsOn}
+          aria-label="Flux d’activité"
+          title={
+            flowsOn
+              ? `${flows
+                  .map((f) => `${f.label} : ${f.count ?? '—'} ${f.detail}`)
+                  .join(' · ')} — cliquer pour couper les flux`
+              : 'Afficher les flux : commandes, livraisons et factures en lumière dans les rues'
+          }
+          onClick={() => {
+            writeFlowsOn(!flowsOn);
+            setFlowsOn(!flowsOn);
+          }}
+          style={{
+            position: 'absolute',
+            right: 20 * ui,
+            top: compact ? 14 : 80 * ui,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12 * ui,
+            height: 32 * ui,
+            padding: `0 ${12 * ui}px`,
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.72)',
+            border: '1px solid rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(10px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(10px) saturate(1.6)',
+            boxShadow: '0 6px 18px rgba(40,36,80,0.10)',
+            color: '#0f172a',
+            fontSize: 12.5 * ui,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            zIndex: 2100,
+          }}
+        >
+          <HiOutlineBolt
+            aria-hidden="true"
+            style={{
+              fontSize: 15 * ui,
+              color: flowsOn ? TONE.violet : '#9ca3af',
+            }}
+          />
+          {flowsOn ? (
+            flows.map((f) => (
+              <span
+                key={f.id}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: f.color,
+                    boxShadow: `0 0 6px ${f.color}`,
+                  }}
+                />
+                {f.label}
+                <strong style={{ fontWeight: 700 }}>{f.count ?? '—'}</strong>
+              </span>
+            ))
+          ) : (
+            <span style={{ color: '#6b7280' }}>Flux d’activité</span>
+          )}
+        </button>
+      )}
       {view === 'village' && hint && (
         <div
           role="note"
@@ -1033,6 +1112,8 @@ const AdminVillage = ({ onClassic }: Props) => {
       life={data?.life ?? null}
       festive={festive}
       cameraMs={v.cameraMs}
+      fibers={flowsOn}
+      flows={shownFlows}
     />
   );
 
@@ -1059,6 +1140,7 @@ const AdminVillage = ({ onClassic }: Props) => {
           activity={activity}
           ambiance={ambiance}
           renderMap={renderWallMap}
+          flows={shownFlows}
           onRefresh={refresh}
           onExit={exitWall}
         />
@@ -1293,6 +1375,8 @@ const AdminVillage = ({ onClassic }: Props) => {
               life={data?.life ?? null}
               festive={festive}
               arrival={arrival}
+              fibers={flowsOn}
+              flows={shownFlows}
             >
               {overlays}
             </VillageMap>

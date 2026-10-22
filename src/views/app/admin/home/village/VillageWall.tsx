@@ -46,6 +46,7 @@ import {
   type VillageData,
 } from './villageModel';
 import type { VillageActivity } from './villageActivity';
+import type { VillageFlow } from './villageFlows';
 import type { Journee } from './villageJournee';
 import type { Ambiance } from './villageAmbiance';
 import {
@@ -95,6 +96,8 @@ interface Props {
   activity: VillageActivity[];
   ambiance: Ambiance;
   renderMap: (view: WallMapView) => ReactNode;
+  /** Flux d'activité affichés (vide = coupés) : rappelés dans la vue d'ensemble. */
+  flows: VillageFlow[];
   onRefresh: () => void;
   onExit: () => void;
 }
@@ -252,6 +255,7 @@ const VillageWall = ({
   activity,
   ambiance,
   renderMap,
+  flows,
   onRefresh,
   onExit,
 }: Props) => {
@@ -653,6 +657,44 @@ const VillageWall = ({
             ) : (
               'Aucune livraison prévue'
             )}
+          </p>
+        )}
+        {flows.some((f) => f.count !== null) && (
+          <p
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: `${8 * s}px ${18 * s}px`,
+              margin: `${14 * s}px 0 0`,
+              fontSize: 17 * s,
+              color: MUTED,
+            }}
+          >
+            {flows.map((f) => (
+              <span
+                key={f.id}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8 * s,
+                }}
+              >
+                <span
+                  style={{
+                    width: 10 * s,
+                    height: 10 * s,
+                    borderRadius: '50%',
+                    background: f.color,
+                    boxShadow: `0 0 ${8 * s}px ${f.color}`,
+                  }}
+                />
+                <strong style={{ color: TEXT, fontWeight: 700 }}>
+                  {f.count ?? '—'}
+                </strong>
+                {f.short}
+              </span>
+            ))}
           </p>
         )}
       </>

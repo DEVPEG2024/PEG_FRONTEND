@@ -1296,6 +1296,16 @@ export const buildVillageData = (
     ),
     todayDeliveries,
     todayDeliveryCount,
+    flowCounts: {
+      commandes:
+        typeof raw.activity?.boutique?.current === 'number'
+          ? raw.activity.boutique.current
+          : null,
+      livraisons: pr?.dueNext7
+        ? pr.dueNext7.reduce((sum, n) => sum + (Number(n) || 0), 0)
+        : null,
+      factures: raw.invoices ? raw.invoices.unpaid.length : null,
+    },
     life: {
       smoke:
         (inProgress ?? 0) >= 30

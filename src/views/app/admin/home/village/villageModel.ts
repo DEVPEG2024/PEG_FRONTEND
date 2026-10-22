@@ -3,6 +3,7 @@
 // vraies données ; une rubrique dont la lecture échoue reste affichée, sans
 // pastille, avec « Données indisponibles ».
 import type { VillageFilter } from './VillageMap';
+import type { FlowId } from './villageFlows';
 import type { ChantierStage, SectionId } from './villageScene';
 
 export const TONE = {
@@ -180,6 +181,12 @@ export interface VillageData {
   todayDeliveries: DayDelivery[];
   /** Leur nombre total (la liste peut en montrer moins). */
   todayDeliveryCount: number;
+  /**
+   * Volumes des flux d'activité (rues en fibres optiques) : commandes payées
+   * sur 30 jours, livraisons prévues sur 7 jours, factures à encaisser.
+   * null = lecture manquante (aucun point, jamais un faux 0).
+   */
+  flowCounts: Record<FlowId, number | null>;
 }
 
 /** La rubrique répond-elle au filtre ? « Urgent » = rubrique en alerte. */
