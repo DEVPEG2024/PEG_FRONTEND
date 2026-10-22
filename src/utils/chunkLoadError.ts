@@ -36,8 +36,18 @@ export function isChunkLoadError(error: unknown): boolean {
 // ---------------------------------------------------------------------------
 
 const STALE_RELOAD_LOG_KEY = 'peg_stale_build_reloads';
-export const MAX_STALE_RELOADS = 3;
-export const STALE_RELOAD_WINDOW_MS = 2 * 60_000;
+export const MAX_STALE_RELOADS = 4;
+export const STALE_RELOAD_WINDOW_MS = 3 * 60_000;
+
+/**
+ * Attente avant chaque rechargement d'une même fenêtre. Le premier est immédiat : un onglet
+ * resté sur l'ancienne version se répare en un rechargement. Les suivants s'espacent pour
+ * couvrir la minute où, pendant une mise en ligne, la nouvelle version peut réclamer des
+ * fichiers que le CDN ne sert pas encore. Incident du 22/10/2026 : trois rechargements
+ * immédiats, tous dans cette minute, puis « Connexion instable » alors que la version en ligne
+ * était saine quelques instants plus tard.
+ */
+export const STALE_RELOAD_BACKOFF_MS = [0, 4_000, 15_000, 40_000];
 
 let reloadInFlight = false;
 
@@ -62,6 +72,7 @@ export function reloadForStaleBuild(): boolean {
   const now = Date.now();
   const log = readReloadLog(now);
   if (log.length >= MAX_STALE_RELOADS) return false;
+  const delay = STALE_RELOAD_BACKOFF_MS[log.length] ?? 0;
   log.push(now);
   try {
     sessionStorage.setItem(STALE_RELOAD_LOG_KEY, JSON.stringify(log));
@@ -69,6 +80,8 @@ export function reloadForStaleBuild(): boolean {
     /* stockage indisponible (navigation privée) : on recharge quand même */
   }
   reloadInFlight = true;
-  window.location.reload();
+  // Pendant l'attente, l'ErrorBoundary affiche « Mise à jour de l'application… ».
+  if (delay > 0) window.setTimeout(() => window.location.reload(), delay);
+  else window.location.reload();
   return true;
 }

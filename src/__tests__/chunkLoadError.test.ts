@@ -10,7 +10,11 @@
  * `undefined` ; ce message n'étant pas reconnu, l'ErrorBoundary restait affiché.
  */
 
-import { isChunkLoadError, MAX_STALE_RELOADS } from '@/utils/chunkLoadError';
+import {
+  isChunkLoadError,
+  MAX_STALE_RELOADS,
+  STALE_RELOAD_BACKOFF_MS,
+} from '@/utils/chunkLoadError';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -69,6 +73,7 @@ describe('rechargement après build périmé', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.resetModules();
     sessionStorage.clear();
     reloadMock.mockClear();
@@ -76,6 +81,10 @@ describe('rechargement après build périmé', () => {
       configurable: true,
       value: { ...originalLocation, reload: reloadMock },
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   afterAll(() => {
@@ -94,9 +103,11 @@ describe('rechargement après build périmé', () => {
   });
 
   it('recharge encore après un premier rechargement récent (plus de blocage à 30 s)', () => {
-    freshModule().reloadForStaleBuild(); // page 1
+    freshModule().reloadForStaleBuild(); // page 1 : tout de suite
+    expect(reloadMock).toHaveBeenCalledTimes(1);
     jest.resetModules();
     expect(freshModule().reloadForStaleBuild()).toBe(true); // page 2, quelques secondes après
+    jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[1]);
     expect(reloadMock).toHaveBeenCalledTimes(2);
   });
 
@@ -104,10 +115,32 @@ describe('rechargement après build périmé', () => {
     for (let i = 0; i < MAX_STALE_RELOADS; i++) {
       jest.resetModules();
       expect(freshModule().reloadForStaleBuild()).toBe(true);
+      jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[i]);
     }
     jest.resetModules();
     expect(freshModule().reloadForStaleBuild()).toBe(false);
     expect(reloadMock).toHaveBeenCalledTimes(MAX_STALE_RELOADS);
+  });
+
+  /**
+   * Incident du 22/10/2026 : pendant une mise en ligne, la nouvelle version réclame parfois des
+   * fichiers que le CDN ne sert pas encore, pendant une minute environ. Trois rechargements
+   * immédiats tombaient tous dans cette minute → « Connexion instable ».
+   */
+  it("les rechargements s'espacent et couvrent la minute d'une mise en ligne", () => {
+    expect(STALE_RELOAD_BACKOFF_MS[0]).toBe(0);
+    expect(STALE_RELOAD_BACKOFF_MS).toHaveLength(MAX_STALE_RELOADS);
+    const span = STALE_RELOAD_BACKOFF_MS.reduce((a, b) => a + b, 0);
+    expect(span).toBeGreaterThanOrEqual(55_000);
+
+    freshModule().reloadForStaleBuild();
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    jest.resetModules();
+    freshModule().reloadForStaleBuild();
+    jest.advanceTimersByTime(STALE_RELOAD_BACKOFF_MS[1] - 1);
+    expect(reloadMock).toHaveBeenCalledTimes(1); // pas encore : on laisse le CDN finir
+    jest.advanceTimersByTime(1);
+    expect(reloadMock).toHaveBeenCalledTimes(2);
   });
 
   it('un seul garde : aucun anti-boucle local dans les appelants', () => {
