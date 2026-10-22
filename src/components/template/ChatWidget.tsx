@@ -22,6 +22,8 @@ import type { ChatFormTurn } from '@/components/template/chat/chatFormTypes';
 import type { ChatCard } from '@/components/template/ChatCardView';
 import ChatOfferAction from '@/components/template/ChatOfferAction';
 import { isChatOffer, prefillForProduct, type ChatNavState, type ChatOffer } from '@/components/template/chatOffer';
+import ChatChoiceView from '@/components/template/chat/ChatChoiceView';
+import { choiceRequest, parseChatChoice, type ChatChoice, type ChatChoiceOption, type ChatChoiceRequest } from '@/components/template/chat/chatChoice';
 import ChatVoiceBar from '@/components/template/ChatVoiceBar';
 import { useChatVoice, type SpokenReply } from '@/components/template/useChatVoice';
 import { chatUserKey } from '@/components/template/chat/chatTrace';
@@ -33,7 +35,7 @@ import ChatClosedBar from '@/components/template/chat/ChatClosedBar';
  * renvoyée au modèle : avant, le message « service indisponible » repartait
  * dans l'historique comme un vrai tour de l'assistant et polluait la suite.
  */
-type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number; voice?: boolean; form?: ChatFormTurn };
+type Message = { role: 'user' | 'assistant'; content: string; error?: boolean; cards?: ChatCard[]; offer?: ChatOffer; at?: number; voice?: boolean; form?: ChatFormTurn; choice?: ChatChoice };
 
 const CLOSING_PHRASE_RE = /avez.vous encore besoin de moi/i;
 const USER_NO_RE = /^(non|non\s*merci|pas\s*besoin|c[''`]?est\s*(bon|tout)|ça\s*va|ok\s*merci|merci\s*c[''`]?est\s*tout|tout\s*va\s*bien)\s*[.!?]?\s*$/i;
@@ -98,6 +100,7 @@ const loadSaved = (key: string): { conversationId: string; messages: Message[] }
         return !!x && (x.role === 'user' || x.role === 'assistant') && typeof x.content === 'string';
       })
       .map((m) => (m.offer && !isChatOffer(m.offer) ? { ...m, offer: undefined } : m))
+      .map((m) => (m.choice ? { ...m, choice: parseChatChoice(m.choice) } : m))
       .slice(-40);
     return { conversationId: parsed.conversationId, messages };
   } catch {
@@ -110,7 +113,7 @@ const saveConversation = (key: string, conversationId: string, messages: Message
 
 // ── Transport ────────────────────────────────────────────────────────────────
 
-type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[]; offer?: unknown; form?: unknown };
+type ChatResult = { reply: string; authenticated?: boolean; rateLimited?: boolean; cards?: ChatCard[]; offer?: unknown; choice?: unknown; form?: unknown };
 type StreamHandlers = { onStatus: (label: string) => void; onDelta: (text: string) => void; onCards: (cards: ChatCard[]) => void };
 
 class StreamUnavailableError extends Error {}
@@ -157,7 +160,7 @@ const chatStream = async (body: object, token: string | null, signal: AbortSigna
     if (event === 'status' && data?.label) { received = true; h.onStatus(String(data.label)); }
     else if (event === 'delta' && typeof data?.text === 'string') { received = true; streamedText += data.text; h.onDelta(data.text); }
     else if (event === 'cards' && Array.isArray(data?.cards)) { lastCards = data.cards; h.onCards(data.cards); }
-    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined, offer: data.offer, form: data.form }; }
+    else if (event === 'done') { received = true; done = { reply: data.reply ?? '', authenticated: data.authenticated, rateLimited: data.rateLimited, cards: Array.isArray(data.cards) ? data.cards : undefined, offer: data.offer, choice: data.choice, form: data.form }; }
     else if (event === 'error') { throw new Error(data?.message || 'stream error'); }
   };
 
@@ -356,6 +359,8 @@ const ChatWidget = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Couleur touchée sous une question de l'assistant, envoyée avec le message suivant.
+  const pendingChoiceRef = useRef<ChatChoiceRequest | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
   // Parler à l'assistant comme à NOVA : la question dictée part comme un message tapé,
@@ -464,6 +469,9 @@ const ChatWidget = () => {
     const token = sessionToken || getPersistedAuthToken();
     // Style de réponse (⚡ Rapide / 💬 Conseil) : absent si le serveur ne le connaît pas.
     const requestStyle = chatStyle.forRequest();
+    // Couleur touchée sous la question de l'assistant : consommée par CETTE requête.
+    const offerChoice = pendingChoiceRef.current;
+    pendingChoiceRef.current = null;
     const body = {
       messages: history.filter((m) => !m.error).map(({ role, content }) => ({ role, content })),
       userName,
@@ -471,6 +479,9 @@ const ChatWidget = () => {
       origin: window.location.origin,
       conversationId,
       ...chatForm.requestFields(),
+      // Le widget sait afficher les couleurs à choisir (sinon le serveur les liste dans le texte).
+      choices: true,
+      ...(offerChoice ? { offerChoice } : {}),
     };
     try {
       let result: ChatResult;
@@ -498,7 +509,9 @@ const ChatWidget = () => {
         const offer = isChatOffer(result.offer) ? result.offer : undefined;
         const form = chatForm.acceptTurn(result.form);
         const shownOffer = offer ?? chatForm.recapOffer(form);
-        setMessages([...history, { role: 'assistant', content: reply, at: Date.now(), ...(cards.length ? { cards } : {}), ...(form ? { form } : {}), ...(shownOffer ? { offer: shownOffer } : {}) }]);
+        // Couleur à choisir avant l'offre : boutons sous la question (jamais avec une offre).
+        const choice = shownOffer ? undefined : parseChatChoice(result.choice);
+        setMessages([...history, { role: 'assistant', content: reply, at: Date.now(), ...(cards.length ? { cards } : {}), ...(form ? { form } : {}), ...(shownOffer ? { offer: shownOffer } : {}), ...(choice ? { choice } : {}) }]);
         // Token envoyé mais backend n'a pas pu identifier le client → session expirée.
         setAuthWarn(Boolean(token) && result.authenticated === false);
         if (CLOSING_PHRASE_RE.test(reply)) setAwaitingClose(true);
@@ -549,6 +562,16 @@ const ChatWidget = () => {
   };
 
   const send = () => sendText(input);
+
+  /** Couleur touchée : elle part comme message du client, le choix structuré avec lui. */
+  const chooseOption = (choice: ChatChoice, option: ChatChoiceOption) => {
+    if (loading) return;
+    pendingChoiceRef.current = choiceRequest(choice, option);
+    void sendText(option.name);
+    // La requête a consommé le choix (corps construit avant tout await) ; un envoi
+    // refusé (conversation close) ne doit pas le laisser à la requête suivante.
+    pendingChoiceRef.current = null;
+  };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -824,6 +847,9 @@ const ChatWidget = () => {
                           onGo={goFromOffer}
                           onOfferChange={(o) => updateOffer(i, o)}
                         />
+                      )}
+                      {msg.role === 'assistant' && !msg.error && msg.choice && (
+                        <ChatChoiceView choice={msg.choice} active={i === messages.length - 1 && !loading} onChoose={chooseOption} />
                       )}
                       {msg.role === 'assistant' && !msg.error && msg.offer && (
                         <ChatOfferAction offer={msg.offer} onChange={(o) => updateOffer(i, o)} onGo={goFromOffer} formAnswers={chatForm.answersFor(msg)} />
