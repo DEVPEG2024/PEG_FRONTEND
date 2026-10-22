@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { Product, ProductRequest } from '@/@types/product';
+import { Product } from '@/@types/product';
 import { PegFile } from '@/@types/pegFile';
+import { buildDuplicateProductInput } from './productDuplicate';
 import {
   apiGetAdminProducts,
   apiDeleteProduct,
@@ -77,29 +78,21 @@ export const duplicateProduct = createAsyncThunk(
     );
     const { product: productToDuplicate }: { product: Product } =
       await unwrapData(apiGetProductForEditById(product.documentId));
-    const { documentId, images, ...duplicatedProduct } = productToDuplicate;
-    const imagesLoaded: PegFile[] = await apiGetPegFiles(images);
-    // Les relations sont envoyées au backend sous forme de `documentId` (string),
-    // d'où le type `ProductRequest` plutôt que `Product`.
-    const newProduct: Omit<ProductRequest, 'documentId'> = {
-      ...duplicatedProduct,
-      images: imagesLoaded.map(({ id }) => id),
-      sizes: duplicatedProduct.sizes.map(({ documentId }) => documentId),
-      colors: duplicatedProduct.colors.map(({ documentId }) => documentId),
-      form: duplicatedProduct.form?.documentId,
-      productCategory: duplicatedProduct.productCategory?.documentId,
-      customerCategories: duplicatedProduct.customerCategories.map(
-        ({ documentId }) => documentId
-      ),
-      customers: duplicatedProduct.customers.map(
-        ({ documentId }) => documentId
-      ),
-    };
+    // Média Strapi : l'écriture attend l'id numérique, que GraphQL n'expose pas
+    const imagesLoaded: PegFile[] = await apiGetPegFiles(
+      productToDuplicate.images ?? []
+    );
+    const newProduct = buildDuplicateProductInput(
+      productToDuplicate,
+      imagesLoaded.map(({ id }) => id)
+    );
     const { createProduct }: { createProduct: Product } = await unwrapData(
-      // Le mutateur GraphQL attend des `documentId` pour les relations ;
-      // `ProductRequest` reflète cette forme côté écriture.
+      // Le mutateur GraphQL attend des identifiants pour les relations
       apiCreateProduct(newProduct as unknown as CreateProductRequest)
     );
+    // Réponse partielle (`createProduct: null` + erreurs) : unwrapData ne lève
+    // pas, et la liste insérerait `null`
+    if (!createProduct) throw new Error('Copie refusée par le serveur');
     return createProduct;
   }
 );
@@ -119,8 +112,8 @@ export const deleteProduct = createAsyncThunk(
   async (documentId: string): Promise<DeleteProductResponse> => {
     const { deleteProduct }: { deleteProduct: DeleteProductResponse } =
       await unwrapData(apiDeleteProduct(documentId));
-    //TODO: à remettre
-    //apiDeleteFiles(data.product.images.map(({ fileNameBack }) => fileNameBack));
+    // Ne PAS effacer les photos du produit : un même fichier sert souvent à
+    // plusieurs produits (copies). Voir `ProductsList.onDeleted`.
     return deleteProduct;
   }
 );

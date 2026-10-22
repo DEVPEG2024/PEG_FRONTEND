@@ -27,8 +27,6 @@ import { apiGetCustomers } from '@/services/CustomerServices';
 import { apiGetForms } from '@/services/FormServices';
 import { apiGetChecklists } from '@/services/ChecklistServices';
 import { unwrapData } from '@/utils/serviceHelper';
-import { PegFile } from '@/@types/pegFile';
-import { apiDeleteFiles, apiLoadPegFilesAndFiles } from '@/services/FileServices';
 import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
 import { getCatalogueVisibilityIssues } from '@/utils/productHelpers';
@@ -66,16 +64,11 @@ const ProductsList = () => {
 
   const onDeleted = async () => {
     if (productToDelete) {
+      // Les photos restent dans la médiathèque : un même fichier sert souvent à
+      // plusieurs produits (copie faite par « Dupliquer »), et son URL est
+      // reprise ailleurs (campagnes, paniers). Effacer le fichier ici retirait
+      // la photo de l'AUTRE produit (CONTRAST COOL POLO, 22/10/2026).
       dispatch(deleteProduct(productToDelete.documentId));
-      try {
-        if (productToDelete.images?.length > 0) {
-          const pegFilesToDelete: PegFile[] = await apiLoadPegFilesAndFiles(productToDelete.images);
-          await apiDeleteFiles(pegFilesToDelete.map((f) => f.id));
-        }
-      } catch (err) {
-        // Images introuvables ou déjà supprimées — on continue, mais on trace
-        console.error('[Products] Échec suppression des images du produit:', err);
-      }
     }
     dispatch(setModalDeleteProductClose());
   };
@@ -103,8 +96,15 @@ const ProductsList = () => {
   };
 
   const onDuplicate = async (product: Product) => {
-    dispatch(duplicateProduct(product));
-    toast.success('Produit dupliqué');
+    try {
+      await dispatch(duplicateProduct(product)).unwrap();
+      toast.success(
+        'Copie créée, inactive : enregistrez-la depuis sa fiche pour la publier'
+      );
+    } catch (err) {
+      console.error('[Products] Échec de la duplication:', err);
+      toast.error('La duplication a échoué, aucune copie n’a été créée');
+    }
   };
 
   const handlePaginationChange = (page: number) => {

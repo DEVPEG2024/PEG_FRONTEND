@@ -75,7 +75,7 @@ type ProductFormProps = {
   forms: Options[];
   checklists: Options[];
   images: PegFile[];
-  setImages: (images: PegFile[]) => void;
+  setImages: React.Dispatch<React.SetStateAction<PegFile[]>>;
   imagesLoading: boolean;
   currentBatUrl?: string | null;
   /** Affiche le toggle « Suggestion client » (champ suggested déployé côté Strapi) */
@@ -174,15 +174,20 @@ const ProductForm = (props: ProductFormProps) => {
     await onFormSubmit(formData, batFile, batRemoved);
   };
 
-  const onFileAdd = async (file: File) => {
-    setImages([...images, { file, name: file.name } as unknown as PegFile]);
+  // Mise à jour fonctionnelle : l'Upload appelle onFileAdd une fois par photo
+  // dans la même boucle. Avec `[...images, file]`, chaque appel repartait de la
+  // même liste et seule la DERNIÈRE photo d'une sélection multiple restait.
+  const onFileAdd = (file: File) => {
+    setImages((prev) => [
+      ...prev,
+      { file, name: file.name } as unknown as PegFile,
+    ]);
   };
 
-  const onFileRemove = (fileName: string) => {
-    const imageToDelete = images.find(({ name }) => name === fileName);
-    if (imageToDelete) {
-      setImages(images.filter(({ name }) => name !== fileName));
-    }
+  // Par position, pas par nom : deux photos peuvent porter le même nom de
+  // fichier, et le retrait d'une seule les retirait toutes.
+  const onFileRemove = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const beforeUpload = (files: FileList | null) => {
@@ -382,7 +387,7 @@ const ProductForm = (props: ProductFormProps) => {
                   fileItemClass="upload-file--actions-below"
                   beforeUpload={beforeUpload}
                   onFileAdd={(file) => onFileAdd(file)}
-                  onFileRemove={(file) => onFileRemove(file)}
+                  onFileRemove={(_, index) => onFileRemove(index)}
                   field={{ name: 'images' }}
                   fileList={images.map((pf) => {
                     const file = pf.file as File & { previewUrl?: string; displayName?: string };

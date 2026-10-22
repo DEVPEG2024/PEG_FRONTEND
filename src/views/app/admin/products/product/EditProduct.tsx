@@ -80,6 +80,9 @@ const EditProduct = () => {
   const [checklists, setChecklists] = useState<Options[]>([]);
   const [images, setImages] = useState<PegFile[]>([]);
   const [imagesLoading, setImagesLoading] = useState<boolean>(false);
+  // Photos enregistrées impossibles à relire : la liste affichée est vide mais
+  // le produit en a — l'enregistrer telle quelle les effacerait.
+  const [imagesLoadFailed, setImagesLoadFailed] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState(0);
   // Champ `suggested` : disponible seulement une fois déployé côté Strapi
   const [suggestedAvailable, setSuggestedAvailable] = useState(false);
@@ -156,6 +159,7 @@ const EditProduct = () => {
 
   const fetchFiles = async (): Promise<void> => {
     setImagesLoading(true);
+    setImagesLoadFailed(false);
     try {
       if (product?.images && product?.images?.length > 0) {
         // Load full file content so watermark and re-upload work correctly
@@ -172,7 +176,12 @@ const EditProduct = () => {
           const pegFilesLoaded: PegFile[] = await apiGetPegFiles(product.images);
           setImages(pegFilesLoaded.map((f) => ({ ...f, file: new File([], f.name) })));
         }
-      } catch { /* ignore */ }
+      } catch {
+        setImagesLoadFailed(true);
+        toast.error(
+          'Photos du produit illisibles : elles seront conservées telles quelles à l’enregistrement'
+        );
+      }
     } finally {
       setImagesLoading(false);
     }
@@ -321,6 +330,18 @@ const EditProduct = () => {
   };
 
   const handleFormSubmit = async (values: ProductFormModel, batFile: PegFile | null, batRemoved = false) => {
+    // Enregistrer avant la fin du chargement envoyait `images: []` : toutes
+    // les photos du produit étaient retirées côté serveur.
+    if (imagesLoading) {
+      toast.info('Photos en cours de chargement, réessayez dans un instant');
+      return;
+    }
+    if (imagesLoadFailed && images.length > 0) {
+      toast.error(
+        'Rechargez la page avant d’ajouter des photos : les photos actuelles n’ont pas pu être lues'
+      );
+      return;
+    }
     try {
       // Média Strapi : la relation attend l'id NUMÉRIQUE du fichier (comme les images),
       // pas son documentId.
@@ -361,6 +382,10 @@ const EditProduct = () => {
       }
       if (!onEdition) {
         delete data.documentId;
+      }
+      // Photos illisibles : sans le champ, le serveur garde celles qu'il a
+      if (imagesLoadFailed) {
+        delete data.images;
       }
       // `batFile` : seulement l'id numérique d'un NOUVEL envoi — jamais l'objet lu du
       // produit. Avant, il était toujours retiré : aucun BAT n'était jamais rattaché.

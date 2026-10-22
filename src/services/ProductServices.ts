@@ -361,6 +361,12 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
             }
             active
             inCatalogue
+            # Mêmes champs que la liste admin : la carte insérée (copie) garde sa catégorie
+            productCategory {
+                documentId
+                name
+                active
+            }
         }
     }
   `,
@@ -751,6 +757,12 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
             }
             active
             inCatalogue
+            # Mêmes champs que la liste admin : la carte remplacée garde sa catégorie
+            productCategory {
+                documentId
+                name
+                active
+            }
         }
     }
   `,

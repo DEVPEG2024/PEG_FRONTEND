@@ -45,7 +45,7 @@ type ProductFieldsProps = {
   watch: UseFormWatch<ProductFormModel>;
   setValue: UseFormSetValue<ProductFormModel>;
   images: PegFile[];
-  setImages: (images: PegFile[]) => void;
+  setImages: React.Dispatch<React.SetStateAction<PegFile[]>>;
   batFile: PegFile | null;
   setBatFile: (f: PegFile | null) => void;
   currentBatUrl?: string | null;
@@ -210,7 +210,12 @@ const ProductFields = (props: ProductFieldsProps) => {
           const blob = await imgResp.blob();
           const safeName = name.trim().replace(/\s+/g, '-').toLowerCase();
           const file = new File([blob], `${safeName}-ai.jpg`, { type: blob.type || 'image/jpeg' });
-          setImages([...images, { file, name: file.name } as unknown as PegFile]);
+          // Mise à jour fonctionnelle : la génération dure plusieurs secondes,
+          // `images` peut avoir changé entre-temps (photo ajoutée ou retirée)
+          setImages((prev) => [
+            ...prev,
+            { file, name: file.name } as unknown as PegFile,
+          ]);
         } catch {
           // CORS ou réseau — image ignorée silencieusement
         }

@@ -1005,6 +1005,17 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 
 ---
 
+## 🖼️ Produits — duplication et photos (correctif 23/10/2026)
+
+- **« Dupliquer »** construit la copie champ par champ (`buildDuplicateProductInput`, `products/store/productDuplicate.ts`). Avant, la lecture de la fiche d'édition partait telle quelle dans `createProduct` : `checklist { documentId }` (depuis mars) et `batFile { url name }` (depuis le 25/09) → 400 GraphQL, aucun des 17 produits avec checklist ne se copiait, et la liste affichait quand même « Produit dupliqué ». **Ne jamais réétaler la lecture dans une mutation.**
+- La copie est nommée « … (copie) », **inactive** (mêmes clients que l'original : ils verraient deux offres identiques ; l'enregistrer depuis sa fiche l'active) et **sans le fichier de BAT** (maquette d'un client précis ; `requiresBat` est gardé). Elle **partage les fichiers photo** de l'original.
+- ⚠️ **Supprimer un produit n'efface plus ses photos** de la médiathèque : un fichier sert souvent à plusieurs produits (copies) et son URL est reprise ailleurs (campagnes, paniers). L'ancien `apiDeleteFiles` a retiré la photo de CONTRAST COOL POLO en supprimant une de ses copies (22/10/2026). Ne pas le remettre : un nettoyage des fichiers orphelins se fait côté serveur, en vérifiant `files_related_mph`.
+- Formulaire : ajout de photos en **mise à jour fonctionnelle** (plusieurs photos choisies d'un coup → seule la dernière restait), retrait **par position** (deux photos de même nom partaient ensemble), enregistrement **refusé pendant le chargement** des photos et champ `images` **omis** si elles n'ont pas pu être relues (sinon `images: []` les effaçait).
+- Relations produit `form` / `checklist` (`oneToOne`) et `sizes` / `colors` / `customers` (`oneToMany`) sont **unidirectionnelles** : une copie ne les retire pas à l'original (cibles partagées vérifiées en prod).
+- Tests : `src/__tests__/productDuplicate.test.ts`, `src/__tests__/productFormImages.test.tsx`.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données
