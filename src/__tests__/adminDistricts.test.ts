@@ -3,20 +3,32 @@
 // rubriques de la Production, tout reste dans l'image ; le cadrage remplit
 // toujours le cadre et le zoom garde le point visé.
 import {
+  CARD_H,
   CITY_IMAGE,
   CONVEYOR,
   CONVEYOR_SHORT,
+  DELIVERY_ROUTE,
   DISTRICT_SPOTS,
   DISTRICT_ZOOM_MAX,
   PRODUCTION_SITES,
+  ROADS,
+  ROOFS,
+  WATERWAYS,
+  arcPath,
+  cardWidth,
   cityCamera,
+  compactFrame,
   districtLine,
   focusOfCamera,
   keepInside,
+  placeDistrictCards,
   readCount,
+  smoothPath,
+  spreadCards,
   toFrame,
   toImage,
 } from '@/views/app/admin/home/village/districtsScene';
+import { FLOW_DEFS } from '@/views/app/admin/home/village/villageFlows';
 import {
   DISTRICTS,
   membersOf,
@@ -59,11 +71,62 @@ describe('PEG DISTRICTS — les repères sur la ville', () => {
   });
 });
 
+describe('PEG DISTRICTS — le réseau et la vie de la ville', () => {
+  it('chaque échange entre bâtiments a ses deux pôles, sur l’image', () => {
+    for (const f of FLOW_DEFS) {
+      if (!f.exchange) continue;
+      const a = ROOFS[f.exchange.from];
+      const b = ROOFS[f.exchange.to];
+      expect({
+        flow: f.id,
+        from: !!a && inImage(a),
+        to: !!b && inImage(b),
+      }).toEqual({ flow: f.id, from: true, to: true });
+    }
+  });
+
+  it('un arc part d’un pôle, arrive à l’autre et monte au-dessus des toits', () => {
+    const d = arcPath([338, 190], [1365, 632]);
+    const n = d.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+    expect(n.slice(0, 2)).toEqual([338, 190]);
+    expect(n.slice(-2)).toEqual([1365, 632]);
+    expect(n[3]).toBeLessThan((190 + 632) / 2);
+  });
+
+  it('routes, voies d’eau et route des livraisons restent dans l’image', () => {
+    for (const r of [...ROADS, ...WATERWAYS]) {
+      expect(r.pts.length).toBeGreaterThan(1);
+      for (const p of r.pts)
+        expect({ id: r.id, p, in: inImage(p) }).toEqual({
+          id: r.id,
+          p,
+          in: true,
+        });
+    }
+    for (const p of DELIVERY_ROUTE) expect(inImage(p)).toBe(true);
+    expect(new Set(ROADS.map((r) => r.id)).size).toBe(ROADS.length);
+  });
+
+  it('un tracé lissé passe par le premier et le dernier point, une courbe par tronçon', () => {
+    const pts: [number, number][] = [
+      [0, 0],
+      [100, 50],
+      [200, 40],
+    ];
+    const d = smoothPath(pts);
+    expect(d.startsWith('M0 0 C')).toBe(true);
+    expect(d.endsWith(' 200 40')).toBe(true);
+    expect(d.match(/C/g)).toHaveLength(2);
+    expect(d).toContain(' 100 50 C');
+  });
+});
+
 describe('PEG DISTRICTS — cadrage', () => {
   const frames: [number, number][] = [
     [1258, 705],
     [1092, 612],
     [720, 440],
+    [644, 440],
     [1600, 520],
   ];
 
@@ -121,6 +184,88 @@ describe('PEG DISTRICTS — cadrage', () => {
     }
     // Déjà à l'intérieur : elle ne bouge pas.
     expect(keepInside([600, 400], 238, 60, 1092, 612)).toEqual([600, 400]);
+  });
+
+  type P = [number, number];
+  const hits = (a: P, aw: number, ah: number, b: P, bw: number, bh: number) =>
+    Math.abs(a[0] - b[0]) < (aw + bw) / 2 - 0.5 &&
+    Math.abs(a[1] - b[1]) < (ah + bh) / 2 - 0.5;
+
+  it('au zoom comme en cadre étroit, les cartes ne recouvrent ni une autre carte ni un site', () => {
+    for (const [w, h] of frames)
+      for (const zoom of [1, 1.4, 1.8, 2.2])
+        for (const focus of [
+          undefined,
+          [600, 820] as P,
+          [300, 200] as P,
+          [1400, 700] as P,
+          [860, 600] as P,
+        ]) {
+          const c = cityCamera(w, h, zoom, focus);
+          const cw = cardWidth(w);
+          const at = placeDistrictCards(c, w, h);
+          const sites = PRODUCTION_SITES.map((s) => toFrame(c, s.at))
+            .map(([x, y]) => [x + 61, y] as P)
+            .filter(([x, y]) => x > 0 && x < w && y > 0 && y < h);
+          at.forEach(([x, y], i) => {
+            const where = { w, h, zoom, focus, card: DISTRICT_SPOTS[i].id };
+            expect({
+              ...where,
+              inside:
+                x - cw / 2 >= 12 - 1e-6 &&
+                x + cw / 2 <= w - 12 + 1e-6 &&
+                y - CARD_H / 2 >= 12 - 1e-6 &&
+                y + CARD_H / 2 <= h - 12 + 1e-6,
+            }).toEqual({ ...where, inside: true });
+            at.slice(i + 1).forEach((b, k) =>
+              expect({
+                ...where,
+                other: DISTRICT_SPOTS[i + 1 + k].id,
+                hit: hits([x, y], cw, CARD_H, b, cw, CARD_H),
+              }).toEqual({
+                ...where,
+                other: DISTRICT_SPOTS[i + 1 + k].id,
+                hit: false,
+              })
+            );
+            sites.forEach((p, k) =>
+              expect({
+                ...where,
+                site: k,
+                hit: hits([x, y], cw, CARD_H, p, 150, 28),
+              }).toEqual({ ...where, site: k, hit: false })
+            );
+          });
+        }
+  });
+
+  it('sur un grand écran, à 100 %, chaque carte reste sur son bâtiment', () => {
+    for (const [w, h] of [
+      [1209, 677],
+      [1044, 585],
+      [1258, 705],
+    ] as P[]) {
+      const c = cityCamera(w, h, 1);
+      expect(placeDistrictCards(c, w, h)).toEqual(
+        DISTRICT_SPOTS.map((s) => keepInside(toFrame(c, s.card), 238, 60, w, h))
+      );
+    }
+  });
+
+  it('sans chevauchement, les cartes restent où elles sont', () => {
+    const pts: P[] = [
+      [200, 100],
+      [600, 100],
+      [400, 400],
+    ];
+    expect(spreadCards(pts, 238, 60, 1092, 612)).toEqual(pts);
+  });
+
+  it('un cadre étroit resserre les cartes pour en aligner trois', () => {
+    expect(compactFrame(677)).toBe(true);
+    expect(compactFrame(1044)).toBe(false);
+    expect(3 * cardWidth(662) + 2 * 10 + 2 * 12).toBeLessThanOrEqual(662);
+    expect(cardWidth(1209)).toBe(238);
   });
 });
 

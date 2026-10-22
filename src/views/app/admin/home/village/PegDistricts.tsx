@@ -1,11 +1,16 @@
 // Accueil admin « PEG DISTRICTS » (ordinateur, ≥ 1024 px), d'après la maquette
 // du 22/10/2026 : la ville est un rendu 3D (une image) ; posés dessus, les six
 // quartiers (carte aux vrais chiffres, rubriques au clic), les trois sites de
-// production numérotés et la ligne de production lumineuse ; à droite « Ma
-// journée » et les indicateurs clés. Vue liste et tableau de bord classique
-// (« Statistiques ») à un clic ; le plein écran ouvre l'écran mural.
+// production numérotés et la ligne de production lumineuse, et la vie de la
+// ville : le réseau des échanges (un pôle sur chaque toit, des arcs où file le
+// courant et circulent les jetons, au rythme des vrais chiffres), la route des
+// livraisons et ses camions, la circulation sur quatre routes, des bateaux,
+// des ondes. À droite « Ma journée », les indicateurs clés et la légende des
+// échanges. Vue liste et tableau de bord classique (« Statistiques ») à un
+// clic ; le plein écran ouvre l'écran mural.
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -33,6 +38,7 @@ import {
   HiOutlineMinus,
   HiOutlinePaperAirplane,
   HiOutlinePlus,
+  HiOutlineSparkles,
   HiOutlineUsers,
 } from 'react-icons/hi2';
 import navigationIcon from '@/configs/navigation-icon.config';
@@ -45,23 +51,41 @@ import { SECTION_INFO } from './villageSections';
 import {
   DISTRICTS,
   MENU_ORDER,
+  districtOf,
   membersOf,
   type DistrictId,
   type SectionId,
 } from './villageScene';
 import { emptySection, type SectionData, type Trend } from './villageModel';
 import {
+  FLOW_DEFS,
+  flowDots,
+  readAnimationsOn,
+  writeAnimationsOn,
+  type FlowId,
+} from './villageFlows';
+import {
+  CARD_H,
   CITY_IMAGE,
   CONVEYOR,
   CONVEYOR_SHORT,
+  DELIVERY_ROUTE,
   DISTRICT_SPOTS,
   DISTRICT_ZOOM_MAX,
   PRODUCTION_SITES,
+  ROADS,
+  ROOFS,
+  WATERWAYS,
+  arcPath,
+  cardWidth,
   cityCamera,
+  compactFrame,
   districtLine,
   focusOfCamera,
-  keepInside,
+  placeDistrictCards,
+  pointsLength,
   readCount as num,
+  smoothPath,
   statOf,
   toFrame,
   toImage,
@@ -75,8 +99,6 @@ const PANEL_W = 340;
 const GAP = 24;
 /** Marge intérieure de la page claire posée sur le fond sombre de l'application. */
 const PAD = 28;
-const CARD_W = 238;
-const CARD_H = 60;
 const ZOOMS = [1, 1.4, 1.8, DISTRICT_ZOOM_MAX];
 const EASE = 'transform .45s cubic-bezier(.2,.8,.2,1)';
 
@@ -87,9 +109,71 @@ const CSS = `
 .pd-btn:focus-visible,.pd-card:focus-visible,.pd-pin:focus-visible,.pd-kpi:focus-visible,.pd-row:focus-visible{outline:3px solid #6d5dfc;outline-offset:2px}
 .pd-flow{animation:pd-flow 2.4s linear infinite}
 @keyframes pd-flow{to{stroke-dashoffset:-160}}
-.pd-glow{transition:opacity .25s ease}
-@media (prefers-reduced-motion: reduce){.pd-card,.pd-kpi,.pd-row,.pd-glow{transition:none}.pd-flow{animation:none}}
+.pd-current{animation:pd-current 1.3s linear infinite}
+@keyframes pd-current{to{stroke-dashoffset:-120}}
+.pd-glow,.pd-arc,.pd-lane{transition:opacity .25s ease}
+.pd-pulse{transform-box:fill-box;transform-origin:center;animation:pd-pulse 2.8s ease-out infinite}
+@keyframes pd-pulse{0%{transform:scale(.3);opacity:.95}100%{transform:scale(1.7);opacity:0}}
+@media (prefers-reduced-motion: reduce){.pd-card,.pd-kpi,.pd-row,.pd-glow,.pd-arc,.pd-lane{transition:none}.pd-flow,.pd-current,.pd-pulse{animation:none}}
 `;
+
+/** Carrosseries de la circulation (les feux et la traînée sont communs). */
+const CAR_COLORS = [
+  '#ffffff',
+  '#e5e7eb',
+  '#93c5fd',
+  '#fca5a5',
+  '#c4b5fd',
+  '#334155',
+];
+
+/** Apparition et disparition en fondu aux deux bouts d'un trajet. */
+const fadeEnds = (dur: number, begin: number, until = 1) => (
+  <animate
+    attributeName="opacity"
+    values="0;1;1;0;0"
+    keyTimes={`0;${(0.06 * until).toFixed(3)};${(0.92 * until).toFixed(3)};${until};1`}
+    dur={`${dur.toFixed(1)}s`}
+    begin={`${begin.toFixed(1)}s`}
+    repeatCount="indefinite"
+  />
+);
+
+/** Tracés lissés des routes, des voies d'eau et de la route des livraisons. */
+const ROAD_PATHS = ROADS.map((r) => ({
+  ...r,
+  d: smoothPath(r.pts),
+  length: pointsLength(r.pts),
+}));
+const WATER_PATHS = WATERWAYS.map((w) => ({
+  ...w,
+  d: smoothPath(w.pts),
+  length: pointsLength(w.pts),
+}));
+const DELIVERY = {
+  d: smoothPath(DELIVERY_ROUTE),
+  length: pointsLength(DELIVERY_ROUTE),
+};
+
+/** Couleur de chaque échange : arc, jetons, légende. */
+const FLOW_COLOR: Record<FlowId, string> = {
+  commandes: '#8b5cf6',
+  demandes: '#14b8a6',
+  production: '#f97316',
+  livraisons: '#0ea5e9',
+  factures: '#f59e0b',
+  tickets: '#f43f5e',
+};
+
+/** D'où vient et où va chaque échange, en mots (légende). */
+const FLOW_ROUTE: Record<FlowId, string> = {
+  commandes: 'Boutique → Projets',
+  demandes: 'Clients → Devis',
+  production: 'Projets → Producteurs',
+  livraisons: 'Ateliers → clients, en camion',
+  factures: 'Projets → Finance',
+  tickets: 'Clients → Tickets',
+};
 
 const DISTRICT_ICON: Record<DistrictId, ReactNode> = {
   clients: <HiOutlineUsers />,
@@ -167,6 +251,83 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
   const [hot, setHot] = useState<DistrictId | null>(null);
   const [allDay, setAllDay] = useState(false);
   const cam = cityCamera(frameW, frameH, zoom, focus);
+  // Cadre étroit : cartes resserrées et commandes en icônes. Une carte hors
+  // champ revient au bord du cadre, sans recouvrir sa voisine ni un site.
+  const compact = compactFrame(frameW);
+  const cardW = cardWidth(frameW);
+  const cardAt = placeDistrictCards(cam, frameW, frameH);
+  // La ville bouge (échanges, circulation, camions, ondes) sauf si on coupe
+  // les animations — choix partagé avec l'écran mural — ou si le système en
+  // demande moins.
+  const [animOn, setAnimOn] = useState(readAnimationsOn);
+  const [reduced] = useState(
+    () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  );
+  const motion = animOn && !reduced;
+  const [hotFlow, setHotFlow] = useState<FlowId | null>(null);
+  const uid = useId().replace(/:/g, '');
+
+  /**
+   * Les échanges entre bâtiments, au rythme des vrais chiffres : sans volume
+   * (ou chiffre illisible), l'arc reste tracé, pâle et immobile.
+   */
+  const arcs = FLOW_DEFS.flatMap((f) => {
+    const ex = f.exchange;
+    const a = ex && ROOFS[ex.from];
+    const b = ex && ROOFS[ex.to];
+    if (!ex || !a || !b) return [];
+    const count = data?.flowCounts[f.id] ?? null;
+    return [
+      {
+        id: f.id,
+        a,
+        b,
+        d: arcPath(a, b),
+        dots: flowDots(count, ex.token),
+        doc: ex.token === 'doc',
+        dur: Math.max(4, (Math.hypot(b[0] - a[0], b[1] - a[1]) * 1.1) / 90),
+        districts: [districtOf(ex.from), districtOf(ex.to)],
+      },
+    ];
+  });
+  /** Un échange ressort quand on le survole dans la légende, ou son quartier sur la carte. */
+  const arcLit = (x: { id: FlowId; districts: DistrictId[] }) =>
+    hotFlow ? x.id === hotFlow : hot ? x.districts.includes(hot) : true;
+  /** Les pôles : un par toit relié, allumé si l'un de ses échanges l'est. */
+  const hubs = [
+    ...new Map(arcs.flatMap((x) => [x.a, x.b]).map((p) => [p.join(), p])),
+  ].map(([key, at]) => ({
+    key,
+    at,
+    lit: arcs.some(
+      (x) => arcLit(x) && (x.a.join() === key || x.b.join() === key)
+    ),
+  }));
+  // Les livraisons roulent : une route tracée des quais au pont, et un camion
+  // par livraison du jour — ou, faute de livraison aujourd'hui, au rythme de
+  // celles de la semaine (le chiffre de la légende).
+  const laneLit = hotFlow
+    ? hotFlow === 'livraisons'
+    : hot
+      ? hot === 'production' || hot === 'clients'
+      : true;
+  const vans = Math.min(
+    3,
+    Math.max(
+      data?.life.vans ?? 0,
+      flowDots(data?.flowCounts.livraisons ?? null, 'doc')
+    )
+  );
+  const pulses: { at: [number, number]; color: string }[] = [
+    { id: 'commandes' as const, at: ROOFS.boutique },
+    { id: 'tickets' as const, at: ROOFS.tickets },
+    { id: 'factures' as const, at: ROOFS.finance },
+    { id: 'demandes' as const, at: ROOFS.clients },
+  ].flatMap((p) =>
+    p.at && (data?.flowCounts[p.id] ?? 0) > 0
+      ? [{ at: p.at, color: FLOW_COLOR[p.id] }]
+      : []
+  );
 
   const section = (id: SectionId): SectionData =>
     data?.sections[id] ??
@@ -351,13 +512,15 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             type="button"
             className="pd-btn"
             aria-pressed={on}
+            aria-label={compact ? label : undefined}
+            title={compact ? label : undefined}
             onClick={() => (id === 'stats' ? onClassic() : setView(id))}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
               height: 40,
-              padding: '0 16px',
+              padding: compact ? '0 12px' : '0 16px',
               borderRadius: 12,
               border: 0,
               background: on ? '#efecfe' : 'transparent',
@@ -370,7 +533,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             <span aria-hidden="true" style={{ display: 'flex', fontSize: 18 }}>
               {glyph}
             </span>
-            {label}
+            {!compact && label}
           </button>
         );
       })}
@@ -381,14 +544,14 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
     label: string,
     glyph: ReactNode,
     onClick: () => void,
-    disabled = false
+    pressed?: boolean
   ) => (
     <button
       type="button"
       className="pd-btn"
       aria-label={label}
+      aria-pressed={pressed}
       title={label}
-      disabled={disabled}
       onClick={onClick}
       style={{
         display: 'grid',
@@ -397,16 +560,20 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
         height: 44,
         borderRadius: 14,
         border: 0,
-        background: 'rgba(255,255,255,0.95)',
+        background: pressed ? '#efecfe' : 'rgba(255,255,255,0.95)',
         boxShadow: '0 10px 30px rgba(30,27,75,0.12)',
-        color: disabled ? '#c4c7d0' : '#374151',
+        color: pressed ? '#4f3fd1' : '#374151',
         fontSize: 19,
-        cursor: disabled ? 'default' : 'pointer',
+        cursor: 'pointer',
       }}
     >
       {glyph}
     </button>
   );
+  const toggleAnimations = () => {
+    writeAnimationsOn(!animOn);
+    setAnimOn(!animOn);
+  };
 
   const city = (
     <div
@@ -478,6 +645,338 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
           aria-hidden="true"
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         >
+          <defs>
+            <linearGradient id={`${uid}trail`} x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#a78bfa" stopOpacity="0" />
+              <stop offset="1" stopColor="#c4b5fd" stopOpacity="0.85" />
+            </linearGradient>
+            {arcs.map((a) => (
+              <path key={a.id} id={`${uid}arc-${a.id}`} d={a.d} />
+            ))}
+            {ROAD_PATHS.map((r) => (
+              <path key={r.id} id={`${uid}road-${r.id}`} d={r.d} />
+            ))}
+            {WATER_PATHS.map((w) => (
+              <path key={w.id} id={`${uid}water-${w.id}`} d={w.d} />
+            ))}
+            <path id={`${uid}delivery`} d={DELIVERY.d} />
+          </defs>
+
+          {/* La route des livraisons : des quais de l'entrepôt au pont */}
+          <g className="pd-lane" style={{ opacity: laneLit ? 1 : 0.2 }}>
+            <path
+              d={DELIVERY.d}
+              fill="none"
+              stroke={FLOW_COLOR.livraisons}
+              strokeOpacity={0.16}
+              strokeWidth={10}
+              strokeLinecap="round"
+            />
+            <path
+              d={DELIVERY.d}
+              fill="none"
+              stroke={FLOW_COLOR.livraisons}
+              strokeOpacity={0.8}
+              strokeWidth={4}
+              strokeLinecap="round"
+              strokeDasharray="0.1 10"
+            />
+          </g>
+
+          {/* Ondes : il se passe quelque chose dans ce bâtiment */}
+          {motion &&
+            pulses.flatMap((p, i) =>
+              [0, 1].map((k) => (
+                <ellipse
+                  key={`${i}-${k}`}
+                  className="pd-pulse"
+                  cx={p.at[0]}
+                  cy={p.at[1]}
+                  rx={30}
+                  ry={15}
+                  fill="none"
+                  stroke={p.color}
+                  strokeWidth={2.4}
+                  style={{ animationDelay: `${-(k * 1.4 + i * 0.45)}s` }}
+                />
+              ))
+            )}
+
+          {/* Les bateaux glissent sur le canal et le fleuve, puis disparaissent sous le pont */}
+          {motion &&
+            WATER_PATHS.map((w, i) => {
+              const dur = w.length / 11 / 0.72;
+              const begin = -i * dur * 0.45;
+              return (
+                <g key={w.id}>
+                  <g opacity={0}>
+                    <path
+                      d="M-7 0 L-26 -6 M-7 0 L-26 6"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeOpacity={0.8}
+                      strokeWidth={1.3}
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M-8 -3.2 H4 Q10 0 4 3.2 H-8 Z"
+                      fill="#ffffff"
+                      stroke="#94a3b8"
+                      strokeWidth={0.6}
+                    />
+                    <rect
+                      x={-5}
+                      y={-1.7}
+                      width={6}
+                      height={3.4}
+                      rx={0.9}
+                      fill={VIOLET}
+                    />
+                    {fadeEnds(dur, begin, 0.72)}
+                  </g>
+                  <animateMotion
+                    dur={`${dur.toFixed(1)}s`}
+                    begin={`${begin.toFixed(1)}s`}
+                    repeatCount="indefinite"
+                    rotate="auto"
+                    keyPoints="0;1;1"
+                    keyTimes="0;0.72;1"
+                    calcMode="linear"
+                  >
+                    <mpath href={`#${uid}water-${w.id}`} />
+                  </animateMotion>
+                </g>
+              );
+            })}
+
+          {/* La circulation dans les deux sens, chacun sur sa voie, avec sa traînée de lumière */}
+          {motion &&
+            ROAD_PATHS.flatMap((r, ri) =>
+              Array.from({ length: r.cars * 2 }, (_, i) => {
+                const back = i % 2 === 1;
+                const k = Math.floor(i / 2);
+                const dur = (r.length / 34) * (0.88 + (k % 3) * 0.1);
+                const begin = -((k + (back ? 0.5 : 0)) * dur) / r.cars;
+                return (
+                  <g key={`${r.id}-${i}`}>
+                    <g opacity={0}>
+                      <g transform="translate(0 3.8)">
+                        <rect
+                          x={-30}
+                          y={-1.7}
+                          width={24}
+                          height={3.4}
+                          rx={1.7}
+                          fill={`url(#${uid}trail)`}
+                        />
+                        <rect
+                          x={-6.5}
+                          y={-3}
+                          width={13}
+                          height={6}
+                          rx={2.2}
+                          fill={CAR_COLORS[(ri * 3 + i) % CAR_COLORS.length]}
+                          stroke="rgba(15,23,42,0.3)"
+                          strokeWidth={0.6}
+                        />
+                        <rect
+                          x={-2.6}
+                          y={-2.2}
+                          width={5.4}
+                          height={4.4}
+                          rx={1.3}
+                          fill="rgba(15,23,42,0.32)"
+                        />
+                        <circle cx={6} cy={-1.8} r={1} fill="#fef9c3" />
+                        <circle cx={6} cy={1.8} r={1} fill="#fef9c3" />
+                      </g>
+                      {fadeEnds(dur, begin)}
+                    </g>
+                    <animateMotion
+                      dur={`${dur.toFixed(1)}s`}
+                      begin={`${begin.toFixed(1)}s`}
+                      repeatCount="indefinite"
+                      rotate={back ? 'auto-reverse' : 'auto'}
+                      keyPoints={back ? '1;0' : '0;1'}
+                      keyTimes="0;1"
+                      calcMode="linear"
+                    >
+                      <mpath href={`#${uid}road-${r.id}`} />
+                    </animateMotion>
+                  </g>
+                );
+              })
+            )}
+
+          {/* Les camions de livraison quittent la ville par le pont */}
+          {motion &&
+            Array.from({ length: vans }, (_, i) => {
+              const dur = DELIVERY.length / 26;
+              const begin = -(i * dur) / vans;
+              return (
+                <g key={`van-${i}`}>
+                  <g opacity={0}>
+                    <rect
+                      x={-11}
+                      y={-4}
+                      width={14}
+                      height={8}
+                      rx={1.2}
+                      fill="#ffffff"
+                      stroke="#94a3b8"
+                      strokeWidth={0.6}
+                    />
+                    <rect
+                      x={3.8}
+                      y={-3.5}
+                      width={6}
+                      height={7}
+                      rx={1.8}
+                      fill={FLOW_COLOR.livraisons}
+                    />
+                    <circle cx={10.2} cy={-2.1} r={1.1} fill="#fef9c3" />
+                    <circle cx={10.2} cy={2.1} r={1.1} fill="#fef9c3" />
+                    {fadeEnds(dur, begin)}
+                  </g>
+                  <animateMotion
+                    dur={`${dur.toFixed(1)}s`}
+                    begin={`${begin.toFixed(1)}s`}
+                    repeatCount="indefinite"
+                    rotate="auto"
+                  >
+                    <mpath href={`#${uid}delivery`} />
+                  </animateMotion>
+                </g>
+              );
+            })}
+
+          {/* Le réseau des échanges : arcs entre les pôles, le courant qui file, les jetons */}
+          {arcs.map((a) => {
+            const color = FLOW_COLOR[a.id];
+            const live = a.dots > 0;
+            return (
+              <g
+                key={a.id}
+                className="pd-arc"
+                style={{ opacity: arcLit(a) ? (live ? 1 : 0.5) : 0.12 }}
+              >
+                <path
+                  d={a.d}
+                  fill="none"
+                  stroke={color}
+                  strokeOpacity={0.14}
+                  strokeWidth={14}
+                  strokeLinecap="round"
+                />
+                <path
+                  d={a.d}
+                  fill="none"
+                  stroke={color}
+                  strokeOpacity={0.24}
+                  strokeWidth={7}
+                  strokeLinecap="round"
+                />
+                <path
+                  d={a.d}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+                <path
+                  d={a.d}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeOpacity={0.9}
+                  strokeWidth={1.1}
+                  strokeLinecap="round"
+                />
+                {motion && live && (
+                  <path
+                    className="pd-current"
+                    d={a.d}
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth={2.6}
+                    strokeLinecap="round"
+                    strokeDasharray="12 48"
+                  />
+                )}
+                {motion &&
+                  Array.from({ length: a.dots }, (_, i) => (
+                    <g key={i}>
+                      {a.doc ? (
+                        <g>
+                          <rect
+                            x={-5.5}
+                            y={-6.5}
+                            width={11}
+                            height={13}
+                            rx={2}
+                            fill="#ffffff"
+                            stroke={color}
+                            strokeWidth={1.8}
+                          />
+                          <path
+                            d="M-2.6 -2.2 H2.6 M-2.6 1 H2.6"
+                            stroke={color}
+                            strokeWidth={1.3}
+                            strokeLinecap="round"
+                          />
+                        </g>
+                      ) : (
+                        <g>
+                          <circle r={8} fill={color} opacity={0.25} />
+                          <circle
+                            r={4}
+                            fill="#ffffff"
+                            stroke={color}
+                            strokeWidth={2.2}
+                          />
+                        </g>
+                      )}
+                      <animateMotion
+                        dur={`${a.dur.toFixed(1)}s`}
+                        begin={`${(-(i * a.dur) / a.dots).toFixed(1)}s`}
+                        repeatCount="indefinite"
+                      >
+                        <mpath href={`#${uid}arc-${a.id}`} />
+                      </animateMotion>
+                    </g>
+                  ))}
+              </g>
+            );
+          })}
+
+          {/* Les pôles, posés sur les toits */}
+          {hubs.map((h) => (
+            <g
+              key={h.key}
+              className="pd-arc"
+              style={{ opacity: h.lit ? 1 : 0.35 }}
+            >
+              <ellipse
+                cx={h.at[0]}
+                cy={h.at[1]}
+                rx={15}
+                ry={7.5}
+                fill={VIOLET}
+                fillOpacity={0.22}
+                stroke="#ffffff"
+                strokeOpacity={0.95}
+                strokeWidth={1.6}
+              />
+              <circle
+                cx={h.at[0]}
+                cy={h.at[1]}
+                r={4.6}
+                fill="#ffffff"
+                stroke={VIOLET}
+                strokeWidth={2.4}
+              />
+            </g>
+          ))}
+
           {[CONVEYOR, CONVEYOR_SHORT].map((pts, i) => {
             const d = `M${pts.map((p) => p.join(' ')).join(' L')}`;
             return (
@@ -493,7 +992,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                   style={{ filter: 'blur(4px)' }}
                 />
                 <path
-                  className="pd-flow"
+                  className={motion ? 'pd-flow' : undefined}
                   d={d}
                   fill="none"
                   stroke="#ffffff"
@@ -605,16 +1104,10 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
       })}
 
       {/* Les six quartiers */}
-      {DISTRICT_SPOTS.map((s) => {
+      {DISTRICT_SPOTS.map((s, i) => {
         const d = DISTRICTS.find((x) => x.id === s.id);
         if (!d) return null;
-        const [cx, cy] = keepInside(
-          toFrame(cam, s.card),
-          CARD_W,
-          CARD_H,
-          frameW,
-          frameH
-        );
+        const [cx, cy] = cardAt[i];
         const isOpen = open === s.id;
         const members = membersOf(s.id);
         const alert = members.some((id) => section(id).alert);
@@ -628,8 +1121,8 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
               position: 'absolute',
               left: 0,
               top: 0,
-              width: CARD_W,
-              transform: `translate(${cx - CARD_W / 2}px, ${cy - CARD_H / 2}px)`,
+              width: cardW,
+              transform: `translate(${cx - cardW / 2}px, ${cy - CARD_H / 2}px)`,
               transition: moving ? 'none' : EASE,
               zIndex: isOpen ? 3 : hot === s.id ? 2 : 1,
             }}
@@ -644,10 +1137,10 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                width: CARD_W,
+                gap: compact ? 10 : 12,
+                width: cardW,
                 height: CARD_H,
-                padding: '0 12px 0 10px',
+                padding: compact ? '0 10px 0 8px' : '0 12px 0 10px',
                 boxSizing: 'border-box',
                 borderRadius: 16,
                 border: '1px solid rgba(255,255,255,0.8)',
@@ -664,13 +1157,13 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                   position: 'relative',
                   display: 'grid',
                   placeItems: 'center',
-                  width: 40,
-                  height: 40,
+                  width: compact ? 34 : 40,
+                  height: compact ? 34 : 40,
                   flexShrink: 0,
-                  borderRadius: 12,
+                  borderRadius: compact ? 10 : 12,
                   background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)',
                   color: '#ffffff',
-                  fontSize: 21,
+                  fontSize: compact ? 18 : 21,
                 }}
               >
                 {DISTRICT_ICON[s.id]}
@@ -693,7 +1186,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 15,
+                    fontSize: compact ? 14 : 15,
                     fontWeight: 700,
                     color: INK,
                     lineHeight: 1.25,
@@ -704,7 +1197,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 12.5,
+                    fontSize: compact ? 12 : 12.5,
                     color: MUTED,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -732,7 +1225,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
                   position: 'absolute',
                   left: 0,
                   [up ? 'bottom' : 'top']: CARD_H + 8,
-                  width: CARD_W + 40,
+                  width: cardW + 40,
                   margin: 0,
                   padding: 6,
                   listStyle: 'none',
@@ -850,6 +1343,15 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
           gap: 8,
         }}
       >
+        {!reduced &&
+          roundButton(
+            animOn
+              ? 'Couper les animations (échanges, circulation)'
+              : 'Animer la ville (échanges, circulation)',
+            <HiOutlineSparkles />,
+            toggleAnimations,
+            animOn
+          )}
         {roundButton(
           'Recentrer la ville',
           <HiOutlinePaperAirplane />,
@@ -1248,6 +1750,107 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
             </button>
           ))}
         </div>
+      </section>
+
+      <section aria-labelledby="pd-flows">
+        <h2
+          id="pd-flows"
+          style={{
+            margin: '0 0 12px',
+            fontSize: 20,
+            fontWeight: 700,
+            color: INK,
+          }}
+        >
+          Échanges en direct
+        </h2>
+        <ul
+          style={{
+            margin: 0,
+            padding: 0,
+            listStyle: 'none',
+            display: 'grid',
+            gap: 6,
+          }}
+        >
+          {FLOW_DEFS.map((f) => {
+            const count = data?.flowCounts[f.id] ?? null;
+            const on = hotFlow === f.id;
+            return (
+              <li key={f.id}>
+                <button
+                  type="button"
+                  className="pd-btn"
+                  aria-pressed={on}
+                  onClick={() => setHotFlow(on ? null : f.id)}
+                  onPointerEnter={() => setHotFlow(f.id)}
+                  onPointerLeave={() =>
+                    setHotFlow((h) => (h === f.id ? null : h))
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 12,
+                    border: `1px solid ${on ? FLOW_COLOR[f.id] : 'transparent'}`,
+                    background: on ? '#faf9ff' : 'transparent',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 26,
+                      height: 4,
+                      flexShrink: 0,
+                      borderRadius: 2,
+                      background: FLOW_COLOR[f.id],
+                      boxShadow: `0 0 8px ${FLOW_COLOR[f.id]}`,
+                    }}
+                  />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                        color: INK,
+                      }}
+                    >
+                      {f.label}
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 12,
+                        color: MUTED,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {FLOW_ROUTE[f.id]}
+                    </span>
+                  </span>
+                  <span
+                    title={f.detail}
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: INK,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {count === null ? '—' : count.toLocaleString('fr-FR')}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </section>
     </aside>
   );
