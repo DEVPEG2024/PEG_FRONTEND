@@ -1048,7 +1048,7 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 - **NE JAMAIS réimplémenter cette fonctionnalité** sans validation Nova
 
 ### Tests de non-régression
-- `src/__tests__/terminology-guard.test.ts` — 39 tests (glossaire, marqueurs, i18n, statuts, synonymes interdits)
+- `src/__tests__/terminology-guard.test.ts` — 47 tests (glossaire, marqueurs, i18n, statuts, Expédition / Chat Conseil, synonymes interdits)
 - Lancer : `npx jest src/__tests__/terminology-guard.test.ts`
 
 ---

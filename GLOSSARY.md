@@ -1,7 +1,7 @@
 # PEG -- Glossaire terminologique officiel
 
 > SOURCE DE VERITE. Ne jamais modifier sans validation explicite de Nova.
-> Derniere validation : 2026-04-18
+> Derniere validation : 2026-10-22 (ajout des termes Expedition et Chat Conseil)
 
 ---
 
@@ -26,6 +26,15 @@
 | Categorie                | Classement clients/producteurs/produits                    | type, groupe, famille                            |
 | Pool                     | Ressource producteur affectable a un projet                | equipe, groupe, assignation                      |
 | Magasin                  | Point de vente physique (`/admin/markets`)                 | boutique (= e-commerce), store                   |
+| Expedition / Expedie     | Depart de la commande d'un projet (`shippedAt` renseigne) -- pas un statut projet | envoi, livraison (= date prevue du projet), statut "Expedie" |
+| Transporteur             | Societe qui achemine le colis (`shippingCarrier`)          | livreur, coursier, prestataire                   |
+| Numero de suivi          | Reference du colis chez le transporteur (`trackingNumber`) ; lien "Suivre le colis" deduit | tracking, numero de colis, reference d'envoi |
+| Retrait sur place        | Pas d'envoi : commande "prete a etre retiree" (`pickup`)   | click & collect, enlevement                      |
+| Style de reponse         | Facon dont l'assistant repond, choisie par le client : Rapide / Conseil | mode, ton, personnalite, niveau     |
+| Personnalisation guidee  | Formulaire de personnalisation rempli dans le chat avec l'assistant | formulaire IA, auto-remplissage, questionnaire |
+| Rempli avec l'assistant  | Badge d'une commande dont la personnalisation a ete remplie dans le chat | genere par l'IA, rempli par le bot |
+| Commande issue de l'assistant | Commande dont au moins un article vient d'une offre du chat | vente IA, commande chatbot                  |
+| Conversation conclue     | Conversation du chat close apres le paiement d'une commande issue de l'assistant | conversation fermee, archivee |
 
 ---
 
@@ -40,6 +49,31 @@
 | `canceled`       | Annule                  |
 | `unpaid`         | Termine impaye (filtre) |
 | `sav`            | SAV                     |
+
+---
+
+## Transporteurs (valeurs internes, `project.shippingCarrier`)
+
+| Valeur interne   | Label FR            |
+|------------------|---------------------|
+| `colissimo`      | Colissimo           |
+| `chronopost`     | Chronopost          |
+| `dpd`            | DPD                 |
+| `gls`            | GLS                 |
+| `ups`            | UPS                 |
+| `dhl`            | DHL                 |
+| `fedex_tnt`      | FedEx/TNT           |
+| `peg_delivery`   | Livraison PEG       |
+| `pickup`         | Retrait sur place   |
+
+---
+
+## Styles de reponse du chat (valeurs internes)
+
+| Valeur interne | Label FR | Indication affichee                                 |
+|----------------|----------|-----------------------------------------------------|
+| `quick`        | Rapide   | Reponses courtes, droit au but                      |
+| `advice`       | Conseil  | Je m'interesse a votre projet et je vous conseille  |
 
 ---
 

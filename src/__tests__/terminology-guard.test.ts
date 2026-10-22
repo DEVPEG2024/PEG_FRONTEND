@@ -165,6 +165,59 @@ describe('Statuts projet', () => {
   })
 })
 
+// ─── 5 bis. Expedition et Chat Conseil (valides le 22/10/2026) ───────────────
+
+describe('Expedition et Chat Conseil', () => {
+  test('GLOSSARY.md contient les termes Expedition et Chat Conseil', () => {
+    const glossary = fs.readFileSync(path.resolve(SRC, '..', 'GLOSSARY.md'), 'utf-8')
+    for (const term of [
+      'Expedition / Expedie',
+      'Transporteur',
+      'Numero de suivi',
+      'Retrait sur place',
+      'Style de reponse',
+      'Personnalisation guidee',
+      "Rempli avec l'assistant",
+      "Commande issue de l'assistant",
+      'Conversation conclue',
+    ]) {
+      expect(glossary).toContain(term)
+    }
+  })
+
+  test('Bandeau projet : « Marquer comme expédié » et « Suivre le colis »', () => {
+    const bar = readFile('views/app/common/projects/details/components/shipping/ProjectShippingBar.tsx')
+    expect(bar).toContain('Marquer comme expédié')
+    expect(bar).toContain('Suivre le colis')
+  })
+
+  test('Dialogue : « Transporteur » et « Numéro de suivi (facultatif) »', () => {
+    const dialog = readFile('views/app/common/projects/details/components/shipping/ShipProjectDialog.tsx')
+    expect(dialog).toContain('Transporteur')
+    expect(dialog).toContain('Numéro de suivi (facultatif)')
+  })
+
+  test('Style quick = "Rapide", advice = "Conseil"', () => {
+    const styles = readFile('components/template/chat/chatStyle.ts')
+    expect(styles).toMatch(/quick:\s*{[^}]*label: 'Rapide'/)
+    expect(styles).toMatch(/advice:\s*{[^}]*label: 'Conseil'/)
+  })
+
+  test('Badge de commande « Rempli avec l\'assistant »', () => {
+    expect(readFile('views/app/common/orderItem/ShowOrderItem.tsx')).toContain('Rempli avec l&apos;assistant')
+  })
+
+  test('Tuiles admin : commandes issues de l\'assistant, conversations conclues', () => {
+    const stats = readFile('views/app/admin/chatbot/ChatOrderStats.tsx')
+    expect(stats).toMatch(/Commandes issues de l.assistant/)
+    expect(stats).toContain('Conversations conclues par une commande')
+  })
+
+  test('Clôture : « Nouvelle question »', () => {
+    expect(readFile('components/template/chat/chatClosing.ts')).toContain("'Nouvelle question'")
+  })
+})
+
 // ─── 6. Absence de synonymes interdits ───────────────────────────────────────
 
 describe('Absence de synonymes interdits dans l\'UI', () => {
