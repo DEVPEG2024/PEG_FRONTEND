@@ -18,6 +18,7 @@ import { apiUploadFile } from '@/services/FileServices';
 import { extractPdfText } from '@/utils/pdfText';
 import { renderChatMarkdown } from '@/utils/chatMarkdown';
 import type { ChatbotConfig, FAQ, ChatbotDocument, ConversationSummary, Message } from '@/services/ChatbotServices';
+import ChatOrderStats from './ChatOrderStats';
 
 /** Message d'erreur lisible depuis une réponse axios (message serveur si présent). */
 const errMsg = (e: any, fallback: string): string =>
@@ -864,6 +865,23 @@ const HistoryPanel = () => {
               >
                 <div>
                   <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{c.userName}</div>
+                  {c.closedAt && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '3px',
+                        padding: '1px 8px',
+                        borderRadius: '999px',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        color: '#22c55e',
+                        background: 'rgba(34,197,94,0.12)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                      }}
+                    >
+                      Commande
+                    </span>
+                  )}
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '2px' }}>
                     {c.messageCount} messages · {new Date(c.updatedAt || c.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                   </div>
@@ -1007,6 +1025,9 @@ const ChatbotPage = () => {
           ⚠️ {backendError}
         </div>
       )}
+
+      {/* Commandes et CA issus de l'assistant (masqué si le serveur ne les fournit pas) */}
+      {!loading && !showHistory && <ChatOrderStats />}
 
       {loading ? (
         <div style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>Chargement...</div>

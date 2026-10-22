@@ -24,6 +24,9 @@ import ChatOfferAction from '@/components/template/ChatOfferAction';
 import { isChatOffer, prefillForProduct, type ChatNavState, type ChatOffer } from '@/components/template/chatOffer';
 import ChatVoiceBar from '@/components/template/ChatVoiceBar';
 import { useChatVoice, type SpokenReply } from '@/components/template/useChatVoice';
+import { chatUserKey } from '@/components/template/chat/chatTrace';
+import { useChatClosing } from '@/components/template/chat/useChatClosing';
+import ChatClosedBar from '@/components/template/chat/ChatClosedBar';
 
 /**
  * `error` : bulle locale (erreur réseau, surcharge) — affichée mais JAMAIS
@@ -415,6 +418,38 @@ const ChatWidget = () => {
     if (!open) { stopSpeaking(); cancelRecording(); }
   }, [open, stopSpeaking, cancelRecording]);
 
+  // Commande issue d'une offre du chat, payée : le chat s'ouvre tout seul sur le
+  // remerciement écrit par le serveur, et la conversation est close (« Nouvelle question »).
+  const closing = useChatClosing({
+    userKey: chatUserKey(user),
+    conversationId,
+    token: sessionToken || getPersistedAuthToken(),
+    waiting: loading,
+    onClosing: (c) => {
+      // Question partie pendant l'appel de clôture : abandonnée, sa réponse
+      // n'écrasera pas le remerciement ; micro et voix coupés (saisie remplacée).
+      abortRef.current?.abort();
+      setLoading(false);
+      setStreamingText('');
+      setStatusLabel(null);
+      stopSpeaking();
+      cancelRecording();
+      const thanks: Message = {
+        role: 'assistant',
+        content: c.reply,
+        at: Date.now(),
+      };
+      if (c.conversationId === conversationId)
+        setMessages((prev) => [...prev.filter((m) => !m.error), thanks]);
+      else {
+        setConversationId(c.conversationId);
+        setMessages([thanks]);
+      }
+      setAwaitingClose(false);
+      setOpen(true);
+    },
+  });
+
   /**
    * Envoie l'historique (sans les bulles d'erreur locales) et ajoute la réponse.
    * `spoken` : question posée à la voix → la réponse est lue au fil du flux.
@@ -493,6 +528,7 @@ const ChatWidget = () => {
   const sendText = async (raw: string, opts: { voice?: boolean } = {}) => {
     const text = (raw || '').trim();
     if (!text || loading) return;
+    if (closing.locked) return;
     // Si le bot attend une réponse de clôture et l'utilisateur dit non → fermer après réponse
     const isClosing = awaitingClose && USER_NO_RE.test(text);
     // Les bulles d'erreur précédentes disparaissent dès qu'on renvoie un message.
@@ -835,6 +871,7 @@ const ChatWidget = () => {
             </div>
           )}
 
+          {closing.locked ? <ChatClosedBar onNew={resetConversation} isPhone={isPhone} /> : (<>
           {/* Saisie */}
           <div className="pcw-compose" style={{
             // Téléphone : au-dessus de la barre d'accueil de l'iPhone.
@@ -890,6 +927,7 @@ const ChatWidget = () => {
               </div>
             )}
           </div>
+          </>)}
         </div>
       )}
 

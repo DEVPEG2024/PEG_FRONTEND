@@ -3,6 +3,7 @@ import { MdAddShoppingCart, MdCheckCircle, MdArrowForward } from 'react-icons/md
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { addToCart } from '@/store/slices/base/cartSlice';
+import { chatTraceFor } from './chat/chatTrace';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
 import { describeOffer, planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
@@ -79,6 +80,7 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
           formAnswer: r.formAnswer,
           sizeAndColors: r.sizeAndColors,
           userDocumentId: user.documentId,
+          ...chatTraceFor(offer.id, user),
         } as unknown as CartItem));
       }
       const toPersonalize = ready.some((r) => r.kind === 'ready' && r.formAnswer);

@@ -12,7 +12,6 @@ import { FormAnswer } from '@/@types/formAnswer';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { unwrapData } from '@/utils/serviceHelper';
 import { TVA_RATE, fmtPrice } from '@/utils/priceHelpers';
-import { apiCreateOrderItem } from '@/services/OrderItemServices';
 import { OrderItem } from '@/@types/orderItem';
 import { User } from '@/@types/user';
 import {
@@ -28,6 +27,12 @@ import { PromoCodeValidation } from '@/@types/promoCode';
 import { toast } from 'react-toastify';
 import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
+import { createOrderItemWithTrace } from '@/services/ChatTraceServices';
+import { chatUserKey } from '@/components/template/chat/chatTrace';
+import {
+  announceChatClosing,
+  prepareChatClosing,
+} from '@/components/template/chat/chatClosing';
 
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
   // Articles dont la personnalisation OBLIGATOIRE n'est pas faite (ajoutés depuis
@@ -152,7 +157,9 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           ...(item.batApproved && { batStatus: 'approved' as const }),
         },
         { createOrderItem: orderItemCreated }: { createOrderItem: OrderItem } =
-          await unwrapData(apiCreateOrderItem(orderItem));
+          await unwrapData(
+            createOrderItemWithTrace(orderItem, item.chatConversationId)
+          );
 
       return orderItemCreated;
     } catch (error) {
@@ -200,6 +207,11 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     setSubmitting(true);
     try {
       const orderItems: OrderItem[] = await createOrdersAndUpdateCartItems();
+      prepareChatClosing(
+        chatUserKey(user),
+        orderItems.map((o) => o.documentId),
+        user.customer!.deferredPayment ? 'deferred' : 'card'
+      );
       if (orderItems.length === 0) {
         toast.error("La commande n'a pas pu être créée. Veuillez réessayer.");
         return;
@@ -281,6 +293,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
       dispatch(removeFromCartItemOfOrderItem(orderItem.documentId))
     );
     toast.success('Commande enregistrée — paiement différé.');
+    announceChatClosing(chatUserKey(user));
     navigate('/common/projects');
   };
 

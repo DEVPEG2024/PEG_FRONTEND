@@ -37,6 +37,8 @@ export type ConversationSummary = {
   updatedAt?: string;
   lastMessage?: { role: string; content: string; timestamp: string };
   meta?: ConversationMeta | null;
+  /** Conversation conclue par une commande (remerciement écrit dans le chat). */
+  closedAt?: string | null;
 };
 
 export type Message = {
