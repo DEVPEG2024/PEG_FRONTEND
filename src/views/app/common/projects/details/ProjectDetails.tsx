@@ -1,6 +1,7 @@
 import Container from '@/components/shared/Container';
 import ProjectHeader from './components/ProjectHeader';
-import reducer, { getProjectById, setProject, useAppSelector } from './store';
+import reducer, { getProjectById, setProject, setSelectedTab, useAppSelector } from './store';
+import { labelList } from './utils';
 import Summary from './components/Summary';
 import Comments from './components/Comments';
 import Files from './components/Files';
@@ -19,7 +20,7 @@ import { useAppSelector as useRootAppSelector } from '@/store';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { pegBackendFetch } from '@/services/PegBackendClient';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -52,6 +53,13 @@ const ProjectDetails = () => {
       dispatch(setProject(undefined));
     };
   }, [dispatch, documentId]);
+
+  // Lien direct vers un onglet (notification « BAT à valider », accueil client) : ?tab=BAT
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  useEffect(() => {
+    if (tabParam && labelList.includes(tabParam)) dispatch(setSelectedTab(tabParam));
+  }, [dispatch, documentId, tabParam]);
 
   const { user } = useRootAppSelector((state) => state.auth.user);
   const isProducer = hasRole(user, [PRODUCER]);

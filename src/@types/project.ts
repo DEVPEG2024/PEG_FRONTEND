@@ -6,6 +6,7 @@ import { Invoice } from './invoice';
 import { PegFile } from './pegFile';
 import { ChecklistItem } from './checklist';
 import { SavTicket } from './sav';
+import { BatStatus } from '@/utils/projectBat';
 
 export type Project = {
   documentId: string;
@@ -35,6 +36,12 @@ export type Project = {
   savTickets?: SavTicket[];
   adminNotes?: string;
   additionalSales?: AdditionalSale[];
+  // BAT propre au projet (projet issu d'un devis, créé par l'admin…) — lu à
+  // part (apiGetProjectBat) ; absent tant que Strapi n'a pas ces champs.
+  // Règle de lecture : utils/projectBat.ts.
+  batFile?: PegFile | null;
+  batStatus?: BatStatus | null;
+  batComment?: string | null;
 }
 
 export type AdditionalSale = {

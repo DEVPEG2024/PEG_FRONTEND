@@ -5,6 +5,7 @@ import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, SUPER_ADMIN, PRODUCER } from '@/constants/roles.constant';
 import useResponsive from '@/utils/hooks/useResponsive';
+import { getProjectBat, isBatAwaitingClient, showsBatTab } from '@/utils/projectBat';
 
 const QuickFilterTab = () => {
   const dispatch = useAppDispatch();
@@ -34,7 +35,8 @@ const QuickFilterTab = () => {
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Dépenses') return hasRole(user, [SUPER_ADMIN, ADMIN]);
     if (tab === 'Ventes add.') return hasRole(user, [SUPER_ADMIN, ADMIN]);
-    if (tab === 'BAT') return !!project?.orderItem?.product?.requiresBat;
+    // BAT : aussi sur un projet sans commande (devis, création admin) — règle dans utils/projectBat.ts
+    if (tab === 'BAT') return showsBatTab(getProjectBat(project), hasRole(user, [SUPER_ADMIN, ADMIN]));
     // Fichiers client : visible pour admin/customer toujours, pour producteur seulement s'il est assigné
     if (tab === 'Fichiers client') return !isProducer || isAssignedProducer;
     // SAV : visible pour admins et clients, ou pour tous quand le projet est en état SAV
@@ -50,6 +52,7 @@ const QuickFilterTab = () => {
         const items = project?.checklistItems ?? [];
         return items.length > 0 ? items.length : undefined;
       }
+      case 'BAT': return isBatAwaitingClient(getProjectBat(project)) ? 1 : undefined;
       case 'Devis': return project?.devis?.length;
       case 'Factures': return project?.invoices?.length;
       case 'SAV': {

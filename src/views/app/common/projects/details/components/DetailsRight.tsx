@@ -17,9 +17,10 @@ import {
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
-import { updateCurrentProject, useAppSelector } from '../store';
+import { setSelectedTab, updateCurrentProject, useAppSelector } from '../store';
 import ProgressionBar from '../../lists/components/ProgressionBar';
-import { MdPersonAdd } from 'react-icons/md';
+import { MdOutlineVerifiedUser, MdPersonAdd } from 'react-icons/md';
+import { batSummaryLabel, getProjectBat } from '@/utils/projectBat';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { unwrapData } from '@/utils/serviceHelper';
 import { apiGetProducers, GetProducersResponse } from '@/services/ProducerServices';
@@ -123,6 +124,12 @@ const DetailsRight = () => {
   const hideOnThisTab = smaller.md && selectedTab !== 'Accueil';
   const hideProgressCard = smaller.md;
   const hideTeamCard = smaller.md && isCustomer;
+
+  // BAT : « Validé par le client » dès la commande pour une offre dont le BAT a
+  // été approuvé sur la fiche ; clic → onglet BAT.
+  const bat = getProjectBat(project);
+  const batLabel = batSummaryLabel(bat);
+  const batColor = bat?.status === 'approved' ? '#4ade80' : bat?.status === 'rejected' ? '#f87171' : '#fbbf24';
 
   // Fetch project expenses (admin only)
   const [projectExpenses, setProjectExpenses] = useState<Expense[]>([]);
@@ -356,6 +363,20 @@ const DetailsRight = () => {
           } />
           <MetaRow icon={<LuCalendarCheck size={13} />} label="Début" value={dayjs(project.startDate).format('DD/MM/YYYY')} />
           <MetaRow icon={<LuCalendarClock size={13} />} label="Fin" value={dayjs(project.endDate).format('DD/MM/YYYY')} />
+          {batLabel && (
+            <button
+              type="button"
+              onClick={() => {
+                dispatch(setSelectedTab('BAT'));
+                if (smaller.md) window.scrollTo({ top: 0 });
+              }}
+              style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
+            >
+              <MetaRow icon={<MdOutlineVerifiedUser size={13} />} label="BAT" value={
+                <span style={{ color: batColor, fontWeight: 600 }}>{batLabel}</span>
+              } />
+            </button>
+          )}
         </div>
       </div>
 

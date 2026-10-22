@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Comment, Project, Task } from '@/@types/project';
 import {
   apiGetProjectById,
+  apiGetProjectBat,
   DeleteProjectResponse,
   apiDeleteProject,
   apiUpdateProject,
@@ -57,7 +58,13 @@ export type ProjectDetailsState = {
 export const getProjectById = createAsyncThunk(
   SLICE_NAME + '/getProjectById',
   async (documentId: string): Promise<{ project: Project }> => {
-    return await unwrapData(apiGetProjectById(documentId));
+    // BAT du projet lu à part : sans ces champs côté Strapi, il reste absent
+    // et le projet se charge comme avant (utils/projectBat.ts).
+    const [{ project }, bat] = await Promise.all([
+      unwrapData(apiGetProjectById(documentId)),
+      apiGetProjectBat(documentId),
+    ]);
+    return { project: project && bat ? { ...project, ...(bat as Partial<Project>) } : project };
   }
 );
 
@@ -319,6 +326,14 @@ const initialState: ProjectDetailsState = {
   checklistPercent: null,
 };
 
+// Le BAT du projet est lu par une requête à part (getProjectById) : les
+// réponses de mutation ne le renvoient pas — on garde celui déjà chargé, sinon
+// l'onglet BAT disparaissait au premier changement de statut.
+const keepProjectBat = (next: any, prev: any) =>
+  next && prev && next.documentId === prev.documentId
+    ? { batFile: prev.batFile, batStatus: prev.batStatus, batComment: prev.batComment, ...next }
+    : next;
+
 const projectListSlice = createSlice({
   name: `${SLICE_NAME}/state`,
   initialState,
@@ -328,7 +343,7 @@ const projectListSlice = createSlice({
     },
     setProject: (state, action) => {
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
     },
     setEditDescription: (state, action) => {
       state.editDescription = action.payload;
@@ -398,7 +413,7 @@ const projectListSlice = createSlice({
     builder.addCase(updateCurrentProject.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
       state.editDescription = false;
     });
     builder.addCase(updateCurrentProject.rejected, (state) => {
@@ -411,7 +426,7 @@ const projectListSlice = createSlice({
     builder.addCase(createTask.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
       state.tasks = action.payload.tasks as any;
       state.newDialogTask = false;
     });
@@ -478,7 +493,7 @@ const projectListSlice = createSlice({
     builder.addCase(addInvoice.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
       state.invoices = action.payload.invoices as any;
     });
     builder.addCase(addInvoice.rejected, (state) => {
@@ -491,7 +506,7 @@ const projectListSlice = createSlice({
     builder.addCase(deleteProjectInvoice.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload.project as any;
+      state.project = keepProjectBat(action.payload.project, state.project);
       state.invoices = action.payload.project.invoices as any;
     });
     builder.addCase(deleteProjectInvoice.rejected, (state) => {
@@ -522,7 +537,7 @@ const projectListSlice = createSlice({
     builder.addCase(addDevis.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
     });
     builder.addCase(addDevis.rejected, (state) => {
       state.loading = false;
@@ -534,7 +549,7 @@ const projectListSlice = createSlice({
     builder.addCase(deleteDevis.fulfilled, (state, action) => {
       state.loading = false;
       // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
-      state.project = action.payload as any;
+      state.project = keepProjectBat(action.payload, state.project);
     });
     builder.addCase(deleteDevis.rejected, (state) => {
       state.loading = false;

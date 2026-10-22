@@ -913,6 +913,27 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 
 ---
 
+## 🖨️ BAT d'un projet — commande ET devis (ajout 22/10/2026)
+
+### Deux sources, une seule règle (`src/utils/projectBat.ts`)
+- **Commande d'un produit « BAT requis »** (source `product`) : fichier = `product.batFile`, statut = `orderItem.batStatus`. Une **offre dont le client a approuvé le BAT sur la fiche** avant l'ajout au panier arrive donc « Validé par le client » dès la commande (`CartItem.batApproved` → `orderItem.batStatus: 'approved'`).
+- **Tout autre projet** (créé par un **devis**, par l'admin, commande d'un produit sans BAT) — source `project` : champs Strapi du projet `batFile` (média), `batStatus` (pending/approved/rejected), `batComment`. Demande Nova du 22/10/2026 : les projets issus d'un devis n'avaient pas d'onglet BAT (au 22/10, les 22 projets de prod étaient tous sans commande).
+- Onglet BAT : **admin sur tout projet** (pour en déposer un) ; client et producteur dès qu'un BAT existe (ou que le produit commandé en exige un). Pastille « 1 » quand le BAT attend le client. Colonne de détail (`DetailsRight`) : ligne « BAT » (Validé / En attente / Refusé), cliquable. Lien direct `?tab=BAT` (notifications, accueil client).
+- **Seul le client répond** (avant : le producteur voyait aussi « Approuver »). Dépôt admin → notification `new_file` « BAT à valider » au client ; réponse → `project_status_change` aux admins. Accueil client : « Bon à Tirer à valider » dans « À faire » pour les deux sources.
+
+### ⚠️ Pièges
+- Relation média = **id NUMÉRIQUE** du fichier envoyé. L'ancien dépôt de BAT dans un projet passait le `documentId` → Strapi répondait « Invalid relations » : **aucun BAT déposé depuis un projet n'avait jamais été enregistré** (vérifié sur Strapi local le 22/10/2026). `id` n'est pas lisible sur `UploadFile` en GraphQL : ne pas le demander.
+- Champs BAT du projet lus par une **requête à part** (`apiGetProjectBat`, `apiGetCustomerProjectBats`) : avant le déploiement Strapi elle échoue seule, champs `undefined` → comportement d'avant. **Ne pas les ajouter à la requête principale du projet.** Les réponses de mutation ne les renvoient pas → `keepProjectBat` dans `projectDetailsSlice` les conserve.
+- L'accueil admin « Ville PEG » (`villageData.ts`, `village-summary.ts`) ne compte encore que les BAT de **commandes**.
+
+### Ordre de déploiement
+**Backend Strapi d'abord** (3 champs sur `project`, aucune migration). Front avant back = sans risque (vérifié : le projet se charge, pas d'onglet BAT sur un projet de devis).
+
+### Tests
+`src/__tests__/projectBat.test.ts` (règle) ; parcours vérifié sur Strapi local + navigateur (dépôt admin, accueil client, lien `?tab=BAT`, validation, offre validée, téléphone, producteur, backend non déployé).
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

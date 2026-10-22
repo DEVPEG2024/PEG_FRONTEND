@@ -36,6 +36,8 @@ import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelper
 import { fmtHT, fmtTTC } from '@/utils/priceHelpers';
 import { apiGetCustomerInvoiceSummaries, CustomerInvoiceSummary } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding, isTransferPending } from '@/utils/invoiceStatus';
+import { apiGetCustomerProjectBats } from '@/services/ProjectServices';
+import { getProjectBat, isBatAwaitingClient, ProjectBatFields } from '@/utils/projectBat';
 import useResponsive from '@/utils/hooks/useResponsive';
 import useDashboardPhoto from '@/utils/hooks/useDashboardPhoto';
 import { projectCoverUrl, projectProgress } from '@/views/app/common/projects/details/utils';
@@ -214,13 +216,23 @@ const DashboardCustomer = () => {
     if (user.customer?.documentId) loadInvoices(user.customer.documentId);
   }, [user.customer?.documentId]);
 
+  // BAT portés par les projets (projet issu d'un devis…) : lus à part, comme les
+  // factures ; vides tant que Strapi n'a pas ces champs.
+  const [projectBats, setProjectBats] = useState<Record<string, ProjectBatFields>>({});
+  const loadProjectBats = async (customerDocumentId: string) => {
+    setProjectBats(await apiGetCustomerProjectBats(customerDocumentId));
+  };
+  useEffect(() => {
+    if (user.customer?.documentId) loadProjectBats(user.customer.documentId);
+  }, [user.customer?.documentId]);
+
   // Téléphone : bouton « Actualiser »
   const [refreshing, setRefreshing] = useState(false);
   const refresh = async () => {
     const id = user.customer?.documentId;
     if (!id || refreshing) return;
     setRefreshing(true);
-    await Promise.allSettled([dispatch(getDashboardCustomerInformations(id)), loadInvoices(id)]);
+    await Promise.allSettled([dispatch(getDashboardCustomerInformations(id)), loadInvoices(id), loadProjectBats(id)]);
     setRefreshing(false);
   };
 
@@ -301,9 +313,11 @@ const DashboardCustomer = () => {
     (a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime()
   );
 
-  const pendingBats = projects.filter(
-    (p) => p.orderItem?.product?.requiresBat && p.orderItem?.product?.batFile?.url && (!p.orderItem?.batStatus || p.orderItem?.batStatus === 'pending')
-  );
+  // BAT déposé qui attend le client : sur le produit commandé, ou sur le projet
+  // (projet issu d'un devis…) — règle commune utils/projectBat.ts.
+  const pendingBats = projects
+    .map((p) => ({ project: p, bat: getProjectBat({ ...p, ...projectBats[p.documentId] }) }))
+    .filter(({ bat }) => isBatAwaitingClient(bat));
 
   // ── « À faire » : ce qui attend une action DU CLIENT ──
   // C'est la seule chose qui justifie un tableau de bord. Les trois cas sont
@@ -315,10 +329,13 @@ const DashboardCustomer = () => {
     (p) => (p.devis?.length || 0) > 0 && (p.invoices?.length || 0) === 0 && (p.paidPrice ?? 0) < (p.price ?? 0)
   );
   const todos: PcmRow[] = [
-    ...pendingBats.map((p) => ({
-      key: `bat-${p.documentId}`, title: p.name, sub: `${p.orderItem!.product.name} — Bon à Tirer à valider`,
+    ...pendingBats.map(({ project: p, bat }) => ({
+      key: `bat-${p.documentId}`, title: p.name,
+      sub: bat!.source === 'product' ? `${p.orderItem!.product.name} — Bon à Tirer à valider` : 'Bon à Tirer à valider',
       icon: <HiOutlineDocumentText />, color: '#c084fc', cta: 'Valider',
-      onClick: () => navigate(`/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`),
+      onClick: () => navigate(bat!.source === 'product'
+        ? `/customer/product/${p.orderItem!.product.documentId}?orderItemId=${p.orderItem!.documentId}`
+        : `/common/projects/details/${p.documentId}?tab=BAT`),
     })),
     ...invoicesToPay.map((inv) => ({
       key: `inv-${inv.documentId}`, title: inv.name || 'Facture', sub: `À régler — ${fmtTTC(inv.totalAmount ?? 0)}`,
@@ -348,7 +365,7 @@ const DashboardCustomer = () => {
     .slice(0, 3);
   const projectCards: PcmProject[] = ongoingProjects.map((p) => {
     const si = getStateInfo(p.state);
-    const batToValidate = pendingBats.some((b) => b.documentId === p.documentId);
+    const batToValidate = pendingBats.some((b) => b.project.documentId === p.documentId);
     return {
       key: p.documentId,
       title: p.name,

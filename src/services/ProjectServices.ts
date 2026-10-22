@@ -1,8 +1,9 @@
 import ApiService from './ApiService'
 import { Project } from '@/@types/project'
 import { AxiosResponse } from 'axios'
-import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper'
+import { ApiResponse, PageInfo, PaginationRequest, unwrapData } from '@/utils/serviceHelper'
 import { API_GRAPHQL_URL } from '@/configs/api.config'
+import { BatStatus, ProjectBatFields } from '@/utils/projectBat'
 
 // update project
 export async function apiUpdateProject(project: Partial<Project>): Promise<AxiosResponse<ApiResponse<{updateProject: Project}>>> {
@@ -965,6 +966,91 @@ export async function apiGetProjectAdditionalSales(documentId: string): Promise<
         method: 'post',
         data: { query, variables }
     })
+}
+
+// BAT propre au projet (projet issu d'un devis, créé par l'admin…). Requêtes À
+// PART, comme les ventes additionnelles : tant que Strapi n'a pas ces champs,
+// elles échouent seules → null / {} et le projet s'affiche comme avant.
+// Règle de lecture : utils/projectBat.ts.
+const PROJECT_BAT_FIELDS = `
+            batStatus
+            batComment
+            batFile { documentId url name mime }`
+
+const readProjectBat = (node: ProjectBatFields | null | undefined): ProjectBatFields => ({
+    batFile: node?.batFile ?? null,
+    batStatus: node?.batStatus ?? null,
+    batComment: node?.batComment ?? null,
+})
+
+export async function apiGetProjectBat(documentId: string): Promise<ProjectBatFields | null> {
+    const query = `
+    query GetProjectBat($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId${PROJECT_BAT_FIELDS}
+        }
+    }
+  `
+    try {
+        const { project } = await unwrapData<{ project: ProjectBatFields | null }>(ApiService.fetchData({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: { query, variables: { documentId } }
+        }))
+        return project ? readProjectBat(project) : null
+    } catch {
+        return null
+    }
+}
+
+/** BAT de chaque projet d'un client, par documentId de projet (accueil client). */
+export async function apiGetCustomerProjectBats(customerDocumentId: string): Promise<Record<string, ProjectBatFields>> {
+    const query = `
+    query GetCustomerProjectBats($customerDocumentId: ID!) {
+        projects_connection(
+            filters: { customer: { documentId: { eq: $customerDocumentId } } }
+            pagination: { page: 1, pageSize: 1000 }
+        ) {
+            nodes {
+                documentId${PROJECT_BAT_FIELDS}
+            }
+        }
+    }
+  `
+    try {
+        const { projects_connection } = await unwrapData<{ projects_connection: { nodes: (ProjectBatFields & { documentId: string })[] } }>(ApiService.fetchData({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: { query, variables: { customerDocumentId } }
+        }))
+        return Object.fromEntries(
+            (projects_connection?.nodes ?? []).map((node) => [node.documentId, readProjectBat(node)])
+        )
+    } catch {
+        return {}
+    }
+}
+
+// Écriture du BAT d'un projet : dépôt par l'admin (`batFile` = id NUMÉRIQUE du
+// fichier envoyé, jamais son documentId — relation média Strapi), réponse du
+// client (`batStatus` + `batComment`).
+export async function apiUpdateProjectBat(
+    documentId: string,
+    data: { batFile?: string | number; batStatus: BatStatus; batComment: string | null }
+): Promise<ProjectBatFields> {
+    const query = `
+    mutation UpdateProjectBat($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId${PROJECT_BAT_FIELDS}
+        }
+    }
+  `
+    const { updateProject } = await unwrapData<{ updateProject: ProjectBatFields }>(ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { documentId, data } }
+    }))
+    return readProjectBat(updateProject)
 }
 
 // update project additionalSales only (separate mutation)
