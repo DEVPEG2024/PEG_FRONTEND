@@ -943,6 +943,19 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 
 ---
 
+## 📎 Fichiers du projet — le client valide / refuse chaque fichier (ajout 22/10/2026)
+
+- Section **Fichiers** du projet : sous chaque fichier déposé par PEG (admin ou producteur), le client a **Valider** / **Refuser** ; un refus exige un motif (« Que faut-il modifier sur ce fichier ? »), modifiable ensuite (« Modifier ma demande »). Pastilles : À valider / Validé / Refusé (admin : « En attente du client »).
+- Après un refus, l'admin clique **« Remplacer par une nouvelle version »** : le nouveau fichier prend la place de l'ancien (même rang), repart « En attente du client », avec la mention « Nouvelle version de « … » — demande : « … » ». L'ancien fichier reste dans la médiathèque.
+- Les fichiers **déposés par un client** (table de propriété de peg-backend, `GET /projects/files/ownership/:id`) n'attendent pas de validation : ni boutons ni pastille.
+- Stockage : JSON **`project.fileReviews`** indexé par l'**id numérique** du fichier (`{ status, comment, at, replaces, previousComment }`). Règles front `src/utils/fileReviews.ts`, règle serveur `mergeCustomerFileReviews` (`write-rules.ts`) : un client ne pose que validé / refusé (+ motif) sur un fichier du projet.
+- Lu par une **requête à part** (`apiGetProjectFileReviews`) comme le BAT : sans le champ côté Strapi, la fonction est masquée et la section reste comme avant. `keepProjectBat` conserve aussi `fileReviews` après une mutation.
+- Notifications : fichier déposé par PEG → client « Nouveau fichier à valider » ; réponse du client → admins « Fichier validé / refusé » ; nouvelle version → client « Nouvelle version à valider ». Liens `?tab=Fichiers`.
+- **Ordre de déploiement : backend Strapi d'abord** (champ JSON, aucune migration). Front avant back = sans risque (vérifié).
+- Tests : front `src/__tests__/fileReviews.test.ts`, back `src/__tests__/writeRules.test.ts`.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données
@@ -1174,7 +1187,7 @@ Révoquer `customer.update` ne suffisait pas : la relation client↔catégorie s
 ### Champs écrits sur un projet / une commande (correctif faille, 22/10/2026)
 La garde ci-dessus vérifie **à qui** est la donnée, pas **quels champs** sont écrits. Un client pouvait poser `paidPrice` sur son projet, le passer « En cours (payé) » (le pré-hook aligne alors `paidPrice` sur `price`), se créer un projet au prix de son choix ; un producteur (aucune garde de propriété) pouvait modifier **n'importe quel projet**, sa commission comprise.
 - Troisième middleware `documents.use` (`register()`, juste après la garde de propriété, **avant** le pré-hook `pending_paid`), règles pures dans `peg_strapi/src/services/write-rules.ts` (tests `node --test src/__tests__/writeRules.test.ts`).
-- **Client**, sur son projet : `comments` (ajout des siens, jamais de retrait), `images` (ajout d'un envoi tout frais, retrait permis), `savTickets`, `state: 'sav'` seulement, `batStatus` (validé / refusé), `batComment`. Commande : création au paiement (`customer` et `state: 'pending'` imposés, jamais `paymentState`), puis `batStatus` / `batComment` seulement.
+- **Client**, sur son projet : `comments` (ajout des siens, jamais de retrait), `images` (ajout d'un envoi tout frais, retrait permis), `savTickets`, `state: 'sav'` seulement, `batStatus` (validé / refusé), `batComment`, `fileReviews` (validé / refusé avec motif, sur un fichier rattaché au projet, jamais de retrait, date posée par le serveur — `mergeCustomerFileReviews`). Commande : création au paiement (`customer` et `state: 'pending'` imposés, jamais `paymentState`), puis `batStatus` / `batComment` seulement.
 - **Producteur**, sur le projet **qui lui est attribué** : commentaires, fichiers, SAV, `checklistItems`, `state` « Terminé » (ou « En cours » depuis « Terminé »), note **ajoutée** à la description ; projet du pool sans producteur : s'y attribuer, rien d'autre. Aucune écriture de commande.
 - Autre rôle non admin (« Authenticated »…) : aucune écriture de projet ni de commande. `project.create` / `project.delete` ajoutés à `REVOKE_FROM_NON_ADMIN`.
 - Champ refusé glissé dans un geste légitime → **retiré** et journalisé (`[write-guard] Champs ignorés`) ; écriture dont il ne reste rien → **403** (`[write-guard] Refusé`). Appels internes (webhook, checkout en `auth: false`, cron, NOVA par jeton d'API) non concernés.

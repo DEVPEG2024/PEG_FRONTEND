@@ -3,7 +3,7 @@ import Container from '@/components/shared/Container';
 import DetailsRight from './DetailsRight';
 import { PegFile } from '@/@types/pegFile';
 import { useAppDispatch, useAppSelector as useRootAppSelector } from '@/store';
-import { updateCurrentProject, useAppSelector } from '../store';
+import { getProjectById, setProject, updateCurrentProject, useAppSelector } from '../store';
 import {
   apiDeleteFile,
   apiGetPegFiles,
@@ -21,8 +21,12 @@ import {
   HiOutlineX,
 } from 'react-icons/hi';
 import { hasRole } from '@/utils/permissions';
-import { CUSTOMER } from '@/constants/roles.constant';
+import { ADMIN, CUSTOMER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { pegBackendFetch } from '@/services/PegBackendClient';
+import { apiUpdateProjectFileReviews } from '@/services/ProjectServices';
+import { triggerNotification } from '@/services/NotificationService';
+import { fileReviewStatus, replaceInList, withClientAnswer, withReplacement } from '@/utils/fileReviews';
+import FileReviewPanel, { FileReviewChip } from './files/FileReviewPanel';
 
 /* ── Helpers ── */
 const isImageFile = (name: string) => /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(name);
@@ -62,6 +66,11 @@ const Files = () => {
   const [filesLoading, setFilesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [myFileIds, setMyFileIds] = useState<string[]>([]);
+  // Fichiers déposés par un client (table de propriété de peg-backend) : ils
+  // n'attendent pas de validation. Les autres (PEG, producteur) : le client répond.
+  const [clientFileIds, setClientFileIds] = useState<string[]>([]);
+  const [ownershipReady, setOwnershipReady] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +78,13 @@ const Files = () => {
   const { project } = useAppSelector((state) => state.projectDetails.data);
   const { user } = useRootAppSelector((state) => state.auth.user);
   const isCustomer = hasRole(user, [CUSTOMER]);
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const userId = user?.documentId || user?.id || user?._id;
+  // undefined : Strapi sans le champ `fileReviews` → pas de validation des fichiers
+  const reviews = project?.fileReviews;
+  const reviewsOn = reviews !== undefined && ownershipReady;
+  const filesLink = `/common/projects/details/${project?.documentId}?tab=Fichiers`;
+  const senderId = userId != null ? String(userId) : undefined;
 
   /* ── Load files ── */
   useEffect(() => {
@@ -77,7 +92,7 @@ const Files = () => {
   }, [project]);
 
   useEffect(() => {
-    if (!isCustomer || !project?.documentId) return;
+    if (!project?.documentId || (!isCustomer && !isAdmin)) return;
     pegBackendFetch(`/projects/files/ownership/${encodeURIComponent(project.documentId)}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -85,14 +100,16 @@ const Files = () => {
       })
       .then((data) => {
         if (data.files) {
+          setClientFileIds(data.files.map((f: any) => String(f.file_id)));
           const mine = data.files
             .filter((f: any) => f.user_id === userId)
             .map((f: any) => f.file_id);
           setMyFileIds(mine);
         }
       })
-      .catch((err) => console.warn('[FileOwnership] GET error:', err));
-  }, [isCustomer, project?.documentId, userId]);
+      .catch((err) => console.warn('[FileOwnership] GET error:', err))
+      .finally(() => setOwnershipReady(true));
+  }, [isCustomer, isAdmin, project?.documentId, userId]);
 
   const fetchFiles = async () => {
     setFilesLoading(true);
@@ -154,6 +171,19 @@ const Files = () => {
         })
       );
 
+      // Fichier déposé par PEG : le client est invité à le valider
+      if (!isCustomer && reviews !== undefined && senderId && project.customer?.documentId) {
+        triggerNotification({
+          eventType: 'new_file',
+          senderId,
+          customerRecipient: project.customer.documentId,
+          title: pendingFiles.length > 1 ? 'Nouveaux fichiers à valider' : 'Nouveau fichier à valider',
+          message: `${pendingFiles.length > 1 ? `${pendingFiles.length} fichiers ont été ajoutés` : 'Un fichier a été ajouté'} au projet "${project.name}" : validez-le ou demandez une modification.`,
+          link: filesLink,
+          metadata: { projectId: project.documentId },
+        });
+      }
+
       setPendingFiles([]);
       toast.success('Fichiers ajoutés !');
     } catch (err) {
@@ -194,6 +224,71 @@ const Files = () => {
     a.rel = 'noopener';
     a.click();
   };
+
+  /* ── Réponse du client à un fichier ── */
+  const answerFile = async (file: PegFile, status: 'approved' | 'rejected', comment: string | null): Promise<boolean> => {
+    if (!project || reviews === undefined) return false;
+    setReviewBusy(String(file.id));
+    try {
+      const saved = await apiUpdateProjectFileReviews(project.documentId, {
+        fileReviews: withClientAnswer(reviews, file.id, status, comment),
+      });
+      dispatch(setProject({ ...project, fileReviews: saved }));
+      toast.success(status === 'approved' ? 'Fichier validé' : 'Demande de modification envoyée');
+      if (senderId) {
+        triggerNotification({
+          eventType: 'project_status_change',
+          senderId,
+          notifyAdmins: true,
+          title: status === 'approved' ? 'Fichier validé' : 'Fichier refusé',
+          message: status === 'approved'
+            ? `Le client a validé « ${file.name} » (projet "${project.name}")`
+            : `Le client demande une modification de « ${file.name} » (projet "${project.name}") : ${comment}`,
+          link: filesLink,
+          metadata: { projectId: project.documentId },
+        });
+      }
+      return true;
+    } catch {
+      toast.error("Votre réponse n'a pas pu être enregistrée");
+      return false;
+    } finally {
+      setReviewBusy(null);
+    }
+  };
+
+  /* ── Admin : nouvelle version d'un fichier refusé ── */
+  const replaceFile = async (file: PegFile, next: File) => {
+    if (!project || reviews === undefined) return;
+    setReviewBusy(String(file.id));
+    try {
+      const uploaded = await apiUploadFile(next);
+      await apiUpdateProjectFileReviews(project.documentId, {
+        fileReviews: withReplacement(reviews, file.id, uploaded.id, file.name, new Date().toISOString()),
+        images: replaceInList(pegFiles, file.id, uploaded).map(({ id }) => id),
+      });
+      await dispatch(getProjectById(project.documentId));
+      toast.success('Nouvelle version envoyée au client');
+      if (senderId && project.customer?.documentId) {
+        triggerNotification({
+          eventType: 'new_file',
+          senderId,
+          customerRecipient: project.customer.documentId,
+          title: 'Nouvelle version à valider',
+          message: `Une nouvelle version de « ${file.name} » attend votre validation (projet "${project.name}")`,
+          link: filesLink,
+          metadata: { projectId: project.documentId },
+        });
+      }
+    } catch {
+      toast.error("Échec de l'envoi de la nouvelle version");
+    } finally {
+      setReviewBusy(null);
+    }
+  };
+
+  // Fichier soumis au client : tout fichier qui n'a pas été déposé par un client
+  const isReviewable = (file: PegFile) => reviewsOn && !!file.id && !clientFileIds.includes(String(file.id));
 
   const canDelete = (file: PegFile) => {
     if (!isCustomer) return true;
@@ -337,9 +432,11 @@ const Files = () => {
                     <div className="space-y-1.5">
                       {catFiles.map((file) => {
                         const img = isImageFile(file.name || file.url || '');
+                        const reviewable = isReviewable(file);
+                        const review = reviews?.[String(file.id)];
                         return (
+                          <div key={file.id || file.documentId}>
                           <div
-                            key={file.id || file.documentId}
                             className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition"
                           >
                             {/* Thumbnail */}
@@ -359,8 +456,11 @@ const Files = () => {
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="text-sm text-white/80 truncate">{file.name}</div>
-                              <div className="text-[10px] text-white/30">
-                                {getExt(file.name || file.url || '')}
+                              <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-white/30">{getExt(file.name || file.url || '')}</span>
+                                {reviewable && (isCustomer || isAdmin) && (
+                                  <FileReviewChip status={fileReviewStatus(reviews, file.id)} isAdmin={isAdmin} />
+                                )}
                               </div>
                             </div>
 
@@ -380,6 +480,19 @@ const Files = () => {
                                 </button>
                               )}
                             </div>
+                          </div>
+                          {reviewable && (isCustomer || isAdmin) && (
+                            <FileReviewPanel
+                              fileId={file.id}
+                              fileName={file.name}
+                              review={review}
+                              canAnswer={isCustomer && !isAdmin}
+                              isAdmin={isAdmin}
+                              busy={reviewBusy === String(file.id)}
+                              onAnswer={(status, comment) => answerFile(file, status, comment)}
+                              onReplace={(next) => replaceFile(file, next)}
+                            />
+                          )}
                           </div>
                         );
                       })}

@@ -4,6 +4,7 @@ import { AxiosResponse } from 'axios'
 import { ApiResponse, PageInfo, PaginationRequest, unwrapData } from '@/utils/serviceHelper'
 import { API_GRAPHQL_URL } from '@/configs/api.config'
 import { BatStatus, ProjectBatFields } from '@/utils/projectBat'
+import { FileReviews, readFileReviews } from '@/utils/fileReviews'
 
 // update project
 export async function apiUpdateProject(project: Partial<Project>): Promise<AxiosResponse<ApiResponse<{updateProject: Project}>>> {
@@ -1001,6 +1002,50 @@ export async function apiGetProjectBat(documentId: string): Promise<ProjectBatFi
     } catch {
         return null
     }
+}
+
+// Réponses du client aux fichiers du projet (section Fichiers). Requête À PART,
+// comme le BAT : sans le champ côté Strapi → undefined, la fonction est masquée.
+export async function apiGetProjectFileReviews(documentId: string): Promise<FileReviews | undefined> {
+    const query = `
+    query GetProjectFileReviews($documentId: ID!) {
+        project(documentId: $documentId) {
+            documentId
+            fileReviews
+        }
+    }
+  `
+    try {
+        const { project } = await unwrapData<{ project: { fileReviews?: unknown } | null }>(ApiService.fetchData({
+            url: API_GRAPHQL_URL,
+            method: 'post',
+            data: { query, variables: { documentId } }
+        }))
+        return project ? readFileReviews(project.fileReviews ?? null) : undefined
+    } catch {
+        return undefined
+    }
+}
+
+// Écriture des réponses (client) ; l'admin y joint `images` quand il remplace un fichier.
+export async function apiUpdateProjectFileReviews(
+    documentId: string,
+    data: { fileReviews: FileReviews; images?: (string | number)[] }
+): Promise<FileReviews> {
+    const query = `
+    mutation UpdateProjectFileReviews($documentId: ID!, $data: ProjectInput!) {
+        updateProject(documentId: $documentId, data: $data) {
+            documentId
+            fileReviews
+        }
+    }
+  `
+    const { updateProject } = await unwrapData<{ updateProject: { fileReviews?: unknown } }>(ApiService.fetchData({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { documentId, data } }
+    }))
+    return readFileReviews(updateProject?.fileReviews ?? null) ?? {}
 }
 
 /** BAT de chaque projet d'un client, par documentId de projet (accueil client). */

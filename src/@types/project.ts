@@ -42,6 +42,8 @@ export type Project = {
   batFile?: PegFile | null;
   batStatus?: BatStatus | null;
   batComment?: string | null;
+  /** Réponses du client aux fichiers (section Fichiers) ; absent = backend sans le champ. */
+  fileReviews?: import('@/utils/fileReviews').FileReviews;
 }
 
 export type AdditionalSale = {

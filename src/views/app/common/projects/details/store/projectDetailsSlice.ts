@@ -3,6 +3,7 @@ import { Comment, Project, Task } from '@/@types/project';
 import {
   apiGetProjectById,
   apiGetProjectBat,
+  apiGetProjectFileReviews,
   DeleteProjectResponse,
   apiDeleteProject,
   apiUpdateProject,
@@ -60,11 +61,19 @@ export const getProjectById = createAsyncThunk(
   async (documentId: string): Promise<{ project: Project }> => {
     // BAT du projet lu à part : sans ces champs côté Strapi, il reste absent
     // et le projet se charge comme avant (utils/projectBat.ts).
-    const [{ project }, bat] = await Promise.all([
+    const [{ project }, bat, fileReviews] = await Promise.all([
       unwrapData(apiGetProjectById(documentId)),
       apiGetProjectBat(documentId),
+      apiGetProjectFileReviews(documentId),
     ]);
-    return { project: project && bat ? { ...project, ...(bat as Partial<Project>) } : project };
+    if (!project) return { project };
+    return {
+      project: {
+        ...project,
+        ...(bat ? (bat as Partial<Project>) : {}),
+        ...(fileReviews !== undefined ? { fileReviews } : {}),
+      },
+    };
   }
 );
 
@@ -329,9 +338,10 @@ const initialState: ProjectDetailsState = {
 // Le BAT du projet est lu par une requête à part (getProjectById) : les
 // réponses de mutation ne le renvoient pas — on garde celui déjà chargé, sinon
 // l'onglet BAT disparaissait au premier changement de statut.
+// Idem pour les réponses du client aux fichiers (`fileReviews`, lu à part).
 const keepProjectBat = (next: any, prev: any) =>
   next && prev && next.documentId === prev.documentId
-    ? { batFile: prev.batFile, batStatus: prev.batStatus, batComment: prev.batComment, ...next }
+    ? { batFile: prev.batFile, batStatus: prev.batStatus, batComment: prev.batComment, fileReviews: prev.fileReviews, ...next }
     : next;
 
 const projectListSlice = createSlice({
