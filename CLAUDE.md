@@ -1155,12 +1155,22 @@ Révoquer `customer.update` ne suffisait pas : la relation client↔catégorie s
 ### Règle avant toute révocation
 **Chercher qui appelle l'action côté front.** `invoice.create` servait au devis différé, `customer.update` à la fiche entreprise, `quote.update` au refus client, `order-item.update` au BAT. Une révocation sèche les aurait cassés — en silence pour le premier.
 
+### Champs écrits sur un projet / une commande (correctif faille, 22/10/2026)
+La garde ci-dessus vérifie **à qui** est la donnée, pas **quels champs** sont écrits. Un client pouvait poser `paidPrice` sur son projet, le passer « En cours (payé) » (le pré-hook aligne alors `paidPrice` sur `price`), se créer un projet au prix de son choix ; un producteur (aucune garde de propriété) pouvait modifier **n'importe quel projet**, sa commission comprise.
+- Troisième middleware `documents.use` (`register()`, juste après la garde de propriété, **avant** le pré-hook `pending_paid`), règles pures dans `peg_strapi/src/services/write-rules.ts` (tests `node --test src/__tests__/writeRules.test.ts`).
+- **Client**, sur son projet : `comments` (ajout des siens, jamais de retrait), `images` (ajout d'un envoi tout frais, retrait permis), `savTickets`, `state: 'sav'` seulement, `batStatus` (validé / refusé), `batComment`. Commande : création au paiement (`customer` et `state: 'pending'` imposés, jamais `paymentState`), puis `batStatus` / `batComment` seulement.
+- **Producteur**, sur le projet **qui lui est attribué** : commentaires, fichiers, SAV, `checklistItems`, `state` « Terminé » (ou « En cours » depuis « Terminé »), note **ajoutée** à la description ; projet du pool sans producteur : s'y attribuer, rien d'autre. Aucune écriture de commande.
+- Autre rôle non admin (« Authenticated »…) : aucune écriture de projet ni de commande. `project.create` / `project.delete` ajoutés à `REVOKE_FROM_NON_ADMIN`.
+- Champ refusé glissé dans un geste légitime → **retiré** et journalisé (`[write-guard] Champs ignorés`) ; écriture dont il ne reste rien → **403** (`[write-guard] Refusé`). Appels internes (webhook, checkout en `auth: false`, cron, NOVA par jeton d'API) non concernés.
+- ⚠️ **Nouveau geste client ou producteur qui écrit un projet / une commande → l'ajouter à `write-rules.ts`**, sinon le champ est ignoré sans erreur visible (seulement le journal).
+- Vérifié sur Strapi local (29 attaques/gestes + SAV/checklist + parcours BAT navigateur).
+
 ---
 
 ## 🐛 Problèmes connus (au 18/04/2026)
 
 - Des variables d'environnement inconnues sont présentes sur `peg-int` : `GROQ_API_KEY`, `STRAPI_API_TOKEN`, `SUPABASE_DATABASE_URL`, `ALLOWED_ORIGINS`, etc. → origine inconnue, ne pas supprimer sans vérification
-- **Strapi prod REST endpoints retournent 500** — tous les endpoints `/api/*` retournent `InternalServerError`. Le GraphQL fonctionne. À investiguer côté Heroku.
+- **Strapi prod REST endpoints retournent 500** — tous les endpoints `/api/*` retournent `InternalServerError`. Le GraphQL fonctionne. À investiguer côté Heroku. Cause trouvée pour `/api/projects` (22/10/2026, reproduite en local) : `api/project/services/project.ts` fait `...factories.createCoreService(...)` — on étale une **fabrique** (fonction), le service perd `find`/`update`… → « strapi.service(...).update is not a function ». Les autres types sont peut-être dans le même cas.
 - **`invoices_connection` retourne 0 en prod** — les factures existent (visibles dans les projets) mais ne sont pas retournées par la query GraphQL. Probablement un problème de permissions Strapi. Le dashboard utilise `project.price` comme contournement.
 
 ---
