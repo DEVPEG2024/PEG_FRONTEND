@@ -18,8 +18,10 @@ import {
 import {
   activityBubbles,
   activitySection,
+  agoLabel,
   liveNotifications,
   maxNotificationId,
+  recentActivity,
 } from '@/views/app/admin/home/village/villageActivity';
 
 dayjs.locale('fr');
@@ -294,5 +296,65 @@ describe('village — activité en direct', () => {
     expect(tickets).toEqual([
       { key: '21', rawId: 21, id: 'tickets', text: 'Réponse', link: null },
     ]);
+  });
+});
+
+describe('PEG DISTRICTS — le fil de la ville', () => {
+  const now = Date.parse('2026-10-22T10:00:00Z');
+  const ago = (h: number) => new Date(now - h * 3_600_000).toISOString();
+
+  it('les 48 dernières heures, la plus récente d’abord, chacune sur son bâtiment', () => {
+    const fil = recentActivity(
+      [
+        {
+          _id: 1,
+          eventType: 'new_order',
+          title: 'Commande',
+          link: '/admin/invoices',
+          createdAt: ago(5),
+        },
+        {
+          _id: 2,
+          eventType: 'new_ticket',
+          title: 'Ticket',
+          link: '/admin/tickets/9',
+          createdAt: ago(1),
+        },
+        { _id: 3, eventType: 'new_comment', createdAt: ago(60) },
+        { _id: 4, eventType: 'inconnu', createdAt: ago(2) },
+        { _id: 5, eventType: 'new_task', createdAt: 'pas une date' },
+        {
+          _id: 6,
+          eventType: 'new_task',
+          title: 'Plus tard',
+          createdAt: ago(-1),
+        },
+      ],
+      now
+    );
+    expect(fil.map((a) => [a.key, a.id])).toEqual([
+      ['2', 'tickets'],
+      ['1', 'finance'],
+    ]);
+    // Le lien de la notification est gardé, corrigé comme dans la cloche.
+    expect(fil[0].link).toBe('/support');
+    expect(fil[0].at).toBe(Date.parse(ago(1)));
+  });
+
+  it('au plus `max` activités', () => {
+    const list = Array.from({ length: 20 }, (_, i) => ({
+      _id: i,
+      eventType: 'new_order',
+      createdAt: ago(i / 10),
+    }));
+    expect(recentActivity(list, now, undefined, 5)).toHaveLength(5);
+  });
+
+  it('chaque bulle dit son âge', () => {
+    expect(agoLabel(now - 20_000, now)).toBe('à l’instant');
+    expect(agoLabel(now - 5 * 60_000, now)).toBe('il y a 5 min');
+    expect(agoLabel(now - 3 * 3_600_000 - 10, now)).toBe('il y a 3 h');
+    expect(agoLabel(now - 30 * 3_600_000, now)).toBe('il y a 1 j');
+    expect(agoLabel(now + 60_000, now)).toBe('à l’instant');
   });
 });

@@ -1,13 +1,15 @@
 // « PEG DISTRICTS » (accueil admin, 22/10/2026) : la ville est un rendu 3D —
 // une image —, et tout ce qui est interactif est posé par-dessus : une carte
 // par quartier, les trois sites de production numérotés, la ligne de
-// production lumineuse. Ce module place ces repères en pixels de l'image et
-// calcule le cadrage (remplir le cadre, zoom, déplacement).
+// production lumineuse, et la vie de la ville (réseau des échanges, routes,
+// voies d'eau, vols, façades, fontaines). Ce module place ces repères en
+// pixels de l'image et calcule le cadrage (remplir le cadre, zoom,
+// déplacement).
 //
 // Ne dépend ni de React ni du navigateur : il est testé tel quel.
 
 import { plural, type VillageData } from './villageModel';
-import type { DistrictId, SectionId } from './villageScene';
+import { districtOf, type DistrictId, type SectionId } from './villageScene';
 
 type Pt = [number, number];
 
@@ -94,10 +96,13 @@ export const arcPath = (a: Pt, b: Pt) => {
 };
 
 /**
- * Les routes où roule la circulation, relevées sur l'image (voitures de la
- * photo comprises) : le pont et la route du bord de l'eau jusqu'au coude du
- * canal ; le boulevard sous la place des clients, prolongé devant le campus ;
- * le quai qui longe le fleuve jusqu'au pont ; la boucle au sud de la finance.
+ * Les routes où roule la circulation (`cars` voitures dans chaque sens),
+ * relevées sur l'image, voitures de la photo comprises : le pont et la route
+ * du bord de l'eau jusqu'au coude du canal ; le boulevard sous la place des
+ * clients, prolongé devant le campus jusqu'à la boutique ; le quai qui longe
+ * le fleuve ; la boucle au sud de la finance ; l'avenue à gauche de la place
+ * des clients ; la rue qui monte vers la tour ; l'avenue à l'est de la
+ * boutique et la rue qui passe au sud de la boutique.
  */
 export const ROADS: { id: string; pts: Pt[]; cars: number }[] = [
   {
@@ -120,7 +125,7 @@ export const ROADS: { id: string; pts: Pt[]; cars: number }[] = [
       [1191, 666],
       [1213, 627],
     ],
-    cars: 4,
+    cars: 7,
   },
   {
     id: 'boulevard',
@@ -136,8 +141,12 @@ export const ROADS: { id: string; pts: Pt[]; cars: number }[] = [
       [860, 318],
       [960, 330],
       [997, 325],
+      [1030, 315],
+      [1070, 297],
+      [1110, 277],
+      [1150, 253],
     ],
-    cars: 3,
+    cars: 6,
   },
   {
     id: 'quai',
@@ -158,7 +167,7 @@ export const ROADS: { id: string; pts: Pt[]; cars: number }[] = [
       [440, 738],
       [490, 752],
     ],
-    cars: 2,
+    cars: 3,
   },
   {
     id: 'sud',
@@ -177,8 +186,153 @@ export const ROADS: { id: string; pts: Pt[]; cars: number }[] = [
       [1570, 780],
       [1640, 745],
     ],
+    cars: 4,
+  },
+  {
+    id: 'gauche',
+    pts: [
+      [0, 198],
+      [50, 234],
+      [100, 272],
+      [150, 304],
+      [200, 337],
+      [250, 367],
+      [300, 402],
+    ],
     cars: 3,
   },
+  {
+    id: 'tour',
+    pts: [
+      [680, 258],
+      [650, 236],
+      [612, 206],
+      [580, 180],
+      [556, 158],
+    ],
+    cars: 2,
+  },
+  {
+    id: 'est',
+    pts: [
+      [1462, 222],
+      [1520, 288],
+      [1580, 340],
+      [1630, 386],
+      [1672, 424],
+    ],
+    cars: 3,
+  },
+  {
+    id: 'boutique-sud',
+    pts: [
+      [1420, 476],
+      [1500, 452],
+      [1560, 422],
+      [1590, 402],
+    ],
+    cars: 2,
+  },
+];
+
+/**
+ * Les drones : des boucles au-dessus des toits (une grande au-dessus de toute
+ * la ville, une autour de la finance et de l'assistance, une au-dessus de la
+ * production). Leur ombre suit au sol.
+ */
+export const DRONE_LOOPS: Pt[][] = [
+  [
+    [1385, 200],
+    [1150, 150],
+    [920, 120],
+    [650, 110],
+    [360, 140],
+    [300, 260],
+    [520, 330],
+    [800, 300],
+    [1100, 290],
+  ],
+  [
+    [1330, 560],
+    [1240, 640],
+    [1120, 700],
+    [1000, 660],
+    [1080, 560],
+    [1220, 520],
+  ],
+  [
+    [420, 430],
+    [600, 400],
+    [800, 420],
+    [940, 520],
+    [760, 600],
+    [520, 600],
+    [400, 520],
+  ],
+];
+
+/** Deux vols d'oiseaux qui traversent le ciel brumeux du fond, dans les deux sens. */
+export const BIRD_PATHS: Pt[][] = [
+  [
+    [-80, 95],
+    [500, 60],
+    [1100, 50],
+    [1760, 30],
+  ],
+  [
+    [1760, 150],
+    [1200, 120],
+    [600, 125],
+    [-80, 100],
+  ],
+];
+
+/** Feu rouge clignotant en haut de l'antenne de la tour des clients. */
+export const BEACONS: Pt[] = [[497, 68]];
+
+/** Le néon violet de la tour : une bande verticale (centre x, haut, bas, largeur). */
+export const TOWER_NEON = { x: 522.5, top: 139, bottom: 241, w: 10 };
+
+/** Les fontaines : la place des clients, le campus, les deux du toit de la boutique (`h` = hauteur du jet). */
+export const FOUNTAINS: { at: Pt; h: number }[] = [
+  { at: [386, 300], h: 24 },
+  { at: [914, 285], h: 26 },
+  { at: [1371, 246], h: 11 },
+  { at: [1412, 274], h: 9 },
+];
+
+/**
+ * Les façades vitrées où passe un reflet (polygones) : la tour des clients,
+ * le cube de verre du campus, la grande façade de la boutique et sa verrière
+ * violette.
+ */
+export const GLASS: Pt[][] = [
+  [
+    [439, 104],
+    [490, 129],
+    [490, 242],
+    [439, 215],
+  ],
+  [
+    [880, 191],
+    [922, 169],
+    [968, 195],
+    [968, 232],
+    [925, 254],
+    [880, 232],
+  ],
+  [
+    [1264, 272],
+    [1366, 332],
+    [1366, 442],
+    [1264, 372],
+  ],
+  [
+    [1174, 280],
+    [1232, 306],
+    [1232, 370],
+    [1174, 340],
+  ],
 ];
 
 /** Les bateaux : sur le canal, du second pont au bassin, et sur le fleuve jusqu'au pont. */
@@ -233,6 +387,73 @@ export const smoothPath = (pts: Pt[]) => {
     return `${d} C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${p[0]} ${p[1]}`;
   }, `M${pts[0][0]} ${pts[0][1]}`);
 };
+
+/** Même lissage pour une boucle fermée (les drones) : on revient au départ sans angle. */
+export const smoothLoop = (pts: Pt[]) => {
+  const n = pts.length;
+  const at = (i: number) => pts[((i % n) + n) % n];
+  const f = (v: number) => Number(v.toFixed(1));
+  return pts.reduce((d, p1, k) => {
+    const [p0, p2, p3] = [at(k - 1), at(k + 1), at(k + 2)];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    return `${d} C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${p2[0]} ${p2[1]}`;
+  }, `M${pts[0][0]} ${pts[0][1]}`);
+};
+
+/** Chemin SVG d'un polygone fermé (façades vitrées). */
+export const polygonPath = (pts: Pt[]) =>
+  `M${pts.map((p) => `${p[0]} ${p[1]}`).join(' L')} Z`;
+
+/** Rectangle englobant d'un polygone : [x, y, largeur, hauteur]. */
+export const bounds = (pts: Pt[]): [number, number, number, number] => {
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return [x, y, Math.max(...xs) - x, Math.max(...ys) - y];
+};
+
+/** Les biefs où l'eau scintille : entre les deux ponts du canal, le bassin du canal, le fleuve. */
+const GLINT_STRETCHES: [Pt, Pt][] = [
+  [
+    [983, 372],
+    [1080, 440],
+  ],
+  [
+    [1150, 497],
+    [1335, 597],
+  ],
+  [
+    [8, 655],
+    [165, 728],
+  ],
+];
+
+/** Reflets sur l'eau : des points tous les 22 px environ, de part et d'autre du milieu du bief. */
+export const WATER_GLINTS: Pt[] = GLINT_STRETCHES.flatMap(([a, b]) => {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const count = Math.max(3, Math.round(len / 22));
+  const [nx, ny] = [-(b[1] - a[1]) / len, (b[0] - a[0]) / len];
+  return Array.from({ length: count }, (_, k): Pt => {
+    const t = (k + 0.5) / count;
+    const off = (k % 2 ? -1 : 1) * (3 + (k % 3) * 3);
+    return [
+      Math.round(a[0] + (b[0] - a[0]) * t + nx * off),
+      Math.round(a[1] + (b[1] - a[1]) * t + ny * off),
+    ];
+  });
+});
+
+/**
+ * Où se pose la bulle d'une activité : le pôle de sa rubrique, son site de
+ * production, sinon le cœur de son quartier.
+ */
+export const sectionAnchor = (id: SectionId): Pt =>
+  ROOFS[id] ??
+  PRODUCTION_SITES.find((s) => s.id === id)?.at ??
+  DISTRICT_SPOTS.find((d) => d.id === districtOf(id))?.glow ??
+  CITY_FOCUS;
 
 /** Longueur d'une ligne de points (pixels de l'image). */
 export const pointsLength = (pts: Pt[]) =>
@@ -394,11 +615,52 @@ export const placeDistrictCards = (c: Camera, frameW: number, frameH: number) =>
     CARD_H,
     frameW,
     frameH,
-    PRODUCTION_SITES.map((s) => {
-      const [x, y] = toFrame(c, s.at);
-      return { at: [x + 61, y] as Pt, w: 150, h: 28, gap: 0 };
-    })
+    siteBoxes(c)
   );
+
+/** Les sites de production tels qu'ils occupent le cadre : pastille et nom, environ 150 × 28 à droite du repère. */
+export const siteBoxes = (c: Camera): Box[] =>
+  PRODUCTION_SITES.map((s) => {
+    const [x, y] = toFrame(c, s.at);
+    return { at: [x + 61, y] as Pt, w: 150, h: 28, gap: 0 };
+  });
+
+/** Hauteur d'une bulle d'activité ; sa largeur dépend de ses textes (`bubbleWidth`). */
+export const BUBBLE_H = 44;
+
+/**
+ * Largeur estimée d'une bulle : pastille, la plus longue de ses deux lignes,
+ * marges. Mesuré en Inter : 6,5 à 7,3 px par caractère pour le titre
+ * (12,5 px, demi-gras), 4,6 à 5,7 pour la ligne du dessous (11 px).
+ */
+export const bubbleWidth = (text: string, sub: string) =>
+  Math.round(
+    Math.min(
+      260,
+      Math.max(140, 66 + Math.max(text.length * 7.4, sub.length * 5.8))
+    )
+  );
+
+/**
+ * Les bulles d'activité : chacune juste au-dessus de son bâtiment (`anchor`,
+ * dans le cadre) si la place est libre, sinon à la place libre la plus proche
+ * — jamais sur une carte, un site ou une autre bulle. `moved` : la bulle a dû
+ * s'écarter (sa tige ne pointerait plus son bâtiment).
+ */
+export const placeBubbles = (
+  items: { anchor: Pt; w: number }[],
+  frameW: number,
+  frameH: number,
+  obstacles: Box[]
+): { at: Pt; moved: boolean }[] => {
+  const placed: Box[] = [...obstacles];
+  return items.map(({ anchor, w }) => {
+    const want: Pt = [anchor[0], anchor[1] - 18 - BUBBLE_H / 2];
+    const [at] = spreadCards([want], w, BUBBLE_H, frameW, frameH, placed);
+    placed.push({ at, w, h: BUBBLE_H, gap: 6 });
+    return { at, moved: Math.hypot(at[0] - want[0], at[1] - want[1]) > 1 };
+  });
+};
 
 // ── Les chiffres des cartes ──────────────────────────────────────────────────
 

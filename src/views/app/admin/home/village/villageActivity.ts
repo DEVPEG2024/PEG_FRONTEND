@@ -96,6 +96,56 @@ export const liveNotifications = (
     return Number.isFinite(at) && at >= since;
   });
 
+export interface RecentActivity extends VillageActivity {
+  /** Heure de la notification (ms). */
+  at: number;
+}
+
+/**
+ * Le fil de la ville (PEG DISTRICTS) : les notifications de la cloche des
+ * dernières `maxAgeMs`, la plus récente d'abord, chacune rattachée à son
+ * bâtiment. Elles s'affichent une à une avec leur âge : rien d'ancien ne se
+ * fait passer pour neuf.
+ */
+export const recentActivity = (
+  list: ActivityNotification[],
+  now: number,
+  maxAgeMs = 48 * 3_600_000,
+  max = 12
+): RecentActivity[] =>
+  list
+    .map((n) => ({
+      n,
+      at: n.createdAt ? Date.parse(n.createdAt) : NaN,
+      id: activitySection(n),
+    }))
+    .filter(
+      (x): x is { n: ActivityNotification; at: number; id: SectionId } =>
+        !!x.id &&
+        Number.isFinite(x.at) &&
+        x.at <= now + 120_000 &&
+        now - x.at <= maxAgeMs
+    )
+    .sort((a, b) => b.at - a.at)
+    .slice(0, max)
+    .map(({ n, at, id }) => ({
+      key: String(n._id),
+      rawId: n._id,
+      id,
+      text: (n.title || 'Nouvelle activité').trim(),
+      link: safeLink(n.link),
+      at,
+    }));
+
+/** L'âge d'une activité : « à l'instant », « il y a 5 min », « il y a 2 h », « il y a 1 j ». */
+export const agoLabel = (at: number, now: number) => {
+  const min = Math.max(0, Math.floor((now - at) / 60_000));
+  if (min < 1) return 'à l’instant';
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `il y a ${h} h` : `il y a ${Math.floor(h / 24)} j`;
+};
+
 /** Une bulle par bâtiment (la plus récente), au plus `max` à la fois. */
 export const activityBubbles = (
   fresh: ActivityNotification[],

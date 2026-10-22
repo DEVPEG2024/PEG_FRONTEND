@@ -3,6 +3,8 @@
 // rubriques de la Production, tout reste dans l'image ; le cadrage remplit
 // toujours le cadre et le zoom garde le point visé.
 import {
+  BEACONS,
+  BUBBLE_H,
   CARD_H,
   CITY_IMAGE,
   CONVEYOR,
@@ -10,19 +12,28 @@ import {
   DELIVERY_ROUTE,
   DISTRICT_SPOTS,
   DISTRICT_ZOOM_MAX,
+  DRONE_LOOPS,
+  FOUNTAINS,
+  GLASS,
   PRODUCTION_SITES,
   ROADS,
   ROOFS,
+  TOWER_NEON,
+  WATER_GLINTS,
   WATERWAYS,
   arcPath,
+  bubbleWidth,
   cardWidth,
   cityCamera,
   compactFrame,
   districtLine,
   focusOfCamera,
   keepInside,
+  placeBubbles,
   placeDistrictCards,
   readCount,
+  sectionAnchor,
+  smoothLoop,
   smoothPath,
   spreadCards,
   toFrame,
@@ -31,6 +42,7 @@ import {
 import { FLOW_DEFS } from '@/views/app/admin/home/village/villageFlows';
 import {
   DISTRICTS,
+  MENU_ORDER,
   membersOf,
 } from '@/views/app/admin/home/village/villageScene';
 import type { VillageData } from '@/views/app/admin/home/village/villageModel';
@@ -118,6 +130,96 @@ describe('PEG DISTRICTS — le réseau et la vie de la ville', () => {
     expect(d.endsWith(' 200 40')).toBe(true);
     expect(d.match(/C/g)).toHaveLength(2);
     expect(d).toContain(' 100 50 C');
+  });
+});
+
+describe('PEG DISTRICTS — drones, fontaines, façades, eau', () => {
+  it('tout ce qui vit sur la ville est posé sur l’image', () => {
+    const all: [string, [number, number]][] = [
+      ...DRONE_LOOPS.flatMap((l, i) =>
+        l.map((p) => [`drone ${i}`, p] as [string, [number, number]])
+      ),
+      ...FOUNTAINS.map(
+        (f, i) => [`fontaine ${i}`, f.at] as [string, [number, number]]
+      ),
+      ...BEACONS.map((p) => ['feu', p] as [string, [number, number]]),
+      ...GLASS.flatMap((g, i) =>
+        g.map((p) => [`façade ${i}`, p] as [string, [number, number]])
+      ),
+      ...WATER_GLINTS.map((p) => ['eau', p] as [string, [number, number]]),
+      ['néon haut', [TOWER_NEON.x, TOWER_NEON.top]],
+      ['néon bas', [TOWER_NEON.x, TOWER_NEON.bottom]],
+    ];
+    for (const [what, p] of all)
+      expect({ what, p, in: inImage(p) }).toEqual({ what, p, in: true });
+    expect(WATER_GLINTS.length).toBeGreaterThan(15);
+    expect(TOWER_NEON.top).toBeLessThan(TOWER_NEON.bottom);
+  });
+
+  it('une boucle de drone revient à son départ sans angle', () => {
+    const loop: [number, number][] = [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+    ];
+    const d = smoothLoop(loop);
+    expect(d.startsWith('M0 0 C')).toBe(true);
+    expect(d.endsWith(' 0 0')).toBe(true);
+    expect(d.match(/C/g)).toHaveLength(3);
+  });
+
+  it('chaque rubrique a un point d’ancrage pour ses bulles, sur l’image', () => {
+    for (const id of MENU_ORDER)
+      expect({ id, in: inImage(sectionAnchor(id)) }).toEqual({ id, in: true });
+    expect(sectionAnchor('boutique')).toEqual(ROOFS.boutique);
+    expect(sectionAnchor('planning')).toEqual(
+      PRODUCTION_SITES.find((s) => s.id === 'planning')?.at
+    );
+  });
+});
+
+describe('PEG DISTRICTS — bulles d’activité', () => {
+  type P = [number, number];
+  const hit = (a: P, aw: number, ah: number, b: P, bw: number, bh: number) =>
+    Math.abs(a[0] - b[0]) < (aw + bw) / 2 - 0.5 &&
+    Math.abs(a[1] - b[1]) < (ah + bh) / 2 - 0.5;
+
+  it('place libre : la bulle se pose juste au-dessus de son bâtiment', () => {
+    const [b] = placeBubbles([{ anchor: [500, 300], w: 200 }], 1200, 680, []);
+    expect(b.moved).toBe(false);
+    expect(b.at).toEqual([500, 300 - 18 - BUBBLE_H / 2]);
+  });
+
+  it('jamais sur une carte, et deux bulles ne se recouvrent pas', () => {
+    const card = { at: [500, 240] as P, w: 238, h: 60, gap: 6 };
+    const spots = placeBubbles(
+      [
+        { anchor: [500, 300], w: 220 },
+        { anchor: [520, 300], w: 220 },
+      ],
+      1200,
+      680,
+      [card]
+    );
+    for (const s of spots) {
+      expect(s.moved).toBe(true);
+      expect(hit(s.at, 220, BUBBLE_H, card.at, card.w, card.h)).toBe(false);
+      expect(s.at[0] - 110).toBeGreaterThanOrEqual(12 - 1e-6);
+      expect(s.at[1] - BUBBLE_H / 2).toBeGreaterThanOrEqual(12 - 1e-6);
+    }
+    expect(hit(spots[0].at, 220, BUBBLE_H, spots[1].at, 220, BUBBLE_H)).toBe(
+      false
+    );
+  });
+
+  it('la largeur d’une bulle suit ses textes, dans des bornes', () => {
+    expect(bubbleWidth('Ok', 'il y a 1 h · Tickets')).toBe(182);
+    // « Nouvelle commande » mesure 124 px : la bulle la contient entière.
+    expect(
+      bubbleWidth('Nouvelle commande', 'il y a 2 h · Finance')
+    ).toBeGreaterThanOrEqual(124 + 57);
+    expect(bubbleWidth('x'.repeat(80), 'y')).toBe(260);
+    expect(bubbleWidth('', '')).toBe(140);
   });
 });
 
