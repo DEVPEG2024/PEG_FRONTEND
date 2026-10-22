@@ -7,6 +7,7 @@ import { getProductPackOptions, isProductM2Pricing, isProductPackPricing } from 
 import { DEFAULT_CHOICE } from '@/views/app/customer/products/show/SizeAndColorsChoice';
 import { optionKey } from '@/utils/optionKey';
 import { sortSizes } from '@/utils/sizeSort';
+import type { ChatFormAnswer } from '@/components/template/chat/chatFormTypes';
 
 /**
  * Offre chiffrée par l'assistant, prête à passer au panier. Construite par le
@@ -56,6 +57,10 @@ export type ChatPrefill = {
   quantity: number;
   /** Lignes de l'offre pour ce produit (une par taille/couleur en cas de répartition). */
   lines: ChatOfferLine[];
+  /** Personnalisation remplie dans le chat (récapitulatif) : la fiche la reprend. */
+  answer?: ChatFormAnswer;
+  /** « Modifier » du récapitulatif : la fiche s'ouvre sur le formulaire. */
+  openForm?: boolean;
 };
 
 /** State de navigation posé par le chat : fiche pré-remplie ou pop-up logo du panier. */
@@ -305,7 +310,10 @@ export const personalizationStatus = (item: Pick<CartItem, 'product' | 'formAnsw
  * panier, ou à finaliser sur la fiche pré-remplie. Charge le produit complet, comme
  * la fiche, pour que la ligne de panier soit strictement identique.
  */
-export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
+export const planOffer = async (
+  offer: ChatOffer,
+  opts: { answers?: Record<string, ChatFormAnswer> } = {}
+): Promise<PlannedLine[]> => {
   const byProduct = new Map<string, ChatOfferLine[]>();
   for (const line of offer.lines) byProduct.set(line.productDocumentId, [...(byProduct.get(line.productDocumentId) ?? []), line]);
   const planned: PlannedLine[] = [];
@@ -317,13 +325,18 @@ export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
       const line = lines[0];
       const selection = selectionForLines(product, lines);
       const missing = missingSteps(product, lines, selection);
+      // Personnalisation remplie dans le chat (récapitulatif) : la ligne la porte
+      // (state 'submitted', ou 'pending' si un fichier reste à envoyer).
+      const answer = product.form
+        ? opts.answers?.[line.productDocumentId]
+        : undefined;
       if (!missing.length && selection) {
-        planned.push({ kind: 'ready', line, lines, product, sizeAndColors: selection, formAnswer: pendingFormAnswer(product) });
+        planned.push({ kind: 'ready', line, lines, product, sizeAndColors: selection, formAnswer: answer ? ({ form: product.form, answer } as unknown as Partial<FormAnswer>) : pendingFormAnswer(product) });
       } else {
         const prefill = parts.length > 1
           ? { offerId: offer.id, quantity: lines.reduce((n, l) => n + l.quantity, 0), lines }
           : prefillForProduct(offer, line.productDocumentId)!;
-        planned.push({ kind: 'complete', line, lines, product, missing, prefill });
+        planned.push({ kind: 'complete', line, lines, product, missing, prefill: answer ? { ...prefill, answer } : prefill });
       }
     }
   }
@@ -333,7 +346,22 @@ export const planOffer = async (offer: ChatOffer): Promise<PlannedLine[]> => {
 /** Lecture tolérante du state de navigation de la fiche produit. */
 export const readChatPrefill = (state: unknown): ChatPrefill | null => {
   const p = (state as { chatOffer?: ChatPrefill } | null)?.chatOffer;
-  return p && typeof p.offerId === 'string' && Number(p.quantity) > 0 && Array.isArray(p.lines) && p.lines.length > 0 ? p : null;
+  if (
+    !p ||
+    typeof p.offerId !== 'string' ||
+    !(Number(p.quantity) > 0) ||
+    !Array.isArray(p.lines) ||
+    p.lines.length === 0
+  )
+    return null;
+  // Réponse du chat relue de l'historique de navigation : écartée si mal formée.
+  const a = p.answer as { data?: unknown; state?: unknown } | undefined;
+  const answerOk =
+    !a ||
+    (!!a.data &&
+      typeof a.data === 'object' &&
+      (a.state === 'submitted' || a.state === 'pending'));
+  return answerOk ? p : { ...p, answer: undefined };
 };
 
 /** Validation minimale d'une offre reçue du serveur (ou relue du sessionStorage). */

@@ -6,6 +6,7 @@ import { addToCart } from '@/store/slices/base/cartSlice';
 import useUserCart from '@/utils/hooks/useUserCart';
 import type { CartItem } from '@/@types/cart';
 import { describeOffer, planOffer, type ChatNavState, type ChatOffer } from './chatOffer';
+import type { ChatFormAnswer } from './chat/chatFormTypes';
 
 type Props = {
   offer: ChatOffer;
@@ -13,6 +14,8 @@ type Props = {
   onChange: (offer: ChatOffer) => void;
   /** Ferme le chat puis navigue : la fenêtre recouvrait le bouton « Ajouter au panier » de la fiche. */
   onGo: (path: string, state?: ChatNavState) => void;
+  /** Réponses de personnalisation remplies dans le chat, par produit. */
+  formAnswers?: Record<string, ChatFormAnswer>;
 };
 
 const fmt = (n: number) => `${(Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
@@ -32,7 +35,7 @@ const btn = (primary: boolean): React.CSSProperties => ({
  * personnalisation (logo…) se complète ensuite depuis le panier. Seules les
  * lignes dont les tailles sont à répartir ouvrent la fiche pré-remplie.
  */
-const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
+const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user.user);
   const [busy, setBusy] = useState(false);
@@ -62,7 +65,7 @@ const ChatOfferAction = ({ offer, onChange, onGo }: Props) => {
     setError(false);
     try {
       const subset = lineIds ? { ...offer, lines: offer.lines.filter((l) => lineIds.includes(l.productDocumentId)) } : offer;
-      const plan = await planOffer(subset);
+      const plan = await planOffer(subset, { answers: formAnswers });
       const ready = plan.filter((p) => p.kind === 'ready');
       const todo = plan.filter((p) => p.kind === 'complete');
       const addedIds: string[] = [];

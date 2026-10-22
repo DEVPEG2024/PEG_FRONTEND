@@ -198,6 +198,16 @@ const ShowProduct = () => {
   useEffect(() => {
     if (!chatPrefill || chatPrefillApplied.current || !product || product.documentId !== documentId) return;
     chatPrefillApplied.current = true;
+    // Personnalisation remplie dans le chat : la fiche la reprend ; « Modifier »
+    // (récapitulatif du chat) ouvre directement le formulaire, pré-rempli.
+    if (chatPrefill.answer && product.form) {
+      dispatch(
+        setFormAnswer({ form: product.form, answer: chatPrefill.answer })
+      );
+      dispatch(setFormCompleted(chatPrefill.answer.state === 'submitted'));
+    }
+    if (chatPrefill.openForm && product.form && prefillComplete)
+      setWizardStep(formStepIndex);
     if (isM2Pricing) {
       if (prefillM2?.width) setM2Width(Math.round(prefillM2.width * 100));
       if (prefillM2?.height) setM2Height(Math.round(prefillM2.height * 100));
