@@ -12,7 +12,7 @@
 
 import { hasRole } from '@/utils/permissions';
 import { normalizeName, sameName } from '@/utils/nameMatch';
-import { compareSizeNames, sortSizes } from '@/utils/sizeSort';
+import { compareSizeNames, sortSelections, sortSizes } from '@/utils/sizeSort';
 import {
   parsePegOrigRef,
   stripPegOrigMarker,
@@ -110,6 +110,43 @@ describe('Tri naturel des tailles', () => {
     const copy = [...input];
     sortSizes(input);
     expect(input).toEqual(copy);
+  });
+
+  test('ages enfant dans l\'ordre (PACK ESDL NOEL : 6A avant 10A)', () => {
+    const sorted = sortSizes(
+      ['10A', '12A', '14A', '6A', '8A'].map((name) => ({ name }))
+    ).map((s) => s.name);
+    expect(sorted).toEqual(['6A', '8A', '10A', '12A', '14A']);
+    expect(compareSizeNames('3/4 ans', '5/6 ans')).toBeLessThan(0);
+    expect(compareSizeNames('8 ans', '12-14A')).toBeLessThan(0);
+  });
+
+  test('enfant, puis adulte, puis pointures, puis le reste', () => {
+    const sorted = sortSizes(
+      ['XL', '42', '10A', 'Taille unique', 'S', '6A', '38', 'A4'].map((name) => ({ name }))
+    ).map((s) => s.name);
+    expect(sorted).toEqual(['6A', '10A', 'S', 'XL', '38', '42', 'A4', 'Taille unique']);
+  });
+
+  test('toute l\'echelle des lettres, 7XL compris (tailles de la prod au 22/10/2026)', () => {
+    const sorted = sortSizes(
+      ['7xl', 'XS', '3XL', 'XXS', 'L', '4XL', 'XXL', 'M', 'XL', 'S', '2XL'].map((name) => ({ name }))
+    ).map((s) => s.name);
+    expect(sorted).toEqual(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', '4XL', '7xl']);
+    expect(compareSizeNames('XXL', '2XL')).toBe(0);
+  });
+
+  test('formats : ordre naturel', () => {
+    expect(compareSizeNames('A5', 'A4')).toBeGreaterThan(0);
+    expect(compareSizeNames('T2', 'T10')).toBeLessThan(0);
+  });
+
+  test('selections : couleurs dans l\'ordre d\'apparition, tailles triees dans chaque couleur', () => {
+    const noir = { value: '#000', name: 'Noir' };
+    const rouge = { value: '#f00', name: 'Rouge' };
+    const line = (size: string, color: typeof noir) => ({ size: { name: size }, color, quantity: 1 });
+    const sorted = sortSelections([line('12A', noir), line('M', rouge), line('6A', noir), line('S', rouge)]);
+    expect(sorted.map((s) => `${s.size.name}/${s.color.name}`)).toEqual(['6A/Noir', '12A/Noir', 'S/Rouge', 'M/Rouge']);
   });
 });
 

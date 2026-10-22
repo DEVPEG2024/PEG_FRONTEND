@@ -15,7 +15,7 @@ import reducer, {
   setPackSize,
   setSizeAndColorsSelected,
 } from './store';
-import { sortSizes } from '@/utils/sizeSort';
+import { sortSelections, sortSizes } from '@/utils/sizeSort';
 import {
   addToCart,
   CartItemSizeAndColorEdition,
@@ -204,7 +204,7 @@ const ShowProduct = () => {
       setM2Quantity(prefillM2?.quantity ?? chatPrefill.quantity);
       return;
     }
-    if (prefill?.selection.length) dispatch(setSizeAndColorsSelected(prefill.selection));
+    if (prefill?.selection.length) dispatch(setSizeAndColorsSelected(sortSelections(prefill.selection)));
     if (prefill?.packFormatDefaulted) dispatch(setPackSize(prefill.packFormatDefaulted));
   }, [chatPrefill, product, documentId, isM2Pricing, prefillM2, prefill, dispatch]);
 
@@ -304,7 +304,9 @@ const ShowProduct = () => {
         updated[index] = newEntry;
         return updated;
       }
-      return [...sizeAndColorsSelected, newEntry];
+      // Rangée dans l'ordre naturel des tailles (pas l'ordre des clics) :
+      // c'est l'ordre enregistré sur la commande et affiché partout.
+      return sortSelections([...sizeAndColorsSelected, newEntry]);
     }
     return sizeAndColorsSelected.filter(
       (s) => !(sameOption(s.size, size) && sameOption(s.color, color))

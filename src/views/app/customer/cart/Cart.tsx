@@ -39,6 +39,7 @@ import useUserCart from '@/utils/hooks/useUserCart';
 import { personalizationStatus } from '@/components/template/chatOffer';
 import PersonalizeDialog from './PersonalizeDialog';
 import { optionKey } from '@/utils/optionKey';
+import { sortSelections } from '@/utils/sizeSort';
 
 /* ── Shared styles ── */
 const inputStyle: React.CSSProperties = {
@@ -301,7 +302,7 @@ function CartItemCard({
                   </span>
                 );
               })
-            : item.sizeAndColors.map((s) => (
+            : sortSelections(item.sizeAndColors).map((s) => (
               <span
                 key={optionKey(s.size) + optionKey(s.color)}
                 style={{

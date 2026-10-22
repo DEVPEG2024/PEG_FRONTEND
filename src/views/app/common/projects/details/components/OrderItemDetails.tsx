@@ -9,6 +9,7 @@ import { OrderItem } from '@/@types/orderItem';
 import { SizeAndColorSelection } from '@/@types/product';
 import { useNavigate } from 'react-router-dom';
 import { Customer } from '@/@types/customer';
+import { sortSelections } from '@/utils/sizeSort';
 
 const sep: React.CSSProperties = {
   height: '1px',
@@ -28,8 +29,11 @@ const OrderItemDetails = ({
   const navigate = useNavigate();
 
   const productTitle: string = orderItem.product.name;
-  const productSizeAndColors: SizeAndColorSelection[] =
-    orderItem.sizeAndColorSelections;
+  // Tailles dans l'ordre naturel (6A avant 10A), y compris les commandes passées
+  // avant que la sélection ne soit enregistrée triée.
+  const productSizeAndColors: SizeAndColorSelection[] = sortSelections(
+    orderItem.sizeAndColorSelections ?? []
+  );
 
   return (
     <div style={{ width: '100%', fontFamily: 'Inter, sans-serif' }}>
