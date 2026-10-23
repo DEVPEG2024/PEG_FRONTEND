@@ -252,10 +252,31 @@ interface WatermarkModalProps {
   file: File
   onApply: (watermarkedFile: File) => void
   onClose: () => void
+  /** Logo à proposer d'office (logo du client) ; sinon le dernier logo utilisé */
+  initialLogoUrl?: string | null
 }
 
-export default function WatermarkModal({ file, onApply, onClose }: WatermarkModalProps) {
+export default function WatermarkModal({ file, onApply, onClose, initialLogoUrl }: WatermarkModalProps) {
   const [logoSrc, setLogoSrc] = useState<string | null>(loadLogo)
+
+  // Logo du client : relu en data URL (le canvas exporté ne doit pas être
+  // « teinté » par une image d'une autre origine). Pas mémorisé comme logo
+  // par défaut : la fiche produit garde le dernier logo choisi à la main.
+  useEffect(() => {
+    if (!initialLogoUrl) return
+    let cancelled = false
+    fetch(initialLogoUrl + (initialLogoUrl.includes('?') ? '&' : '?') + '_cb=' + Date.now())
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((blob) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(blob)
+      }))
+      .then((dataUrl) => { if (!cancelled) setLogoSrc(dataUrl) })
+      .catch(() => { /* logo du client illisible : on garde le dernier logo */ })
+    return () => { cancelled = true }
+  }, [initialLogoUrl])
   // Logo position as % of image (0–1), default bottom-right
   const [logoPos, setLogoPos] = useState({ x: 0.85, y: 0.85 })
   const [scale, setScale] = useState(15)

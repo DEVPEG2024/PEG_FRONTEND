@@ -22,7 +22,11 @@ import {
   HiOutlineStar,
 } from 'react-icons/hi';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import { env } from '@/configs/env.config';
+import { apiGetHiddenOffersClients } from '@/services/OfferCopyServices';
+import { pendingCopyCounts } from '@/views/app/admin/products/copy/offerCopy';
+import { unwrapData } from '@/utils/serviceHelper';
 import CustomerWizard from './CustomerWizard';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 
@@ -124,6 +128,17 @@ const CustomersList = () => {
       getCustomers({ pagination: { page: currentPage, pageSize }, searchTerm })
     );
   }, [dispatch, currentPage, pageSize, searchTerm]);
+
+  // Copies d'offres encore cachées (faites sur cet appareil) → mention
+  // « N offres à publier » qui rouvre l'étape Photos. Jamais bloquant.
+  const [hiddenOffers, setHiddenOffers] = useState<Record<string, number>>({});
+  useEffect(() => {
+    unwrapData(apiGetHiddenOffersClients())
+      .then(({ products_connection }) =>
+        setHiddenOffers(pendingCopyCounts(products_connection?.nodes ?? []))
+      )
+      .catch(() => setHiddenOffers({}));
+  }, []);
 
   // Bascule rapide Premium / Standard depuis la liste (étoile)
   const togglePremium = async (c: any) => {
@@ -454,6 +469,26 @@ const CustomersList = () => {
                       >
                         Sans catalogue
                       </span>
+                    )}
+                    {hiddenOffers[docId] > 0 && (
+                      <Link
+                        to={`/admin/products/copy-offers?to=${docId}`}
+                        title="Changer les photos puis publier ces offres"
+                        style={{
+                          background: 'rgba(251,191,36,0.12)',
+                          border: '1px solid rgba(251,191,36,0.35)',
+                          borderRadius: '100px',
+                          padding: '1px 8px',
+                          color: '#fcd34d',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        {hiddenOffers[docId] > 1
+                          ? `${hiddenOffers[docId]} offres à publier`
+                          : '1 offre à publier'}
+                      </Link>
                     )}
                   </div>
                   <div

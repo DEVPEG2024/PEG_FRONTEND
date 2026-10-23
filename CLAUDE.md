@@ -1016,6 +1016,27 @@ Simulateur iOS (Xcode) + `safaridriver` (session `platformName: 'iOS'`, `safari:
 
 ---
 
+## 📋 Copier les offres d'un client vers un autre (ajout 23/10/2026)
+
+### Concept
+Reproduire les offres complètes d'un client (ex. ESDL DOUVAINE, club de foot) pour un nouveau client, puis changer les photos avant qu'il les voie. Écran `/admin/products/copy-offers`, bouton « Copier les offres d'un client » en haut de la liste Produits. Maquette validée : https://claude.ai/artifact/WFycKGDJmm6azj4cSJsSM1. **Front seul**, aucune modification Strapi.
+
+### Les 3 étapes
+1. **Choisir** : client modèle → nouveau client ; offres **réservées** au client modèle (relation `customers`), les actives cochées d'office. Les offres de secteur ne se copient pas (un client du même secteur les voit déjà).
+2. **Noms** : « Remplacer ESDL par … » (mot entier, sans casse ; `suggestNameToken` propose le mot du nom du client qui revient dans ses offres), chaque nom modifiable.
+3. **Photos** : par photo, « Déposer une photo », « Poser le logo du club » (outil logo existant, logo de la fiche client chargé d'office via `initialLogoUrl`) ou « Garder ». Puis **Publier** (active les copies) ou « Terminer plus tard ».
+
+### Règles
+- Copie = `buildOfferCopyInput` (sur la base de `buildDuplicateProductInput`) : **seul** le nouveau client dans `customers`, `customerCategories` vide, **hors catalogue public**, **inactive**, pas de fichier BAT. Création **une par une** (peg-prod a peu de mémoire), une erreur n'arrête pas les autres.
+- État d'une photo **déduit des fichiers** : encore celui d'une offre du client d'origine = « Logo du client d'origine » ; nouveau fichier = « Changée ». Publier reste possible (« Publier quand même »), avec avertissement.
+- ⚠️ **Seules les copies sont montrées et publiées** : GROPPI et NICOMATIC ont des offres désactivées exprès, « Publier » ne doit jamais les réactiver. Les copies créées sont retenues **sur l'appareil** (`localStorage.peg_offer_copy_v1` : client d'origine, copies, photos gardées) → mention « N offres à publier » sur la carte du client (liste Clients) qui rouvre l'étape Photos (`?to=<client>`). Sur un autre appareil : les copies restent dans Produits, « Inactif ».
+- Le nom du module de logique est `offerCopy.ts` (et non `copyOffers.ts`) : macOS ne distingue pas `CopyOffers.tsx` / `copyOffers.ts` à l'import.
+
+### Fichiers
+`src/views/app/admin/products/copy/` (`CopyOffers.tsx`, `CopyOffersPhotos.tsx`, `CopySteps.tsx`, `offerCopy.ts`), `src/services/OfferCopyServices.ts`, `WatermarkModal.tsx` (`initialLogoUrl`), `CustomersList.tsx` (mention). Tests : `offerCopy.test.ts`, `offerCopyPhotos.test.tsx`.
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données

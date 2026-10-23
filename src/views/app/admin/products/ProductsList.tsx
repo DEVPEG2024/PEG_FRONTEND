@@ -31,7 +31,7 @@ import { toast } from 'react-toastify';
 import ProductCard from './ProductCard';
 import { getCatalogueVisibilityIssues } from '@/utils/productHelpers';
 import { normalizeName } from '@/utils/nameMatch';
-import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload } from 'react-icons/hi';
+import { HiOutlineSearch, HiPlus, HiExclamation, HiDownload, HiUpload, HiDuplicate } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import CatalogueBanner from '@/views/app/common/categories/CatalogueBanner';
 
@@ -499,6 +499,19 @@ const ProductsList = () => {
             style={{ display: 'none' }}
             onChange={handleImportCSV}
           />
+          <Link
+            to="/admin/products/copy-offers"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '10px', padding: '10px 18px',
+              color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <HiDuplicate size={16} /> Copier les offres d’un client
+          </Link>
           <Link to="/admin/products/new" style={{ textDecoration: 'none' }}>
             <button
               style={{
