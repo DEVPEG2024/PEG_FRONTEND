@@ -10,6 +10,7 @@ import { PegFile } from '@/@types/pegFile';
 import { Loading } from '@/components/shared';
 import { useState } from 'react';
 import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch, HiReply, HiOutlineRefresh } from 'react-icons/hi';
+import { MdDragIndicator } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -188,6 +189,14 @@ const ProductForm = (props: ProductFormProps) => {
   // fichier, et le retrait d'une seule les retirait toutes.
   const onFileRemove = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Ordre des photos = ordre du diaporama de la fiche ; la 1re est la photo
+  // principale (cartes produit, catalogue, chat). Enregistré tel quel.
+  const onImagesReorder = (order: number[]) => {
+    setImages((prev) =>
+      order.length === prev.length ? order.map((i) => prev[i]) : prev
+    );
   };
 
   const beforeUpload = (files: FileList | null) => {
@@ -378,6 +387,11 @@ const ProductForm = (props: ProductFormProps) => {
                   Images du produit
                 </p>
               </div>
+              {images.length > 1 && (
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11.5px', lineHeight: 1.45, margin: '-6px 0 12px' }}>
+                  Glissez <MdDragIndicator size={13} style={{ display: 'inline-block', verticalAlign: '-2px' }} aria-label="la poignée" /> pour changer l&apos;ordre du diaporama. La 1<sup>re</sup> photo est la photo principale.
+                </p>
+              )}
               <Loading loading={imagesLoading}>
                 <Upload
                   multiple
@@ -388,6 +402,7 @@ const ProductForm = (props: ProductFormProps) => {
                   beforeUpload={beforeUpload}
                   onFileAdd={(file) => onFileAdd(file)}
                   onFileRemove={(_, index) => onFileRemove(index)}
+                  onReorder={onImagesReorder}
                   field={{ name: 'images' }}
                   fileList={images.map((pf) => {
                     const file = pf.file as File & { previewUrl?: string; displayName?: string };
@@ -400,6 +415,11 @@ const ProductForm = (props: ProductFormProps) => {
                     const img = images[index] as PegFile & { _watermarked?: boolean; _originalKey?: string };
                     return (
                       <>
+                        {index === 0 && images.length > 1 && (
+                          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em', color: '#4ade80', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '6px', padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                            Principale
+                          </span>
+                        )}
                         <button
                           type="button"
                           title={img?._watermarked ? 'Repositionner le logo (repart de l\'image originale)' : 'Ajouter un logo'}

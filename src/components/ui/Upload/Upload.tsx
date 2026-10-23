@@ -1,12 +1,14 @@
 import { forwardRef, useRef, useState, useCallback, useEffect } from 'react'
 import classNames from 'classnames'
+import { Reorder, useDragControls } from 'framer-motion'
+import { MdDragIndicator } from 'react-icons/md'
 import { useConfig } from '../ConfigProvider'
 import cloneDeep from 'lodash/cloneDeep'
 import FileItem from './FileItem'
 import Button from '../Button/Button'
 import CloseButton from '../CloseButton'
 import type { CommonProps } from '../@types/common'
-import type { ReactNode, ChangeEvent, MouseEvent } from 'react'
+import type { ReactNode, ChangeEvent, MouseEvent, KeyboardEvent } from 'react'
 import { toast } from 'react-toastify'
 
 export interface UploadProps extends CommonProps {
@@ -29,6 +31,68 @@ export interface UploadProps extends CommonProps {
     field?: any
     clickable?: boolean
     renderFileActions?: (file: File, index: number) => ReactNode
+    /**
+     * Ordre modifiable à la main : poignée à faire glisser (souris ou doigt), ou
+     * flèches haut/bas du clavier sur la poignée. `order` = indices de l'ancienne
+     * liste dans le nouvel ordre (`next[i] = prev[order[i]]`).
+     */
+    onReorder?: (order: number[]) => void
+}
+
+/** Nouvel ordre (indices de l'ancienne liste) quand l'élément `index` avance de `step`. */
+export const moveOrder = (length: number, index: number, step: number): number[] | null => {
+    const target = index + step
+    if (index < 0 || index >= length || target < 0 || target >= length) return null
+    const order = Array.from({ length }, (_, i) => i)
+    order.splice(target, 0, ...order.splice(index, 1))
+    return order
+}
+
+type SortableFileRowProps = {
+    value: string
+    index: number
+    count: number
+    label: string
+    onMove: (index: number, step: -1 | 1) => void
+    /** Reçoit la poignée, à placer dans la rangée d'actions. */
+    children: (handle: ReactNode) => ReactNode
+}
+
+/** Ligne déplaçable : seule la poignée lance le glissement (les boutons restent cliquables). */
+const SortableFileRow = ({ value, index, count, label, onMove, children }: SortableFileRowProps) => {
+    const controls = useDragControls()
+    const onHandleKey = (e: KeyboardEvent) => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+        e.preventDefault()
+        onMove(index, e.key === 'ArrowUp' ? -1 : 1)
+    }
+    const handle = count > 1 ? (
+        <button
+            type="button"
+            className="upload-file-handle"
+            aria-label={`Déplacer ${label} (flèches haut et bas)`}
+            title="Glisser pour changer l'ordre"
+            onPointerDown={(e) => {
+                e.preventDefault()
+                controls.start(e)
+            }}
+            onKeyDown={onHandleKey}
+        >
+            <MdDragIndicator size={18} aria-hidden="true" />
+        </button>
+    ) : null
+    return (
+        <Reorder.Item
+            as="div"
+            value={value}
+            dragListener={false}
+            dragControls={controls}
+            style={{ position: 'relative' }}
+            whileDrag={{ scale: 1.02, zIndex: 2, boxShadow: '0 12px 30px rgba(0, 0, 0, 0.45)' }}
+        >
+            {children(handle)}
+        </Reorder.Item>
+    )
 }
 
 const filesToArray = (files: File[]) =>
@@ -56,12 +120,24 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
         field,
         clickable = false,
         renderFileActions,
+        onReorder,
         ...rest
     } = props
 
     const fileInputField = useRef<HTMLInputElement>(null)
     const [files, setFiles] = useState(fileList)
     const [dragOver, setDragOver] = useState(false)
+    // Clé stable par fichier (un nom peut revenir deux fois) pour le réordonnancement.
+    const fileKeys = useRef(new WeakMap<File, string>())
+    const keyCounter = useRef(0)
+    const keyOf = (file: File) => {
+        let key = fileKeys.current.get(file)
+        if (!key) {
+            key = `f${++keyCounter.current}`
+            fileKeys.current.set(file, key)
+        }
+        return key
+    }
 
     const { themeColor, primaryColorLevel } = useConfig()
 
@@ -138,6 +214,22 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
         setFiles(deletedFileList)
     }
 
+    const applyOrder = (order: number[]) => {
+        if (order.length !== files.length || order.some((i) => files[i] === undefined)) return
+        setFiles(order.map((i) => files[i]))
+        onReorder?.(order)
+    }
+
+    const onReorderKeys = (nextKeys: string[]) => {
+        const prevKeys = files.map(keyOf)
+        applyOrder(nextKeys.map((key) => prevKeys.indexOf(key)))
+    }
+
+    const moveFile = (index: number, step: -1 | 1) => {
+        const order = moveOrder(files.length, index, step)
+        if (order) applyOrder(order)
+    }
+
     const triggerUpload = (e: MouseEvent<HTMLDivElement>) => {
         if (!disabled) {
             fileInputField.current?.click()
@@ -185,6 +277,17 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
         onDrop: handleDrop,
     }
 
+    const renderItemActions = (file: File, index: number, handle?: ReactNode) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {handle}
+            {renderFileActions?.(file, index)}
+            <CloseButton
+                className="upload-file-remove"
+                onClick={() => removeFile(index)}
+            />
+        </div>
+    )
+
     const draggableEventFeedbackClass = `border-${themeColor}-${primaryColorLevel}`
 
     const uploadClass = classNames(
@@ -225,20 +328,40 @@ const Upload = forwardRef<HTMLDivElement, UploadProps>((props, ref) => {
                 {renderChildren()}
             </div>
             {tip}
-            {showList && (
+            {showList && !onReorder && (
                 <div className={classNames('upload-file-list', fileListClass)}>
                     {files.map((file, index) => (
                         <FileItem key={file.name + index} file={file} clickable={clickable} className={fileItemClass}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                {renderFileActions?.(file, index)}
-                                <CloseButton
-                                    className="upload-file-remove"
-                                    onClick={() => removeFile(index)}
-                                />
-                            </div>
+                            {renderItemActions(file, index)}
                         </FileItem>
                     ))}
                 </div>
+            )}
+            {showList && onReorder && (
+                <Reorder.Group
+                    as="div"
+                    axis="y"
+                    values={files.map(keyOf)}
+                    className={classNames('upload-file-list', fileListClass)}
+                    onReorder={onReorderKeys}
+                >
+                    {files.map((file, index) => (
+                        <SortableFileRow
+                            key={keyOf(file)}
+                            value={keyOf(file)}
+                            index={index}
+                            count={files.length}
+                            label={`« ${(file as File & { displayName?: string }).displayName ?? file.name} »`}
+                            onMove={moveFile}
+                        >
+                            {(handle) => (
+                                <FileItem file={file} clickable={clickable} className={fileItemClass}>
+                                    {renderItemActions(file, index, handle)}
+                                </FileItem>
+                            )}
+                        </SortableFileRow>
+                    ))}
+                </Reorder.Group>
             )}
         </>
     )
