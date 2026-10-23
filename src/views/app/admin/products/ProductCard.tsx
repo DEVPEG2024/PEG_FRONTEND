@@ -5,6 +5,7 @@ import { Product } from '@/@types/product';
 import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate, getCatalogueVisibilityIssues } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
 import { memo, useRef } from 'react';
+import ProductBadges from '@/components/shared/ProductBadges';
 
 const ProductCard = memo(
   ({
@@ -109,6 +110,9 @@ const ProductCard = memo(
               {product.productCategory.name}
             </div>
           )}
+
+          {/* Badges posés sur le produit (« Nouveau », « Promo »…) */}
+          <ProductBadges documentId={product.documentId} layout="row" style={{ position: 'absolute', left: '10px', bottom: '10px', right: '10px' }} />
         </div>
 
         {/* Content */}

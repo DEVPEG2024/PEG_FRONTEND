@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { HiArrowRight } from 'react-icons/hi';
 import { HOME_OFFERS, offerCategories, type OfferShowcaseItem } from '../offerShowcase';
-import { OfferBadge, OfferVisual, SavingsSticker } from './OfferVisuals';
+import { OfferCornerBadges, OfferVisual, SavingsSticker } from './OfferVisuals';
 
 type Props = {
   offers: OfferShowcaseItem[];
@@ -79,7 +79,7 @@ const OffersGrid = ({ offers, total, customerName, onOpen, onSeeAll }: Props) =>
           >
             <OfferVisual offer={o} sizes="280px" style={{ width: '100%', aspectRatio: '4 / 3' }}>
               {o.savings && <SavingsSticker percent={o.savings} size={62} caption={false} style={{ top: '12px', left: '12px' }} />}
-              {o.isNew && <OfferBadge style={{ top: '14px', right: '14px' }}>Nouveau</OfferBadge>}
+              <OfferCornerBadges documentId={o.documentId} autoLabel={o.isNew ? 'Nouveau' : null} style={{ top: '14px', right: '14px' }} />
             </OfferVisual>
             <span style={{ flex: '1 1 auto', width: '100%', boxSizing: 'border-box', padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {o.category && (

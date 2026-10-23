@@ -22,6 +22,7 @@ import {
   CreateProductRequest,
 } from '@/services/ProductServices';
 import { apiGetPegFiles } from '@/services/FileServices';
+import { apiAreProductBadgesAvailable, loadProductBadges } from '@/services/ProductBadgeServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { getProductBasePrice } from '@/utils/productHelpers';
 import { fmtNum } from '@/utils/priceHelpers';
@@ -195,12 +196,16 @@ const CopyOffers = () => {
     for (const [i, offer] of chosen.entries()) {
       try {
         const files = await apiGetPegFiles(offer.images ?? []);
+        const badges = (await apiAreProductBadgesAvailable())
+          ? await loadProductBadges(offer.documentId)
+          : null;
         const input = buildOfferCopyInput(
           offer,
           files.map((f) => f.id),
           {
             name: nameOf(offer),
             customerDocumentId: targetId,
+            badges,
           }
         );
         const { createProduct } = await unwrapData(

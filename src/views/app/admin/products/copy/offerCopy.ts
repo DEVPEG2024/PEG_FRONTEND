@@ -7,6 +7,7 @@
  * le nouveau client ne les voit qu'après « Publier ».
  */
 import { Product } from '@/@types/product';
+import type { ProductBadge } from '@/utils/productBadges';
 import {
   buildDuplicateProductInput,
   DuplicateProductInput,
@@ -62,10 +63,10 @@ export const countTokenMatches = (names: string[], token: string): number =>
 export function buildOfferCopyInput(
   product: Product,
   imageIds: string[],
-  { name, customerDocumentId }: { name: string; customerDocumentId: string }
+  { name, customerDocumentId, badges }: { name: string; customerDocumentId: string; badges?: ProductBadge[] | null }
 ): DuplicateProductInput {
   return {
-    ...buildDuplicateProductInput(product, imageIds),
+    ...buildDuplicateProductInput(product, imageIds, badges),
     name: name.trim() || product.name,
     customers: [customerDocumentId],
     customerCategories: [],

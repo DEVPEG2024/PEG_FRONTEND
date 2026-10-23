@@ -45,6 +45,8 @@ import {
 import { injectReducer } from '@/store';
 import { apiGetProductCategorySizes } from '@/services/SizeServices';
 import { apiGetProductCategoryColors } from '@/services/ColorServices';
+import { apiAreProductBadgesAvailable, apiGetBadgeLibrary, invalidateProductBadges, loadProductBadges } from '@/services/ProductBadgeServices';
+import type { ProductBadge } from '@/utils/productBadges';
 
 injectReducer('products', reducer);
 
@@ -87,6 +89,10 @@ const EditProduct = () => {
   // Champ `suggested` : disponible seulement une fois déployé côté Strapi
   const [suggestedAvailable, setSuggestedAvailable] = useState(false);
   const [initialSuggested, setInitialSuggested] = useState(false);
+  // Badges (« Nouveau », « Promo »…) : null tant que le champ n'est pas déployé
+  // côté Strapi (éditeur masqué, rien n'est envoyé). Lus à part, comme `suggested`.
+  const [badges, setBadges] = useState<ProductBadge[] | null>(null);
+  const [badgeLibrary, setBadgeLibrary] = useState<ProductBadge[]>([]);
   const initialData: ProductFormModel = useMemo(() => ({
     documentId: documentId ?? '',
     name: product?.name || '',
@@ -128,6 +134,14 @@ const EditProduct = () => {
         setInitialSuggested(await apiGetProductSuggestedFlag(documentId));
       }
     };
+    const loadBadges = async () => {
+      if (!(await apiAreProductBadgesAvailable())) return;
+      // Relus (pas le cache des cartes) : la fiche part de l'état enregistré.
+      if (onEdition) invalidateProductBadges([documentId]);
+      setBadges(onEdition ? await loadProductBadges(documentId) : []);
+      setBadgeLibrary(await apiGetBadgeLibrary());
+    };
+    loadBadges();
     if (onEdition) {
       // Attendre aussi le flag suggested : il alimente les defaultValues du
       // formulaire, figées au premier rendu de ProductForm
@@ -415,8 +429,13 @@ const EditProduct = () => {
       // formulaire produit déclencherait un 400 ; on ne le transmet donc que si
       // l'introspection confirme explicitement sa présence.
       if (!suggestedAvailable) delete data.suggested;
+      // Badges : seulement si le champ existe côté Strapi (sinon 400 sur tout l'enregistrement).
+      if (badges) data.badges = badges.length ? badges : null;
+      else delete data.badges;
 
       await updateOrCreateProduct(data);
+      // Cartes (liste admin, catalogue) : badges relus après l'enregistrement.
+      invalidateProductBadges(onEdition ? [documentId] : undefined);
       navigate('/admin/products');
     } catch (error: any) {
       toast.error(error?.message || 'Erreur lors de la sauvegarde du produit');
@@ -456,6 +475,9 @@ const EditProduct = () => {
         currentBatUrl={product?.batFile?.url ?? null}
         initialData={initialData}
         showSuggested={suggestedAvailable}
+        badges={badges}
+        setBadges={setBadges}
+        badgeLibrary={badgeLibrary}
         currentStep={currentStep}
         setCurrentStep={setCurrentStep}
         filterSizesListByProductCategory={filterSizesListByProductCategory}

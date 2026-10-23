@@ -13,6 +13,7 @@
  * lecture ne peut plus casser la duplication.
  */
 import { Product } from '@/@types/product';
+import type { ProductBadge } from '@/utils/productBadges';
 
 export const DUPLICATE_SUFFIX = ' (copie)';
 
@@ -47,6 +48,8 @@ export type DuplicateProductInput = {
   productCategory: string | null;
   customerCategories: string[];
   customers: string[];
+  /** Badges de l'original (« Nouveau », « Promo »…) — seulement s'il en a. */
+  badges?: ProductBadge[];
 };
 
 const ids = (list: { documentId: string }[] | null | undefined): string[] =>
@@ -63,10 +66,13 @@ const ids = (list: { documentId: string }[] | null | undefined): string[] =>
  *   l'active (comme toute fiche enregistrée).
  * - Le fichier de BAT n'est PAS copié : il montre la maquette d'un client
  *   précis. `requiresBat` est conservé ; l'admin joint le BAT de la copie.
+ * - `badges` : lus à part (champ absent des requêtes produit tant qu'il peut
+ *   manquer côté Strapi) ; jamais envoyés vides.
  */
 export function buildDuplicateProductInput(
   product: Product,
-  imageIds: string[]
+  imageIds: string[],
+  badges?: ProductBadge[] | null
 ): DuplicateProductInput {
   return {
     name: duplicateName(product.name),
@@ -91,5 +97,6 @@ export function buildDuplicateProductInput(
     productCategory: product.productCategory?.documentId ?? null,
     customerCategories: ids(product.customerCategories),
     customers: ids(product.customers),
+    ...(badges?.length ? { badges } : {}),
   };
 }

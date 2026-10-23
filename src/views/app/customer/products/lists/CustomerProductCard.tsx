@@ -7,6 +7,7 @@ import { Product } from '@/@types/product';
 import { HiArrowRight } from 'react-icons/hi';
 import { RootState, useAppSelector } from '@/store';
 import { buildImageSources } from '@/utils/strapiImage';
+import ProductBadges from '@/components/shared/ProductBadges';
 
 const getShortSentence = (desc: string): string => {
   const text = desc.replace(/<[^>]*>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
@@ -146,27 +147,36 @@ const CustomerProductCard = ({
           pointerEvents: 'none',
         }} />
 
-        {/* Category badge */}
-        {product.productCategory?.name && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            background: 'rgba(0,0,0,0.45)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '100px',
-            padding: '3px 10px',
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: '10px',
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            {product.productCategory.name}
-          </div>
-        )}
+        {/* Category badge, puis badges posés par l'admin (« Nouveau », « Promo »…) */}
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          maxWidth: 'calc(100% - 20px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '5px',
+        }}>
+          {product.productCategory?.name && (
+            <div style={{
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '100px',
+              padding: '3px 10px',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}>
+              {product.productCategory.name}
+            </div>
+          )}
+          <ProductBadges documentId={product.documentId} />
+        </div>
 
         {/* Savings badge */}
         {savingsPercent && (

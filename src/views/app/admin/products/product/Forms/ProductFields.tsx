@@ -20,6 +20,8 @@ import { useState } from 'react';
 import { apiAiFillProduct, apiGenerateProductImage } from '@/services/ChatbotServices';
 import { sameName } from '@/utils/nameMatch';
 import { BAT_ACCEPT, BAT_FORMATS_LABEL, isAcceptedBatFile } from '@/utils/batFiles';
+import ProductBadgesEditor from './ProductBadgesEditor';
+import type { ProductBadge } from '@/utils/productBadges';
 
 type Options = {
   label: string;
@@ -55,6 +57,10 @@ type ProductFieldsProps = {
   /** Affiche le toggle « Suggestion client » (champ suggested déployé côté Strapi) */
   showSuggested?: boolean;
   currentStep?: number;
+  /** Badges du produit (« Nouveau », « Promo »…) ; éditeur masqué si absents (champ non déployé). */
+  badges?: ProductBadge[] | null;
+  setBadges?: (badges: ProductBadge[]) => void;
+  badgeLibrary?: ProductBadge[];
 };
 
 const card: React.CSSProperties = {
@@ -128,6 +134,9 @@ const ProductFields = (props: ProductFieldsProps) => {
     setBatRemoved,
     showSuggested,
     currentStep,
+    badges,
+    setBadges,
+    badgeLibrary,
   } = props;
 
   const step = currentStep ?? -1; // -1 = show all (backwards compat)
@@ -341,6 +350,11 @@ const ProductFields = (props: ProductFieldsProps) => {
           {errors.description && <p style={fieldError}>{errors.description.message}</p>}
         </div>
       </div>
+      )}
+
+      {/* ── Step 0 (suite) : badges affichés côté client ── */}
+      {show(0) && badges && setBadges && (
+        <ProductBadgesEditor value={badges} onChange={setBadges} library={badgeLibrary} />
       )}
 
       {/* ── Step 1 : Paliers de prix ── */}

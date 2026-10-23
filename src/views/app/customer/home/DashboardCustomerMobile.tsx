@@ -33,7 +33,7 @@ import {
 import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
 import Carousel from '@/components/shared/Carousel';
 import type { OfferShowcaseItem } from './offerShowcase';
-import { OFFER_CSS, OFFER_ON_YELLOW, OFFER_YELLOW, OfferBadge, OfferSteps, OfferVisual, SavingsSticker } from './components/OfferVisuals';
+import { OFFER_CSS, OFFER_ON_YELLOW, OFFER_YELLOW, OfferCornerBadges, OfferSteps, OfferVisual, SavingsSticker } from './components/OfferVisuals';
 import PremiumTeaser from './components/PremiumTeaser';
 import DeliveryCountdown from './components/DeliveryCountdown';
 
@@ -523,7 +523,7 @@ const OfferCard = ({ offer }: { offer: PcmOffer }) => (
   <button type="button" className="pcm-offer" onClick={offer.onClick}>
     <OfferVisual offer={offer} sizes="300px" padding="8%" style={{ height: '188px', flexShrink: 0 }}>
       {offer.savings && <SavingsSticker percent={offer.savings} size={68} style={{ top: '12px', left: '12px' }} />}
-      {offer.isNew && <OfferBadge style={{ top: '14px', right: '14px' }}>Nouveau</OfferBadge>}
+      <OfferCornerBadges documentId={offer.documentId} autoLabel={offer.isNew ? 'Nouveau' : null} style={{ top: '14px', right: '14px' }} />
     </OfferVisual>
     <span className="pcm-offer-body">
       {offer.category && <span className="pcm-offer-cat">{offer.category.name}</span>}

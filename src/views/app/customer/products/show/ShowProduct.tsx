@@ -39,6 +39,7 @@ import useResponsive from '@/utils/hooks/useResponsive';
 import { chatTraceFor } from '@/components/template/chat/chatTrace';
 import { RichTextEditor } from '@/components/shared';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
+import ProductBadges from '@/components/shared/ProductBadges';
 import { User } from '@/@types/user';
 import { toast } from 'react-toastify';
 import { optionKey, sameOption } from '@/utils/optionKey';
@@ -544,6 +545,7 @@ const ShowProduct = () => {
                     (sinon ils n'arrivaient qu'après la liste des tailles) */}
                 {smaller.md && (
                   <div>
+                    <ProductBadges documentId={product.documentId} layout="row" size="md" style={{ marginBottom: '8px' }} />
                     <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
                       {product.name}
                     </h1>
@@ -630,6 +632,7 @@ const ShowProduct = () => {
 
               {/* Name + ref (sous md : affichés sous la photo) */}
               <div className="peg-hide-mobile" style={{ marginBottom: '16px' }}>
+                <ProductBadges documentId={product.documentId} layout="row" size="md" style={{ marginBottom: '10px' }} />
                 <h1 style={{ margin: 0, fontSize: 'var(--peg-fs-24)', fontWeight: 700, color: '#f0f4ff', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                   {product.name}
                 </h1>

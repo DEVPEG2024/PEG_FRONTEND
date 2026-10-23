@@ -8,7 +8,7 @@ import type { EmblaCarouselType } from 'embla-carousel';
 import { HiArrowRight, HiChevronLeft, HiChevronRight, HiOutlineShoppingCart } from 'react-icons/hi';
 import Carousel from '@/components/shared/Carousel';
 import type { OfferShowcaseItem } from '../offerShowcase';
-import { OfferBadge, OfferSteps, OfferVisual, SavingsSticker } from './OfferVisuals';
+import { OfferBadge, OfferCornerBadges, OfferSteps, OfferVisual, SavingsSticker } from './OfferVisuals';
 
 const ACCENT = '#6d5dfc';
 
@@ -55,7 +55,7 @@ const FeaturedOffers = ({ offers, onOpen, onSeeAll }: Props) => {
             <OfferVisual offer={o} sizes="(min-width: 1200px) 560px, 50vw" padding="12%" style={{ flex: 1 }}>
               {o.savings && <SavingsSticker percent={o.savings} size={96} style={{ top: '22px', left: '22px' }} />}
               <OfferBadge icon style={{ top: '24px', right: '22px', fontSize: '12px', padding: '8px 13px' }}>Prix réservé</OfferBadge>
-              {o.isNew && <OfferBadge tone="light" style={{ bottom: '22px', left: '22px', fontWeight: 800 }}>Nouvelle offre</OfferBadge>}
+              <OfferCornerBadges documentId={o.documentId} autoLabel={o.isNew ? 'Nouvelle offre' : null} tone="light" style={{ bottom: '22px', left: '22px', alignItems: 'flex-start' }} />
             </OfferVisual>
           </button>
 

@@ -6,6 +6,9 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { HiOutlineCube, HiOutlineTag } from 'react-icons/hi';
 import { buildImageSources } from '@/utils/strapiImage';
+import ProductBadges from '@/components/shared/ProductBadges';
+import useProductBadges from '@/utils/hooks/useProductBadges';
+import { hasNewBadge } from '@/utils/productBadges';
 import type { OfferShowcaseItem, OfferStep } from '../offerShowcase';
 
 export const OFFER_YELLOW = '#ffd23f';
@@ -183,3 +186,31 @@ export const OfferSteps = ({
     </ul>
   );
 };
+
+/**
+ * Coin d'un visuel d'offre : badges posés par l'admin (« Promo », personnalisés…)
+ * et, s'il y a lieu, l'étiquette automatique (« Nouveau », offre de moins de
+ * 30 jours). Un « Nouveau » posé à la main remplace l'automatique (pas de doublon).
+ */
+export const OfferCornerBadges = ({
+  documentId,
+  autoLabel,
+  tone = 'dark',
+  style,
+}: {
+  documentId: string;
+  /** Étiquette automatique (« Nouveau », « Nouvelle offre »), ou rien. */
+  autoLabel?: string | null;
+  tone?: 'dark' | 'light';
+  style: CSSProperties;
+}) => {
+  const badges = useProductBadges(documentId);
+  const showAuto = !!autoLabel && !hasNewBadge(badges);
+  return (
+    <span style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', ...style }}>
+      {showAuto && <OfferBadge tone={tone} style={{ position: 'static', fontWeight: tone === 'light' ? 800 : 700 }}>{autoLabel}</OfferBadge>}
+      <ProductBadges badges={badges} layout="stack" size="md" style={{ alignItems: style.left !== undefined ? 'flex-start' : 'flex-end' }} />
+    </span>
+  );
+};
+

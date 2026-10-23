@@ -15,6 +15,7 @@ import {
 } from '@/services/ProductServices';
 import { apiGetPegFiles } from '@/services/FileServices';
 import { unwrapData } from '@/utils/serviceHelper';
+import { apiAreProductBadgesAvailable, loadProductBadges } from '@/services/ProductBadgeServices';
 
 export const SLICE_NAME = 'products';
 
@@ -82,9 +83,14 @@ export const duplicateProduct = createAsyncThunk(
     const imagesLoaded: PegFile[] = await apiGetPegFiles(
       productToDuplicate.images ?? []
     );
+    // Badges : lus à part, seulement si le champ existe côté Strapi
+    const badges = (await apiAreProductBadgesAvailable())
+      ? await loadProductBadges(product.documentId)
+      : null;
     const newProduct = buildDuplicateProductInput(
       productToDuplicate,
-      imagesLoaded.map(({ id }) => id)
+      imagesLoaded.map(({ id }) => id),
+      badges
     );
     const { createProduct }: { createProduct: Product } = await unwrapData(
       // Le mutateur GraphQL attend des identifiants pour les relations

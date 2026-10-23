@@ -11,6 +11,7 @@ import { Loading } from '@/components/shared';
 import { useState } from 'react';
 import { HiOutlinePhotograph, HiArrowRight, HiArrowLeft, HiCheck, HiOutlineColorSwatch, HiReply, HiOutlineRefresh } from 'react-icons/hi';
 import { MdDragIndicator } from 'react-icons/md';
+import type { ProductBadge } from '@/utils/productBadges';
 import { toast } from 'react-toastify';
 import WatermarkModal from '@/components/ui/Upload/WatermarkModal';
 import { AiOutlineSave } from 'react-icons/ai';
@@ -83,6 +84,10 @@ type ProductFormProps = {
   showSuggested?: boolean;
   currentStep: number;
   setCurrentStep: (step: number | ((s: number) => number)) => void;
+  /** Badges du produit ; null = champ pas encore déployé côté Strapi (éditeur masqué). */
+  badges?: ProductBadge[] | null;
+  setBadges?: (badges: ProductBadge[]) => void;
+  badgeLibrary?: ProductBadge[];
   filterSizesListByProductCategory: (productCategoryDocumentId: string) => void;
   filterColorsListByProductCategory: (productCategoryDocumentId: string) => void;
 };
@@ -148,6 +153,9 @@ const ProductForm = (props: ProductFormProps) => {
     showSuggested,
     currentStep,
     setCurrentStep,
+    badges,
+    setBadges,
+    badgeLibrary,
     filterSizesListByProductCategory,
     filterColorsListByProductCategory,
   } = props;
@@ -374,6 +382,9 @@ const ProductForm = (props: ProductFormProps) => {
               batRemoved={batRemoved}
               setBatRemoved={setBatRemoved}
               showSuggested={showSuggested}
+              badges={badges}
+              setBadges={setBadges}
+              badgeLibrary={badgeLibrary}
               currentStep={currentStep}
             />
           </div>

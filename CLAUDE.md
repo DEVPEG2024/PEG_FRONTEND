@@ -1037,6 +1037,18 @@ Reproduire les offres complètes d'un client (ex. ESDL DOUVAINE, club de foot) p
 
 ---
 
+## 🔖 Badges produit — « Nouveau », « Promo »… et personnalisés (ajout 23/10/2026)
+
+- Champ JSON `product.badges` : `[{ kind, label?, color?, until? }]`. Préréglages `new` Nouveau, `promo` Promo, `bestseller` Meilleure vente, `limited` Stock limité, `exclusive` Exclusif, `eco` Éco-responsable ; `custom` = libellé (20 car.) + couleur hex. Date de fin facultative (AAAA-MM-JJ, incluse, jour de Paris). **3 au plus.**
+- Écrits par l'admin dans la fiche produit (étape « Infos », carte « Badges », `ProductBadgesEditor.tsx`) ; badges personnalisés déjà utilisés proposés en un clic (`GET /api/product-badges/library`, admin). Copiés par « Dupliquer » et par la copie d'offres. Nettoyés côté serveur à TOUTE écriture (`strapi.documents.use`, `src/services/product-badges-text.ts`).
+- Lus par une **route REST dédiée** `GET /api/product-badges?ids=a,b` (JWT exigé, badges seuls renvoyés), jamais dans les grosses requêtes GraphQL produit. Les cartes d'une page sont regroupées en une requête (`ProductBadgeServices.ts`, cache + invalidation après enregistrement). Route absente (backend pas déployé) → 404 → badges masqués, éditeur caché, rien d'envoyé.
+- Affichés (`components/shared/ProductBadges.tsx`) : cartes produit client (sous la pastille de catégorie), fiche (au-dessus du titre), offres de l'accueil (`OfferCornerBadges` : un « Nouveau » posé à la main remplace le « Nouveau » automatique des offres de moins de 30 jours), cartes admin (bas de l'image). Couleur du texte choisie pour le meilleur contraste (préréglages ≥ 4,5:1).
+- ⚠️ **L'introspection GraphQL est désactivée** (Apollo, `INTROSPECTION_DISABLED`) : toute sonde `__type` répond 400. `apiIsSuggestedFieldAvailable` (champ `suggested`) renvoie donc toujours faux et `apiGetProductInputFields` toujours null — ne pas s'appuyer sur l'introspection pour détecter un champ ; préférer une route dédiée.
+- Tests : front `productBadges.test.ts`, `productBadgeServices.test.ts`, `productBadgesEditor.test.tsx` ; back `productBadgesText.test.ts`.
+- Ordre de déploiement : **Strapi d'abord** (champ + route) ; front avant back = sans risque (badges invisibles).
+
+---
+
 ## 🏷️ Attributs produit — Tailles / Couleurs multi-catégories (ajout 01/06/2026)
 
 ### Modèle de données
