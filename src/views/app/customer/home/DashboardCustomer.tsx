@@ -175,7 +175,7 @@ const ProjectRow = ({ project, first }: { project: PcmProject; first: boolean })
 const DashboardCustomer = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { customer, products, offersTotal, projects, loading } = useAppSelector(
+  const { customer, products, projects, loading } = useAppSelector(
     (state) => state.dashboardCustomer.data
   );
   const { user }: { user: User } = useSelector(
@@ -307,7 +307,7 @@ const DashboardCustomer = () => {
   const liveInvoices = invoices.filter((inv) => !isInvoiceCanceled(inv));
   const invoicesCount = liveInvoices.length;
   const outstandingInvoices = invoices.filter(isInvoiceOutstanding);
-  const offersCount = Math.max(offersTotal, products.length);
+  const offersCount = products.length;
 
   const sortedProjects = [...projects].sort(
     (a, b) => new Date(b.startDate as unknown as string).getTime() - new Date(a.startDate as unknown as string).getTime()
@@ -356,7 +356,6 @@ const DashboardCustomer = () => {
   const offers = offersReserved ? [] : buildOfferShowcase(products, user?.customer);
   const offersVisible = offers.length > 0;
   const openProduct = (documentId: string) => navigate(`/customer/product/${documentId}`);
-  const seeAllOffers = () => navigate('/customer/products');
 
   // Projets réellement en cours : ni terminés, ni annulés.
   const ongoingProjects = [...projects]
@@ -459,8 +458,6 @@ const DashboardCustomer = () => {
         onRefresh={refresh}
         refreshing={refreshing}
         offers={offers.map((o) => ({ ...o, onClick: () => openProduct(o.documentId) }))}
-        offersTotal={offersCount}
-        onSeeOffers={seeAllOffers}
         onDiscoverPremium={offersReserved ? () => navigate('/customer/premium') : undefined}
         shortcuts={quickActions.map((a) => ({ key: a.title, label: a.title, icon: a.icon, onClick: () => navigate(a.to) }))}
         todos={todos}
@@ -540,7 +537,7 @@ const DashboardCustomer = () => {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
               {offersVisible && (
                 <div style={{ flex: '2 1 560px', minWidth: 0 }}>
-                  <FeaturedOffers offers={offers.slice(0, MAX_FEATURED)} onOpen={openProduct} onSeeAll={seeAllOffers} />
+                  <FeaturedOffers offers={offers.slice(0, MAX_FEATURED)} onOpen={openProduct} />
                 </div>
               )}
               {offersReserved && <PremiumTeaser onDiscover={() => navigate('/customer/premium')} />}
@@ -584,10 +581,8 @@ const DashboardCustomer = () => {
             {offersVisible && (
               <OffersGrid
                 offers={offers}
-                total={offersCount}
                 customerName={customer.name}
                 onOpen={openProduct}
-                onSeeAll={seeAllOffers}
               />
             )}
 

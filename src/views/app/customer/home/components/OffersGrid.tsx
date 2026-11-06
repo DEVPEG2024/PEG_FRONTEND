@@ -1,26 +1,24 @@
 /**
  * Accueil client (ordinateur et tablette) — « Vos offres personnalisées » en
- * cartes colorées, filtrables par catégorie quand il y en a plusieurs.
+ * cartes colorées, filtrables par catégorie quand il y en a plusieurs. TOUTES
+ * les offres sont sur cette page, sans « Voir plus » (demande du 06/11/2026).
  */
 import { useState } from 'react';
 import { HiArrowRight } from 'react-icons/hi';
-import { HOME_OFFERS, offerCategories, type OfferShowcaseItem } from '../offerShowcase';
+import { offerCategories, type OfferShowcaseItem } from '../offerShowcase';
 import { OfferCornerBadges, OfferVisual, SavingsSticker } from './OfferVisuals';
 
 type Props = {
   offers: OfferShowcaseItem[];
-  /** Nombre total d'offres du client (offers n'en porte que la première page) */
-  total: number;
   customerName: string;
   onOpen: (documentId: string) => void;
-  onSeeAll: () => void;
 };
 
-const OffersGrid = ({ offers, total, customerName, onOpen, onSeeAll }: Props) => {
+const OffersGrid = ({ offers, customerName, onOpen }: Props) => {
   const [category, setCategory] = useState<string>('all');
   const categories = offerCategories(offers);
   const active = categories.some((c) => c.id === category) ? category : 'all';
-  const shown = (active === 'all' ? offers : offers.filter((o) => o.category?.id === active)).slice(0, HOME_OFFERS);
+  const shown = active === 'all' ? offers : offers.filter((o) => o.category?.id === active);
   const chips = categories.length > 0 ? [{ id: 'all', name: 'Tout', count: offers.length }, ...categories] : [];
 
   return (
@@ -31,7 +29,7 @@ const OffersGrid = ({ offers, total, customerName, onOpen, onSeeAll }: Props) =>
             Vos offres personnalisées
           </h2>
           <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.66)' }}>
-            {total > 1 ? `${total} offres préparées pour ${customerName}` : `Une offre préparée pour ${customerName}`}
+            {offers.length > 1 ? `${offers.length} offres préparées pour ${customerName}` : `Une offre préparée pour ${customerName}`}
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
@@ -55,13 +53,6 @@ const OffersGrid = ({ offers, total, customerName, onOpen, onSeeAll }: Props) =>
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={onSeeAll}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '40px', padding: '0 6px 0 10px', border: 0, background: 'transparent', color: '#a99bff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer' }}
-          >
-            {total > shown.length ? `Voir les ${total} offres` : 'Ouvrir Mes offres'} <HiArrowRight size={15} />
-          </button>
         </div>
       </div>
 

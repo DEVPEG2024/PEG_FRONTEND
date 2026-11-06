@@ -7,7 +7,8 @@
  * relation avec PEG, ses réalisations en photos, et son équipe en bas de page.
  * Depuis le 21/10/2026 (maquette validée), ses offres personnalisées passent
  * juste sous la salutation, en grandes cartes à glisser (prix, autocollant
- * d'économie, escalier des paliers) ; un client Standard y voit Premium.
+ * d'économie, escalier des paliers) ; un client Standard y voit Premium. Toutes
+ * ses offres sont dans ce carrousel, qui défile tout seul toutes les 3 s.
  *
  * Composant d'AFFICHAGE : DashboardCustomer calcule tout (mêmes valeurs et
  * mêmes libellés que l'ordinateur) et passe des données prêtes à afficher.
@@ -32,7 +33,7 @@ import {
 } from 'react-icons/hi';
 import type { DashboardPhoto } from '@/utils/hooks/useDashboardPhoto';
 import Carousel from '@/components/shared/Carousel';
-import type { OfferShowcaseItem } from './offerShowcase';
+import { OFFERS_CAROUSEL_INTERVAL, type OfferShowcaseItem } from './offerShowcase';
 import { OFFER_CSS, OFFER_ON_YELLOW, OFFER_YELLOW, OfferCornerBadges, OfferSteps, OfferVisual, SavingsSticker } from './components/OfferVisuals';
 import PremiumTeaser from './components/PremiumTeaser';
 import DeliveryCountdown from './components/DeliveryCountdown';
@@ -97,9 +98,6 @@ type Props = {
   onRefresh: () => void;
   refreshing: boolean;
   offers: PcmOffer[];
-  /** Nombre total d'offres (offers n'en porte que la première page) */
-  offersTotal: number;
-  onSeeOffers: () => void;
   /** Client Standard : ses offres sont réservées au Premium → carte Premium */
   onDiscoverPremium?: () => void;
   shortcuts: PcmShortcut[];
@@ -599,8 +597,6 @@ const DashboardCustomerMobile = ({
   onRefresh,
   refreshing,
   offers,
-  offersTotal,
-  onSeeOffers,
   onDiscoverPremium,
   shortcuts,
   todos,
@@ -771,11 +767,10 @@ const DashboardCustomerMobile = ({
             <div className="pcm-section-head">
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 Vos offres personnalisées
-                <span className="pcm-count" style={{ background: OFFER_YELLOW, color: OFFER_ON_YELLOW }}>{offersTotal}</span>
+                <span className="pcm-count" style={{ background: OFFER_YELLOW, color: OFFER_ON_YELLOW }}>{offers.length}</span>
               </h2>
-              <button type="button" className="pcm-link" onClick={onSeeOffers}>Tout voir</button>
             </div>
-            <Carousel label="Vos offres personnalisées" className="pcm-offers" slideClassName="pcm-offer-slide">
+            <Carousel label="Vos offres personnalisées" className="pcm-offers" slideClassName="pcm-offer-slide" autoplay="step" interval={OFFERS_CAROUSEL_INTERVAL}>
               {offers.map((o) => <OfferCard key={o.documentId} offer={o} />)}
             </Carousel>
           </div>

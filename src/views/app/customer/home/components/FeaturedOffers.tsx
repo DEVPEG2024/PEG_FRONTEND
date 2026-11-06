@@ -1,13 +1,14 @@
 /**
  * Accueil client (ordinateur et tablette) — « Votre offre à la une » : les
  * offres personnalisées du client en grand, une à la fois, avec flèches et
- * points. Passe par le carrousel partagé (glissable au doigt sur iPad).
+ * points. Passe par le carrousel partagé (glissable au doigt sur iPad) et
+ * défile tout seul toutes les 3 s, en pause sous la souris.
  */
 import { useState } from 'react';
 import type { EmblaCarouselType } from 'embla-carousel';
-import { HiArrowRight, HiChevronLeft, HiChevronRight, HiOutlineShoppingCart } from 'react-icons/hi';
+import { HiChevronLeft, HiChevronRight, HiOutlineShoppingCart } from 'react-icons/hi';
 import Carousel from '@/components/shared/Carousel';
-import type { OfferShowcaseItem } from '../offerShowcase';
+import { OFFERS_CAROUSEL_INTERVAL, type OfferShowcaseItem } from '../offerShowcase';
 import { OfferBadge, OfferCornerBadges, OfferSteps, OfferVisual, SavingsSticker } from './OfferVisuals';
 
 const ACCENT = '#6d5dfc';
@@ -21,16 +22,17 @@ const arrowStyle: React.CSSProperties = {
 type Props = {
   offers: OfferShowcaseItem[];
   onOpen: (documentId: string) => void;
-  onSeeAll: () => void;
 };
 
-const FeaturedOffers = ({ offers, onOpen, onSeeAll }: Props) => {
+const FeaturedOffers = ({ offers, onOpen }: Props) => {
   const [api, setApi] = useState<EmblaCarouselType>();
   const many = offers.length > 1;
 
   return (
     <Carousel
       label="Vos offres personnalisées"
+      autoplay="step"
+      interval={OFFERS_CAROUSEL_INTERVAL}
       loop={many}
       gap={20}
       slideStyle={{ width: '100%' }}
@@ -110,22 +112,13 @@ const FeaturedOffers = ({ offers, onOpen, onSeeAll }: Props) => {
             )}
 
             <div style={{ marginTop: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
-              <span style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(o.documentId)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', height: '48px', padding: '0 22px', border: 0, borderRadius: '14px', background: ACCENT, color: '#fff', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 26px rgba(79,63,209,0.35)' }}
-                >
-                  <HiOutlineShoppingCart size={18} /> Commander
-                </button>
-                <button
-                  type="button"
-                  onClick={onSeeAll}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '48px', padding: '0 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.16)', background: 'transparent', color: '#fff', fontSize: '14.5px', fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Toutes mes offres <HiArrowRight size={15} />
-                </button>
-              </span>
+              <button
+                type="button"
+                onClick={() => onOpen(o.documentId)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', height: '48px', padding: '0 22px', border: 0, borderRadius: '14px', background: ACCENT, color: '#fff', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 26px rgba(79,63,209,0.35)' }}
+              >
+                <HiOutlineShoppingCart size={18} /> Commander
+              </button>
               {many && (
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                   {offers.map((d, k) => (
