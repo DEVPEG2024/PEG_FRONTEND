@@ -10,7 +10,8 @@ const PublicRoute = () => {
 
     // Lien « réinitialiser » de l'e-mail, ouvert sur un appareil encore connecté :
     // sans cette exception, le client retombait sur l'accueil sans voir le formulaire.
-    if (authenticated && pathname !== '/reset-password') {
+    // Même chose pour le lien de paiement reçu sur WhatsApp : il s'ouvre connecté ou non.
+    if (authenticated && pathname !== '/reset-password' && !pathname.startsWith('/paiement/')) {
         return <Navigate to={authenticatedEntryPath} />
     }
     return <Outlet />

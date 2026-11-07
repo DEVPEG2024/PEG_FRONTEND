@@ -385,6 +385,41 @@ Notes de conception détaillées par lot : `docs/chat-conseil/lot{1..4}.md` (le 
 
 ---
 
+## 📲 Agent WhatsApp — tout sur WhatsApp, le paiement sur PEG (ajout 07/11/2026)
+
+### Concept (décisions Nova du 07/11/2026)
+- Un **numéro dédié** (jamais le 06 de Nova) : les contacts discutent avec un agent IA qui trouve le produit, chiffre, reçoit le logo et prépare la commande. **Seul le paiement se fait sur PEG**, sur une page sans compte ni mot de passe.
+- L'agent passe la main quand il le faut : réponse promise **sous 24 h, 7 jours sur 7**. Nova répond depuis `/admin/whatsapp` (menu « WhatsApp »), ordinateur ou téléphone, avec notification.
+- **Tant qu'aucun numéro n'est relié, tout s'essaie** : bouton « Essayer » de l'écran = on écrit comme un contact, vrai catalogue et vrai agent, rien ne part vers Meta. Le numéro définitif vient à la fin.
+- Étape 1 livrée : contacts sans compte, jusqu'au paiement. **Pas encore** : liaison du numéro d'un client existant, suivi de ses projets et factures, BAT et fichiers sur WhatsApp, notifications PEG → WhatsApp. En attendant, un client existant est passé à l'équipe.
+
+### Ce qu'un contact peut voir
+- Client fictif `PROSPECT` (`whatsapp-pay.ts`) : **catalogue public au prix plein**, par le même moteur que le chat (`runCustomerTool`, `buildOffer`). Jamais une offre réservée, jamais Imbretex (hors catalogue), aucune donnée client.
+- Le modèle n'écrit **jamais de lien** (`toWhatsappText` les retire tous) : le seul lien part du serveur, en bouton.
+- Dans l'interface, dire **« contact »** : « prospect » est un synonyme proscrit (GLOSSARY).
+
+### Paiement sans compte
+- `createPayLink` décide si la commande est complète (couleur, tailles, formulaire obligatoire, coordonnées) et dit au modèle quoi demander. Adresse déjà connue → **aucun rattachement automatique**, passage à l'équipe.
+- Jeton aléatoire, **seule son empreinte est stockée**, valable 7 jours ; un nouveau lien annule le précédent ; montant rechiffré à chaque étape ; une seule session Stripe ouverte par lien.
+- Le **compte client, la commande, la facture et le projet naissent au paiement** (`finalizeWhatsappPayment`, branche `metadata.type === 'whatsapp'` du webhook Stripe), jamais avant. Rejouable sans doublon. Mot de passe aléatoire : pour se connecter, « Mot de passe oublié ».
+- Conversation d'essai : paiement possible seulement avec une clé `sk_test`, aucun e-mail, notifications à l'admin qui essaie seulement.
+
+### Fenêtre de 24 h de WhatsApp
+Après 24 h sans message du contact, seul un modèle validé par Meta peut partir, et il faut son accord (demandé au passage de main, `consent`). Rappel aux admins à 18 h d'attente (`remindWaiting`, cron). Au-delà : `adminReply` met le texte de côté, envoie `WHATSAPP_TEMPLATE_REENGAGE`, et le texte part à la réponse du contact. Sans accord ou sans modèle : refus expliqué, il reste le téléphone.
+
+### Variables d'environnement (Heroku) — aucune tant que l'essai suffit
+`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` (signature du webhook, refus sans lui), `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_DISPLAY_PHONE`, `WHATSAPP_TEMPLATE_REENGAGE` ; facultatives : `WHATSAPP_GRAPH_VERSION`, `WHATSAPP_TURNS_PER_HOUR` (40). Webhook à déclarer chez Meta : `https://api.mypeg.fr/api/whatsapp/webhook`, champ `messages`.
+
+### Fichiers clés
+- Back : `src/services/whatsapp-text.ts` (règles pures, `src/__tests__/whatsappText.test.ts`), `whatsapp-store.ts` (tables, envoi, Leads, passage de main), `whatsapp-agent.ts`, `whatsapp-pay.ts`, `whatsapp.service.ts` (réception, file, écran admin), `src/api/whatsapp/`, `config/cron-tasks.ts`. Tables : `whatsapp_conversations`, `whatsapp_messages`, `whatsapp_pay_links` (pas de content-type).
+- Front : `src/views/app/admin/whatsapp/`, `src/views/auth/WhatsappPay/WhatsappPayPage.tsx` (`/paiement/:token`, exception dans `PublicRoute`), `src/services/WhatsappServices.ts`.
+- Leads : une fiche par conversation sérieuse, `source: whatsapp`.
+
+### Ordre de déploiement
+**Backend Strapi d'abord.** Front avant back : l'écran affiche « Module indisponible », rien d'autre ne change.
+
+---
+
 ## ✍️ Relecteur PEG — orthographe & fiches produit (ajout 24/09/2026)
 
 ### Concept

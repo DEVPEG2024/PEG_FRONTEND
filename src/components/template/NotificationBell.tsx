@@ -31,6 +31,7 @@ const EVENT_ICONS: Record<string, string> = {
   new_task: '✅',
   task_status_change: '🔄',
   campaign: '📣',
+  whatsapp: '💬',
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -44,6 +45,7 @@ const EVENT_COLORS: Record<string, string> = {
   new_task: 'bg-teal-100 dark:bg-teal-900/30',
   task_status_change: 'bg-amber-100 dark:bg-amber-900/30',
   campaign: 'bg-sky-100 dark:bg-sky-900/30',
+  whatsapp: 'bg-green-100 dark:bg-green-900/30',
 };
 
 /** Campagne clients : la photo de couverture remplace l'icône (URL https du serveur uniquement). */

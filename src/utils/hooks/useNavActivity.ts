@@ -21,6 +21,7 @@ export const NAV_ACTIVITY_EVENTS: Record<string, string[]> = {
   '/admin/store/orders': ['new_order'],
   '/customer/files': ['new_file'],
   '/common/news': ['campaign'],
+  '/admin/whatsapp': ['whatsapp'],
 };
 const ACTIVITY_SEEN_KEY = 'peg_nav_activity_seen';
 // Plusieurs menus peuvent être montés en même temps (barre d'onglets + menu du

@@ -20,6 +20,12 @@ const authRoute: Routes = [
         component: lazy(() => import('@/views/auth/ResetPassword')),
         authority: [],
     },
+    {
+        key: 'whatsappPay',
+        path: `/paiement/:token`,
+        component: lazy(() => import('@/views/auth/WhatsappPay/WhatsappPayPage')),
+        authority: [],
+    },
 ]
 
 export default authRoute

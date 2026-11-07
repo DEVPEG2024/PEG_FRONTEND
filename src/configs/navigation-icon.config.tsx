@@ -21,7 +21,7 @@ import { AiOutlineProject } from "react-icons/ai";
 import { RiTeamLine } from "react-icons/ri";
 import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
-import { FaPenNib } from 'react-icons/fa';
+import { FaPenNib, FaWhatsapp } from 'react-icons/fa';
 import { BsCalendar3 } from 'react-icons/bs';
 import { TbFileInvoice, TbCrown, TbCalendarStats, TbShare3 } from 'react-icons/tb';
 
@@ -58,6 +58,7 @@ const navigationIcon: NavigationIcons = {
     pool: <PiSwimmingPoolBold />,
     calendar: <BsCalendar3 />,
     leads: <HiOutlineLightningBolt />,
+    whatsapp: <FaWhatsapp />,
     checklist: <GoTasklist />,
     chatbot: <MdSmartToy />,
     ia: <RiRobot2Line />,

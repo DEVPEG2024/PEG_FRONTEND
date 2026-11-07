@@ -46,6 +46,7 @@ const SOURCES: { key: LeadSource; label: string }[] = [
     { key: 'cold_call',  label: 'Cold Call' },
     { key: 'event',      label: 'Événement' },
     { key: 'site_web',   label: 'Site Web' },
+    { key: 'whatsapp',   label: 'WhatsApp' },
     { key: 'autre',      label: 'Autre' },
 ]
 
@@ -635,7 +636,7 @@ function parseLeadsCsv(text: string): Omit<Lead, 'documentId' | 'createdAt'>[] {
     const lines = text.trim().split('\n').map(l => l.replace(/\r/g, ''))
     if (lines.length < 2) return []
     const validStages: LeadStage[]    = ['nouveau', 'contacté', 'qualification', 'proposition', 'négociation', 'gagné', 'perdu']
-    const validSources: LeadSource[]  = ['linkedin', 'referral', 'inbound', 'cold_call', 'event', 'site_web', 'autre']
+    const validSources: LeadSource[]  = ['linkedin', 'referral', 'inbound', 'cold_call', 'event', 'site_web', 'whatsapp', 'autre']
     const validPrios: LeadPriority[]  = ['basse', 'normale', 'haute', 'urgente']
     return lines.slice(1)
         .map(parseCsvLine)

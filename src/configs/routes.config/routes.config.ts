@@ -6,6 +6,13 @@ import lazy from "@/utils/lazyWithRetry";
 export const publicRoutes: Routes = [...authRoute];
 
 const protectedAdminRoutes = [
+  // WhatsApp : conversations de l'agent, reprise par l'équipe
+  {
+    key: "admin.whatsapp",
+    path: "/admin/whatsapp",
+    component: lazy(() => import("@/views/app/admin/whatsapp/WhatsappPage")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   // leads
   {
     key: "admin.leads",

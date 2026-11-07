@@ -58,6 +58,16 @@ const navigationAdmin: NavigationTree[] = [
     subMenu: [],
   },
   {
+    key: "admin.whatsapp",
+    path: "/admin/whatsapp",
+    title: "WhatsApp",
+    translateKey: "nav.whatsapp",
+    icon: "whatsapp",
+    type: NAV_ITEM_TYPE_ITEM,
+    authority: [SUPER_ADMIN, ADMIN],
+    subMenu: [],
+  },
+  {
     key: "admin.leads",
     path: "/admin/leads",
     title: "Leads",
