@@ -400,6 +400,7 @@ Notes de conception détaillées par lot : `docs/chat-conseil/lot{1..4}.md` (le 
 
 ### Paiement sans compte
 - `createPayLink` décide si la commande est complète (couleur, tailles, formulaire obligatoire, coordonnées) et dit au modèle quoi demander. Adresse déjà connue → **aucun rattachement automatique**, passage à l'équipe.
+- **Coordonnées relevées par le serveur** (`captureBilling`, `whatsapp-agent.ts`) : appel dédié avant la réponse, outil imposé, dès qu'une commande est en cours ; seul ce que le contact a écrit est retenu (`keepWrittenBilling`). Complètes ou corrigées → le bouton part dans le même tour. ⚠️ Essai du 07/11/2026 : le vrai modèle filait au bouton sans jamais appeler `noter_coordonnees` et redemandait tout, en boucle. **Une étape qui compte ne dépend pas d'un choix d'outil du modèle**, et un faux modèle qui suit le bon ordre ne prouve rien : tester aussi les étapes sautées.
 - Jeton aléatoire, **seule son empreinte est stockée**, valable 7 jours ; un nouveau lien annule le précédent ; montant rechiffré à chaque étape ; une seule session Stripe ouverte par lien.
 - Le **compte client, la commande, la facture et le projet naissent au paiement** (`finalizeWhatsappPayment`, branche `metadata.type === 'whatsapp'` du webhook Stripe), jamais avant. Rejouable sans doublon. Mot de passe aléatoire : pour se connecter, « Mot de passe oublié ».
 - Conversation d'essai : paiement possible seulement avec une clé `sk_test`, aucun e-mail, notifications à l'admin qui essaie seulement.
