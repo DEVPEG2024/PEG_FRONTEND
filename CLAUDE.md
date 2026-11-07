@@ -398,6 +398,13 @@ Notes de conception détaillées par lot : `docs/chat-conseil/lot{1..4}.md` (le 
 - Le modèle n'écrit **jamais de lien** (`toWhatsappText` les retire tous) : le seul lien part du serveur, en bouton.
 - Dans l'interface, dire **« contact »** : « prospect » est un synonyme proscrit (GLOSSARY).
 
+### Cibler, puis proposer deux produits (retour de Nova du 07/11/2026)
+- Constat : l'agent proposait le t-shirt **le moins cher** sans savoir à quoi il servirait.
+- **Fiche du besoin** (`captureNeeds`, colonne `needs`) : le serveur relit la conversation à chaque message (appel dédié, outil `noter_besoin` imposé) — produit, usage, pour qui, quantité, couleurs, personnalisation, gamme, budget, délai. Elle garde ce qui sort de la fenêtre relue (**40 derniers messages**) ; un nombre n'y entre que si le contact l'a écrit (`keepWrittenNeeds`). Visible dans `/admin/whatsapp` (« Ce que cherche le contact ») et jointe au résumé d'un passage de main.
+- **Pas de proposition à l'aveugle** (`proposalGate`) : il faut le produit, son usage ou son public, et la quantité — sauf si le contact a déjà écrit 4 messages (pas d'interrogatoire) ou qu'une proposition a déjà été faite.
+- **`proposer_produits`** : deux produits (le plus adapté + une vraie alternative), chacun en photo avec la raison donnée par le modèle (écartée si elle contient un prix) et le **prix pour sa quantité calculé par le serveur**, puis des boutons `pick:<documentId>` / « Autre chose ». La recherche donne au modèle les **descriptions** et la consigne de choisir sur le besoin, jamais sur le prix seul.
+- **On ne chiffre que ce que le contact a choisi** : produit proposé, celui de l'offre en cours, ou modèle qu'il a nommé (`namesProduct` : ce qui distingue le modèle, pas seulement « casquette »). Sinon `preparer_offre` est refusé.
+
 ### Paiement sans compte
 - `createPayLink` décide si la commande est complète (couleur, tailles, formulaire obligatoire, coordonnées) et dit au modèle quoi demander. Adresse déjà connue → **aucun rattachement automatique**, passage à l'équipe.
 - **Coordonnées relevées par le serveur** (`captureBilling`, `whatsapp-agent.ts`) : appel dédié avant la réponse, outil imposé, dès qu'une commande est en cours ; seul ce que le contact a écrit est retenu (`keepWrittenBilling`). Complètes ou corrigées → le bouton part dans le même tour. ⚠️ Essai du 07/11/2026 : le vrai modèle filait au bouton sans jamais appeler `noter_coordonnees` et redemandait tout, en boucle. **Une étape qui compte ne dépend pas d'un choix d'outil du modèle**, et un faux modèle qui suit le bon ordre ne prouve rien : tester aussi les étapes sautées.

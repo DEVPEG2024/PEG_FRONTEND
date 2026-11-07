@@ -18,6 +18,8 @@ export type WhatsappConversation = {
   handoffSummary: string | null;
   handoffAt: string | null;
   offerTotalTTC: number | null;
+  /** Fiche du besoin relevée par le serveur dans la conversation (absente avant le déploiement du 07/11). */
+  needs?: { label: string; value: string }[];
   leadDocumentId: string | null;
   customerDocumentId: string | null;
   pendingReply: string | null;

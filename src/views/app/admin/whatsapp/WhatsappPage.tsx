@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useResponsive from '@/utils/hooks/useResponsive';
 import { FaWhatsapp } from 'react-icons/fa';
@@ -89,6 +96,14 @@ const CSS = `
 .wa-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .wa-notice { margin: 10px 14px 0; padding: 10px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.45; color: #fde68a; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.22); }
 .wa-notice strong { display: block; color: #fff; font-weight: 700; }
+.wa-needs { margin: 10px 14px 0; border-radius: 12px; font-size: 12.5px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.wa-needs summary { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px; cursor: pointer; list-style: none; color: rgba(255,255,255,0.6); }
+.wa-needs summary::-webkit-details-marker { display: none; }
+.wa-needs summary strong { flex-shrink: 0; color: #fff; font-weight: 700; }
+.wa-needs summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-needs dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; padding: 0 12px 10px; }
+.wa-needs dt { color: rgba(255,255,255,0.45); }
+.wa-needs dd { margin: 0; color: rgba(255,255,255,0.85); overflow-wrap: anywhere; }
 .wa-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 7px; background: rgba(0,0,0,0.14); }
 .wa-bubble { max-width: min(78%, 480px); padding: 8px 11px; border-radius: 14px; font-size: 14px; line-height: 1.42; overflow-wrap: anywhere; white-space: pre-wrap; }
 .wa-in { align-self: flex-start; color: #fff; background: rgba(255,255,255,0.09); border-bottom-left-radius: 4px; }
@@ -765,6 +780,22 @@ const WhatsappPage = () => {
                 <strong>{selected.handoffReason}</strong>
                 {selected.handoffSummary}
               </div>
+            )}
+            {!!selected.needs?.length && (
+              <details className="wa-needs">
+                <summary>
+                  <strong>Ce que cherche le contact</strong>
+                  <span>{selected.needs.map((n) => n.value).join(' · ')}</span>
+                </summary>
+                <dl>
+                  {selected.needs.map((n) => (
+                    <Fragment key={n.label}>
+                      <dt>{n.label}</dt>
+                      <dd>{n.value}</dd>
+                    </Fragment>
+                  ))}
+                </dl>
+              </details>
             )}
             <div className="wa-messages" ref={messagesRef}>
               {messages.map((m) => (
