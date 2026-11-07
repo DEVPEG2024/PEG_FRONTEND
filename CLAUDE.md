@@ -1077,6 +1077,15 @@ Reproduire les offres complètes d'un client (ex. ESDL DOUVAINE, club de foot) p
 
 ---
 
+## 🔑 Mot de passe — changement et oubli (correctif 07/11/2026)
+
+- **Compte connecté** (`/settings/password`, `account/components/Password.tsx`) : `POST /auth/change-password`, route native de Strapi, **mot de passe actuel obligatoire** (`apiChangePassword`). ⚠️ **Jamais `PUT /users/:id`** : `user.update` est révoqué pour les clients et producteurs depuis le 11/07/2026 (`REVOKE_FROM_NON_ADMIN`). L'ancien écran l'appelait quand même et avalait le 403 : retour à l'onglet Profil comme si c'était fait, mot de passe inchangé, pendant presque 4 mois. Droit `auth.changePassword` déjà accordé à tous les rôles au démarrage : aucun changement Strapi.
+- **Oubli** : `/forgot-password` → e-mail Mailjet (modèle `FORGOT_PASSWORD`, lien valable 1 h) → `/reset-password?code=…` (routes `api::auth`). `PublicRoute` laisse passer `/reset-password` même connecté : sinon le lien ouvert sur un appareil encore connecté renvoyait à l'accueil sans formulaire.
+- **Minimum 6 caractères** : imposé par le schéma `user` de Strapi, le formulaire (`DefinePassword`) doit rester aligné.
+- **Messages** : Strapi répond dans `error.message`, en anglais pour ses routes natives → `passwordErrorMessage` (`src/utils/passwordErrors.ts`) traduit ; une erreur inconnue donne le texte de repli, jamais le texte technique. Tests : `src/__tests__/accountPassword.test.tsx`.
+
+---
+
 ## 🔒 Terminologie & composants protégés (ajout 18/04/2026)
 
 ### Règle absolue

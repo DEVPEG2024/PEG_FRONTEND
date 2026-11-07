@@ -6,17 +6,26 @@ import { HiEye, HiEyeOff } from 'react-icons/hi';
 import { AiOutlineSave } from 'react-icons/ai';
 
 export type UserPasswordFormModel = {
+  /** Demandé seulement avec `askCurrent` (compte connecté) */
+  currentPassword?: string;
   newPassword: string;
   confirmNewPassword: string;
 };
 
-const validationSchema = Yup.object().shape({
+// 6 caractères : le minimum imposé par Strapi (schéma user). À 5, le formulaire
+// laissait passer un mot de passe que le serveur refusait ensuite.
+const baseSchema = {
   newPassword: Yup.string()
     .required('Nouveau mot de passe requis')
-    .min(5, 'Mot de passe trop court (5 caractères min)'),
+    .min(6, 'Mot de passe trop court (6 caractères min)'),
   confirmNewPassword: Yup.string()
     .required('Confirmation requise')
     .oneOf([Yup.ref('newPassword')], 'Les mots de passe ne correspondent pas'),
+};
+const validationSchema = Yup.object().shape(baseSchema);
+const validationSchemaWithCurrent = Yup.object().shape({
+  currentPassword: Yup.string().required('Mot de passe actuel requis'),
+  ...baseSchema,
 });
 
 const inputStyle: React.CSSProperties = {
@@ -32,13 +41,14 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const PasswordInput = ({ field, id, error, placeholder, show, onToggle }: {
+const PasswordInput = ({ field, id, error, placeholder, show, onToggle, autoComplete = 'new-password' }: {
   field: any;
   id: string;
   error?: string;
   placeholder: string;
   show: boolean;
   onToggle: () => void;
+  autoComplete?: string;
 }) => (
   <div>
     <div style={{ position: 'relative' }}>
@@ -47,7 +57,7 @@ const PasswordInput = ({ field, id, error, placeholder, show, onToggle }: {
         id={id}
         type={show ? 'text' : 'password'}
         placeholder={placeholder}
-        autoComplete="new-password"
+        autoComplete={autoComplete}
         style={{ ...inputStyle, borderColor: error ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)' }}
         onFocus={(e) => { e.target.style.borderColor = 'rgba(47,111,237,0.5)' }}
         onBlur={(e) => { e.target.style.borderColor = error ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.09)'; field.onBlur() }}
@@ -67,15 +77,19 @@ const PasswordInput = ({ field, id, error, placeholder, show, onToggle }: {
 
 const DefinePassword = ({
   onFormSubmit,
+  askCurrent = false,
 }: {
   onFormSubmit: (values: UserPasswordFormModel) => Promise<void>;
+  /** Compte connecté : le mot de passe actuel est demandé (vérifié par le serveur) */
+  askCurrent?: boolean;
 }) => {
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<UserPasswordFormModel>({
-    resolver: yupResolver(validationSchema),
-    defaultValues: { newPassword: '', confirmNewPassword: '' },
+    resolver: yupResolver((askCurrent ? validationSchemaWithCurrent : validationSchema) as Yup.ObjectSchema<UserPasswordFormModel>),
+    defaultValues: { currentPassword: '', newPassword: '', confirmNewPassword: '' },
   });
 
   return (
@@ -90,7 +104,7 @@ const DefinePassword = ({
           </svg>
         </div>
         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: 0 }}>
-          Choisissez un mot de passe sécurisé<br />d'au moins 5 caractères
+          Choisissez un mot de passe sécurisé<br />d'au moins 6 caractères
         </p>
       </div>
 
@@ -99,6 +113,15 @@ const DefinePassword = ({
 
       {/* Fields */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {askCurrent && (
+          <div>
+            <label htmlFor="define-currentPassword" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Mot de passe actuel *</label>
+            <Controller name="currentPassword" control={control} render={({ field }) => (
+              <PasswordInput field={field} id="define-currentPassword" error={errors.currentPassword?.message} placeholder="Mot de passe actuel" show={showCurrent} onToggle={() => setShowCurrent((v) => !v)} autoComplete="current-password" />
+            )} />
+          </div>
+        )}
+
         <div>
           <label htmlFor="define-newPassword" style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Nouveau mot de passe *</label>
           <Controller name="newPassword" control={control} render={({ field }) => (

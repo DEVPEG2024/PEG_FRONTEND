@@ -6,11 +6,11 @@ import Alert from '@/components/ui/Alert';
 import ActionLink from '@/components/shared/ActionLink';
 import { apiForgotPassword } from '@/services/AuthService';
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage';
+import { passwordErrorMessage } from '@/utils/passwordErrors';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import type { CommonProps } from '@/@types/common';
-import type { AxiosError } from 'axios';
 
 interface ForgotPasswordFormProps extends CommonProps {
   disableSubmit?: boolean;
@@ -22,7 +22,9 @@ type ForgotPasswordFormSchema = {
 };
 
 const validationSchema = Yup.object().shape({
+  // trim : le téléphone ajoute souvent une espace après une adresse suggérée
   email: Yup.string()
+    .trim()
     .email('Veuillez entrer une adresse email valide')
     .required('Veuillez renseigner votre email'),
 });
@@ -41,10 +43,7 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
         setEmailSent(true);
       }
     } catch (errors) {
-      setMessage(
-        (errors as AxiosError<{ message: string }>)?.response?.data?.message ||
-          (errors as Error).toString()
-      );
+      setMessage(passwordErrorMessage(errors, 'L’envoi a échoué. Réessayez dans un instant.'));
     }
   };
 

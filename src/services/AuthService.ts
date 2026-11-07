@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@/configs/api.config'
 import ApiService from './ApiService'
 import type {
     SignInCredential,
+    ChangePassword,
     ForgotPassword,
     ResetPassword,
     SignInResponse,
@@ -42,6 +43,19 @@ export async function apiForgotPassword(data: ForgotPassword) {
 export async function apiResetPassword(data: ResetPassword) {
     return ApiService.fetchData({
         url: `${API_BASE_URL}/auth/reset-password`,
+        method: 'post',
+        data,
+    })
+}
+
+/**
+ * Le compte connecté change SON mot de passe (route native de Strapi, le mot de
+ * passe actuel y est vérifié). Jamais `PUT /users/:id` : ce droit est retiré aux
+ * clients et producteurs depuis le 11/07/2026, le serveur répond 403.
+ */
+export async function apiChangePassword(data: ChangePassword) {
+    return ApiService.fetchData({
+        url: `${API_BASE_URL}/auth/change-password`,
         method: 'post',
         data,
     })

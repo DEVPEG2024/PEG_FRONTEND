@@ -1,11 +1,12 @@
 import { ActionLink } from '@/components/shared';
 import { Alert } from '@/components/ui';
 import { apiResetPassword } from '@/services/AuthService';
+import useAuth from '@/utils/hooks/useAuth';
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage';
+import { passwordErrorMessage } from '@/utils/passwordErrors';
 import DefinePassword, {
   UserPasswordFormModel,
 } from '@/views/app/account/components/DefinePassword';
-import { AxiosError } from 'axios';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -14,6 +15,9 @@ const ResetPassword = () => {
   const [message, setMessage] = useTimeOutMessage();
   const [searchParams] = useSearchParams();
   const code = searchParams.get('code') ?? '';
+  // Lien ouvert sur un appareil déjà connecté (PublicRoute le laisse passer) : la
+  // session reste ouverte, le retour mène donc à l'accueil.
+  const { authenticated } = useAuth();
 
   // DefinePassword (react-hook-form) gère lui-même l'état isSubmitting et
   // n'appelle onFormSubmit qu'avec les valeurs → signature à un seul argument.
@@ -30,21 +34,18 @@ const ResetPassword = () => {
         setPasswordReset(true);
       }
     } catch (errors) {
-      setMessage(
-        (errors as AxiosError<{ message: string }>)?.response?.data?.message ||
-          (errors as Error).toString()
-      );
+      setMessage(passwordErrorMessage(errors, 'Le mot de passe n’a pas pu être modifié. Réessayez.'));
     }
   };
 
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '520px', margin: '0 auto' }}>
       {passwordReset ? (
         <div>
-          <h3 className="mb-1">Votre passe a bien été modifié</h3>
+          <h3 className="mb-1">Votre mot de passe a bien été modifié</h3>
           <div className="mt-4 text-center">
             <ActionLink to={'/sign-in'}>
-              Retour à la page de connexion
+              {authenticated ? 'Retour à l’accueil' : 'Retour à la page de connexion'}
             </ActionLink>
           </div>
         </div>

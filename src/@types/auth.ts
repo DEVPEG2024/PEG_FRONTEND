@@ -64,3 +64,9 @@ export type ResetPassword = {
   password: string;
   passwordConfirmation: string;
 };
+
+export type ChangePassword = {
+  currentPassword: string;
+  password: string;
+  passwordConfirmation: string;
+};

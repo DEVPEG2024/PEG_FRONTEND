@@ -173,14 +173,6 @@ export async function apiUpdateOwnProfile(user: Partial<User>): Promise<AxiosRes
 }
 
 // update user password (Strapi v5 REST)
-export async function apiUpdateUserPassword(password: string, documentId: string): Promise<AxiosResponse<User>> {
-    return ApiService.fetchData<User>({
-        url: `/users/${documentId}`,
-        method: 'put',
-        data: { password },
-    })
-}
-
 // delete user
 export type DeleteUserResponse = {
     documentId: string
