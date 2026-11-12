@@ -22,6 +22,8 @@ export const NAV_ACTIVITY_EVENTS: Record<string, string[]> = {
   '/customer/files': ['new_file'],
   '/common/news': ['campaign'],
   '/admin/whatsapp': ['whatsapp'],
+  // Demande, devis prêt, refus (envoyés par le serveur, 12/11/2026)
+  '/common/quotes': ['quote'],
 };
 const ACTIVITY_SEEN_KEY = 'peg_nav_activity_seen';
 // Plusieurs menus peuvent être montés en même temps (barre d'onglets + menu du

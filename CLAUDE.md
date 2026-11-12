@@ -192,7 +192,10 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 - Déclenché quand le nombre de non-lus augmente (polling) ou sur événement socket (dev)
 
 ### Types d'événements
-`new_order`, `project_status_change`, `new_invoice`, `new_ticket`, `payment_received`, `new_comment`, `new_file`, `new_task`, `task_status_change`
+`new_order`, `project_status_change`, `new_invoice`, `new_ticket`, `payment_received`, `new_comment`, `new_file`, `new_task`, `task_status_change`, `quote`
+
+### Devis — `quote` (12/11/2026)
+Tout part du **serveur Strapi** (`src/services/quote-notifications.ts`), aucun appel du front : demande d'un client → admins (`requestQuote`) ; devis prêt → comptes du client (middleware sur `updateQuote`, une fois puis à chaque nouveau montant) ; refus par le client → admins (`rejectQuote`). Lien `/common/quotes` (pastille « Devis », préférence « Devis »). Le devis payé reste `project_status_change` (admins) + `payment_received` (client — partait vers le `customer.documentId`, corrigé). Hors production, aucun client prévenu (`isLiveDelivery`).
 
 ### Système d'IDs — ATTENTION
 - **Les notifications utilisent `user.documentId`** (string Strapi, ex: `ncgzvxcyahbgztbtflqbf60j`)

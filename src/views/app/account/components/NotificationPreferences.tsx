@@ -25,6 +25,7 @@ const EVENT_LABELS: Record<string, { label: string; description: string; roles: 
   task_status_change:    { label: 'Tâche mise à jour',         description: "Quand le statut d'une tâche change",                 roles: ['admin', 'super_admin', 'customer'] },
   new_invoice:           { label: 'Nouvelle facture',          description: 'Quand une facture est créée',                        roles: ['admin', 'super_admin', 'customer'] },
   new_ticket:            { label: 'Nouveau ticket',            description: "Quand un ticket d'assistance est ouvert",            roles: ['admin', 'super_admin', 'customer', 'producer'] },
+  quote:                 { label: 'Devis',                     description: 'Demande de devis, devis prêt ou refusé',             roles: ['admin', 'super_admin', 'customer'] },
   payment_received:      { label: 'Paiement reçu',            description: 'Quand un paiement est confirmé',                     roles: ['admin', 'super_admin', 'producer'] },
 };
 
