@@ -443,6 +443,11 @@ Master Print (imprimeur DTF / textile / grand format, Moselle) fabrique les proj
 - `proof_required: false` (PEG fait valider son BAT), **envoi neutre** par défaut, livraison chez le client (ou retrait atelier). Chiffrage avant envoi : `/prices/batch` en `same_order` (paliers communs) + port sur le poids total ; marge face au prix du projet.
 - **Idempotency-Key** : gardée tant que l'envoi a pu aboutir (pas de réponse, 5xx) → un nouvel essai rend la commande d'origine ; renouvelée après un refus net (sinon `idempotency_conflict`).
 
+### Page « Catalogue Master Print » (menu Fournisseurs, `/admin/master-print/catalog`)
+- Les 2 325 produits (textile, DTF, grand format, adhésifs, PLV) aux **prix d'achat** du compte : recherche (nom, marque, référence — Master Print n'a pas de recherche, le serveur garde la liste 12 h), familles, meilleures ventes d'abord, repère **« Dans PEG »**.
+- Fiche : description, coloris (pastille, correspondance PEG ou « nouveau : Bleu marine »), tailles vendues par coloris (« 2XL = XXL »), **prix d'achat par paliers** pour un coloris + des marquages (ou un format) et prix de vente PEG majoré. **L'API ne fournit aucune photo.**
+- **Import** (comme Imbretex) : produit créé **`inCatalogue: false`** (invisible des clients), `priceTiers` = achat × (1 + majoration %, mémorisée dans le navigateur), `cost` = premier palier, `productRef` = référence, catégorie PEG choisie ; coloris/tailles PEG existants réutilisés, sinon créés (coloris en français) et rattachés à la catégorie ; **correspondance mémorisée** (marquages compris) → le produit part chez Master Print sans ressaisie. Déjà importé → 409, « Importer une autre fois » sur confirmation.
+
 ### Suivi (automatique)
 - **Webhook signé** `POST /api/master-print/webhook` (`X-MP-Signature: t=,v1=` HMAC-SHA256 de `t.corps`, 5 min, événement traité une fois — `master_print_events`) : abonné automatiquement au premier envoi depuis une adresse https (secret rendu une fois, gardé dans `master_print_settings`). Le serveur **relit la commande** (jamais le corps du webhook seul). + relecture des commandes en cours **toutes les 30 min** (cron `masterPrintRelecture`).
 - Expédiée → projet marqué expédié par la **route d'expédition** (`markProjectShipped`, transporteur GLS/UPS…, client prévenu comme d'habitude). Transporteur inconnu → cloche admin « transporteur à saisir ».
@@ -457,7 +462,7 @@ En production, seules quelques familles passent de vraies commandes (`GET /me` �
 
 ### Fichiers clés
 - Back : `src/services/master-print-text.ts` (règles pures, `node --test src/__tests__/masterPrintText.test.ts`), `master-print.service.ts`, `src/api/master-print/`, `config/cron-tasks.ts`. Tables `master_print_*` (pas de content-type).
-- Front : `src/views/app/common/projects/details/components/masterPrint/`, `src/utils/masterPrint.ts` (tests `src/__tests__/masterPrint.test.ts`), `src/services/MasterPrintServices.ts`, `src/@types/masterPrint.ts`.
+- Front : `src/views/app/common/projects/details/components/masterPrint/`, `src/views/app/admin/masterPrint/MasterPrintCatalog.tsx`, `src/utils/masterPrint.ts` (tests `src/__tests__/masterPrint.test.ts`), `src/services/MasterPrintServices.ts`, `src/@types/masterPrint.ts`.
 
 ### Ordre de déploiement
 **Backend Strapi d'abord**, puis les deux variables. Front avant back : l'onglet dit « Module indisponible », rien d'autre ne change.

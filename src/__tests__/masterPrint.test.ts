@@ -5,6 +5,10 @@
 import type { MpDraftLine, MpProductView } from '@/@types/masterPrint';
 import {
   addressIssues,
+  defaultImportColors,
+  defaultMarkings,
+  suggestCategory,
+  tierRows,
   canCancel,
   fileSlots,
   linesFromMapping,
@@ -426,5 +430,58 @@ describe('erreurs du serveur', () => {
         },
       })
     ).toBe(false);
+  });
+});
+
+describe('page Catalogue Master Print', () => {
+  it('coloris proposés à l’import : ceux qui existent déjà dans PEG', () => {
+    const d = {
+      product: {
+        ...tshirt,
+        colors: [
+          ...tshirt.colors,
+          { code: 'apricot', label: 'Apricot', available: false },
+        ],
+      },
+      imported: [],
+      pegColors: {
+        black: { documentId: 'cNoir', name: 'Noir' },
+        white: null,
+        apricot: { documentId: 'cA', name: 'Abricot' },
+      },
+      pegSizes: {},
+      newColorNames: {},
+    };
+    expect(defaultImportColors(d)).toEqual(['black']);
+  });
+  it('marquage proposé : cœur au plus petit format, rien sans marquage possible', () => {
+    expect(defaultMarkings(tshirt)).toEqual([
+      { position: 'chest_left', technique: 'dtf', format: 'a4' },
+    ]);
+    expect(defaultMarkings(panneau)).toEqual([]);
+  });
+  it('paliers : achat et vente majorée, paliers sans prix ignorés', () => {
+    expect(
+      tierRows(
+        [
+          { from: 1, to: 4, unitPriceExclTax: 7.96, unit: 'piece' },
+          { from: 5, to: null, unitPriceExclTax: 4.96, unit: 'piece' },
+          { from: 10, to: null, unitPriceExclTax: null, unit: 'piece' },
+        ],
+        50
+      )
+    ).toEqual([
+      { from: 1, to: 4, cost: 7.96, price: 11.94 },
+      { from: 5, to: null, cost: 4.96, price: 7.44 },
+    ]);
+  });
+  it('catégorie PEG proposée selon la famille', () => {
+    const cats = [
+      { documentId: 'p', name: 'Print' },
+      { documentId: 'v', name: 'VÊTEMENT PERSONNALISÉ' },
+    ];
+    expect(suggestCategory(cats, 'textile')).toBe('v');
+    expect(suggestCategory(cats, 'displays')).toBe('p');
+    expect(suggestCategory([], 'textile')).toBe('');
   });
 });

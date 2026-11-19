@@ -281,3 +281,55 @@ export type MpSimulateEvent =
   | 'production_started'
   | 'shipped'
   | 'delivered';
+
+// ── Page « Catalogue Master Print » (menu Fournisseurs) ──
+
+export type MpImportedRef = { documentId: string; name: string };
+
+export type MpCatalogResult = MpCatalogItem & { imported: MpImportedRef[] };
+
+export type MpCatalogPage = {
+  results: MpCatalogResult[];
+  matched: number;
+  total: number;
+  counts: Record<string, number>;
+  offset: number;
+};
+
+export type MpCatalogDetails = {
+  product: MpProductView;
+  imported: MpImportedRef[];
+  /** Coloris Master Print → coloris PEG existant (null = sera créé à l'import). */
+  pegColors: Record<string, MpImportedRef | null>;
+  pegSizes: Record<string, MpImportedRef | null>;
+  /** Nom du coloris s'il est créé dans PEG (en français quand on le connaît). */
+  newColorNames: Record<string, string>;
+};
+
+export type MpPriceGridTier = {
+  from: number;
+  to: number | null;
+  unitPriceExclTax: number | null;
+  unit: string;
+};
+
+export type MpGridChoice = {
+  color?: string;
+  markings?: MpMarking[];
+  format?: string;
+};
+
+export type MpImportRequest = MpGridChoice & {
+  markupPercent: number;
+  categoryDocumentId?: string;
+  colors: string[];
+  again?: boolean;
+};
+
+export type MpImportResult = {
+  productDocumentId: string;
+  name: string;
+  priceTiers: Array<{ minQuantity: number; price: number }>;
+  cost: number | null;
+  created: { colors: number; sizes: number };
+};

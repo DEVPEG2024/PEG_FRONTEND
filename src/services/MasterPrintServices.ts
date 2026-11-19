@@ -1,7 +1,12 @@
 import ApiService from './ApiService';
 import type {
   MpAddress,
-  MpCatalogItem,
+  MpCatalogDetails,
+  MpCatalogPage,
+  MpGridChoice,
+  MpImportRequest,
+  MpImportResult,
+  MpPriceGridTier,
   MpLineConfig,
   MpOrderView,
   MpPegProduct,
@@ -36,11 +41,50 @@ export const apiGetMasterPrintProject = (documentId: string) =>
     method: 'get',
   });
 
-export const apiSearchMasterPrintCatalog = (q: string, category?: string) =>
-  ApiService.fetchData<{ results: MpCatalogItem[]; total: number }>({
+export const apiSearchMasterPrintCatalog = (
+  q: string,
+  category?: string,
+  offset = 0,
+  limit = 50
+) =>
+  ApiService.fetchData<MpCatalogPage>({
     url: '/master-print/admin/catalog',
     method: 'get',
-    params: { q, ...(category ? { category } : {}) },
+    params: { q, offset, limit, ...(category ? { category } : {}) },
+  });
+
+/** Fiche du catalogue : produit + coloris/tailles PEG correspondants + imports déjà faits. */
+export const apiGetMasterPrintCatalogDetails = (id: string) =>
+  ApiService.fetchData<MpCatalogDetails>({
+    url: `/master-print/admin/catalog/${enc(id)}/details`,
+    method: 'get',
+  });
+
+/** Prix d'achat par paliers de quantité pour un coloris / des marquages / un format. */
+export const apiGetMasterPrintPriceGrid = (id: string, choice: MpGridChoice) =>
+  ApiService.fetchData<{ tiers: MpPriceGridTier[] }>({
+    url: `/master-print/admin/catalog/${enc(id)}/price-grid`,
+    method: 'post',
+    data: choice,
+  });
+
+/** Crée le produit dans PEG (invisible des clients) et mémorise sa correspondance Master Print. */
+export const apiImportMasterPrintProduct = (
+  id: string,
+  data: MpImportRequest
+) =>
+  ApiService.fetchData<MpImportResult>({
+    url: `/master-print/admin/catalog/${enc(id)}/import`,
+    method: 'post',
+    data,
+  });
+
+export const apiGetPegCategoriesForMasterPrint = () =>
+  ApiService.fetchData<{
+    categories: Array<{ documentId: string; name: string }>;
+  }>({
+    url: '/master-print/admin/peg-categories',
+    method: 'get',
   });
 
 export const apiGetMasterPrintProduct = (id: string) =>

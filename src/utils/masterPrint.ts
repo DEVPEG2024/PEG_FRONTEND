@@ -5,11 +5,13 @@
  * ce que l'admin voit avant de cliquer.
  */
 import type {
+  MpCatalogDetails,
   MpDraftLine,
   MpLineConfig,
   MpMarking,
   MpProductMapping,
   MpProductView,
+  MpPriceGridTier,
   MpSimulateEvent,
 } from '@/@types/masterPrint';
 
@@ -375,4 +377,71 @@ export const isMasterPrintMissing = (err: unknown): boolean => {
     (res?.status === 404 || res?.status === 405) &&
     typeof res?.data?.error !== 'string'
   );
+};
+
+// ── Page « Catalogue Master Print » ─────────────────────────────────────────
+
+/** Coloris proposés à l'import : ceux qui existent déjà dans PEG (et sont vendus). */
+export function defaultImportColors(d: MpCatalogDetails): string[] {
+  return d.product.colors
+    .filter((c) => c.available !== false && d.pegColors[c.code])
+    .map((c) => c.code);
+}
+
+/** Marquage proposé pour la grille de prix : un cœur (ou le premier emplacement), au plus petit format. */
+export function defaultMarkings(view: MpProductView): MpMarking[] {
+  const m = view.markings;
+  if (!m?.positions.length || !m.formats.length) return [];
+  const pos =
+    m.positions.find((p) => p.code === 'chest_left') || m.positions[0];
+  return [
+    {
+      position: pos.code,
+      technique: m.techniques[0]?.code || 'dtf',
+      format: m.formats[0].code,
+    },
+  ];
+}
+
+/** Aperçu des paliers : prix d'achat et prix de vente PEG majoré (même arrondi que le serveur). */
+export function tierRows(tiers: MpPriceGridTier[], markupPercent: number) {
+  const k = 1 + (Number.isFinite(markupPercent) ? markupPercent : 0) / 100;
+  return tiers
+    .filter((t) => t.unitPriceExclTax != null && t.unitPriceExclTax > 0)
+    .map((t) => ({
+      from: t.from,
+      to: t.to,
+      cost: t.unitPriceExclTax as number,
+      price: Math.round((t.unitPriceExclTax as number) * k * 100) / 100,
+    }));
+}
+
+const norm = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/** Catégorie PEG proposée selon la famille Master Print (l'admin peut changer). */
+export function suggestCategory(
+  categories: Array<{ documentId: string; name: string }>,
+  mpCategory: string
+): string {
+  const tests: RegExp[] =
+    mpCategory === 'textile' || mpCategory === 'dtf'
+      ? [/vetement personnalise/, /vetement/, /textile/]
+      : [/print/, /impression/, /grand format/, /signal/];
+  for (const re of tests) {
+    const hit = categories.find((c) => re.test(norm(c.name)));
+    if (hit) return hit.documentId;
+  }
+  return '';
+}
+
+export const MP_CATEGORY_LABELS: Record<string, string> = {
+  textile: 'Textile',
+  dtf: 'Transferts DTF',
+  'large-format': 'Grand format',
+  stickers: 'Adhésifs et stickers',
+  displays: 'Supports et PLV',
 };

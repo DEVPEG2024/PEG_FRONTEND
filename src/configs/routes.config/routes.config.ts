@@ -163,6 +163,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/imbretex/ImbretexCatalog")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // Master Print : catalogue de l'exécutant des projets (recherche, fiche, import dans PEG)
+  {
+    key: "admin.masterPrint.catalog",
+    path: "/admin/master-print/catalog",
+    component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintCatalog")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   //orders
   {
     key: "admin.store.orders",
