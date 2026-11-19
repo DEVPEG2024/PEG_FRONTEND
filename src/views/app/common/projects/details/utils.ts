@@ -13,6 +13,7 @@ export const labelList = [
   'Factures',
   'Dépenses',
   'Ventes add.',
+  'Master Print',
   'SAV',
 ];
 

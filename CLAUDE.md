@@ -431,6 +431,39 @@ Après 24 h sans message du contact, seul un modèle validé par Meta peut parti
 
 ---
 
+## 🖨️ Master Print — exécutant des projets (ajout 19/11/2026)
+
+### Concept
+Master Print (imprimeur DTF / textile / grand format, Moselle) fabrique les projets PEG via son **API v1** (doc privée, copie dans `~/Downloads/master-print-api/`). Compte **NOVA, MP-000022**, niveau Gold, **paiement sur facture**. Onglet **« Master Print »** de la fiche projet, **admin seulement** : l'admin envoie le projet, suit chaque commande Master Print et, en bac à sable, la fait avancer (« Simuler »).
+
+### Envoi
+- **Projet issu d'une commande PEG** : quantités de la commande (jamais modifiées), une ligne Master Print **par coloris**. Le serveur **propose** le produit Master Print par la référence fournisseur (`productRef` = `sku` Master Print, ex. TU01T), les coloris (noms FR → codes EN, hex proche) et les tailles (XXL = 2XL) ; l'admin vérifie, choisit les **marquages** (emplacement, format Cœur/A4/A3 ou largeur libre) — mêmes marquages sur toutes les lignes — et coche « Mémoriser » (table `master_print_product_maps`).
+- **Projet sans commande** (devis, création admin) : lignes saisies à la main (produit, coloris, quantités par taille ; ou quantité, format/dimensions, longueur, options pour le grand format).
+- **Fichiers** : un par emplacement (`marking:<emplacement>`, `main`…), choisis parmi les fichiers du projet (BAT, Fichiers, Fichiers du client) ; envoyés **en arrière-plan** (téléchargement S3 + envoi, 50 Mo max : dépasserait les 30 s du routeur Heroku) — l'écran relit toutes les 3 s. Manquants → « Envoyer ces fichiers » sur la carte.
+- `proof_required: false` (PEG fait valider son BAT), **envoi neutre** par défaut, livraison chez le client (ou retrait atelier). Chiffrage avant envoi : `/prices/batch` en `same_order` (paliers communs) + port sur le poids total ; marge face au prix du projet.
+- **Idempotency-Key** : gardée tant que l'envoi a pu aboutir (pas de réponse, 5xx) → un nouvel essai rend la commande d'origine ; renouvelée après un refus net (sinon `idempotency_conflict`).
+
+### Suivi (automatique)
+- **Webhook signé** `POST /api/master-print/webhook` (`X-MP-Signature: t=,v1=` HMAC-SHA256 de `t.corps`, 5 min, événement traité une fois — `master_print_events`) : abonné automatiquement au premier envoi depuis une adresse https (secret rendu une fois, gardé dans `master_print_settings`). Le serveur **relit la commande** (jamais le corps du webhook seul). + relecture des commandes en cours **toutes les 30 min** (cron `masterPrintRelecture`).
+- Expédiée → projet marqué expédié par la **route d'expédition** (`markProjectShipped`, transporteur GLS/UPS…, client prévenu comme d'habitude). Transporteur inconnu → cloche admin « transporteur à saisir ».
+- Producteur du projet = « Master Print » (créé au premier envoi), **prix producteur = total des commandes non annulées**. Cloche admin à chaque étape (production, expédiée, livrée, annulée, fichier refusé).
+- ⚠️ Un projet n'est **modifié** que par une commande de **production**, ou du **bac à sable hors de l'app de production** (`liveDelivery()` faux, ex. peg-int) : un essai avec une clé de test sur la prod ne touche aucun vrai projet.
+
+### Limites côté Master Print (au 19/11/2026)
+En production, seules quelques familles passent de vraies commandes (`GET /me` → `live_orders.modules`, vide pour NOVA), **en retrait à l'atelier**, sans envoi neutre ni BAT ; **le textile marqué n'est pas encore ouvert**. Tout se teste en bac à sable. Une commande ne mêle pas plusieurs familles (`mixed_families_not_supported`).
+
+### Variables (Heroku)
+`MASTER_PRINT_CLIENT_ID=MP-000022`, `MASTER_PRINT_API_KEY` (`mp_test_…` bac à sable, `mp_live_…` production — l'environnement se lit sur la clé). Facultative : `MASTER_PRINT_REFRESH_CRON`. Sans elles : onglet « pas encore branché », rien d'autre ne change.
+
+### Fichiers clés
+- Back : `src/services/master-print-text.ts` (règles pures, `node --test src/__tests__/masterPrintText.test.ts`), `master-print.service.ts`, `src/api/master-print/`, `config/cron-tasks.ts`. Tables `master_print_*` (pas de content-type).
+- Front : `src/views/app/common/projects/details/components/masterPrint/`, `src/utils/masterPrint.ts` (tests `src/__tests__/masterPrint.test.ts`), `src/services/MasterPrintServices.ts`, `src/@types/masterPrint.ts`.
+
+### Ordre de déploiement
+**Backend Strapi d'abord**, puis les deux variables. Front avant back : l'onglet dit « Module indisponible », rien d'autre ne change.
+
+---
+
 ## ✍️ Relecteur PEG — orthographe & fiches produit (ajout 24/09/2026)
 
 ### Concept

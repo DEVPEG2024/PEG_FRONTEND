@@ -14,6 +14,7 @@ import BatModificationsTab from './components/bat/BatModificationsTab';
 import ProjectSav from './components/ProjectSav';
 import ProjectExpenses from './components/ProjectExpenses';
 import AdditionalSales from './components/AdditionalSales';
+import MasterPrintTab from './components/masterPrint/MasterPrintTab';
 import DeliveryWizard from './components/DeliveryWizard';
 import ClientFilesPanel from '@/components/shared/ClientFiles/ClientFilesPanel';
 import { injectReducer, useAppDispatch } from '@/store';
@@ -140,6 +141,7 @@ const ProjectDetails = () => {
             {selectedTab === 'Factures' && <Invoices />}
             {selectedTab === 'Dépenses' && isAdmin && <ProjectExpenses />}
             {selectedTab === 'Ventes add.' && isAdmin && <AdditionalSales />}
+            {selectedTab === 'Master Print' && isAdmin && <MasterPrintTab />}
             {selectedTab === 'SAV' && <ProjectSav />}
           </Container>
           {/* Delivery wizard for producers */}

@@ -35,6 +35,8 @@ const QuickFilterTab = () => {
     if (tab === 'Factures') return hasRole(user, [SUPER_ADMIN, ADMIN, CUSTOMER]);
     if (tab === 'Dépenses') return hasRole(user, [SUPER_ADMIN, ADMIN]);
     if (tab === 'Ventes add.') return hasRole(user, [SUPER_ADMIN, ADMIN]);
+    // Master Print (exécutant des projets) : admin seulement
+    if (tab === 'Master Print') return hasRole(user, [SUPER_ADMIN, ADMIN]);
     // BAT : aussi sur un projet sans commande (devis, création admin) — règle dans utils/projectBat.ts
     if (tab === 'BAT') return showsBatTab(getProjectBat(project), hasRole(user, [SUPER_ADMIN, ADMIN]));
     // Modifications : seulement quand le client a refusé le BAT déposé
