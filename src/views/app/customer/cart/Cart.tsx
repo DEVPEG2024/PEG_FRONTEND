@@ -8,7 +8,8 @@ import { editFormAnswerCartItem, editItem, removeFromCart, type CartItemFormAnsw
 import { apiGetProducts } from '@/services/ProductServices';
 import { apiGetCustomerCompanyInfo } from '@/services/CustomerServices';
 import {
-  getTotalPriceForCartItem,
+  cartItemTotal,
+  getProductBasePrice,
   getProductPriceForSizeAndColors,
   isProductPackPricing,
   isProductM2Pricing,
@@ -181,7 +182,10 @@ function CartItemCard({
     customer,
     item.product
   );
-  const totalItem = applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer, item.product);
+  const totalItem = cartItemTotal(item, customer);
+  // Offre configurable : prix et résumé calculés par le serveur.
+  const configured = item.configurator ?? null;
+  const fileCount = configured ? Object.keys(configured.files).length : 0;
   const isPackPricing = isProductPackPricing(item.product);
   const isM2 = isProductM2Pricing(item.product);
   const totalQuantity = item.sizeAndColors.reduce(
@@ -273,57 +277,81 @@ function CartItemCard({
             margin: '0 0 8px 0',
           }}
         >
-          {isM2
+          {configured
+            ? configured.price.unitPriceExclTax != null
+              ? `${fmtPrice(configured.price.unitPriceExclTax)} / unite · ${configured.price.quantityLabel}`
+              : configured.price.quantityLabel
+            : isM2
             ? `${fmtPrice(item.product.pricePerM2 || 0)} / m²`
             : isPackPricing
             ? `Pack de ${totalQuantity} unite${totalQuantity > 1 ? 's' : ''}`
             : `${fmtPrice(unitPrice)} / unite`}
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-          {isM2
-            ? item.sizeAndColors.map((s, i) => {
-                const w = s.width || 0;
-                const h = s.height || 0;
-                const area = Math.max(w * h, item.product.minM2 || 0);
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-                      border: '1px solid rgba(47,111,237,0.2)',
-                      borderRadius: '8px',
-                      padding: '3px 9px',
-                      color: '#6b9eff',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {Math.round(w * 100)} × {Math.round(h * 100)} cm · {area.toFixed(2)} m² × {s.quantity}
-                  </span>
-                );
-              })
-            : sortSelections(item.sizeAndColors).map((s) => (
-              <span
-                key={optionKey(s.size) + optionKey(s.color)}
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
-                  border: '1px solid rgba(47,111,237,0.2)',
-                  borderRadius: '8px',
-                  padding: '3px 9px',
-                  color: '#6b9eff',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                }}
-              >
-                {s.size.value !== 'DEFAULT' ? s.size.name : 'Qte'}
-                {s.color?.value && s.color.value !== 'DEFAULT'
-                  ? ` · ${s.color.name}`
-                  : ''}{' '}
-                : {s.quantity}
+        {configured ? (
+          <p
+            style={{
+              color: '#8db4ff',
+              fontSize: '11.5px',
+              margin: 0,
+              lineHeight: 1.45,
+            }}
+          >
+            {configured.summary}
+            {fileCount > 0 && (
+              <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                {' '}
+                · {fileCount} visuel{fileCount > 1 ? 's' : ''} joint
+                {fileCount > 1 ? 's' : ''}
               </span>
-            ))}
-        </div>
+            )}
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+            {isM2
+              ? item.sizeAndColors.map((s, i) => {
+                  const w = s.width || 0;
+                  const h = s.height || 0;
+                  const area = Math.max(w * h, item.product.minM2 || 0);
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                        border: '1px solid rgba(47,111,237,0.2)',
+                        borderRadius: '8px',
+                        padding: '3px 9px',
+                        color: '#6b9eff',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {Math.round(w * 100)} × {Math.round(h * 100)} cm · {area.toFixed(2)} m² × {s.quantity}
+                    </span>
+                  );
+                })
+              : sortSelections(item.sizeAndColors).map((s) => (
+                <span
+                  key={optionKey(s.size) + optionKey(s.color)}
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(47,111,237,0.12), rgba(47,111,237,0.06))',
+                    border: '1px solid rgba(47,111,237,0.2)',
+                    borderRadius: '8px',
+                    padding: '3px 9px',
+                    color: '#6b9eff',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.size.value !== 'DEFAULT' ? s.size.name : 'Qte'}
+                  {s.color?.value && s.color.value !== 'DEFAULT'
+                    ? ` · ${s.color.name}`
+                    : ''}{' '}
+                  : {s.quantity}
+                </span>
+              ))}
+          </div>
+        )}
         {toPersonalize && (
           <button
             type="button"
@@ -543,6 +571,13 @@ function Cart() {
   }, [cart.length]);
 
   const handleEdit = (item: CartItem) => {
+    // Offre configurable : son formulaire rouvre avec la configuration et les visuels de l'article.
+    if (item.configurator) {
+      navigate('/customer/product/' + item.product.documentId, {
+        state: { editCartItem: item },
+      });
+      return;
+    }
     dispatch(editItem(item));
     navigate('/customer/product/' + item.product.documentId + '/edit');
   };
@@ -581,7 +616,7 @@ function Cart() {
 
   const totalHT = cart.reduce(
     (sum, item) =>
-      sum + applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), user?.customer, item.product),
+      sum + cartItemTotal(item, user?.customer),
     0
   );
 
@@ -1302,7 +1337,13 @@ function Cart() {
                         fontWeight: 700,
                       }}
                     >
-                      {fmtPrice(product.price ?? 0)}
+                      {fmtPrice(
+                        applyPremiumDiscount(
+                          getProductBasePrice(product),
+                          user?.customer,
+                          product
+                        )
+                      )}
                     </span>
                     <span
                       style={{

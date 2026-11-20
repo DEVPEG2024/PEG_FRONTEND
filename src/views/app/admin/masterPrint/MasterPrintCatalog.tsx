@@ -238,6 +238,13 @@ const ProductSheet = ({
             >
               {imp.name}
             </Link>
+            <span aria-hidden="true">·</span>
+            <Link
+              to={`/admin/master-print/offers/${imp.documentId}`}
+              style={{ color: '#8db4ff', textDecoration: 'underline' }}
+            >
+              formulaire client
+            </Link>
           </p>
         ))}
       </div>
@@ -503,8 +510,12 @@ const ProductSheet = ({
           Le produit est créé{' '}
           <strong style={{ color: '#fff' }}>invisible des clients</strong>, avec
           ces paliers de prix, le prix d’achat comme prix de revient, et la
-          correspondance Master Print déjà faite. Ajoutez la photo sur sa fiche,
-          puis mettez-le au catalogue quand il est prêt.
+          correspondance Master Print déjà faite. Il reçoit aussi son{' '}
+          <strong style={{ color: '#fff' }}>formulaire client</strong> : le
+          client compose sa commande (coloris, tailles, marquages, options),
+          voit le prix en direct, et la commande payée part seule chez Master
+          Print. Ajoutez la photo sur sa fiche, réglez le formulaire, puis
+          mettez-le au catalogue ou dans les offres d’un client.
         </p>
         <Issues items={issues} />
         <div
@@ -529,6 +540,11 @@ const ProductSheet = ({
           {done && (
             <Link to={`/admin/products/edit/${done.documentId}`}>
               <Btn>Ouvrir la fiche produit</Btn>
+            </Link>
+          )}
+          {done && (
+            <Link to={`/admin/master-print/offers/${done.documentId}`}>
+              <Btn>Régler le formulaire client</Btn>
             </Link>
           )}
         </div>

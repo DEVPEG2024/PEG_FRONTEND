@@ -45,8 +45,13 @@ import { toast } from 'react-toastify';
 import { optionKey, sameOption } from '@/utils/optionKey';
 import { applyLineChoice, describeLines, describeMissing, lineChoiceFor, prefillSelection, readChatPrefill, type LineChoice } from '@/components/template/chatOffer';
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
+import { apiGetConfigurator } from '@/services/ConfiguratorServices';
+import type { OfferSpec } from '@/@types/masterPrint';
 
 const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
+const OfferConfigurator = lazy(
+  () => import('./configurator/OfferConfigurator')
+);
 
 injectReducer('showProduct', reducer);
 
@@ -60,7 +65,26 @@ const ShowProduct = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderItemId = searchParams.get('orderItemId');
-  const onEdition: boolean = useLocation().pathname.split('/').pop() === 'edit';
+  const location = useLocation();
+  const onEdition: boolean = location.pathname.split('/').pop() === 'edit';
+  // Offre configurable (formulaire du produit de l'imprimeur partenaire) : undefined = en cours de lecture,
+  // null = produit ordinaire (parcours habituel ci-dessous).
+  const [offerSpec, setOfferSpec] = useState<OfferSpec | null | undefined>(
+    undefined
+  );
+  const editCartItem =
+    (location.state as { editCartItem?: CartItem } | null)?.editCartItem ??
+    null;
+  useEffect(() => {
+    let alive = true;
+    setOfferSpec(undefined);
+    apiGetConfigurator(documentId)
+      .then((res) => alive && setOfferSpec(res.data.spec))
+      .catch(() => alive && setOfferSpec(null));
+    return () => {
+      alive = false;
+    };
+  }, [documentId]);
   const {
     product,
     loading,
@@ -185,7 +209,6 @@ const ShowProduct = () => {
   // Offre de l'assistant (carte produit ou « Finaliser » du chat) : la fiche arrive
   // pré-remplie — quantité, tailles, couleurs, dimensions dites dans la conversation.
   // On reste sur la sélection pour que le client la voie. Appliqué une fois.
-  const location = useLocation();
   const chatPrefill = onEdition ? null : readChatPrefill(location.state);
   const chatPrefillApplied = useRef(false);
   const prefillLines = chatPrefill?.lines ?? [];
@@ -353,7 +376,7 @@ const ShowProduct = () => {
     </Container>
   );
 
-  if (loading) return Skeleton;
+  if (loading || offerSpec === undefined) return Skeleton;
 
   if (error || !product) return (
     <Container>
@@ -376,6 +399,42 @@ const ShowProduct = () => {
       </div>
     </Container>
   );
+
+  if (offerSpec) {
+    return (
+      <Container>
+        <button
+          className="peg-tap-target"
+          onClick={() => navigate(-1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'rgba(160,185,220,0.5)',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginBottom: '16px',
+            padding: 0,
+          }}
+        >
+          ← Retour
+        </button>
+        <Suspense fallback={Skeleton}>
+          <OfferConfigurator
+            product={product}
+            spec={offerSpec}
+            editing={
+              editCartItem?.product?.documentId === product.documentId
+                ? editCartItem
+                : null
+            }
+          />
+        </Suspense>
+      </Container>
+    );
+  }
 
   const basePrice = applyPremiumDiscount(getProductBasePrice(product), user?.customer, product);
   const savingsPercent = getCatalogSavingsPercent(product, amountSelected > 0 ? amountSelected : 1);

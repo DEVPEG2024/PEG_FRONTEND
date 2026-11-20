@@ -1,5 +1,6 @@
 import { CartItem } from '@/@types/cart';
 import {
+  cartItemTotal,
   getTotalPriceForCartItem,
   applyPremiumDiscount,
 } from '@/utils/productHelpers';
@@ -28,6 +29,7 @@ import { toast } from 'react-toastify';
 import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 import { createOrderItemWithTrace } from '@/services/ChatTraceServices';
+import { apiCreateConfiguratorOrderItem } from '@/services/ConfiguratorServices';
 import { chatUserKey } from '@/components/template/chat/chatTrace';
 import {
   announceChatClosing,
@@ -60,7 +62,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
   const SHIPPING_HT = 9.90;
 
   const subtotalHT: number = cart.reduce((total: number, item: CartItem) => {
-    return total + premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors), item.product);
+    return total + cartItemTotal(item, user?.customer);
   }, 0);
 
   const discountAmount = (promoValidation?.valid && promoValidation.discountAmount) || 0;
@@ -144,6 +146,41 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
   const createOrderItem = async (
     item: CartItem
   ): Promise<OrderItem | undefined> => {
+    // Offre configurable : la ligne est créée PAR LE SERVEUR, au prix qu'il recalcule
+    // (jamais au prix du navigateur), avec la configuration et les visuels du client.
+    if (item.configurator) {
+      try {
+        const res = await apiCreateConfiguratorOrderItem(
+          item.product.documentId,
+          {
+            config: item.configurator.config,
+            files: Object.fromEntries(
+              Object.entries(item.configurator.files).map(([slot, f]) => [
+                slot,
+                f.id,
+              ])
+            ),
+            shipping,
+            ...(item.chatConversationId
+              ? { chatConversationId: item.chatConversationId }
+              : {}),
+          }
+        );
+        return res.data.orderItem as unknown as OrderItem;
+      } catch (error) {
+        const message = (
+          error as { response?: { data?: { error?: string } } }
+        )?.response?.data?.error;
+        toast.error(
+          `${item.product.name} : ${message || 'la commande n’a pas pu être préparée.'}`
+        );
+        console.error(
+          '[Checkout] Échec création OrderItem (offre configurable):',
+          error
+        );
+        return undefined;
+      }
+    }
     try {
       const formAnswer: FormAnswer | null = await createFormAnswer(item),
         orderItem: Omit<OrderItem, 'documentId'> = {
@@ -391,7 +428,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
         padding: '10px 12px', marginBottom: '10px',
       }}>
         {cart.map((item, i) => {
-          const total = premiumPrice(getTotalPriceForCartItem(item.product, item.sizeAndColors), item.product);
+          const total = cartItemTotal(item, user?.customer);
           const qty = item.sizeAndColors.reduce((s, sc) => s + sc.quantity, 0);
           return (
             <div key={item.id} style={{

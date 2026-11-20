@@ -96,7 +96,18 @@ export type MpProductView = {
     label: string;
     type: string;
     required: boolean;
-    values: Array<{ code: string; label: string; default: boolean }>;
+    values: Array<{
+      code: string;
+      label: string;
+      default: boolean;
+      description?: string | null;
+      /** Sans supplément. */
+      included?: boolean;
+      /** Quantité libre à donner : jamais proposée au client. */
+      custom?: boolean;
+    }>;
+    /** Formats avec lesquels l'option ne se combine pas. */
+    notWithFormats?: string[];
   }>;
   dimensions: null | {
     freeFormat: boolean;
@@ -105,12 +116,16 @@ export type MpProductView = {
       label: string;
       widthMm: number | null;
       heightMm: number | null;
+      printed?: boolean;
     }>;
     widthMm: { min: number | null; max: number | null } | null;
     heightMm: { min: number | null; max: number | null } | null;
     rollWidthMm: number | null;
     perLength: boolean;
+    pieces?: { maxCount: number | null; sideMin: number | null; sideMax: number | null; maxQuantity: number | null } | null;
   };
+  /** Délai standard en jours ouvrés. */
+  productionDays?: number | null;
 };
 
 export type MpCatalogItem = {
@@ -225,6 +240,16 @@ export type MpProjectDraft = {
   files: MpProjectFile[];
   orders: MpOrderView[];
   idempotencyKey: string;
+  /** Commande composée par le client dans le formulaire d'une offre configurable. */
+  offer?: null | {
+    summary: string;
+    files: Record<string, { id: number; name: string }>;
+    /** sent | failed | manual | null (pas encore payée) */
+    autoStatus: string | null;
+    autoError: string | null;
+    pegPrice: number | null;
+    mpTotal: number | null;
+  };
 };
 
 export type MpStatus =
@@ -332,4 +357,124 @@ export type MpImportResult = {
   priceTiers: Array<{ minQuantity: number; price: number }>;
   cost: number | null;
   created: { colors: number; sizes: number };
+};
+
+// ── Offres configurables (formulaire client, ajout 20/11/2026) ──
+// Format de `/api/configurator/*` (client) et `/api/master-print/admin/offers/*`
+// (admin) — peg_strapi `src/services/master-print-offer.service.ts`, règles dans
+// la section « Offres configurables » de `master-print-text.ts`.
+
+export type OfferSpec = {
+  kind: 'textile' | 'unit' | 'length';
+  name: string;
+  description: string | null;
+  quantity: { min: number; max: number | null; step: number };
+  productionDays: number | null;
+  colors: Array<{ code: string; label: string; hex: string | null; sizes: string[] }>;
+  sizes: string[];
+  markings: null | {
+    mode: 'fixed' | 'client';
+    min: number;
+    max: number;
+    fixed: Array<{ position: string; positionLabel: string; techniqueLabel: string; sizeLabel: string }>;
+    positions: Array<{ code: string; label: string; maxWidthMm: number | null; maxHeightMm: number | null; formats: string[] }>;
+    techniques: Array<{ code: string; label: string }>;
+    formats: Array<{ code: string; label: string; widthMm: number | null; heightMm: number | null }>;
+    customSize: boolean;
+  };
+  options: Array<{
+    code: string;
+    label: string;
+    type: 'select' | 'multi_select';
+    required: boolean;
+    values: Array<{ code: string; label: string; description: string | null; default: boolean }>;
+    notWithFormats: string[];
+  }>;
+  fixedOptions: Array<{ label: string; value: string }>;
+  format:
+    | null
+    | { mode: 'fixed'; label: string; printed: boolean }
+    | {
+        mode: 'client';
+        formats: Array<{ code: string; label: string; widthMm: number | null; heightMm: number | null; printed: boolean }>;
+        free: null | {
+          width: { min: number | null; max: number | null };
+          height: { min: number | null; max: number | null };
+        };
+      };
+  pieces: null | { maxCount: number; sideMin: number; sideMax: number; maxQuantity: number; rollWidthMm: number | null };
+  ready: boolean;
+};
+
+export type OfferClientMarking = { position: string; technique?: string; format?: string; width_mm?: number };
+
+export type OfferClientConfig = {
+  color?: string;
+  sizes?: Record<string, number>;
+  quantity?: number;
+  markings?: OfferClientMarking[];
+  options?: Record<string, string | string[]>;
+  format?: string;
+  width_mm?: number;
+  height_mm?: number;
+  pieces?: Array<{ width_mm: number; height_mm: number; quantity: number }>;
+};
+
+/** Visuel attendu ; `formats` = extensions acceptées par l'imprimeur (PDF seul pour l'impression grand format). */
+export type OfferFileSlot = { slot: string; label: string; formats: string[] };
+
+export type OfferPrice = {
+  totalExclTax: number;
+  unitPriceExclTax: number | null;
+  quantityLabel: string;
+  detail: Array<{ label: string; amount: number }>;
+  shipDate: string | null;
+  workingDays: number | null;
+};
+
+export type OfferPriceResult = { price: OfferPrice; summary: string; files: OfferFileSlot[] };
+
+export type OfferUploadedFile = { id: number; name: string; url?: string };
+
+export type OfferOrderItemResult = {
+  orderItem: {
+    documentId: string;
+    price: number;
+    state: 'pending';
+    product: { documentId: string; name: string };
+    sizeAndColorSelections: Array<{ size: { documentId: string; name: string; value: string }; color: { documentId: string; name: string; value: string }; quantity: number }>;
+  };
+  price: OfferPrice;
+  summary: string;
+};
+
+export type OfferOptionRule = { mode: 'client' | 'fixed'; value?: string | string[]; allowed?: string[] };
+
+export type OfferConfig = {
+  autoSend: boolean;
+  markupPercent: number;
+  colors: string[];
+  markings: {
+    mode: 'none' | 'fixed' | 'client';
+    fixed: MpMarking[];
+    positions: string[];
+    techniques: string[];
+    formats: string[];
+    customSize: boolean;
+    min: number;
+    max: number;
+  };
+  options: Record<string, OfferOptionRule>;
+  format: { mode: 'client' | 'fixed'; fixed: string | null; width_mm?: number; height_mm?: number; allowed: string[]; free: boolean };
+  minQuantity: number | null;
+};
+
+export type MpOfferAdmin = {
+  product: { documentId: string; name: string; inCatalogue: boolean; active: boolean };
+  linked: boolean;
+  enabled: boolean;
+  mpProduct?: MpProductView;
+  offer?: OfferConfig;
+  issues?: string[];
+  spec?: OfferSpec;
 };

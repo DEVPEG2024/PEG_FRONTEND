@@ -118,6 +118,19 @@ export function applyPremiumDiscount(
 }
 
 /**
+ * Total HT d'un article du panier, remise Premium comprise. Une offre
+ * configurable porte le prix calculé par le serveur (déjà remisé) ; les autres
+ * articles suivent le tarif du produit. Seule source du total d'un article.
+ */
+export function cartItemTotal(
+  item: { product: Product; sizeAndColors: SizeAndColorSelection[]; configurator?: { price: { totalExclTax: number } } },
+  customer: Customer | null | undefined
+): number {
+  if (item.configurator) return item.configurator.price.totalExclTax;
+  return applyPremiumDiscount(getTotalPriceForCartItem(item.product, item.sizeAndColors), customer, item.product);
+}
+
+/**
  * Get the effective price for a product.
  *
  * The application historically stored a simple `price` property on the

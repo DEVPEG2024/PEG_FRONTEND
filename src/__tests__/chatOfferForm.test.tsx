@@ -88,6 +88,10 @@ jest.mock('@/services/ProductServices', () => ({
   apiGetProductForShowById: (id: string) =>
     Promise.resolve({ data: { data: { product: products[id] } } }),
 }));
+// Produit ordinaire : pas d'offre configurable (le serveur répond 404).
+jest.mock('@/services/ConfiguratorServices', () => ({
+  apiGetConfigurator: () => Promise.reject(new Error('404')),
+}));
 
 const makeStore = () =>
   configureStore({

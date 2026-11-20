@@ -387,7 +387,9 @@ const ManualLineEditor = ({
 };
 
 const SendForm = ({ draft, onSent, onClose }: Props) => {
-  const pegMode = draft.lines.length > 0;
+  // Offre configurable : la ligne est celle composée par le client (envoyée telle quelle).
+  const offerLine = draft.offer && draft.lines[0] ? draft.lines[0] : null;
+  const pegMode = draft.lines.length > 0 && !offerLine;
   const [mapping, setMapping] = useState<MpProductMapping | null>(
     draft.mapping
   );
@@ -396,15 +398,26 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
     optionDefaults(draft.mpProduct)
   );
   const [manual, setManual] = useState<ManualLine[]>(() =>
-    pegMode ? [] : [{ key: newKey(), config: { product_id: '', options: {} } }]
+    offerLine
+      ? [{ key: offerLine.key, config: offerLine.config }]
+      : pegMode
+        ? []
+        : [{ key: newKey(), config: { product_id: '', options: {} } }]
   );
-  const [views, setViews] = useState<Record<string, MpProductView>>({});
+  const [views, setViews] = useState<Record<string, MpProductView>>(() =>
+    draft.mpProduct ? { [draft.mpProduct.id]: draft.mpProduct } : {}
+  );
   const [picker, setPicker] = useState<string | null>(null); // 'peg' | clé d'une ligne manuelle
   const [address, setAddress] = useState<MpAddress>(draft.address || {});
   const [pickup, setPickup] = useState(false);
   const [blind, setBlind] = useState(true);
   const [notes, setNotes] = useState('');
-  const [files, setFiles] = useState<Record<string, number>>({});
+  // Visuels déposés par le client dans le formulaire de l'offre, déjà rangés par emplacement.
+  const [files, setFiles] = useState<Record<string, number>>(() =>
+    Object.fromEntries(
+      Object.entries(draft.offer?.files ?? {}).map(([slot, f]) => [slot, f.id])
+    )
+  );
   const [remember, setRemember] = useState(true);
   const [price, setPrice] = useState<MpPriceResult | null>(null);
   const [priceFor, setPriceFor] = useState('');

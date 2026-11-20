@@ -4,6 +4,7 @@ import { Color, Product, ProductCategory, Size } from '@/@types/product';
 import { getProductBasePrice } from '@/utils/productHelpers';
 import { PegFile } from '@/@types/pegFile';
 import ProductForm, { ProductFormModel } from './Forms/ProductForm';
+import OfferLinkBanner from '@/views/app/admin/masterPrint/OfferLinkBanner';
 import { rememberOptions } from './Forms/attachedOptions';
 import {
   apiGetCustomers,
@@ -456,33 +457,38 @@ const EditProduct = () => {
 
   return (
     (!onEdition || product) && (
-      <ProductForm
-        type={onEdition ? 'edit' : 'new'}
-        onFormSubmit={handleFormSubmit}
-        onDiscard={handleDiscard}
-        sizes={sizes}
-        colors={colors}
-        knownSizes={knownSizes}
-        knownColors={knownColors}
-        customers={customers}
-        customerCategories={customerCategories}
-        categories={productCategories}
-        forms={forms}
-        checklists={checklists}
-        images={images}
-        setImages={setImages}
-        imagesLoading={imagesLoading}
-        currentBatUrl={product?.batFile?.url ?? null}
-        initialData={initialData}
-        showSuggested={suggestedAvailable}
-        badges={badges}
-        setBadges={setBadges}
-        badgeLibrary={badgeLibrary}
-        currentStep={currentStep}
-        setCurrentStep={setCurrentStep}
-        filterSizesListByProductCategory={filterSizesListByProductCategory}
-        filterColorsListByProductCategory={filterColorsListByProductCategory}
-      />
+      <>
+        {onEdition && product?.documentId && (
+          <OfferLinkBanner productDocumentId={product.documentId} />
+        )}
+        <ProductForm
+          type={onEdition ? 'edit' : 'new'}
+          onFormSubmit={handleFormSubmit}
+          onDiscard={handleDiscard}
+          sizes={sizes}
+          colors={colors}
+          knownSizes={knownSizes}
+          knownColors={knownColors}
+          customers={customers}
+          customerCategories={customerCategories}
+          categories={productCategories}
+          forms={forms}
+          checklists={checklists}
+          images={images}
+          setImages={setImages}
+          imagesLoading={imagesLoading}
+          currentBatUrl={product?.batFile?.url ?? null}
+          initialData={initialData}
+          showSuggested={suggestedAvailable}
+          badges={badges}
+          setBadges={setBadges}
+          badgeLibrary={badgeLibrary}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
+          filterSizesListByProductCategory={filterSizesListByProductCategory}
+          filterColorsListByProductCategory={filterColorsListByProductCategory}
+        />
+      </>
     )
   );
 };

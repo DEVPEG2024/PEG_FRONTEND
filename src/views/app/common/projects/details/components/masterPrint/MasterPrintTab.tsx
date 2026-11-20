@@ -218,6 +218,51 @@ const MasterPrintTab = () => {
         )}
       </div>
 
+      {draft.offer && (
+        <div
+          style={{
+            ...card,
+            borderColor:
+              draft.offer.autoStatus === 'failed'
+                ? 'rgba(239,68,68,0.4)'
+                : 'rgba(47,111,237,0.35)',
+          }}
+        >
+          <p style={{ ...muted, margin: 0 }}>
+            <strong style={{ color: '#fff' }}>
+              Commande composée par le client
+            </strong>{' '}
+            dans le formulaire de l’offre : {draft.offer.summary}
+            {Object.keys(draft.offer.files).length > 0 &&
+              ` · ${Object.keys(draft.offer.files).length} visuel(s) joint(s)`}
+            {draft.offer.pegPrice != null &&
+              ` · prix client ${fmtEur(draft.offer.pegPrice)} HT`}
+            {draft.offer.mpTotal != null &&
+              ` (achat ${fmtEur(draft.offer.mpTotal)} HT)`}
+          </p>
+          <p
+            style={{
+              ...muted,
+              margin: '6px 0 0',
+              color:
+                draft.offer.autoStatus === 'failed'
+                  ? '#fca5a5'
+                  : draft.offer.autoStatus === 'sent'
+                    ? '#86efac'
+                    : undefined,
+            }}
+          >
+            {draft.offer.autoStatus === 'sent'
+              ? 'Transmise automatiquement à Master Print au paiement.'
+              : draft.offer.autoStatus === 'failed'
+                ? `Envoi automatique impossible : ${draft.offer.autoError || 'erreur inconnue'} Envoyez-la ci-dessous (configuration et visuels du client déjà remplis).`
+                : draft.offer.autoStatus === 'manual'
+                  ? 'Envoi automatique désactivé pour cette offre : vérifiez puis envoyez ci-dessous.'
+                  : 'Envoi automatique au paiement.'}
+          </p>
+        </div>
+      )}
+
       {formOpen && (
         <SendForm
           key={formSeq}
