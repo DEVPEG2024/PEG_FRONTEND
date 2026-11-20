@@ -46,6 +46,14 @@ import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { RichTextEditor } from '@/components/shared';
 import ProductActionBar from '../ProductActionBar';
 import { C, Chip, Label, Section, Stepper, Swatch, inputStyle } from './ui';
+// Stock du textile : tailles épuisées, « Plus que N », coloris épuisés.
+import {
+  colorChoices,
+  firstAvailableColor,
+  stockBlocker,
+} from '@/utils/offerStock';
+import useOfferStock from './useOfferStock';
+import { SoldOutSwatch, StockSizeGrid } from './StockAware';
 
 /*
  * Formulaire d'une offre configurable (produit relié à l'imprimeur partenaire).
@@ -108,8 +116,19 @@ const OfferConfigurator = ({
     [spec, config]
   );
   const key = JSON.stringify(forServer);
-  const blocker = configBlocker(spec, config);
+  const stock = useOfferStock(
+    product.documentId,
+    spec.kind === 'textile' && spec.sizes.length > 0
+  );
+  const blocker =
+    configBlocker(spec, config) || stockBlocker(spec, stock, config);
   const pieces = totalPieces(spec, config);
+
+  // Coloris de départ épuisé (rien de saisi) : le premier coloris disponible.
+  useEffect(() => {
+    const next = firstAvailableColor(spec, stock, config);
+    if (next) setConfig((c) => ({ ...c, color: next, sizes: {} }));
+  }, [stock]);
 
   // Prix serveur à chaque changement (après une courte pause de saisie).
   useEffect(() => {
@@ -247,14 +266,15 @@ const OfferConfigurator = ({
       }
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-        {spec.colors.map((c) => (
+        {colorChoices(spec, stock).map((c) => (
           <button
             key={c.code}
             type="button"
             className="peg-tap-target"
-            title={c.label}
-            aria-label={c.label}
+            title={c.soldOut ? `${c.label} — épuisé` : c.label}
+            aria-label={c.soldOut ? `${c.label} (épuisé)` : c.label}
             aria-pressed={c.code === config.color}
+            disabled={c.soldOut}
             onClick={() => {
               // Les tailles qui n'existent pas dans le nouveau coloris sont retirées.
               const sizes = Object.fromEntries(
@@ -268,7 +288,7 @@ const OfferConfigurator = ({
               background: 'none',
               border: 'none',
               padding: 0,
-              cursor: 'pointer',
+              cursor: c.soldOut ? 'not-allowed' : 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -283,7 +303,11 @@ const OfferConfigurator = ({
                 border: `2px solid ${c.code === config.color ? C.accent : 'transparent'}`,
               }}
             >
-              <Swatch hex={c.hex} />
+              {c.soldOut ? (
+                <SoldOutSwatch hex={c.hex} />
+              ) : (
+                <Swatch hex={c.hex} />
+              )}
             </span>
             <span
               style={{
@@ -294,6 +318,9 @@ const OfferConfigurator = ({
               }}
             >
               {c.label}
+              {c.soldOut && (
+                <span style={{ display: 'block', color: C.faint }}>Épuisé</span>
+              )}
             </span>
           </button>
         ))}
@@ -324,25 +351,15 @@ const OfferConfigurator = ({
           </span>
         }
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
-            gap: '10px',
-          }}
-        >
-          {(color?.sizes ?? spec.sizes).map((s) => (
-            <Stepper
-              key={s}
-              label={s}
-              ariaLabel={`Taille ${s}`}
-              value={Number(config.sizes?.[s] || 0)}
-              onChange={(n) =>
-                set({ sizes: { ...(config.sizes || {}), [s]: n } })
-              }
-            />
-          ))}
-        </div>
+        <StockSizeGrid
+          spec={spec}
+          stock={stock}
+          color={config.color}
+          sizes={config.sizes}
+          onChange={(s, n) =>
+            set({ sizes: { ...(config.sizes || {}), [s]: n } })
+          }
+        />
       </Section>
     ) : (
       <Section
