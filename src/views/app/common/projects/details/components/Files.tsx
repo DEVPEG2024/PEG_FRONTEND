@@ -304,6 +304,9 @@ const Files = () => {
     return acc;
   }, {});
 
+  // Visuels joints par le client à sa commande (offre configurable) : lecture seule.
+  const orderVisuals: PegFile[] = project?.customerImages ?? [];
+
   const categoryOrder = ['image', 'pdf', 'psd', 'zip', 'autre'];
   const categoryLabels: Record<string, string> = { image: 'Images', pdf: 'Documents PDF', psd: 'Fichiers design', zip: 'Archives', autre: 'Autres' };
 
@@ -317,7 +320,7 @@ const Files = () => {
             <div className="flex items-center gap-2">
               <HiOutlineFolder className="w-5 h-5 text-white/50" />
               <h3 className="text-base font-semibold text-white">Fichiers du projet</h3>
-              <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{pegFiles.length}</span>
+              <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{pegFiles.length + orderVisuals.length}</span>
             </div>
 
             <button
@@ -401,8 +404,52 @@ const Files = () => {
             </div>
           )}
 
+          {/* VISUELS DE LA COMMANDE — déposés par le client dans le formulaire de l'offre,
+              joints au projet au paiement (customerImages) et transmis à l'imprimeur. */}
+          {orderVisuals.length > 0 && (
+            <div className="mb-5 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <HiOutlinePhotograph className="w-4 h-4 text-cyan-300/70" />
+                <h4 className="text-sm font-semibold text-white">Visuels de la commande</h4>
+                <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{orderVisuals.length}</span>
+              </div>
+              <p className="text-xs text-white/40 mb-3">
+                {isCustomer ? 'Les visuels joints à votre commande, transmis pour la fabrication.' : 'Déposés par le client à la commande, transmis à l’atelier avec elle.'}
+              </p>
+              <div className="space-y-1.5">
+                {orderVisuals.map((file) => {
+                  const img = isImageFile(file.name || file.url || '');
+                  return (
+                    <div key={file.documentId || file.url} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/[0.03] transition">
+                      {img ? (
+                        <button
+                          onClick={() => setPreviewUrl(file.url)}
+                          className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-white/[0.08] shrink-0 hover:border-cyan-500/30 transition"
+                          title="Aperçu"
+                        >
+                          <img src={file.url} alt={file.name} className="w-full h-full object-contain" />
+                        </button>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
+                          <HiOutlineDocumentText className="w-5 h-5 text-white/30" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white/80 truncate">{file.name}</div>
+                        <span className="text-[10px] text-white/30">{getExt(file.name || file.url || '')}</span>
+                      </div>
+                      <button onClick={() => handleDownload(file)} className="peg-tap-target p-1.5 rounded-lg text-white/40 hover:text-cyan-400 hover:bg-cyan-500/[0.05] transition shrink-0" title="Télécharger">
+                        <HiOutlineDownload className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* EMPTY STATE */}
-          {!filesLoading && pegFiles.length === 0 && pendingFiles.length === 0 && (
+          {!filesLoading && pegFiles.length === 0 && pendingFiles.length === 0 && orderVisuals.length === 0 && (
             <div className="text-center py-10">
               <HiOutlineFolder className="w-10 h-10 text-white/10 mx-auto mb-3" />
               <p className="text-sm text-white/30">Aucun fichier pour ce projet</p>

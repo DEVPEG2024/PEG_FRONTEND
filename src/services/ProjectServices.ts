@@ -334,6 +334,11 @@ export async function apiGetProjectById(documentId: string): Promise<AxiosRespon
                 url
                 name
             }
+            customerImages (pagination: {limit: 100}){
+                documentId
+                url
+                name
+            }
             devis (pagination: {limit: 100}){
                 documentId
                 url
