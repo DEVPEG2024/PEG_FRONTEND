@@ -53,6 +53,7 @@ import {
   muted,
   sectionTitle,
 } from '@/views/app/common/projects/details/components/masterPrint/ui';
+import ServiceStatusBanner from './ServiceStatusBanner';
 
 const PAGE = 50;
 const MARKUP_KEY = 'master_print_markup';
@@ -658,6 +659,7 @@ const MasterPrintCatalog = () => {
         padding: phone ? '12px 0' : '4px 0 24px',
       }}
     >
+      <ServiceStatusBanner />
       {children}
     </div>
   );

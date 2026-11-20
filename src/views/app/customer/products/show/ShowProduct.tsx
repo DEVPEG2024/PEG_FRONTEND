@@ -47,6 +47,9 @@ import { applyLineChoice, describeLines, describeMissing, lineChoiceFor, prefill
 import { HiArrowRight, HiArrowLeft, HiCheck, HiShoppingCart, HiClipboardList, HiEye } from 'react-icons/hi';
 import { apiGetConfigurator } from '@/services/ConfiguratorServices';
 import type { OfferSpec } from '@/@types/masterPrint';
+import { isServiceUnavailable } from '@/utils/deliveryEstimate';
+import DeliveryEstimateLine from './DeliveryEstimateLine';
+import OfferUnavailable from './configurator/OfferUnavailable';
 
 const WizardShowForm = lazy(() => import('../modal/WizardShowForm'));
 const OfferConfigurator = lazy(
@@ -72,19 +75,27 @@ const ShowProduct = () => {
   const [offerSpec, setOfferSpec] = useState<OfferSpec | null | undefined>(
     undefined
   );
+  // Formulaire momentanément indisponible (503) : message calme, jamais la fiche habituelle à sa place.
+  const [offerUnavailable, setOfferUnavailable] = useState(false);
+  const [offerRetry, setOfferRetry] = useState(0);
   const editCartItem =
     (location.state as { editCartItem?: CartItem } | null)?.editCartItem ??
     null;
   useEffect(() => {
     let alive = true;
     setOfferSpec(undefined);
+    setOfferUnavailable(false);
     apiGetConfigurator(documentId)
       .then((res) => alive && setOfferSpec(res.data.spec))
-      .catch(() => alive && setOfferSpec(null));
+      .catch((e) => {
+        if (!alive) return;
+        setOfferUnavailable(isServiceUnavailable(e));
+        setOfferSpec(null);
+      });
     return () => {
       alive = false;
     };
-  }, [documentId]);
+  }, [documentId, offerRetry]);
   const {
     product,
     loading,
@@ -400,6 +411,14 @@ const ShowProduct = () => {
     </Container>
   );
 
+  if (offerUnavailable) {
+    return (
+      <Container>
+        <OfferUnavailable name={product.name} onRetry={() => setOfferRetry((n) => n + 1)} />
+      </Container>
+    );
+  }
+
   if (offerSpec) {
     return (
       <Container>
@@ -617,6 +636,7 @@ const ShowProduct = () => {
                         <span style={{ fontSize: '12px', color: '#eab308', fontWeight: 700 }}>⭐ -15% Premium</span>
                       )}
                     </div>
+                    <DeliveryEstimateLine productDocumentId={product.documentId} style={{ margin: '8px 0 0' }} />
                   </div>
                 )}
 
@@ -754,6 +774,11 @@ const ShowProduct = () => {
                   </div>
                 )}
               </div>
+
+              {/* Date d'expédition prévue (produits de l'imprimeur partenaire) */}
+              {!smaller.md && (
+                <DeliveryEstimateLine productDocumentId={product.documentId} style={{ margin: '-8px 0 18px' }} />
+              )}
 
               {/* Description */}
               {product.description && (

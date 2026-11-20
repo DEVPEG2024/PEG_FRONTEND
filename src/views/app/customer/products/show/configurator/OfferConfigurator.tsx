@@ -6,7 +6,6 @@ import {
   HiPlus,
   HiTrash,
   HiUpload,
-  HiTruck,
   HiShoppingCart,
 } from 'react-icons/hi';
 import type {
@@ -38,7 +37,6 @@ import {
   mmToCm,
   optionHidden,
   selectionsFromConfig,
-  shipDateLabel,
   totalPieces,
 } from '@/utils/offerConfigurator';
 import useResponsive from '@/utils/hooks/useResponsive';
@@ -46,6 +44,8 @@ import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
 import { RichTextEditor } from '@/components/shared';
 import ProductActionBar from '../ProductActionBar';
 import { C, Chip, Label, Section, Stepper, Swatch, inputStyle } from './ui';
+import DeliveryEstimateLine from '../DeliveryEstimateLine';
+import { isServiceUnavailable } from '@/utils/deliveryEstimate';
 
 /*
  * Formulaire d'une offre configurable (produit relié à l'imprimeur partenaire).
@@ -69,7 +69,7 @@ type PriceState =
   | { status: 'idle'; blocker: string | null }
   | { status: 'loading' }
   | { status: 'ok'; result: OfferPriceResult; key: string }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; calm?: boolean }; // calm : service momentanément indisponible
 
 const errorMessage = (e: unknown): string => {
   const data = (e as { response?: { data?: { error?: unknown } } })?.response
@@ -126,7 +126,11 @@ const OfferConfigurator = ({
           setPrice({ status: 'ok', result: res.data, key });
       } catch (e) {
         if (mine === seq.current)
-          setPrice({ status: 'error', message: errorMessage(e) });
+          setPrice({
+            status: 'error',
+            message: errorMessage(e),
+            calm: isServiceUnavailable(e),
+          });
       }
     }, 450);
     return () => clearTimeout(t);
@@ -891,7 +895,6 @@ const OfferConfigurator = ({
 
   // ── Prix ──────────────────────────────────────────────────────────────────
   const days = spec.productionDays ?? 0;
-  const ship = shipDateLabel(shown?.price.shipDate);
   const pricePanel = (
     <div
       style={{
@@ -934,23 +937,12 @@ const OfferConfigurator = ({
             {shown.price.unitPriceExclTax != null &&
               ` · ${fmtHT(shown.price.unitPriceExclTax)} / pièce`}
           </p>
-          {(ship || (shown.price.workingDays ?? 0) > 0) && (
-            <p
-              style={{
-                margin: '10px 0 0',
-                fontSize: '12.5px',
-                color: C.text,
-                display: 'flex',
-                gap: '6px',
-                alignItems: 'center',
-              }}
-            >
-              <HiTruck style={{ color: C.accentText }} />
-              {ship
-                ? `Expédition estimée ${ship}`
-                : `Fabrication en ${shown.price.workingDays} jour${(shown.price.workingDays || 0) > 1 ? 's' : ''} ouvré${(shown.price.workingDays || 0) > 1 ? 's' : ''}`}
-            </p>
-          )}
+          {/* Date rendue avec le prix ; « Commandez avant … » quand elle concorde avec l'estimation */}
+          <DeliveryEstimateLine
+            productDocumentId={product.documentId}
+            formShipDate={shown.price.shipDate}
+            formWorkingDays={shown.price.workingDays}
+          />
           {shown.price.detail.length > 1 && (
             <>
               <button
@@ -999,18 +991,27 @@ const OfferConfigurator = ({
           )}
         </>
       ) : (
-        <p style={{ margin: 0, fontSize: '13.5px', color: C.muted }}>
-          {price.status === 'loading'
-            ? 'Calcul du prix…'
-            : price.status === 'idle'
-              ? price.blocker || 'Composez votre commande.'
-              : ''}
-        </p>
+        <>
+          <p style={{ margin: 0, fontSize: '13.5px', color: C.muted }}>
+            {price.status === 'loading'
+              ? 'Calcul du prix…'
+              : price.status === 'idle'
+                ? price.blocker || 'Composez votre commande.'
+                : ''}
+          </p>
+          {price.status !== 'error' && (
+            <DeliveryEstimateLine productDocumentId={product.documentId} />
+          )}
+        </>
       )}
       {price.status === 'error' && (
         <p
-          role="alert"
-          style={{ margin: '10px 0 0', fontSize: '12.5px', color: C.error }}
+          role={price.calm ? 'status' : 'alert'}
+          style={{
+            margin: '10px 0 0',
+            fontSize: '12.5px',
+            color: price.calm ? C.muted : C.error,
+          }}
         >
           {price.message}
         </p>
