@@ -26,7 +26,10 @@ export const apiGetConfigurator = (productDocumentId: string) =>
     method: 'get',
   });
 
-export const apiPriceConfigurator = (productDocumentId: string, config: OfferClientConfig) =>
+export const apiPriceConfigurator = (
+  productDocumentId: string,
+  config: OfferClientConfig
+) =>
   ApiService.fetchData<OfferPriceResult>({
     url: `/configurator/${enc(productDocumentId)}/price`,
     method: 'post',
@@ -35,7 +38,12 @@ export const apiPriceConfigurator = (productDocumentId: string, config: OfferCli
 
 export const apiCreateConfiguratorOrderItem = (
   productDocumentId: string,
-  body: { config: OfferClientConfig; files: Record<string, number>; shipping?: ShippingAddress; chatConversationId?: string },
+  body: {
+    config: OfferClientConfig;
+    files: Record<string, number>;
+    shipping?: ShippingAddress;
+    chatConversationId?: string;
+  }
 ) =>
   ApiService.fetchData<OfferOrderItemResult>({
     url: `/configurator/${enc(productDocumentId)}/order-item`,
@@ -51,10 +59,17 @@ export const apiGetMasterPrintOffer = (productDocumentId: string) =>
 
 export const apiSaveMasterPrintOffer = (
   productDocumentId: string,
-  body: { enabled: boolean; offer?: OfferConfig; productId?: string },
+  body: { enabled: boolean; offer?: OfferConfig; productId?: string }
 ) =>
   ApiService.fetchData<MpOfferAdmin>({
     url: `/master-print/admin/offers/${enc(productDocumentId)}`,
     method: 'put',
     data: body,
+  });
+
+/** Remplace la description de la fiche PEG par celle de Master Print, mise en forme. */
+export const apiRefreshMasterPrintDescription = (productDocumentId: string) =>
+  ApiService.fetchData<{ description: string }>({
+    url: `/master-print/admin/offers/${enc(productDocumentId)}/description`,
+    method: 'post',
   });

@@ -11,6 +11,7 @@ import type {
 import type { Product } from '@/@types/product';
 import {
   apiGetMasterPrintOffer,
+  apiRefreshMasterPrintDescription,
   apiSaveMasterPrintOffer,
 } from '@/services/ConfiguratorServices';
 import { apiGetProductForShowById } from '@/services/ProductServices';
@@ -223,6 +224,29 @@ const OfferSettings = () => {
     }
   };
 
+  const [describing, setDescribing] = useState(false);
+  const refreshDescription = async () => {
+    if (
+      product?.description &&
+      !window.confirm(
+        'Remplacer la description actuelle de la fiche produit par celle de Master Print ?'
+      )
+    )
+      return;
+    setDescribing(true);
+    try {
+      const { data: d } =
+        await apiRefreshMasterPrintDescription(productDocumentId);
+      setProduct((p) => (p ? { ...p, description: d.description } : p));
+      setPreviewKey((k) => k + 1);
+      toast.success('Description reprise de Master Print');
+    } catch (e) {
+      toast.error(masterPrintError(e, 'Description indisponible.'));
+    } finally {
+      setDescribing(false);
+    }
+  };
+
   const pick = (item: MpCatalogItem) => {
     setPicking(false);
     save({ enabled: true, productId: item.id });
@@ -306,6 +330,15 @@ const OfferSettings = () => {
           <Pill tone={data.enabled ? LIVE_TONE : SANDBOX_TONE}>
             {data.enabled ? 'Formulaire actif' : 'Formulaire inactif'}
           </Pill>
+          <Btn
+            disabled={describing}
+            onClick={refreshDescription}
+            title="Remplace la description de la fiche produit par celle de Master Print (texte et caractéristiques)"
+          >
+            {describing
+              ? 'Description…'
+              : 'Reprendre la description Master Print'}
+          </Btn>
           {data.enabled ? (
             <Btn
               variant="danger"

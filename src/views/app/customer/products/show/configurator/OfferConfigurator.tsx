@@ -43,6 +43,7 @@ import {
 } from '@/utils/offerConfigurator';
 import useResponsive from '@/utils/hooks/useResponsive';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
+import { RichTextEditor } from '@/components/shared';
 import ProductActionBar from '../ProductActionBar';
 import { C, Chip, Label, Section, Stepper, Swatch, inputStyle } from './ui';
 
@@ -1127,6 +1128,20 @@ const OfferConfigurator = ({
             )}
           </div>
           {!smaller.md && pricePanel}
+          {product.description && (
+            <div
+              className="product-desc"
+              style={{
+                color: 'rgba(160,185,220,0.75)',
+                fontSize: '12.5px',
+                lineHeight: 1.45,
+                marginTop: '12px',
+              }}
+            >
+              <style>{`.product-desc p,.product-desc h1,.product-desc h2,.product-desc h3{margin:0 0 4px 0}.product-desc p:last-child{margin-bottom:0}.product-desc .ql-editor,.product-desc .ql-container{padding:0;border:none}.product-desc ul,.product-desc ol{margin:2px 0 8px;padding-left:16px}.product-desc li{margin:0}.product-desc strong{color:#f0f4ff}`}</style>
+              <RichTextEditor value={product.description} readOnly={true} />
+            </div>
+          )}
         </div>
       </div>
       <div
