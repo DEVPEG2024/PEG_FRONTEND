@@ -7,6 +7,7 @@ import {
   UNAVAILABLE_MESSAGE,
   dayLabel,
   deliveryLine,
+  formDateValid,
   hourLabel,
   isServiceUnavailable,
   isStale,
@@ -147,9 +148,60 @@ describe('deliveryLine', () => {
     const after = new Date('2026-11-23T09:00:01Z');
     expect(isStale(dtf, after)).toBe(true);
     expect(deliveryLine(dtf, { now: after })).toBeNull();
-    expect(deliveryLine(dtf, { now: after, formShipDate: '2026-11-25' })).toBe(
-      'Expédition prévue le mercredi 25 novembre'
+    // Prix calculé APRÈS l'heure limite : sa date vaut.
+    expect(
+      deliveryLine(dtf, {
+        now: after,
+        formShipDate: '2026-11-25',
+        formPricedAt: after.getTime(),
+      })
+    ).toBe('Expédition prévue le mercredi 25 novembre');
+  });
+
+  it('prix calculé AVANT une heure limite passée depuis : sa date est périmée', () => {
+    // Lundi 23/11 : prix à 9 h 58 (Paris) → expédition mardi 24 ; le client ne touche plus à rien.
+    const priced = Date.parse('2026-11-23T08:58:00Z');
+    const monday: DeliveryEstimate = { ...dtf, today: '2026-11-23' };
+    // 10 h 00 passées, estimation pas encore relue : rien plutôt qu'une promesse intenable.
+    const at10 = new Date('2026-11-23T09:00:30Z');
+    expect(
+      deliveryLine(monday, {
+        now: at10,
+        formShipDate: '2026-11-24',
+        formPricedAt: priced,
+      })
+    ).toBeNull();
+    // Estimation relue (prochaine heure limite mardi 10 h) : la date du vieux prix reste écartée…
+    const next: DeliveryEstimate = {
+      shipDate: '2026-11-25',
+      workingDays: 2,
+      orderBefore: '10:00',
+      orderBeforeDate: '2026-11-24',
+      orderBeforeAt: '2026-11-24T09:00:00.000Z',
+      today: '2026-11-23',
+    };
+    const passed = Date.parse(monday.orderBeforeAt as string);
+    const later = new Date('2026-11-23T09:01:05Z');
+    expect(
+      deliveryLine(next, {
+        now: later,
+        formShipDate: '2026-11-24',
+        formPricedAt: priced,
+        passedCutoffAt: passed,
+      })
+    ).toBe(
+      'Commandez avant demain 10 h : expédition prévue le mercredi 25 novembre'
     );
+    // … jusqu'au nouveau prix, calculé après l'heure limite.
+    expect(
+      formDateValid(next, {
+        now: later,
+        formPricedAt: later.getTime(),
+        passedCutoffAt: passed,
+      })
+    ).toBe(true);
+    // Sans heure limite franchie, l'heure de calcul est sans effet.
+    expect(formDateValid(dtf, { now: saturday })).toBe(true);
   });
 });
 

@@ -119,6 +119,33 @@ export function refreshDelayMs(
   return ms <= 0 ? 60_000 : ms + 1000;
 }
 
+/**
+ * La date rendue avec le prix du formulaire vaut-elle encore ? Non si une heure limite
+ * est passée depuis son calcul : celle d'une estimation périmée (pas encore relue), ou
+ * `passedCutoffAt`, la dernière franchie pendant la visite. Sans heure de calcul connue,
+ * elle ne vaut que si aucune heure limite n'est passée.
+ */
+export function formDateValid(
+  est: DeliveryEstimate | null,
+  opts: {
+    formPricedAt?: number | null;
+    passedCutoffAt?: number | null;
+    now?: Date;
+  } = {}
+): boolean {
+  const now = opts.now ?? new Date();
+  const limits: number[] = [];
+  if (opts.passedCutoffAt != null && Number.isFinite(opts.passedCutoffAt))
+    limits.push(opts.passedCutoffAt);
+  if (est?.orderBeforeAt && isStale(est, now))
+    limits.push(Date.parse(est.orderBeforeAt));
+  if (!limits.length) return true;
+  const at = opts.formPricedAt;
+  return (
+    typeof at === 'number' && Number.isFinite(at) && at >= Math.max(...limits)
+  );
+}
+
 const shipPhrase = (shipDate: string, today: string): string | null => {
   const label = dayLabel(shipDate);
   if (!label) return null;
@@ -136,17 +163,26 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  *  - heure limite passée : « Commandez avant demain 10 h : … » / « avant lundi 10 h : … »
  *  - sans heure limite : « Expédition prévue le mardi 1er décembre »
  * `formShipDate` (date rendue avec le prix du formulaire) prime : si elle diffère de
- * l'estimation, elle seule est affichée, sans heure limite.
+ * l'estimation, elle seule est affichée, sans heure limite. Calculée avant une heure
+ * limite passée depuis (`formDateValid`), elle est périmée : jamais affichée.
  */
 export function deliveryLine(
   est: DeliveryEstimate | null,
-  opts: { formShipDate?: string | null; now?: Date } = {}
+  opts: {
+    formShipDate?: string | null;
+    /** Instant (ms) du calcul de ce prix. */
+    formPricedAt?: number | null;
+    /** Dernière heure limite franchie pendant la visite (ms). */
+    passedCutoffAt?: number | null;
+    now?: Date;
+  } = {}
 ): string | null {
   const now = opts.now ?? new Date();
   const today = parisToday(now);
-  const form = parseIso(opts.formShipDate)
-    ? (opts.formShipDate as string).slice(0, 10)
-    : null;
+  const form =
+    parseIso(opts.formShipDate) && formDateValid(est, { ...opts, now })
+      ? (opts.formShipDate as string).slice(0, 10)
+      : null;
   const usable = est?.shipDate && !isStale(est, now) ? est : null;
   if (form && (!usable || usable.shipDate !== form)) {
     const p = shipPhrase(form, today);

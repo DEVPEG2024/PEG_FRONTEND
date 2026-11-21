@@ -19,6 +19,8 @@ export type MpPriceChangeReason =
   | 'auto'
   | 'retouche'
   | 'ancien_import'
+  /** Configuration d'achat introuvable (ancien import, options changées) : prix non suivis. */
+  | 'config_inconnue'
   | 'retire';
 
 /** webhook = avis de Master Print ; nuit = vérification de la nuit ; admin = bouton. */

@@ -52,7 +52,7 @@ import {
 } from '@/utils/offerStock';
 import useOfferStock from './useOfferStock';
 import { SoldOutSwatch, StockSizeGrid } from './StockAware';
-import DeliveryEstimateLine from '../DeliveryEstimateLine';
+import DeliveryEstimateLine, { usePassedCutoff } from '../DeliveryEstimateLine';
 import { isServiceUnavailable } from '@/utils/deliveryEstimate';
 
 /*
@@ -76,7 +76,7 @@ type Props = {
 type PriceState =
   | { status: 'idle'; blocker: string | null }
   | { status: 'loading' }
-  | { status: 'ok'; result: OfferPriceResult; key: string }
+  | { status: 'ok'; result: OfferPriceResult; key: string; at: number } // at : instant du calcul (date d'expédition)
   | { status: 'error'; message: string; calm?: boolean }; // calm : service momentanément indisponible
 
 const errorMessage = (e: unknown): string => {
@@ -122,6 +122,8 @@ const OfferConfigurator = ({
   );
   const blocker =
     configBlocker(spec, config) || stockBlocker(spec, stock, config);
+  // Heure limite franchie pendant la visite : prix relancé, sa date d'expédition change.
+  const passedCutoff = usePassedCutoff(product.documentId);
   const pieces = totalPieces(spec, config);
 
   // Coloris de départ épuisé (rien de saisi) : le premier coloris disponible.
@@ -142,7 +144,7 @@ const OfferConfigurator = ({
       try {
         const res = await apiPriceConfigurator(product.documentId, forServer);
         if (mine === seq.current)
-          setPrice({ status: 'ok', result: res.data, key });
+          setPrice({ status: 'ok', result: res.data, key, at: Date.now() });
       } catch (e) {
         if (mine === seq.current)
           setPrice({
@@ -153,7 +155,7 @@ const OfferConfigurator = ({
       }
     }, 450);
     return () => clearTimeout(t);
-  }, [key, blocker]);
+  }, [key, blocker, passedCutoff]);
 
   const priced =
     price.status === 'ok' && price.key === key ? price.result : null;
@@ -202,6 +204,17 @@ const OfferConfigurator = ({
     !!priced &&
     missingFiles.length === 0 &&
     !Object.values(uploading).some(Boolean);
+  // Barre d'action (téléphone) : la raison du blocage, pas « Choisissez vos quantités ».
+  const actionHint = preview
+    ? null
+    : blocker ||
+      (price.status === 'error' ? price.message : null) ||
+      (priced && missingFiles.length
+        ? `Ajoutez ${missingFiles.length > 1 ? 'vos visuels' : 'votre visuel'} pour continuer.`
+        : null) ||
+      (!priced && (price.status === 'loading' || price.status === 'ok')
+        ? 'Calcul du prix…'
+        : null);
 
   const handleAdd = () => {
     if (!priced) return;
@@ -958,6 +971,8 @@ const OfferConfigurator = ({
           <DeliveryEstimateLine
             productDocumentId={product.documentId}
             formShipDate={shown.price.shipDate}
+            formPricedAt={price.status === 'ok' ? price.at : null}
+            passedCutoffAt={passedCutoff}
             formWorkingDays={shown.price.workingDays}
           />
           {shown.price.detail.length > 1 && (
@@ -1209,6 +1224,7 @@ const OfferConfigurator = ({
         unitLabel={shown?.price.unitPriceExclTax != null ? '/ pièce' : ''}
         total={shown?.price.totalExclTax ?? 0}
         summary={shown?.price.quantityLabel ?? null}
+        hint={actionHint}
       />
     </div>
   );

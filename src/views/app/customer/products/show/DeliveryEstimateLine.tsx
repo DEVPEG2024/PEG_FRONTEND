@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { HiTruck } from 'react-icons/hi';
 import { apiGetDeliveryEstimate } from '@/services/DeliveryEstimateServices';
 import {
@@ -81,10 +81,35 @@ export function useDeliveryEstimate(
   return est;
 }
 
+/**
+ * Dernière heure limite franchie pendant la visite (ms), null sinon. Le formulaire
+ * relance alors son prix : la date rendue avec l'ancien ne vaut plus.
+ */
+export function usePassedCutoff(
+  productDocumentId: string | undefined
+): number | null {
+  const est = useDeliveryEstimate(productDocumentId);
+  const cur = est?.orderBeforeAt ?? null;
+  const prev = useRef<string | null>(null);
+  const [passed, setPassed] = useState<number | null>(null);
+  useEffect(() => {
+    const before = prev.current;
+    prev.current = cur;
+    if (!before || before === cur) return;
+    const t = Date.parse(before);
+    if (Number.isFinite(t) && t <= Date.now()) setPassed(t);
+  }, [cur]);
+  return passed;
+}
+
 type Props = {
   productDocumentId: string;
   /** Date d'expédition rendue avec le prix du formulaire (prime sur l'estimation). */
   formShipDate?: string | null;
+  /** Instant (ms) du calcul de ce prix : périmé si une heure limite est passée depuis. */
+  formPricedAt?: number | null;
+  /** Dernière heure limite franchie pendant la visite (`usePassedCutoff`). */
+  passedCutoffAt?: number | null;
   /** Délai rendu avec le prix, quand il n'y a pas de date. */
   formWorkingDays?: number | null;
   style?: CSSProperties;
@@ -93,13 +118,15 @@ type Props = {
 const DeliveryEstimateLine = ({
   productDocumentId,
   formShipDate = null,
+  formPricedAt = null,
+  passedCutoffAt = null,
   formWorkingDays = null,
   style,
 }: Props) => {
   const est = useDeliveryEstimate(productDocumentId);
   const days = formWorkingDays ?? 0;
   const text =
-    deliveryLine(est, { formShipDate }) ||
+    deliveryLine(est, { formShipDate, formPricedAt, passedCutoffAt }) ||
     (days > 0
       ? `Fabrication en ${days} jour${days > 1 ? 's' : ''} ouvré${days > 1 ? 's' : ''}`
       : null);

@@ -15,6 +15,7 @@ import {
   priceLine,
   priceStatusTone,
   reasonText,
+  reviewTitle,
   runLine,
   splitChanges,
   variationColor,
@@ -113,6 +114,38 @@ describe('prix d’achat Master Print', () => {
     ).toContain('aucun prix ne peut être proposé');
   });
 
+  it('le texte suit le statut final : une retouche appliquée ne dit plus « rien n’a été écrasé »', () => {
+    const applied = reasonText(change({ status: 'applique' }));
+    expect(applied).toBe(
+      'Nouveaux prix appliqués par un administrateur (majoration +60 %).'
+    );
+    expect(applied).not.toContain('rien n’a été écrasé');
+    expect(reasonText(change({ status: 'applique', reason: 'auto' }))).toBe(
+      'Mis à jour automatiquement, même majoration (+60 %).'
+    );
+    expect(reasonText(change({ status: 'ignore' }))).toContain('gardés');
+  });
+
+  it('configuration d’achat inconnue : aucun prix proposé, titre dédié', () => {
+    const c = change({
+      reason: 'config_inconnue',
+      newTiers: null,
+      markup: null,
+    });
+    expect(reasonText(c)).toContain('aucun prix proposé');
+    expect(nbsp(priceLine(c))).toBe(
+      '1er palier actuel : 37,94 € (prix non suivis)'
+    );
+    expect(reviewTitle(c)).toBe(
+      'Prix d’achat Master Print non suivis : à vérifier'
+    );
+    expect(reviewTitle(change())).toBe(
+      'Prix d’achat Master Print modifié : à revoir'
+    );
+    expect(canApply(c)).toBe(false);
+    expect(canDecide(c)).toBe(true);
+  });
+
   it('boutons : appliquer seulement avec des paliers proposés', () => {
     expect(canApply(change())).toBe(true);
     expect(canApply(change({ newTiers: null }))).toBe(false);
@@ -132,6 +165,13 @@ describe('prix d’achat Master Print', () => {
     );
     expect(runLine(run({ applied: 0, review: 0 }))).toContain(
       '12 produits vérifiés, aucun changement.'
+    );
+    // Vérification suivante sans rien de nouveau : le « à revoir » d'avant n'est pas effacé du bilan.
+    expect(runLine(run({ applied: 0, review: 0 }), 1)).toContain(
+      '12 produits vérifiés, rien de nouveau (1 changement toujours à revoir).'
+    );
+    expect(runLine(run({ applied: 0, review: 0 }), 0)).toContain(
+      'aucun changement.'
     );
     expect(runLine(run({ checked: 1, applied: 1, review: 0 }))).toContain(
       '1 produit vérifié, 1 ajusté.'

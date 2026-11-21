@@ -13,6 +13,7 @@ import {
   costLine,
   priceLine,
   reasonText,
+  reviewTitle,
 } from '@/utils/masterPrintPrices';
 import { Btn } from '@/views/app/common/projects/details/components/masterPrint/ui';
 
@@ -92,7 +93,7 @@ const PriceReviewNotice = ({
       }}
     >
       <strong style={{ color: '#fcd34d' }}>
-        Prix d’achat Master Print modifié : à revoir
+        {reviewTitle(pending)}
       </strong>
       <div style={{ marginTop: '4px' }}>{priceLine(pending)}</div>
       {cost && <div>{cost}</div>}

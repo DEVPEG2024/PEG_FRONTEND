@@ -81,6 +81,8 @@ const fmtMarkup = (m: number) =>
 export function priceLine(c: MpPriceChange): string {
   if (c.reason === 'retire')
     return 'Produit retiré de la vente par Master Print';
+  if (c.reason === 'config_inconnue')
+    return `1er palier actuel : ${fmtEur(firstTierPrice(c.oldTiers))} (prix non suivis)`;
   const before = firstTierPrice(c.oldTiers);
   const after = firstTierPrice(c.newTiers);
   if (after == null)
@@ -96,9 +98,27 @@ export function costLine(c: MpPriceChange): string | null {
   return `Achat : ${fmtEur(c.oldCost)} → ${fmtEur(c.newCost)}`;
 }
 
-/** Pourquoi ce changement, en une phrase. */
+/** Titre de l'alerte « à revoir » sur la fiche produit. */
+export function reviewTitle(c: MpPriceChange): string {
+  if (c.reason === 'retire')
+    return 'Produit retiré par Master Print : à revoir';
+  if (c.reason === 'config_inconnue')
+    return 'Prix d’achat Master Print non suivis : à vérifier';
+  return 'Prix d’achat Master Print modifié : à revoir';
+}
+
+/**
+ * Pourquoi ce changement, en une phrase. Le texte suit le statut FINAL : une
+ * proposition appliquée ou ignorée par un admin ne dit plus « rien n'a été écrasé ».
+ */
 export function reasonText(c: MpPriceChange): string {
   const m = c.markup != null ? `+${fmtMarkup(c.markup)} %` : null;
+  if (c.status === 'applique' && c.reason !== 'auto')
+    return `Nouveaux prix appliqués par un administrateur${m ? ` (majoration ${m})` : ''}.`;
+  if (c.status === 'ignore')
+    return c.reason === 'config_inconnue'
+      ? 'Signalement clos : prix de la fiche gardés tels quels.'
+      : 'Ignoré : les prix de la fiche ont été gardés.';
   switch (c.reason) {
     case 'auto':
       return `Mis à jour automatiquement, même majoration${m ? ` (${m})` : ''}.`;
@@ -110,6 +130,8 @@ export function reasonText(c: MpPriceChange): string {
         : 'Importé avant le suivi des prix : aucun prix ne peut être proposé, vérifiez la fiche.';
     case 'retire':
       return 'Vérifiez la fiche : produit à retirer du catalogue ou à relier à un autre produit Master Print.';
+    case 'config_inconnue':
+      return 'Format ou coloris acheté introuvable chez Master Print (importé avant le suivi des prix, ou options changées) : aucun prix proposé. Vérifiez les prix de la fiche, ou réimportez le produit pour qu’ils soient suivis.';
     default:
       return '';
   }
@@ -139,8 +161,15 @@ export function fmtDateTime(iso: string | null | undefined): string {
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n > 1 ? many : one}`;
 
-/** Bilan de la dernière vérification, en une phrase. */
-export function runLine(last: MpPriceRun | null | undefined): string {
+/**
+ * Bilan de la dernière vérification, en une phrase. `pending` = changements encore
+ * « à revoir » (trouvés par une vérification précédente) : une passe sans rien de
+ * nouveau ne dit alors pas « aucun changement ».
+ */
+export function runLine(
+  last: MpPriceRun | null | undefined,
+  pending = 0
+): string {
   if (!last)
     return 'Pas encore vérifiés : la première vérification a lieu cette nuit, ou maintenant avec le bouton.';
   const source = PRICE_SOURCE_LABELS[last.source] || last.source;
@@ -152,7 +181,11 @@ export function runLine(last: MpPriceRun | null | undefined): string {
       plural(last.retired, 'retiré de la vente', 'retirés de la vente')
     );
   if (!last.applied && !last.review && !last.retired && last.checked)
-    parts.push('aucun changement');
+    parts.push(
+      pending > 0
+        ? `rien de nouveau (${pending} changement${pending > 1 ? 's' : ''} toujours à revoir)`
+        : 'aucun changement'
+    );
   const error = last.error ? ` Problème : ${last.error}` : '';
   return `Dernière vérification ${fmtDateTime(last.at)} (${source}) : ${parts.join(', ')}.${error}`;
 }

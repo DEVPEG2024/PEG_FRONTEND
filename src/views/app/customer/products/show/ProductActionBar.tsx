@@ -20,6 +20,12 @@ type Props = {
   total: number;
   /** « 3 pièces », « Pack 50 », « 1,20 m² × 2 »… ; null tant que rien n'est choisi */
   summary: string | null;
+  /**
+   * Ce qui empêche de continuer (« Il ne reste que 15 pièces en S (Noir). »), à la
+   * place de « Choisissez vos quantités » ; sans prix connu, le montant est masqué
+   * (jamais « 0,00 € HT »).
+   */
+  hint?: string | null;
 };
 
 const ProductActionBar = ({
@@ -30,6 +36,7 @@ const ProductActionBar = ({
   unitLabel,
   total,
   summary,
+  hint = null,
 }: Props) => {
   const { smaller } = useResponsive();
   const visible = smaller.md;
@@ -54,10 +61,27 @@ const ProductActionBar = ({
           </>
         ) : (
           <>
-            <strong>
-              {fmtHT(unitPrice)} <small>{unitLabel}</small>
-            </strong>
-            <span>Choisissez vos quantités</span>
+            {(!hint || unitPrice > 0) && (
+              <strong>
+                {fmtHT(unitPrice)} <small>{unitLabel}</small>
+              </strong>
+            )}
+            {hint ? (
+              <span
+                role="status"
+                style={{
+                  color: '#fcd34d',
+                  whiteSpace: 'normal',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                }}
+              >
+                {hint}
+              </span>
+            ) : (
+              <span>Choisissez vos quantités</span>
+            )}
           </>
         )}
       </div>

@@ -36,6 +36,21 @@ import {
   prepareChatClosing,
 } from '@/components/template/chat/chatClosing';
 
+/** Refus expliqué par le serveur (stock du panier dépassé, avoir changé…) : message montré tel quel. */
+class CheckoutRefusal extends Error {}
+
+/** 409 du paiement : message écrit pour le client par le serveur, sinon null. */
+async function refusalOf(response: Response): Promise<string | null> {
+  if (response.status !== 409) return null;
+  try {
+    const body = await response.json();
+    const message = body?.error?.message;
+    return typeof message === 'string' && message ? message : null;
+  } catch {
+    return null;
+  }
+}
+
 function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingPersonalization = [] }: { cart: CartItem[]; shipping: ShippingAddress; hasAddress: boolean; onMissingAddress: () => void; missingPersonalization?: string[] }) {
   // Articles dont la personnalisation OBLIGATOIRE n'est pas faite (ajoutés depuis
   // l'assistant) : la commande partirait sans le fichier exigé.
@@ -261,7 +276,11 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
       await validatePayment(orderItems);
     } catch (error) {
       console.error('[Checkout] Échec de la validation du panier:', error);
-      toast.error("Le paiement n'a pas pu être finalisé. Aucun montant n'a été débité, réessayez.");
+      toast.error(
+        error instanceof CheckoutRefusal
+          ? error.message
+          : "Le paiement n'a pas pu être finalisé. Aucun montant n'a été débité, réessayez."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -323,6 +342,8 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     });
 
     if (!response.ok) {
+      const refusal = await refusalOf(response);
+      if (refusal) throw new CheckoutRefusal(refusal);
       throw new Error(`Checkout différé échoué (HTTP ${response.status})`);
     }
 
@@ -350,6 +371,8 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     });
 
     if (!response.ok) {
+      const refusal = await refusalOf(response);
+      if (refusal) throw new CheckoutRefusal(refusal);
       throw new Error(`Création de session Stripe échouée (HTTP ${response.status})`);
     }
 

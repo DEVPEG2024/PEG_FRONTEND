@@ -205,7 +205,7 @@ const PurchasePricesPanel = () => {
       // Fin d'une vérification lancée d'ici : bilan en une ligne.
       if (watching.current && !d.running) {
         watching.current = false;
-        toast.info(runLine(d.last));
+        toast.info(runLine(d.last, d.pending));
       }
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response
@@ -318,7 +318,7 @@ const PurchasePricesPanel = () => {
           <p style={{ ...muted, marginTop: '4px' }}>
             {data.running
               ? 'Vérification en cours… les prix d’achat sont relus produit par produit.'
-              : runLine(data.last)}
+              : runLine(data.last, data.pending)}
           </p>
           <p style={{ ...muted, marginTop: '2px' }}>
             {data.linked
