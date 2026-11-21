@@ -170,6 +170,13 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintCatalog")),
     authority: [SUPER_ADMIN, ADMIN],
   },
+  // Master Print : commandes (statut, alertes, marge, facture d'achat) et suivi automatique
+  {
+    key: "admin.masterPrint.orders",
+    path: "/admin/master-print/orders",
+    component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintOrders")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
   // Offre configurable : formulaire client d'un produit relié à Master Print (réglages + aperçu)
   {
     key: "admin.masterPrint.offer",

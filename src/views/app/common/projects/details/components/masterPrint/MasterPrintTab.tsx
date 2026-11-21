@@ -19,6 +19,7 @@ import {
   masterPrintError,
 } from '@/utils/masterPrint';
 import { getProjectById, useAppDispatch, useAppSelector } from '../../store';
+import MarginCard from './MarginCard';
 import OrderCard from './OrderCard';
 import SendForm from './SendForm';
 import { Btn, LIVE_TONE, Pill, SANDBOX_TONE, card, muted } from './ui';
@@ -217,6 +218,13 @@ const MasterPrintTab = () => {
           </Btn>
         )}
       </div>
+
+      {/* Achat / vente / marge du projet + facture(s) d'achat PDF */}
+      <MarginCard
+        price={draft.project.price}
+        orders={draft.orders}
+        environment={draft.environment}
+      />
 
       {draft.offer && (
         <div
