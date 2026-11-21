@@ -20,6 +20,7 @@ import {
 } from '@/utils/masterPrint';
 import { getProjectById, useAppDispatch, useAppSelector } from '../../store';
 import OrderCard from './OrderCard';
+import { QuoteSummary } from './PurchaseQuote'; // devis d'achat (prix bloqué 15 jours)
 import SendForm from './SendForm';
 import { Btn, LIVE_TONE, Pill, SANDBOX_TONE, card, muted } from './ui';
 
@@ -198,6 +199,10 @@ const MasterPrintTab = () => {
               projet {fmtEur(draft.project.price)}
             </p>
           )}
+          <QuoteSummary
+            projectDocumentId={draft.project.documentId}
+            refreshKey={draft.orders.length}
+          />
         </div>
         {!formOpen && (
           <Btn
