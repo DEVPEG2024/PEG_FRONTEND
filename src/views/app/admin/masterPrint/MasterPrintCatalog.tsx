@@ -29,7 +29,6 @@ import {
   apiSearchMasterPrintCatalog,
 } from '@/services/MasterPrintServices';
 import {
-  MP_CATEGORY_LABELS,
   defaultImportColors,
   defaultMarkings,
   fmtEur,
@@ -41,6 +40,9 @@ import {
 } from '@/utils/masterPrint';
 import useResponsive from '@/utils/hooks/useResponsive';
 import PurchasePricesPanel from './PurchasePricesPanel';
+// Catégories Master Print (libellés à jour) et rangement automatique à l'import.
+import { pickImportCategory } from '@/utils/masterPrintQuote';
+import useMpCategories from './useMpCategories';
 import MarkingsEditor from '@/views/app/common/projects/details/components/masterPrint/MarkingsEditor';
 import CatalogStock from './CatalogStock';
 import {
@@ -109,8 +111,14 @@ const ProductSheet = ({
   const [tiers, setTiers] = useState<MpPriceGridTier[] | null>(null);
   const [gridError, setGridError] = useState<string | null>(null);
   const [markup, setMarkup] = useState<number>(readMarkup);
+  const mpCategories = useMpCategories();
+  const remembered = mpCategories.rememberedFor(p.category);
   const [category, setCategory] = useState(() =>
-    suggestCategory(categories, p.category)
+    pickImportCategory(
+      categories,
+      remembered,
+      suggestCategory(categories, p.category)
+    )
   );
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ documentId: string; name: string } | null>(
@@ -120,8 +128,14 @@ const ProductSheet = ({
 
   useEffect(() => {
     if (!category && categories.length)
-      setCategory(suggestCategory(categories, p.category));
-  }, [categories, category, p.category]);
+      setCategory(
+        pickImportCategory(
+          categories,
+          remembered,
+          suggestCategory(categories, p.category)
+        )
+      );
+  }, [categories, category, p.category, remembered]);
 
   // Grille de prix relue à chaque changement de coloris, marquage ou format.
   const markingsOk = markings.every(
@@ -187,6 +201,7 @@ const ProductSheet = ({
         ...(again ? { again: true } : {}),
       });
       setDone({ documentId: data.productDocumentId, name: data.name });
+      if (category) mpCategories.remember(p.category, category);
       const extra = [
         data.created.colors ? `${data.created.colors} coloris créé(s)` : '',
         data.created.sizes ? `${data.created.sizes} taille(s) créée(s)` : '',
@@ -217,7 +232,7 @@ const ProductSheet = ({
           {[
             p.brand,
             p.sku ? `réf. ${p.sku}` : null,
-            MP_CATEGORY_LABELS[p.category] || p.category,
+            mpCategories.labelOf(p.category),
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -578,6 +593,7 @@ const MasterPrintCatalog = () => {
   const [categories, setCategories] = useState<
     Array<{ documentId: string; name: string }>
   >([]);
+  const mpCategories = useMpCategories();
   const seq = useRef(0);
 
   const search = useCallback(
@@ -712,7 +728,7 @@ const MasterPrintCatalog = () => {
         />
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {[['', 'Tout'], ...Object.entries(MP_CATEGORY_LABELS)].map(
+        {[['', 'Tout'], ...Object.entries(mpCategories.labels)].map(
           ([code, name]) => (
             <button
               key={code || 'tout'}
@@ -797,7 +813,7 @@ const MasterPrintCatalog = () => {
               {[
                 r.brand,
                 r.sku ? `réf. ${r.sku}` : null,
-                MP_CATEGORY_LABELS[r.category] || r.category,
+                mpCategories.labelOf(r.category),
                 r.bestSellerRank ? `n° ${r.bestSellerRank} des ventes` : null,
               ]
                 .filter(Boolean)

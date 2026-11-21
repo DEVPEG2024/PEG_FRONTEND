@@ -46,6 +46,13 @@ import {
 } from '@/utils/masterPrint';
 import MarkingsEditor from './MarkingsEditor';
 import ProductPicker from './ProductPicker';
+// Devis d'achat (prix bloqué 15 jours) et 409 price_changed.
+import type {
+  MpPriceChange,
+  MpSendQuoteOutcome,
+} from '@/@types/masterPrintQuote';
+import { priceChangeOf, sendQuoteNote } from '@/utils/masterPrintQuote';
+import { PriceChangeNotice, QuotePanel } from './PurchaseQuote';
 import {
   Btn,
   Field,
@@ -422,6 +429,7 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
   const [price, setPrice] = useState<MpPriceResult | null>(null);
   const [priceFor, setPriceFor] = useState('');
   const [busy, setBusy] = useState<'price' | 'send' | 'pick' | null>(null);
+  const [priceChange, setPriceChange] = useState<MpPriceChange | null>(null);
   const keyRef = useRef(draft.idempotencyKey);
   const sandbox = draft.environment === 'sandbox';
 
@@ -452,6 +460,10 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
       ...(pickup ? [] : addressIssues(address)),
     ]),
   ];
+  // Devis d'achat : seules les lignes comptent (pas l'adresse).
+  const lineIssues = issues.filter(
+    (i) => pickup || !addressIssues(address).includes(i)
+  );
   const slots = fileSlots(lines);
   const signature = JSON.stringify({ lines, address: pickup ? null : address });
   const priceFresh = !!price && priceFor === signature;
@@ -542,7 +554,8 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
     }
   };
 
-  const send = async () => {
+  /** `acceptPriceChange` : « Confirmer le nouveau prix » après un 409 price_changed. */
+  const send = async (acceptPriceChange = false) => {
     const total =
       priceFresh && price?.totalExclTax != null
         ? ` (${fmtEur(price.totalExclTax)} HT)`
@@ -550,8 +563,9 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
     const question = sandbox
       ? 'Bac à sable : rien ne sera produit ni facturé. Envoyer la commande d’essai ?'
       : `Envoyer ce projet à Master Print${total} ? Il sera fabriqué et facturé.`;
-    if (!window.confirm(question)) return;
+    if (!acceptPriceChange && !window.confirm(question)) return;
     setBusy('send');
+    setPriceChange(null);
     try {
       const assigned = Object.fromEntries(
         Object.entries(files).filter(([slot, id]) => id && slots.includes(slot))
@@ -567,18 +581,24 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
         ...(pegMode && remember && mapping?.productId && draft.pegProduct
           ? { remember: mappingToSave(mapping) }
           : {}),
+        ...(acceptPriceChange ? { accept_price_change: true } : {}),
       });
+      const viaQuote = sendQuoteNote(
+        (data as { quote?: MpSendQuoteOutcome }).quote
+      );
       toast.success(
         data.filesStarted
-          ? `Commande ${data.order.orderId} créée — envoi des fichiers en cours`
-          : `Commande ${data.order.orderId} créée${data.order.missingFiles ? ' — fichiers à envoyer' : ''}`
+          ? `Commande ${data.order.orderId} créée${viaQuote} — envoi des fichiers en cours`
+          : `Commande ${data.order.orderId} créée${viaQuote}${data.order.missingFiles ? ' — fichiers à envoyer' : ''}`
       );
       onSent();
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response
         ?.status;
       keyRef.current = nextIdempotencyKey(keyRef.current, status);
-      toast.error(masterPrintError(e, 'Envoi refusé par Master Print.'));
+      const change = priceChangeOf(e);
+      if (change) setPriceChange(change);
+      else toast.error(masterPrintError(e, 'Envoi refusé par Master Print.'));
     } finally {
       setBusy(null);
     }
@@ -1129,6 +1149,12 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
               )}
           </div>
         )}
+        <QuotePanel
+          projectDocumentId={draft.project.documentId}
+          lines={lines}
+          ready={!lineIssues.length}
+          disabled={!!busy}
+        />
         <div
           style={{
             display: 'flex',
@@ -1146,7 +1172,7 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
           </Btn>
           <Btn
             variant="primary"
-            onClick={send}
+            onClick={() => send()}
             disabled={!!issues.length || !!busy}
           >
             {busy === 'send'
@@ -1156,6 +1182,13 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
                 : 'Envoyer à Master Print'}
           </Btn>
         </div>
+        {priceChange && (
+          <PriceChangeNotice
+            change={priceChange}
+            busy={!!busy}
+            onConfirm={() => send(true)}
+          />
+        )}
       </section>
     </div>
   );
