@@ -42,6 +42,7 @@ import {
 import useResponsive from '@/utils/hooks/useResponsive';
 import PurchasePricesPanel from './PurchasePricesPanel';
 import MarkingsEditor from '@/views/app/common/projects/details/components/masterPrint/MarkingsEditor';
+import CatalogStock from './CatalogStock';
 import {
   Btn,
   Field,
@@ -373,6 +374,8 @@ const ProductSheet = ({
           </div>
         </section>
       )}
+
+      {!!p.colors.length && <CatalogStock productId={p.id} color={color} />}
 
       <section>
         <h3 style={sectionTitle}>Prix d’achat par quantité</h3>
