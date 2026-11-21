@@ -33,6 +33,7 @@ import {
 } from '@/views/app/common/projects/details/components/masterPrint/ui';
 import MarkingsEditor from '@/views/app/common/projects/details/components/masterPrint/MarkingsEditor';
 import ProductPicker from '@/views/app/common/projects/details/components/masterPrint/ProductPicker';
+import ServiceStatusBanner from './ServiceStatusBanner';
 
 const OfferConfigurator = lazy(
   () =>
@@ -255,8 +256,11 @@ const OfferSettings = () => {
   if (error) {
     return (
       <Container>
-        <div style={card}>
-          <p style={muted}>{error}</p>
+        <div style={{ display: 'grid', gap: '14px' }}>
+          <ServiceStatusBanner />
+          <div style={card}>
+            <p style={muted}>{error}</p>
+          </div>
         </div>
       </Container>
     );
@@ -365,6 +369,7 @@ const OfferSettings = () => {
     return (
       <Container>
         <div style={{ display: 'grid', gap: '14px' }}>
+          <ServiceStatusBanner />
           {header}
           <div style={card}>
             <h2 style={sectionTitle}>
@@ -402,6 +407,7 @@ const OfferSettings = () => {
   return (
     <Container>
       <div style={{ display: 'grid', gap: '14px' }}>
+        <ServiceStatusBanner />
         {header}
         <div
           style={{

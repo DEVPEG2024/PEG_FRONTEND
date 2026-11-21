@@ -22,6 +22,7 @@ import { getProjectById, useAppDispatch, useAppSelector } from '../../store';
 import MarginCard from './MarginCard';
 import OrderCard from './OrderCard';
 import SendForm from './SendForm';
+import ServiceStatusBanner from '@/views/app/admin/masterPrint/ServiceStatusBanner';
 import { Btn, LIVE_TONE, Pill, SANDBOX_TONE, card, muted } from './ui';
 
 type Load = 'loading' | 'ready' | 'missing' | 'error';
@@ -104,6 +105,7 @@ const MasterPrintTab = () => {
       }}
       data-testid="master-print-tab"
     >
+      <ServiceStatusBanner />
       {children}
     </div>
   );
