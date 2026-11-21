@@ -38,6 +38,7 @@ import {
   optionHidden,
   selectionsFromConfig,
   totalPieces,
+  imagesForColor,
 } from '@/utils/offerConfigurator';
 import useResponsive from '@/utils/hooks/useResponsive';
 import ProductImageCarousel from '@/components/shared/ProductImageCarousel';
@@ -250,6 +251,8 @@ const OfferConfigurator = ({
   // ── Sections ──────────────────────────────────────────────────────────────
   let step = 0;
   const color = spec.colors.find((c) => c.code === config.color);
+  // Photo du coloris choisi (posée depuis « Photos des produits ») à la place de l'image principale.
+  const images = imagesForColor(product.images ?? [], color);
   const markings = config.markings ?? [];
   const m = spec.markings;
 
@@ -1127,7 +1130,7 @@ const OfferConfigurator = ({
             }}
           >
             <ProductImageCarousel
-              images={product.images ?? []}
+              images={images}
               alt={product.name}
               maxImageHeight={380}
               lensSize={200}

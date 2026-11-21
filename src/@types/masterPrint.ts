@@ -370,7 +370,14 @@ export type OfferSpec = {
   description: string | null;
   quantity: { min: number; max: number | null; step: number };
   productionDays: number | null;
-  colors: Array<{ code: string; label: string; hex: string | null; sizes: string[] }>;
+  /** imageUrl : photo du coloris (fichier PEG), posée depuis « Photos des produits ». */
+  colors: Array<{
+    code: string;
+    label: string;
+    hex: string | null;
+    sizes: string[];
+    imageUrl?: string | null;
+  }>;
   sizes: string[];
   markings: null | {
     mode: 'fixed' | 'client';

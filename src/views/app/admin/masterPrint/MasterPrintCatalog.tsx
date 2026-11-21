@@ -40,6 +40,7 @@ import {
 } from '@/utils/masterPrint';
 import useResponsive from '@/utils/hooks/useResponsive';
 import PurchasePricesPanel from './PurchasePricesPanel';
+import ProductPhotosPanel, { ImportPhotosButton } from './ProductPhotosPanel';
 // Catégories Master Print (libellés à jour) et rangement automatique à l'import.
 import { pickImportCategory } from '@/utils/masterPrintQuote';
 import useMpCategories from './useMpCategories';
@@ -265,6 +266,9 @@ const ProductSheet = ({
             </Link>
           </p>
         ))}
+        {done && p.category === 'textile' && (
+          <ImportPhotosButton productDocumentId={done.documentId} />
+        )}
       </div>
 
       {p.description && (
@@ -870,11 +874,13 @@ const MasterPrintCatalog = () => {
         <p style={{ ...muted, marginTop: '4px' }}>
           Prix d’achat du compte PEG chez Master Print. Un produit importé reste
           invisible des clients jusqu’à sa mise au catalogue. Master Print ne
-          fournit pas de photos.
+          fournit pas de photos : le panneau « Photos des produits » retrouve
+          celles du fabricant.
         </p>
       </div>
       {/* Prix d'achat des produits importés (au téléphone : masqué pendant la lecture d'une fiche). */}
       {!(phone && selected) && <PurchasePricesPanel />}
+      {!(phone && selected) && <ProductPhotosPanel />}
       {phone ? (
         selected ? (
           sheet

@@ -289,3 +289,17 @@ export function formatsLabel(formats: string[]): string {
 /** Attribut `accept` du champ de fichier : « .pdf,.png ». */
 export const acceptAttr = (formats: string[]) =>
   formats.map((f) => `.${f}`).join(',');
+
+/**
+ * Images de la fiche quand un coloris est choisi : sa photo (fichier PEG posé
+ * depuis « Photos des produits ») d'abord, puis la galerie sans doublon ; sans
+ * photo de coloris, la galerie normale.
+ */
+export function imagesForColor<I extends { url: string }>(
+  images: I[],
+  color: { imageUrl?: string | null; label?: string } | null | undefined
+): Array<I | { url: string; name?: string }> {
+  const url = color?.imageUrl;
+  if (!url) return images;
+  return [{ url, name: color?.label }, ...images.filter((i) => i.url !== url)];
+}
