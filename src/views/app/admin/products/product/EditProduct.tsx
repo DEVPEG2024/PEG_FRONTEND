@@ -5,6 +5,7 @@ import { getProductBasePrice } from '@/utils/productHelpers';
 import { PegFile } from '@/@types/pegFile';
 import ProductForm, { ProductFormModel } from './Forms/ProductForm';
 import OfferLinkBanner from '@/views/app/admin/masterPrint/OfferLinkBanner';
+import PriceReviewNotice from '@/views/app/admin/masterPrint/PriceReviewNotice';
 import { rememberOptions } from './Forms/attachedOptions';
 import {
   apiGetCustomers,
@@ -460,6 +461,9 @@ const EditProduct = () => {
       <>
         {onEdition && product?.documentId && (
           <OfferLinkBanner productDocumentId={product.documentId} />
+        )}
+        {onEdition && product?.documentId && (
+          <PriceReviewNotice productDocumentId={product.documentId} />
         )}
         <ProductForm
           type={onEdition ? 'edit' : 'new'}

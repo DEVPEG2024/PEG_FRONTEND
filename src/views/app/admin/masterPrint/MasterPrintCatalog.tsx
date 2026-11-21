@@ -40,6 +40,7 @@ import {
   tierRows,
 } from '@/utils/masterPrint';
 import useResponsive from '@/utils/hooks/useResponsive';
+import PurchasePricesPanel from './PurchasePricesPanel';
 import MarkingsEditor from '@/views/app/common/projects/details/components/masterPrint/MarkingsEditor';
 import {
   Btn,
@@ -851,6 +852,8 @@ const MasterPrintCatalog = () => {
           fournit pas de photos.
         </p>
       </div>
+      {/* Prix d'achat des produits importés (au téléphone : masqué pendant la lecture d'une fiche). */}
+      {!(phone && selected) && <PurchasePricesPanel />}
       {phone ? (
         selected ? (
           sheet
