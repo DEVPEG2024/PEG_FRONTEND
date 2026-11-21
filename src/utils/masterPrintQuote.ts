@@ -6,7 +6,7 @@
  */
 import type {
   MpCategory,
-  MpPriceChange,
+  MpQuotePriceChange,
   MpQuoteCheck,
   MpQuoteView,
   MpSendQuoteOutcome,
@@ -90,7 +90,7 @@ const num = (v: unknown): number | null =>
     : null;
 
 /** Erreur d'envoi `409 price_changed` → données du bouton « Confirmer le nouveau prix ». */
-export function priceChangeOf(err: unknown): MpPriceChange | null {
+export function priceChangeOf(err: unknown): MpQuotePriceChange | null {
   const res = (
     err as {
       response?: {
@@ -117,7 +117,7 @@ export function priceChangeOf(err: unknown): MpPriceChange | null {
 }
 
 /** « 79,98 € → 85,50 € HT », ou null si un des deux montants manque. */
-export function priceChangeAmounts(change: MpPriceChange): string | null {
+export function priceChangeAmounts(change: MpQuotePriceChange): string | null {
   if (change.oldTotalExclTax === null || change.newTotalExclTax === null)
     return null;
   return `${fmtEur(change.oldTotalExclTax)} → ${fmtEur(change.newTotalExclTax)} HT`;

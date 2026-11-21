@@ -48,7 +48,7 @@ import MarkingsEditor from './MarkingsEditor';
 import ProductPicker from './ProductPicker';
 // Devis d'achat (prix bloqué 15 jours) et 409 price_changed.
 import type {
-  MpPriceChange,
+  MpQuotePriceChange,
   MpSendQuoteOutcome,
 } from '@/@types/masterPrintQuote';
 import { priceChangeOf, sendQuoteNote } from '@/utils/masterPrintQuote';
@@ -429,7 +429,9 @@ const SendForm = ({ draft, onSent, onClose }: Props) => {
   const [price, setPrice] = useState<MpPriceResult | null>(null);
   const [priceFor, setPriceFor] = useState('');
   const [busy, setBusy] = useState<'price' | 'send' | 'pick' | null>(null);
-  const [priceChange, setPriceChange] = useState<MpPriceChange | null>(null);
+  const [priceChange, setPriceChange] = useState<MpQuotePriceChange | null>(
+    null
+  );
   const keyRef = useRef(draft.idempotencyKey);
   const sandbox = draft.environment === 'sandbox';
 

@@ -18,6 +18,7 @@ import {
   isMasterPrintMissing,
   masterPrintError,
 } from '@/utils/masterPrint';
+import { projectPurchase } from '@/utils/masterPrintOrders';
 import { getProjectById, useAppDispatch, useAppSelector } from '../../store';
 import MarginCard from './MarginCard';
 import OrderCard from './OrderCard';
@@ -151,10 +152,8 @@ const MasterPrintTab = () => {
 
   const sandbox = draft.environment === 'sandbox';
   const live = draft.orders.filter((o) => o.status !== 'cancelled');
-  const cost = live.reduce(
-    (a, o) => a + (o.totalWithShippingExclTax ?? o.totalExclTax ?? 0),
-    0
-  );
+  // Même règle d'achat que la carte « Marge » : commandes réelles d'abord, sinon bac à sable.
+  const purchase = projectPurchase(draft.orders);
 
   return wrap(
     <>
@@ -198,8 +197,9 @@ const MasterPrintTab = () => {
           </p>
           {!!live.length && (
             <p style={muted}>
-              {live.length} commande(s) · coût {fmtEur(cost)} HT · prix du
-              projet {fmtEur(draft.project.price)}
+              {live.length} commande(s)
+              {purchase ? ` · achat ${fmtEur(purchase.amount)} HT` : ''} · prix
+              du projet {fmtEur(draft.project.price)}
             </p>
           )}
           <QuoteSummary

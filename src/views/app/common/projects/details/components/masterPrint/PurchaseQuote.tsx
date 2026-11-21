@@ -13,7 +13,7 @@ import { toast } from 'react-toastify';
 import { HiLockClosed } from 'react-icons/hi';
 import type { MpLineConfig } from '@/@types/masterPrint';
 import type {
-  MpPriceChange,
+  MpQuotePriceChange,
   MpQuoteCheck,
   MpQuoteView,
 } from '@/@types/masterPrintQuote';
@@ -221,7 +221,7 @@ export const PriceChangeNotice = ({
   busy,
   onConfirm,
 }: {
-  change: MpPriceChange;
+  change: MpQuotePriceChange;
   busy: boolean;
   onConfirm: () => void;
 }) => {

@@ -41,7 +41,7 @@ export type MpSendQuoteOutcome = {
 };
 
 /** 409 price_changed : le prix a changé depuis le devis (ou devis expiré). */
-export type MpPriceChange = {
+export type MpQuotePriceChange = {
   message: string;
   quoteId: string | null;
   oldTotalExclTax: number | null;
