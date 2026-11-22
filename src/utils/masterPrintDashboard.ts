@@ -197,24 +197,6 @@ export function marginRate(
   return Math.round((m.margin / m.sale) * 1000) / 10;
 }
 
-/**
- * Graduations « rondes » d'un axe qui part de 0 : 1, 2 ou 5 × 10^n, 4 intervalles
- * au plus. Rend [0] quand tout est nul.
- */
-export function niceTicks(max: number, intervals = 4): number[] {
-  if (!(max > 0)) return [0];
-  const raw = max / intervals;
-  const pow = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 5, 10]
-    .map((k) => k * pow)
-    .find((s) => s >= raw) as number;
-  const top = Math.ceil(max / step) * step;
-  const out: number[] = [];
-  for (let v = 0; v <= top + step / 2; v += step)
-    out.push(Math.round(v * 100) / 100);
-  return out;
-}
-
 /** « 1 200 € », « 12,5 k€ » : montant court pour un axe. */
 export function compactEur(n: number): string {
   if (Math.abs(n) >= 10000)

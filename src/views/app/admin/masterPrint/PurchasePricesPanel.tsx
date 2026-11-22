@@ -187,7 +187,12 @@ const ChangeRow = ({
   );
 };
 
-const PurchasePricesPanel = () => {
+/** `defaultOpen` : onglet « Prix » de la page Master Print — la liste des changements est ouverte d'emblée. */
+const PurchasePricesPanel = ({
+  defaultOpen = false,
+}: {
+  defaultOpen?: boolean;
+}) => {
   const [data, setData] = useState<MpPricesOverview | null>(null);
   const [hidden, setHidden] = useState(false);
   const [error, setError] = useState('');
@@ -283,7 +288,7 @@ const PurchasePricesPanel = () => {
     hidden: more,
   } = splitChanges(data.changes, showAll);
   const total = data.changes.length;
-  const open = listOpen ?? data.pending > 0;
+  const open = listOpen ?? (defaultOpen || data.pending > 0);
 
   return (
     <section style={{ ...card, padding: '14px 16px' }}>

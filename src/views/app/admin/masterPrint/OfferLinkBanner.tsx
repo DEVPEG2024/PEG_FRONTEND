@@ -51,7 +51,7 @@ const OfferLinkBanner = ({
       <Link
         to={`/admin/master-print/offers/${productDocumentId}`}
         style={{
-          color: '#8db4ff',
+          color: '#b9b0ff',
           fontWeight: 700,
           textDecoration: 'underline',
         }}

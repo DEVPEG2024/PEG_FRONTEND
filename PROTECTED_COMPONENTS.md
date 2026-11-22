@@ -3,6 +3,9 @@
 > NE PAS MODIFIER ces composants sans demande explicite de Nova.
 > Reference : GLOSSARY.md
 > Derniere validation : 2026-04-18
+> 2026-11-22 (demande explicite) : rendu du dashboard admin deplace dans `DashboardAdminHub.tsx` (affichage seul,
+> design « hub » commun) ; calculs, banniere, pense-bete et widgets restent dans `DashboardAdmin.tsx`.
+> Les numeros de lignes ci-dessous datent d'avant cette refonte : chercher les noms (TodoListWidget, WIDGET_DEFS, onBannerFile).
 
 ---
 

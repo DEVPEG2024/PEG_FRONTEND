@@ -501,7 +501,7 @@ const ProductPhotosPanel = () => {
             style={{
               width: `${Math.round((progress.page / progress.pages) * 100)}%`,
               height: '100%',
-              background: '#2f6fed',
+              background: '#8b7dff',
               transition: 'width .2s ease',
             }}
           />

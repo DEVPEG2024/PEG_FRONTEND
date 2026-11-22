@@ -12,7 +12,6 @@ import {
   legacyTarget,
   ringValue,
   shortOrderId,
-  sparkPoints,
   stations,
   tabBadges,
   tabFromSearch,
@@ -202,16 +201,6 @@ describe('petits graphiques', () => {
     expect(deltaPct(120, 100)).toBe(20);
     expect(deltaPct(50, 100)).toBe(-50);
     expect(deltaPct(10, 0)).toBeNull();
-  });
-
-  it('courbe : de gauche à droite, le plus haut en haut, à plat si tout est nul', () => {
-    const p = sparkPoints([0, 10, 5], 84, 30);
-    expect(p[0][0]).toBe(4);
-    expect(p[2][0]).toBe(80);
-    expect(p[1][1]).toBe(4);
-    expect(p[0][1]).toBe(26);
-    expect(sparkPoints([0, 0], 84, 30).every(([, y]) => y === 15)).toBe(true);
-    expect(sparkPoints([], 84, 30)).toEqual([]);
   });
 
   it('anneau borné de 0 à 100', () => {

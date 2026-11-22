@@ -119,7 +119,7 @@ const PriceReviewNotice = ({
         <Link
           to={hubPath('prix')}
           style={{
-            color: '#8db4ff',
+            color: '#b9b0ff',
             fontWeight: 700,
             textDecoration: 'underline',
           }}

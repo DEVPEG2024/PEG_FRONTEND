@@ -101,7 +101,7 @@ const Radio = <T extends string>({
           fontSize: '12.5px',
           fontWeight: 700,
           cursor: 'pointer',
-          border: `1px solid ${value === o.value ? '#2f6fed' : 'rgba(255,255,255,0.12)'}`,
+          border: `1px solid ${value === o.value ? '#8b7dff' : 'rgba(255,255,255,0.12)'}`,
           background:
             value === o.value
               ? 'rgba(47,111,237,0.18)'
@@ -316,7 +316,7 @@ const OfferSettings = () => {
           {' · '}
           <Link
             to={`/admin/products/edit/${productDocumentId}`}
-            style={{ color: '#8db4ff', textDecoration: 'underline' }}
+            style={{ color: '#b9b0ff', textDecoration: 'underline' }}
           >
             fiche produit
           </Link>

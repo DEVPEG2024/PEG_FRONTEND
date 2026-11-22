@@ -692,7 +692,7 @@ const AdminVillage = ({ onClassic }: Props) => {
         title="Bannière, pense-bête et widgets"
         style={segment(false)}
       >
-        <HiOutlineViewGrid aria-hidden="true" /> Vue classique
+        <HiOutlineViewGrid aria-hidden="true" /> Tableau de bord
       </button>
       <button
         type="button"

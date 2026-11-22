@@ -649,7 +649,7 @@ const PegDistricts = ({ onClassic, onWall }: Props) => {
         [
           ['ville', 'Vue ville', <HiOutlineMap key="v" />],
           ['liste', 'Liste', <HiOutlineListBullet key="l" />],
-          ['stats', 'Statistiques', <HiOutlineChartBar key="s" />],
+          ['stats', 'Tableau de bord', <HiOutlineChartBar key="s" />],
         ] as const
       ).map(([id, label, glyph]) => {
         const on = id === view;

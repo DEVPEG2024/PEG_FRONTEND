@@ -168,23 +168,6 @@ export function deltaPct(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-/** Points d'une courbe (x de 0 à w, y de h à 0) ; tout à plat au milieu si tout vaut 0. */
-export function sparkPoints(
-  values: number[],
-  w: number,
-  h: number,
-  pad = 4
-): Array<[number, number]> {
-  if (!values.length) return [];
-  const max = Math.max(...values);
-  const step = values.length > 1 ? (w - pad * 2) / (values.length - 1) : 0;
-  return values.map((v, i) => [
-    Math.round((pad + i * step) * 10) / 10,
-    Math.round((max > 0 ? h - pad - (v / max) * (h - pad * 2) : h / 2) * 10) /
-      10,
-  ]);
-}
-
 /** Taux (0–100) d'un anneau ; borné. */
 export const ringValue = (n: number, total: number) =>
   total > 0 ? Math.max(0, Math.min(100, Math.round((n / total) * 100))) : 0;

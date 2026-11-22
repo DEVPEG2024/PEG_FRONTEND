@@ -260,7 +260,7 @@ const ProductSheet = ({
             <span aria-hidden="true">·</span>
             <Link
               to={`/admin/master-print/offers/${imp.documentId}`}
-              style={{ color: '#8db4ff', textDecoration: 'underline' }}
+              style={{ color: '#b9b0ff', textDecoration: 'underline' }}
             >
               formulaire client
             </Link>
@@ -760,7 +760,7 @@ const MasterPrintCatalog = ({ embedded = false }: Props) => {
                     : '1px solid rgba(255,255,255,0.1)',
                 background:
                   category === code
-                    ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)'
+                    ? 'linear-gradient(135deg, #8b7dff 0%, #5b47e0 100%)'
                     : 'rgba(255,255,255,0.05)',
                 color: category === code ? '#fff' : 'rgba(255,255,255,0.65)',
               }}

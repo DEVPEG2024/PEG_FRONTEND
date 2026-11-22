@@ -1,51 +1,52 @@
 /*
- * Onglet « Master Print » — briques visuelles communes (même style que les
- * autres onglets admin du projet : cartes bleu nuit, Inter, libellés en capitales).
+ * Master Print — briques visuelles communes (onglet du projet, page Master Print,
+ * réglages d'offre). Depuis le 22/11/2026, alignées sur le design « hub »
+ * (components/shared/hub) : cartes bleu nuit arrondies, libellés en minuscules,
+ * action en violet PEG.
  */
 import type { CSSProperties, ReactNode } from 'react';
 import type { Tone } from '@/utils/masterPrint';
 
 export const card: CSSProperties = {
-  background: 'linear-gradient(160deg, #16263d 0%, #0f1c2e 100%)',
-  border: '1.5px solid rgba(255,255,255,0.07)',
-  borderRadius: '16px',
-  padding: '18px 20px',
+  background: 'linear-gradient(165deg, #16223b 0%, #0f182b 100%)',
+  border: '1px solid rgba(140,160,255,0.09)',
+  borderRadius: '20px',
+  padding: '20px 22px',
   fontFamily: 'Inter, sans-serif',
   color: '#fff',
 };
 
 export const label: CSSProperties = {
-  color: 'rgba(255,255,255,0.5)',
-  fontSize: '11px',
+  color: 'rgba(226,232,255,0.55)',
+  fontSize: '12px',
   fontWeight: 600,
   marginBottom: '4px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
 };
 
 export const input: CSSProperties = {
   width: '100%',
-  background: 'rgba(255,255,255,0.06)',
+  background: 'rgba(255,255,255,0.05)',
   border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '8px',
+  borderRadius: '12px',
   color: '#fff',
-  fontSize: '13px',
-  padding: '8px 10px',
+  fontSize: '13.5px',
+  padding: '9px 12px',
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
-  minHeight: '36px',
+  minHeight: '40px',
 };
 
 export const muted: CSSProperties = {
-  color: 'rgba(255,255,255,0.55)',
-  fontSize: '12.5px',
+  color: 'rgba(226,232,255,0.58)',
+  fontSize: '13px',
   lineHeight: 1.5,
 };
 
 export const sectionTitle: CSSProperties = {
-  fontSize: '14px',
+  fontSize: '16px',
   fontWeight: 700,
-  margin: '0 0 10px',
+  letterSpacing: '-0.01em',
+  margin: '0 0 12px',
   color: '#fff',
 };
 
@@ -76,21 +77,22 @@ export const Btn = ({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '6px',
-      padding: '8px 14px',
-      borderRadius: '10px',
+      gap: '7px',
+      padding: '8px 16px',
+      borderRadius: '12px',
       cursor: disabled ? 'not-allowed' : 'pointer',
       opacity: disabled ? 0.55 : 1,
       fontFamily: 'Inter, sans-serif',
-      fontSize: '12.5px',
+      fontSize: '13px',
       fontWeight: 700,
-      minHeight: '36px',
+      minHeight: '38px',
+      whiteSpace: 'nowrap',
       ...(variant === 'primary'
         ? {
             color: '#fff',
             border: 'none',
-            background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)',
-            boxShadow: '0 3px 12px rgba(47,111,237,0.35)',
+            background: 'linear-gradient(135deg, #8b7dff 0%, #5b47e0 100%)',
+            boxShadow: '0 6px 18px rgba(91,71,224,0.35)',
           }
         : variant === 'danger'
           ? {
@@ -99,9 +101,9 @@ export const Btn = ({
               background: 'rgba(239,68,68,0.08)',
             }
           : {
-              color: 'rgba(255,255,255,0.85)',
+              color: 'rgba(240,244,255,0.9)',
               border: '1px solid rgba(255,255,255,0.12)',
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(255,255,255,0.04)',
             }),
     }}
   >
@@ -169,8 +171,8 @@ export const Issues = ({ items }: { items: string[] }) =>
     <ul
       style={{
         margin: '8px 0 0',
-        padding: '8px 12px 8px 26px',
-        borderRadius: '10px',
+        padding: '10px 14px 10px 28px',
+        borderRadius: '12px',
         background: 'rgba(245,158,11,0.08)',
         border: '1px solid rgba(245,158,11,0.25)',
         color: '#fcd34d',
@@ -188,5 +190,5 @@ export const Issues = ({ items }: { items: string[] }) =>
 export const grid = (min: number): CSSProperties => ({
   display: 'grid',
   gridTemplateColumns: `repeat(auto-fill, minmax(min(${min}px, 100%), 1fr))`,
-  gap: '10px',
+  gap: '12px',
 });

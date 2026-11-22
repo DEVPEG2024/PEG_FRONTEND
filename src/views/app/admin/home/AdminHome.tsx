@@ -1,17 +1,15 @@
-// Accueil admin : « PEG DISTRICTS » (la ville en rendu 3D) ou le tableau de
-// bord classique.
+// Accueil admin : le tableau de bord (design « hub », comme la page Master
+// Print — par défaut depuis le 22/11/2026) ou « PEG DISTRICTS » (la ville en
+// rendu 3D).
 //
-// DashboardAdmin.tsx est un composant protégé : on ne le touche pas, ce
-// composant choisit seulement quoi afficher. Sous 1024 px (téléphone,
-// tablette), le tableau de bord classique reste seul — il bascule lui-même sur
-// sa version téléphone. Au-delà, la ville est la vue par défaut et la vue
-// classique (« Statistiques ») reste à un clic ; le choix est retenu sur
-// l'appareil. « ?mural=1 » ouvre l'écran mural (télévision), quel que soit ce
-// choix.
+// DashboardAdmin.tsx est un composant protégé : il calcule tout et rend le
+// tableau de bord ; ce composant choisit seulement quoi afficher. Sous 1024 px
+// (téléphone, tablette), le tableau de bord reste seul. Au-delà, le bouton
+// « Ville PEG » de la bannière ouvre la ville, et « Tableau de bord » dans la
+// ville y ramène ; le choix est retenu sur l'appareil. « ?mural=1 » ouvre l'écran
+// mural (télévision), quel que soit ce choix.
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import { HiOutlineMap } from 'react-icons/hi';
 import lazy from '@/utils/lazyWithRetry';
 import useResponsive from '@/utils/hooks/useResponsive';
 import DashboardAdmin from './DashboardAdmin';
@@ -49,22 +47,7 @@ const AdminHome = () => {
       <PegDistricts onClassic={() => choose('classic')} onWall={openWall} />
     );
 
-  return (
-    <>
-      <DashboardAdmin />
-      {createPortal(
-        <button
-          type="button"
-          onClick={() => choose('village')}
-          className="fixed bottom-6 right-6 z-30 inline-flex h-11 items-center gap-2 rounded-full bg-[#6d5dfc] px-5 text-sm font-bold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:bg-[#5b4ae8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >
-          <HiOutlineMap className="text-lg" aria-hidden="true" />
-          Vue ville
-        </button>,
-        document.body
-      )}
-    </>
-  );
+  return <DashboardAdmin onOpenCity={() => choose('village')} />;
 };
 
 export default AdminHome;

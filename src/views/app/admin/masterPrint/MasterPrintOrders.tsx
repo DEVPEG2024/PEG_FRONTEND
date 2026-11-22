@@ -142,7 +142,7 @@ const OrderRow = ({ o }: { o: MpAdminOrder }) => {
             <>
               <Link
                 to={`/common/projects/details/${o.project.documentId}?tab=Master%20Print`}
-                style={{ color: '#8db4ff', textDecoration: 'underline' }}
+                style={{ color: '#b9b0ff', textDecoration: 'underline' }}
               >
                 {o.project.name || 'Projet'}
               </Link>
@@ -431,7 +431,7 @@ const MasterPrintOrders = ({ embedded = false, initialQuery = '' }: Props) => {
                   filter === code ? 'none' : '1px solid rgba(255,255,255,0.1)',
                 background:
                   filter === code
-                    ? 'linear-gradient(90deg, #2f6fed, #1f4bb6)'
+                    ? 'linear-gradient(135deg, #8b7dff 0%, #5b47e0 100%)'
                     : 'rgba(255,255,255,0.05)',
                 color: filter === code ? '#fff' : 'rgba(255,255,255,0.7)',
               }}

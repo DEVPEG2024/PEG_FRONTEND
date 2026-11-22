@@ -17,7 +17,6 @@ import {
   dashboardActions,
   marginRate,
   monthsEmpty,
-  niceTicks,
   offerPath,
   paymentModeLabel,
   shortMonth,
@@ -287,13 +286,6 @@ describe('« À faire »', () => {
 });
 
 describe('chiffres', () => {
-  it('graduations rondes, de 0 au-dessus du maximum', () => {
-    expect(niceTicks(0)).toEqual([0]);
-    expect(niceTicks(430)).toEqual([0, 200, 400, 600]);
-    expect(niceTicks(1000)).toEqual([0, 500, 1000]);
-    expect(niceTicks(87)).toEqual([0, 50, 100]);
-  });
-
   it('montants courts pour l’axe', () => {
     expect(compactEur(0)).toBe('0 €');
     expect(compactEur(1200).replace(/\s/g, ' ')).toBe('1 200 €');

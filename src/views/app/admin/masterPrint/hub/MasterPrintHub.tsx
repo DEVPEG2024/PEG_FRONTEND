@@ -58,15 +58,19 @@ import ProductPhotosPanel from '../ProductPhotosPanel';
 import PurchasePricesPanel from '../PurchasePricesPanel';
 import ServiceStatusBanner from '../ServiceStatusBanner';
 import WebhookPanel from '../WebhookPanel';
-import { HUB_CSS } from './hubStyles';
+import { HUB_CSS } from '@/components/shared/hub/hubStyles';
 import {
   AccountCard,
   ActionsCard,
   Atelier,
   CatalogCard,
+  CatalogStrip,
   ColorBar,
   KpiRow,
   OrdersCard,
+  OrdersStrip,
+  PhotosStrip,
+  PricesStrip,
   SalesCard,
 } from './widgets';
 
@@ -162,7 +166,7 @@ const MasterPrintHub = () => {
   // Téléphone : la barre d'onglets défile ; l'onglet ouvert reste visible.
   useEffect(() => {
     document
-      .getElementById(`mpx-tab-${tab}`)
+      .getElementById(`hx-tab-${tab}`)
       ?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
   }, [tab]);
 
@@ -222,24 +226,24 @@ const MasterPrintHub = () => {
   });
 
   const servicePill = !svc ? null : !svc.ok ? (
-    <span className="mpx-pill mpx-pill--down">
+    <span className="hx-pill hx-pill--down">
       <i aria-hidden="true" />
       Hors service
     </span>
   ) : svc.degraded ? (
-    <span className="mpx-pill mpx-pill--warn">
+    <span className="hx-pill hx-pill--warn">
       <i aria-hidden="true" />
       Ralenti
     </span>
   ) : (
-    <span className="mpx-pill mpx-pill--ok">
+    <span className="hx-pill hx-pill--ok">
       <i aria-hidden="true" />
       En ligne
     </span>
   );
 
   const overview = (
-    <div className="mpx-grid">
+    <div className="hx-grid">
       <Atelier
         orders={orders}
         sandbox={sandbox}
@@ -290,20 +294,42 @@ const MasterPrintHub = () => {
 
   const content: Record<HubTab, ReactNode> = {
     overview,
-    commandes: <MasterPrintOrders key={q} embedded initialQuery={q} />,
-    catalogue: <MasterPrintCatalog embedded />,
-    prix: <PurchasePricesPanel />,
-    photos: <ProductPhotosPanel />,
+    commandes: (
+      <>
+        {orders && orders.counted > 0 && <OrdersStrip orders={orders} />}
+        <MasterPrintOrders key={q} embedded initialQuery={q} />
+      </>
+    ),
+    catalogue: (
+      <>
+        {catalog && <CatalogStrip catalog={catalog} />}
+        <MasterPrintCatalog embedded />
+      </>
+    ),
+    prix: (
+      <>
+        {prices.data && prices.data.configured && (
+          <PricesStrip prices={prices.data} />
+        )}
+        <PurchasePricesPanel defaultOpen />
+      </>
+    ),
+    photos: (
+      <>
+        {catalog && catalog.linked > 0 && <PhotosStrip catalog={catalog} />}
+        <ProductPhotosPanel />
+      </>
+    ),
     compte: (
-      <div className="mpx-grid">
+      <div className="hx-grid">
         <AccountCard
           status={st}
           hooks={hooks.data}
           subscribing={subscribing}
           onSubscribe={subscribe}
-          span="mpx-s12"
+          span="hx-s12"
         />
-        <div className="mpx-s12" style={{ minWidth: 0 }}>
+        <div className="hx-s12" style={{ minWidth: 0 }}>
           <WebhookPanel />
         </div>
       </div>
@@ -311,25 +337,25 @@ const MasterPrintHub = () => {
   };
 
   return (
-    <div className="mpx" data-testid="mp-hub">
+    <div className="hx" data-testid="mp-hub">
       <style>{HUB_CSS}</style>
 
-      <header className="mpx-head">
-        <div className="mpx-brand">
+      <header className="hx-head">
+        <div className="hx-brand">
           <ColorBar />
           <div style={{ minWidth: 0 }}>
-            <div className="mpx-title-row">
-              <h1 className="mpx-title">Master Print</h1>
+            <div className="hx-title-row">
+              <h1 className="hx-title">Master Print</h1>
               {env && (
                 <span
-                  className={`mpx-pill ${env === 'production' ? 'mpx-pill--live' : 'mpx-pill--sandbox'}`}
+                  className={`hx-pill ${env === 'production' ? 'hx-pill--live' : 'hx-pill--sandbox'}`}
                 >
                   {env === 'production' ? 'Production' : 'Essai'}
                 </span>
               )}
               {servicePill}
             </div>
-            <p className="mpx-sub">
+            <p className="hx-sub">
               Votre imprimeur exécutant
               {st?.company ? `, compte ${st.company}` : ''}.
               {loadedAt
@@ -341,7 +367,7 @@ const MasterPrintHub = () => {
         {tab === 'overview' && (
           <button
             type="button"
-            className="mpx-btn mpx-btn--ghost"
+            className="hx-btn hx-btn--ghost"
             onClick={load}
             disabled={loading}
           >
@@ -352,7 +378,7 @@ const MasterPrintHub = () => {
       </header>
 
       <nav
-        className="mpx-tabs"
+        className="hx-tabs"
         role="tablist"
         aria-label="Rubriques Master Print"
       >
@@ -363,18 +389,18 @@ const MasterPrintHub = () => {
               key={t.key}
               type="button"
               role="tab"
-              id={`mpx-tab-${t.key}`}
+              id={`hx-tab-${t.key}`}
               aria-selected={tab === t.key}
-              aria-controls="mpx-panel"
-              className="mpx-tab"
+              aria-controls="hx-panel"
+              className="hx-tab"
               onClick={() => go(t.key)}
-              data-testid={`mpx-tab-${t.key}`}
+              data-testid={`hx-tab-${t.key}`}
             >
               {TAB_ICONS[t.key]}
               {t.label}
               {b && (
                 <span
-                  className={`mpx-badge mpx-badge--${b.level}${b.count ? '' : ' mpx-badge--dot'}`}
+                  className={`hx-badge hx-badge--${b.level}${b.count ? '' : ' hx-badge--dot'}`}
                   aria-label={b.count ? `${b.count} à voir` : 'à voir'}
                 >
                   {b.count || ''}
@@ -388,14 +414,14 @@ const MasterPrintHub = () => {
       {tab !== 'overview' && <ServiceStatusBanner />}
 
       <div
-        id="mpx-panel"
+        id="hx-panel"
         role="tabpanel"
-        aria-labelledby={`mpx-tab-${tab}`}
+        aria-labelledby={`hx-tab-${tab}`}
         style={{ marginTop: tab === 'overview' ? 0 : 4 }}
       >
         {unconfigured ? (
-          <div className="mpx-card">
-            <p className="mpx-muted">
+          <div className="hx-card">
+            <p className="hx-muted">
               Master Print n’est pas encore branché sur ce serveur
               (MASTER_PRINT_CLIENT_ID, MASTER_PRINT_API_KEY).
             </p>
