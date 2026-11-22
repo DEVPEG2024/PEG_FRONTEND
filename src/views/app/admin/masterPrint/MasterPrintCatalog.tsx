@@ -577,7 +577,15 @@ const ProductSheet = ({
   );
 };
 
-const MasterPrintCatalog = () => {
+type Props = {
+  /**
+   * Affichée dans l'onglet « Catalogue » de la page Master Print : sans titre ni
+   * bandeau d'état (la page les porte), prix et photos ayant leurs propres onglets.
+   */
+  embedded?: boolean;
+};
+
+const MasterPrintCatalog = ({ embedded = false }: Props) => {
   const { smaller } = useResponsive();
   const phone = smaller.md;
   const [q, setQ] = useState('');
@@ -680,10 +688,10 @@ const MasterPrintCatalog = () => {
         gap: '14px',
         fontFamily: 'Inter, sans-serif',
         color: '#fff',
-        padding: phone ? '12px 0' : '4px 0 24px',
+        padding: embedded ? 0 : phone ? '12px 0' : '4px 0 24px',
       }}
     >
-      <ServiceStatusBanner />
+      {!embedded && <ServiceStatusBanner />}
       {children}
     </div>
   );
@@ -867,20 +875,22 @@ const MasterPrintCatalog = () => {
 
   return wrap(
     <>
-      <div>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, margin: 0 }}>
-          Catalogue Master Print
-        </h1>
-        <p style={{ ...muted, marginTop: '4px' }}>
-          Prix d’achat du compte PEG chez Master Print. Un produit importé reste
-          invisible des clients jusqu’à sa mise au catalogue. Master Print ne
-          fournit pas de photos : le panneau « Photos des produits » retrouve
-          celles du fabricant.
-        </p>
-      </div>
+      {!embedded && (
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: 0 }}>
+            Catalogue Master Print
+          </h1>
+          <p style={{ ...muted, marginTop: '4px' }}>
+            Prix d’achat du compte PEG chez Master Print. Un produit importé
+            reste invisible des clients jusqu’à sa mise au catalogue. Master
+            Print ne fournit pas de photos : le panneau « Photos des produits »
+            retrouve celles du fabricant.
+          </p>
+        </div>
+      )}
       {/* Prix d'achat des produits importés (au téléphone : masqué pendant la lecture d'une fiche). */}
-      {!(phone && selected) && <PurchasePricesPanel />}
-      {!(phone && selected) && <ProductPhotosPanel />}
+      {!embedded && !(phone && selected) && <PurchasePricesPanel />}
+      {!embedded && !(phone && selected) && <ProductPhotosPanel />}
       {phone ? (
         selected ? (
           sheet

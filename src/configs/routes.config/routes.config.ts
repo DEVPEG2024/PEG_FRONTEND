@@ -163,25 +163,24 @@ const protectedAdminRoutes = [
     component: lazy(() => import("@/views/app/admin/imbretex/ImbretexCatalog")),
     authority: [SUPER_ADMIN, ADMIN],
   },
-  // Master Print : catalogue de l'exécutant des projets (recherche, fiche, import dans PEG)
+  // Master Print : une seule page à onglets (?tab=commandes|catalogue|prix|photos|compte)
   {
-    key: "admin.masterPrint.catalog",
-    path: "/admin/master-print/catalog",
-    component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintCatalog")),
-    authority: [SUPER_ADMIN, ADMIN],
-  },
-  // Master Print : tableau de bord (à faire, étapes des commandes, achats / ventes / marge, catalogue, compte)
-  {
-    key: "admin.masterPrint.dashboard",
+    key: "admin.masterPrint",
     path: "/admin/master-print",
-    component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintDashboard")),
+    component: lazy(() => import("@/views/app/admin/masterPrint/hub/MasterPrintHub")),
     authority: [SUPER_ADMIN, ADMIN],
   },
-  // Master Print : commandes (statut, alertes, marge, facture d'achat) et suivi automatique
+  // Anciennes adresses (avant le 22/11) → onglet correspondant
   {
-    key: "admin.masterPrint.orders",
+    key: "admin.masterPrint",
+    path: "/admin/master-print/catalog",
+    component: lazy(() => import("@/views/app/admin/masterPrint/hub/LegacyRedirect")),
+    authority: [SUPER_ADMIN, ADMIN],
+  },
+  {
+    key: "admin.masterPrint",
     path: "/admin/master-print/orders",
-    component: lazy(() => import("@/views/app/admin/masterPrint/MasterPrintOrders")),
+    component: lazy(() => import("@/views/app/admin/masterPrint/hub/LegacyRedirect")),
     authority: [SUPER_ADMIN, ADMIN],
   },
   // Offre configurable : formulaire client d'un produit relié à Master Print (réglages + aperçu)

@@ -8,6 +8,7 @@ import {
   apiIgnoreMasterPrintPriceChange,
 } from '@/services/MasterPrintPricesServices';
 import { masterPrintError } from '@/utils/masterPrint';
+import { hubPath } from '@/utils/masterPrintHub';
 import {
   canApply,
   costLine,
@@ -92,9 +93,7 @@ const PriceReviewNotice = ({
         lineHeight: 1.5,
       }}
     >
-      <strong style={{ color: '#fcd34d' }}>
-        {reviewTitle(pending)}
-      </strong>
+      <strong style={{ color: '#fcd34d' }}>{reviewTitle(pending)}</strong>
       <div style={{ marginTop: '4px' }}>{priceLine(pending)}</div>
       {cost && <div>{cost}</div>}
       <div style={{ color: 'rgba(255,240,210,0.7)' }}>
@@ -118,7 +117,7 @@ const PriceReviewNotice = ({
           Ignorer
         </Btn>
         <Link
-          to="/admin/master-print/catalog"
+          to={hubPath('prix')}
           style={{
             color: '#8db4ff',
             fontWeight: 700,

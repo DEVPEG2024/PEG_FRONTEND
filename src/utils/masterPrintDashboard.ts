@@ -12,6 +12,7 @@ import type { MpDashboard, MpDashMonth } from '@/@types/masterPrintDashboard';
 import type { MpWebhooksOverview } from '@/@types/masterPrintOrders';
 import type { MpPricesOverview } from '@/@types/masterPrintPrices';
 import type { MpServiceStatus } from '@/services/MasterPrintStatusServices';
+import { hubPath } from './masterPrintHub';
 
 export type DashLevel = 'danger' | 'warning' | 'info';
 
@@ -36,8 +37,12 @@ const LEVEL_RANK: Record<DashLevel, number> = {
   info: 2,
 };
 
-export const ORDERS_PATH = '/admin/master-print/orders';
-export const CATALOG_PATH = '/admin/master-print/catalog';
+// Onglets de la page Master Print (depuis le 22/11 : une seule page à onglets).
+export const ORDERS_PATH = hubPath('commandes');
+export const CATALOG_PATH = hubPath('catalogue');
+export const PRICES_PATH = hubPath('prix');
+export const PHOTOS_PATH = hubPath('photos');
+export const ACCOUNT_PATH = hubPath('compte');
 export const offerPath = (productDocumentId: string) =>
   `/admin/master-print/offers/${encodeURIComponent(productDocumentId)}`;
 export const projectPath = (documentId: string) =>
@@ -95,7 +100,7 @@ export function dashboardActions(input: {
         level: webhooks.health.level,
         title: webhooks.health.title,
         detail: webhooks.health.detail,
-        to: ORDERS_PATH,
+        to: ACCOUNT_PATH,
         cta: 'Voir le suivi',
       });
     }
@@ -128,7 +133,7 @@ export function dashboardActions(input: {
       title: `${plural(prices.pending, 'changement de prix', 'changements de prix')} à revoir`,
       detail:
         'Master Print a changé ses prix sur des produits dont vous avez retouché les paliers : rien n’a été écrasé, à vous de décider.',
-      to: CATALOG_PATH,
+      to: PRICES_PATH,
       cta: 'Revoir',
     });
   }
@@ -152,7 +157,7 @@ export function dashboardActions(input: {
       level: 'info',
       title: `${plural(catalog.offersWithoutPhotosCount, 'offre', 'offres')} sans photo`,
       detail: `Le client voit une fiche sans image : ${names(catalog.offersWithoutPhotos, catalog.offersWithoutPhotosCount)}.`,
-      to: CATALOG_PATH,
+      to: PHOTOS_PATH,
       cta: 'Chercher les photos',
     });
   }
@@ -181,10 +186,6 @@ export function dashboardActions(input: {
 }
 
 // ── Chiffres ────────────────────────────────────────────────────────────────
-
-/** Part en % arrondie (0 si rien). */
-export const share = (n: number, total: number) =>
-  total > 0 ? Math.round((n / total) * 100) : 0;
 
 /** Taux de marge sur la vente, en % à une décimale ; null sans vente. */
 export function marginRate(

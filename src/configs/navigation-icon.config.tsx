@@ -23,7 +23,7 @@ import { GoFileDiff } from "react-icons/go";
 import { PiFlagBannerBold, PiSwimmingPoolBold } from "react-icons/pi";
 import { FaPenNib, FaWhatsapp } from 'react-icons/fa';
 import { BsCalendar3 } from 'react-icons/bs';
-import { TbFileInvoice, TbCrown, TbCalendarStats, TbShare3 } from 'react-icons/tb';
+import { TbFileInvoice, TbCrown, TbCalendarStats, TbShare3, TbPrinter } from 'react-icons/tb';
 
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -42,6 +42,7 @@ const navigationIcon: NavigationIcons = {
     offers: <MdOutlineWorkOutline />,
     forms: <MdOutlineWorkOutline />,
     store: <PiStorefront />,
+    masterPrint: <TbPrinter />,
     storeOrders: <PiStorefront />,
     storeProducts: <PiStorefront />,
     storeAdd: <PiStorefront />,

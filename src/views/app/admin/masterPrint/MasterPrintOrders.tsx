@@ -1,6 +1,6 @@
 /*
- * Commandes Master Print (menu Fournisseurs, `/admin/master-print/orders`) —
- * ajout 20/11/2026.
+ * Commandes Master Print — ajout 20/11/2026. Depuis le 22/11, onglet « Commandes »
+ * de la page Master Print (`/admin/master-print?tab=commandes`, `embedded`).
  *
  * Toutes les commandes passées chez Master Print avec la clé de ce serveur,
  * fusionnées avec celles enregistrées par PEG : statut, alertes (fichier refusé,
@@ -257,11 +257,18 @@ const OrderRow = ({ o }: { o: MpAdminOrder }) => {
 
 type Meta = Extract<MpOrdersPage, { configured: true }>;
 
-const MasterPrintOrders = () => {
+type Props = {
+  /** Affichée dans un onglet de la page Master Print : ni titre ni suivi automatique (onglet « Compte et suivi »). */
+  embedded?: boolean;
+  /** Recherche de départ (n° de commande cliqué depuis la vue d'ensemble). */
+  initialQuery?: string;
+};
+
+const MasterPrintOrders = ({ embedded = false, initialQuery = '' }: Props) => {
   const { smaller } = useResponsive();
   const phone = smaller.md;
   const [filter, setFilter] = useState<MpOrdersFilter>('todo');
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(initialQuery);
   const [items, setItems] = useState<MpAdminOrder[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [state, setState] = useState<
@@ -320,7 +327,7 @@ const MasterPrintOrders = () => {
         gap: '14px',
         fontFamily: 'Inter, sans-serif',
         color: '#fff',
-        padding: phone ? '12px 0' : '4px 0 24px',
+        padding: embedded ? 0 : phone ? '12px 0' : '4px 0 24px',
       }}
     >
       {children}
@@ -359,7 +366,7 @@ const MasterPrintOrders = () => {
   if (state === 'missing')
     return wrap(
       <>
-        {header}
+        {!embedded && header}
         <div style={card}>
           <p style={muted}>
             Module indisponible : le serveur n’est pas encore à jour.
@@ -370,7 +377,7 @@ const MasterPrintOrders = () => {
   if (state === 'unconfigured')
     return wrap(
       <>
-        {header}
+        {!embedded && header}
         <div style={card}>
           <p style={muted}>
             Master Print n’est pas encore branché sur ce serveur
@@ -387,8 +394,8 @@ const MasterPrintOrders = () => {
 
   return wrap(
     <>
-      {header}
-      <WebhookPanel />
+      {!embedded && header}
+      {!embedded && <WebhookPanel />}
 
       <div
         style={{
