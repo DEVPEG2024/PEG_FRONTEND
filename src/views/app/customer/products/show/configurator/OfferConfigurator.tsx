@@ -345,6 +345,58 @@ const OfferConfigurator = ({
           </button>
         ))}
       </div>
+      {/* Téléphone : la grande photo est en haut de page, hors de l'écran au
+          moment du choix — vignette du coloris choisi ici même ; un appui
+          remonte à la photo. */}
+      {smaller.md && color?.imageUrl && (
+        <button
+          type="button"
+          className="peg-tap-target"
+          onClick={() =>
+            document
+              .querySelector('.peg-media-cap')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+          aria-label={`Voir la photo du coloris ${color.label}`}
+          style={{
+            marginTop: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+            width: '100%',
+            background: 'rgba(255,255,255,0.035)',
+            border: `1px solid ${C.border}`,
+            borderRadius: '12px',
+            padding: '8px',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <img
+            key={color.imageUrl}
+            src={color.imageUrl}
+            alt={`${product.name} — ${color.label}`}
+            loading="lazy"
+            style={{
+              width: '72px',
+              height: '72px',
+              objectFit: 'contain',
+              background: 'linear-gradient(180deg, #ffffff 0%, #eef3fb 100%)',
+              borderRadius: '10px',
+              flexShrink: 0,
+            }}
+          />
+          <span style={{ fontSize: '13px', color: C.text, lineHeight: 1.35 }}>
+            {color.label}
+            <span
+              style={{ display: 'block', fontSize: '11.5px', color: C.muted }}
+            >
+              Voir la photo en grand
+            </span>
+          </span>
+        </button>
+      )}
     </Section>
   );
 
