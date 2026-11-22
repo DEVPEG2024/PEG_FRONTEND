@@ -1,7 +1,8 @@
 /*
  * Catalogue Master Print — un produit = une carte, comme une offre PEG
- * (22/11/2026) : zone photo claire en haut (photo de la fiche PEG si le produit
- * est importé, sinon l'illustration de sa famille), famille, « Dans PEG »,
+ * (22/11/2026) : zone photo claire en haut — photo de la fiche PEG si le produit
+ * est importé, sinon celle du modèle (catalogue public Master Print, photos
+ * Falk & Ross, lue par le serveur), sinon l'illustration de sa famille —, famille, « Dans PEG »,
  * rang des ventes, marque et référence, nom, prix de vente « dès … » s'il est
  * dans PEG. Styles : design « hub » (hx-pcard-*). Règles : utils/masterPrintCards.ts.
  */
@@ -20,7 +21,7 @@ const fmtPrice = (n: number) =>
     maximumFractionDigits: 2,
   });
 
-/** Illustration de famille (Master Print ne fournit pas de photo). */
+/** Illustration de famille (produit sans photo : supports, adhésifs, film DTF…). */
 export const FamilyArt = ({
   art,
   ink,
@@ -215,6 +216,8 @@ type Props = {
 
 const CatalogProductCard = ({ item, categoryLabel, peg, onOpen }: Props) => {
   const look = lookOf(item.category);
+  // Photo de la fiche PEG (ce que voient les clients), sinon celle du modèle (Falk & Ross).
+  const photo = peg?.imageUrl || item.imageUrl || null;
   const rank = rankBadge(item.bestSellerRank);
   const imported = item.imported.length > 0;
   const meta = cardMeta(item);
@@ -230,13 +233,13 @@ const CatalogProductCard = ({ item, categoryLabel, peg, onOpen }: Props) => {
         className="hx-pcard-visual"
         style={{
           // Fond « studio » clair et opaque ; l'encre de la famille en halo sous l'illustration.
-          background: peg?.imageUrl
+          background: photo
             ? '#fff'
             : `radial-gradient(60% 62% at 50% 48%, ${look.ink}2e 0%, ${look.ink}00 72%), linear-gradient(160deg, #ffffff 0%, #eef1f9 100%)`,
         }}
       >
-        {peg?.imageUrl ? (
-          <img src={peg.imageUrl} alt="" loading="lazy" decoding="async" />
+        {photo ? (
+          <img src={photo} alt="" loading="lazy" decoding="async" />
         ) : (
           <FamilyArt art={look.art} ink={look.ink} />
         )}

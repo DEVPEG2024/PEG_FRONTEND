@@ -228,6 +228,31 @@ const ProductSheet = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Photo du modèle (catalogue public Master Print, photo Falk & Ross) */}
+      {details.imageUrl && (
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '16px',
+            display: 'grid',
+            placeItems: 'center',
+            height: 'min(320px, 60vw)',
+            overflow: 'hidden',
+          }}
+        >
+          <img
+            src={details.imageUrl}
+            alt={p.name}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              padding: '12px',
+              mixBlendMode: 'multiply',
+            }}
+          />
+        </div>
+      )}
       <div>
         <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>
           {p.name}

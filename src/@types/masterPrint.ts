@@ -122,7 +122,12 @@ export type MpProductView = {
     heightMm: { min: number | null; max: number | null } | null;
     rollWidthMm: number | null;
     perLength: boolean;
-    pieces?: { maxCount: number | null; sideMin: number | null; sideMax: number | null; maxQuantity: number | null } | null;
+    pieces?: {
+      maxCount: number | null;
+      sideMin: number | null;
+      sideMax: number | null;
+      maxQuantity: number | null;
+    } | null;
   };
   /** Délai standard en jours ouvrés. */
   productionDays?: number | null;
@@ -135,6 +140,8 @@ export type MpCatalogItem = {
   brand: string | null;
   category: string;
   bestSellerRank: number | null;
+  /** Photo du modèle (catalogue public Master Print, hébergée chez Falk & Ross) ; absente si inconnue. */
+  imageUrl?: string | null;
 };
 
 export type MpAddress = {
@@ -323,6 +330,8 @@ export type MpCatalogPage = {
 
 export type MpCatalogDetails = {
   product: MpProductView;
+  /** Photo du modèle (catalogue public Master Print, hébergée chez Falk & Ross). */
+  imageUrl?: string | null;
   imported: MpImportedRef[];
   /** Coloris Master Print → coloris PEG existant (null = sera créé à l'import). */
   pegColors: Record<string, MpImportedRef | null>;
@@ -383,10 +392,26 @@ export type OfferSpec = {
     mode: 'fixed' | 'client';
     min: number;
     max: number;
-    fixed: Array<{ position: string; positionLabel: string; techniqueLabel: string; sizeLabel: string }>;
-    positions: Array<{ code: string; label: string; maxWidthMm: number | null; maxHeightMm: number | null; formats: string[] }>;
+    fixed: Array<{
+      position: string;
+      positionLabel: string;
+      techniqueLabel: string;
+      sizeLabel: string;
+    }>;
+    positions: Array<{
+      code: string;
+      label: string;
+      maxWidthMm: number | null;
+      maxHeightMm: number | null;
+      formats: string[];
+    }>;
     techniques: Array<{ code: string; label: string }>;
-    formats: Array<{ code: string; label: string; widthMm: number | null; heightMm: number | null }>;
+    formats: Array<{
+      code: string;
+      label: string;
+      widthMm: number | null;
+      heightMm: number | null;
+    }>;
     customSize: boolean;
   };
   options: Array<{
@@ -394,7 +419,12 @@ export type OfferSpec = {
     label: string;
     type: 'select' | 'multi_select';
     required: boolean;
-    values: Array<{ code: string; label: string; description: string | null; default: boolean }>;
+    values: Array<{
+      code: string;
+      label: string;
+      description: string | null;
+      default: boolean;
+    }>;
     notWithFormats: string[];
   }>;
   fixedOptions: Array<{ label: string; value: string }>;
@@ -403,17 +433,34 @@ export type OfferSpec = {
     | { mode: 'fixed'; label: string; printed: boolean }
     | {
         mode: 'client';
-        formats: Array<{ code: string; label: string; widthMm: number | null; heightMm: number | null; printed: boolean }>;
+        formats: Array<{
+          code: string;
+          label: string;
+          widthMm: number | null;
+          heightMm: number | null;
+          printed: boolean;
+        }>;
         free: null | {
           width: { min: number | null; max: number | null };
           height: { min: number | null; max: number | null };
         };
       };
-  pieces: null | { maxCount: number; sideMin: number; sideMax: number; maxQuantity: number; rollWidthMm: number | null };
+  pieces: null | {
+    maxCount: number;
+    sideMin: number;
+    sideMax: number;
+    maxQuantity: number;
+    rollWidthMm: number | null;
+  };
   ready: boolean;
 };
 
-export type OfferClientMarking = { position: string; technique?: string; format?: string; width_mm?: number };
+export type OfferClientMarking = {
+  position: string;
+  technique?: string;
+  format?: string;
+  width_mm?: number;
+};
 
 export type OfferClientConfig = {
   color?: string;
@@ -439,7 +486,11 @@ export type OfferPrice = {
   workingDays: number | null;
 };
 
-export type OfferPriceResult = { price: OfferPrice; summary: string; files: OfferFileSlot[] };
+export type OfferPriceResult = {
+  price: OfferPrice;
+  summary: string;
+  files: OfferFileSlot[];
+};
 
 export type OfferUploadedFile = { id: number; name: string; url?: string };
 
@@ -449,13 +500,21 @@ export type OfferOrderItemResult = {
     price: number;
     state: 'pending';
     product: { documentId: string; name: string };
-    sizeAndColorSelections: Array<{ size: { documentId: string; name: string; value: string }; color: { documentId: string; name: string; value: string }; quantity: number }>;
+    sizeAndColorSelections: Array<{
+      size: { documentId: string; name: string; value: string };
+      color: { documentId: string; name: string; value: string };
+      quantity: number;
+    }>;
   };
   price: OfferPrice;
   summary: string;
 };
 
-export type OfferOptionRule = { mode: 'client' | 'fixed'; value?: string | string[]; allowed?: string[] };
+export type OfferOptionRule = {
+  mode: 'client' | 'fixed';
+  value?: string | string[];
+  allowed?: string[];
+};
 
 export type OfferConfig = {
   autoSend: boolean;
@@ -472,12 +531,24 @@ export type OfferConfig = {
     max: number;
   };
   options: Record<string, OfferOptionRule>;
-  format: { mode: 'client' | 'fixed'; fixed: string | null; width_mm?: number; height_mm?: number; allowed: string[]; free: boolean };
+  format: {
+    mode: 'client' | 'fixed';
+    fixed: string | null;
+    width_mm?: number;
+    height_mm?: number;
+    allowed: string[];
+    free: boolean;
+  };
   minQuantity: number | null;
 };
 
 export type MpOfferAdmin = {
-  product: { documentId: string; name: string; inCatalogue: boolean; active: boolean };
+  product: {
+    documentId: string;
+    name: string;
+    inCatalogue: boolean;
+    active: boolean;
+  };
   linked: boolean;
   enabled: boolean;
   mpProduct?: MpProductView;
