@@ -383,7 +383,7 @@ export default function DashboardAdmin({ onOpenCity }: { onOpenCity?: () => void
     return months.map(k => { const b = by.get(k)!; return { key: k, label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid, depenses: b.depenses } })
   }, [invoices, transactions, projects, allExpenses, allAdditionalSales])
   const revenue6m = useMemo(() => revenueMonths.slice(-6), [revenueMonths])
-  const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
+  const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
   const paidLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].paid : 0; const paidThisMonth = revenue6m.length >= 1 ? revenue6m[revenue6m.length - 1].paid : 0
 
   const pipeline = useMemo(() => { const m = new Map<string, number>(); for (const p of projects) m.set((p?.state ?? 'unknown').toString(), (m.get((p?.state ?? 'unknown').toString()) ?? 0) + 1); return Array.from(m.entries()).map(([l, v]) => ({ label: l, value: v })).sort((a, b) => b.value - a.value).slice(0, 8) }, [projects])
@@ -565,13 +565,14 @@ export default function DashboardAdmin({ onOpenCity }: { onOpenCity?: () => void
         hero={{
           label: 'CA total TTC',
           value: eur(invoiceTotal),
-          sub: `${eur(toHT(invoiceTotal))} HT · ce mois-ci ${eur(thisMonthCa)}`,
+          ht: `${eur(toHT(invoiceTotal))} HT`,
+          month: eur(thisMonthCa),
           delta: hidePrices ? null : pct(thisMonthCa, caLastMonth),
-          series: caSparkData,
+          bars: revenue6m.map(m => ({ label: m.label, value: m.ca, display: eur(m.ca) })),
           onClick: () => navigate('/admin/invoices'),
         }}
         finance={[
-          { key: 'paid', label: 'Encaissé TTC', value: eur(invoicePaid), foot: <>{eur(toHT(invoicePaid))} HT{paidDelta != null && <span className={`hx-delta ${paidDelta >= 0 ? 'hx-delta--good' : 'hx-delta--bad'}`} style={{ marginLeft: 8 }}>{paidDelta >= 0 ? '+' : ''}{paidDelta} %</span>}</>, icon: <HiOutlineCheckCircle />, accent: '#34d399', onClick: () => navigate('/admin/invoices') },
+          { key: 'paid', label: 'Encaissé TTC', value: eur(invoicePaid), foot: <>{eur(toHT(invoicePaid))} HT{paidDelta != null && <span className={`hx-delta ${paidDelta >= 0 ? 'hx-delta--good' : 'hx-delta--bad'}`} style={{ marginLeft: 8 }}>{paidDelta >= 0 ? '+' : ''}{paidDelta} % ce mois</span>}</>, icon: <HiOutlineCheckCircle />, accent: '#34d399', onClick: () => navigate('/admin/invoices') },
           { key: 'pending', label: 'Reste à encaisser', value: eur(invoicePending), foot: `${eur(toHT(invoicePending))} HT, voir le détail`, icon: <HiOutlineClock />, accent: invoicePending > 0 ? '#fbbf24' : '#34d399', onClick: () => setShowPendingDetails(true) },
           { key: 'margin', label: 'Marge brute', value: `${margePct} %`, foot: `${eur(margeBrute)} TTC`, icon: <HiOutlineChartBar />, accent: marginInk, ring: { value: margePct, color: marginInk } },
           { key: 'sales', label: 'Ventes add.', value: eur(totalAdditionalSales), foot: `${allAdditionalSales.length} vente(s), ${eur(toHT(totalAdditionalSales))} HT`, icon: <HiOutlineLightningBolt />, accent: '#1f9cc6' },

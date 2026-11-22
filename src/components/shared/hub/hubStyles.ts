@@ -337,4 +337,29 @@ export const HUB_CSS = `
 .hx-pcard-note { font-size: 11.5px; font-weight: 600; color: #fcd34d; }
 @container (max-width: 560px) { .hx-pcard-body { padding: 10px 11px 12px; } .hx-pcard-name { font-size: 13px; } .hx-pcard-price { font-size: 15px; } .hx-pcard-cta { display: none; } }
 .hx-ptoolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+/* ── Accueil : en-tête et bannière (sans texte posé sur l'image) ───────── */
+.hx-home-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 20px; }
+.hx-home-title { font-size: 34px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; margin: 0; color: #fff; }
+.hx-home-date { margin: 6px 0 0; font-size: 14px; color: rgba(226,232,255,0.6); }
+.hx-home-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.hx-home-stamp { font-size: 12px; color: rgba(226,232,255,0.45); margin-right: 4px; white-space: nowrap; }
+.hx-btn--on { color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+.hx-home-banner { margin: 0; overflow: hidden; border-radius: 24px; border: 1px solid rgba(140,160,255,0.1); background: #0b1222; box-shadow: 0 14px 36px rgba(0,0,0,0.35); }
+.hx-home-banner img { display: block; width: 100%; height: auto; max-height: 360px; object-fit: cover; }
+@container (max-width: 560px) { .hx-home-title { font-size: 26px; } .hx-home-tools .hx-btn span { display: none; } .hx-home-tools .hx-btn { padding: 8px 11px; } .hx-home-stamp { display: none; } .hx-home-banner { border-radius: 18px; } }
+
+/* ── Carte du chiffre d'affaires ───────────────────────────────────────── */
+.hx-ca-hero { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 46%); gap: 18px; align-items: stretch; }
+.hx-ca-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.hx-ca-sub { font-size: 13px; color: rgba(226,232,255,0.55); }
+.hx-ca-month { margin-top: auto; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 13px; color: rgba(226,232,255,0.65); }
+.hx-ca-month b { color: #fff; font-weight: 800; }
+.hx-ca-bars { display: flex; align-items: flex-end; gap: 8px; height: 122px; align-self: end; padding: 0 2px; }
+.hx-ca-bar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+.hx-ca-bar i { display: block; width: min(26px, 72%); border-radius: 6px 6px 0 0; background: rgba(124,108,240,0.38); }
+.hx-ca-bar.is-now i { background: #7c6cf0; }
+.hx-ca-bar span { font-size: 11px; color: rgba(226,232,255,0.45); white-space: nowrap; }
+.hx-ca-bar.is-now span { color: #fff; font-weight: 700; }
+@container (max-width: 560px) { .hx-ca-hero { grid-template-columns: minmax(0, 1fr); gap: 12px; } .hx-ca-month { margin-top: 2px; } .hx-ca-bars { height: 90px; } }
 `;

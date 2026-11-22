@@ -14,7 +14,6 @@ import {
   TbEye,
   TbEyeOff,
   TbGripVertical,
-  TbLayoutGridAdd,
   TbLock,
   TbPhotoEdit,
   TbPlus,
@@ -23,13 +22,7 @@ import {
 } from 'react-icons/tb';
 import Container from '@/components/shared/Container';
 import { HUB_CSS } from '@/components/shared/hub/hubStyles';
-import {
-  Kpi,
-  MeterList,
-  Ring,
-  Spark,
-  tint,
-} from '@/components/shared/hub/HubWidgets';
+import { Kpi, MeterList, Ring, tint } from '@/components/shared/hub/HubWidgets';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,9 +69,14 @@ type Props = {
   hero: {
     label: string;
     value: ReactNode;
-    sub: ReactNode;
+    /** Montant HT. */
+    ht: ReactNode;
+    /** CA du mois en cours (formaté). */
+    month: ReactNode;
+    /** Variation du mois en cours sur le mois dernier, en %. */
     delta: number | null;
-    series: number[];
+    /** Six derniers mois (le dernier = mois en cours). */
+    bars: Array<{ label: string; value: number; display: string }>;
     onClick: () => void;
   };
   finance: HubTile[];
@@ -257,9 +255,6 @@ export const StateBars = ({
   />
 );
 
-// Couleurs validées (daltonisme, contraste) sur le fond des cartes.
-export const CA_INK = '#7c6cf0';
-
 // ── Page ────────────────────────────────────────────────────────────────────
 
 const Tile = ({ t, className }: { t: HubTile; className?: string }) => (
@@ -297,27 +292,61 @@ const DashboardAdminHub = (p: Props) => {
       <div className="hx" data-testid="admin-hub">
         <style>{HUB_CSS}</style>
         <div className="hx-stack">
-          {/* Bannière (image choisie par l'admin, sinon fond PEG) */}
-          <header className="hx-banner" data-testid="hx-banner">
-            {p.bannerUrl && <img src={p.bannerUrl} alt="" />}
-            <div className="hx-banner-tools">
+          {/* En-tête : bonjour, points d'attention, réglages. La bannière de l'admin
+              (souvent un visuel avec son propre texte) s'affiche ensuite en entier,
+              sans rien posé dessus. */}
+          <header className="hx-home-head" data-testid="hx-banner">
+            <div style={{ minWidth: 0 }}>
+              <h1 className="hx-home-title">{p.greeting}</h1>
+              <p className="hx-home-date">{p.dateLabel}</p>
+              {p.attention.length > 0 && (
+                <div className="hx-chips">
+                  {p.attention.map((a) => (
+                    <button
+                      key={a.key}
+                      type="button"
+                      className="hx-chip-alert"
+                      onClick={a.onClick}
+                      disabled={!a.onClick}
+                      style={{
+                        color: TONE[a.tone],
+                        background: tint(TONE[a.tone], 0.1),
+                        borderColor: tint(TONE[a.tone], 0.38),
+                        cursor: a.onClick ? 'pointer' : 'default',
+                      }}
+                    >
+                      <i
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: '50%',
+                          background: TONE[a.tone],
+                          display: 'inline-block',
+                        }}
+                        aria-hidden="true"
+                      />
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="hx-home-tools">
               {p.lastUpdatedText && (
-                <span
-                  className="hx-glass hx-glass--stamp"
-                  style={{
-                    cursor: 'default',
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.75)',
-                  }}
-                >
+                <span className="hx-home-stamp">
                   Mis à jour {p.lastUpdatedText}
                 </span>
               )}
               <button
                 type="button"
-                className={`hx-glass${p.hidePrices ? ' hx-glass--on' : ''}`}
+                className={`hx-btn hx-btn--ghost${p.hidePrices ? ' hx-btn--on' : ''}`}
                 onClick={p.onTogglePrices}
                 aria-pressed={p.hidePrices}
+                aria-label={
+                  p.hidePrices
+                    ? 'Afficher les chiffres'
+                    : 'Masquer les chiffres'
+                }
               >
                 {p.hidePrices ? (
                   <TbEyeOff aria-hidden="true" />
@@ -330,7 +359,7 @@ const DashboardAdminHub = (p: Props) => {
               </button>
               <button
                 type="button"
-                className="hx-glass"
+                className="hx-btn hx-btn--ghost"
                 onClick={p.onRefresh}
                 disabled={p.refreshing}
                 aria-label="Actualiser"
@@ -340,9 +369,11 @@ const DashboardAdminHub = (p: Props) => {
               </button>
               <button
                 type="button"
-                className="hx-glass"
+                className="hx-btn hx-btn--ghost"
                 onClick={p.onPickBanner}
-                aria-label="Changer la bannière"
+                aria-label={
+                  p.bannerUrl ? 'Changer la bannière' : 'Ajouter une bannière'
+                }
               >
                 <TbPhotoEdit aria-hidden="true" />
                 <span>Bannière</span>
@@ -350,7 +381,7 @@ const DashboardAdminHub = (p: Props) => {
               {p.onOpenCity && (
                 <button
                   type="button"
-                  className="hx-glass hx-glass--accent"
+                  className="hx-btn hx-btn--primary"
                   onClick={p.onOpenCity}
                 >
                   <TbBuildingCommunity aria-hidden="true" />
@@ -358,51 +389,22 @@ const DashboardAdminHub = (p: Props) => {
                 </button>
               )}
             </div>
-            <div>
-              <h1 className="hx-banner-title">{p.greeting}</h1>
-              <p className="hx-banner-sub" style={{ textTransform: 'none' }}>
-                {p.dateLabel}
-              </p>
-              <div className="hx-chips">
-                {p.attention.map((a) => (
-                  <button
-                    key={a.key}
-                    type="button"
-                    className="hx-chip-alert"
-                    onClick={a.onClick}
-                    disabled={!a.onClick}
-                    style={{
-                      color: TONE[a.tone],
-                      background: 'rgba(10,16,30,0.55)',
-                      borderColor: tint(TONE[a.tone], 0.45),
-                      cursor: a.onClick ? 'pointer' : 'default',
-                    }}
-                  >
-                    <i
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        background: TONE[a.tone],
-                        display: 'inline-block',
-                      }}
-                      aria-hidden="true"
-                    />
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
             {p.error && (
               <p
                 className="hx-muted"
                 role="alert"
-                style={{ color: '#fca5a5', marginTop: 10 }}
+                style={{ color: '#fca5a5', flexBasis: '100%' }}
               >
                 {p.error}
               </p>
             )}
           </header>
+
+          {p.bannerUrl && (
+            <figure className="hx-home-banner" data-testid="hx-banner-image">
+              <img src={p.bannerUrl} alt="" />
+            </figure>
+          )}
 
           {/* Finances */}
           <section aria-labelledby="hx-fin-title">
@@ -428,40 +430,56 @@ const DashboardAdminHub = (p: Props) => {
               </div>
             ) : (
               <div className="hx-kgrid">
-                <Kpi
-                  label={p.hero.label}
-                  icon={<TbLayoutGridAdd aria-hidden="true" />}
-                  accent={CA_INK}
-                  className="hx-k2"
+                <button
+                  type="button"
+                  className="hx-card hx-kpi hx-kpi--link hx-k2 hx-ca-hero"
                   onClick={p.hero.onClick}
-                  testId="hx-hero-kpi"
-                  value={<span className="hx-hero-figure">{p.hero.value}</span>}
-                  foot={
-                    <span>
-                      {p.hero.sub}
+                  data-testid="hx-hero-kpi"
+                >
+                  <span className="hx-ca-text">
+                    <span className="hx-kpi-label">{p.hero.label}</span>
+                    <span className="hx-hero-figure">{p.hero.value}</span>
+                    <span className="hx-ca-sub">{p.hero.ht}</span>
+                    <span className="hx-ca-month">
+                      Ce mois-ci <b>{p.hero.month}</b>
                       {p.hero.delta != null && (
                         <span
                           className={`hx-delta ${p.hero.delta >= 0 ? 'hx-delta--good' : 'hx-delta--bad'}`}
-                          style={{ marginLeft: 10 }}
                         >
                           {p.hero.delta >= 0 ? '+' : ''}
-                          {p.hero.delta} % sur un mois
+                          {p.hero.delta} % vs mois dernier
                         </span>
                       )}
                     </span>
-                  }
-                >
-                  <span className="hx-kpi-spark-bg" aria-hidden="true">
-                    <Spark
-                      values={p.hero.series}
-                      color={CA_INK}
-                      w={300}
-                      h={70}
-                      stretch
-                      className=""
-                    />
                   </span>
-                </Kpi>
+                  <span
+                    className="hx-ca-bars"
+                    role="img"
+                    aria-label={`Chiffre d’affaires des six derniers mois : ${p.hero.bars.map((b) => `${b.label} ${b.display}`).join(', ')}`}
+                  >
+                    {p.hero.bars.map((b, i) => {
+                      const max = Math.max(
+                        1,
+                        ...p.hero.bars.map((x) => x.value)
+                      );
+                      const now = i === p.hero.bars.length - 1;
+                      return (
+                        <span
+                          key={`${i}-${b.label}`}
+                          className={`hx-ca-bar${now ? ' is-now' : ''}`}
+                          title={`${b.label} : ${b.display}`}
+                        >
+                          <i
+                            style={{
+                              height: `${b.value > 0 ? Math.max(4, (b.value / max) * 92) : 2}px`,
+                            }}
+                          />
+                          <span>{b.label}</span>
+                        </span>
+                      );
+                    })}
+                  </span>
+                </button>
                 {p.finance.map((t) => (
                   <Tile key={t.key} t={t} className="" />
                 ))}
