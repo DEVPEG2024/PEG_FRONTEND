@@ -22,7 +22,8 @@ import { toHT } from '@/utils/priceHelpers'
 import { shrinkImage } from '@/utils/imageShrink'
 import { areDashboardFiguresHidden, toggleDashboardFiguresHidden, DASHBOARD_FIGURES_EVENT, HIDDEN_FIGURE } from './dashboardFigures'
 import { statusTextData } from '@/views/app/common/projects/lists/constants'
-import DashboardAdminHub, { AlertRows, Empty, MonthsChart, Rows, StateBars, WidgetHead, WidgetLink, type HubTone } from './DashboardAdminHub'
+import DashboardAdminHub, { AlertRows, Empty, Rows, StateBars, WidgetHead, WidgetLink, type HubTone } from './DashboardAdminHub'
+import RevenueWidget from './RevenueWidget'
 import { motion } from 'framer-motion'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
@@ -366,8 +367,9 @@ export default function DashboardAdmin({ onOpenCity }: { onOpenCity?: () => void
   const TAX_RATE = 0.15; const beneficeNet = margeBrute * (1 - TAX_RATE); const impotEstime = margeBrute * TAX_RATE
   const openTickets = useMemo(() => tickets.filter((t: any) => !String(t?.state ?? '').toLowerCase().includes('closed')).length, [tickets])
 
-  const revenue6m = useMemo(() => {
-    const now = new Date(); const months: string[] = []; for (let i = 5; i >= 0; i--) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
+  // 24 mois (widget « Chiffre d'affaires » : 6 ou 12 mois comparés à la période précédente) ; les 6 derniers = revenue6m, inchangé.
+  const revenueMonths = useMemo(() => {
+    const now = new Date(); const months: string[] = []; for (let i = 23; i >= 0; i--) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
     const by = new Map<string, { ca: number; costs: number; paid: number; depenses: number }>(); months.forEach(k => by.set(k, { ca: 0, costs: 0, paid: 0, depenses: 0 }))
     // CA par mois = prix des projets (source de vérité)
     for (const p of projects) { const price = Number(p?.price) || 0; if (!price) continue; const d = safeDate(p?.startDate) ?? safeDate(p?.createdAt); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; by.get(k)!.ca += price; const paidPrice = effectivePaid(p); if (paidPrice) by.get(k)!.paid += paidPrice }
@@ -378,8 +380,9 @@ export default function DashboardAdmin({ onOpenCity }: { onOpenCity?: () => void
     for (const exp of allExpenses) { const d = safeDate(exp?.date); if (!d) continue; const k = monthKey(d); if (by.has(k)) { by.get(k)!.costs += (Number(exp?.totalAmount) || 0); by.get(k)!.depenses += (Number(exp?.totalAmount) || 0) } }
     // Ajouter les ventes additionnelles au CA par mois
     for (const s of allAdditionalSales) { const d = safeDate(s.date); if (!d) continue; const k = monthKey(d); if (!by.has(k)) continue; const amt = Number(s.amount) || 0; by.get(k)!.ca += amt; if (isSalePaid(s)) by.get(k)!.paid += amt }
-    return months.map(k => { const b = by.get(k)!; return { label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid, depenses: b.depenses } })
+    return months.map(k => { const b = by.get(k)!; return { key: k, label: monthLabel(k), ca: b.ca, marge: Math.max(0, b.ca - b.costs), paid: b.paid, depenses: b.depenses } })
   }, [invoices, transactions, projects, allExpenses, allAdditionalSales])
+  const revenue6m = useMemo(() => revenueMonths.slice(-6), [revenueMonths])
   const caSparkData = revenue6m.map(d => d.ca); const caLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].ca : 0
   const paidLastMonth = revenue6m.length >= 2 ? revenue6m[revenue6m.length - 2].paid : 0; const paidThisMonth = revenue6m.length >= 1 ? revenue6m[revenue6m.length - 1].paid : 0
 
@@ -501,12 +504,11 @@ export default function DashboardAdmin({ onOpenCity }: { onOpenCity?: () => void
 
   /* ── Widget renderer (rendu « hub », mêmes données) ── */
   const stateName = (st: string) => (statusTextData as Record<string, string>)[st] ?? st
-  const axisEur = (n: number) => hidePrices ? HIDDEN_FIGURE : n >= 1000 ? `${Math.round(n / 1000)} k€` : `${Math.round(n)} €`
   const renderWidget = (id: WidgetId) => {
     if (!dataReady) return <Empty>Chargement…</Empty>
 
     switch (id) {
-      case 'chart-ca': return <><WidgetHead title="Chiffre d'affaires" note="CA, marge et dépenses sur 6 mois" /><MonthsChart months={revenue6m} format={eur} axisFormat={axisEur} /></>
+      case 'chart-ca': return <RevenueWidget months={revenueMonths} format={eur} hidden={hidePrices} toHT={toHT} />
       case 'chart-tickets': return <><WidgetHead title="Tickets" note={`${ticketsTotal} au total`} right={<WidgetLink onClick={() => navigate('/support')}>Ouvrir</WidgetLink>} />{ticketsByState.length > 0 ? <StateBars items={ticketsByState.map(t => ({ key: t.label, label: t.label, value: t.value }))} color="#9d92ff" /> : <Empty>Aucun ticket</Empty>}</>
       case 'pipeline': return <><WidgetHead title="Pipeline" note="Projets par statut" right={<WidgetLink onClick={() => navigate('/common/projects')}>Ouvrir</WidgetLink>} />{pipeline.length > 0 ? <StateBars items={pipeline.map(it => ({ key: it.label, label: stateName(it.label), value: it.value }))} color="#7c6cf0" onClick={l => navigate(`/common/projects?state=${encodeURIComponent(l)}`)} /> : <Empty>Aucun projet</Empty>}</>
       case 'orders': return <><WidgetHead title="Commandes" note={`${orderItemsTotal} au total`} right={<WidgetLink onClick={() => navigate('/admin/order-items')}>Ouvrir</WidgetLink>} />{ordersByState.length > 0 ? <StateBars items={ordersByState.map(o => ({ key: o.label, label: o.label, value: o.value }))} color="#1f9cc6" /> : <Empty>Aucune commande</Empty>}</>

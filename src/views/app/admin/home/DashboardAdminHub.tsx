@@ -24,10 +24,7 @@ import {
 import Container from '@/components/shared/Container';
 import { HUB_CSS } from '@/components/shared/hub/hubStyles';
 import {
-  type BarSeries,
-  GroupedBars,
   Kpi,
-  Legend,
   MeterList,
   Ring,
   Spark,
@@ -262,47 +259,6 @@ export const StateBars = ({
 
 // Couleurs validées (daltonisme, contraste) sur le fond des cartes.
 export const CA_INK = '#7c6cf0';
-export const MARGIN_INK = '#199e70';
-export const SPEND_INK = '#d95926';
-
-/** Chiffre d'affaires, marge et dépenses des six derniers mois. */
-export const MonthsChart = ({
-  months,
-  format,
-  axisFormat,
-}: {
-  months: Array<{ label: string; ca: number; marge: number; depenses: number }>;
-  format: (n: number) => string;
-  axisFormat: (n: number) => string;
-}) => {
-  const withSpend = months.some((m) => m.depenses > 0);
-  const series: BarSeries[] = [
-    { key: 'ca', label: 'CA', color: CA_INK },
-    { key: 'marge', label: 'Marge', color: MARGIN_INK },
-    ...(withSpend ? [{ key: 'dep', label: 'Dépenses', color: SPEND_INK }] : []),
-  ];
-  if (!months.some((m) => m.ca > 0 || m.marge > 0 || m.depenses > 0))
-    return <Empty>Pas encore de chiffre sur ces six mois.</Empty>;
-  return (
-    <>
-      <div style={{ marginBottom: 12 }}>
-        <Legend series={series} />
-      </div>
-      <GroupedBars
-        ariaLabel="Chiffre d'affaires, marge et dépenses par mois"
-        rows={months.map((m, i) => ({
-          key: `${i}-${m.label}`,
-          axis: m.label,
-          title: m.label,
-          values: withSpend ? [m.ca, m.marge, m.depenses] : [m.ca, m.marge],
-        }))}
-        series={series}
-        format={format}
-        axisFormat={axisFormat}
-      />
-    </>
-  );
-};
 
 // ── Page ────────────────────────────────────────────────────────────────────
 

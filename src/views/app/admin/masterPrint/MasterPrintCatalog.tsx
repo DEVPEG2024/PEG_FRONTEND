@@ -59,15 +59,18 @@ import {
   sectionTitle,
 } from '@/views/app/common/projects/details/components/masterPrint/ui';
 import ServiceStatusBanner from './ServiceStatusBanner';
+import CatalogProductCard from './catalog/CatalogProductCard';
+import { apiGetPegCardProducts } from '@/services/MasterPrintCardsServices';
+import {
+  type PegCardInfo,
+  cardPegId,
+  idsToFetch,
+  pegCardInfo,
+} from '@/utils/masterPrintCards';
 
 const PAGE = 50;
 const MARKUP_KEY = 'master_print_markup';
 
-const IMPORTED_TONE = {
-  color: '#86efac',
-  background: 'rgba(34,197,94,0.12)',
-  border: 'rgba(34,197,94,0.35)',
-};
 const MUTED_TONE = {
   color: 'rgba(255,255,255,0.7)',
   background: 'rgba(255,255,255,0.05)',
@@ -607,6 +610,10 @@ const MasterPrintCatalog = ({ embedded = false }: Props) => {
   >([]);
   const mpCategories = useMpCategories();
   const seq = useRef(0);
+  // Cartes : photo et prix des fiches PEG déjà importées (lus par lots, gardés).
+  const [pegInfo, setPegInfo] = useState<Record<string, PegCardInfo>>({});
+  const pegAsked = useRef<Set<string>>(new Set());
+  const gridScroll = useRef(0);
 
   const search = useCallback(
     async (offset: number) => {
@@ -647,12 +654,32 @@ const MasterPrintCatalog = ({ embedded = false }: Props) => {
   }, [search]);
 
   useEffect(() => {
+    for (const ids of idsToFetch(results, pegAsked.current)) {
+      ids.forEach((id) => pegAsked.current.add(id));
+      apiGetPegCardProducts(ids)
+        .then(({ data }) => {
+          const found = data?.data?.products || [];
+          setPegInfo((cur) => {
+            const next = { ...cur };
+            for (const p of found) next[p.documentId] = pegCardInfo(p);
+            return next;
+          });
+        })
+        .catch(() => {
+          // Carte sans photo ni prix : l'illustration de la famille reste.
+          ids.forEach((id) => pegAsked.current.delete(id));
+        });
+    }
+  }, [results]);
+
+  useEffect(() => {
     apiGetPegCategoriesForMasterPrint()
       .then(({ data }) => setCategories(data.categories || []))
       .catch(() => setCategories([]));
   }, []);
 
   const open = useCallback(async (id: string) => {
+    gridScroll.current = window.scrollY;
     setSelected(id);
     setDetails(null);
     setDetailsLoading(true);
@@ -715,149 +742,113 @@ const MasterPrintCatalog = ({ embedded = false }: Props) => {
     );
   }
 
+  const backToGrid = () => {
+    setSelected(null);
+    setDetails(null);
+    requestAnimationFrame(() => window.scrollTo({ top: gridScroll.current }));
+  };
+
   const list = (
-    <div
-      style={{
-        ...card,
-        padding: '14px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        minWidth: 0,
-      }}
-    >
-      <div style={{ position: 'relative' }}>
-        <HiSearch
-          style={{ position: 'absolute', left: 10, top: 11, opacity: 0.5 }}
-          aria-hidden="true"
-        />
-        <input
-          style={{ ...input, paddingLeft: '30px' }}
-          placeholder="Nom, marque ou référence (TU01T, polo, roll-up…)"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          aria-label="Rechercher dans le catalogue Master Print"
-        />
+    <div style={{ minWidth: 0 }}>
+      <div className="hx-ptoolbar" style={{ ...card, padding: '14px' }}>
+        <div style={{ position: 'relative' }}>
+          <HiSearch
+            style={{ position: 'absolute', left: 12, top: 13, opacity: 0.5 }}
+            aria-hidden="true"
+          />
+          <input
+            style={{ ...input, paddingLeft: '34px' }}
+            placeholder="Nom, marque ou référence (TU01T, polo, roll-up…)"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            aria-label="Rechercher dans le catalogue Master Print"
+          />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {[['', 'Tout'], ...Object.entries(mpCategories.labels)].map(
+            ([code, name]) => (
+              <button
+                key={code || 'tout'}
+                type="button"
+                className="peg-tap-target"
+                onClick={() => setCategory(code)}
+                aria-pressed={category === code}
+                style={{
+                  margin: 0,
+                  padding: '6px 13px',
+                  borderRadius: '100px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  border:
+                    category === code
+                      ? 'none'
+                      : '1px solid rgba(255,255,255,0.1)',
+                  background:
+                    category === code
+                      ? 'linear-gradient(135deg, #8b7dff 0%, #5b47e0 100%)'
+                      : 'rgba(255,255,255,0.05)',
+                  color: category === code ? '#fff' : 'rgba(255,255,255,0.7)',
+                }}
+              >
+                {name}
+                {code && meta?.counts[code] ? ` (${meta.counts[code]})` : ''}
+              </button>
+            )
+          )}
+        </div>
+        <p style={muted}>
+          {meta
+            ? `${meta.matched.toLocaleString('fr-FR')} produit(s)${q.trim() || category ? ` sur ${meta.total.toLocaleString('fr-FR')}` : ''} — meilleures ventes d’abord`
+            : 'Chargement du catalogue…'}
+        </p>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {[['', 'Tout'], ...Object.entries(mpCategories.labels)].map(
-          ([code, name]) => (
-            <button
-              key={code || 'tout'}
-              type="button"
-              className="peg-tap-target"
-              onClick={() => setCategory(code)}
-              style={{
-                padding: '5px 12px',
-                borderRadius: '100px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif',
-                border:
-                  category === code
-                    ? 'none'
-                    : '1px solid rgba(255,255,255,0.1)',
-                background:
-                  category === code
-                    ? 'linear-gradient(135deg, #8b7dff 0%, #5b47e0 100%)'
-                    : 'rgba(255,255,255,0.05)',
-                color: category === code ? '#fff' : 'rgba(255,255,255,0.65)',
-              }}
-            >
-              {name}
-              {code && meta?.counts[code] ? ` (${meta.counts[code]})` : ''}
-            </button>
-          )
-        )}
+
+      <div className="hx-pgrid">
+        {results.map((r) => {
+          const pegId = cardPegId(r);
+          return (
+            <CatalogProductCard
+              key={r.id}
+              item={r}
+              categoryLabel={mpCategories.labelOf(r.category)}
+              peg={pegId ? (pegInfo[pegId] ?? null) : null}
+              onOpen={open}
+            />
+          );
+        })}
       </div>
-      <p style={muted}>
-        {meta
-          ? `${meta.matched.toLocaleString('fr-FR')} produit(s)${q.trim() || category ? ` sur ${meta.total.toLocaleString('fr-FR')}` : ''} — meilleures ventes d’abord`
-          : 'Chargement du catalogue…'}
-      </p>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-          ...(phone
-            ? {}
-            : { maxHeight: 'calc(100dvh - 330px)', overflowY: 'auto' }),
-        }}
-      >
-        {results.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            className="peg-tap-target"
-            onClick={() => open(r.id)}
-            style={{
-              textAlign: 'left',
-              padding: '9px 10px',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              color: '#fff',
-              fontFamily: 'Inter, sans-serif',
-              border: `1px solid ${selected === r.id ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.06)'}`,
-              background:
-                selected === r.id
-                  ? 'rgba(59,130,246,0.12)'
-                  : 'rgba(255,255,255,0.03)',
-            }}
-          >
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                justifyContent: 'space-between',
-              }}
-            >
-              <strong style={{ fontSize: '13px', fontWeight: 600 }}>
-                {r.name}
-              </strong>
-              {!!r.imported.length && (
-                <Pill tone={IMPORTED_TONE}>Dans PEG</Pill>
-              )}
-            </span>
-            <span style={{ ...muted, fontSize: '11.5px' }}>
-              {[
-                r.brand,
-                r.sku ? `réf. ${r.sku}` : null,
-                mpCategories.labelOf(r.category),
-                r.bestSellerRank ? `n° ${r.bestSellerRank} des ventes` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
-          </button>
-        ))}
-        {!loading && meta && !results.length && (
-          <p style={muted}>Aucun produit ne correspond.</p>
-        )}
-        {meta && results.length < meta.matched && (
-          <div style={{ marginTop: '6px' }}>
-            <Btn onClick={() => search(results.length)} disabled={loading}>
-              {loading
-                ? 'Chargement…'
-                : `Afficher plus (${(meta.matched - results.length).toLocaleString('fr-FR')} restants)`}
-            </Btn>
-          </div>
-        )}
-      </div>
+      {!loading && meta && !results.length && (
+        <p style={{ ...muted, marginTop: '12px' }}>
+          Aucun produit ne correspond.
+        </p>
+      )}
+      {meta && results.length < meta.matched && (
+        <div
+          style={{
+            marginTop: '16px',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Btn onClick={() => search(results.length)} disabled={loading}>
+            {loading
+              ? 'Chargement…'
+              : `Afficher plus de produits (${(meta.matched - results.length).toLocaleString('fr-FR')} restants)`}
+          </Btn>
+        </div>
+      )}
     </div>
   );
 
   const sheet = (
     <div style={{ ...card, minWidth: 0 }}>
-      {phone && (
-        <div style={{ marginBottom: '12px' }}>
-          <Btn onClick={() => setSelected(null)}>
-            <HiArrowLeft aria-hidden="true" /> Retour à la liste
-          </Btn>
-        </div>
-      )}
+      <div style={{ marginBottom: '14px' }}>
+        <Btn onClick={backToGrid}>
+          <HiArrowLeft aria-hidden="true" /> Retour au catalogue
+        </Btn>
+      </div>
       {detailsLoading && <p style={muted}>Chargement de la fiche…</p>}
       {!detailsLoading && !details && (
         <p style={muted}>Choisissez un produit dans la liste.</p>
@@ -891,25 +882,7 @@ const MasterPrintCatalog = ({ embedded = false }: Props) => {
       {/* Prix d'achat des produits importés (au téléphone : masqué pendant la lecture d'une fiche). */}
       {!embedded && !(phone && selected) && <PurchasePricesPanel />}
       {!embedded && !(phone && selected) && <ProductPhotosPanel />}
-      {phone ? (
-        selected ? (
-          sheet
-        ) : (
-          list
-        )
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(320px, 420px) minmax(0, 1fr)',
-            gap: '16px',
-            alignItems: 'start',
-          }}
-        >
-          {list}
-          {sheet}
-        </div>
-      )}
+      {selected ? sheet : list}
     </>
   );
 };
