@@ -348,6 +348,16 @@ const navigationAdmin: NavigationTree[] = [
             subMenu: [],
           },
           {
+            key: "admin.masterPrint.dashboard",
+            path: "/admin/master-print",
+            title: "Bilan Master Print",
+            translateKey: "nav.masterPrintDashboard",
+            icon: "categories",
+            type: NAV_ITEM_TYPE_ITEM,
+            authority: [SUPER_ADMIN, ADMIN],
+            subMenu: [],
+          },
+          {
             key: "admin.masterPrint.catalog",
             path: "/admin/master-print/catalog",
             title: "Catalogue Master Print",
