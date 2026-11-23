@@ -4,7 +4,8 @@
 //
 // Même base de prix que la page « Mes offres » (CustomerProductCard) : prix du
 // premier palier (ou prix au m²), remise Premium selon isPremiumDiscountEligible,
-// économie calculée par getCatalogSavingsPercent.
+// économie calculée par getCatalogSavingsPercent. Prix HT, ou TTC pour un compte
+// association (`pv`, utils/priceDisplay).
 import dayjs from 'dayjs';
 import type { Product } from '@/@types/product';
 import type { Customer } from '@/@types/customer';
@@ -15,6 +16,9 @@ import {
   getProductBasePrice,
 } from '@/utils/productHelpers';
 import { fmtPrice } from '@/utils/priceHelpers';
+import { priceView, type PriceView } from '@/utils/priceDisplay';
+
+const HT_VIEW = priceView(false);
 
 /** Une offre créée depuis moins de NEW_OFFER_DAYS jours porte l'étiquette « Nouveau ». */
 export const NEW_OFFER_DAYS = 30;
@@ -36,7 +40,7 @@ export type OfferStep = {
   key: string;
   /** « dès 50 » */
   quantity: string;
-  /** « 19,90 € » (HT) */
+  /** « 19,90 € » (HT, ou TTC selon le compte) */
   price: string;
   /** Hauteur de la marche, en % de la plus haute */
   height: number;
@@ -52,7 +56,7 @@ export type OfferShowcaseItem = {
   category?: { id: string; name: string };
   /** Prix affiché en grand, sans unité : « 19,90 € » */
   price: string;
-  /** « HT l'unité », « HT le m² », « HT le pack de 50 » */
+  /** « HT l'unité », « TTC le m² », « HT le pack de 50 »… */
   unit: string;
   /** Prix catalogue barré, seulement quand l'offre fait économiser */
   catalogue?: string;
@@ -79,7 +83,8 @@ const sortedTiers = (product: Product) =>
  */
 export function offerSteps(
   product: Product,
-  customer?: Customer | null
+  customer?: Customer | null,
+  pv: PriceView = HT_VIEW
 ): OfferStep[] {
   if (product.pricingMode === 'm2' || product.pricingMode === 'packs') return [];
   const tiers = sortedTiers(product);
@@ -96,7 +101,7 @@ export function offerSteps(
   return shown.map((t, i) => ({
     key: String(t.minQuantity),
     quantity: `dès ${qty(Math.max(1, t.minQuantity))}`,
-    price: fmtPrice(applyPremiumDiscount(t.price, customer, product)),
+    price: fmtPrice(pv.amount(applyPremiumDiscount(t.price, customer, product))),
     height: Math.round(100 - (i * 60) / last),
     best: i === last,
   }));
@@ -117,7 +122,8 @@ export function toShowcaseItem(
   product: Product,
   customer: Customer | null | undefined,
   index: number,
-  now: Date = new Date()
+  now: Date = new Date(),
+  pv: PriceView = HT_VIEW
 ): OfferShowcaseItem {
   const m2 = product.pricingMode === 'm2';
   const packs = product.pricingMode === 'packs';
@@ -135,16 +141,16 @@ export function toShowcaseItem(
     category: product.productCategory
       ? { id: product.productCategory.documentId, name: product.productCategory.name }
       : undefined,
-    price: fmtPrice(applyPremiumDiscount(base, customer, product)),
+    price: fmtPrice(pv.amount(applyPremiumDiscount(base, customer, product))),
     unit: m2
-      ? 'HT le m²'
+      ? `${pv.label} le m²`
       : packs && firstPack
-        ? `HT le pack de ${qty(firstPack.minQuantity)}`
-        : "HT l'unité",
-    catalogue: savings && product.catalogPrice ? fmtPrice(product.catalogPrice) : undefined,
+        ? `${pv.label} le pack de ${qty(firstPack.minQuantity)}`
+        : `${pv.label} l'unité`,
+    catalogue: savings && product.catalogPrice ? fmtPrice(pv.amount(product.catalogPrice)) : undefined,
     savings,
     isNew: isNewOffer(product.createdAt, now),
-    steps: offerSteps(product, customer),
+    steps: offerSteps(product, customer, pv),
     note: m2
       ? 'Prix au m² : indiquez vos dimensions sur la fiche, le total se calcule tout seul.'
       : packs && packSizes.length > 1
@@ -157,9 +163,10 @@ export function toShowcaseItem(
 export function buildOfferShowcase(
   products: Product[],
   customer: Customer | null | undefined,
-  now: Date = new Date()
+  now: Date = new Date(),
+  pv: PriceView = HT_VIEW
 ): OfferShowcaseItem[] {
-  const items = products.map((p, i) => toShowcaseItem(p, customer, i, now));
+  const items = products.map((p, i) => toShowcaseItem(p, customer, i, now, pv));
   return [...items.filter((o) => o.isNew), ...items.filter((o) => !o.isNew)];
 }
 

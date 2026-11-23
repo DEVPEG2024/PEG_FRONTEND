@@ -157,6 +157,27 @@ export const apiGetCustomerForEditByDocumentId = (documentId: string) => {
   });
 };
 
+/**
+ * Nom du secteur (customerCategory) d'un client — lu par le compte client
+ * lui-même pour l'affichage HT/TTC (utils/priceDisplay). `/users/me` ne
+ * peuple pas cette relation. Même route REST que « Ma société », réduite au
+ * strict nécessaire. `null` = client sans secteur.
+ */
+export async function apiGetCustomerSectorName(
+  documentId: string
+): Promise<string | null> {
+  const query = new URLSearchParams();
+  query.set('filters[documentId][$eq]', documentId);
+  query.set('fields[0]', 'documentId');
+  query.set('populate[customerCategory][fields][0]', 'name');
+  const res = await ApiService.fetchData<{
+    data?: { customerCategory?: { name?: string | null } | null }[];
+  }>({ url: `/customers?${query.toString()}`, method: 'get' });
+  const customer = res.data?.data?.[0];
+  if (!customer) throw new Error(`Client introuvable : ${documentId}`);
+  return customer.customerCategory?.name ?? null;
+}
+
 // Resolve documentId -> numeric id
 export const apiResolveCustomerIdFromDocumentId = async (
   documentId: string

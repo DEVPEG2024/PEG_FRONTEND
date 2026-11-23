@@ -27,6 +27,7 @@ import { stateData } from '@/views/app/common/invoices/constants';
 import { toast } from 'react-toastify';
 import { apiUploadFile } from '@/services/FileServices';
 import { TVA_RATE, fmtTTC, fmtHT } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { CreateInvoiceRequest } from '@/services/InvoicesServices';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 
@@ -35,6 +36,7 @@ const Invoices = () => {
     (state: RootState) => state.auth.user
   );
   const dispatch = useAppDispatch();
+  const pv = usePriceView();
   const {
     invoices,
     editProjectInvoiceDialog: editInvoiceDialog,
@@ -249,9 +251,11 @@ const Invoices = () => {
                         }}>
                           {fmtTTC(invoice.totalAmount)}
                         </span>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
-                          {fmtHT(invoice.amount)}
-                        </span>
+                        {!pv.ttc && (
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
+                            {fmtHT(invoice.amount)}
+                          </span>
+                        )}
                       </div>
 
                       {/* Paid indicator */}

@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck } from 'react-icons/hi';
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { formatPremiumDiscount, premiumSavingsHT } from '@/utils/productHelpers';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
 import { apiGetNumberingReport, NumberingReport } from '@/services/InvoicesServices';
@@ -197,6 +198,7 @@ const InvoicesList = () => {
   const customer = useRootAppSelector((state: RootState) => state.auth.user.user?.customer);
   const isAdmin: boolean = hasRole(user, [SUPER_ADMIN, ADMIN]);
   const isPremium = !!customer?.premium;
+  const pv = usePriceView();
   const { invoices, total, loading, selectedInvoice, editInvoiceDialog, printInvoiceDialog } = useAppSelector((state) => state.invoices.data);
   const [report, setReport] = useState<NumberingReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
@@ -230,10 +232,10 @@ const InvoicesList = () => {
       else paid += ttc
       // Économie Premium : seulement sur les lignes réellement remisées
       // (catalogue public — les offres personnalisées gardent leur prix)
-      if (isPremium) premiumSavings += premiumSavingsHT(inv, customer)
+      if (isPremium) premiumSavings += pv.amount(premiumSavingsHT(inv, customer))
     }
     return { billed, pending, paid, premiumSavings }
-  }, [invoices, isPremium, customer]);
+  }, [invoices, isPremium, customer, pv]);
 
   /* ── Années disponibles + données dépenses ── */
   const years = useMemo(() => {
@@ -451,8 +453,8 @@ const InvoicesList = () => {
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>{fmtTTC(inv.totalAmount ?? 0)}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{fmtHT(inv.amount ?? 0)}</div>
-                      {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>TVA {fmtPrice(inv.vatAmount ?? 0)}</div>}
+                      {!pv.ttc && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{fmtHT(inv.amount ?? 0)}</div>}
+                      {inv.vatAmount > 0 && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{pv.ttc ? 'dont TVA' : 'TVA'} {fmtPrice(inv.vatAmount ?? 0)}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: '5px', flexShrink: 0, alignItems: 'center' }}>
                       <Btn onClick={() => { dispatch(setSelectedInvoice(inv)); dispatch(setPrintInvoiceDialog(true)) }} icon={<HiPrinter size={13} />} hoverBg="rgba(107,158,255,0.15)" hoverColor="#6b9eff" hoverBorder="rgba(107,158,255,0.4)" title="Imprimer" />

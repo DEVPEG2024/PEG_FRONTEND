@@ -1,6 +1,7 @@
 import { Product } from '@/@types/product';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { useNavigate } from 'react-router-dom';
 import { HiPhotograph } from 'react-icons/hi';
 import { RootState, useAppSelector } from '@/store';
@@ -8,6 +9,7 @@ import { RootState, useAppSelector } from '@/store';
 const HomeProductsList = ({ products }: { products: Product[] }) => {
   const navigate = useNavigate();
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
+  const pv = usePriceView();
 
   return (
     <>
@@ -91,14 +93,16 @@ const HomeProductsList = ({ products }: { products: Product[] }) => {
                   boxShadow: '0 2px 8px rgba(47,111,237,0.35)',
                   display: 'inline-block',
                 }}>
-                  {fmtHT(priceHT)}
+                  {pv.fmt(priceHT)}
                 </span>
-                <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
-                  {fmtTTC(priceTTC)}
-                </span>
+                {!pv.ttc && (
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px' }}>
+                    {fmtTTC(priceTTC)}
+                  </span>
+                )}
                 {isPremium && fullPriceHT > priceHT && (
                   <span style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '2px', paddingLeft: '2px', textDecoration: 'line-through' }}>
-                    {fmtHT(fullPriceHT)}
+                    {pv.fmt(fullPriceHT)}
                   </span>
                 )}
               </div>

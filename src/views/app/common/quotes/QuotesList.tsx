@@ -16,6 +16,8 @@ import { Quote, QUOTE_STATUS_META } from '@/@types/quote';
 import { apiGetQuotes, apiGetCustomerQuotes, apiUpdateQuote, apiDeleteQuote, apiRejectQuoteAsCustomer } from '@/services/QuoteServices';
 import { unwrapData } from '@/utils/serviceHelper';
 import { fmtEur } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
+import type { PriceView } from '@/utils/priceDisplay';
 import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { redirectToHostedCheckout, type StripeSessionResponse } from '@/utils/stripeClient';
 
@@ -24,8 +26,9 @@ const fmtDate = (d?: string | null) => {
   const date = new Date(d);
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 };
-const fmtAmount = (n?: number | null) =>
-  typeof n === 'number' ? n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' € HT' : '—';
+/** Montant HT du devis, affiché HT (ou TTC pour un compte association). */
+const fmtAmount = (n: number | null | undefined, pv: PriceView) =>
+  typeof n === 'number' ? pv.fmt(n) : '—';
 
 const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
 
@@ -190,6 +193,7 @@ function QuoteCard({ quote, isAdmin, busy, validateLabel = 'Valider le devis', o
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
+  const pv = usePriceView();
 
   return (
     <div style={card}>
@@ -247,7 +251,7 @@ function QuoteCard({ quote, isAdmin, busy, validateLabel = 'Valider le devis', o
           <p style={{ color: '#6b9eff', fontSize: '11px', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
             Proposition
           </p>
-          <p style={{ color: '#fff', fontSize: '18px', fontWeight: 800, margin: '4px 0 0' }}>{fmtAmount(quote.proposalAmount)}</p>
+          <p style={{ color: '#fff', fontSize: '18px', fontWeight: 800, margin: '4px 0 0' }}>{fmtAmount(quote.proposalAmount, pv)}</p>
           {quote.proposalMessage && (
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px', margin: '6px 0 0', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
               {quote.proposalMessage}
@@ -353,6 +357,7 @@ const QuotesList = () => {
   const { user }: { user: User } = useAppSelector((state: RootState) => state.auth.user);
   const { token } = useAppSelector((state: RootState) => state.auth.session);
   const isAdmin = hasRole(user, [ADMIN, SUPER_ADMIN]);
+  const pv = usePriceView();
   const { larger } = useResponsive();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -410,9 +415,9 @@ const QuotesList = () => {
   /* ── KPI ── */
   const stats = useMemo(() => {
     const acceptedQ = quotes.filter((q) => q.status === 'accepted');
-    const validatedAmount = acceptedQ.reduce((s, q) => s + (q.proposalAmount ?? 0), 0);
+    const validatedAmount = pv.amount(acceptedQ.reduce((s, q) => s + (q.proposalAmount ?? 0), 0));
     return { total: quotes.length, pending: pendingCount, accepted: acceptedQ.length, validatedAmount };
-  }, [quotes, pendingCount]);
+  }, [quotes, pendingCount, pv]);
 
   /* ── Filtrage (tabs + recherche) ── */
   const filtered = useMemo(() => {
@@ -599,7 +604,7 @@ const QuotesList = () => {
         <KpiCard icon={<TbClipboardCheck size={24} />} iconBg="rgba(52,211,153,0.12)" iconBorder="rgba(52,211,153,0.28)" iconColor="#34d399"
           label="Validés" value={stats.accepted} hint="Devis acceptés" />
         <KpiCard icon={<TbCoin size={22} />} iconBg="rgba(107,158,255,0.12)" iconBorder="rgba(107,158,255,0.28)" iconColor="#6b9eff"
-          label="Montant validé" value={fmtEur(stats.validatedAmount)} hint="Devis acceptés (HT)" />
+          label="Montant validé" value={fmtEur(stats.validatedAmount)} hint={`Devis acceptés (${pv.label})`} />
       </div>
 
       {/* ── Tabs + Search ── */}

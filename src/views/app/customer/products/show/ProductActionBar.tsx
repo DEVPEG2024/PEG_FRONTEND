@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { HiArrowRight } from 'react-icons/hi';
 import useResponsive from '@/utils/hooks/useResponsive';
-import { fmtHT, fmtTTC, toTTC } from '@/utils/priceHelpers';
+import { fmtTTC, toTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 
 /*
  * Barre d'action de la fiche produit, sur téléphone : total en direct + étape
@@ -39,6 +40,7 @@ const ProductActionBar = ({
   hint = null,
 }: Props) => {
   const { smaller } = useResponsive();
+  const pv = usePriceView();
   const visible = smaller.md;
 
   useEffect(() => {
@@ -54,16 +56,16 @@ const ProductActionBar = ({
       <div className="peg-product-bar-sum" aria-live="polite">
         {canGoNext && summary ? (
           <>
-            <strong>{fmtHT(total)}</strong>
+            <strong>{pv.fmt(total)}</strong>
             <span>
-              {summary} · {fmtTTC(toTTC(total))}
+              {summary}{!pv.ttc && ` · ${fmtTTC(toTTC(total))}`}
             </span>
           </>
         ) : (
           <>
             {(!hint || unitPrice > 0) && (
               <strong>
-                {fmtHT(unitPrice)} <small>{unitLabel}</small>
+                {pv.fmt(unitPrice)} <small>{unitLabel}</small>
               </strong>
             )}
             {hint ? (

@@ -22,7 +22,8 @@ import { apiPriceConfigurator } from '@/services/ConfiguratorServices';
 import { apiUploadFile } from '@/services/FileServices';
 import { addToCart, removeFromCart } from '@/store/slices/base/cartSlice';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
-import { fmtHT, fmtTTC, toTTC } from '@/utils/priceHelpers';
+import { fmtTTC, toTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import {
   acceptAttr,
   cmToMm,
@@ -110,6 +111,7 @@ const OfferConfigurator = ({
     blocker: null,
   });
   const [showDetail, setShowDetail] = useState(false);
+  const pv = usePriceView();
   const seq = useRef(0);
 
   const forServer = useMemo(
@@ -1011,16 +1013,18 @@ const OfferConfigurator = ({
                 transition: 'opacity .2s',
               }}
             >
-              {fmtHT(shown.price.totalExclTax)}
+              {pv.fmt(shown.price.totalExclTax)}
             </span>
-            <span style={{ fontSize: '13px', color: C.muted }}>
-              {fmtTTC(toTTC(shown.price.totalExclTax))}
-            </span>
+            {!pv.ttc && (
+              <span style={{ fontSize: '13px', color: C.muted }}>
+                {fmtTTC(toTTC(shown.price.totalExclTax))}
+              </span>
+            )}
           </div>
           <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: C.muted }}>
             {shown.price.quantityLabel}
             {shown.price.unitPriceExclTax != null &&
-              ` · ${fmtHT(shown.price.unitPriceExclTax)} / pièce`}
+              ` · ${pv.fmt(shown.price.unitPriceExclTax)} / pièce`}
           </p>
           {/* Date rendue avec le prix ; « Commandez avant … » quand elle concorde avec l'estimation */}
           <DeliveryEstimateLine
@@ -1069,7 +1073,7 @@ const OfferConfigurator = ({
                       }}
                     >
                       <span>{d.label}</span>
-                      <span style={{ color: C.text }}>{fmtHT(d.amount)}</span>
+                      <span style={{ color: C.text }}>{pv.fmt(d.amount)}</span>
                     </li>
                   ))}
                 </ul>

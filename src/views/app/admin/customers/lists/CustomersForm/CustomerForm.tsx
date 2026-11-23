@@ -40,6 +40,8 @@ export type CustomerFormModel = Omit<
 type CustomerFormProps = {
   initialData?: CustomerFormModel
   customerCategories: Options[]
+  /** Réglage HT/TTC modifiable (fiche existante, serveur à jour) */
+  priceDisplayEditable?: boolean
   onDiscard?: () => void
   onFormSubmit: (formData: CustomerFormModel) => void
   extraContent?: React.ReactNode
@@ -62,7 +64,7 @@ const validationSchema = Yup.object().shape({
 })
 
 const CustomerForm = (props: CustomerFormProps) => {
-  const { initialData, onFormSubmit, onDiscard, customerCategories, extraContent } = props
+  const { initialData, onFormSubmit, onDiscard, customerCategories, extraContent, priceDisplayEditable = false } = props
 
   const {
     control,
@@ -101,6 +103,7 @@ const CustomerForm = (props: CustomerFormProps) => {
               errors={errors as any}
               customerCategories={customerCategories}
               watch={watch}
+              priceDisplayEditable={priceDisplayEditable}
             />
           </div>
         </div>

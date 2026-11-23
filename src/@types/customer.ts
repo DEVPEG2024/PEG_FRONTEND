@@ -42,6 +42,11 @@ export type Customer = {
    * Décimal Strapi : peut arriver en chaîne. Lu par getPremiumDiscountRate.
    */
   premiumDiscountPercent?: number | string | null;
+  /**
+   * Affichage des prix choisi par l'admin : « ttc » ou « ht ». Vide =
+   * automatique (TTC pour un secteur associatif). Voir utils/priceDisplay.
+   */
+  priceDisplay?: 'ttc' | 'ht' | null;
   /** Générateur (apporteur d'affaires) ayant parrainé ce client — rattachement permanent. */
   generator?: { documentId: string; name?: string } | null;
   /** Date de rattachement au générateur (ISO). */

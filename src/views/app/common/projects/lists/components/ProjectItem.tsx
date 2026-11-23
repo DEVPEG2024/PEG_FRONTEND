@@ -15,7 +15,8 @@ import ModalPayProducer from '../../modals/ModalPayProducer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, CUSTOMER, PRODUCER, SUPER_ADMIN } from '@/constants/roles.constant';
 import { User } from '@/@types/user';
-import { fmtHT, fmtPrice } from '@/utils/priceHelpers';
+import { fmtPrice } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import useResponsive from '@/utils/hooks/useResponsive';
 import ProjectCardMobile from './ProjectCardMobile';
 
@@ -61,6 +62,8 @@ const ProjectItem = ({
   const navigate = useNavigate();
   const [isPayProducerOpen, setIsPayProducerOpen] = useState(false);
   const { smaller } = useResponsive();
+  // Client : HT, ou TTC pour les associations (admin/producteur : toujours HT)
+  const pv = usePriceView();
 
   const duration = dayjs(project.endDate).diff(dayjs(), 'day');
   const status = statusStyles[project.state] ?? statusStyles.pending;
@@ -109,8 +112,8 @@ const ProjectItem = ({
         ? { amount: fmtPrice(project.producerPrice ?? 0) }
         : hasRole(user, [CUSTOMER])
           ? {
-              amount: fmtHT(totalCA),
-              sub: totalAdditionalSales > 0 ? `dont ventes add. ${fmtPrice(totalAdditionalSales)}` : undefined,
+              amount: pv.fmt(totalCA),
+              sub: totalAdditionalSales > 0 ? `dont ventes add. ${fmtPrice(pv.amount(totalAdditionalSales))}` : undefined,
             }
           : undefined;
     return (
@@ -375,11 +378,11 @@ const ProjectItem = ({
                     color: '#6b9eff', fontSize: '11px', fontWeight: 600,
                   }}
                 >
-                  {fmtHT(totalCA)}
+                  {pv.fmt(totalCA)}
                 </span>
                 {totalAdditionalSales > 0 && (
                   <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    dont ventes add. {fmtPrice(totalAdditionalSales)}
+                    dont ventes add. {fmtPrice(pv.amount(totalAdditionalSales))}
                   </span>
                 )}
               </>

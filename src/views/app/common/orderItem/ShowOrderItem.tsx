@@ -18,6 +18,7 @@ import { getTotalPriceForCartItem } from '@/utils/productHelpers';
 import { useParams } from 'react-router-dom';
 import { safeHtmlParse } from '@/utils/sanitizeHtml';
 import { fmtPrice } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { HiCheck, HiClock } from 'react-icons/hi';
 import { MdChecklist } from 'react-icons/md';
 import { isAssistantFilled } from '@/components/template/chat/chatForm';
@@ -29,6 +30,7 @@ type ShowOrderItemParams = {
 };
 
 const ShowOrderItem = () => {
+  const pv = usePriceView();
   const { documentId } =
     useParams<ShowOrderItemParams>() as ShowOrderItemParams;
   const dispatch = useAppDispatch();
@@ -68,7 +70,7 @@ const ShowOrderItem = () => {
                     {orderItem.product.name}
                   </h1>
                   <p className="text-2xl font-semibold">
-                    {fmtPrice(getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections))}
+                    {fmtPrice(pv.amount(getTotalPriceForCartItem(orderItem.product, orderItem.sizeAndColorSelections)))}
                   </p>
                 </div>
 

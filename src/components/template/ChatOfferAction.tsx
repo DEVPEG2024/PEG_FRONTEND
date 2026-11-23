@@ -6,6 +6,7 @@ import { addToCart } from '@/store/slices/base/cartSlice';
 import { chatTraceFor } from './chat/chatTrace';
 import { RECAP_OFFER_SUFFIX } from './chat/chatForm';
 import useUserCart from '@/utils/hooks/useUserCart';
+import usePriceView from '@/utils/hooks/usePriceView';
 import type { CartItem } from '@/@types/cart';
 import type { Color, Product, Size } from '@/@types/product';
 import { answerChatQuestion, chatQuestionFor, describeOffer, planOffer, type ChatNavState, type ChatOffer, type ChatQuestion } from './chatOffer';
@@ -61,6 +62,7 @@ const btn = (primary: boolean): React.CSSProperties => ({
 const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user.user);
+  const pv = usePriceView();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [pending, setPending] = useState<PendingQuestion | null>(null);
@@ -174,7 +176,11 @@ const ChatOfferAction = ({ offer, onChange, onGo, formAnswers }: Props) => {
   return (
     <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '6px', whiteSpace: 'normal' }}>
       <div style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.65)' }}>
-        {summary} — <strong style={{ color: '#fff' }}>{fmt(offer.totalHT)} HT</strong> · {fmt(offer.totalTTC)} TTC
+        {summary} — {pv.ttc ? (
+          <strong style={{ color: '#fff' }}>{fmt(offer.totalTTC)} TTC</strong>
+        ) : (
+          <><strong style={{ color: '#fff' }}>{fmt(offer.totalHT)} HT</strong> · {fmt(offer.totalTTC)} TTC</>
+        )}
       </div>
 
       {q && <style>{CHIP_CSS}</style>}

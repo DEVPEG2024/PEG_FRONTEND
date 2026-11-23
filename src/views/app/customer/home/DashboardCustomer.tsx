@@ -33,7 +33,8 @@ import { Project } from '@/@types/project';
 import { Product } from '@/@types/product';
 import dayjs from 'dayjs';
 import { getProductBasePrice, applyPremiumDiscount } from '@/utils/productHelpers';
-import { fmtHT, fmtTTC } from '@/utils/priceHelpers';
+import { fmtTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { apiGetCustomerInvoiceSummaries, CustomerInvoiceSummary } from '@/services/InvoicesServices';
 import { isInvoiceCanceled, isInvoiceOutstanding, isTransferPending } from '@/utils/invoiceStatus';
 import { apiGetCustomerProjectBats } from '@/services/ProjectServices';
@@ -173,6 +174,7 @@ const ProjectRow = ({ project, first }: { project: PcmProject; first: boolean })
 );
 
 const DashboardCustomer = () => {
+  const pv = usePriceView();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { customer, products, projects, loading } = useAppSelector(
@@ -353,7 +355,7 @@ const DashboardCustomer = () => {
     : `${todos.length} petites actions et vos projets avancent.`;
 
   // ── Offres personnalisées, mises en avant (maquette du 21/10/2026) ──
-  const offers = offersReserved ? [] : buildOfferShowcase(products, user?.customer);
+  const offers = offersReserved ? [] : buildOfferShowcase(products, user?.customer, new Date(), pv);
   const offersVisible = offers.length > 0;
   const openProduct = (documentId: string) => navigate(`/customer/product/${documentId}`);
 
@@ -440,7 +442,7 @@ const DashboardCustomer = () => {
     const productCard = (product: Product): PcmProduct => ({
       key: product.documentId,
       name: product.name,
-      price: fmtHT(applyPremiumDiscount(getProductBasePrice(product), user?.customer, product)),
+      price: pv.fmt(applyPremiumDiscount(getProductBasePrice(product), user?.customer, product)),
       image: product.images?.[0]?.url,
       onClick: () => navigate(`/customer/product/${product.documentId}`),
     });
@@ -700,7 +702,7 @@ const DashboardCustomer = () => {
                           <div style={{ padding: '12px 14px' }}>
                             <p style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</p>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-                              <span style={{ background: 'rgba(124,107,255,0.12)', border: '1px solid rgba(124,107,255,0.25)', borderRadius: '8px', padding: '4px 9px', color: '#a99bff', fontSize: '12px', fontWeight: 800 }}>{fmtHT(priceHT)}</span>
+                              <span style={{ background: 'rgba(124,107,255,0.12)', border: '1px solid rgba(124,107,255,0.25)', borderRadius: '8px', padding: '4px 9px', color: '#a99bff', fontSize: '12px', fontWeight: 800 }}>{pv.fmt(priceHT)}</span>
                               <span style={{ color: '#a99bff', fontSize: '11px', fontWeight: 600 }}>Voir →</span>
                             </div>
                           </div>

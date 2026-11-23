@@ -25,6 +25,7 @@ import { fmtEur } from '@/utils/priceHelpers';
 import CatalogueSelection from './CatalogueSelection';
 import OffersHelpStrip from './OffersHelpStrip';
 import OffersProgressSteps from './OffersProgressSteps';
+import usePriceView from '@/utils/hooks/usePriceView';
 import {
   ACTION_CARD_CLASS,
   CTA_CLASS,
@@ -390,6 +391,7 @@ const OffersEmptyState = ({
   excludeIds,
 }: OffersEmptyStateProps) => {
   const company = customerName || 'votre entreprise';
+  const pv = usePriceView();
 
   switch (variant) {
     case 'standard':
@@ -400,7 +402,7 @@ const OffersEmptyState = ({
             icon={<TbGift size={26} color="#eab308" />}
             eyebrow="OFFRES PERSONNALISÉES"
             title="Les offres personnalisées sont incluses dans Premium"
-            footnote={`${fmtEur(PREMIUM_PRICE_HT)} HT / mois · engagement ${PREMIUM_MIN_MONTHS} mois minimum`}
+            footnote={`${fmtEur(pv.amount(PREMIUM_PRICE_HT))} ${pv.label} / mois · engagement ${PREMIUM_MIN_MONTHS} mois minimum`}
             actions={
               <>
                 <LinkButton to="/customer/premium" style={GOLD_BUTTON_STYLE}>

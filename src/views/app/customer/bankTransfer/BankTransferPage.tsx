@@ -5,6 +5,7 @@ import ApiService from '@/services/ApiService'
 import { API_GRAPHQL_URL, EXPRESS_BACKEND_URL } from '@/configs/api.config'
 import { HiArrowLeft, HiCheckCircle, HiClipboardCopy, HiClipboardCheck } from 'react-icons/hi'
 import { fmtPrice, fmtHT, fmtTTC } from '@/utils/priceHelpers'
+import usePriceView from '@/utils/hooks/usePriceView'
 import { Invoice } from '@/@types/invoice'
 
 const IBAN = 'FR76 1679 8000 0100 0178 1163 397'
@@ -30,6 +31,7 @@ const BankTransferPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
+  const pv = usePriceView()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -133,9 +135,9 @@ const BankTransferPage = () => {
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>Montant à payer</p>
                   <p style={{ color: '#fff', fontWeight: 700, fontSize: '22px' }}>{fmtTTC(invoice.totalAmount)}</p>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{fmtHT(invoice.amount)}</p>
+                  {!pv.ttc && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{fmtHT(invoice.amount)}</p>}
                   {invoice.vatAmount > 0 && (
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>TVA {fmtPrice(invoice.vatAmount)}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{pv.ttc ? 'dont TVA' : 'TVA'} {fmtPrice(invoice.vatAmount)}</p>
                   )}
                 </div>
               </div>

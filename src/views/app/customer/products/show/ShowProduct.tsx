@@ -30,7 +30,8 @@ import Container from '@/components/shared/Container';
 import { Button } from '@/components/ui';
 import { Color, Size, SizeAndColorSelection } from '@/@types/product';
 import { getProductBasePrice, getProductPriceForQuantity, getCatalogSavingsPercent, isProductPackPricing, isProductM2Pricing, getM2Price, applyPremiumDiscount, getTotalPriceForCartItem } from '@/utils/productHelpers';
-import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
+import { toTTC, fmtTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { CartItem } from '@/@types/cart';
 import { FormAnswer } from '@/@types/formAnswer';
 import SizeAndColorsChoice from './SizeAndColorsChoice';
@@ -151,6 +152,8 @@ const ShowProduct = () => {
   // Remise automatique -15% pour les clients Premium (catalogue standard)
   const unitPrice = applyPremiumDiscount(rawUnitPrice, user?.customer, product);
   const isPremium = !!user?.customer?.premium;
+  // HT, ou TTC pour les associations (utils/priceDisplay)
+  const pv = usePriceView();
 
   // m² pricing calculation
   const m2Data = isM2Pricing && product ? getM2Price(product, m2Width / 100, m2Height / 100, m2Quantity) : null;
@@ -628,9 +631,9 @@ const ShowProduct = () => {
                       {product.name}
                     </h1>
                     <div style={{ marginTop: '6px', display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{fmtHT(unitPrice)}</span>
+                      <span style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{pv.fmt(unitPrice)}</span>
                       <span style={{ fontSize: '12px', color: 'rgba(160,185,220,0.6)' }}>
-                        {isPackPricing ? '/ pack' : '/ pièce'} · {fmtTTC(toTTC(unitPrice))}
+                        {isPackPricing ? '/ pack' : '/ pièce'}{!pv.ttc && ` · ${fmtTTC(toTTC(unitPrice))}`}
                       </span>
                       {isPremium && rawUnitPrice > unitPrice && (
                         <span style={{ fontSize: '12px', color: '#eab308', fontWeight: 700 }}>⭐ -15% Premium</span>
@@ -680,16 +683,16 @@ const ShowProduct = () => {
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                             <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix au m²</span>
-                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtNum(product.pricePerM2 || 0)} € HT/m²</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{pv.fmt(product.pricePerM2 || 0)}/m²</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                             <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>Prix unitaire</span>
-                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{fmtHT(m2Data.pricePerUnit)}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 600 }}>{pv.fmt(m2Data.pricePerUnit)}</span>
                           </div>
                           {m2Quantity > 1 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: 'rgba(160,185,220,0.6)', fontSize: '12px' }}>× {m2Quantity} exemplaire{m2Quantity > 1 ? 's' : ''}</span>
-                              <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{fmtHT(m2Data.total)}</span>
+                              <span style={{ color: '#fff', fontSize: '15px', fontWeight: 800 }}>{pv.fmt(m2Data.total)}</span>
                             </div>
                           )}
                         </div>
@@ -727,15 +730,17 @@ const ShowProduct = () => {
                 <div style={{ display: 'inline-flex', flexDirection: 'column', background: 'linear-gradient(90deg, #2f6fed, #1f4bb6)', borderRadius: '10px', padding: '8px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                     <span style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-                      {fmtHT(unitPrice)}
+                      {pv.fmt(unitPrice)}
                     </span>
                     <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
                       {isPackPricing ? '/ pack' : '/ pièce'}
                     </span>
                   </div>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
-                    {fmtTTC(toTTC(unitPrice))}
-                  </span>
+                  {!pv.ttc && (
+                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>
+                      {fmtTTC(toTTC(unitPrice))}
+                    </span>
+                  )}
                   {isPackPricing && amountSelected > 0 && (
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: '4px' }}>
                       Pack {amountSelected} sélectionné
@@ -759,7 +764,7 @@ const ShowProduct = () => {
                       -{savingsPercent}% vs catalogue
                     </span>
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
-                      {fmtHT(product.catalogPrice)}
+                      {pv.fmt(product.catalogPrice)}
                     </span>
                   </div>
                 )}
@@ -769,7 +774,7 @@ const ShowProduct = () => {
                       ⭐ -15% Premium
                     </span>
                     <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
-                      {fmtHT(rawUnitPrice)}{isPackPricing ? ' / pack' : ' / pièce'}
+                      {pv.fmt(rawUnitPrice)}{isPackPricing ? ' / pack' : ' / pièce'}
                     </span>
                   </div>
                 )}
@@ -834,11 +839,13 @@ const ShowProduct = () => {
                             )}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                               <span style={{ fontSize: '14px', fontWeight: isActive ? 700 : 400, color: isActive ? '#fff' : 'rgba(160,185,220,0.6)' }}>
-                                {fmtHT(tierDisplayHT)}
+                                {pv.fmt(tierDisplayHT)}
                               </span>
-                              <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
-                                {fmtTTC(toTTC(tierDisplayHT))}
-                              </span>
+                              {!pv.ttc && (
+                                <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(160,185,220,0.35)' }}>
+                                  {fmtTTC(toTTC(tierDisplayHT))}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -864,17 +871,19 @@ const ShowProduct = () => {
                         <span style={{ fontWeight: 700, color: '#7eb3ff', fontSize: '15px' }}>{amountSelected}</span>
                         {' '}pièce{amountSelected > 1 ? 's' : ''}
                         {' × '}
-                        <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{fmtHT(unitPrice)}</span>
+                        <span style={{ fontWeight: 700, color: '#7eb3ff' }}>{pv.fmt(unitPrice)}</span>
                       </>
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 800, fontSize: '22px', color: '#fff', letterSpacing: '-0.02em' }}>
-                      {fmtHT(totalPrice)}
+                      {pv.fmt(totalPrice)}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
-                      {fmtTTC(toTTC(totalPrice))}
-                    </div>
+                    {!pv.ttc && (
+                      <div style={{ fontSize: '12px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
+                        {fmtTTC(toTTC(totalPrice))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1044,11 +1053,13 @@ const ShowProduct = () => {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: '24px', color: '#fff', letterSpacing: '-0.02em' }}>
-                  {fmtHT(totalPrice)}
+                  {pv.fmt(totalPrice)}
                 </div>
-                <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
-                  {fmtTTC(toTTC(totalPrice))}
-                </div>
+                {!pv.ttc && (
+                  <div style={{ fontSize: '13px', color: 'rgba(160,185,220,0.5)', fontWeight: 600 }}>
+                    {fmtTTC(toTTC(totalPrice))}
+                  </div>
+                )}
               </div>
             </div>
 

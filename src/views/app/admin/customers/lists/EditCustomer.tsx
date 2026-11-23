@@ -51,6 +51,13 @@ const EditCustomer = () => {
     }
   }
 
+  // Affichage HT/TTC (utils/priceDisplay). Strapi refuse une clé qu'il ne
+  // connaît pas : le réglage n'est proposé et envoyé que sur une fiche existante
+  // dont la lecture contient le champ (serveur à jour). À la création, le
+  // client part en automatique (selon le secteur).
+  const serverKnowsPriceDisplay =
+    isEdit && !!selectedCustomer && 'priceDisplay' in selectedCustomer
+
   const nestCustomer = (formData: CustomerFormModel) => {
     const { logoFile, bannerFile, bannerImageUrl: _biu, bannerDocumentId,
       email, phoneNumber, vatNumber, siretNumber, address, zipCode, city, country, website,
@@ -62,6 +69,9 @@ const EditCustomer = () => {
         customerCategory: rest.customerCategory || null,
         deferredPayment: rest.deferredPayment ?? false,
         catalogAccess: rest.catalogAccess ?? true,
+        ...(serverKnowsPriceDisplay
+          ? { priceDisplay: rest.priceDisplay === 'ttc' || rest.priceDisplay === 'ht' ? rest.priceDisplay : null }
+          : {}),
         companyInformations: { email: email || '', phoneNumber: phoneNumber || '', vatNumber: vatNumber || '', siretNumber: siretNumber || '', address: address || '', zipCode: zipCode || '', city: city || '', country: country || '', website: website || '' },
       },
       logoFile: logoFile ?? null,
@@ -90,6 +100,7 @@ const EditCustomer = () => {
     <CustomerForm
       initialData={isEdit ? flattenCustomer(selectedCustomer) : undefined}
       customerCategories={customerCategories}
+      priceDisplayEditable={serverKnowsPriceDisplay}
       onFormSubmit={handleSubmit}
       onDiscard={handleDiscard}
       extraContent={isEdit && documentId ? (

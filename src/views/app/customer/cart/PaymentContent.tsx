@@ -13,6 +13,7 @@ import { FormAnswer } from '@/@types/formAnswer';
 import { apiCreateFormAnswer } from '@/services/FormAnswerService';
 import { unwrapData } from '@/utils/serviceHelper';
 import { TVA_RATE, fmtPrice } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { OrderItem } from '@/@types/orderItem';
 import { User } from '@/@types/user';
 import {
@@ -103,6 +104,17 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
     Math.round((discountedSubtotalHT - creditApplied + SHIPPING_HT) * 100) / 100;
   const totalPriceWithVAT: number = Math.round(totalPrice * (1 + TVA_RATE) * 100) / 100;
   const tva = Math.round((totalPriceWithVAT - totalPrice) * 100) / 100;
+
+  // Compte en TTC (associations, utils/priceDisplay) : chaque ligne du
+  // récapitulatif est donnée TTC. Le sous-total est déduit du total réellement
+  // débité pour que les lignes tombent juste au centime près.
+  const pv = usePriceView();
+  const shippingShown = pv.amount(SHIPPING_HT);
+  const discountShown = pv.amount(discountAmount);
+  const creditShown = pv.amount(creditApplied);
+  const subtotalShown = pv.ttc
+    ? Math.round((totalPriceWithVAT - shippingShown + discountShown + creditShown) * 100) / 100
+    : subtotalHT;
 
   const handleApplyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
@@ -472,7 +484,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
                 </span>
               </div>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, flexShrink: 0, marginLeft: '8px' }}>
-                {fmtPrice(total)}
+                {fmtPrice(pv.amount(total))}
               </span>
             </div>
           );
@@ -495,7 +507,7 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
               <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
                 {promoValidation.discountType === 'percentage'
                   ? `-${promoValidation.discountValue}%`
-                  : `-${fmtPrice(promoValidation.discountValue!)}`}
+                  : `-${fmtPrice(pv.amount(promoValidation.discountValue!))}`}
               </span>
             </div>
             <button type="button" onClick={handleRemovePromo} className="peg-tap-target" style={{
@@ -571,16 +583,16 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
       {/* Totals */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Sous-total HT</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Sous-total {pv.label}</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
-            {fmtPrice(subtotalHT)}
+            {fmtPrice(subtotalShown)}
           </span>
         </div>
         {discountAmount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: 500 }}>Remise ({appliedCode})</span>
             <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '13px' }}>
-              -{fmtPrice(discountAmount)}
+              -{fmtPrice(discountShown)}
             </span>
           </div>
         )}
@@ -588,18 +600,18 @@ function PaymentContent({ cart, shipping, hasAddress, onMissingAddress, missingP
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#6b9eff', fontSize: '13px', fontWeight: 500 }}>Avoir parrainage</span>
             <span style={{ color: '#6b9eff', fontWeight: 600, fontSize: '13px' }}>
-              -{fmtPrice(creditApplied)}
+              -{fmtPrice(creditShown)}
             </span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Livraison HT</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>Livraison {pv.label}</span>
           <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: '13px' }}>
-            {fmtPrice(SHIPPING_HT)}
+            {fmtPrice(shippingShown)}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>TVA (20%)</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontWeight: 500 }}>{pv.ttc ? 'dont TVA (20%)' : 'TVA (20%)'}</span>
           <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 500 }}>
             {fmtPrice(tva)}
           </span>

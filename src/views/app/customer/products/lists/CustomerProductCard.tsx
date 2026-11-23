@@ -1,6 +1,7 @@
 import { memo, useRef } from 'react';
 import { getProductBasePrice, getCatalogSavingsPercent, applyPremiumDiscount } from '@/utils/productHelpers';
-import { toTTC, fmtHT, fmtTTC } from '@/utils/priceHelpers';
+import { toTTC, fmtTTC } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { sortSizes } from '@/utils/sizeSort';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/@types/product';
@@ -32,6 +33,7 @@ const CustomerProductCard = ({
 
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
   const isPremium = !!customer?.premium;
+  const pv = usePriceView();
 
   const image = product.images[0];
   const imageSources = buildImageSources(image);
@@ -315,20 +317,22 @@ const CustomerProductCard = ({
               lineHeight: 1,
               whiteSpace: 'nowrap',
             }}>
-              {fmtHT(priceHT)}{unitSuffix}
+              {pv.fmt(priceHT)}{unitSuffix}
             </span>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {fmtTTC(priceTTC)}{unitSuffix}
-            </span>
+            {!pv.ttc && (
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {fmtTTC(priceTTC)}{unitSuffix}
+              </span>
+            )}
             {savingsPercent && product.catalogPrice && (
               <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontWeight: 500, whiteSpace: 'nowrap', textDecoration: 'line-through' }}>
-                {fmtHT(product.catalogPrice)}
+                {pv.fmt(product.catalogPrice)}
               </span>
             )}
             {isPremium && fullPriceHT > priceHT && (
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                 <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: 600, textDecoration: 'line-through' }}>
-                  {fmtHT(fullPriceHT)}{unitSuffix}
+                  {pv.fmt(fullPriceHT)}{unitSuffix}
                 </span>
                 <span style={{ fontSize: '10px', color: '#eab308', fontWeight: 700 }}>
                   ⭐ -15% Premium

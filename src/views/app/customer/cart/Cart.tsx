@@ -15,7 +15,8 @@ import {
   isProductM2Pricing,
   applyPremiumDiscount,
 } from '@/utils/productHelpers';
-import { fmtPrice, fmtHT } from '@/utils/priceHelpers';
+import { fmtPrice } from '@/utils/priceHelpers';
+import usePriceView from '@/utils/hooks/usePriceView';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -177,6 +178,7 @@ function CartItemCard({
   const personalization = personalizationStatus(item);
   const toPersonalize = personalization === 'optional' || personalization === 'required';
   const customer = useAppSelector((state: RootState) => state.auth.user.user?.customer);
+  const pv = usePriceView();
   const unitPrice = applyPremiumDiscount(
     getProductPriceForSizeAndColors(item.product, item.sizeAndColors),
     customer,
@@ -279,13 +281,13 @@ function CartItemCard({
         >
           {configured
             ? configured.price.unitPriceExclTax != null
-              ? `${fmtPrice(configured.price.unitPriceExclTax)} / unite · ${configured.price.quantityLabel}`
+              ? `${fmtPrice(pv.amount(configured.price.unitPriceExclTax))} / unite · ${configured.price.quantityLabel}`
               : configured.price.quantityLabel
             : isM2
-            ? `${fmtPrice(item.product.pricePerM2 || 0)} / m²`
+            ? `${fmtPrice(pv.amount(item.product.pricePerM2 || 0))} / m²`
             : isPackPricing
             ? `Pack de ${totalQuantity} unite${totalQuantity > 1 ? 's' : ''}`
-            : `${fmtPrice(unitPrice)} / unite`}
+            : `${fmtPrice(pv.amount(unitPrice))} / unite`}
         </p>
         {configured ? (
           <p
@@ -392,7 +394,7 @@ function CartItemCard({
               letterSpacing: '-0.02em',
             }}
           >
-            {fmtHT(totalItem)}
+            {pv.fmt(totalItem)}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -468,6 +470,7 @@ function Cart() {
   );
   const cart = useUserCart(documentId);
   const dispatch = useAppDispatch();
+  const pv = usePriceView();
   // Continuer ses achats : le CATALOGUE (le bouton envoyait vers « Mes offres »,
   // qui montre une sélection du catalogue aux clients Standard). Un client sans
   // accès au catalogue ne commande que depuis ses offres — même règle que le
@@ -821,7 +824,7 @@ function Cart() {
               fontWeight: 500,
             }}
           >
-            Total : {fmtHT(totalHT)}
+            Total : {pv.fmt(totalHT)}
           </span>
         </div>
       </div>
@@ -1338,10 +1341,12 @@ function Cart() {
                       }}
                     >
                       {fmtPrice(
-                        applyPremiumDiscount(
-                          getProductBasePrice(product),
-                          user?.customer,
-                          product
+                        pv.amount(
+                          applyPremiumDiscount(
+                            getProductBasePrice(product),
+                            user?.customer,
+                            product
+                          )
                         )
                       )}
                     </span>

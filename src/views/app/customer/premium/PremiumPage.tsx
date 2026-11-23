@@ -24,6 +24,7 @@ import {
 import PegStripeCheckout from '@/components/payment/PegStripeCheckout';
 import { formatPremiumDiscount } from '@/utils/productHelpers';
 import { redirectToHostedCheckout } from '@/utils/stripeClient';
+import usePriceView from '@/utils/hooks/usePriceView';
 
 const GOLD = '#eab308';
 
@@ -55,6 +56,8 @@ const PremiumPage = () => {
   const [paymentSecret, setPaymentSecret] = useState<string | null>(null);
 
   const priceTTC = Math.round(PREMIUM_PRICE_HT * 1.2);
+  // Compte association : l'abonnement est annoncé TTC (utils/priceDisplay)
+  const pv = usePriceView();
   const premiumSince = user?.customer?.premiumSince;
   const cancellable = canCancelPremium(premiumSince);
   const cancelFromDate = premiumCancellableFrom(premiumSince);
@@ -241,10 +244,10 @@ const PremiumPage = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
-                  <span style={{ color: '#fff', fontSize: 'var(--peg-fs-28)', fontWeight: 800 }}>{PREMIUM_PRICE_HT} €</span>
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> HT / mois</span>
+                  <span style={{ color: '#fff', fontSize: 'var(--peg-fs-28)', fontWeight: 800 }}>{pv.ttc ? priceTTC : PREMIUM_PRICE_HT} €</span>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 600 }}> {pv.label} / mois</span>
                   <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                    soit {priceTTC} € TTC / mois · engagement {PREMIUM_MIN_MONTHS} mois minimum
+                    {pv.ttc ? '' : `soit ${priceTTC} € TTC / mois · `}engagement {PREMIUM_MIN_MONTHS} mois minimum
                   </p>
                 </div>
                 <button onClick={handleSubscribe} disabled={busy || !accepted} title={!accepted ? 'Acceptez le contrat pour continuer' : undefined} style={{

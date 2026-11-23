@@ -5,6 +5,7 @@ import Select from '@/components/ui/Select';
 import { Controller, FieldErrors, FieldValues } from 'react-hook-form';
 import { t } from 'i18next';
 import { Options } from '../EditCustomer';
+import { customerSeesTTC } from '@/utils/priceDisplay';
 
 type FormFieldsName = {
   customerCategory: string;
@@ -15,10 +16,19 @@ type FormFieldsName = {
 
 type CompanyFieldsProps = {
   customerCategories: Options[];
+  /** false : création, ou serveur sans le champ → résultat affiché, pas de choix */
+  priceDisplayEditable?: boolean;
   control: any;
   errors: FieldErrors<FormFieldsName>;
   watch: any;
 };
+
+/** Affichage des prix vu par le client (utils/priceDisplay). */
+const PRICE_DISPLAY_OPTIONS: Options[] = [
+  { value: 'auto', label: 'Automatique (selon le secteur)' },
+  { value: 'ttc', label: 'TTC' },
+  { value: 'ht', label: 'HT' },
+];
 
 /** EU countries that use intra-community VAT numbers */
 const EU_COUNTRIES = [
@@ -28,13 +38,17 @@ const EU_COUNTRIES = [
 ]
 
 const CompanyFields = (props: CompanyFieldsProps) => {
-  const { customerCategories, errors, control, watch } = props;
+  const { customerCategories, errors, control, watch, priceDisplayEditable = false } = props;
   const selectedCountry: string = watch('country') ?? '';
   const isFrance = selectedCountry === 'FR';
   const isEU = EU_COUNTRIES.includes(selectedCountry);
 
   const vatLabel = isFrance ? 'N° TVA intracommunautaire' : isEU ? 'N° TVA intracommunautaire' : 'N° identification fiscale';
   const vatPlaceholder = isFrance ? 'FR XX XXXXXXXXX' : isEU ? 'Ex: DE123456789' : 'Tax ID';
+
+  // Ce que le client verra réellement, secteur choisi compris
+  const sectorName = customerCategories.find((c) => c.value === watch('customerCategory'))?.label;
+  const seesTTC = customerSeesTTC(watch('priceDisplay'), sectorName);
 
   return (
     <AdaptableCard bordered={false} className="mb-4">
@@ -62,6 +76,38 @@ const CompanyFields = (props: CompanyFieldsProps) => {
                 />
               )}
             />
+          </FormItem>
+        </div>
+        <div className="col-span-1">
+          <FormItem
+            label="Affichage des prix"
+            extra={
+              <span className="text-xs text-gray-400">
+                {' '}— le client voit les prix {seesTTC ? 'TTC' : 'HT'}
+              </span>
+            }
+          >
+            {priceDisplayEditable && (
+              <Controller
+                name="priceDisplay"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    field={field}
+                    options={PRICE_DISPLAY_OPTIONS}
+                    isSearchable={false}
+                    value={PRICE_DISPLAY_OPTIONS.find((o) => o.value === (field.value || 'auto'))}
+                    onChange={(option) =>
+                      field.onChange(option?.value === 'ttc' || option?.value === 'ht' ? option.value : null)
+                    }
+                  />
+                )}
+              />
+            )}
+            <p className="text-xs text-gray-400 mt-1">
+              Automatique : TTC pour le secteur associatif (clubs, associations), HT sinon.
+              {!priceDisplayEditable && ' Réglable sur la fiche une fois le client créé.'}
+            </p>
           </FormItem>
         </div>
       </div>
