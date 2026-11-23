@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { Tooltip } from '@/components/ui';
-import { HiDuplicate, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiDuplicate, HiOutlineGlobeAlt, HiOutlineTag, HiOutlineUser, HiPencil, HiTrash } from 'react-icons/hi';
 import { Product } from '@/@types/product';
 import { getProductBasePrice, getProductCost, getUnitMargin, getMarginRate, getCatalogueVisibilityIssues } from '@/utils/productHelpers';
 import { toTTC, fmtHT, fmtTTC, fmtNum } from '@/utils/priceHelpers';
-import { memo, useRef } from 'react';
+import { memo, useRef, useState } from 'react';
 import ProductBadges from '@/components/shared/ProductBadges';
+import { offerAudience } from './offerAudience';
+
+/** Clients listés au survol ; au-delà : « + N autres ». */
+const MAX_AUDIENCE_LINES = 6;
 
 const ProductCard = memo(
   ({
@@ -30,14 +34,24 @@ const ProductCard = memo(
     const marginRate = getMarginRate(basePrice, cost);
     const showMargin = cost > 0;
     const visibilityIssues = getCatalogueVisibilityIssues(product);
+    // À qui appartient l'offre : montré au survol de la carte (demande du 23/11/2026)
+    const audience = offerAudience(product);
+    const [hovered, setHovered] = useState(false);
+    const audienceLines = [
+      ...audience.customers.map((name) => ({ key: `c-${name}`, icon: <HiOutlineUser size={13} />, text: name })),
+      ...audience.sectors.map((name) => ({ key: `s-${name}`, icon: <HiOutlineTag size={13} />, text: `Secteur : ${name}` })),
+    ];
+    const hiddenLines = Math.max(0, audienceLines.length - MAX_AUDIENCE_LINES);
 
     const handleMouseEnter = () => {
+      setHovered(true);
       if (cardRef.current) {
         cardRef.current.style.transform = 'translateY(-4px)';
         cardRef.current.style.boxShadow = '0 20px 44px rgba(0,0,0,0.5), 0 0 0 1px rgba(47,111,237,0.2)';
       }
     };
     const handleMouseLeave = () => {
+      setHovered(false);
       if (cardRef.current) {
         cardRef.current.style.transform = 'translateY(0)';
         cardRef.current.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06)';
@@ -113,6 +127,56 @@ const ProductCard = memo(
 
           {/* Badges posés sur le produit (« Nouveau », « Promo »…) */}
           <ProductBadges documentId={product.documentId} layout="row" style={{ position: 'absolute', left: '10px', bottom: '10px', right: '10px' }} />
+
+          {/* Survol : à qui appartient l'offre */}
+          <div
+            role="tooltip"
+            aria-hidden={!hovered}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 2,
+              background: 'rgba(8,14,28,0.92)',
+              backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+              padding: '14px 16px', boxSizing: 'border-box',
+              display: 'flex', flexDirection: 'column', gap: '8px',
+              opacity: hovered ? 1 : 0, transition: 'opacity 0.18s ease',
+              pointerEvents: 'none', overflow: 'hidden',
+            }}
+          >
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Pour qui ?
+            </span>
+            <span style={{
+              color: audience.nobody ? '#fca5a5' : '#fff', fontSize: '14px', fontWeight: 800,
+              letterSpacing: '-0.01em', lineHeight: 1.3,
+            }}>
+              {audience.title}
+            </span>
+            {audienceLines.length > 1 && (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px', minHeight: 0 }}>
+                {audienceLines.slice(0, MAX_AUDIENCE_LINES).map((line) => (
+                  <li key={line.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.85)', fontSize: '12px', fontWeight: 600, minWidth: 0 }}>
+                    <span style={{ color: '#6b9eff', display: 'flex', flexShrink: 0 }}>{line.icon}</span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{line.text}</span>
+                  </li>
+                ))}
+                {hiddenLines > 0 && (
+                  <li style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 600 }}>
+                    + {hiddenLines} autre{hiddenLines > 1 ? 's' : ''}
+                  </li>
+                )}
+              </ul>
+            )}
+            {audience.publicCatalogue && (audience.customers.length > 0 || audience.sectors.length > 0) && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.55)', fontSize: '11px', fontWeight: 600 }}>
+                <HiOutlineGlobeAlt size={13} /> Aussi au catalogue public
+              </span>
+            )}
+            {audience.nobody && (
+              <span style={{ color: 'rgba(252,165,165,0.85)', fontSize: '11px', lineHeight: 1.45 }}>
+                Hors catalogue et rattachée à aucun client ni secteur : personne ne la voit.
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Content */}

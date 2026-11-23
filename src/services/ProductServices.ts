@@ -320,6 +320,10 @@ export async function apiGetAdminProducts(data: GetProductsRequest = {pagination
                     name
                     active
                 }
+                # Offre réservée : à qui elle appartient (survol de la carte admin).
+                # ⚠️ Jamais dans getProducts (vues client) : noms des autres clients.
+                customers(pagination: { limit: 100 }) { documentId name }
+                customerCategories(pagination: { limit: 100 }) { documentId name }
             }
             pageInfo {
                 page
@@ -367,6 +371,8 @@ export async function apiCreateProduct(data: CreateProductRequest): Promise<Axio
                 name
                 active
             }
+            customers(pagination: { limit: 100 }) { documentId name }
+            customerCategories(pagination: { limit: 100 }) { documentId name }
         }
     }
   `,
@@ -763,6 +769,8 @@ export async function apiUpdateProduct(product: Partial<Product>): Promise<Axios
                 name
                 active
             }
+            customers(pagination: { limit: 100 }) { documentId name }
+            customerCategories(pagination: { limit: 100 }) { documentId name }
         }
     }
   `,
