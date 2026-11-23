@@ -14,6 +14,7 @@ export type PegCardProduct = {
   priceTiers: Array<{ minQuantity?: number; price?: number }> | null;
   active: boolean | null;
   inCatalogue: boolean | null;
+  productCategory?: { documentId: string; name: string } | null;
   images: Array<{
     url: string;
     formats?: Record<string, { url?: string }> | null;
@@ -29,6 +30,10 @@ const QUERY = `
       priceTiers
       active
       inCatalogue
+      productCategory {
+        documentId
+        name
+      }
       images {
         url
         formats

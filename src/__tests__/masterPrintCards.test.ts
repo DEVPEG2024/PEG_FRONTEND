@@ -49,7 +49,24 @@ describe('fiche PEG sur la carte', () => {
       basePrice: 15.62,
       active: true,
       inCatalogue: false,
+      imageCount: 1,
+      categoryName: null,
     });
+  });
+
+  it('catégorie et nombre d’images de la fiche', () => {
+    const info = pegCardInfo({
+      documentId: 'p4',
+      name: 'Sof Tee',
+      price: 10,
+      priceTiers: [],
+      active: true,
+      inCatalogue: true,
+      productCategory: { documentId: 'c1', name: 'Textile' },
+      images: [{ url: 'a' }, { url: 'b' }],
+    });
+    expect(info.categoryName).toBe('Textile');
+    expect(info.imageCount).toBe(2);
   });
 
   it('sans paliers ni image : prix de base, pas d’image ; prix nul ignoré', () => {

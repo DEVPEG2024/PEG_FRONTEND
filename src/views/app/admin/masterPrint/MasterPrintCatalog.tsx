@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { HiArrowLeft, HiCheckCircle, HiSearch } from 'react-icons/hi';
+import { HiArrowLeft, HiSearch } from 'react-icons/hi';
 import type {
   MpCatalogDetails,
   MpCatalogResult,
@@ -40,7 +40,8 @@ import {
 } from '@/utils/masterPrint';
 import useResponsive from '@/utils/hooks/useResponsive';
 import PurchasePricesPanel from './PurchasePricesPanel';
-import ProductPhotosPanel, { ImportPhotosButton } from './ProductPhotosPanel';
+import ProductPhotosPanel from './ProductPhotosPanel';
+import ImportedStatus from './catalog/ImportedStatus';
 // Catégories Master Print (libellés à jour) et rangement automatique à l'import.
 import { pickImportCategory } from '@/utils/masterPrintQuote';
 import useMpCategories from './useMpCategories';
@@ -128,6 +129,9 @@ const ProductSheet = ({
   const [done, setDone] = useState<{ documentId: string; name: string } | null>(
     null
   );
+  // Visible des clients dès l'import (catégorie requise) ; photos du modèle copiées dans la fiche.
+  const [visible, setVisible] = useState(true);
+  const [withPhotos, setWithPhotos] = useState(true);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -203,6 +207,8 @@ const ProductSheet = ({
         markings,
         format: format || undefined,
         ...(again ? { again: true } : {}),
+        inCatalogue: visible && !!category,
+        photos: withPhotos && !!details.imageUrl,
       });
       setDone({ documentId: data.productDocumentId, name: data.name });
       if (category) mpCategories.remember(p.category, category);
@@ -212,8 +218,14 @@ const ProductSheet = ({
       ]
         .filter(Boolean)
         .join(', ');
+      const ph = data.photos;
+      const photoNote = !ph
+        ? ''
+        : 'pending' in ph
+          ? ', photos en cours de copie'
+          : `, ${ph.added} photo(s)`;
       toast.success(
-        `« ${data.name} » importé dans PEG${extra ? ` (${extra})` : ''}`
+        `« ${data.name} » importé dans PEG${extra ? ` (${extra})` : ''}${photoNote}${data.inCatalogue ? ', visible des clients' : ', pas encore visible des clients'}.`
       );
       onImported();
     } catch (e) {
@@ -266,37 +278,12 @@ const ProductSheet = ({
             .filter(Boolean)
             .join(' · ')}
         </p>
-        {[...details.imported, ...(done ? [done] : [])].map((imp) => (
-          <p
-            key={imp.documentId}
-            style={{
-              fontSize: '12.5px',
-              marginTop: '6px',
-              color: '#86efac',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <HiCheckCircle aria-hidden="true" /> Dans PEG :{' '}
-            <Link
-              to={`/admin/products/edit/${imp.documentId}`}
-              style={{ color: '#86efac', textDecoration: 'underline' }}
-            >
-              {imp.name}
-            </Link>
-            <span aria-hidden="true">·</span>
-            <Link
-              to={`/admin/master-print/offers/${imp.documentId}`}
-              style={{ color: '#b9b0ff', textDecoration: 'underline' }}
-            >
-              formulaire client
-            </Link>
-          </p>
-        ))}
-        {done && p.category === 'textile' && (
-          <ImportPhotosButton productDocumentId={done.documentId} />
-        )}
+        <ImportedStatus
+          refs={[...details.imported, ...(done ? [done] : [])]}
+          categories={categories}
+          suggestedCategory={category}
+          canCopyPhotos={!!details.imageUrl}
+        />
       </div>
 
       {p.description && (
@@ -558,16 +545,72 @@ const ProductSheet = ({
             </select>
           </Field>
         </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '12px',
+          }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              fontSize: '13.5px',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={visible && !!category}
+              disabled={!category}
+              onChange={(e) => setVisible(e.target.checked)}
+              style={{ marginTop: '3px', accentColor: '#8b7dff' }}
+            />
+            <span>
+              Visible tout de suite dans le catalogue client
+              <span style={{ ...muted, display: 'block' }}>
+                {category
+                  ? 'Dans la catégorie choisie ci-dessus.'
+                  : 'Choisissez d’abord une catégorie PEG : sans elle, les clients ne le voient pas.'}
+              </span>
+            </span>
+          </label>
+          {!!details.imageUrl && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={withPhotos}
+                onChange={(e) => setWithPhotos(e.target.checked)}
+                style={{ marginTop: '3px', accentColor: '#8b7dff' }}
+              />
+              <span>
+                Copier les photos du modèle dans la fiche
+                <span style={{ ...muted, display: 'block' }}>
+                  Photo principale et photos par coloris, copiées dans le
+                  stockage PEG.
+                </span>
+              </span>
+            </label>
+          )}
+        </div>
         <p style={{ ...muted, marginTop: '8px' }}>
-          Le produit est créé{' '}
-          <strong style={{ color: '#fff' }}>invisible des clients</strong>, avec
-          ces paliers de prix, le prix d’achat comme prix de revient, et la
-          correspondance Master Print déjà faite. Il reçoit aussi son{' '}
+          Le produit est créé avec ces paliers de prix, le prix d’achat comme
+          prix de revient, la correspondance Master Print déjà faite et son{' '}
           <strong style={{ color: '#fff' }}>formulaire client</strong> : le
           client compose sa commande (coloris, tailles, marquages, options),
           voit le prix en direct, et la commande payée part seule chez Master
-          Print. Ajoutez la photo sur sa fiche, réglez le formulaire, puis
-          mettez-le au catalogue ou dans les offres d’un client.
+          Print.
         </p>
         <Issues items={issues} />
         <div

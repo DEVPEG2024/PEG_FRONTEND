@@ -16,6 +16,8 @@ export type PegCardInfo = {
   basePrice: number | null;
   active: boolean;
   inCatalogue: boolean;
+  imageCount: number;
+  categoryName: string | null;
 };
 
 const num = (v: unknown): number | null => {
@@ -45,6 +47,8 @@ export function pegCardInfo(p: PegCardProduct): PegCardInfo {
     basePrice: base ?? null,
     active: p.active !== false,
     inCatalogue: p.inCatalogue === true,
+    imageCount: Array.isArray(p.images) ? p.images.length : 0,
+    categoryName: p.productCategory?.name ?? null,
   };
 }
 

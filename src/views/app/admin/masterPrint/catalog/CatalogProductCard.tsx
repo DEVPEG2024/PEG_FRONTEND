@@ -264,8 +264,12 @@ const CatalogProductCard = ({ item, categoryLabel, peg, onOpen }: Props) => {
             {imported ? 'Voir' : 'Importer'}
           </span>
         </span>
-        {imported && peg && !peg.active && (
-          <span className="hx-pcard-note">Fiche PEG inactive</span>
+        {imported && peg && (!peg.active || !peg.inCatalogue) && (
+          <span className="hx-pcard-note">
+            {!peg.active
+              ? 'Fiche PEG inactive'
+              : 'Pas encore visible des clients'}
+          </span>
         )}
       </span>
     </button>

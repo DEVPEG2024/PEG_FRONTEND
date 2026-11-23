@@ -207,3 +207,13 @@ export async function findPhotosFor(
   const plan = match.entry ? photoPlan(product, match.entry) : null;
   return { product, match, plan };
 }
+
+/** Photos du modèle (catalogue public Master Print, photos Falk & Ross) copiées par le serveur dans la fiche PEG. */
+export const apiAttachModelPhotos = (productDocumentId: string) =>
+  ApiService.fetchData<
+    SavePhotosResult & { copied: number; colorPhotos: number }
+  >({
+    url: `/master-print/admin/photos/${encodeURIComponent(productDocumentId)}/model`,
+    method: 'post',
+    timeout: 60000,
+  });

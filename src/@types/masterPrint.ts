@@ -358,6 +358,10 @@ export type MpImportRequest = MpGridChoice & {
   categoryDocumentId?: string;
   colors: string[];
   again?: boolean;
+  /** Visible tout de suite dans le catalogue client (catégorie requise). */
+  inCatalogue?: boolean;
+  /** Copier les photos du modèle (catalogue public Master Print) dans la fiche. */
+  photos?: boolean;
 };
 
 export type MpImportResult = {
@@ -366,6 +370,9 @@ export type MpImportResult = {
   priceTiers: Array<{ minQuantity: number; price: number }>;
   cost: number | null;
   created: { colors: number; sizes: number };
+  /** Photos du modèle copiées (pending : la copie se termine en arrière-plan). */
+  photos?: { added: number; colors: number } | { pending: true } | null;
+  inCatalogue?: boolean;
 };
 
 // ── Offres configurables (formulaire client, ajout 20/11/2026) ──
